@@ -248,7 +248,7 @@ void loop() {
 
   // Wifi und Webserver
   #if MODUL_WIFI
-    server.handleClient(); 
+    Webserver.handleClient(); 
   #endif
 }
 

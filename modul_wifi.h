@@ -8,7 +8,7 @@
 #include <FS.h> // um die HTML-Dateien zu lesen
 
 WiFiClient client;
-ESP8266WebServer server(80); 
+ESP8266WebServer Webserver(80); //
 
 String FormatiereHtml(const char* dateiname) {
   // Versuche, die HTML-Datei zu öffnen
@@ -79,7 +79,7 @@ void WebseiteStartAusgeben() {
     formatierterCode += "%</p>";
   #endif
   formatierterCode += "</div></body></html>";
-  server.send(200, "text/html", formatierterCode);
+  Webserver.send(200, "text/html", formatierterCode);
 }
 
 void WebseiteAdminAusgeben() {
@@ -117,8 +117,8 @@ void WifiSetup(){
   // Nun sollte WLAN verbunden sein
   Serial.print("meine IP: ");
   Serial.println(WiFi.localIP());
-  server.on("/", WebseiteStartAusgeben);
-  server.begin(); // Webserver starten
+  Webserver.on("/", WebseiteStartAusgeben);
+  Webserver.begin(); // Webserver starten
   #if MODUL_DEBUG
     Serial.println(F("#######################################"));
   #endif
