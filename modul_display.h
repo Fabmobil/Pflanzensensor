@@ -10,6 +10,13 @@
  * oben und unten; \x7b -> {; \x7c -> |; \x7d -> };
  * \xf8 -> °
  */
+ 
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // Initialisierung des Displays
 
 /**
  * Funktion: DisplayIntro()
@@ -93,7 +100,7 @@ if (bodenfeuchte != -1) {
     display.setCursor(0, 40);
     display.println(bodenfeuchte);
     display.display();      // Display aktualisieren
-    delay(VAR_DISPLAY_ANZEIGEDAUER);
+    delay(displayAnzeigedauer);
   }
   if (lichtstaerke != -1) {
     display.clearDisplay();
@@ -108,7 +115,7 @@ if (bodenfeuchte != -1) {
     display.setCursor(50, 40);
     display.println("%");
     display.display();      // Display aktualisieren
-    delay(VAR_DISPLAY_ANZEIGEDAUER);
+    delay(displayAnzeigedauer);
   }
   if (lufttemperatur != -1) {
     display.clearDisplay();
@@ -125,7 +132,7 @@ if (bodenfeuchte != -1) {
     display.setCursor(60, 40);
     display.println("C");
     display.display();      // Display aktualisieren
-    delay(VAR_DISPLAY_ANZEIGEDAUER);
+    delay(displayAnzeigedauer);
   }
   if (luftfeuchte != -1) {
     display.clearDisplay();
@@ -140,6 +147,6 @@ if (bodenfeuchte != -1) {
     display.setCursor(50, 40);
     display.println("%");
     display.display();      // Display aktualisieren
-    delay(VAR_DISPLAY_ANZEIGEDAUER);
+    delay(displayAnzeigedauer);
   }
 }

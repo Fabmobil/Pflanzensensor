@@ -95,7 +95,7 @@ void WifiSetup(){
   WiFi.mode(WIFI_OFF);
   WiFi.mode(WIFI_AP_STA);
   if (WiFi.status() == WL_CONNECTED) Serial.println("WLAN war verbunden");
-  WiFi.begin(VAR_WIFI_SSID, VAR_WIFI_PASSWORD);
+  WiFi.begin(wifiSsid, wifiPassword);
   int i=0; // Es wird nur 20 mal versucht, eine WLAN Verbindung aufzubauen
   while (!(WiFi.status() == WL_CONNECTED) && i<20) {
       #if MODUL_DEBUG
@@ -144,9 +144,9 @@ void ifttt_nachricht(int bodenfeuchte, int lichtstaerke, int luftfeuchte, int lu
   // construct the POST request
   String postString = "";
   postString += "POST /trigger/";
-  postString += VAR_WIFI_IFTTT_EREIGNIS;
+  postString += wifiIftttEreignis;
   postString += "/with/key/";
-  postString += VAR_WIFI_IFTTT_EREIGNIS;
+  postString += wifiIftttEreignis;
   postString += " HTTP/1.1\r\n";
   postString += "Host: maker.ifttt.com\r\n";
   postString += "Content-Type: application/json\r\n";

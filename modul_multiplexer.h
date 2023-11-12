@@ -23,7 +23,7 @@ void MultiplexerWechseln(int c, int b, int a) {
     Serial.print(F(" a: ")); Serial.println(a);
     Serial.println(F("#######################################"));
   #endif
-  digitalWrite(PIN_MULTIPLEXER_1, a);
-  digitalWrite(PIN_MULTIPLEXER_2, b);
-  digitalWrite(PIN_MULTIPLEXER_3, c);
+  digitalWrite(pinMultiplexer1, a);
+  digitalWrite(pinMultiplexer2, b);
+  digitalWrite(pinMultiplexer3, c);
 }

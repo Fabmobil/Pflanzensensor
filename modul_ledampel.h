@@ -19,17 +19,17 @@ void LedampelBlinken(String farbe, int anzahl, int dauer) {
     Serial.println(F("#######################################"));
   #endif
   char PIN_LED;
-  digitalWrite(PIN_LEDAMPEL_ROTELED, LOW);
-  digitalWrite(PIN_LEDAMPEL_GELBELED, LOW);
-  digitalWrite(PIN_LEDAMPEL_GRUENELED, LOW);
+  digitalWrite(pinAmpelRot, LOW);
+  digitalWrite(pinAmpelGelb, LOW);
+  digitalWrite(pinAmpelGruen, LOW);
   if (farbe == "rot") {
-    PIN_LED = PIN_LEDAMPEL_ROTELED;
+    PIN_LED = pinAmpelRot;
   } 
   if (farbe =="gelb") {
-    PIN_LED = PIN_LEDAMPEL_GELBELED;
+    PIN_LED = pinAmpelGelb;
   } 
   if (farbe == "gruen") {
-    PIN_LED = PIN_LEDAMPEL_GRUENELED;
+    PIN_LED = pinAmpelGruen;
   }
   for (int i=0;i<anzahl;i++){
     digitalWrite(PIN_LED, HIGH);
@@ -53,24 +53,24 @@ void LedampelAnzeigen(String farbe, int dauer) {
     Serial.println(F("#######################################"));
   #endif
   if (farbe == "rot") {
-    digitalWrite(PIN_LEDAMPEL_ROTELED, HIGH);
+    digitalWrite(pinAmpelRot, HIGH);
     if (dauer != -1) {
       delay(dauer);
-      digitalWrite(PIN_LEDAMPEL_ROTELED, LOW);
+      digitalWrite(pinAmpelRot, LOW);
     }
   }
   if (farbe == "gelb") {
-    digitalWrite(PIN_LEDAMPEL_GELBELED, HIGH);
+    digitalWrite(pinAmpelGelb, HIGH);
     if (dauer != -1) {
       delay(dauer);
-      digitalWrite(PIN_LEDAMPEL_GELBELED, LOW);
+      digitalWrite(pinAmpelGelb, LOW);
     }
   } 
   if (farbe == "gruen") {
-    digitalWrite(PIN_LEDAMPEL_GRUENELED, HIGH);
+    digitalWrite(pinAmpelGruen, HIGH);
     if (dauer != -1) {
       delay(dauer);
-      digitalWrite(PIN_LEDAMPEL_GRUENELED, LOW);
+      digitalWrite(pinAmpelGruen, LOW);
     }
   }  
 }
