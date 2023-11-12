@@ -82,6 +82,13 @@ void WebseiteStartAusgeben() {
   server.send(200, "text/html", formatierterCode);
 }
 
+void WebseiteAdminAusgeben() {
+  String formatierterCode = WebseiteKopfAusgeben();
+  formatierterCode += "<h2>Adminseite</h2>"
+  formatierterCode += "</div></body></html>";
+  server.send(200, "text/html", formatierterCode);
+}
+
 /* 
  * Funktion: WifiSetup() 
  * Verbindet das WLAN
@@ -116,6 +123,7 @@ void WifiSetup(){
     Serial.println(F("#######################################"));
   #endif
 }
+
 
 /*
  * Funktion: ifttt_nachricht(int bodenfeuchte, int lichtstaerke, int luftfeuchte, int lufttemperatur)
