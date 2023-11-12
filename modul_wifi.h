@@ -84,9 +84,9 @@ void WebseiteStartAusgeben() {
 
 void WebseiteAdminAusgeben() {
   String formatierterCode = WebseiteKopfAusgeben();
-  formatierterCode += "<h2>Adminseite</h2>"
+  formatierterCode += "<h2>Adminseite</h2>";
   formatierterCode += "</div></body></html>";
-  server.send(200, "text/html", formatierterCode);
+  Webserver.send(200, "text/html", formatierterCode);
 }
 
 /* 
