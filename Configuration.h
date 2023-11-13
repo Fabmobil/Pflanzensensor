@@ -32,16 +32,16 @@
   #define pinAnalog A0
 #endif
 #if MODUL_DHT
-  #define pinDht 0 // "D3"; an welchem Pin ist der Sensor angeschlossen?
+  #define pinDht 2 // "D4"; an welchem Pin ist der Sensor angeschlossen?
   #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
 #endif
 #if MODUL_DISPLAY
   #define displayAnzeigedauer 1500 // Anzeigedauer der einzelnen Messwerte auf dem Display in Millisekunden
 #endif
 #if MODUL_LEDAMPEL
-  #define pinAmpelRot 12 // Pin der roten LED
-  #define pinAmpelGelb 13 // Pin der gelben LED
-  #define pinAmpelGruen 14 // Pin der gruenen LED
+  #define pinAmpelRot 12 // "D6"; Pin der roten LED
+  #define pinAmpelGelb 13 // "D7"; Pin der gelben LED
+  #define pinAmpelGruen 14 // "D5"; Pin der gruenen LED
   bool ampelBodenfeuchteInvertiert = false; // true: grün = großer Wert, rot = kleiner Wert. false: rot = großer Wert, grün = kleiner Wert
   int ampelBodenfeuchteGruen = 40; // Luftfeuchte in %, ab der die Ampel grün ist
   int ampelBodenfeuchteGelb = 30; // Luftfeuchte in %, ab der die Ampel gelb und unter der die Ampel rot ist

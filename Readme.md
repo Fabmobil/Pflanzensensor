@@ -28,3 +28,4 @@ Folgende Bibliotheken werden verwendet und müssen ggfs. in der Arduino IDE heru
 |-----------|----------------|
 | Bodenfeuchte |  |
 | DHT | [DHT sensor library](https://github.com/adafruit/DHT-sensor-library), [Adafruit Unified Sensor](https://github.com/adafruit/Adafruit_Sensor) |
+| Display | Adafruit BusIO, Adafruit GFX Library, Adafruit SSD1306 |
