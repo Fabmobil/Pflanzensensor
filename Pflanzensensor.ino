@@ -141,7 +141,7 @@ void loop() {
   // Lichtsensor messen und ggfs. Multiplexer umstellen
   #if MODUL_HELLIGKEIT
     #if MODUL_MULTIPLEXER
-      MultiplexerWechseln(HIGH); // Multiplexer auf Ausgang 2 stellen
+      MultiplexerWechseln(1); // Multiplexer auf Ausgang 2 stellen
       delay(500); // 0,5s warten
     #endif
   messwertHelligkeit = HelligkeitMessen();
@@ -155,7 +155,7 @@ void loop() {
   // Bodenfeuchte messen und ggfs. Multiplexer umstellen
   #if MODUL_BODENFEUCHTE
     #if MODUL_MULTIPLEXER
-      MultiplexerWechseln(LOW); // Multiplexer auf Ausgang 1 stellen
+      MultiplexerWechseln(0); // Multiplexer auf Ausgang 1 stellen
       delay(500); // 0,5s warten
     #endif
     // Bodenfeuchte messen

@@ -13,8 +13,6 @@ int HelligkeitMessen() {
   #endif
   // Lichtstaerke messen
   int messwertHelligkeit = analogRead(pinAnalog);
-  Serial.print("Messwert Lichtstärke: ");
-  Serial.println(messwertHelligkeit);
   #if MODUL_DEBUG
     Serial.print  (F("Lichtstärke absolut: ")); Serial.println(messwertHelligkeit);
     Serial.println(F("#######################################"));

@@ -22,7 +22,6 @@ int BodenfeuchteUmrechnung(int messwert) {
   */
   #if MODUL_DEBUG
     Serial.println(F("## Debug: Beginn von BodenfeuchteUmrechnung(messwert)"));
-    Serial.print(F("Bodenfeuchte: ")); Serial.println(messwert);
   #endif
   float quotient=1-(float)messwert/1023.0; // ESP8266
   float skaliert=(quotient*100.0-50.0)*(100.0/(77.0-50.0));

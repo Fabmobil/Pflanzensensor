@@ -4,16 +4,10 @@
  */
 
 /*
- * Funktion: MultiplexerWechseln(int c, int b, int a)
+ * Funktion: MultiplexerWechseln(int a)
  * Schaltet den Eingang des analog Multiplexers um:
- * 000 -> Eingang 0
- * 001 -> Eingang 1
- * 010 -> Eingang 2
- * 011 -> Eingang 3
- * 100 -> Eingang 4
- * 101 -> Eingang 5
- * 110 -> Eingang 6
- * 111 -> Eingang 7
+ * 0 -> Eingang 0
+ * 1 -> Eingang 1
  */
 void MultiplexerWechseln(int a) {
   #if MODUL_DEBUG
