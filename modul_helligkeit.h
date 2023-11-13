@@ -3,9 +3,6 @@
  * Diese Datei enthält den Code für den analogen Helligkeitssensor
  */
 
-int messwertHelligkeit = -1;
-
-
 /*
  * Funktion: HelligkeitMessen()
  *  Misst den Analogwert des Lichtsensors
@@ -17,7 +14,7 @@ int HelligkeitMessen() {
   // Lichtstaerke messen
   int messwertHelligkeit = analogRead(pinAnalog);
   Serial.print("Messwert Lichtstärke: ");
-  Serial.println(messwertHelligkeit); 
+  Serial.println(messwertHelligkeit);
   #if MODUL_DEBUG
     Serial.print  (F("Lichtstärke absolut: ")); Serial.println(messwertHelligkeit);
     Serial.println(F("#######################################"));
@@ -25,7 +22,7 @@ int HelligkeitMessen() {
   return messwertHelligkeit;
 }
 
-/* 
+/*
  * Funktion: HelligkeitUmrechnen(int lichtstaerke, int lichtstaerkeMinimum, int lichtstaerkeMaximum)
  * Macht aus dem analogen Messwert lichtstaerke einen Prozentwert, in dem er den Messwert auf eine
  * Skala zwischen lichtstaerkeMinimum und lichtstaerkeMaximum mappt

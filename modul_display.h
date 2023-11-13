@@ -6,11 +6,11 @@
  * \x84 -> ä; \x94 -> ö; \x81 -> ü; \x8e -> Ä; \x99 -> Ö;
  * \x9a -> Ü; \xe1 -> ß; \xe0 -> alpha; \xe4 -> Summenzeichen;
  * \xe3 -> Pi; \xea -> Ohm; \xed -> Durchschnitt; \xee -> PI;
- * \x10 -> Pfeil links; \x11 -> Pfeil rechts; \x12 -> Pfeil 
+ * \x10 -> Pfeil links; \x11 -> Pfeil rechts; \x12 -> Pfeil
  * oben und unten; \x7b -> {; \x7c -> |; \x7d -> };
  * \xf8 -> °
  */
- 
+
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
@@ -22,8 +22,9 @@ Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // I
  * Funktion: DisplayIntro()
  * Spielt den Bootscreen auf dem Display ab und zeigt die IP Adresse an
  * String ip: IP Adresse des Chips
+ * String hostname: Name des Gerätes -- im Browser dann errichbar unter hostname.local
  */
-void DisplayIntro(String ip) {
+void DisplayIntro(String ip, String hostname) {
   #if MODUL_DEBUG
     Serial.println(F("## Debug: Beginn von DisplayIntro()"));
     Serial.println(F("#######################################"));
@@ -61,14 +62,21 @@ void DisplayIntro(String ip) {
 
   display.clearDisplay();
   display.setCursor(0, 0);
-  display.setTextSize(2); 
+  display.setTextSize(2);
   display.println(F("IP Adresse"));
-  display.setTextSize(1); 
-  display.setCursor(0, 40);
+  display.setTextSize(1);
+  display.setCursor(0, 17);
   display.println(ip);
+  display.setCursor(0, 35);
+  display.setTextSize(2);
+  display.println(F("Hostname"));
+  display.setTextSize(1);
+  display.setCursor(0, 52);
+  display.print(hostname);
+  display.println(".local");
   display.display();
   delay(5000);
-  
+
 }
 
 /**

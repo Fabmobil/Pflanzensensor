@@ -2,9 +2,9 @@
  * FABMOBIL Pflanzensensor
  * ***********************
  * Author: tommy@fabmobil.org
- * 
+ *
  * Dies ist der Code für den Fabmobil Pflanzensensor. Er ist aufgeteilt in verschiedene Dateien:
- * - Pflanzensensor.ino ist die zentrale Datei, welche die setup() und loop()-Funktion enthält, 
+ * - Pflanzensensor.ino ist die zentrale Datei, welche die setup() und loop()-Funktion enthält,
  *   die für den Betrieb des Sensors notwendig ist.
  * - Configuration.h enthält Konfigurationsdefinitionen und ermöglicht es, Module an- oder aus-
  *   zuschalten, die Pins der Sensoren zu definieren und verschiedene Variablen zu setzen
@@ -15,10 +15,10 @@
  * - MODUL_HELLIGKEIT.h ist die Datei mit den Funktionen für den Lichtsensor
  * - modul_multiplexer.h ist die Datei mit den Funktionen für den Analogmultiplexer. Dieser
  *   kommt zum Einsatz wenn sowohl der Licht- als auch der Bodenfeuchtesensor eingesetzt
- *   werden, da beide Analogsignale liefern und der verwendete ESP8266 Chip nur einen 
+ *   werden, da beide Analogsignale liefern und der verwendete ESP8266 Chip nur einen
  *   Analogeingang hat.
  * - modul_wifi.h ist die Datei mit den Funktionen für die Wifiverbindung
- * 
+ *
  * Die verwendeten Bauteile sind in der Readme.md aufgeführt.
  */
 
@@ -32,7 +32,7 @@
 void setup() {
   Serial.begin(baudrateSeriell); // Serielle Verbindung aufbauen
   /* Die #if ... #endif-Anweisungen werden vom Preprozessor aufgegriffen,
-   * welcher den Code fürs kompilieren vorbereitet. Es wird abgefragt, 
+   * welcher den Code fürs kompilieren vorbereitet. Es wird abgefragt,
    * ob das jeweilige Modul aktiviert ist oder nicht. Dies geschieht in
    * der Configuration.h-Datei. Ist das Modul deaktiviert, wird der Code
    * zwischen dem #if und #endif ignoriert und landet nicht auf dem Chip.
@@ -46,7 +46,7 @@ void setup() {
    * über Werkzeuge -> Serieller Monitor angeschaut werden so lange
    * eine USB-Verbindung zum Chip besteht. Der Unterschied zwischen
    * Serial.println() und Serial.print() ist, dass der erste Befehl
-   * 
+   *
    */
   Serial.println(" Fabmobil Pflanzensensor, V0.1");
   pinMode(pinEingebauteLed, OUTPUT); // eingebaute LED intialisieren
@@ -75,12 +75,12 @@ void setup() {
   #endif
   #if MODUL_MULTIPLEXER
     pinMode(pinMultiplexer1, OUTPUT);
-    pinMode(pinMultiplexer2, OUTPUT);     
-    pinMode(pinMultiplexer3, OUTPUT); 
+    pinMode(pinMultiplexer2, OUTPUT);
+    pinMode(pinMultiplexer3, OUTPUT);
   #endif
   String ip = "keine WLAN Verbindung.";
   #if MODUL_WIFI
-    WifiSetup(); // Wifi-Verbindung herstellen
+    WifiSetup(wifiHostname); // Wifi-Verbindung herstellen
     ip = WiFi.localIP().toString();
   #endif
   #if MODUL_DISPLAY
@@ -91,11 +91,11 @@ void setup() {
     display.display(); // Display anschalten und initialen Buffer zeigen
     delay(1000); // 1 Sekunde warten
     display.clearDisplay(); // Display löschen
-    DisplayIntro(ip); // Introfunktion aufrufen
+    // DisplayIntro(ip, wifiHostname); // Introfunktion aufrufen
   #endif
   #if MODUL_DHT
     // Initialisierung des Lufttemperatur und -feuchte Sensors:
-    dht.begin(); 
+    dht.begin();
     sensor_t sensor;
     #if MODUL_DEBUG
       Serial.println(F("## Debug: DHT Sensor intialisieren und auslesen"));
@@ -136,7 +136,7 @@ void loop() {
     Serial.println(F("@@ Debug: Begin von loop()"));
   #endif
   interne_led_blinken(3, 50); // in jedem neuen Loop blinkt die interne LED 3x kurz
-  
+
   // Lichtsensor messen und ggfs. Multiplexer umstellen
   #if MODUL_HELLIGKEIT
     #if MODUL_MULTIPLEXER
@@ -164,8 +164,8 @@ void loop() {
   #if MODUL_DHT
     //float messwertLufttemperatur = 23.3;
     //float messwertLuftfeuchte = 39.9;
-    float messwertLufttemperatur = DhtMessenLufttemperatur();
-    float messwertLuftfeuchte = DhtMessenLuftfeuchte();
+    messwertLufttemperatur = DhtMessenLufttemperatur();
+    messwertLuftfeuchte = DhtMessenLuftfeuchte();
   #endif
 
   // LED Ampel anzeigen lassen
@@ -183,23 +183,23 @@ void loop() {
       // Unterscheidung, ob die Skala der Lichtstärke invertiert ist oder nicht
       if ( ampelLichtstaerkeInvertiert ) {
         if ( messwertHelligkeit >= ampelLichtstaerkeGruen ) {
-          LedampelAnzeigen("gruen", -1);   
+          LedampelAnzeigen("gruen", -1);
         }
         if ( (messwertHelligkeit >= ampelLichtstaerkeGelb) && (messwertHelligkeit < ampelLichtstaerkeGruen) ) {
-          LedampelAnzeigen("gelb", -1);   
+          LedampelAnzeigen("gelb", -1);
         }
         if ( messwertHelligkeit < ampelLichtstaerkeGelb ) {
-          LedampelAnzeigen("rot", -1);   
-        } 
+          LedampelAnzeigen("rot", -1);
+        }
       } else {
         if ( messwertHelligkeit <= ampelLichtstaerkeGruen ) {
-          LedampelAnzeigen("gruen", -1);   
+          LedampelAnzeigen("gruen", -1);
         }
         if ( (messwertHelligkeit <= ampelLichtstaerkeGelb) && (messwertHelligkeit < ampelLichtstaerkeGruen) ) {
-          LedampelAnzeigen("gelb", -1);   
+          LedampelAnzeigen("gelb", -1);
         }
         if ( messwertHelligkeit > ampelLichtstaerkeGelb ) {
-          LedampelAnzeigen("rot", -1);   
+          LedampelAnzeigen("rot", -1);
         }
       }
     #endif
@@ -214,28 +214,28 @@ void loop() {
       #endif
       if ( ampelBodenfeuchteInvertiert ) { // Unterscheidung, ob die Bodenfeuchteskala invertiert wird oder nicht
         if ( messwertBodenfeuchte >= ampelBodenfeuchteGruen ) {
-          LedampelAnzeigen("gruen", -1);   
+          LedampelAnzeigen("gruen", -1);
         }
         if ( (messwertBodenfeuchte >= ampelBodenfeuchteGelb) && (messwertBodenfeuchte < ampelBodenfeuchteGruen) ) {
-          LedampelAnzeigen("gelb", -1);   
+          LedampelAnzeigen("gelb", -1);
         }
         if ( messwertBodenfeuchte < ampelBodenfeuchteGelb ) {
-          LedampelAnzeigen("rot", -1);   
+          LedampelAnzeigen("rot", -1);
         }
       } else {
         if ( messwertBodenfeuchte <= ampelBodenfeuchteGruen ) {
-          LedampelAnzeigen("gruen", -1);   
+          LedampelAnzeigen("gruen", -1);
         }
         if ( (messwertBodenfeuchte <= ampelBodenfeuchteGelb) && (messwertBodenfeuchte < ampelBodenfeuchteGruen) ) {
-          LedampelAnzeigen("gelb", -1);   
+          LedampelAnzeigen("gelb", -1);
         }
         if ( messwertBodenfeuchte > ampelBodenfeuchteGelb ) {
-          LedampelAnzeigen("rot", -1);   
+          LedampelAnzeigen("rot", -1);
         }
       }
     #endif
   #endif
-  
+
   // Messwerte auf dem Display anzeigen
   #if MODUL_DISPLAY
     DisplayMesswerte(messwertBodenfeuchte, LICHTSTAERKE_PROZENT, messwertLuftfeuchte, messwertLufttemperatur);
@@ -248,7 +248,7 @@ void loop() {
 
   // Wifi und Webserver
   #if MODUL_WIFI
-    Webserver.handleClient(); 
+    Webserver.handleClient();
   #endif
 }
 
@@ -264,5 +264,5 @@ void interne_led_blinken(int anzahl, int dauer){
     digitalWrite(pinEingebauteLed, LOW);
     delay(dauer);
     digitalWrite(pinEingebauteLed, HIGH);
-  } 
+  }
 }

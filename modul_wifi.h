@@ -5,6 +5,7 @@
 
 #include <ESP8266WiFi.h> // für WLAN
 #include <ESP8266WebServer.h> // für Webserver
+#include <ESP8266mDNS.h> // für Namensauflösung
 
 WiFiClient client;
 ESP8266WebServer Webserver(80); //
@@ -34,26 +35,28 @@ void WebseiteStartAusgeben() {
   #include "modul_wifi_footer.h"
   String formatierterCode = htmlHeader;
   #if MODUL_LICHTSENSOR
-    int lichtstaerke = 20;
-    formatierterCode += "<h2>Lichtstärke</h2><p>";
-    formatierterCode += lichtstaerke;
+    formatierterCode += "<h2>Helligkeit</h2><p>";
+    formatierterCode += messwertHelligkeit;
     formatierterCode += "%</p>";
   #endif
   #if MODUL_BODENFEUCHTE
-    int bodenfeuchte = 35;
     formatierterCode += "<h2>Bodenfeuchte</h2><p>";
-    formatierterCode += bodenfeuchte;
+    formatierterCode += messwertBodenfeuchte;
     formatierterCode += "%</p>";
   #endif
   #if MODUL_DHT
-    int luftfeuchte = 37;
-    int lufttemperatur = 22;
     formatierterCode += "<h2>Lufttemperatur</h2><p>";
-    formatierterCode += lufttemperatur;
+    formatierterCode += messwertLufttemperatur;
     formatierterCode += "°C</p>";
     formatierterCode += "<h2>Luftfeuchte</h2><p>";
-    formatierterCode += luftfeuchte;
+    formatierterCode += messwertLuftfeuchte;
     formatierterCode += "%</p>";
+  #endif
+  #if MODUL_LEDAMPEL
+    formatierterCode += "<h2>LEDAmpel</h2>";
+    formatierterCode += "<h3>Helligkeit</h3><p>";
+    formatierterCode += ampelLichtstaerkeGruen;
+    formatierterCode += "</p>";
   #endif
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
@@ -67,16 +70,62 @@ void WebseiteAdminAusgeben() {
   #include "modul_wifi_header.h"
   #include "modul_wifi_footer.h"
   String formatierterCode = htmlHeader;
-  formatierterCode += "<h2>Adminseite</h2>";
+  formatierterCode += "<h1>Adminseite</h1>";
+  formatierterCode += "<h2>Variablen</h2><h3>LED Ampel</h3>";
+  formatierterCode += "<h4>Helligkeit</h4>";
+  formatierterCode += "<p>Schwellwert gruen: <input type=\"number\" name=\"ampelLichtstaerkeGruen\" placeholder=\"";
+  formatierterCode += ampelLichtstaerkeGruen;
+  formatierterCode += "\"></p>";
+  formatierterCode += "<p>Schwellwert gelb: <input type=\"number\" name=\"ampelLichtstaerkeGelb\" placeholder=\"";
+  formatierterCode += ampelLichtstaerkeGelb;
+  formatierterCode += "\"></p>";
+  formatierterCode += "<p>Schwellwert rot: <input type=\"number\" name=\"ampelLichtstaerkeRot\" placeholder=\"";
+  formatierterCode += ampelLichtstaerkeRot;
+  formatierterCode += "\"></p>";
+  formatierterCode += "<h2>Passwort</h2>";
+  formatierterCode += "<form action=\"/setzeVariablen\" method=\"POST\"><input type=\"password\" name=\"Passwort\" placeholder=\"Passwort\">";
+  formatierterCode += "<input type=\"submit\" value=\"Login\"></form>";
+
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
+}
+
+void WebseiteSetzeVariablen() {
+  #if MODUL_DEBUG
+    Serial.println(F("## Debug: Beginn von WebseiteSetzeVariablen()"));
+    Serial.println(F("#######################################"));
+  #endif
+  if ( ! Webserver.hasArg("Passwort") || Webserver.arg("Passwort") == NULL) { // If the POST request doesn't have username and password data
+    Webserver.send(400, "text/plain", "400: Invalid Request");         // The request is invalid, so send HTTP status 400
+    return;
+  }
+  if(Webserver.arg("Passwort") == wifiAdminPasswort) { // If both the username and the password are correct
+    ampelLichtstaerkeGruen = Webserver.arg("ampelLichtstaerkeGruen").toInt();
+    ampelLichtstaerkeGelb = Webserver.arg("ampelLichtstaerkeGelb").toInt();
+    ampelLichtstaerkeRot = Webserver.arg("ampelLichtstaerkeRot").toInt();
+    #include "modul_wifi_header.h"
+    #include "modul_wifi_footer.h"
+    String formatierterCode = htmlHeader;
+    formatierterCode += "<h2>Erfolgreich!</h2>";
+    formatierterCode += htmlFooter;
+    Webserver.send(200, "text/html", formatierterCode);
+  } else {                                                                              // Username and password don't match
+    Webserver.send(401, "text/plain", "401: Unauthorized");
+  }
+  #if MODUL_DEBUG
+    Serial.print(F("Passwort = ")); Serial.println(F(wifiAdminPasswort));
+    Serial.print(F("ampelLichtstaerkeGruen = ")); Serial.println(ampelLichtstaerkeGruen);
+    Serial.print(F("ampelLichtstaerkeGelb = ")); Serial.println(ampelLichtstaerkeGelb);
+    Serial.print(F("ampelLichtstaerkeRot = ")); Serial.println(ampelLichtstaerkeRot);
+    Serial.println(F("#######################################"));
+  #endif
 }
 
 /*
  * Funktion: WifiSetup()
  * Verbindet das WLAN
  */
-void WifiSetup(){
+void WifiSetup(String hostname){
   #if MODUL_DEBUG
     Serial.println(F("## Debug: Beginn von WifiSetup()"));
     Serial.println(F("#######################################"));
@@ -87,11 +136,11 @@ void WifiSetup(){
   if (WiFi.status() == WL_CONNECTED) Serial.println("WLAN war verbunden");
   WiFi.begin(wifiSsid, wifiPassword);
   int i=0; // Es wird nur 20 mal versucht, eine WLAN Verbindung aufzubauen
-  while (!(WiFi.status() == WL_CONNECTED) && i<20) {
+  while (!(WiFi.status() == WL_CONNECTED) && i<30) {
       #if MODUL_DEBUG
         Serial.print("Verbindungsversuch ");
         Serial.print(i);
-        Serial.println(" von 20.");
+        Serial.println(" von 30.");
         delay(1000);
       #endif
       i++;
@@ -100,8 +149,17 @@ void WifiSetup(){
   // Nun sollte WLAN verbunden sein
   Serial.print("meine IP: ");
   Serial.println(WiFi.localIP());
-  Webserver.on("/", WebseiteStartAusgeben);
-  Webserver.on("/admin.html", WebseiteAdminAusgeben);
+  // DNS Namensauflösung aktivieren:
+  if (MDNS.begin(hostname)) {
+    Serial.print("Gerät unter ");
+    Serial.print(hostname);
+    Serial.println(" erreichbar.");
+  } else {
+    Serial.println("Fehler bein Einrichten der Namensauflösung.");
+  }
+  Webserver.on("/", HTTP_GET, WebseiteStartAusgeben);
+  Webserver.on("/admin.html", HTTP_GET, WebseiteAdminAusgeben);
+  Webserver.on("/setzeVariablen", HTTP_POST, WebseiteSetzeVariablen);
   Webserver.begin(); // Webserver starten
   #if MODUL_DEBUG
     Serial.println(F("#######################################"));

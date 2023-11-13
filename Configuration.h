@@ -1,12 +1,12 @@
 /**
  * Fabmobil Pflanzensensor Konfigurationsdatei
- * 
+ *
  * hier werden die Module ausgewählt sowie die PINs und
  * Variablen festgelegt.
  */
 
 /**
- * Module 
+ * Module
  * "true" aktiviert sie, "false" deaktiviert sie
  */
 #define MODUL_DEBUG         true  // Debugmodus (de)aktivieren
@@ -18,7 +18,7 @@
 #define MODUL_HELLIGKEIT   true // hat dein Pflanzensensor einen Lichtsensor?
 // Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
 #if MODUL_BODENFEUCHTE && MODUL_HELLIGKEIT
-  #define MODUL_MULTIPLEXER true 
+  #define MODUL_MULTIPLEXER true
 #else
   #define MODUL_MULTIPLEXER false
 #endif
@@ -42,20 +42,18 @@
   #define pinAmpelRot 12 // Pin der roten LED
   #define pinAmpelGelb 13 // Pin der gelben LED
   #define pinAmpelGruen 14 // Pin der gruenen LED
-  #define ampelBodenfeuchteInvertiert false // true: grün = großer Wert, rot = kleiner Wert. false: rot = großer Wert, grün = kleiner Wert
-  #define ampelBodenfeuchteGruen 40 // Luftfeuchte in %, ab der die Ampel grün ist
-  #define ampelBodenfeuchteGelb 30 // Luftfeuchte in %, ab der die Ampel gelb und unter der die Ampel rot ist
-  #define ampelBodenfeuchteRot 40 // Luftfeuchte in %, ab der die Ampel grün ist
-  #define ampelLichtstaerkeInvertiert false // true: grün = klein, rot = groß. false: rot = klein, grün = groß
-  #define ampelLichtstaerkeGruen 50 // Lichtstärke in %, bis zu der Ampel grün ist
-  #define ampelLichtstaerkeGelb 30 // Lichtstärke in %, bis zu der Ampel grün ist
-  #define ampelLichtstaerkeRot 10 // Lichtstärke in %, bis zu der Ampel grün ist
+  bool ampelBodenfeuchteInvertiert = false; // true: grün = großer Wert, rot = kleiner Wert. false: rot = großer Wert, grün = kleiner Wert
+  int ampelBodenfeuchteGruen = 40; // Luftfeuchte in %, ab der die Ampel grün ist
+  int ampelBodenfeuchteGelb = 30; // Luftfeuchte in %, ab der die Ampel gelb und unter der die Ampel rot ist
+  int ampelBodenfeuchteRot = 40; // Luftfeuchte in %, ab der die Ampel grün ist
+  bool ampelLichtstaerkeInvertiert = false; // true: grün = klein, rot = groß. false: rot = klein, grün = groß
+  int ampelLichtstaerkeGruen = 50; // Lichtstärke in %, bis zu der Ampel grün ist
+  int ampelLichtstaerkeGelb = 30; // Lichtstärke in %, bis zu der Ampel grün ist
+  int ampelLichtstaerkeRot = 10; // Lichtstärke in %, bis zu der Ampel grün ist
 #endif
 #if MODUL_HELLIGKEIT
   const int lichtstaerkeMinimum = 1024;
   const int lichtstaerkeMaximum = 0;
-  //#define lichtstaerkeMinimum 1024
-  //#define lichtstaerkeMaximum 0
 #endif
 #if MODUL_MULTIPLEXER
   #define pinMultiplexer1 8 // "S1"; erster Eingangspin des Multiplexers
@@ -63,22 +61,27 @@
   #define pinMultiplexer3 10 // "S3"; dritter Eingangspin des Multiplexers
 #endif
 #if MODUL_WIFI
+  #define wifiAdminPasswort "admin" // Passwort für das Admininterface
+  #define wifiHostname "pflanzensensor" // Das Gerät ist später unter diesem Name + .local erreichbar
   #define wifiSsid "Tommy" // WLAN Name
   #define wifiPassword "freibier" // WLAN Passwort
   #define wifiIftttPasswort "IFTTT Schlüssel"
   #define wifiIftttEreignis "Fabmobil_Pflanzensensor"
-#endif 
+#endif
 
 /**
  * Setup der einzelnen Module
  */
 #if MODUL_BODENFEUCHTE
+  int messwertBodenfeuchte = -1;
   #include "modul_bodenfeuchte.h"
 #else
   #define messwertBodenfeuchte -1
 #endif
- 
+
 #if MODUL_DHT
+  float messwertLufttemperatur = -1;
+  float messwertLuftfeuchte = -1;
   #include "modul_dht.h"
 #else
   #define messwertLufttemperatur -1
@@ -98,6 +101,7 @@
 #endif
 
 #if MODUL_HELLIGKEIT
+  int messwertHelligkeit = -1;
   #include "modul_helligkeit.h"
 #else
   #define messwertHelligkeit -1

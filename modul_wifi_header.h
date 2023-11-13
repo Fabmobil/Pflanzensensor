@@ -50,7 +50,7 @@ String htmlHeader = F(R"====(
       font-size: 1.5em;
     }
 
-    p, ul, ol {
+    p, ul, ol, input {
       line-height: 1.4;
       color: #4a4a4a;
       font-weight: normal;
