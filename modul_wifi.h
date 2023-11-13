@@ -5,49 +5,24 @@
 
 #include <ESP8266WiFi.h> // für WLAN
 #include <ESP8266WebServer.h> // für Webserver
-#include <FS.h> // um die HTML-Dateien zu lesen
 
 WiFiClient client;
 ESP8266WebServer Webserver(80); //
-
-String FormatiereHtml(const char* dateiname) {
-  // Versuche, die HTML-Datei zu öffnen
-  File datei = SPIFFS.open(dateiname, "r");
-  if (!datei) {
-    Serial.println("Fehler beim Öffnen der Datei");
-    return "";
-  }
-
-  // Lese den Inhalt der HTML-Datei
-  String htmlText = datei.readString();
-  datei.close();
-
-  // Ersetze Anführungszeichen für die Verwendung im F() - Makro
-  htmlText.replace("\"", "\\\"");
-
-  // Erstelle den formatierten Code
-  String formatierterCode = "String formatierterCode = F(\"";
-  formatierterCode += htmlText;
-  formatierterCode += "\");";
-
-  return formatierterCode;
-}
-
 /*
  * Funktion: String WebseiteKopfAusgeben()
  * Liest die /HTML/header.html Datei aus, formatiert sie um
  * und gibt sie als String zurück.
  */
 String WebseiteKopfAusgeben() {
-  // Initialisiere das Dateisystem
-  if (!SPIFFS.begin()) {
-    Serial.println("Fehler beim Initialisieren des Dateisystems");
-    return "Fehler beim Initialisieren des Dateisystems";
-  }
-  // Gib den formatierten Code für die HTML-Datei aus
-  String formatierterCode = F("<!DOCTYPE html>");
-  formatierterCode += FormatiereHtml("/HTML/header.html");
-  return formatierterCode;
+  #include "modul_wifi_header.h"
+  #if MODUL_DEBUG
+    Serial.println(F("## Debug: Beginn von WebsiteKopfAusgeben()"));
+    Serial.println(F("#######################################"));
+    Serial.println(F("HTML-Code:"));
+    Serial.println(htmlHeader);
+    Serial.println(F("#######################################"));
+  #endif
+  return htmlHeader;
 }
 
 /*
@@ -55,7 +30,9 @@ String WebseiteKopfAusgeben() {
  * Gibt die Startseite des Webservers aus.
  */
 void WebseiteStartAusgeben() {
-  String formatierterCode = WebseiteKopfAusgeben();
+  #include "modul_wifi_header.h"
+  #include "modul_wifi_footer.h"
+  String formatierterCode = htmlHeader;
   #if MODUL_LICHTSENSOR
     int lichtstaerke = 20;
     formatierterCode += "<h2>Lichtstärke</h2><p>";
@@ -78,19 +55,25 @@ void WebseiteStartAusgeben() {
     formatierterCode += luftfeuchte;
     formatierterCode += "%</p>";
   #endif
-  formatierterCode += "</div></body></html>";
+  formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
 }
 
+/*
+ * Funktion: Void WebseiteAdminAusgeben()
+ * Gibt die Administrationsseite des Webservers aus.
+ */
 void WebseiteAdminAusgeben() {
-  String formatierterCode = WebseiteKopfAusgeben();
+  #include "modul_wifi_header.h"
+  #include "modul_wifi_footer.h"
+  String formatierterCode = htmlHeader;
   formatierterCode += "<h2>Adminseite</h2>";
-  formatierterCode += "</div></body></html>";
+  formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
 }
 
-/* 
- * Funktion: WifiSetup() 
+/*
+ * Funktion: WifiSetup()
  * Verbindet das WLAN
  */
 void WifiSetup(){
@@ -118,6 +101,7 @@ void WifiSetup(){
   Serial.print("meine IP: ");
   Serial.println(WiFi.localIP());
   Webserver.on("/", WebseiteStartAusgeben);
+  Webserver.on("/admin.html", WebseiteAdminAusgeben);
   Webserver.begin(); // Webserver starten
   #if MODUL_DEBUG
     Serial.println(F("#######################################"));
@@ -145,7 +129,7 @@ void ifttt_nachricht(int bodenfeuchte, int lichtstaerke, int luftfeuchte, int lu
   jsonString += "\",\"lufttemperatur\":\"";
   jsonString += lufttemperatur;
   jsonString += "\"}";
-  int jsonLength = jsonString.length();  
+  int jsonLength = jsonString.length();
   String lenString = String(jsonLength);
   // connect to the Maker event server
   client.connect("maker.ifttt.com", 80);
@@ -162,7 +146,7 @@ void ifttt_nachricht(int bodenfeuchte, int lichtstaerke, int luftfeuchte, int lu
   postString += lenString + "\r\n";
   postString += "\r\n";
   postString += jsonString; // combine post request and JSON
-  
+
   client.print(postString);
   delay(500);
   client.stop();

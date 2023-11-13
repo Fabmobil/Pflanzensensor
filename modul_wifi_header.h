@@ -1,3 +1,4 @@
+String htmlHeader = F(R"====(
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -100,7 +101,7 @@
     }
 
     #container {
-      border-right: 2em solid black;
+      border-right: 2em solid #560245;
       border-radius: 30px;
       animation-name: fadeInRight;
       animation-duration: 1s;
@@ -151,4 +152,6 @@
   </style>
 </head>
 <body>
-
+<div id="container">
+<h1>Fabmobil Pflanzensensor</h1>
+)====");
