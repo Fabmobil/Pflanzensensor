@@ -13,7 +13,7 @@
 #define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
 #define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
-#define MODUL_BODENFEUCHTE  false // hat dein Pflanzensensor einen Bodenfeuchtemesser?
+#define MODUL_BODENFEUCHTE  true // hat dein Pflanzensensor einen Bodenfeuchtemesser?
 #define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
 #define MODUL_HELLIGKEIT   true // hat dein Pflanzensensor einen Lichtsensor?
 // Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
@@ -56,15 +56,15 @@
   const int lichtstaerkeMaximum = 0;
 #endif
 #if MODUL_MULTIPLEXER
-  #define pinMultiplexer1 8 // "S1"; erster Eingangspin des Multiplexers
-  #define pinMultiplexer2 9 // "S2"; zweiter Eingangspin des Multiplexers
-  #define pinMultiplexer3 10 // "S3"; dritter Eingangspin des Multiplexers
+  #define pinMultiplexer1 15 // "D8"; erster Eingangspin des Multiplexers
+  #define pinMultiplexer2 16 // "D0"; zweiter Eingangspin des Multiplexers
+  #define pinMultiplexer3 0 // "D3"; dritter Eingangspin des Multiplexers
 #endif
 #if MODUL_WIFI
   #define wifiAdminPasswort "admin" // Passwort für das Admininterface
   #define wifiHostname "pflanzensensor" // Das Gerät ist später unter diesem Name + .local erreichbar
-  #define wifiSsid "Tommy" // WLAN Name
-  #define wifiPassword "freibier" // WLAN Passwort
+  #define wifiSsid "Magrathea" // WLAN Name
+  #define wifiPassword "Gemeinschaftskueche" // WLAN Passwort
   #define wifiIftttPasswort "IFTTT Schlüssel"
   #define wifiIftttEreignis "Fabmobil_Pflanzensensor"
 #endif

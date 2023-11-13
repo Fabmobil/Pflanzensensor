@@ -33,10 +33,10 @@ int HelligkeitUmrechnen(int lichtstaerke, int lichtstaerkeMinimum, int lichtstae
     Serial.println(F("#######################################"));
   #endif
   // Convert MIN reading (100) -> MAX reading (700) to a range 0->100.
-   int LICHTSTAERKE_PROZENT = map(lichtstaerke, lichtstaerkeMinimum, lichtstaerkeMaximum, 0, 100);
+   int messwertHelligkeitProzent = map(lichtstaerke, lichtstaerkeMinimum, lichtstaerkeMaximum, 0, 100);
   #if MODUL_DEBUG
-    Serial.print  (F("Lichtstärke %: ")); Serial.println(LICHTSTAERKE_PROZENT);
+    Serial.print  (F("Lichtstärke %: ")); Serial.println(messwertHelligkeitProzent);
     Serial.println(F("#######################################"));
   #endif
-   return LICHTSTAERKE_PROZENT;
+   return messwertHelligkeitProzent;
 }

@@ -50,11 +50,14 @@ void setup() {
    */
   Serial.println(" Fabmobil Pflanzensensor, V0.1");
   pinMode(pinEingebauteLed, OUTPUT); // eingebaute LED intialisieren
-  interne_led_blinken(1,1000); // LED leuchtet 1s zum Neustart
+  InterneLedBlinken(1,1000); // LED leuchtet 1s zum Neustart
   #if MODUL_LEDAMPEL
     pinMode(pinAmpelGruen, OUTPUT); // LED 1 (grün)
     pinMode(pinAmpelGelb, OUTPUT); // LED 2 (gelb)
     pinMode(pinAmpelRot, OUTPUT); // LED 3 (rot)
+    LedampelBlinken("gruen", 1, 2000);
+    LedampelBlinken("gelb", 1, 2000);
+    LedampelBlinken("rot", 1, 2000);
     #if MODUL_DEBUG
       Serial.println(F("## Debug: Setup der Ledampel"));
       Serial.print(F("PIN gruene LED: ")); Serial.println(pinAmpelGruen);
@@ -135,7 +138,7 @@ void loop() {
     Serial.println(F("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@"));
     Serial.println(F("@@ Debug: Begin von loop()"));
   #endif
-  interne_led_blinken(3, 50); // in jedem neuen Loop blinkt die interne LED 3x kurz
+  InterneLedBlinken(3, 50); // in jedem neuen Loop blinkt die interne LED 3x kurz
 
   // Lichtsensor messen und ggfs. Multiplexer umstellen
   #if MODUL_HELLIGKEIT
@@ -144,7 +147,11 @@ void loop() {
       delay(500); // 0,5s warten
     #endif
   messwertHelligkeit = HelligkeitMessen();
-  int LICHTSTAERKE_PROZENT = HelligkeitUmrechnen(messwertHelligkeit, lichtstaerkeMinimum, lichtstaerkeMaximum);
+  int messwertHelligkeitProzent = HelligkeitUmrechnen(messwertHelligkeit, lichtstaerkeMinimum, lichtstaerkeMaximum);
+  Serial.print("Messwert Helligkeit: ");
+  Serial.println(messwertHelligkeit);
+  Serial.print("Helligkeit Prozent: ");
+  Serial.println(messwertHelligkeitProzent);
   #endif
 
   // Bodenfeuchte messen und ggfs. Multiplexer umstellen
@@ -154,10 +161,8 @@ void loop() {
       delay(500); // 0,5s warten
     #endif
     // Bodenfeuchte messen
-    Serial.print("Messwert Bodenfeuchte: ");
     int messwertBodenfeuchte = analogRead(pinAnalog);
-    int PROZENT_BODENFEUCHTE = BodenfeuchteUmrechnung(messwertBodenfeuchte); // Skalierung auf maximal 0 bis 100
-    Serial.println(messwertBodenfeuchte);
+    int messwertBodenfeuchteProzent = BodenfeuchteUmrechnung(messwertBodenfeuchte); // Skalierung auf maximal 0 bis 100
   #endif
 
   // Luftfeuchte und -temperatur messen
@@ -178,7 +183,7 @@ void loop() {
        */
       #if MODUL_BODENFEUCHTE
         // LED Ampel blinkt 5x gelb um zu signalisieren, dass jetzt der Bodenfeuchtewert angezeigt wird
-        LedampelBlinken("gekb", 5, 100);
+        LedampelBlinken("gelb", 5, 100);
       #endif
       // Unterscheidung, ob die Skala der Lichtstärke invertiert ist oder nicht
       if ( ampelLichtstaerkeInvertiert ) {
@@ -202,10 +207,11 @@ void loop() {
           LedampelAnzeigen("rot", -1);
         }
       }
+      delay(5000);
     #endif
     // Modus 2: Anzeige der Bodenfeuchte
     #if MODUL_BODENFEUCHTE
-      #if MODUL_LICHTSTAERKE
+      #if MODUL_HELLIGKEIT
       /*
        * Falls es auch das Bodenfeuchte Modul gibt, blinkt die LED Ampel kurz 5x grün damit
        * klar ist, dass jetzt die Bodenfeuchte angezeigt wird.
@@ -233,12 +239,13 @@ void loop() {
           LedampelAnzeigen("rot", -1);
         }
       }
+      delay(5000);
     #endif
   #endif
 
   // Messwerte auf dem Display anzeigen
   #if MODUL_DISPLAY
-    DisplayMesswerte(messwertBodenfeuchte, LICHTSTAERKE_PROZENT, messwertLuftfeuchte, messwertLufttemperatur);
+    DisplayMesswerte(messwertBodenfeuchte, messwertHelligkeitProzent, messwertLuftfeuchte, messwertLufttemperatur);
   #endif
   #if MODUL_DEBUG
     Serial.println(F("@@ Debug: Ende von loop()"));
@@ -253,12 +260,12 @@ void loop() {
 }
 
 /*
- * Funktion: interne_led_blinken(int anzahl, int dauer)
+ * Funktion: InterneLedBlinken(int anzahl, int dauer)
  * Lässt die interne LED blinken.
  * anzahl: Anzahl der Blinkvorgänge
  * dauer: Dauer der Blinkvorgänge
  */
-void interne_led_blinken(int anzahl, int dauer){
+void InterneLedBlinken(int anzahl, int dauer){
   for (int i=0;i<anzahl;i++){
     delay(500);
     digitalWrite(pinEingebauteLed, LOW);
