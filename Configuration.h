@@ -56,9 +56,7 @@
   const int lichtstaerkeMaximum = 0;
 #endif
 #if MODUL_MULTIPLEXER
-  #define pinMultiplexer1 15 // "D8"; erster Eingangspin des Multiplexers
-  #define pinMultiplexer2 16 // "D0"; zweiter Eingangspin des Multiplexers
-  #define pinMultiplexer3 0 // "D3"; dritter Eingangspin des Multiplexers
+  #define pinMultiplexer 16 // "D0"; Pin des Multiplexers
 #endif
 #if MODUL_WIFI
   #define wifiAdminPasswort "admin" // Passwort für das Admininterface

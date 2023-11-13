@@ -77,9 +77,7 @@ void setup() {
     pinMode(pinAnalog, INPUT);
   #endif
   #if MODUL_MULTIPLEXER
-    pinMode(pinMultiplexer1, OUTPUT);
-    pinMode(pinMultiplexer2, OUTPUT);
-    pinMode(pinMultiplexer3, OUTPUT);
+    pinMode(pinMultiplexer, OUTPUT);
   #endif
   String ip = "keine WLAN Verbindung.";
   #if MODUL_WIFI
@@ -143,7 +141,7 @@ void loop() {
   // Lichtsensor messen und ggfs. Multiplexer umstellen
   #if MODUL_HELLIGKEIT
     #if MODUL_MULTIPLEXER
-      MultiplexerWechseln(LOW, LOW, HIGH); // Multiplexer auf Ausgang 2 stellen
+      MultiplexerWechseln(HIGH); // Multiplexer auf Ausgang 2 stellen
       delay(500); // 0,5s warten
     #endif
   messwertHelligkeit = HelligkeitMessen();
@@ -157,7 +155,7 @@ void loop() {
   // Bodenfeuchte messen und ggfs. Multiplexer umstellen
   #if MODUL_BODENFEUCHTE
     #if MODUL_MULTIPLEXER
-      MultiplexerWechseln(LOW, LOW, LOW); // Multiplexer auf Ausgang 1 stellen
+      MultiplexerWechseln(LOW); // Multiplexer auf Ausgang 1 stellen
       delay(500); // 0,5s warten
     #endif
     // Bodenfeuchte messen

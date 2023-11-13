@@ -15,15 +15,11 @@
  * 110 -> Eingang 6
  * 111 -> Eingang 7
  */
-void MultiplexerWechseln(int c, int b, int a) {
+void MultiplexerWechseln(int a) {
   #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von MultiplexerWechseln(c, b, a)"));
-    Serial.print(F("c: ")); Serial.print(c);
-    Serial.print(F(" b: ")); Serial.print(b);
+    Serial.println(F("## Debug: Beginn von MultiplexerWechseln(a)"));
     Serial.print(F(" a: ")); Serial.println(a);
     Serial.println(F("#######################################"));
   #endif
-  digitalWrite(pinMultiplexer1, a);
-  digitalWrite(pinMultiplexer2, b);
-  digitalWrite(pinMultiplexer3, c);
+  digitalWrite(pinMultiplexer, a);
 }
