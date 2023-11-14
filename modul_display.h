@@ -18,6 +18,7 @@
 
 Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // Initialisierung des Displays
 
+#include "modul_display_blume.h" // bildBlume
 /**
  * Funktion: DisplayIntro()
  * Spielt den Bootscreen auf dem Display ab und zeigt die IP Adresse an
@@ -87,68 +88,97 @@ void DisplayIntro(String ip, String hostname) {
  * luftfeuchte: Luftfeuchte in %
  * lufttemperatur: Lufttemperatur in °C
  */
-void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur) {
+void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur, int displayAnzeige) {
   #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von DisplayMesswerte(bodenfeuchte, helligkeit, luftfeuchte, lufttemperatur)"));
+    Serial.println(F("## Debug: Beginn von DisplayMesswerte(bodenfeuchte, helligkeit, luftfeuchte, lufttemperatur, displayAnzeige)"));
+    Serial.print(F("displayAnzeige vorher: "));
+    Serial.println(displayAnzeige);
   #endif
-if (bodenfeuchte != -1) {
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 0);
-    display.println(F("Boden-"));
-    display.setCursor(10, 20);
-    display.println(F("feuchte:"));
-    display.setCursor(0, 40);
-    display.println(bodenfeuchte);
-    display.display();      // Display aktualisieren
-    delay(displayAnzeigedauer);
-  }
-  if (helligkeit != -1) {
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 0);
-    display.println(F("Licht-"));
-    display.setCursor(10, 20);
-    display.println(F("staerke:"));
-    display.setCursor(0, 40);
-    display.println(helligkeit);
-    display.setCursor(50, 40);
-    display.println("%");
-    display.display();      // Display aktualisieren
-    delay(displayAnzeigedauer);
-  }
-  if (lufttemperatur != -1) {
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 0);
-    display.println(F("Lufttemp-"));
-    display.setCursor(10, 20);
-    display.println(F("eratur:"));
-    display.setCursor(0, 40);
-    display.println(lufttemperatur);
-    display.setCursor(50, 40);
-    display.println("\xf8");
-    display.setCursor(60, 40);
-    display.println("C");
-    display.display();      // Display aktualisieren
-    delay(displayAnzeigedauer);
-  }
-  if (luftfeuchte != -1) {
-    display.clearDisplay();
-    display.setTextSize(2);
-    display.setTextColor(SSD1306_WHITE);
-    display.setCursor(0, 0);
-    display.println(F("Luft-"));
-    display.setCursor(10, 20);
-    display.println(F("feuchte:"));
-    display.setCursor(0, 40);
-    display.println(luftfeuchte);
-    display.setCursor(50, 40);
-    display.println("%");
-    display.display();      // Display aktualisieren
-    delay(displayAnzeigedauer);
+
+  display.clearDisplay();
+  display.setTextSize(2);
+  display.setTextColor(SSD1306_WHITE);
+
+  switch (displayAnzeige) {
+    case 0:
+      #if MODUL_DEBUG
+        Serial.println("Case 0");
+      #endif
+      if (bodenfeuchte != -1) {
+        display.setCursor(0, 0);
+        display.println(F("Boden-"));
+        display.setCursor(10, 20);
+        display.println(F("feuchte:"));
+        display.setCursor(20, 40);
+        display.println(bodenfeuchte);
+        display.display();      // Display aktualisieren
+      } else {
+        display.clearDisplay();
+        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+        display.display();
+      }
+      break;
+    case 1:
+      #if MODUL_DEBUG
+        Serial.println("Case 1");
+      #endif
+      if (helligkeit != -1) {
+        display.setCursor(0, 0);
+        display.println(F("Hellig-"));
+        display.setCursor(10, 20);
+        display.println(F("keit:"));
+        display.setCursor(20, 40);
+        display.println(helligkeit);
+        display.setCursor(70, 40);
+        display.println("%");
+        display.display();      // Display aktualisieren
+      } else {
+        display.clearDisplay();
+        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+        display.display();
+      }
+      break;
+    case 2:
+      #if MODUL_DEBUG
+        Serial.println("Case 2");
+      #endif
+      if (lufttemperatur != -1) {
+        display.setCursor(0, 0);
+        display.println(F("Lufttemp-"));
+        display.setCursor(10, 20);
+        display.println(F("eratur:"));
+        display.setCursor(20, 40);
+        display.println(lufttemperatur);
+        display.setCursor(70, 40);
+        display.println("\xf8");
+        display.setCursor(60, 40);
+        display.println("C");
+        display.display();      // Display aktualisieren
+      } else {
+        display.clearDisplay();
+        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+        display.display();
+      }
+      break;
+    case 3:
+      #if MODUL_DEBUG
+        Serial.println("Case 3");
+      #endif
+      if (luftfeuchte != -1) {
+        display.setCursor(0, 0);
+        display.println(F("Luft-"));
+        display.setCursor(10, 20);
+        display.println(F("feuchte:"));
+        display.setCursor(20, 40);
+        display.println(luftfeuchte);
+        display.setCursor(70, 40);
+        display.println("%");
+        display.display();      // Display aktualisieren
+      } else {
+        display.clearDisplay();
+        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+        display.display();
+      }
+      break;
   }
 }

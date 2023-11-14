@@ -13,9 +13,9 @@
 #define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
 #define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
-#define MODUL_BODENFEUCHTE  true // hat dein Pflanzensensor einen Bodenfeuchtemesser?
+#define MODUL_BODENFEUCHTE  false // hat dein Pflanzensensor einen Bodenfeuchtemesser?
 #define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
-#define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
+#define MODUL_HELLIGKEIT    false // hat dein Pflanzensensor einen Lichtsensor?
 // Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
 #if MODUL_BODENFEUCHTE && MODUL_HELLIGKEIT
   #define MODUL_MULTIPLEXER true
@@ -38,6 +38,7 @@ bool eingebauteLedAktiv = true; // wird die eingebaute LED verwendet oder nicht?
 #endif
 #if MODUL_DISPLAY
   int displayAnzeigedauer = 1500; // Anzeigedauer der einzelnen Messwerte auf dem Display in Millisekunden
+  int displayAnzeige = 0;
 #endif
 #if MODUL_LEDAMPEL
   #define pinAmpelRot 12 // "D6"; Pin der roten LED
@@ -56,7 +57,6 @@ bool eingebauteLedAktiv = true; // wird die eingebaute LED verwendet oder nicht?
 #if MODUL_HELLIGKEIT
   int helligkeitMinimum = 1023;
   int helligkeitMaximum = 0;
-  int messwertHelligkeitProzent;
 #endif
 #if MODUL_MULTIPLEXER
   #define pinMultiplexer 16 // "D0"; Pin des Multiplexers
@@ -64,8 +64,8 @@ bool eingebauteLedAktiv = true; // wird die eingebaute LED verwendet oder nicht?
 #if MODUL_WIFI
   #define wifiAdminPasswort "admin" // Passwort für das Admininterface
   #define wifiHostname "pflanzensensor" // Das Gerät ist später unter diesem Name + .local erreichbar
-  #define wifiSsid "Tommy" // WLAN Name
-  #define wifiPassword "freibier" // WLAN Passwort
+  #define wifiSsid "Magrathea" // WLAN Name
+  #define wifiPassword "Gemeinschaftskueche" // WLAN Passwort
   #define wifiIftttPasswort "IFTTT Schlüssel"
   #define wifiIftttEreignis "Fabmobil_Pflanzensensor"
 #endif
@@ -103,10 +103,11 @@ bool eingebauteLedAktiv = true; // wird die eingebaute LED verwendet oder nicht?
 #endif
 
 #if MODUL_HELLIGKEIT
-  int messwertHelligkeit = -1;
+  int messwertHelligkeit;
+  int messwertHelligkeitProzent;
   #include "modul_helligkeit.h"
 #else
-  #define messwertHelligkeit -1
+  #define messwertHelligkeitProzent -1
 #endif
 
 #if MODUL_MULTIPLEXER

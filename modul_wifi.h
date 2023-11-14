@@ -322,6 +322,9 @@ void WebseiteSetzeVariablen() {
     return;
   }
   if ( Webserver.arg("Passwort") == wifiAdminPasswort) { // If both the username and the password are correct
+    if ( Webserver.arg("eingebauteLedAktiv") != "" ) {
+      eingebauteLedAktiv = Webserver.arg("eingebauteLedAktiv").toInt();
+    }
     #if MODUL_LEDAMPEL
       #if MODUL_HELLIGKEIT
         if ( Webserver.arg("ampelHelligkeitGruen") != "" ) {

@@ -49,7 +49,7 @@ void setup() {
    */
   Serial.println(" Fabmobil Pflanzensensor, V0.2");
   pinMode(pinEingebauteLed, OUTPUT); // eingebaute LED intialisieren
-  InterneLedBlinken(1,1000); // LED leuchtet 1s zum Neustart
+  EingebauteLedBlinken(1,1000); // LED leuchtet 1s zum Neustart
   #if MODUL_LEDAMPEL
     pinMode(pinAmpelGruen, OUTPUT); // LED 1 (grün)
     pinMode(pinAmpelGelb, OUTPUT); // LED 2 (gelb)
@@ -129,7 +129,7 @@ void loop() {
   #if MODUL_DEBUG
     Serial.println(F("#### Debug: Begin von loop()"));
   #endif
-  InterneLedBlinken(3, 50); // in jedem neuen Loop blinkt die interne LED 3x kurz
+  EingebauteLedBlinken(3, 50); // in jedem neuen Loop blinkt die interne LED 3x kurz
 
   // Lichtsensor messen und ggfs. Multiplexer umstellen
   #if MODUL_HELLIGKEIT
@@ -163,19 +163,20 @@ void loop() {
   // LED Ampel anzeigen lassen
   #if MODUL_LEDAMPEL
     // Modus 1: Anzeige Lichtstärke
+    #if MODUL_HELLIGKEIT
     /*
      * Falls es auch das Bodenfeuchte Modul gibt, blinkt die LED Ampel kurz 5x gelb damit
      * klar ist, dass jetzt die Lichtstärke angezeigt wird..
      */
-    if ( MODUL_BODENFEUCHTE && MODUL_HELLIGKEIT ) {
+    if ( !MODUL_BODENFEUCHTE  ) {
       // LED Ampel blinkt 5x gelb um zu signalisieren, dass jetzt der Bodenfeuchtewert angezeigt wird
-      LedampelBlinken("gelb", 5, 100);
-      ampelUmschalten = !ampelUmschalten;
-    } else {
       ampelUmschalten = true;
+    } else {
+      ampelUmschalten = !ampelUmschalten; // wir wollen nur jede zweite Runde umschalten
     }
     // Unterscheidung, ob die Skala der Lichtstärke invertiert ist oder nicht
     if ( ampelUmschalten ) {
+      if ( MODUL_BODENFEUCHTE ) { LedampelBlinken("gelb", 2, 500); }
       #if MODUL_DEBUG
         Serial.print(F("ampelUmschalten = "));
         Serial.print(ampelUmschalten);
@@ -203,51 +204,47 @@ void loop() {
         }
       }
     }
-  #endif
-  // Modus 2: Anzeige der Bodenfeuchte
-  #if MODUL_BODENFEUCHTE
-    if ( MODUL_HELLIGKEIT && MODUL_BODENFEUCHTE ) {
-    /*
-      * Falls es auch das Bodenfeuchte Modul gibt, blinkt die LED Ampel kurz 5x grün damit
-      * klar ist, dass jetzt die Bodenfeuchte angezeigt wird.
-      */
-      LedampelBlinken("gruen", 5, 100);
-    } else {
-      ampelUmschalten = false;
-    }
-    if ( !ampelUmschalten ) {
-      #if MODUL_DEBUG
-        Serial.print(F("ampelUmschalten = "));
-        Serial.print(ampelUmschalten);
-        Serial.println(F(": Ledampel zeigt Bodenfeuchte an."));
-      #endif
-      if ( ampelBodenfeuchteInvertiert ) { // Unterscheidung, ob die Bodenfeuchteskala invertiert wird oder nicht
-        if ( messwertBodenfeuchte >= ampelBodenfeuchteGruen ) {
-          LedampelAnzeigen("gruen", -1);
-        }
-        if ( (messwertBodenfeuchte >= ampelBodenfeuchteGelb) && (messwertBodenfeuchte < ampelBodenfeuchteGruen) ) {
-          LedampelAnzeigen("gelb", -1);
-        }
-        if ( messwertBodenfeuchte < ampelBodenfeuchteGelb ) {
-          LedampelAnzeigen("rot", -1);
-        }
-      } else {
-        if ( messwertBodenfeuchte <= ampelBodenfeuchteGruen ) {
-          LedampelAnzeigen("gruen", -1);
-        }
-        if ( (messwertBodenfeuchte <= ampelBodenfeuchteGelb) && (messwertBodenfeuchte < ampelBodenfeuchteGruen) ) {
-          LedampelAnzeigen("gelb", -1);
-        }
-        if ( messwertBodenfeuchte > ampelBodenfeuchteGelb ) {
-          LedampelAnzeigen("rot", -1);
+    #endif
+    // Modus 2: Anzeige der Bodenfeuchte
+    #if MODUL_BODENFEUCHTE
+      if ( !MODUL_HELLIGKEIT ) { // Falls es kein Helligkeitsmodul gibt
+        ampelUmschalten = false;
+      }
+      if ( !ampelUmschalten ) {
+        #if MODUL_DEBUG
+          Serial.print(F("ampelUmschalten = "));
+          Serial.print(ampelUmschalten);
+          Serial.println(F(": Ledampel zeigt Bodenfeuchte an."));
+        #endif
+        if ( MODUL_HELLIGKEIT ) { LedampelBlinken("gruen", 2, 500); }
+        if ( ampelBodenfeuchteInvertiert ) { // Unterscheidung, ob die Bodenfeuchteskala invertiert wird oder nicht
+          if ( messwertBodenfeuchte >= ampelBodenfeuchteGruen ) {
+            LedampelAnzeigen("gruen", -1);
+          }
+          if ( (messwertBodenfeuchte >= ampelBodenfeuchteGelb) && (messwertBodenfeuchte < ampelBodenfeuchteGruen) ) {
+            LedampelAnzeigen("gelb", -1);
+          }
+          if ( messwertBodenfeuchte < ampelBodenfeuchteGelb ) {
+            LedampelAnzeigen("rot", -1);
+          }
+        } else {
+          if ( messwertBodenfeuchte <= ampelBodenfeuchteGruen ) {
+            LedampelAnzeigen("gruen", -1);
+          }
+          if ( (messwertBodenfeuchte <= ampelBodenfeuchteGelb) && (messwertBodenfeuchte < ampelBodenfeuchteGruen) ) {
+            LedampelAnzeigen("gelb", -1);
+          }
+          if ( messwertBodenfeuchte > ampelBodenfeuchteGelb ) {
+            LedampelAnzeigen("rot", -1);
+          }
         }
       }
-    }
+    #endif
   #endif
-
   // Messwerte auf dem Display anzeigen
   #if MODUL_DISPLAY
-    DisplayMesswerte(messwertBodenfeuchte, messwertHelligkeitProzent, messwertLuftfeuchte, messwertLufttemperatur);
+    DisplayMesswerte(messwertBodenfeuchte, messwertHelligkeitProzent, messwertLuftfeuchte, messwertLufttemperatur, displayAnzeige);
+    displayAnzeige = (displayAnzeige + 1) % 4;
   #endif
   #if MODUL_DEBUG
     Serial.println(F(" "));
@@ -260,16 +257,18 @@ void loop() {
 }
 
 /*
- * Funktion: InterneLedBlinken(int anzahl, int dauer)
+ * Funktion: EingebauteLedBlinken(int anzahl, int dauer)
  * Lässt die interne LED blinken.
  * anzahl: Anzahl der Blinkvorgänge
  * dauer: Dauer der Blinkvorgänge
  */
-void InterneLedBlinken(int anzahl, int dauer){
-  for (int i=0;i<anzahl;i++){
-    delay(500);
-    digitalWrite(pinEingebauteLed, LOW);
-    delay(dauer);
-    digitalWrite(pinEingebauteLed, HIGH);
+void EingebauteLedBlinken(int anzahl, int dauer){
+  if ( eingebauteLedAktiv ) {
+    for (int i=0;i<anzahl;i++){
+      delay(500);
+      digitalWrite(pinEingebauteLed, LOW);
+      delay(dauer);
+      digitalWrite(pinEingebauteLed, HIGH);
+    }
   }
 }
