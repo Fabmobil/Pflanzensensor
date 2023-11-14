@@ -2,7 +2,7 @@ String htmlHeader = F(R"====(
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" http-equiv="refresh" content="10">
   <title>Fabmobil Pflanzensensor</title>
   <style>
     h1, h2, h3, h4, h5 {
@@ -15,33 +15,35 @@ String htmlHeader = F(R"====(
       background-color: #560245;
       text-align: left;
       border-radius: 0px 0px 0px 30px;
-      animation-name: fadeInUp;
-      animation-duration: 1s;
-      animation-fill-mode: both;
+    }
+
+    input {
+      font-size: 2em;
     }
 
     h1 {
       font-size: 2.5em;
+      margin-left: 1em;
     }
 
     h2 {
       font-size: 2.25em;
-      animation-delay: 0.2s;
+      margin-left: 2em;
     }
 
     h3 {
       font-size: 2.0em;
-      animation-delay: 0.4s;
+      margin-left: 3em;
     }
 
     h4 {
       font-size: 1.75em;
-      animation-delay: 0.6s;
+      margin-left: 4em;
     }
 
     h5 {
       font-size: 1.5em;
-      animation-delay: 0.8s;
+      margin-left: 5em;
     }
 
     strong {
@@ -50,7 +52,7 @@ String htmlHeader = F(R"====(
       font-size: 1.5em;
     }
 
-    p, ul, ol, input {
+    p, ul, ol {
       line-height: 1.4;
       color: #4a4a4a;
       font-weight: normal;
@@ -63,17 +65,11 @@ String htmlHeader = F(R"====(
       padding-top: 0;
       padding-bottom: 0.5em;
       font-size: 2em;
-      animation-name: fadeInLeft;
-      animation-duration: 1s;
-      animation-fill-mode: both;
     }
 
     a {
       color: #560245;
       text-decoration: none;
-      animation-name: link;
-      animation-duration: 8s;
-      animation-iteration-count: infinite;
     }
 
     a:hover {
@@ -91,9 +87,6 @@ String htmlHeader = F(R"====(
       height: auto;
       border-radius: 30px;
       box-shadow: 10px 10px;
-      animation-name: zoomIn;
-      animation-duration: 1s;
-      animation-fill-mode: both;
     }
 
     figcaption {
@@ -103,51 +96,6 @@ String htmlHeader = F(R"====(
     #container {
       border-right: 2em solid #560245;
       border-radius: 30px;
-      animation-name: fadeInRight;
-      animation-duration: 1s;
-      animation-fill-mode: both;
-    }
-
-    @keyframes fadeInUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes fadeInLeft {
-      from {
-        opacity: 0;
-        transform: translateX(-20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    @keyframes fadeInRight {
-      from {
-        opacity: 0;
-        transform: translateX(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    @keyframes zoomIn {
-      from {
-        transform: scale(0);
-      }
-      to {
-        transform: scale(1);
-      }
     }
   </style>
 </head>

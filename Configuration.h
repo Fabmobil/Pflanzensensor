@@ -10,11 +10,11 @@
  * "true" aktiviert sie, "false" deaktiviert sie
  */
 #define MODUL_DEBUG         true  // Debugmodus (de)aktivieren
-#define MODUL_DISPLAY       false  // hat dein Pflanzensensor ein Display?
-#define MODUL_WIFI          false // verwendet dein Pflanzensensor das WiFi-Modul?
-#define MODUL_DHT           false // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
+#define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
+#define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
+#define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
 #define MODUL_BODENFEUCHTE  true // hat dein Pflanzensensor einen Bodenfeuchtemesser?
-#define MODUL_LEDAMPEL      false // hat dein Pflanzensensor eine LED Ampel?
+#define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
 #define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
 // Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
 #if MODUL_BODENFEUCHTE && MODUL_HELLIGKEIT
@@ -27,6 +27,7 @@
  * Pinbelegungen und Variablen
  */
 #define pinEingebauteLed LED_BUILTIN // "D0"; worüber wird die interne LED des ESPs angesprochen?
+bool eingebauteLedAktiv = true; // wird die eingebaute LED verwendet oder nicht?
 #define baudrateSeriell 9600 // Baudrate der seriellen Verbindung
 #if MODUL_BODENFEUCHTE || MODUL_HELLIGKEIT
   #define pinAnalog A0
@@ -36,7 +37,7 @@
   #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
 #endif
 #if MODUL_DISPLAY
-  #define displayAnzeigedauer 1500 // Anzeigedauer der einzelnen Messwerte auf dem Display in Millisekunden
+  int displayAnzeigedauer = 1500; // Anzeigedauer der einzelnen Messwerte auf dem Display in Millisekunden
 #endif
 #if MODUL_LEDAMPEL
   #define pinAmpelRot 12 // "D6"; Pin der roten LED
@@ -46,14 +47,16 @@
   int ampelBodenfeuchteGruen = 40; // Luftfeuchte in %, ab der die Ampel grün ist
   int ampelBodenfeuchteGelb = 30; // Luftfeuchte in %, ab der die Ampel gelb und unter der die Ampel rot ist
   int ampelBodenfeuchteRot = 40; // Luftfeuchte in %, ab der die Ampel grün ist
-  bool ampelLichtstaerkeInvertiert = false; // true: grün = klein, rot = groß. false: rot = klein, grün = groß
-  int ampelLichtstaerkeGruen = 50; // Lichtstärke in %, bis zu der Ampel grün ist
-  int ampelLichtstaerkeGelb = 30; // Lichtstärke in %, bis zu der Ampel grün ist
-  int ampelLichtstaerkeRot = 10; // Lichtstärke in %, bis zu der Ampel grün ist
+  bool ampelHelligkeitInvertiert = false; // true: grün = klein, rot = groß. false: rot = klein, grün = groß
+  int ampelHelligkeitGruen = 50; // Lichtstärke in %, bis zu der Ampel grün ist
+  int ampelHelligkeitGelb = 30; // Lichtstärke in %, bis zu der Ampel grün ist
+  int ampelHelligkeitRot = 10; // Lichtstärke in %, bis zu der Ampel grün ist
+  bool ampelUmschalten = true;
 #endif
 #if MODUL_HELLIGKEIT
-  const int lichtstaerkeMinimum = 1024;
-  const int lichtstaerkeMaximum = 0;
+  int helligkeitMinimum = 1023;
+  int helligkeitMaximum = 0;
+  int messwertHelligkeitProzent;
 #endif
 #if MODUL_MULTIPLEXER
   #define pinMultiplexer 16 // "D0"; Pin des Multiplexers
@@ -61,8 +64,8 @@
 #if MODUL_WIFI
   #define wifiAdminPasswort "admin" // Passwort für das Admininterface
   #define wifiHostname "pflanzensensor" // Das Gerät ist später unter diesem Name + .local erreichbar
-  #define wifiSsid "Magrathea" // WLAN Name
-  #define wifiPassword "Gemeinschaftskueche" // WLAN Passwort
+  #define wifiSsid "Tommy" // WLAN Name
+  #define wifiPassword "freibier" // WLAN Passwort
   #define wifiIftttPasswort "IFTTT Schlüssel"
   #define wifiIftttEreignis "Fabmobil_Pflanzensensor"
 #endif
@@ -72,6 +75,7 @@
  */
 #if MODUL_BODENFEUCHTE
   int messwertBodenfeuchte = -1;
+  int messwertBodenfeuchteProzent = -1;
   #include "modul_bodenfeuchte.h"
 #else
   #define messwertBodenfeuchte -1

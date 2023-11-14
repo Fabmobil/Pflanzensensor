@@ -13,10 +13,9 @@
 void LedampelBlinken(String farbe, int anzahl, int dauer) {
   #if MODUL_DEBUG
     Serial.println(F("## Debug: Beginn von LedampelBlinken()"));
-    Serial.print(F("Farbe: ")); Serial.println(farbe);
-    Serial.print(F("Anzahl: ")); Serial.println(anzahl);
-    Serial.print(F("Dauer: ")); Serial.println(dauer);
-    Serial.println(F("#######################################"));
+    Serial.print(F("Farbe: ")); Serial.print(farbe);
+    Serial.print(F(", Anzahl: ")); Serial.print(anzahl);
+    Serial.print(F(", Dauer: ")); Serial.println(dauer);
   #endif
   char PIN_LED;
   digitalWrite(pinAmpelRot, LOW);
@@ -24,10 +23,10 @@ void LedampelBlinken(String farbe, int anzahl, int dauer) {
   digitalWrite(pinAmpelGruen, LOW);
   if (farbe == "rot") {
     PIN_LED = pinAmpelRot;
-  } 
+  }
   if (farbe =="gelb") {
     PIN_LED = pinAmpelGelb;
-  } 
+  }
   if (farbe == "gruen") {
     PIN_LED = pinAmpelGruen;
   }
@@ -36,7 +35,7 @@ void LedampelBlinken(String farbe, int anzahl, int dauer) {
     delay(dauer);
     digitalWrite(PIN_LED, LOW);
     delay(dauer);
-  } 
+  }
 }
 
 /**
@@ -48,9 +47,8 @@ void LedampelBlinken(String farbe, int anzahl, int dauer) {
 void LedampelAnzeigen(String farbe, int dauer) {
   #if MODUL_DEBUG
     Serial.println(F("## Debug: Beginn von LedampelAnzeigen(farbe, dauer)"));
-    Serial.print  (F("Farbe: ")); Serial.println(farbe);
-    Serial.print  (F("Dauer: ")); Serial.println(dauer);
-    Serial.println(F("#######################################"));
+    Serial.print  (F("Farbe: ")); Serial.print(farbe);
+    Serial.print  (F(", Dauer: ")); Serial.println(dauer);
   #endif
   if (farbe == "rot") {
     digitalWrite(pinAmpelRot, HIGH);
@@ -65,12 +63,12 @@ void LedampelAnzeigen(String farbe, int dauer) {
       delay(dauer);
       digitalWrite(pinAmpelGelb, LOW);
     }
-  } 
+  }
   if (farbe == "gruen") {
     digitalWrite(pinAmpelGruen, HIGH);
     if (dauer != -1) {
       delay(dauer);
       digitalWrite(pinAmpelGruen, LOW);
     }
-  }  
+  }
 }

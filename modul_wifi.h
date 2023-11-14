@@ -1,6 +1,6 @@
 /**
  * Wifi Modul
- * Diese Datei enthält den Code für das Wifi-Modul
+ * Diese Datei enthält den Code für das Wifi-Modul, den Webserver und IFTTT.com Benachrichtungen
  */
 
 #include <ESP8266WiFi.h> // für WLAN
@@ -9,32 +9,20 @@
 
 WiFiClient client;
 ESP8266WebServer Webserver(80); //
-/*
- * Funktion: String WebseiteKopfAusgeben()
- * Liest die /HTML/header.html Datei aus, formatiert sie um
- * und gibt sie als String zurück.
- */
-String WebseiteKopfAusgeben() {
-  #include "modul_wifi_header.h"
-  #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von WebsiteKopfAusgeben()"));
-    Serial.println(F("#######################################"));
-    Serial.println(F("HTML-Code:"));
-    Serial.println(htmlHeader);
-    Serial.println(F("#######################################"));
-  #endif
-  return htmlHeader;
-}
 
 /*
  * Funktion: Void WebseiteStartAusgeben()
  * Gibt die Startseite des Webservers aus.
  */
 void WebseiteStartAusgeben() {
+   #if MODUL_DEBUG
+    Serial.println(F("## Debug: Beginn von WebsiteStartAusgeben()"));
+  #endif
   #include "modul_wifi_header.h"
   #include "modul_wifi_footer.h"
   String formatierterCode = htmlHeader;
-  #if MODUL_LICHTSENSOR
+  formatierterCode += "<p>Diese Seite zeigt die Sensordaten deines Pflanzensensors an. Sie aktualisiert sich automatisch aller 10 Sekunden.</p>";
+  #if MODUL_HELLIGKEIT
     formatierterCode += "<h2>Helligkeit</h2><p>";
     formatierterCode += messwertHelligkeit;
     formatierterCode += "%</p>";
@@ -52,73 +40,341 @@ void WebseiteStartAusgeben() {
     formatierterCode += messwertLuftfeuchte;
     formatierterCode += "%</p>";
   #endif
-  #if MODUL_LEDAMPEL
-    formatierterCode += "<h2>LEDAmpel</h2>";
-    formatierterCode += "<h3>Helligkeit</h3><p>";
-    formatierterCode += ampelLichtstaerkeGruen;
-    formatierterCode += "</p>";
-  #endif
+  formatierterCode += "<h2>Links</h2>";
+  formatierterCode += "<ul>";
+  formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
+  formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
+  formatierterCode += "</ul>";
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
 }
 
+
+void WebseiteDebugAusgeben() {
+  long zufallszahl;
+  #include "modul_wifi_header.h"
+  #include "modul_wifi_footer.h"
+  String formatierterCode = htmlHeader;
+  formatierterCode += "<h2>Debug-Informationen</h2>";
+  formatierterCode += "<p>Zufallszahl: ";
+  formatierterCode += random(300);
+  formatierterCode += "</p>";
+
+  formatierterCode += "<h3>DHT Modul</h3>";
+  #if MODUL_DHT
+    formatierterCode += "<ul>";
+    formatierterCode += "<li>Lufttemperatur: ";
+    formatierterCode += messwertLufttemperatur;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Luftfeuchte: ";
+    formatierterCode += messwertLuftfeuchte;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>DHT Pin: ";
+    formatierterCode += pinDht;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>DHT Sensortyp: ";
+    formatierterCode += dhtSensortyp;
+    formatierterCode += "</li>";
+    formatierterCode += "</ul>";
+  #else
+    formatierterCode += "<p>DHT Modul deaktiviert!</p>";
+  #endif
+
+  formatierterCode += "<h3>Display Modul</h3>";
+  #if MODUL_DISPLAY
+    formatierterCode += "<ul>";
+    formatierterCode += "<li>Anzeigedauer: ";
+    formatierterCode += displayAnzeigedauer;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Breite in Pixel: ";
+    formatierterCode += displayBreite;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Hoehe in Pixel: ";
+    formatierterCode += displayHoehe;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Adresse: ";
+    formatierterCode += displayAdresse;
+    formatierterCode += "</li>";
+    formatierterCode += "</ul>";
+  #else
+    formatierterCode += "<p>Display Modul deaktiviert!</p>";
+  #endif
+
+  formatierterCode += "<h3>Bodenfeuchte Modul</h3>";
+  #if MODUL_BODENFEUCHTE
+    formatierterCode += "<ul>";
+    formatierterCode += "<li>Messwert: ";
+    formatierterCode += messwertBodenfeuchte;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Umgerechneter Messwert: ";
+    formatierterCode += messwertBodenfeuchteProzent;
+    formatierterCode += "</li>";
+    formatierterCode += "</ul>";
+  #else
+    formatierterCode += "<p>Bodenfeuchte Modul deaktiviert!</p>";
+  #endif
+
+  formatierterCode += "<h3>LEDAmpel Modul</h3>";
+  #if MODUL_LEDAMPEL
+    formatierterCode += "<ul>";
+    formatierterCode += "<li>Pin gruene LED: ";
+    formatierterCode += pinAmpelGruen;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Pin gelbe LED: ";
+    formatierterCode += pinAmpelGelb;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Pin rote LED: ";
+    formatierterCode += pinAmpelRot;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Bodenfeuchte Schwellwert gruen: ";
+    formatierterCode += ampelBodenfeuchteGruen;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Bodenfeuchte Schwellwert gelb: ";
+    formatierterCode += ampelBodenfeuchteGelb;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Bodenfeuchte Schwellwert rot: ";
+    formatierterCode += ampelBodenfeuchteRot;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Bodenfeuchte Skala invertiert?: ";
+    formatierterCode += ampelBodenfeuchteInvertiert;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Helligkeit Schwellwert gruen: ";
+    formatierterCode += ampelHelligkeitGruen;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Helligkeit Schwellwert gelb: ";
+    formatierterCode += ampelHelligkeitGelb;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Helligkeit Schwellwert rot: ";
+    formatierterCode += ampelHelligkeitRot;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Helligkeit Skala invertiert?: ";
+    formatierterCode += ampelHelligkeitInvertiert;
+    formatierterCode += "</li>";
+    formatierterCode += "</ul>";
+  #else
+    formatierterCode += "<p>Bodenfeuchte Modul deaktiviert!</p>";
+  #endif
+
+  formatierterCode += "<h3>Helligkeit Modul</h3>";
+  #if MODUL_HELLIGKEIT
+    formatierterCode += "<ul>";
+    formatierterCode += "<li>Messwert: ";
+    formatierterCode += messwertHelligkeit;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Umgerechneter Messwert: ";
+    formatierterCode += messwertHelligkeitProzent;
+    formatierterCode += "</li>";
+    formatierterCode += "</ul>";
+  #else
+    formatierterCode += "<p>Helligkeit Modul deaktiviert!</p>";
+  #endif
+
+
+  formatierterCode += "<h3>Wifi Modul</h3>";
+  formatierterCode += "<ul>";
+  formatierterCode += "<li>Hostname: ";
+  formatierterCode += wifiHostname;
+  formatierterCode += ".local</li>";
+  formatierterCode += "<li>SSID: ";
+  formatierterCode += wifiSsid;
+  formatierterCode += "</li>";
+  formatierterCode += "<li>Passwort: ";
+  formatierterCode += wifiPassword;
+  formatierterCode += "</li>";
+  formatierterCode += "<li>IFTTT Passwort: ";
+  formatierterCode += wifiIftttPasswort;
+  formatierterCode += "</li>";
+  formatierterCode += "<li>IFTTT Ereignis: ";
+  formatierterCode += wifiIftttEreignis;
+  formatierterCode += "</li>";
+  formatierterCode += "</ul>";
+
+  formatierterCode += "<h3>Eingebaute LED</h3>";
+  formatierterCode += "<ul>";
+  formatierterCode += "<li>Aktiviert?: ";
+  formatierterCode += eingebauteLedAktiv;
+  formatierterCode += "</li>";
+  formatierterCode += "</ul>";
+
+  formatierterCode += "<h2>Links</h2>";
+  formatierterCode += "<ul>";
+  formatierterCode += "<li><a href=\"/\">zur Anzeige der Sensordaten</a></li>";
+  formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
+  formatierterCode += "</ul>";
+
+  formatierterCode += htmlFooter;
+  Webserver.send(200, "text/html", formatierterCode);
+}
 /*
  * Funktion: Void WebseiteAdminAusgeben()
  * Gibt die Administrationsseite des Webservers aus.
  */
 void WebseiteAdminAusgeben() {
+   #if MODUL_DEBUG
+    Serial.println(F("## Debug: Beginn von WebsiteAdminAusgeben()"));
+  #endif
   #include "modul_wifi_header.h"
   #include "modul_wifi_footer.h"
   String formatierterCode = htmlHeader;
   formatierterCode += "<h1>Adminseite</h1>";
-  formatierterCode += "<h2>Variablen</h2><h3>LED Ampel</h3>";
-  formatierterCode += "<h4>Helligkeit</h4>";
-  formatierterCode += "<p>Schwellwert gruen: <input type=\"number\" name=\"ampelLichtstaerkeGruen\" placeholder=\"";
-  formatierterCode += ampelLichtstaerkeGruen;
-  formatierterCode += "\"></p>";
-  formatierterCode += "<p>Schwellwert gelb: <input type=\"number\" name=\"ampelLichtstaerkeGelb\" placeholder=\"";
-  formatierterCode += ampelLichtstaerkeGelb;
-  formatierterCode += "\"></p>";
-  formatierterCode += "<p>Schwellwert rot: <input type=\"number\" name=\"ampelLichtstaerkeRot\" placeholder=\"";
-  formatierterCode += ampelLichtstaerkeRot;
-  formatierterCode += "\"></p>";
+  formatierterCode += "<p>Auf dieser Seite können die Variablen verändert werden.</p>";
+  formatierterCode += "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p>";
+  formatierterCode += "<form action=\"/setzeVariablen\" method=\"POST\">";
+  formatierterCode += "<h2>Eingebaute LED</h2>";
+  formatierterCode += "<p>";
+  if ( eingebauteLedAktiv ) {
+    formatierterCode += "<input type=\"radio\" name=\"eingebauteLedAktiv\" value=\"true\" checked> An<br>";
+    formatierterCode += "<input type=\"radio\" name=\"eingebauteLedAktiv\" value=\"false\"> Aus";
+  } else {
+    formatierterCode += "<input type=\"radio\" name=\"eingebauteLedAktiv\" value=\"true\"><br> An";
+    formatierterCode += "<input type=\"radio\" name=\"eingebauteLedAktiv\" value=\"false\" checked> Aus";
+  }
+  formatierterCode += "</p>";
+  #if MODUL_DISPLAY
+    formatierterCode += "<h2>Display</h2>";
+    formatierterCode += "<p>Anzeigedauer für jeden Messwert:";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"displayAnzeigedauer\" placeholder=\"";
+    formatierterCode += displayAnzeigedauer;
+    formatierterCode += "\"></p>";
+  #endif
+  #if MODUL_HELLIGKEIT
+    formatierterCode += "<h2>Helligkeitssensor</h2>";
+    formatierterCode += "<p>Minimalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitMinimum\" placeholder=\"";
+    formatierterCode += helligkeitMinimum;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Maximalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitMaximum\" placeholder=\"";
+    formatierterCode += helligkeitMaximum;
+    formatierterCode += "\"></p>";
+  #endif
+  #if MODUL_LEDAMPEL
+    formatierterCode += "<h2>LED Ampel</h2>";
+    #if MODUL_HELLIGKEIT
+      formatierterCode += "<h3>Helligkeitsanzeige</h3>";
+      formatierterCode += "<p>";
+      if ( ampelHelligkeitInvertiert ) {
+        formatierterCode += "<input type=\"radio\" name=\"ampelHelligkeitInvertiert\" value=\"true\" checked> Skale invertiert<br>";
+        formatierterCode += "<input type=\"radio\" name=\"ampelHelligkeitInvertiert\" value=\"false\"> Skale nicht invertiert";
+      } else {
+        formatierterCode += "<input type=\"radio\" name=\"ampelHelligkeitInvertiert\" value=\"true\"> Skale invertiert<br>";
+        formatierterCode += "<input type=\"radio\" name=\"ampelHelligkeitInvertiert\" value=\"false\" checked> Skale nicht invertiert";
+      }
+      formatierterCode += "</p>";
+      formatierterCode += "<p>Schwellwert gruen: ";
+      formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelHelligkeitGruen\" placeholder=\"";
+      formatierterCode += ampelHelligkeitGruen;
+      formatierterCode += "\"></p>";
+      formatierterCode += "<p>Schwellwert gelb: ";
+      formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelHelligkeitGelb\" placeholder=\"";
+      formatierterCode += ampelHelligkeitGelb;
+      formatierterCode += "\"></p>";
+      formatierterCode += "<p>Schwellwert rot: ";
+      formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelHelligkeitRot\" placeholder=\"";
+      formatierterCode += ampelHelligkeitRot;
+      formatierterCode += "\"></p>";
+    #endif
+    #if MODUL_BODENFEUCHTE
+      formatierterCode += "<h3>Bodenfeuchteanzeige</h3>";
+      formatierterCode += "<p>";
+      if ( ampelBodenfeuchteInvertiert ) {
+        formatierterCode += "<input type=\"radio\" name=\"ampelBodenfeuchteInvertiert\" value=\"true\" checked> Skale invertiert<br>";
+        formatierterCode += "<input type=\"radio\" name=\"ampelBodenfeuchteInvertiert\" value=\"false\"> Skale nicht invertiert";
+      } else {
+        formatierterCode += "<input type=\"radio\" name=\"ampelBodenfeuchteInvertiert\" value=\"true\"> Skale invertiert<br>";
+        formatierterCode += "<input type=\"radio\" name=\"ampelBodenfeuchteInvertiert\" value=\"false\" checked> Skale nicht invertiert";
+      }
+      formatierterCode += "</p>";
+      formatierterCode += "<p>Schwellwert gruen: ";
+      formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelBodenfeuchteGruen\" placeholder=\"";
+      formatierterCode += ampelBodenfeuchteGruen;
+      formatierterCode += "\"></p>";
+      formatierterCode += "<p>Schwellwert gelb: ";
+      formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelBodenfeuchteGelb\" placeholder=\"";
+      formatierterCode += ampelBodenfeuchteGelb;
+      formatierterCode += "\"></p>";
+      formatierterCode += "<p>Schwellwert rot: ";
+      formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelBodenfeuchteRot\" placeholder=\"";
+      formatierterCode += ampelBodenfeuchteRot;
+      formatierterCode += "\"></p>";
+    #endif
+  #endif
   formatierterCode += "<h2>Passwort</h2>";
-  formatierterCode += "<form action=\"/setzeVariablen\" method=\"POST\"><input type=\"password\" name=\"Passwort\" placeholder=\"Passwort\">";
-  formatierterCode += "<input type=\"submit\" value=\"Login\"></form>";
+  formatierterCode += "<p><input type=\"password\" name=\"Passwort\" placeholder=\"Passwort\"><br>";
+  formatierterCode += "<input type=\"submit\" value=\"Absenden\"></p></form>";
 
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
 }
 
+/*
+ * Funktion: Void WebseiteSetzeVariablen()
+ * Übernimmt die Änderungen, welche auf der Administrationsseite gemacht wurden.
+ */
 void WebseiteSetzeVariablen() {
+  #include "modul_wifi_header.h"
+  #include "modul_wifi_footer.h"
   #if MODUL_DEBUG
     Serial.println(F("## Debug: Beginn von WebseiteSetzeVariablen()"));
-    Serial.println(F("#######################################"));
   #endif
   if ( ! Webserver.hasArg("Passwort") || Webserver.arg("Passwort") == NULL) { // If the POST request doesn't have username and password data
     Webserver.send(400, "text/plain", "400: Invalid Request");         // The request is invalid, so send HTTP status 400
     return;
   }
-  if(Webserver.arg("Passwort") == wifiAdminPasswort) { // If both the username and the password are correct
-    ampelLichtstaerkeGruen = Webserver.arg("ampelLichtstaerkeGruen").toInt();
-    ampelLichtstaerkeGelb = Webserver.arg("ampelLichtstaerkeGelb").toInt();
-    ampelLichtstaerkeRot = Webserver.arg("ampelLichtstaerkeRot").toInt();
-    #include "modul_wifi_header.h"
-    #include "modul_wifi_footer.h"
+  if ( Webserver.arg("Passwort") == wifiAdminPasswort) { // If both the username and the password are correct
+    #if MODUL_LEDAMPEL
+      #if MODUL_HELLIGKEIT
+        if ( Webserver.arg("ampelHelligkeitGruen") != "" ) {
+          ampelHelligkeitGruen = Webserver.arg("ampelHelligkeitGruen").toInt();
+        }
+        if ( Webserver.arg("ampelHelligkeitGelb") != "" ) {
+          ampelHelligkeitGelb = Webserver.arg("ampelHelligkeitGelb").toInt();
+        }
+        if ( Webserver.arg("ampelHelligkeitRot") != "" ) {
+          ampelHelligkeitRot = Webserver.arg("ampelHelligkeitRot").toInt();
+        }
+      #endif
+      #if MODUL_BODENFEUCHTE
+        if ( Webserver.arg("ampelBodenfeuchteGruen") != "" ) {
+          ampelBodenfeuchteGruen = Webserver.arg("ampelBodenfeuchteGruen").toInt();
+        }
+        if ( Webserver.arg("ampelBodenfeuchteGelb") != "" ) {
+          ampelBodenfeuchteGelb = Webserver.arg("ampelBodenfeuchteGelb").toInt();
+        }
+        if ( Webserver.arg("ampelBodenfeuchteRot") != "" ) {
+          ampelBodenfeuchteRot = Webserver.arg("ampelBodenfeuchteRot").toInt();
+        }
+      #endif
+    #endif
+    #if MODUL_DISPLAY
+      if ( Webserver.arg("displayAnzeigedauer") != "" ) {
+          displayAnzeigedauer = Webserver.arg("displayAnzeigedauer").toInt();
+        }
+    #endif
+    #if MODUL_HELLIGKEIT
+      if ( Webserver.arg("helligkeitMinimum") != "" ) {
+        helligkeitMinimum = Webserver.arg("helligkeitMinimum").toInt();
+      }
+      if ( Webserver.arg("helligkeitMaximum") != "" ) {
+        helligkeitMaximum = Webserver.arg("helligkeitMaximum").toInt();
+      }
+    #endif
     String formatierterCode = htmlHeader;
     formatierterCode += "<h2>Erfolgreich!</h2>";
+    formatierterCode += "<p><a href=\"/\">zurück zur Anzeige der Sensordaten</a></p>";
+    formatierterCode += "<p><a href=\"/admin.html\">zurück zur Administrationsseite</a></p>";
     formatierterCode += htmlFooter;
     Webserver.send(200, "text/html", formatierterCode);
   } else {                                                                              // Username and password don't match
-    Webserver.send(401, "text/plain", "401: Unauthorized");
+    String formatierterCode = htmlHeader;
+    formatierterCode += "<h2>Falsches Passwort!</h2>";
+    formatierterCode += "<ul>";
+    formatierterCode += "<li><a href=\"/\">zur Anzeige der Sensordaten</a></li>";
+    formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
+    formatierterCode += "<li><a href=\"/\">zur Anzeige der Debuginformationen</a></li>";
+    formatierterCode += "</ul>";
+    formatierterCode += htmlFooter;
   }
-  #if MODUL_DEBUG
-    Serial.print(F("Passwort = ")); Serial.println(F(wifiAdminPasswort));
-    Serial.print(F("ampelLichtstaerkeGruen = ")); Serial.println(ampelLichtstaerkeGruen);
-    Serial.print(F("ampelLichtstaerkeGelb = ")); Serial.println(ampelLichtstaerkeGelb);
-    Serial.print(F("ampelLichtstaerkeRot = ")); Serial.println(ampelLichtstaerkeRot);
-    Serial.println(F("#######################################"));
-  #endif
 }
 
 /*
@@ -128,7 +384,6 @@ void WebseiteSetzeVariablen() {
 void WifiSetup(String hostname){
   #if MODUL_DEBUG
     Serial.println(F("## Debug: Beginn von WifiSetup()"));
-    Serial.println(F("#######################################"));
   #endif
 // WLAN Verbindung herstellen
   WiFi.mode(WIFI_OFF);
@@ -153,35 +408,33 @@ void WifiSetup(String hostname){
   if (MDNS.begin(hostname)) {
     Serial.print("Gerät unter ");
     Serial.print(hostname);
-    Serial.println(" erreichbar.");
+    Serial.println(".local erreichbar.");
   } else {
     Serial.println("Fehler bein Einrichten der Namensauflösung.");
   }
   Webserver.on("/", HTTP_GET, WebseiteStartAusgeben);
   Webserver.on("/admin.html", HTTP_GET, WebseiteAdminAusgeben);
+  Webserver.on("/debug.html", HTTP_GET, WebseiteDebugAusgeben);
   Webserver.on("/setzeVariablen", HTTP_POST, WebseiteSetzeVariablen);
   Webserver.begin(); // Webserver starten
-  #if MODUL_DEBUG
-    Serial.println(F("#######################################"));
-  #endif
 }
 
 
 /*
- * Funktion: ifttt_nachricht(int bodenfeuchte, int lichtstaerke, int luftfeuchte, int lufttemperatur)
+ * Funktion: ifttt_nachricht(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur)
  * Sendet Nachrichten über einen www.ifttt.com Webhook
  * bodenfeuchte: Bodenfeuchte in %
- * lichtstaerke: Lichtstaerke in %
+ * helligkeit: Helligkeit in %
  * luftfeuchte: Luftfeuchte in %
  * lufttemperatur: Lufttemperatur in °C
  */
-void ifttt_nachricht(int bodenfeuchte, int lichtstaerke, int luftfeuchte, int lufttemperatur) {
+void ifttt_nachricht(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur) {
   // JSON Datei zusammenbauen:
   String jsonString = "";
   jsonString += "{\"bodenfeuchte:\":\"";
   jsonString += bodenfeuchte;
-  jsonString += "\",\"lichtstaerke:\":\"";
-  jsonString += lichtstaerke;
+  jsonString += "\",\"helligkeit:\":\"";
+  jsonString += helligkeit;
   jsonString += "\",\"luftfeuchte\":\"";
   jsonString += luftfeuchte;
   jsonString += "\",\"lufttemperatur\":\"";

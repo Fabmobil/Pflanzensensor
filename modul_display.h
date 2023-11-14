@@ -27,7 +27,6 @@ Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // I
 void DisplayIntro(String ip, String hostname) {
   #if MODUL_DEBUG
     Serial.println(F("## Debug: Beginn von DisplayIntro()"));
-    Serial.println(F("#######################################"));
   #endif
   display.clearDisplay();
 
@@ -80,22 +79,17 @@ void DisplayIntro(String ip, String hostname) {
 }
 
 /**
- * Funktion: DisplayMesswerte(int bodenfeuchte, int lichtstaerke, int luftfeuchte, int lufttemperatur)
+ * Funktion: DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur)
  * Stellt die Messwerte auf dem Display dar.
  * Wenn ein Messwert "-1" ist, wird die Anzeige übersprungen.
  * bodenfeuchte: Bodenfeuchte in %
- * lichtstaerke: Lichtstaerke in %
+ * helligkeit: Helligkeit in %
  * luftfeuchte: Luftfeuchte in %
  * lufttemperatur: Lufttemperatur in °C
  */
-void DisplayMesswerte(int bodenfeuchte, int lichtstaerke, int luftfeuchte, int lufttemperatur) {
+void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur) {
   #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von DisplayMesswerte(bodenfeuchte, lichtstaerke, luftfeuchte, lufttemperatur)"));
-    Serial.print(F("Bodenfeuchte: ")); Serial.println(bodenfeuchte);
-    Serial.print(F("Lichtstärke: ")); Serial.println(lichtstaerke);
-    Serial.print(F("Luftfeuchte: ")); Serial.println(luftfeuchte);
-    Serial.print(F("Lufttemperatur: ")); Serial.println(lufttemperatur);
-    Serial.println(F("#######################################"));
+    Serial.println(F("## Debug: Beginn von DisplayMesswerte(bodenfeuchte, helligkeit, luftfeuchte, lufttemperatur)"));
   #endif
 if (bodenfeuchte != -1) {
     display.clearDisplay();
@@ -110,7 +104,7 @@ if (bodenfeuchte != -1) {
     display.display();      // Display aktualisieren
     delay(displayAnzeigedauer);
   }
-  if (lichtstaerke != -1) {
+  if (helligkeit != -1) {
     display.clearDisplay();
     display.setTextSize(2);
     display.setTextColor(SSD1306_WHITE);
@@ -119,7 +113,7 @@ if (bodenfeuchte != -1) {
     display.setCursor(10, 20);
     display.println(F("staerke:"));
     display.setCursor(0, 40);
-    display.println(lichtstaerke);
+    display.println(helligkeit);
     display.setCursor(50, 40);
     display.println("%");
     display.display();      // Display aktualisieren

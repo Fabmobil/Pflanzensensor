@@ -11,9 +11,9 @@
  */
 void MultiplexerWechseln(int a) {
   #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von MultiplexerWechseln(a)"));
-    Serial.print(F(" a: ")); Serial.println(a);
-    Serial.println(F("#######################################"));
+    Serial.print(F("## Debug: Beginn von MultiplexerWechseln("));
+    Serial.print(a);
+    Serial.println(")");
   #endif
   digitalWrite(pinMultiplexer, a);
 }

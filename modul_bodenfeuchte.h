@@ -28,9 +28,8 @@ int BodenfeuchteUmrechnung(int messwert) {
   int prozent=(int)(skaliert+0.5);
   #if MODUL_DEBUG
     Serial.print(F("Bodenfeuchte Messwert: ")); Serial.println(messwert);
-    Serial.print(F("Bodenfeuchte transformiert: ")); Serial.println(skaliert);    
+    Serial.print(F("Bodenfeuchte transformiert: ")); Serial.println(skaliert);
     Serial.print(F("Bodenfeuchte Prozent: ")); Serial.println(prozent);
-    Serial.println(F("#######################################"));
   #endif
-  return prozent;   
+  return prozent;
 }
