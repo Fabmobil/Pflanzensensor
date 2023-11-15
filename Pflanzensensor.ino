@@ -186,23 +186,23 @@ void loop() {
           Serial.println(F(": Ledampel zeigt Helligkeit an."));
         #endif
         if ( ampelHelligkeitInvertiert ) {
-          if ( messwertHelligkeit >= ampelHelligkeitGruen ) {
+          if ( messwertHelligkeitProzent >= ampelHelligkeitGruen ) {
             LedampelAnzeigen("gruen", -1);
           }
-          if ( (messwertHelligkeit >= ampelHelligkeitGelb) && (messwertHelligkeit < ampelHelligkeitGruen) ) {
+          if ( (messwertHelligkeitProzent >= ampelHelligkeitGelb) && (messwertHelligkeitProzent < ampelHelligkeitGruen) ) {
             LedampelAnzeigen("gelb", -1);
           }
-          if ( messwertHelligkeit < ampelHelligkeitGelb ) {
+          if ( messwertHelligkeitProzent < ampelHelligkeitGelb ) {
             LedampelAnzeigen("rot", -1);
           }
         } else {
-          if ( messwertHelligkeit <= ampelHelligkeitGruen ) {
+          if ( messwertHelligkeitProzent <= ampelHelligkeitGruen ) {
             LedampelAnzeigen("gruen", -1);
           }
-          if ( (messwertHelligkeit <= ampelHelligkeitGelb) && (messwertHelligkeit < ampelHelligkeitGruen) ) {
+          if ( (messwertHelligkeitProzent <= ampelHelligkeitGelb) && (messwertHelligkeitProzent < ampelHelligkeitGruen) ) {
             LedampelAnzeigen("gelb", -1);
           }
-          if ( messwertHelligkeit > ampelHelligkeitGelb ) {
+          if ( messwertHelligkeitProzent > ampelHelligkeitGelb ) {
             LedampelAnzeigen("rot", -1);
           }
         }
@@ -221,23 +221,23 @@ void loop() {
           #endif
           if ( MODUL_HELLIGKEIT ) { LedampelBlinken("gruen", 2, 500); }
           if ( ampelBodenfeuchteInvertiert ) { // Unterscheidung, ob die Bodenfeuchteskala invertiert wird oder nicht
-            if ( messwertBodenfeuchte >= ampelBodenfeuchteGruen ) {
+            if ( messwertBodenfeuchteProzent >= ampelBodenfeuchteGruen ) {
               LedampelAnzeigen("gruen", -1);
             }
-            if ( (messwertBodenfeuchte >= ampelBodenfeuchteGelb) && (messwertBodenfeuchte < ampelBodenfeuchteGruen) ) {
+            if ( (messwertBodenfeuchteProzent >= ampelBodenfeuchteGelb) && (messwertBodenfeuchteProzent < ampelBodenfeuchteGruen) ) {
               LedampelAnzeigen("gelb", -1);
             }
-            if ( messwertBodenfeuchte < ampelBodenfeuchteGelb ) {
+            if ( messwertBodenfeuchteProzent < ampelBodenfeuchteGelb ) {
               LedampelAnzeigen("rot", -1);
             }
           } else {
-            if ( messwertBodenfeuchte <= ampelBodenfeuchteGruen ) {
+            if ( messwertBodenfeuchteProzent <= ampelBodenfeuchteGruen ) {
               LedampelAnzeigen("gruen", -1);
             }
-            if ( (messwertBodenfeuchte <= ampelBodenfeuchteGelb) && (messwertBodenfeuchte < ampelBodenfeuchteGruen) ) {
+            if ( (messwertBodenfeuchteProzent <= ampelBodenfeuchteGelb) && (messwertBodenfeuchteProzent < ampelBodenfeuchteGruen) ) {
               LedampelAnzeigen("gelb", -1);
             }
-            if ( messwertBodenfeuchte > ampelBodenfeuchteGelb ) {
+            if ( messwertBodenfeuchteProzent > ampelBodenfeuchteGelb ) {
               LedampelAnzeigen("rot", -1);
             }
           }
