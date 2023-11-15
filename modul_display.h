@@ -88,18 +88,18 @@ void DisplayIntro(String ip, String hostname) {
  * luftfeuchte: Luftfeuchte in %
  * lufttemperatur: Lufttemperatur in °C
  */
-void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur, int displayAnzeige) {
+void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur, int status) {
   #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von DisplayMesswerte(bodenfeuchte, helligkeit, luftfeuchte, lufttemperatur, displayAnzeige)"));
-    Serial.print(F("displayAnzeige vorher: "));
-    Serial.println(displayAnzeige);
+    Serial.println(F("## Debug: Beginn von DisplayMesswerte(bodenfeuchte, helligkeit, luftfeuchte, lufttemperatur, status)"));
+    Serial.print(F("status vorher: "));
+    Serial.println(status);
   #endif
 
   display.clearDisplay();
   display.setTextSize(2);
   display.setTextColor(SSD1306_WHITE);
 
-  switch (displayAnzeige) {
+  switch (status) {
     case 0:
       #if MODUL_DEBUG
         Serial.println("Case 0");

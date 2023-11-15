@@ -13,9 +13,6 @@ int HelligkeitMessen() {
   #endif
   // Helligkeit messen
   int messwertHelligkeit = analogRead(pinAnalog);
-  #if MODUL_DEBUG
-    Serial.print  (F("Helligkeit absolut: ")); Serial.println(messwertHelligkeit);
-  #endif
   return messwertHelligkeit;
 }
 
@@ -30,8 +27,8 @@ int HelligkeitUmrechnen(int helligkeit, int helligkeitMinimum, int helligkeitMax
   #endif
   // Convert MIN reading (100) -> MAX reading (700) to a range 0->100.
   messwertHelligkeitProzent = map(helligkeit, helligkeitMinimum, helligkeitMaximum, 0, 100);
-  #if MODUL_DEBUG
-    Serial.print  (F("Helligkeit Prozent: ")); Serial.println(messwertHelligkeitProzent);
-  #endif
-   return messwertHelligkeitProzent;
+  Serial.print(F("Helligkeit: ")); Serial.print(messwertHelligkeitProzent);
+  Serial.print(F("%       (Messwert: ")); Serial.print(messwertHelligkeit);
+  Serial.println(F(")"));
+  return messwertHelligkeitProzent;
 }

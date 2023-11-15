@@ -24,20 +24,20 @@ void WebseiteStartAusgeben() {
   formatierterCode += "<p>Diese Seite zeigt die Sensordaten deines Pflanzensensors an. Sie aktualisiert sich automatisch aller 10 Sekunden.</p>";
   #if MODUL_HELLIGKEIT
     formatierterCode += "<h2>Helligkeit</h2><p>";
-    formatierterCode += messwertHelligkeit;
+    formatierterCode += messwertHelligkeitProzent;
     formatierterCode += "%</p>";
   #endif
   #if MODUL_BODENFEUCHTE
     formatierterCode += "<h2>Bodenfeuchte</h2><p>";
-    formatierterCode += messwertBodenfeuchte;
+    formatierterCode += messwertBodenfeuchteProzent;
     formatierterCode += "%</p>";
   #endif
   #if MODUL_DHT
     formatierterCode += "<h2>Lufttemperatur</h2><p>";
-    formatierterCode += messwertLufttemperatur;
+    formatierterCode += int(messwertLufttemperatur);
     formatierterCode += "°C</p>";
     formatierterCode += "<h2>Luftfeuchte</h2><p>";
-    formatierterCode += messwertLuftfeuchte;
+    formatierterCode += int(messwertLuftfeuchte);
     formatierterCode += "%</p>";
   #endif
   formatierterCode += "<h2>Links</h2>";
@@ -84,7 +84,7 @@ void WebseiteDebugAusgeben() {
   #if MODUL_DISPLAY
     formatierterCode += "<ul>";
     formatierterCode += "<li>Anzeigedauer: ";
-    formatierterCode += displayAnzeigedauer;
+    formatierterCode += statusdauer;
     formatierterCode += "</li>";
     formatierterCode += "<li>Breite in Pixel: ";
     formatierterCode += displayBreite;
@@ -103,11 +103,11 @@ void WebseiteDebugAusgeben() {
   formatierterCode += "<h3>Bodenfeuchte Modul</h3>";
   #if MODUL_BODENFEUCHTE
     formatierterCode += "<ul>";
-    formatierterCode += "<li>Messwert: ";
-    formatierterCode += messwertBodenfeuchte;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Umgerechneter Messwert: ";
+    formatierterCode += "<li>Messwert Prozent: ";
     formatierterCode += messwertBodenfeuchteProzent;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert absolut: ";
+    formatierterCode += messwertBodenfeuchte;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
   #else
@@ -158,11 +158,11 @@ void WebseiteDebugAusgeben() {
   formatierterCode += "<h3>Helligkeit Modul</h3>";
   #if MODUL_HELLIGKEIT
     formatierterCode += "<ul>";
-    formatierterCode += "<li>Messwert: ";
-    formatierterCode += messwertHelligkeit;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Umgerechneter Messwert: ";
+    formatierterCode += "<li>Messwert Prozent: ";
     formatierterCode += messwertHelligkeitProzent;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert absolut: ";
+    formatierterCode += messwertHelligkeit;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
   #else
@@ -233,8 +233,8 @@ void WebseiteAdminAusgeben() {
   #if MODUL_DISPLAY
     formatierterCode += "<h2>Display</h2>";
     formatierterCode += "<p>Anzeigedauer für jeden Messwert:";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"displayAnzeigedauer\" placeholder=\"";
-    formatierterCode += displayAnzeigedauer;
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"statusdauer\" placeholder=\"";
+    formatierterCode += statusdauer;
     formatierterCode += "\"></p>";
   #endif
   #if MODUL_HELLIGKEIT
@@ -350,8 +350,8 @@ void WebseiteSetzeVariablen() {
       #endif
     #endif
     #if MODUL_DISPLAY
-      if ( Webserver.arg("displayAnzeigedauer") != "" ) {
-          displayAnzeigedauer = Webserver.arg("displayAnzeigedauer").toInt();
+      if ( Webserver.arg("statusdauer") != "" ) {
+          statusdauer = Webserver.arg("statusdauer").toInt();
         }
     #endif
     #if MODUL_HELLIGKEIT

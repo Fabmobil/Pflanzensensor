@@ -9,13 +9,13 @@
  * Module
  * "true" aktiviert sie, "false" deaktiviert sie
  */
-#define MODUL_DEBUG         true  // Debugmodus (de)aktivieren
+#define MODUL_DEBUG         false  // Debugmodus (de)aktivieren
 #define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
 #define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
-#define MODUL_BODENFEUCHTE  false // hat dein Pflanzensensor einen Bodenfeuchtemesser?
+#define MODUL_BODENFEUCHTE  true // hat dein Pflanzensensor einen Bodenfeuchtemesser?
 #define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
-#define MODUL_HELLIGKEIT    false // hat dein Pflanzensensor einen Lichtsensor?
+#define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
 // Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
 #if MODUL_BODENFEUCHTE && MODUL_HELLIGKEIT
   #define MODUL_MULTIPLEXER true
@@ -27,18 +27,18 @@
  * Pinbelegungen und Variablen
  */
 #define pinEingebauteLed LED_BUILTIN // "D0"; worüber wird die interne LED des ESPs angesprochen?
-bool eingebauteLedAktiv = true; // wird die eingebaute LED verwendet oder nicht?
+bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht?
 #define baudrateSeriell 9600 // Baudrate der seriellen Verbindung
 #if MODUL_BODENFEUCHTE || MODUL_HELLIGKEIT
   #define pinAnalog A0
 #endif
 #if MODUL_DHT
   #define pinDht 2 // "D4"; an welchem Pin ist der Sensor angeschlossen?
-  #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
+  #define dhtSensortyp DHT22  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
 #endif
 #if MODUL_DISPLAY
-  int displayAnzeigedauer = 1500; // Anzeigedauer der einzelnen Messwerte auf dem Display in Millisekunden
-  int displayAnzeige = 0;
+  int statusdauer = 1500; // Anzeigedauer der einzelnen Messwerte auf dem Display in Millisekunden
+  int status = 0;
 #endif
 #if MODUL_LEDAMPEL
   #define pinAmpelRot 12 // "D6"; Pin der roten LED
@@ -55,8 +55,8 @@ bool eingebauteLedAktiv = true; // wird die eingebaute LED verwendet oder nicht?
   bool ampelUmschalten = true;
 #endif
 #if MODUL_HELLIGKEIT
-  int helligkeitMinimum = 1023;
-  int helligkeitMaximum = 0;
+  int helligkeitMinimum = 900;
+  int helligkeitMaximum = 20;
 #endif
 #if MODUL_MULTIPLEXER
   #define pinMultiplexer 16 // "D0"; Pin des Multiplexers

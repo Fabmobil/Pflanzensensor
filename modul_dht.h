@@ -15,9 +15,9 @@ DHT_Unified dht(pinDht, dhtSensortyp);
  */
 int DhtMessenLuftfeuchte() {
   #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von DhtMessenLuftfeuchte()"));
-    Serial.print(F("DHT PIN: ")); Serial.println(pinDht);
-    Serial.print(F("DHT Sensortyp: ")); Serial.println(dhtSensortyp);
+    Serial.print(F("## Debug: Beginn von DhtMessenLuftfeuchte("));
+    Serial.print(pinDht); Serial.print(F(", "));
+    Serial.println(dhtSensortyp); Serial.print(F(")"));
   #endif
   sensors_event_t event;
   int luftfeuchte = -1;
@@ -42,9 +42,9 @@ int DhtMessenLuftfeuchte() {
  */
 int DhtMessenLufttemperatur() {
   #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von DhtMessenLufttemperatur()"));
-    Serial.print(F("DHT PIN: ")); Serial.println(pinDht);
-    Serial.print(F("DHT Sensortyp: ")); Serial.println(dhtSensortyp);
+    Serial.print(F("## Debug: Beginn von DhtMessenLufttemperatur("));
+    Serial.print(pinDht); Serial.print(F(", "));
+    Serial.println(dhtSensortyp); Serial.print(F(")"));
   #endif
   sensors_event_t event;
   int lufttemperatur = -1;
@@ -53,7 +53,7 @@ int DhtMessenLufttemperatur() {
     Serial.print(F("Temperaturmessung nicht erfolgreich! :-("));
   }
   else {
-    Serial.print(F("Temperatur: "));
+    Serial.print(F("Lufttemperatur: "));
     Serial.print(event.temperature);
     Serial.println(F("°C"));
     lufttemperatur = event.temperature;
