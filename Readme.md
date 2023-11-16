@@ -48,6 +48,8 @@ Folgende Bibliotheken werden verwendet und müssen ggfs. in der Arduino IDE heru
 
 ## Bauteile
 
+*(Preise recherchiert am 15.10.2023)*
+
 ### Basisausstattung
 
 * [NodeMCU / ESP8266](https://www.amazon.de/AZDelivery-NodeMCU-ESP8266-ESP-12E-Development/dp/B0754LZ73Z/ref=sr_1_3?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=2R1E6LL9WLQA0&keywords=nodemcu&qid=1697395604&sprefix=nodemc%2Caps%2C161&sr=8-3) : 4,40€
