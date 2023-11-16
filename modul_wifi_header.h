@@ -85,8 +85,6 @@ String htmlHeader = F(R"====(
     img {
       max-width: 100%;
       height: auto;
-      border-radius: 30px;
-      box-shadow: 10px 10px;
     }
 
     figcaption {

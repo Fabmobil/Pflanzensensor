@@ -18,7 +18,7 @@
 
 Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // Initialisierung des Displays
 
-#include "modul_display_blume.h" // bildBlume
+#include "modul_display_bilder.h" // Bilder fürs Display
 /**
  * Funktion: DisplayIntro()
  * Spielt den Bootscreen auf dem Display ab und zeigt die IP Adresse an
@@ -114,7 +114,7 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int luf
         display.display();      // Display aktualisieren
       } else {
         display.clearDisplay();
-        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+        display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
         display.display();
       }
       break;
@@ -156,7 +156,7 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int luf
         display.display();      // Display aktualisieren
       } else {
         display.clearDisplay();
-        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+        display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
         display.display();
       }
       break;

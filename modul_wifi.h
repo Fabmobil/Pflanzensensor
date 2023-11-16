@@ -15,11 +15,12 @@ ESP8266WebServer Webserver(80); //
  * Gibt die Startseite des Webservers aus.
  */
 void WebseiteStartAusgeben() {
-   #if MODUL_DEBUG
+  #if MODUL_DEBUG
     Serial.println(F("## Debug: Beginn von WebsiteStartAusgeben()"));
   #endif
-  #include "modul_wifi_header.h"
-  #include "modul_wifi_footer.h"
+  #include "modul_wifi_bilder.h" // Bilder die auf der Seite verwendet werden
+  #include "modul_wifi_header.h" // Kopf der HTML-Seite
+  #include "modul_wifi_footer.h" // Fuß der HTML-Seite
   String formatierterCode = htmlHeader;
   formatierterCode += "<p>Diese Seite zeigt die Sensordaten deines Pflanzensensors an. Sie aktualisiert sich automatisch aller 10 Sekunden.</p>";
   #if MODUL_HELLIGKEIT
@@ -42,8 +43,16 @@ void WebseiteStartAusgeben() {
   #endif
   formatierterCode += "<h2>Links</h2>";
   formatierterCode += "<ul>";
-  formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
   formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
+  #if MODUL_DEBUG
+  formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
+  #endif
+  formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\"><img src=\"";
+  formatierterCode += logoGithub;
+  formatierterCode += "\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
+  formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\"><img src=\"";
+  formatierterCode += logoFabmobil;
+  formatierterCode += "\">&nbspHomepage</a></li>";
   formatierterCode += "</ul>";
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
@@ -52,6 +61,7 @@ void WebseiteStartAusgeben() {
 
 void WebseiteDebugAusgeben() {
   long zufallszahl;
+  #include "modul_wifi_bilder.h"
   #include "modul_wifi_header.h"
   #include "modul_wifi_footer.h"
   String formatierterCode = htmlHeader;
@@ -198,8 +208,16 @@ void WebseiteDebugAusgeben() {
 
   formatierterCode += "<h2>Links</h2>";
   formatierterCode += "<ul>";
-  formatierterCode += "<li><a href=\"/\">zur Anzeige der Sensordaten</a></li>";
   formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
+  #if MODUL_DEBUG
+  formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
+  #endif
+  formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\"><img src=\"";
+  formatierterCode += logoGithub;
+  formatierterCode += "\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
+  formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\"><img src=\"";
+  formatierterCode += logoFabmobil;
+  formatierterCode += "\">&nbspHomepage</a></li>";
   formatierterCode += "</ul>";
 
   formatierterCode += htmlFooter;
@@ -213,6 +231,7 @@ void WebseiteAdminAusgeben() {
    #if MODUL_DEBUG
     Serial.println(F("## Debug: Beginn von WebsiteAdminAusgeben()"));
   #endif
+  #include "modul_wifi_bilder.h"
   #include "modul_wifi_header.h"
   #include "modul_wifi_footer.h"
   String formatierterCode = htmlHeader;
@@ -303,6 +322,20 @@ void WebseiteAdminAusgeben() {
   formatierterCode += "<p><input type=\"password\" name=\"Passwort\" placeholder=\"Passwort\"><br>";
   formatierterCode += "<input type=\"submit\" value=\"Absenden\"></p></form>";
 
+  formatierterCode += "<h2>Links</h2>";
+  formatierterCode += "<ul>";
+  formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
+  #if MODUL_DEBUG
+  formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
+  #endif
+  formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\"><img src=\"";
+  formatierterCode += logoGithub;
+  formatierterCode += "\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
+  formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\"><img src=\"";
+  formatierterCode += logoFabmobil;
+  formatierterCode += "\">&nbspHomepage</a></li>";
+  formatierterCode += "</ul>";
+
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
 }
@@ -312,6 +345,7 @@ void WebseiteAdminAusgeben() {
  * Übernimmt die Änderungen, welche auf der Administrationsseite gemacht wurden.
  */
 void WebseiteSetzeVariablen() {
+  #include "modul_wifi_bilder.h"
   #include "modul_wifi_header.h"
   #include "modul_wifi_footer.h"
   #if MODUL_DEBUG
@@ -364,17 +398,34 @@ void WebseiteSetzeVariablen() {
     #endif
     String formatierterCode = htmlHeader;
     formatierterCode += "<h2>Erfolgreich!</h2>";
-    formatierterCode += "<p><a href=\"/\">zurück zur Anzeige der Sensordaten</a></p>";
-    formatierterCode += "<p><a href=\"/admin.html\">zurück zur Administrationsseite</a></p>";
+    formatierterCode += "<ul>";
+    formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
+    #if MODUL_DEBUG
+    formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
+    #endif
+    formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\"><img src=\"";
+    formatierterCode += logoGithub;
+    formatierterCode += "\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
+    formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\"><img src=\"";
+    formatierterCode += logoFabmobil;
+    formatierterCode += "\">&nbspHomepage</a></li>";
+    formatierterCode += "</ul>";
     formatierterCode += htmlFooter;
     Webserver.send(200, "text/html", formatierterCode);
   } else {                                                                              // Username and password don't match
     String formatierterCode = htmlHeader;
     formatierterCode += "<h2>Falsches Passwort!</h2>";
     formatierterCode += "<ul>";
-    formatierterCode += "<li><a href=\"/\">zur Anzeige der Sensordaten</a></li>";
     formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
-    formatierterCode += "<li><a href=\"/\">zur Anzeige der Debuginformationen</a></li>";
+    #if MODUL_DEBUG
+    formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
+    #endif
+    formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\"><img src=\"";
+    formatierterCode += logoGithub;
+    formatierterCode += "\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
+    formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\"><img src=\"";
+    formatierterCode += logoFabmobil;
+    formatierterCode += "\">&nbspHomepage</a></li>";
     formatierterCode += "</ul>";
     formatierterCode += htmlFooter;
   }

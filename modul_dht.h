@@ -50,7 +50,7 @@ int DhtMessenLufttemperatur() {
   int lufttemperatur = -1;
   dht.temperature().getEvent(&event);
   if (isnan(event.temperature)) {
-    Serial.print(F("Temperaturmessung nicht erfolgreich! :-("));
+    Serial.println(F("Temperaturmessung nicht erfolgreich! :-("));
   }
   else {
     Serial.print(F("Lufttemperatur: "));

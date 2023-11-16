@@ -64,8 +64,8 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
 #if MODUL_WIFI
   #define wifiAdminPasswort "admin" // Passwort für das Admininterface
   #define wifiHostname "pflanzensensor" // Das Gerät ist später unter diesem Name + .local erreichbar
-  #define wifiSsid "Magrathea" // WLAN Name
-  #define wifiPassword "Gemeinschaftskueche" // WLAN Passwort
+  #define wifiSsid "Tommy" // WLAN Name
+  #define wifiPassword "freibier" // WLAN Passwort
   #define wifiIftttPasswort "IFTTT Schlüssel"
   #define wifiIftttEreignis "Fabmobil_Pflanzensensor"
 #endif
