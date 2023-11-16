@@ -57,7 +57,6 @@ Preise Stand 15.10.2023
 ### Mit Lichtsensor (+2,19€)
 
 * [Analogmultiplexer](https://www.amazon.de/DEWIN-Electronic-Components-CD4051BE-Multiplexer/dp/B09LHTSPX9/ref=sr_1_6?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=3OFK7TJC628KS&keywords=4051+multiplexer&qid=1697395708&sprefix=4051+multiplexer%2Caps%2C126&sr=8-6) : 0,69€
-  * <https://www.instructables.com/How-to-Use-Multiple-Analog-Sensors-on-Your-ESP8266/>
 * [Lichtsensor](https://www.amazon.de/AZDelivery-KY-018-Widerstand-Resistor-Arduino/dp/B07ZYXHF3C/ref=sr_1_7?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&keywords=lichtsensor&qid=1697395989&sr=8-7&th=1): 1,5€
 
 ### Mit Luchtfeuchte- und Lufttemperatursensor (+2,40€)
