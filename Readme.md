@@ -1,4 +1,5 @@
-# ![logo_fabmobil](https://github.com/pippcat/Pflanzensensor/assets/19587872/cf56b708-fa70-4e74-826a-b1ad516401ee) Pflanzensensor
+# ![logo_fabmobil](https://github.com/pippcat/Pflanzensensor/assets/19587872/6eefc1fa-b6fe-4b89-8963-3fa2665b992d) Pflanzensensor
+
 
 Dieser Pflanzensensor kann aus verschiedenen Modulen bestehen und kombiniert werden. Diese Module sind:
 
