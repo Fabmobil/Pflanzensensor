@@ -5,11 +5,11 @@
 
 
 /**
- * Funktion: BodenfeuchteUmrechnung(int messwert)
+ * Funktion: BodenfeuchteUmrechnen(int bodenfeuchte, int bodenfeuchteMinimum, int bodenfeuchteMaximum)
  * Rechnet den Bodenfeuchte-Analogmesswert in eine Prozentzahl um und gibt diese als Integer zurück
  * messwert: Analogmesswert der Bodenfeuchte
  */
-int BodenfeuchteUmrechnung(int messwert) {
+int BodenfeuchteUmrechnen(int bodenfeuchte, int bodenfeuchteMinimum, int bodenfeuchteMaximum) {
   /* Es wird von einem 10 Bit Wert ausgegangen (ESP8266)
      0 entstricht 100%
      1023 entspricht 0% ESP8266 (10 Bit)
@@ -21,14 +21,20 @@ int BodenfeuchteUmrechnung(int messwert) {
      80 und größer -> 100%
   */
   #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von BodenfeuchteUmrechnung(messwert)"));
+    Serial.print(F("## Debug: Beginn von BodenfeuchteUmrechnen("));
+    Serial.print(bodenfeuchte);
+    Serial.print(F(", "));
+    Serial.print(bodenfeuchteMinimum);
+    Serial.print(F(", "));
+    Serial.print(bodenfeuchteMaximum);
+    Serial.println(F(")"));
   #endif
-  float quotient=1-(float)messwert/1023.0; // ESP8266
-  float skaliert=(quotient*100.0-50.0)*(100.0/(77.0-50.0));
-  int prozent=(int)(skaliert+0.5);
-  Serial.print(F("Bodenfeuchte: ")); Serial.print(prozent);
-  Serial.print(F("%    (Messwert: ")); Serial.print(messwert);
-  Serial.print(F("; transformiert: ")); Serial.print(skaliert);
+
+  // Convert MIN reading (100) -> MAX reading (700) to a range 0->100.
+  messwertBodenfeuchteProzent = map(bodenfeuchte, bodenfeuchteMinimum, bodenfeuchteMaximum, 0, 100);
+  Serial.print(F("bodenfeuchte: ")); Serial.print(messwertBodenfeuchteProzent);
+  Serial.print(F("%       (Messwert: ")); Serial.print(messwertBodenfeuchte);
   Serial.println(F(")"));
-  return prozent;
+  return messwertBodenfeuchteProzent;
 }
+

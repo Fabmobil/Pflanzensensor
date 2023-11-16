@@ -91,8 +91,6 @@ void DisplayIntro(String ip, String hostname) {
 void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur, int status) {
   #if MODUL_DEBUG
     Serial.println(F("## Debug: Beginn von DisplayMesswerte(bodenfeuchte, helligkeit, luftfeuchte, lufttemperatur, status)"));
-    Serial.print(F("status vorher: "));
-    Serial.println(status);
   #endif
 
   display.clearDisplay();
@@ -111,6 +109,8 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int luf
         display.println(F("feuchte:"));
         display.setCursor(20, 40);
         display.println(bodenfeuchte);
+        display.setCursor(70, 40);
+        display.println("%");
         display.display();      // Display aktualisieren
       } else {
         display.clearDisplay();
@@ -179,6 +179,22 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int luf
         display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
         display.display();
       }
+      break;
+    case 4:
+      #if MODUL_DEBUG
+        Serial.println("Case 4");
+      #endif
+      display.clearDisplay();
+      display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
+      display.display();
+      break;
+    case 5:
+      #if MODUL_DEBUG
+        Serial.println("Case 5");
+      #endif
+      display.clearDisplay();
+      display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+      display.display();
       break;
   }
 }

@@ -17,7 +17,7 @@ int DhtMessenLuftfeuchte() {
   #if MODUL_DEBUG
     Serial.print(F("## Debug: Beginn von DhtMessenLuftfeuchte("));
     Serial.print(pinDht); Serial.print(F(", "));
-    Serial.println(dhtSensortyp); Serial.print(F(")"));
+    Serial.print(dhtSensortyp); Serial.println(F(")"));
   #endif
   sensors_event_t event;
   int luftfeuchte = -1;
@@ -44,7 +44,7 @@ int DhtMessenLufttemperatur() {
   #if MODUL_DEBUG
     Serial.print(F("## Debug: Beginn von DhtMessenLufttemperatur("));
     Serial.print(pinDht); Serial.print(F(", "));
-    Serial.println(dhtSensortyp); Serial.print(F(")"));
+    Serial.print(dhtSensortyp); Serial.println(F(")"));
   #endif
   sensors_event_t event;
   int lufttemperatur = -1;

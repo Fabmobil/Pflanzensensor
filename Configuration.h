@@ -9,7 +9,7 @@
  * Module
  * "true" aktiviert sie, "false" deaktiviert sie
  */
-#define MODUL_DEBUG         false  // Debugmodus (de)aktivieren
+#define MODUL_DEBUG         true  // Debugmodus (de)aktivieren
 #define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
 #define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
@@ -32,25 +32,29 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
 #if MODUL_BODENFEUCHTE || MODUL_HELLIGKEIT
   #define pinAnalog A0
 #endif
+#if MODUL_BODENFEUCHTE
+  int bodenfeuchteMinimum = 840;
+  int bodenfeuchteMaximum = 380;
+#endif
 #if MODUL_DHT
   #define pinDht 2 // "D4"; an welchem Pin ist der Sensor angeschlossen?
-  #define dhtSensortyp DHT22  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
+  #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
 #endif
 #if MODUL_DISPLAY
   int statusdauer = 1500; // Anzeigedauer der einzelnen Messwerte auf dem Display in Millisekunden
   int status = 0;
 #endif
 #if MODUL_LEDAMPEL
-  #define pinAmpelRot 12 // "D6"; Pin der roten LED
-  #define pinAmpelGelb 13 // "D7"; Pin der gelben LED
+  #define pinAmpelRot 13 // "D7"; Pin der roten LED
+  #define pinAmpelGelb 12 // "D6"; Pin der roten LED
   #define pinAmpelGruen 14 // "D5"; Pin der gruenen LED
   bool ampelBodenfeuchteInvertiert = false; // true: grün = großer Wert, rot = kleiner Wert. false: rot = großer Wert, grün = kleiner Wert
-  int ampelBodenfeuchteGruen = 40; // Luftfeuchte in %, ab der die Ampel grün ist
-  int ampelBodenfeuchteGelb = 30; // Luftfeuchte in %, ab der die Ampel gelb und unter der die Ampel rot ist
-  int ampelBodenfeuchteRot = 40; // Luftfeuchte in %, ab der die Ampel grün ist
-  bool ampelHelligkeitInvertiert = false; // true: grün = klein, rot = groß. false: rot = klein, grün = groß
-  int ampelHelligkeitGruen = 50; // Lichtstärke in %, bis zu der Ampel grün ist
-  int ampelHelligkeitGelb = 30; // Lichtstärke in %, bis zu der Ampel grün ist
+  int ampelBodenfeuchteGruen = 10; // Luftfeuchte in %, ab der die Ampel grün ist
+  int ampelBodenfeuchteGelb = 50; // Luftfeuchte in %, ab der die Ampel gelb und unter der die Ampel rot ist
+  int ampelBodenfeuchteRot = 90; // Luftfeuchte in %, ab der die Ampel grün ist
+  bool ampelHelligkeitInvertiert = true; // true: grün = klein, rot = groß. false: rot = klein, grün = groß
+  int ampelHelligkeitGruen = 90; // Lichtstärke in %, bis zu der Ampel grün ist
+  int ampelHelligkeitGelb = 50; // Lichtstärke in %, bis zu der Ampel grün ist
   int ampelHelligkeitRot = 10; // Lichtstärke in %, bis zu der Ampel grün ist
   bool ampelUmschalten = true;
 #endif
@@ -64,8 +68,8 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
 #if MODUL_WIFI
   #define wifiAdminPasswort "admin" // Passwort für das Admininterface
   #define wifiHostname "pflanzensensor" // Das Gerät ist später unter diesem Name + .local erreichbar
-  #define wifiSsid "Tommy" // WLAN Name
-  #define wifiPassword "freibier" // WLAN Passwort
+  #define wifiSsid "Magrathea" // WLAN Name
+  #define wifiPassword "Gemeinschaftskueche" // WLAN Passwort
   #define wifiIftttPasswort "IFTTT Schlüssel"
   #define wifiIftttEreignis "Fabmobil_Pflanzensensor"
 #endif

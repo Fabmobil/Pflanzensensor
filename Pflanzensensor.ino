@@ -54,9 +54,9 @@ void setup() {
     pinMode(pinAmpelGruen, OUTPUT); // LED 1 (grün)
     pinMode(pinAmpelGelb, OUTPUT); // LED 2 (gelb)
     pinMode(pinAmpelRot, OUTPUT); // LED 3 (rot)
-    // LedampelBlinken("gruen", 1, 2000);
-    // LedampelBlinken("gelb", 1, 2000);
-    // LedampelBlinken("rot", 1, 2000);
+    LedampelBlinken("gruen", 1, 1000);
+    LedampelBlinken("gelb", 1, 1000);
+    LedampelBlinken("rot", 1, 1000);
     #if MODUL_DEBUG
       Serial.println(F("## Debug: Setup der Ledampel"));
       Serial.print(F("PIN gruene LED: ")); Serial.println(pinAmpelGruen);
@@ -91,7 +91,7 @@ void setup() {
     display.display(); // Display anschalten und initialen Buffer zeigen
     delay(1000); // 1 Sekunde warten
     display.clearDisplay(); // Display löschen
-    // DisplayIntro(ip, wifiHostname); // Introfunktion aufrufen
+    DisplayIntro(ip, wifiHostname); // Intro auf Display abspielen
   #endif
   #if MODUL_DHT
     // Initialisierung des Lufttemperatur und -feuchte Sensors:
@@ -150,7 +150,7 @@ void loop() {
     #endif
     // Bodenfeuchte messen
     messwertBodenfeuchte = analogRead(pinAnalog);
-    messwertBodenfeuchteProzent = BodenfeuchteUmrechnung(messwertBodenfeuchte); // Skalierung auf maximal 0 bis 100
+    messwertBodenfeuchteProzent = BodenfeuchteUmrechnen(messwertBodenfeuchte, bodenfeuchteMinimum, bodenfeuchteMaximum); // Skalierung auf maximal 0 bis 100
   #endif
 
   // Luftfeuchte und -temperatur messen
@@ -181,9 +181,19 @@ void loop() {
       if ( ampelUmschalten ) {
         if ( MODUL_BODENFEUCHTE ) { LedampelBlinken("gelb", 2, 500); }
         #if MODUL_DEBUG
-          Serial.print(F("ampelUmschalten = "));
+          Serial.print(F("ampelUmschalten: "));
           Serial.print(ampelUmschalten);
           Serial.println(F(": Ledampel zeigt Helligkeit an."));
+          Serial.print(F("ampelHelligkeitInvertiert: "));
+          Serial.println(ampelHelligkeitInvertiert);
+          Serial.print(F("messwertHelligkeitProzent: "));
+          Serial.println(messwertHelligkeitProzent);
+          Serial.print(F("ampelHelligkeitGruen: "));
+          Serial.print(ampelHelligkeitGruen);
+          Serial.print(F(", ampelHelligkeitGelb: "));
+          Serial.print(ampelHelligkeitGelb);
+          Serial.print(F(", ampelHelligkeitRot: "));
+          Serial.println(ampelHelligkeitRot);
         #endif
         if ( ampelHelligkeitInvertiert ) {
           if ( messwertHelligkeitProzent >= ampelHelligkeitGruen ) {
@@ -218,6 +228,16 @@ void loop() {
             Serial.print(F("ampelUmschalten = "));
             Serial.print(ampelUmschalten);
             Serial.println(F(": Ledampel zeigt Bodenfeuchte an."));
+            Serial.print(F("ampelBodenfeuchteInvertiert: "));
+            Serial.println(ampelBodenfeuchteInvertiert);
+            Serial.print(F("messwertBodenfeuchteProzent: "));
+            Serial.println(messwertBodenfeuchteProzent);
+            Serial.print(F("ampelBodenfeuchteGruen: "));
+            Serial.print(ampelBodenfeuchteGruen);
+            Serial.print(F(", ampelBodenfeuchteGelb: "));
+            Serial.print(ampelBodenfeuchteGelb);
+            Serial.print(F(", ampelBodenfeuchteRot: "));
+            Serial.println(ampelBodenfeuchteRot);
           #endif
           if ( MODUL_HELLIGKEIT ) { LedampelBlinken("gruen", 2, 500); }
           if ( ampelBodenfeuchteInvertiert ) { // Unterscheidung, ob die Bodenfeuchteskala invertiert wird oder nicht
@@ -247,17 +267,24 @@ void loop() {
   }
   // Messwerte auf dem Display anzeigen
   #if MODUL_DISPLAY
-    DisplayMesswerte(messwertBodenfeuchte, messwertHelligkeitProzent, messwertLuftfeuchte, messwertLufttemperatur, status);
+    DisplayMesswerte(messwertBodenfeuchteProzent, messwertHelligkeitProzent, messwertLuftfeuchte, messwertLufttemperatur, status);
   #endif
   #if MODUL_DEBUG
-    Serial.println(F(" "));
+    Serial.println(F("."));
   #endif
 
   // Wifi und Webserver
   #if MODUL_WIFI
     Webserver.handleClient();
   #endif
-  status = (status + 1) % 4; // Statuszähler erhöhen. Mögliche Zustände: 0, 1, 2, 3
+  status += 1;
+  if ( status == 6) {
+    status = 0;
+  }
+  #if MODUL_DEBUG
+    Serial.print(F("status: ")); Serial.println(status);
+    Serial.print(F("############ Ende von loop() ##############"));
+  #endif
 }
 
 /*
