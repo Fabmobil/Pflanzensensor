@@ -46,25 +46,22 @@ Folgende Bibliotheken werden verwendet und müssen ggfs. in der Arduino IDE heru
 
 ## Bauteile
 
-::: info
-Preise Stand 15.10.2023
-:::
-
-### Basisausstattung (8,36€)
+### Basisausstattung
 
 * [NodeMCU / ESP8266](https://www.amazon.de/AZDelivery-NodeMCU-ESP8266-ESP-12E-Development/dp/B0754LZ73Z/ref=sr_1_3?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=2R1E6LL9WLQA0&keywords=nodemcu&qid=1697395604&sprefix=nodemc%2Caps%2C161&sr=8-3) : 4,40€
 * [Bodenfeuchtesensor](https://www.amazon.de/KeeYees-Bodenfeuchtesensor-Kapazitive-Hygrometer-Feuchtigkeitssensor/dp/B07R174TM1/ref=sr_1_5?crid=SBQ62PDCTU01&keywords=soil+moisture+sensor&qid=1697395580&sprefix=soil+mo%2Caps%2C177&sr=8-5) : 2,66€
 * [LED Ampel](https://www.amazon.de/AZDelivery-Creative-Mini-Ampel-kompatibel-Arduino/dp/B086V33MST/ref=sr_1_5?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=18271JP3Z0QGQ&keywords=led%2Bampel&qid=1697396050&sprefix=led%2Bampel%2Caps%2C138&sr=8-5&th=1) : 1,30€
 
-### Mit Lichtsensor (+2,19€)
+### Mit Lichtsensor
 
 * [Analogmultiplexer](https://www.amazon.de/DEWIN-Electronic-Components-CD4051BE-Multiplexer/dp/B09LHTSPX9/ref=sr_1_6?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=3OFK7TJC628KS&keywords=4051+multiplexer&qid=1697395708&sprefix=4051+multiplexer%2Caps%2C126&sr=8-6) : 0,69€
-* [Lichtsensor](https://www.amazon.de/AZDelivery-KY-018-Widerstand-Resistor-Arduino/dp/B07ZYXHF3C/ref=sr_1_7?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&keywords=lichtsensor&qid=1697395989&sr=8-7&th=1): 1,5€
+* [Lichtsensor](https://www.amazon.de/AZDelivery-KY-018-Widerstand-Resistor-Arduino/dp/B07ZYXHF3C/ref=sr_1_7?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&keywords=lichtsensor&qid=1697395989&sr=8-7&th=1): 1,50€
 
-### Mit Luchtfeuchte- und Lufttemperatursensor (+2,40€)
+### Mit Luchtfeuchte- und Lufttemperatursensor
 
 * [DHT11](https://www.amazon.de/AZDelivery-KY-015-DHT-Temperatursensor-Modul/dp/B089W7CJL4/ref=sr_1_4?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=1GPKR532WG8V6&keywords=dht11&qid=1697396131&sprefix=dht1%252Caps%252C144&sr=8-4) : 2,40€
+* oder [DHT22](https://www.amazon.de/AZDelivery-Temperatursensor-Luftfeuchtigkeitssensor-Platine-Arduino/dp/B078SVZB1X/ref=sr_1_3?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=1S01332PVGW32&keywords=dht22&qid=1700151846&sprefix=dht22%2Caps%2C154&sr=8-3&th=1) : 9,49€
 
-### Mit Display (+4,33€)
+### Mit Display
 
 * [1 Zoll OLED Display](https://www.amazon.de/APKLVSR-Bildschirm-Anzeigemodul-IIC-Bildschirm-kompatibel/dp/B0CFFK32S8/ref=sr_1_4?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=2ZN5Q7U84U4GL&keywords=oled%2Barduino&qid=1697396260&sprefix=oled%2Barduino%2Caps%2C176&sr=8-4&th=1) : 4,33€
