@@ -10,7 +10,7 @@ Dieser Pflanzensensor kann aus verschiedenen Modulen bestehen und kombiniert wer
 - LED Ampel
 - WiFi
 
-## Quellcode
+# Software
 
 Der Quellcode ist modularisiert. Folgendes ist in den unterschiedlichen Dateien zu finden:
 
@@ -30,7 +30,7 @@ Der Quellcode ist modularisiert. Folgendes ist in den unterschiedlichen Dateien 
 | modul_wifi_header.h | Der (immer gleiche) Anfang der HTML-Seiten des Sensors inklusive der CSS Formatierungsinformationen. |
 | modul_wifi_footer.h | Das (immer gleiche) Ende der HTML-Seiten des Sensors. |
 
-### Externe Bibliotheken
+## Externe Bibliotheken
 
 Folgende Bibliotheken werden verwendet und müssen ggfs. in der Arduino IDE heruntergeladen werden:
 
@@ -43,6 +43,8 @@ Folgende Bibliotheken werden verwendet und müssen ggfs. in der Arduino IDE heru
 | LEDAmpel | keine externen Bibliotheken |
 | Multiplexer | keine externen Bibliotheken |
 | Wifi | ESP8266WiFi, ESP8266WebServer, ESP8266mDNS |
+
+# Hardware
 
 ## Bauteile
 
@@ -65,3 +67,10 @@ Folgende Bibliotheken werden verwendet und müssen ggfs. in der Arduino IDE heru
 ### Mit Display
 
 * [1 Zoll OLED Display](https://www.amazon.de/APKLVSR-Bildschirm-Anzeigemodul-IIC-Bildschirm-kompatibel/dp/B0CFFK32S8/ref=sr_1_4?__mk_de_DE=%C3%85M%C3%85%C5%BD%C3%95%C3%91&crid=2ZN5Q7U84U4GL&keywords=oled%2Barduino&qid=1697396260&sprefix=oled%2Barduino%2Caps%2C176&sr=8-4&th=1) : 4,33€
+
+
+## Schaltplan
+
+![image](https://github.com/pippcat/Pflanzensensor/assets/19587872/e3bd4fa9-93cc-4d0a-b73f-5e0a0d183bd6)
+
+Eine Fritzing-Datei des Schaltplans ist unter `/Schaltplan/` zu finden.
