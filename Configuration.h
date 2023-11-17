@@ -9,7 +9,7 @@
  * Module
  * "true" aktiviert sie, "false" deaktiviert sie
  */
-#define MODUL_DEBUG         true  // Debugmodus (de)aktivieren
+#define MODUL_DEBUG         false  // Debugmodus (de)aktivieren
 #define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
 #define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
@@ -52,7 +52,7 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
    * für den Sensor festgelegt. Diese können später auch im Admin-Webinterface
    * verändert werden.
    */
-  int helligkeitMinimum = 900; // Der Rohmesswert des Sensors wenn es ganz dunkel ist
+  int helligkeitMinimum = 950; // Der Rohmesswert des Sensors wenn es ganz dunkel ist
   int helligkeitMaximum = 20; // Der Rohmesswert des Sensors, wenn es ganz hell ist
 #endif
 #if MODUL_LEDAMPEL // falls eine LED Ampel verbaut ist:
