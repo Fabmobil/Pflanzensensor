@@ -164,7 +164,7 @@ void loop() {
   #if MODUL_HELLIGKEIT  // wenn das Helligkeit Modul aktiv ist
     if (millisAktuell - millisVorherHelligkeit >= intervallHelligkeit) {
       #if MODUL_DEBUG
-        Serial.println(F("# invervallHelligkeit erreicht."));
+        Serial.println(F("### intervallHelligkeit erreicht."));
       #endif
       millisVorherHelligkeit = millisAktuell; // neuen Wert übernehmen
       // Ggfs. Multiplexer umstellen:
@@ -183,7 +183,7 @@ void loop() {
   #if MODUL_BODENFEUCHTE // wenn das Bodenfeuchte Modul aktiv is
     if (millisAktuell - millisVorherBodenfeuchte >= intervallBodenfeuchte) {
       #if MODUL_DEBUG
-        Serial.println(F("# invervallBodenfeuchte erreicht."));
+        Serial.println(F("### intervallBodenfeuchte erreicht."));
       #endif
       millisVorherBodenfeuchte = millisAktuell;
       // Ggfs. Multiplexer umstellen:
@@ -202,7 +202,7 @@ void loop() {
   #if MODUL_DHT // wenn das DHT Modul aktiv ist
     if (millisAktuell - millisVorherDht >= intervallDht) {
       #if MODUL_DEBUG
-        Serial.println(F("# invervallDht erreicht."));
+        Serial.println(F("### intervallDht erreicht."));
       #endif
       millisVorherDht = millisAktuell;
       messwertLufttemperatur = DhtMessenLufttemperatur(); // Lufttemperatur messen
@@ -214,7 +214,7 @@ void loop() {
   #if MODUL_LEDAMPEL // Wenn das LED Ampel Modul aktiv ist:
     if (millisAktuell - millisVorherLedampel >= intervallLedampel) {
       #if MODUL_DEBUG // Debuginformation
-        Serial.println(F("# invervallLedAmpel erreicht."));
+        Serial.println(F("### intervallLedAmpel erreicht."));
       #endif
       millisVorherLedampel = millisAktuell;
       LedampelUmschalten(messwertHelligkeitProzent, messwertBodenfeuchteProzent); // Ampel umschalten
@@ -229,7 +229,7 @@ void loop() {
         status = 0; // danach geht es von neuem los
       }
       #if MODUL_DEBUG
-        Serial.print(F("# invervallDisplay erreicht. status: ")); Serial.println(status);
+        Serial.print(F("### intervallDisplay erreicht. status: ")); Serial.println(status);
       #endif
       millisVorherDisplay = millisAktuell;
       // Diese Funktion kümmert sich um die Displayanzeige:
