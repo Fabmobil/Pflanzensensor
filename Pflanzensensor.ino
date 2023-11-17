@@ -54,7 +54,7 @@ void setup() {
   Serial.println(" Fabmobil Pflanzensensor, V0.2");
   module = ModuleZaehlen();
    #if MODUL_DEBUG
-    Serial.print(F("module: "));
+    Serial.print(F("# Anzahl Module: "));
     Serial.println(module);
   #endif
   pinMode(pinEingebauteLed, OUTPUT); // eingebaute LED intialisieren
@@ -134,14 +134,9 @@ void setup() {
  * Zentrale Schleifenfunktion die immer wieder neu ausgeführt wird wenn sie abgeschlossen ist.
  */
 void loop() {
-  Serial.println(F("####### Begin von loop() #######"));
-   // Geschwindigkeit des Programms
-  status += 1;
-  if ( status == 6) {
-    status = 0;
-  }
   unsigned long millisAktuell = millis();
   #if MODUL_DEBUG
+    Serial.println(F("####### Begin von loop() #######"));
     Serial.print(F("# status: "));
     Serial.print(status);
     Serial.print(F(", millis: "));
@@ -216,8 +211,12 @@ void loop() {
   // Messwerte auf dem Display anzeigen:
   #if MODUL_DISPLAY
     if (millisAktuell - millisVorherDisplay >= intervallDisplay) {
+      status += 1;
+      if ( status == 6) {
+        status = 0;
+      }
       #if MODUL_DEBUG
-        Serial.println(F("# invervallDisplay erreicht."));
+        Serial.print(F("# invervallDisplay erreicht. status: ")); Serial.println(status);
       #endif
       millisVorherDisplay = millisAktuell;
       DisplayMesswerte(messwertBodenfeuchteProzent, messwertHelligkeitProzent, messwertLuftfeuchte, messwertLufttemperatur, status);

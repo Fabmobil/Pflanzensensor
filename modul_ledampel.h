@@ -50,6 +50,9 @@ void LedampelAnzeigen(String farbe, int dauer) {
     Serial.print(F(", ")); Serial.print(dauer);
     Serial.println(F(")"));
   #endif
+  digitalWrite(pinAmpelRot, LOW);
+  digitalWrite(pinAmpelGelb, LOW);
+  digitalWrite(pinAmpelGruen, LOW);
   if (farbe == "rot") {
     digitalWrite(pinAmpelRot, HIGH);
     if (dauer != -1) {

@@ -9,7 +9,7 @@
  * Module
  * "true" aktiviert sie, "false" deaktiviert sie
  */
-#define MODUL_DEBUG         true  // Debugmodus (de)aktivieren
+#define MODUL_DEBUG         false  // Debugmodus (de)aktivieren
 #define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
 #define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
@@ -86,7 +86,7 @@ const long intervallHelligkeit = 5000;
 const long intervallBodenfeuchte = 5000;
 const long intervallDht = 5000;
 const long intervallLedampel = 15000;
-const long intervallDisplay = 10000;
+const long intervallDisplay = 5000;
 int module;
 #if MODUL_BODENFEUCHTE
   int messwertBodenfeuchte = -1;
