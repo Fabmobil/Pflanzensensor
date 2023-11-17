@@ -101,30 +101,30 @@ void LedampelUmschalten(int messwertHelligkeitProzent) {
       Serial.println(messwertHelligkeitProzent);
       Serial.print(F("# ampelHelligkeitGruen: "));
       Serial.print(ampelHelligkeitGruen);
-      Serial.print(F(", ampelHelligkeitGelb: "));
-      Serial.print(ampelHelligkeitGelb);
       Serial.print(F(", ampelHelligkeitRot: "));
       Serial.println(ampelHelligkeitRot);
     #endif
-    // Unterscheidung, ob die Skala der Lichtstärke invertiert ist oder nicht
+    // Unterscheidung, ob die Skala der Lichtstärke invertiert ist oder nicht:
     if ( ampelHelligkeitInvertiert ) { // Wenn ja, wird folgendermaßen unterschieden, ob rot, gelb oder grün angezeigt wird:
-      if ( messwertHelligkeitProzent >= ampelHelligkeitGruen ) {
+      if ( messwertHelligkeitProzent >= ampelHelligkeitGruen ) { // zwischen 100% und gruenem Grenzwert
         LedampelAnzeigen("gruen", -1);
       }
-      if ( (messwertHelligkeitProzent >= ampelHelligkeitGelb) && (messwertHelligkeitProzent < ampelHelligkeitGruen) ) {
+      // zwischen gruenem und rotem Grenzwert:
+      if ( (messwertHelligkeitProzent < ampelHelligkeitGruen) && (messwertHelligkeitProzent >= ampelHelligkeitRot) ) {
         LedampelAnzeigen("gelb", -1);
       }
-      if ( messwertHelligkeitProzent < ampelHelligkeitGelb ) {
+      if ( messwertHelligkeitProzent < ampelHelligkeitRot ) { // zwischem rotem Grenzwert und 0%
         LedampelAnzeigen("rot", -1);
       }
-    } else { // ansonsten so:
-      if ( messwertHelligkeitProzent <= ampelHelligkeitGruen ) {
+    } else { // Helligkeitsskala nicht invertiert
+      if ( messwertHelligkeitProzent <= ampelHelligkeitGruen ) { // zwischen 0% und grünem Grenzwert
         LedampelAnzeigen("gruen", -1);
       }
-      if ( (messwertHelligkeitProzent <= ampelHelligkeitGelb) && (messwertHelligkeitProzent < ampelHelligkeitGruen) ) {
+      // zwischen grünem und roten Grenzwert
+      if ( (messwertHelligkeitProzent <= ampelHelligkeitGruen) && (messwertHelligkeitProzent < ampelHelligkeitRot) ) {
         LedampelAnzeigen("gelb", -1);
       }
-      if ( messwertHelligkeitProzent > ampelHelligkeitGelb ) {
+      if ( messwertHelligkeitProzent > ampelHelligkeitRot ) { // zwischen rotem Grenzwert und 100%
         LedampelAnzeigen("rot", -1);
       }
     }
@@ -142,30 +142,30 @@ void LedampelUmschalten(int messwertHelligkeitProzent) {
       Serial.println(messwertBodenfeuchteProzent);
       Serial.print(F("# ampelBodenfeuchteGruen:      "));
       Serial.print(ampelBodenfeuchteGruen);
-      Serial.print(F(", ampelBodenfeuchteGelb:       "));
-      Serial.print(ampelBodenfeuchteGelb);
       Serial.print(F(", ampelBodenfeuchteRot:        "));
       Serial.println(ampelBodenfeuchteRot);
     #endif
     if ( MODUL_HELLIGKEIT ) { LedampelBlinken("gruen", 2, 500); }
-    if ( ampelBodenfeuchteInvertiert ) { // Unterscheidung, ob die Bodenfeuchteskala invertiert wird oder nicht
-      if ( messwertBodenfeuchteProzent >= ampelBodenfeuchteGruen ) {
+    if ( ampelBodenfeuchteInvertiert ) { // Bodenfeuchteskala invertiert:
+      if ( messwertBodenfeuchteProzent >= ampelBodenfeuchteGruen ) { // zwischen 100% und gruenem Grenzwert
         LedampelAnzeigen("gruen", -1);
       }
-      if ( (messwertBodenfeuchteProzent >= ampelBodenfeuchteGelb) && (messwertBodenfeuchteProzent < ampelBodenfeuchteGruen) ) {
+      // zwischen gruenem und rotem Grenzwert:
+      if ( (messwertBodenfeuchteProzent < ampelBodenfeuchteGruen) && (messwertBodenfeuchteProzent >= ampelBodenfeuchteRot) ) {
         LedampelAnzeigen("gelb", -1);
       }
-      if ( messwertBodenfeuchteProzent < ampelBodenfeuchteGelb ) {
+      if ( messwertBodenfeuchteProzent < ampelBodenfeuchteRot ) { // zwischem rotem Grenzwert und 0%
         LedampelAnzeigen("rot", -1);
       }
-    } else {
-      if ( messwertBodenfeuchteProzent <= ampelBodenfeuchteGruen ) {
+    } else { // Bodenfeuchteskala nicht invertiert:
+      if ( messwertBodenfeuchteProzent <= ampelBodenfeuchteGruen ) { // zwischen 0% und gruenem Grenzwert
         LedampelAnzeigen("gruen", -1);
       }
-      if ( (messwertBodenfeuchteProzent <= ampelBodenfeuchteGelb) && (messwertBodenfeuchteProzent < ampelBodenfeuchteGruen) ) {
+      // zwischen grünem und rotem Grenzwert:
+      if ( (messwertBodenfeuchteProzent > ampelBodenfeuchteGruen ) && (messwertBodenfeuchteProzent <= ampelBodenfeuchteRot) ) {
         LedampelAnzeigen("gelb", -1);
       }
-      if ( messwertBodenfeuchteProzent > ampelBodenfeuchteGelb ) {
+      if ( messwertBodenfeuchteProzent > ampelBodenfeuchteRot ) { // zwischen rotem Grenzwert und 100%
         LedampelAnzeigen("rot", -1);
       }
     }

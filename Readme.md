@@ -26,6 +26,7 @@ Der Quellcode ist modularisiert. Folgendes ist in den unterschiedlichen Dateien 
 | modul_dht.h | Code für das Lufttemperatur und -feuchte-Modul. |
 | modul_display.h | Code für das Display-Modul. |
 | modul_display_bilder.h | Bilder, die auf dem Display angezeigt werden können. |
+| modul_ifttt.h | ifttt.com Modul, mit dem zB Mails oder Telegramnachrichten verschickt werden können |
 | modul_ledampel.h | Code für das LED-Ampel-Modul. |
 | modul_lichtsensor.h | Code für das Lichtsensor-Modul. |
 | modul_multiplexer.h | Code für den Analogmultiplexer (wird bei gleichzeitigem Verwenden von Lichtsensor-Modul und Bodenfeuchte-Modul benötigt). |

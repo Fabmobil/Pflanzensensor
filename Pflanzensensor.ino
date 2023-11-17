@@ -73,11 +73,9 @@ void setup() {
       Serial.print(F("# PIN rote LED:                   ")); Serial.println(pinAmpelRot);
       Serial.print(F("# Bodenfeuchte Skala invertiert:  ")); Serial.println(ampelBodenfeuchteInvertiert);
       Serial.print(F("# Schwellwert Bodenfeuchte grün:  ")); Serial.println(ampelBodenfeuchteGruen);
-      Serial.print(F("# Schwellwert Bodenfeuchte gelb:  ")); Serial.println(ampelBodenfeuchteGelb);
       Serial.print(F("# Schwellwert Bodenfeuchte rot:   ")); Serial.println(ampelBodenfeuchteRot);
       Serial.print(F("# Lichtstärke Skala invertiert:   ")); Serial.println(ampelHelligkeitInvertiert);
       Serial.print(F("# Schwellwert Lichtstärke grün:   ")); Serial.println(ampelHelligkeitGruen);
-      Serial.print(F("# Schwellwert Lichtstärke gelb:   ")); Serial.println(ampelHelligkeitGelb);
       Serial.print(F("# Schwellwert Lichtstärke rot:    ")); Serial.println(ampelHelligkeitRot);
     #endif
   #endif

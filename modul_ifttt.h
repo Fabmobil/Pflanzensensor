@@ -1,6 +1,7 @@
 /**
  * Wifi Modul
- * Diese Datei enthält den Code für das Wifi-Modul und den Webserver
+ * Diese Datei enthält den Code für das IFTTT Modul
+ * www.ifttt.com ist ein Webservice der es ermöglicht, dass der ESP dir Emails oder Telegramnachrichten schickt.
  */
 
 /*

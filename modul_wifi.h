@@ -93,7 +93,7 @@ void WebseiteDebugAusgeben() {
   formatierterCode += "<h3>Display Modul</h3>";
   #if MODUL_DISPLAY
     formatierterCode += "<ul>";
-    formatierterCode += "<li>Anzeigedauer: ";
+    formatierterCode += "<li>Aktives Displaybild: ";
     formatierterCode += status;
     formatierterCode += "</li>";
     formatierterCode += "<li>Breite in Pixel: ";
@@ -127,6 +127,9 @@ void WebseiteDebugAusgeben() {
   formatierterCode += "<h3>LEDAmpel Modul</h3>";
   #if MODUL_LEDAMPEL
     formatierterCode += "<ul>";
+    formatierterCode += "<li>ampelUmschalten: ";
+    formatierterCode += ampelUmschalten;
+    formatierterCode += "</li>";
     formatierterCode += "<li>Pin gruene LED: ";
     formatierterCode += pinAmpelGruen;
     formatierterCode += "</li>";
@@ -139,9 +142,6 @@ void WebseiteDebugAusgeben() {
     formatierterCode += "<li>Bodenfeuchte Schwellwert gruen: ";
     formatierterCode += ampelBodenfeuchteGruen;
     formatierterCode += "</li>";
-    formatierterCode += "<li>Bodenfeuchte Schwellwert gelb: ";
-    formatierterCode += ampelBodenfeuchteGelb;
-    formatierterCode += "</li>";
     formatierterCode += "<li>Bodenfeuchte Schwellwert rot: ";
     formatierterCode += ampelBodenfeuchteRot;
     formatierterCode += "</li>";
@@ -150,9 +150,6 @@ void WebseiteDebugAusgeben() {
     formatierterCode += "</li>";
     formatierterCode += "<li>Helligkeit Schwellwert gruen: ";
     formatierterCode += ampelHelligkeitGruen;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Helligkeit Schwellwert gelb: ";
-    formatierterCode += ampelHelligkeitGelb;
     formatierterCode += "</li>";
     formatierterCode += "<li>Helligkeit Schwellwert rot: ";
     formatierterCode += ampelHelligkeitRot;
@@ -292,10 +289,6 @@ void WebseiteAdminAusgeben() {
       formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelHelligkeitGruen\" placeholder=\"";
       formatierterCode += ampelHelligkeitGruen;
       formatierterCode += "\"></p>";
-      formatierterCode += "<p>Schwellwert gelb: ";
-      formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelHelligkeitGelb\" placeholder=\"";
-      formatierterCode += ampelHelligkeitGelb;
-      formatierterCode += "\"></p>";
       formatierterCode += "<p>Schwellwert rot: ";
       formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelHelligkeitRot\" placeholder=\"";
       formatierterCode += ampelHelligkeitRot;
@@ -315,10 +308,6 @@ void WebseiteAdminAusgeben() {
       formatierterCode += "<p>Schwellwert gruen: ";
       formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelBodenfeuchteGruen\" placeholder=\"";
       formatierterCode += ampelBodenfeuchteGruen;
-      formatierterCode += "\"></p>";
-      formatierterCode += "<p>Schwellwert gelb: ";
-      formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelBodenfeuchteGelb\" placeholder=\"";
-      formatierterCode += ampelBodenfeuchteGelb;
       formatierterCode += "\"></p>";
       formatierterCode += "<p>Schwellwert rot: ";
       formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelBodenfeuchteRot\" placeholder=\"";
@@ -372,9 +361,6 @@ void WebseiteSetzeVariablen() {
         if ( Webserver.arg("ampelHelligkeitGruen") != "" ) {
           ampelHelligkeitGruen = Webserver.arg("ampelHelligkeitGruen").toInt();
         }
-        if ( Webserver.arg("ampelHelligkeitGelb") != "" ) {
-          ampelHelligkeitGelb = Webserver.arg("ampelHelligkeitGelb").toInt();
-        }
         if ( Webserver.arg("ampelHelligkeitRot") != "" ) {
           ampelHelligkeitRot = Webserver.arg("ampelHelligkeitRot").toInt();
         }
@@ -382,9 +368,6 @@ void WebseiteSetzeVariablen() {
       #if MODUL_BODENFEUCHTE
         if ( Webserver.arg("ampelBodenfeuchteGruen") != "" ) {
           ampelBodenfeuchteGruen = Webserver.arg("ampelBodenfeuchteGruen").toInt();
-        }
-        if ( Webserver.arg("ampelBodenfeuchteGelb") != "" ) {
-          ampelBodenfeuchteGelb = Webserver.arg("ampelBodenfeuchteGelb").toInt();
         }
         if ( Webserver.arg("ampelBodenfeuchteRot") != "" ) {
           ampelBodenfeuchteRot = Webserver.arg("ampelBodenfeuchteRot").toInt();
