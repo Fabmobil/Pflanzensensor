@@ -89,10 +89,8 @@ void setup() {
     pinMode(pinMultiplexer1, OUTPUT);
     pinMode(pinMultiplexer2, OUTPUT);
   #endif
-  String ip = "keine WLAN Verbindung."; // Initialisierung der IP Adresse mit Fehlermeldung
   #if MODUL_WIFI // wenn das Wifi Modul aktiv ist:
-    WifiSetup(wifiHostname); // Wifi-Verbindung herstellen
-    ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
+    String ip = WifiSetup(wifiHostname); // Wifi-Verbindung herstellen und IP Adresse speichern
   #endif
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
     // hier wird überprüft, ob die Verbindung zum Display erfolgreich war
@@ -145,13 +143,24 @@ void loop() {
    * ausgelesen. Dazwischen werden nur Anfragen an den Webserver abgefragt.
    */
   unsigned long millisAktuell = millis();
+
   #if MODUL_DEBUG
-    Serial.println(F("####### Begin von loop() #######"));
+    Serial.println(F("############ Begin von loop() #############"));
     Serial.print(F("# status: "));
     Serial.print(status);
     Serial.print(F(", millis: "));
     Serial.println(millisAktuell);
+    Serial.print(F("# IP Adresse: "));
+    if ( wifiAp ) { // Falls der ESP sein eigenes WLAN aufgemacht hat:
+      Serial.println(WiFi.softAPIP());
+      Serial.print(F("# Anzahl der mit dem Accesspoint verbundenen Geräte: "));
+      Serial.println(WiFi.softAPgetStationNum());
+    } else {
+      Serial.println(WiFi.localIP());
+    }
   #endif
+
+  MDNS.update(); // MDNS updaten
 
   // eingebaute LED blinken soll blinken falls sie aktiv ist:
   if ( eingebauteLedAktiv ) {

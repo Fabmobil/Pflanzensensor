@@ -79,8 +79,12 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
   String wifiAdminPasswort = "admin"; // Passwort für das Admininterface
   String wifiHostname = "pflanzensensor"; // Das Gerät ist später unter diesem Name + .local erreichbar
-  #define wifiSsid "Tommy" // WLAN Name / SSID
-  #define wifiPassword "freibier" // WLAN Passwort
+  #define wifiAp false // true: ESP macht seinen eigenen AP auf; false: ESP verbindet sich mit fremden WLAN
+  #define wifiApSsid "Fabmobil Pflanzensensor" // SSID des WLANs, falls vom ESP selbst aufgemacht
+  #define wifiApPasswortAktiviert false // soll das selbst aufgemachte WLAN ein Passwort haben?
+  #define wifiApPasswort "geheim" // Das Passwort für das selbst aufgemacht WLAN
+  #define wifiSsid "machbar" // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
+  #define wifiPassword "machbar-wireless" // WLAN Passwort für das fremde Wifi
 #endif
 
 /**

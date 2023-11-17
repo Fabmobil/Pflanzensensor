@@ -184,20 +184,35 @@ void WebseiteDebugAusgeben() {
     formatierterCode += "<p>Helligkeit Modul deaktiviert!</p>";
   #endif
 
-
   formatierterCode += "<h3>Wifi Modul</h3>";
-  formatierterCode += "<ul>";
-  formatierterCode += "<li>Hostname: ";
-  formatierterCode += wifiHostname;
-  formatierterCode += ".local</li>";
-  formatierterCode += "<li>SSID: ";
-  formatierterCode += wifiSsid;
-  formatierterCode += "</li>";
-  formatierterCode += "<li>Passwort: ";
-  formatierterCode += wifiPassword;
-  formatierterCode += "</li>";
-  formatierterCode += "</ul>";
-
+  #if MODUL_WIFI
+    formatierterCode += "<ul>";
+    formatierterCode += "<li>Hostname: ";
+    formatierterCode += wifiHostname;
+    formatierterCode += ".local</li>";
+    if ( wifiAp == false ) { // falls der ESP in einem anderen WLAN ist:
+      formatierterCode += "<li>SSID: ";
+      formatierterCode += wifiSsid;
+      formatierterCode += "</li>";
+      formatierterCode += "<li>Passwort: ";
+      formatierterCode += wifiPassword;
+      formatierterCode += "</li>";
+    } else { // falls der ESP sein eigenes WLAN aufmacht:
+      formatierterCode += "<li>Name des WLANs: ";
+      formatierterCode += wifiApSsid;
+      formatierterCode += "</li>";
+      formatierterCode += "<li>Passwort: ";
+      if ( wifiApPasswortAktiviert ) {
+        formatierterCode += wifiPassword;
+      } else {
+        formatierterCode += "WLAN ohne Passwortschutz!";
+      }
+      formatierterCode += "</li>";
+    }
+    formatierterCode += "</ul>";
+  #else
+    formatierterCode += "<p>Wifi Modul deaktiviert!</p>";
+  #endif
   formatierterCode += "<h3>IFTTT Modul</h3>";
   #if MODUL_IFTTT
     formatierterCode += "<ul>";
@@ -442,34 +457,60 @@ void WebseiteSetzeVariablen() {
  * Funktion: WifiSetup()
  * Verbindet das WLAN
  */
-void WifiSetup(String hostname){
+String WifiSetup(String hostname){
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von WifiSetup()"));
   #endif
 // WLAN Verbindung herstellen
   WiFi.mode(WIFI_OFF);
-  WiFi.mode(WIFI_AP_STA);
-  if (WiFi.status() == WL_CONNECTED) Serial.println("WLAN war verbunden");
-  WiFi.begin(wifiSsid, wifiPassword);
-  int i=0; // Es wird nur 20 mal versucht, eine WLAN Verbindung aufzubauen
-  while (!(WiFi.status() == WL_CONNECTED) && i<30) {
-      #if MODUL_DEBUG
-        Serial.print("# Verbindungsversuch ");
-        Serial.print(i);
-        Serial.println(" von 30.");
-        delay(1000);
-      #endif
-      i++;
+  String ip = "keine WLAN Verbindung."; // Initialisierung der IP Adresse mit Fehlermeldung
+  if ( !wifiAp ) { // falls kein eigener Accesspoint aufgemacht werden soll wird sich mit dem definierten WLAN verbunden
+    WiFi.mode(WIFI_AP_STA);
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("WLAN war verbunden");
+    }
+    WiFi.begin(wifiSsid, wifiPassword);
+    int i=0; // Es wird nur 20 mal versucht, eine WLAN Verbindung aufzubauen
+    while (!(WiFi.status() == WL_CONNECTED) && i<30) {
+        #if MODUL_DEBUG
+          Serial.print("# Verbindungsversuch ");
+          Serial.print(i);
+          Serial.println(" von 30.");
+          delay(1000);
+        #endif
+        i++;
+    }
+    if (WiFi.status() != WL_CONNECTED) {
+      Serial.println("Keine WLAN-Verbindung möglich.");
+    }
+    // Nun sollte WLAN verbunden sein
+    Serial.print("meine IP: ");
+    Serial.println(WiFi.localIP());
+    ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben?
+  } else { // ansonsten wird hier das WLAN erstellt
+    Serial.print("Konfiguriere soft-AP ... ");
+    boolean result = false;
+    if ( wifiApPasswortAktiviert ) { // Falls ein WLAN mit Passwort erstellt werden soll
+      result = WiFi.softAP(wifiApSsid, wifiApPasswort );
+    } else { // ansonsten WLAN ohne Passwort
+      result = WiFi.softAP(wifiApSsid);
+    }
+    Serial.print(F("Accesspoint wurde "));
+    if( !result ) {
+      Serial.println(F("NICHT "));
+    }
+    Serial.println(F("erfolgreich aufgebaut!"));
+    Serial.print("meine IP: ");
+    Serial.println(WiFi.softAPIP());
+    ip = WiFi.softAPIP().toString(); // IP Adresse in Variable schreiben?
   }
-  if (WiFi.status() != WL_CONNECTED) Serial.println("Keine WLAN-Verbindung möglich.");
-  // Nun sollte WLAN verbunden sein
-  Serial.print("meine IP: ");
-  Serial.println(WiFi.localIP());
+
   // DNS Namensauflösung aktivieren:
   if (MDNS.begin(hostname)) {
     Serial.print("Gerät unter ");
     Serial.print(hostname);
     Serial.println(".local erreichbar.");
+    MDNS.addService("http", "tcp", 80);
   } else {
     Serial.println("Fehler bein Einrichten der Namensauflösung.");
   }
@@ -478,4 +519,5 @@ void WifiSetup(String hostname){
   Webserver.on("/debug.html", HTTP_GET, WebseiteDebugAusgeben);
   Webserver.on("/setzeVariablen", HTTP_POST, WebseiteSetzeVariablen);
   Webserver.begin(); // Webserver starten
+  return ip;
 }
