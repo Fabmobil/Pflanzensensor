@@ -78,7 +78,7 @@ Folgende Bibliotheken werden verwendet und müssen ggfs. in der Arduino IDE heru
 
 ## Schaltplan
 
-![image](https://github.com/pippcat/Pflanzensensor/assets/19587872/b55676a4-998a-4789-8930-5cdbf87c1b87)
+![image](https://github.com/pippcat/Pflanzensensor/assets/19587872/ebdddc78-6ae9-408e-8801-bac7f96ac4ca)
 
 Eine Fritzing-Datei des Schaltplans ist unter `/Schaltplan/` zu finden.
 
