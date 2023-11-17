@@ -2,6 +2,9 @@
 
 ![PXL_20231107_172305848](https://github.com/pippcat/Pflanzensensor/assets/19587872/90fa5a0d-8c51-478d-a620-1cea98ed86b6)
 
+https://github.com/pippcat/Pflanzensensor/assets/19587872/cb0c00b8-c6c9-4e3b-ad43-b228fb3646fc
+
+
 Dieser Pflanzensensor kann aus verschiedenen Modulen bestehen und kombiniert werden. Diese Module sind:
 
 - Bodenfeuchtesensor
