@@ -132,6 +132,9 @@ void WebseiteDebugAusgeben() {
   formatierterCode += "<h3>LEDAmpel Modul</h3>";
   #if MODUL_LEDAMPEL
     formatierterCode += "<ul>";
+    formatierterCode += "<li>Modus: ";
+    formatierterCode += ampelModus;
+    formatierterCode += "</li>";
     formatierterCode += "<li>ampelUmschalten: ";
     formatierterCode += ampelUmschalten;
     formatierterCode += "</li>";
@@ -279,6 +282,11 @@ void WebseiteAdminAusgeben() {
   #endif
   #if MODUL_LEDAMPEL
     formatierterCode += "<h2>LED Ampel</h2>";
+    formatierterCode += "<h3>Anzeigemodus</h3>";
+    formatierterCode += "<p>Modus: (0: Helligkeit und Bodenfeuchte; 1: Helligkeit; 2: Bodenfeuchte): ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelModus\" placeholder=\"";
+    formatierterCode += ampelModus;
+    formatierterCode += "\"></p>";
     #if MODUL_HELLIGKEIT
       formatierterCode += "<h3>Helligkeitsanzeige</h3>";
       formatierterCode += "<p>";
@@ -362,6 +370,9 @@ void WebseiteSetzeVariablen() {
       eingebauteLedAktiv = Webserver.arg("eingebauteLedAktiv").toInt();
     }
     #if MODUL_LEDAMPEL
+      if ( Webserver.arg("ampelModus") != "" ) {
+        ampelModus = Webserver.arg("ampelModus").toInt();
+      }
       #if MODUL_HELLIGKEIT
         if ( Webserver.arg("ampelHelligkeitGruen") != "" ) {
           ampelHelligkeitGruen = Webserver.arg("ampelHelligkeitGruen").toInt();

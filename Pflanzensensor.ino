@@ -129,6 +129,7 @@ void setup() {
       Serial.print  (F("# Auflösung:       ")); Serial.print(sensor.resolution); Serial.println(F("%"));
     #endif
   #endif
+  digitalWrite(pinEingebauteLed, HIGH); // eingebaute LED ausschalten
 }
 
 /*
@@ -155,6 +156,8 @@ void loop() {
   // eingebaute LED blinken soll blinken falls sie aktiv ist:
   if ( eingebauteLedAktiv ) {
     EingebauteLedBlinken(3, 50); // in jedem neuen Loop blinkt die interne LED 3x kurz
+  } else {
+    digitalWrite(pinEingebauteLed, HIGH); // Ausschalten
   }
 
   // Helligkeit messen:

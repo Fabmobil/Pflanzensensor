@@ -3,6 +3,9 @@
  * Diese Datei enthält den Code für das LED-Ampel-Modul
  */
 
+
+void LedampelBodenfeuchte(int messwertBodenfeuchteProzent);
+void LedampelHelligkeit(int messwertHelligkeitProzent);
 /**
  * Funktion: LedampelBlinken(String farbe, int anzahl, int dauer)
  * Lässt die LED Ampel in einer Farbe blinken
@@ -81,55 +84,29 @@ void LedampelUmschalten(int messwertHelligkeitProzent, int messwertBodenfeuchteP
   * Falls es auch das Bodenfeuchte Modul gibt, blinkt die LED Ampel kurz 5x gelb damit
   * klar ist, dass jetzt die Lichtstärke angezeigt wird..
   */
-  if ( ampelModus == 0  ) { // im Modus 0 (Helligkeits- und Bodensensor):
-    ampelUmschalten = !ampelUmschalten; // wird hier invertiert. true: Helligkeitsanzeige, false: Bodenfeuchteanzeige
-    if ( ampelUmschalten ) {
-      // LED Ampel blinkt 5x gelb um zu signalisieren, dass jetzt der Bodenfeuchtewert angezeigt wird
-      if ( MODUL_BODENFEUCHTE ) { LedampelBlinken("gelb", 2, 500); } // Ampel blinkt nur, falls es ein Bodenfeuchtemodul gibt
-    }
+  switch (ampelModus) {
 
-    // Anzeige der Helligkeit:
-    #if MODUL_DEBUG // Debugausgabe
-      Serial.print(F("# ampelModus:           "));
-      Serial.println(ampelModus);
-      Serial.print(F("# ampelUmschalten:           "));
-      Serial.print(ampelUmschalten);
-      Serial.println(F(": Ledampel zeigt Helligkeit an."));
-      Serial.print(F("# ampelHelligkeitInvertiert: "));
-      Serial.println(ampelHelligkeitInvertiert);
-      Serial.print(F("# messwertHelligkeitProzent: "));
-      Serial.println(messwertHelligkeitProzent);
-      Serial.print(F("# ampelHelligkeitGruen: "));
-      Serial.print(ampelHelligkeitGruen);
-      Serial.print(F(", ampelHelligkeitRot: "));
-      Serial.println(ampelHelligkeitRot);
-    #endif
-    // Unterscheidung, ob die Skala der Lichtstärke invertiert ist oder nicht:
-    if ( ampelHelligkeitInvertiert ) { // Wenn ja, wird folgendermaßen unterschieden, ob rot, gelb oder grün angezeigt wird:
-      if ( messwertHelligkeitProzent >= ampelHelligkeitGruen ) { // zwischen 100% und gruenem Grenzwert
-        LedampelAnzeigen("gruen", -1);
+    case 0: // im Modus 0 (Helligkeits- und Bodensensor):
+      ampelUmschalten = !ampelUmschalten; // wird hier invertiert. true: Helligkeitsanzeige, false: Bodenfeuchteanzeige
+      if ( ampelUmschalten ) {
+        // LED Ampel blinkt 5x gelb um zu signalisieren, dass jetzt der Bodenfeuchtewert angezeigt wird
+        if ( MODUL_BODENFEUCHTE ) { LedampelBlinken("gelb", 2, 500); } // Ampel blinkt nur, falls es auch ein Bodenfeuchtemodul gibt
+        LedampelHelligkeit(messwertHelligkeitProzent);
+      } else {
+        if ( MODUL_HELLIGKEIT ) { LedampelBlinken("gruen", 2, 500); } // Ampel blinkt nur, falls es auch ein Helligkeitsmodul gibt
+        LedampelBodenfeuchte(messwertBodenfeuchteProzent);
       }
-      // zwischen gruenem und rotem Grenzwert:
-      if ( (messwertHelligkeitProzent < ampelHelligkeitGruen) && (messwertHelligkeitProzent >= ampelHelligkeitRot) ) {
-        LedampelAnzeigen("gelb", -1);
-      }
-      if ( messwertHelligkeitProzent < ampelHelligkeitRot ) { // zwischem rotem Grenzwert und 0%
-        LedampelAnzeigen("rot", -1);
-      }
-    } else { // Helligkeitsskala nicht invertiert
-      if ( messwertHelligkeitProzent <= ampelHelligkeitGruen ) { // zwischen 0% und grünem Grenzwert
-        LedampelAnzeigen("gruen", -1);
-      }
-      // zwischen grünem und roten Grenzwert
-      if ( (messwertHelligkeitProzent <= ampelHelligkeitGruen) && (messwertHelligkeitProzent < ampelHelligkeitRot) ) {
-        LedampelAnzeigen("gelb", -1);
-      }
-      if ( messwertHelligkeitProzent > ampelHelligkeitRot ) { // zwischen rotem Grenzwert und 100%
-        LedampelAnzeigen("rot", -1);
-      }
-    }
+      break;
+    case 1: // Helligkeitsmodus
+      LedampelHelligkeit(messwertHelligkeitProzent);
+      break;
+    case 2: // Bodenfeuchtemodus
+      LedampelBodenfeuchte(messwertBodenfeuchteProzent);
+      break;
   }
+}
 
+void LedampelBodenfeuchte(int messwertBodenfeuchteProzent) {
   // Anzeige der Bodenfeuchte:
   if ( !ampelUmschalten ) { // Wenn ampelUmschalten false ist:
     #if MODUL_DEBUG // Debugausgabe
@@ -145,7 +122,6 @@ void LedampelUmschalten(int messwertHelligkeitProzent, int messwertBodenfeuchteP
       Serial.print(F(", ampelBodenfeuchteRot:        "));
       Serial.println(ampelBodenfeuchteRot);
     #endif
-    if ( MODUL_HELLIGKEIT ) { LedampelBlinken("gruen", 2, 500); }
     if ( ampelBodenfeuchteInvertiert ) { // Bodenfeuchteskala invertiert:
       if ( messwertBodenfeuchteProzent >= ampelBodenfeuchteGruen ) { // zwischen 100% und gruenem Grenzwert
         LedampelAnzeigen("gruen", -1);
@@ -168,6 +144,49 @@ void LedampelUmschalten(int messwertHelligkeitProzent, int messwertBodenfeuchteP
       if ( messwertBodenfeuchteProzent > ampelBodenfeuchteRot ) { // zwischen rotem Grenzwert und 100%
         LedampelAnzeigen("rot", -1);
       }
+    }
+  }
+}
+
+void LedampelHelligkeit(int messwertHelligkeitProzent) {
+  // Anzeige der Helligkeit:
+  #if MODUL_DEBUG // Debugausgabe
+    Serial.print(F("# ampelModus:           "));
+    Serial.println(ampelModus);
+    Serial.print(F("# ampelUmschalten:           "));
+    Serial.print(ampelUmschalten);
+    Serial.println(F(": Ledampel zeigt Helligkeit an."));
+    Serial.print(F("# ampelHelligkeitInvertiert: "));
+    Serial.println(ampelHelligkeitInvertiert);
+    Serial.print(F("# messwertHelligkeitProzent: "));
+    Serial.println(messwertHelligkeitProzent);
+    Serial.print(F("# ampelHelligkeitGruen: "));
+    Serial.print(ampelHelligkeitGruen);
+    Serial.print(F(", ampelHelligkeitRot: "));
+    Serial.println(ampelHelligkeitRot);
+  #endif
+  // Unterscheidung, ob die Skala der Lichtstärke invertiert ist oder nicht:
+  if ( ampelHelligkeitInvertiert ) { // Wenn ja, wird folgendermaßen unterschieden, ob rot, gelb oder grün angezeigt wird:
+    if ( messwertHelligkeitProzent >= ampelHelligkeitGruen ) { // zwischen 100% und gruenem Grenzwert
+      LedampelAnzeigen("gruen", -1);
+    }
+    // zwischen gruenem und rotem Grenzwert:
+    if ( (messwertHelligkeitProzent < ampelHelligkeitGruen) && (messwertHelligkeitProzent >= ampelHelligkeitRot) ) {
+      LedampelAnzeigen("gelb", -1);
+    }
+    if ( messwertHelligkeitProzent < ampelHelligkeitRot ) { // zwischem rotem Grenzwert und 0%
+      LedampelAnzeigen("rot", -1);
+    }
+  } else { // Helligkeitsskala nicht invertiert
+    if ( messwertHelligkeitProzent <= ampelHelligkeitGruen ) { // zwischen 0% und grünem Grenzwert
+      LedampelAnzeigen("gruen", -1);
+    }
+    // zwischen grünem und roten Grenzwert
+    if ( (messwertHelligkeitProzent <= ampelHelligkeitGruen) && (messwertHelligkeitProzent < ampelHelligkeitRot) ) {
+      LedampelAnzeigen("gelb", -1);
+    }
+    if ( messwertHelligkeitProzent > ampelHelligkeitRot ) { // zwischen rotem Grenzwert und 100%
+      LedampelAnzeigen("rot", -1);
     }
   }
 }
