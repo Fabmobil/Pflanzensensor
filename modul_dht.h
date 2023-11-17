@@ -15,7 +15,7 @@ DHT_Unified dht(pinDht, dhtSensortyp);
  */
 int DhtMessenLuftfeuchte() {
   #if MODUL_DEBUG
-    Serial.print(F("## Debug: Beginn von DhtMessenLuftfeuchte("));
+    Serial.print(F("# Beginn von DhtMessenLuftfeuchte("));
     Serial.print(pinDht); Serial.print(F(", "));
     Serial.print(dhtSensortyp); Serial.println(F(")"));
   #endif
@@ -42,7 +42,7 @@ int DhtMessenLuftfeuchte() {
  */
 int DhtMessenLufttemperatur() {
   #if MODUL_DEBUG
-    Serial.print(F("## Debug: Beginn von DhtMessenLufttemperatur("));
+    Serial.print(F("# Beginn von DhtMessenLufttemperatur("));
     Serial.print(pinDht); Serial.print(F(", "));
     Serial.print(dhtSensortyp); Serial.println(F(")"));
   #endif

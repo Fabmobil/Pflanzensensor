@@ -77,6 +77,17 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
 /**
  * Setup der einzelnen Module
  */
+unsigned long millisVorherHelligkeit = 0;
+unsigned long millisVorherBodenfeuchte = 0;
+unsigned long millisVorherDht = 0;
+unsigned long millisVorherLedampel = 0;
+unsigned long millisVorherDisplay = 0;
+const long intervallHelligkeit = 5000;
+const long intervallBodenfeuchte = 5000;
+const long intervallDht = 5000;
+const long intervallLedampel = 15000;
+const long intervallDisplay = 10000;
+int module;
 #if MODUL_BODENFEUCHTE
   int messwertBodenfeuchte = -1;
   int messwertBodenfeuchteProzent = -1;

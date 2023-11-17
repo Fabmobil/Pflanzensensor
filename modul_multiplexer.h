@@ -11,7 +11,7 @@
  */
 void MultiplexerWechseln(int a) {
   #if MODUL_DEBUG
-    Serial.print(F("## Debug: Beginn von MultiplexerWechseln("));
+    Serial.print(F("# Beginn von MultiplexerWechseln("));
     Serial.print(a);
     Serial.println(")");
   #endif

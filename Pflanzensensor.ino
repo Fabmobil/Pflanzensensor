@@ -24,6 +24,9 @@
 
 #include "Configuration.h" // Alle Einstellungen werden dort vorgenommen!
 
+int ModuleZaehlen();
+void EingebauteLedBlinken(int anzahl, int dauer);
+
 /*
  * Funktion: setup()
  * Diese Funktion wird beim booten des Mikrocontrollers einmalig ausgeführt
@@ -37,8 +40,9 @@ void setup() {
    * der Configuration.h-Datei. Ist das Modul deaktiviert, wird der Code
    * zwischen dem #if und #endif ignoriert und landet nicht auf dem Chip.
    */
+  delay(1000);
   #if MODUL_DEBUG
-    Serial.println(F("#### Debug: Start von setup()"));
+    Serial.println(F("#### Start von setup()"));
   #endif
   /* Serial.println() schreibt den Text in den Klammern als Ausgabe
    * auf die serielle Schnittstelle. Die kann z.B. in der Arduino-IDE
@@ -48,6 +52,11 @@ void setup() {
    *
    */
   Serial.println(" Fabmobil Pflanzensensor, V0.2");
+  module = ModuleZaehlen();
+   #if MODUL_DEBUG
+    Serial.print(F("module: "));
+    Serial.println(module);
+  #endif
   pinMode(pinEingebauteLed, OUTPUT); // eingebaute LED intialisieren
   EingebauteLedBlinken(1,1000); // LED leuchtet 1s zum Neustart
   #if MODUL_LEDAMPEL
@@ -58,18 +67,18 @@ void setup() {
     LedampelBlinken("gelb", 1, 1000);
     LedampelBlinken("rot", 1, 1000);
     #if MODUL_DEBUG
-      Serial.println(F("## Debug: Setup der Ledampel"));
-      Serial.print(F("PIN gruene LED: ")); Serial.println(pinAmpelGruen);
-      Serial.print(F("PIN gelbe LED: ")); Serial.println(pinAmpelGelb);
-      Serial.print(F("PIN rote LED: ")); Serial.println(pinAmpelRot);
-      Serial.print(F("Bodenfeuchte Skala invertiert: ")); Serial.println(ampelBodenfeuchteInvertiert);
-      Serial.print(F("Schwellwert Bodenfeuchte grün: ")); Serial.println(ampelBodenfeuchteGruen);
-      Serial.print(F("Schwellwert Bodenfeuchte gelb: ")); Serial.println(ampelBodenfeuchteGelb);
-      Serial.print(F("Schwellwert Bodenfeuchte rot: ")); Serial.println(ampelBodenfeuchteRot);
-      Serial.print(F("Lichtstärke Skala invertiert: ")); Serial.println(ampelHelligkeitInvertiert);
-      Serial.print(F("Schwellwert Lichtstärke grün: ")); Serial.println(ampelHelligkeitGruen);
-      Serial.print(F("Schwellwert Lichtstärke gelb: ")); Serial.println(ampelHelligkeitGelb);
-      Serial.print(F("Schwellwert Lichtstärke rot: ")); Serial.println(ampelHelligkeitRot);
+      Serial.println(F("## Setup der Ledampel"));
+      Serial.print(F("# PIN gruene LED:                 ")); Serial.println(pinAmpelGruen);
+      Serial.print(F("# PIN gelbe LED:                  ")); Serial.println(pinAmpelGelb);
+      Serial.print(F("# PIN rote LED:                   ")); Serial.println(pinAmpelRot);
+      Serial.print(F("# Bodenfeuchte Skala invertiert:  ")); Serial.println(ampelBodenfeuchteInvertiert);
+      Serial.print(F("# Schwellwert Bodenfeuchte grün:  ")); Serial.println(ampelBodenfeuchteGruen);
+      Serial.print(F("# Schwellwert Bodenfeuchte gelb:  ")); Serial.println(ampelBodenfeuchteGelb);
+      Serial.print(F("# Schwellwert Bodenfeuchte rot:   ")); Serial.println(ampelBodenfeuchteRot);
+      Serial.print(F("# Lichtstärke Skala invertiert:   ")); Serial.println(ampelHelligkeitInvertiert);
+      Serial.print(F("# Schwellwert Lichtstärke grün:   ")); Serial.println(ampelHelligkeitGruen);
+      Serial.print(F("# Schwellwert Lichtstärke gelb:   ")); Serial.println(ampelHelligkeitGelb);
+      Serial.print(F("# Schwellwert Lichtstärke rot:    ")); Serial.println(ampelHelligkeitRot);
     #endif
   #endif
   #if MODUL_HELLIGKEIT || MODUL_BODENFEUCHTE // "||" ist ein logisches Oder
@@ -98,25 +107,24 @@ void setup() {
     dht.begin();
     sensor_t sensor;
     #if MODUL_DEBUG
-      Serial.println(F("## Debug: DHT Sensor intialisieren und auslesen"));
+      Serial.println(F("## DHT Sensor intialisieren und auslesen"));
       dht.temperature().getSensor(&sensor);
-      Serial.println(F("Temperatursensor"));
-      Serial.print  (F("Sensortyp: ")); Serial.println(sensor.name);
-      Serial.print  (F("Treiberversion:  ")); Serial.println(sensor.version);
-      Serial.print  (F("ID:   ")); Serial.println(sensor.sensor_id);
-      Serial.print  (F("Maximalwert:   ")); Serial.print(sensor.max_value); Serial.println(F("°C"));
-      Serial.print  (F("Minimalwert:   ")); Serial.print(sensor.min_value); Serial.println(F("°C"));
-      Serial.print  (F("Auflösung:  ")); Serial.print(sensor.resolution); Serial.println(F("°C"));
-      Serial.println(F("------------------------------------"));
+      Serial.println(F("# Lufttemperatursensor"));
+      Serial.print  (F("# Sensortyp:       ")); Serial.println(sensor.name);
+      Serial.print  (F("# Treiberversion:  ")); Serial.println(sensor.version);
+      Serial.print  (F("# ID:              ")); Serial.println(sensor.sensor_id);
+      Serial.print  (F("# Maximalwert:     ")); Serial.print(sensor.max_value); Serial.println(F("°C"));
+      Serial.print  (F("# Minimalwert:     ")); Serial.print(sensor.min_value); Serial.println(F("°C"));
+      Serial.print  (F("# Auflösung:       ")); Serial.print(sensor.resolution); Serial.println(F("°C"));
       // Print humidity sensor details.
       dht.humidity().getSensor(&sensor);
-      Serial.println(F("Humidity Sensor"));
-      Serial.print  (F("Sensortyp: ")); Serial.println(sensor.name);
-      Serial.print  (F("Treiberversion:  ")); Serial.println(sensor.version);
-      Serial.print  (F("ID:   ")); Serial.println(sensor.sensor_id);
-      Serial.print  (F("Maximalwert:   ")); Serial.print(sensor.max_value); Serial.println(F("%"));
-      Serial.print  (F("Minimalwert:   ")); Serial.print(sensor.min_value); Serial.println(F("%"));
-      Serial.print  (F("Auflösung:  ")); Serial.print(sensor.resolution); Serial.println(F("%"));
+      Serial.println(F("# Luftfeuchtesensor"));
+      Serial.print  (F("# Sensortyp:       ")); Serial.println(sensor.name);
+      Serial.print  (F("# Treiberversion:  ")); Serial.println(sensor.version);
+      Serial.print  (F("# ID:              ")); Serial.println(sensor.sensor_id);
+      Serial.print  (F("# Maximalwert:     ")); Serial.print(sensor.max_value); Serial.println(F("%"));
+      Serial.print  (F("# Minimalwert:     ")); Serial.print(sensor.min_value); Serial.println(F("%"));
+      Serial.print  (F("# Auflösung:       ")); Serial.print(sensor.resolution); Serial.println(F("%"));
     #endif
   #endif
 }
@@ -127,164 +135,119 @@ void setup() {
  */
 void loop() {
   Serial.println(F("####### Begin von loop() #######"));
-  if ( eingebauteLedAktiv ) {
-    EingebauteLedBlinken(3, 50); // in jedem neuen Loop blinkt die interne LED 3x kurz
-  } else {
-
-  };
-  // Lichtsensor messen und ggfs. Multiplexer umstellen
-  #if MODUL_HELLIGKEIT
-    #if MODUL_MULTIPLEXER
-      MultiplexerWechseln(0); // Multiplexer auf Ausgang 1 stellen
-      delay(500); // 0,5s warten
-    #endif
-  messwertHelligkeit = HelligkeitMessen();
-  int messwertHelligkeitProzent = HelligkeitUmrechnen(messwertHelligkeit, helligkeitMinimum, helligkeitMaximum);
-  #endif
-
-  // Bodenfeuchte messen und ggfs. Multiplexer umstellen
-  #if MODUL_BODENFEUCHTE
-    #if MODUL_MULTIPLEXER
-      MultiplexerWechseln(1); // Multiplexer auf Ausgang 1 stellen
-      delay(500); // 0,5s warten
-    #endif
-    // Bodenfeuchte messen
-    messwertBodenfeuchte = analogRead(pinAnalog);
-    messwertBodenfeuchteProzent = BodenfeuchteUmrechnen(messwertBodenfeuchte, bodenfeuchteMinimum, bodenfeuchteMaximum); // Skalierung auf maximal 0 bis 100
-  #endif
-
-  // Luftfeuchte und -temperatur messen
-  #if MODUL_DHT
-    //float messwertLufttemperatur = 23.3;
-    //float messwertLuftfeuchte = 39.9;
-    messwertLufttemperatur = DhtMessenLufttemperatur();
-    messwertLuftfeuchte = DhtMessenLuftfeuchte();
-  #endif
-
-  // LED Ampel anzeigen lassen
-  #if MODUL_LEDAMPEL
-    switch (status) {  // nur aller 4 Zyklen Anzeige wechseln
-    case 0:
-      // Modus 1: Anzeige Lichtstärke
-      #if MODUL_HELLIGKEIT
-      /*
-      * Falls es auch das Bodenfeuchte Modul gibt, blinkt die LED Ampel kurz 5x gelb damit
-      * klar ist, dass jetzt die Lichtstärke angezeigt wird..
-      */
-      if ( !MODUL_BODENFEUCHTE  ) {
-        // LED Ampel blinkt 5x gelb um zu signalisieren, dass jetzt der Bodenfeuchtewert angezeigt wird
-        ampelUmschalten = true;
-      } else {
-        ampelUmschalten = !ampelUmschalten; // wir wollen nur jede zweite Runde umschalten
-      }
-      // Unterscheidung, ob die Skala der Lichtstärke invertiert ist oder nicht
-      if ( ampelUmschalten ) {
-        if ( MODUL_BODENFEUCHTE ) { LedampelBlinken("gelb", 2, 500); }
-        #if MODUL_DEBUG
-          Serial.print(F("ampelUmschalten: "));
-          Serial.print(ampelUmschalten);
-          Serial.println(F(": Ledampel zeigt Helligkeit an."));
-          Serial.print(F("ampelHelligkeitInvertiert: "));
-          Serial.println(ampelHelligkeitInvertiert);
-          Serial.print(F("messwertHelligkeitProzent: "));
-          Serial.println(messwertHelligkeitProzent);
-          Serial.print(F("ampelHelligkeitGruen: "));
-          Serial.print(ampelHelligkeitGruen);
-          Serial.print(F(", ampelHelligkeitGelb: "));
-          Serial.print(ampelHelligkeitGelb);
-          Serial.print(F(", ampelHelligkeitRot: "));
-          Serial.println(ampelHelligkeitRot);
-        #endif
-        if ( ampelHelligkeitInvertiert ) {
-          if ( messwertHelligkeitProzent >= ampelHelligkeitGruen ) {
-            LedampelAnzeigen("gruen", -1);
-          }
-          if ( (messwertHelligkeitProzent >= ampelHelligkeitGelb) && (messwertHelligkeitProzent < ampelHelligkeitGruen) ) {
-            LedampelAnzeigen("gelb", -1);
-          }
-          if ( messwertHelligkeitProzent < ampelHelligkeitGelb ) {
-            LedampelAnzeigen("rot", -1);
-          }
-        } else {
-          if ( messwertHelligkeitProzent <= ampelHelligkeitGruen ) {
-            LedampelAnzeigen("gruen", -1);
-          }
-          if ( (messwertHelligkeitProzent <= ampelHelligkeitGelb) && (messwertHelligkeitProzent < ampelHelligkeitGruen) ) {
-            LedampelAnzeigen("gelb", -1);
-          }
-          if ( messwertHelligkeitProzent > ampelHelligkeitGelb ) {
-            LedampelAnzeigen("rot", -1);
-          }
-        }
-      }
-      #endif
-      // Modus 2: Anzeige der Bodenfeuchte
-      #if MODUL_BODENFEUCHTE
-        if ( !MODUL_HELLIGKEIT ) { // Falls es kein Helligkeitsmodul gibt
-          ampelUmschalten = false;
-        }
-        if ( !ampelUmschalten ) {
-          #if MODUL_DEBUG
-            Serial.print(F("ampelUmschalten = "));
-            Serial.print(ampelUmschalten);
-            Serial.println(F(": Ledampel zeigt Bodenfeuchte an."));
-            Serial.print(F("ampelBodenfeuchteInvertiert: "));
-            Serial.println(ampelBodenfeuchteInvertiert);
-            Serial.print(F("messwertBodenfeuchteProzent: "));
-            Serial.println(messwertBodenfeuchteProzent);
-            Serial.print(F("ampelBodenfeuchteGruen: "));
-            Serial.print(ampelBodenfeuchteGruen);
-            Serial.print(F(", ampelBodenfeuchteGelb: "));
-            Serial.print(ampelBodenfeuchteGelb);
-            Serial.print(F(", ampelBodenfeuchteRot: "));
-            Serial.println(ampelBodenfeuchteRot);
-          #endif
-          if ( MODUL_HELLIGKEIT ) { LedampelBlinken("gruen", 2, 500); }
-          if ( ampelBodenfeuchteInvertiert ) { // Unterscheidung, ob die Bodenfeuchteskala invertiert wird oder nicht
-            if ( messwertBodenfeuchteProzent >= ampelBodenfeuchteGruen ) {
-              LedampelAnzeigen("gruen", -1);
-            }
-            if ( (messwertBodenfeuchteProzent >= ampelBodenfeuchteGelb) && (messwertBodenfeuchteProzent < ampelBodenfeuchteGruen) ) {
-              LedampelAnzeigen("gelb", -1);
-            }
-            if ( messwertBodenfeuchteProzent < ampelBodenfeuchteGelb ) {
-              LedampelAnzeigen("rot", -1);
-            }
-          } else {
-            if ( messwertBodenfeuchteProzent <= ampelBodenfeuchteGruen ) {
-              LedampelAnzeigen("gruen", -1);
-            }
-            if ( (messwertBodenfeuchteProzent <= ampelBodenfeuchteGelb) && (messwertBodenfeuchteProzent < ampelBodenfeuchteGruen) ) {
-              LedampelAnzeigen("gelb", -1);
-            }
-            if ( messwertBodenfeuchteProzent > ampelBodenfeuchteGelb ) {
-              LedampelAnzeigen("rot", -1);
-            }
-          }
-        }
-      #endif
-    #endif
-  }
-  // Messwerte auf dem Display anzeigen
-  #if MODUL_DISPLAY
-    DisplayMesswerte(messwertBodenfeuchteProzent, messwertHelligkeitProzent, messwertLuftfeuchte, messwertLufttemperatur, status);
-  #endif
-  #if MODUL_DEBUG
-    Serial.println(F("."));
-  #endif
-
-  // Wifi und Webserver
-  #if MODUL_WIFI
-    Webserver.handleClient();
-  #endif
+   // Geschwindigkeit des Programms
   status += 1;
   if ( status == 6) {
     status = 0;
   }
+  unsigned long millisAktuell = millis();
   #if MODUL_DEBUG
-    Serial.print(F("status: ")); Serial.println(status);
-    Serial.print(F("############ Ende von loop() ##############"));
+    Serial.print(F("# status: "));
+    Serial.print(status);
+    Serial.print(F(", millis: "));
+    Serial.println(millisAktuell);
   #endif
+
+  // eingebaute LED blinken soll blinken falls sie aktiv ist:
+  if ( eingebauteLedAktiv ) {
+    EingebauteLedBlinken(3, 50); // in jedem neuen Loop blinkt die interne LED 3x kurz
+  }
+
+  // Helligkeit messen:
+  #if MODUL_HELLIGKEIT
+    if (millisAktuell - millisVorherHelligkeit >= intervallHelligkeit) {
+      #if MODUL_DEBUG
+        Serial.println(F("# invervallHelligkeit erreicht."));
+      #endif
+      millisVorherHelligkeit = millisAktuell;
+      // Ggfs. Multiplexer umstellen:
+      #if MODUL_MULTIPLEXER
+        MultiplexerWechseln(0); // Multiplexer auf Ausgang 1 stellen
+        delay(500); // 0,5s warten
+      #endif
+      // Helligkeit messen:
+      messwertHelligkeit = HelligkeitMessen();
+      // Messwert in Prozent umrechnen:
+      messwertHelligkeitProzent = HelligkeitUmrechnen(messwertHelligkeit, helligkeitMinimum, helligkeitMaximum);
+    }
+  #endif
+
+  // Bodenfeuchte messen;
+  #if MODUL_BODENFEUCHTE
+    if (millisAktuell - millisVorherBodenfeuchte >= intervallBodenfeuchte) {
+      #if MODUL_DEBUG
+        Serial.println(F("# invervallBodenfeuchte erreicht."));
+      #endif
+      millisVorherBodenfeuchte = millisAktuell;
+      // Ggfs. Multiplexer umstellen:
+      #if MODUL_MULTIPLEXER
+        MultiplexerWechseln(1); // Multiplexer auf Ausgang 1 stellen
+        delay(500); // 0,5s warten
+      #endif
+      // Bodenfeuchte messen
+      messwertBodenfeuchte = analogRead(pinAnalog);
+      messwertBodenfeuchteProzent = BodenfeuchteUmrechnen(messwertBodenfeuchte, bodenfeuchteMinimum, bodenfeuchteMaximum); // Skalierung auf maximal 0 bis 100
+    }
+  #endif
+
+  // Luftfeuchte und -temperatur messen:
+  #if MODUL_DHT
+    if (millisAktuell - millisVorherDht >= intervallDht) {
+      #if MODUL_DEBUG
+        Serial.println(F("# invervallDht erreicht."));
+      #endif
+      millisVorherDht = millisAktuell;
+      messwertLufttemperatur = DhtMessenLufttemperatur(); // Lufttemperatur messen
+      messwertLuftfeuchte = DhtMessenLuftfeuchte(); // Luftfeuchte messen
+    }
+  #endif
+
+  // LED Ampel umschalten:
+  #if MODUL_LEDAMPEL
+    if (millisAktuell - millisVorherLedampel >= intervallLedampel) {
+      #if MODUL_DEBUG
+        Serial.println(F("# invervallLedAmpel erreicht."));
+      #endif
+      millisVorherLedampel = millisAktuell;
+      LedampelUmschalten(messwertHelligkeitProzent);
+    }
+  #endif
+
+  // Messwerte auf dem Display anzeigen:
+  #if MODUL_DISPLAY
+    if (millisAktuell - millisVorherDisplay >= intervallDisplay) {
+      #if MODUL_DEBUG
+        Serial.println(F("# invervallDisplay erreicht."));
+      #endif
+      millisVorherDisplay = millisAktuell;
+      DisplayMesswerte(messwertBodenfeuchteProzent, messwertHelligkeitProzent, messwertLuftfeuchte, messwertLufttemperatur, status);
+    }
+  #endif
+
+
+  // Wifi und Webserver:
+  #if MODUL_WIFI
+    Webserver.handleClient();
+  #endif
+
+  #if MODUL_DEBUG
+    Serial.print(F("# millisAktuell: ")); Serial.println(millisAktuell);
+    Serial.println(F("############ Ende von loop() ##############"));
+    Serial.println(F(""));
+  #endif
+}
+
+// Funktion, um die Anzahl der aktiven Module zu zählen
+int ModuleZaehlen() {
+    int aktiveModule = 0;
+    if (MODUL_DEBUG) aktiveModule++;
+    if (MODUL_DISPLAY) aktiveModule++;
+    if (MODUL_WIFI) aktiveModule++;
+    if (MODUL_DHT) aktiveModule++;
+    if (MODUL_BODENFEUCHTE) aktiveModule++;
+    if (MODUL_LEDAMPEL) aktiveModule++;
+    if (MODUL_HELLIGKEIT) aktiveModule++;
+    return aktiveModule;
 }
 
 /*
@@ -293,7 +256,7 @@ void loop() {
  * anzahl: Anzahl der Blinkvorgänge
  * dauer: Dauer der Blinkvorgänge
  */
-void EingebauteLedBlinken(int anzahl, int dauer){
+void EingebauteLedBlinken(int anzahl, int dauer) {
   if ( eingebauteLedAktiv ) {
     for (int i=0;i<anzahl;i++){
       delay(500);

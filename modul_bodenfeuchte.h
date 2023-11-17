@@ -21,7 +21,7 @@ int BodenfeuchteUmrechnen(int bodenfeuchte, int bodenfeuchteMinimum, int bodenfe
      80 und größer -> 100%
   */
   #if MODUL_DEBUG
-    Serial.print(F("## Debug: Beginn von BodenfeuchteUmrechnen("));
+    Serial.print(F("# Beginn von BodenfeuchteUmrechnen("));
     Serial.print(bodenfeuchte);
     Serial.print(F(", "));
     Serial.print(bodenfeuchteMinimum);

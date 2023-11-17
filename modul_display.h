@@ -27,7 +27,7 @@ Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // I
  */
 void DisplayIntro(String ip, String hostname) {
   #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von DisplayIntro()"));
+    Serial.println(F("# Beginn von DisplayIntro()"));
   #endif
   display.clearDisplay();
 
@@ -90,7 +90,11 @@ void DisplayIntro(String ip, String hostname) {
  */
 void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur, int status) {
   #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von DisplayMesswerte(bodenfeuchte, helligkeit, luftfeuchte, lufttemperatur, status)"));
+    Serial.print(F("# Beginn von DisplayMesswerte(")); Serial.print(helligkeit);
+    Serial.print(F(", ")); Serial.print(luftfeuchte);
+    Serial.print(F(", ")); Serial.print(lufttemperatur);
+    Serial.print(F(", ")); Serial.print(status);
+    Serial.println(F(")"));
   #endif
 
   display.clearDisplay();
@@ -99,9 +103,6 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int luf
 
   switch (status) {
     case 0:
-      #if MODUL_DEBUG
-        Serial.println("Case 0");
-      #endif
       if (bodenfeuchte != -1) {
         display.setCursor(0, 0);
         display.println(F("Boden-"));
@@ -119,9 +120,6 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int luf
       }
       break;
     case 1:
-      #if MODUL_DEBUG
-        Serial.println("Case 1");
-      #endif
       if (helligkeit != -1) {
         display.setCursor(0, 0);
         display.println(F("Hellig-"));
@@ -139,9 +137,6 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int luf
       }
       break;
     case 2:
-      #if MODUL_DEBUG
-        Serial.println("Case 2");
-      #endif
       if (lufttemperatur != -1) {
         display.setCursor(0, 0);
         display.println(F("Lufttemp-"));
@@ -161,9 +156,6 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int luf
       }
       break;
     case 3:
-      #if MODUL_DEBUG
-        Serial.println("Case 3");
-      #endif
       if (luftfeuchte != -1) {
         display.setCursor(0, 0);
         display.println(F("Luft-"));
@@ -181,17 +173,11 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int luf
       }
       break;
     case 4:
-      #if MODUL_DEBUG
-        Serial.println("Case 4");
-      #endif
       display.clearDisplay();
       display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
       display.display();
       break;
     case 5:
-      #if MODUL_DEBUG
-        Serial.println("Case 5");
-      #endif
       display.clearDisplay();
       display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
       display.display();

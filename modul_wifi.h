@@ -16,7 +16,7 @@ ESP8266WebServer Webserver(80); //
  */
 void WebseiteStartAusgeben() {
   #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von WebsiteStartAusgeben()"));
+    Serial.println(F("# Beginn von WebsiteStartAusgeben()"));
   #endif
   #include "modul_wifi_bilder.h" // Bilder die auf der Seite verwendet werden
   #include "modul_wifi_header.h" // Kopf der HTML-Seite
@@ -229,7 +229,7 @@ void WebseiteDebugAusgeben() {
  */
 void WebseiteAdminAusgeben() {
    #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von WebsiteAdminAusgeben()"));
+    Serial.println(F("# Beginn von WebsiteAdminAusgeben()"));
   #endif
   #include "modul_wifi_bilder.h"
   #include "modul_wifi_header.h"
@@ -349,7 +349,7 @@ void WebseiteSetzeVariablen() {
   #include "modul_wifi_header.h"
   #include "modul_wifi_footer.h"
   #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von WebseiteSetzeVariablen()"));
+    Serial.println(F("# Beginn von WebseiteSetzeVariablen()"));
   #endif
   if ( ! Webserver.hasArg("Passwort") || Webserver.arg("Passwort") == NULL) { // If the POST request doesn't have username and password data
     Webserver.send(400, "text/plain", "400: Invalid Request");         // The request is invalid, so send HTTP status 400
@@ -437,7 +437,7 @@ void WebseiteSetzeVariablen() {
  */
 void WifiSetup(String hostname){
   #if MODUL_DEBUG
-    Serial.println(F("## Debug: Beginn von WifiSetup()"));
+    Serial.println(F("# Beginn von WifiSetup()"));
   #endif
 // WLAN Verbindung herstellen
   WiFi.mode(WIFI_OFF);
@@ -447,7 +447,7 @@ void WifiSetup(String hostname){
   int i=0; // Es wird nur 20 mal versucht, eine WLAN Verbindung aufzubauen
   while (!(WiFi.status() == WL_CONNECTED) && i<30) {
       #if MODUL_DEBUG
-        Serial.print("Verbindungsversuch ");
+        Serial.print("# Verbindungsversuch ");
         Serial.print(i);
         Serial.println(" von 30.");
         delay(1000);
