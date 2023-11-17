@@ -39,7 +39,7 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
    * für den Sensor festgelegt. Diese können später auch im Admin-Webinterface
    * verändert werden.
    */
-  int bodenfeuchteMinimum = 840; // Der Rohmesswert des Sensors, wenn er ganz trocken ist
+  int bodenfeuchteMinimum = 850; // Der Rohmesswert des Sensors, wenn er ganz trocken ist
   int bodenfeuchteMaximum = 380; // Der Rohmesswert des Sensors, wenn er in Wasser ist
 #endif
 #if MODUL_DHT // falls ein Lufttemperatur- und -feuchtesensor verbaut ist:

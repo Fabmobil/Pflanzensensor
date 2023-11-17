@@ -144,9 +144,9 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, float luftfeuchte, float
         display.println(F("eratur:"));
         display.setCursor(20, 40);
         display.println(lufttemperatur);
-        display.setCursor(80, 40);
+        display.setCursor(85, 40);
         display.println("\xf8");
-        display.setCursor(80, 40);
+        display.setCursor(95, 40);
         display.println("C");
         display.display();      // Display aktualisieren
       } else {
@@ -163,7 +163,7 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, float luftfeuchte, float
         display.println(F("feuchte:"));
         display.setCursor(20, 40);
         display.println(luftfeuchte);
-        display.setCursor(80, 40);
+        display.setCursor(85, 40);
         display.println("%");
         display.display();      // Display aktualisieren
       } else {
