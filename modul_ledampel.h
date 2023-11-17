@@ -76,7 +76,7 @@ void LedampelAnzeigen(String farbe, int dauer) {
   }
 }
 
-void LedampelUmschalten(int messwertHelligkeitProzent) {
+void LedampelUmschalten(int messwertHelligkeitProzent, int messwertBodenfeuchteProzent) {
   /*
   * Falls es auch das Bodenfeuchte Modul gibt, blinkt die LED Ampel kurz 5x gelb damit
   * klar ist, dass jetzt die Lichtstärke angezeigt wird..

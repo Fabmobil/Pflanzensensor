@@ -77,8 +77,8 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
   #define pinMultiplexer2 0 // "D3"; Pin b des Multiplexers
 #endif
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
-  #define wifiAdminPasswort "admin" // Passwort für das Admininterface
-  #define wifiHostname "pflanzensensor" // Das Gerät ist später unter diesem Name + .local erreichbar
+  String wifiAdminPasswort = "admin"; // Passwort für das Admininterface
+  String wifiHostname = "pflanzensensor"; // Das Gerät ist später unter diesem Name + .local erreichbar
   #define wifiSsid "Tommy" // WLAN Name / SSID
   #define wifiPassword "freibier" // WLAN Passwort
 #endif
@@ -134,8 +134,8 @@ int module;
 #endif
 
 #if MODUL_HELLIGKEIT
-  int messwertHelligkeit;
-  int messwertHelligkeitProzent;
+  int messwertHelligkeit = -1;
+  int messwertHelligkeitProzent = -1;
   #include "modul_helligkeit.h"
 #else
   #define messwertHelligkeitProzent -1

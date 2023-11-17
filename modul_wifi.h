@@ -66,9 +66,14 @@ void WebseiteDebugAusgeben() {
   #include "modul_wifi_footer.h"
   String formatierterCode = htmlHeader;
   formatierterCode += "<h2>Debug-Informationen</h2>";
-  formatierterCode += "<p>Zufallszahl: ";
-  formatierterCode += random(300);
-  formatierterCode += "</p>";
+  formatierterCode += "<ul>";
+  formatierterCode += "<li>Status: ";
+  formatierterCode += status;
+  formatierterCode += "</li>";
+  formatierterCode += "<li>Anzahl Module: ";
+  formatierterCode += module;
+  formatierterCode += "</li>";
+  formatierterCode += "</ul>";
 
   formatierterCode += "<h3>DHT Modul</h3>";
   #if MODUL_DHT
@@ -190,8 +195,8 @@ void WebseiteDebugAusgeben() {
   formatierterCode += "</li>";
   formatierterCode += "</ul>";
 
+  formatierterCode += "<h3>IFTTT Modul</h3>";
   #if MODUL_IFTTT
-    formatierterCode += "<h3>IFTTT Modul</h3>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>IFTTT Passwort: ";
     formatierterCode += wifiIftttPasswort;
