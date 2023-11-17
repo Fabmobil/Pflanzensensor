@@ -56,7 +56,7 @@ void DisplayIntro(String ip, String hostname) {
   delay(500);
   display.setTextSize(1);
   display.setCursor(95, 54);
-  display.println(F("V0.1"));
+  display.println(F("V0.2"));
   display.display();      // Display aktualisieren
   delay(2000);
 
@@ -88,7 +88,7 @@ void DisplayIntro(String ip, String hostname) {
  * luftfeuchte: Luftfeuchte in %
  * lufttemperatur: Lufttemperatur in °C
  */
-void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur, int status) {
+void DisplayMesswerte(int bodenfeuchte, int helligkeit, float luftfeuchte, float lufttemperatur, int status) {
   #if MODUL_DEBUG
     Serial.print(F("# Beginn von DisplayMesswerte(")); Serial.print(helligkeit);
     Serial.print(F(", ")); Serial.print(luftfeuchte);
@@ -144,9 +144,9 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int luf
         display.println(F("eratur:"));
         display.setCursor(20, 40);
         display.println(lufttemperatur);
-        display.setCursor(70, 40);
+        display.setCursor(80, 40);
         display.println("\xf8");
-        display.setCursor(60, 40);
+        display.setCursor(80, 40);
         display.println("C");
         display.display();      // Display aktualisieren
       } else {
@@ -163,7 +163,7 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int luf
         display.println(F("feuchte:"));
         display.setCursor(20, 40);
         display.println(luftfeuchte);
-        display.setCursor(70, 40);
+        display.setCursor(80, 40);
         display.println("%");
         display.display();      // Display aktualisieren
       } else {

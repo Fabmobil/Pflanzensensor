@@ -35,10 +35,10 @@ void WebseiteStartAusgeben() {
   #endif
   #if MODUL_DHT
     formatierterCode += "<h2>Lufttemperatur</h2><p>";
-    formatierterCode += int(messwertLufttemperatur);
+    formatierterCode += messwertLufttemperatur;
     formatierterCode += "°C</p>";
     formatierterCode += "<h2>Luftfeuchte</h2><p>";
-    formatierterCode += int(messwertLuftfeuchte);
+    formatierterCode += messwertLuftfeuchte;
     formatierterCode += "%</p>";
   #endif
   formatierterCode += "<h2>Links</h2>";

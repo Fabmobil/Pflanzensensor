@@ -47,7 +47,7 @@ Folgende Bibliotheken werden verwendet und müssen ggfs. in der Arduino IDE heru
 | Helligkeit | keine externen Bibliotheken |
 | LEDAmpel | keine externen Bibliotheken |
 | Multiplexer | keine externen Bibliotheken |
-| Wifi | ESP8266WiFi, ESP8266WebServer, ESP8266mDNS |
+| Wifi | [ESP8266WiFi](https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WiFi), [ESP8266WebServer](https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266WebServer), [ESP8266mDNS](https://github.com/esp8266/Arduino/tree/master/libraries/ESP8266mDNS) |
 
 # Hardware
 
@@ -81,3 +81,7 @@ Folgende Bibliotheken werden verwendet und müssen ggfs. in der Arduino IDE heru
 ![image](https://github.com/pippcat/Pflanzensensor/assets/19587872/b55676a4-998a-4789-8930-5cdbf87c1b87)
 
 Eine Fritzing-Datei des Schaltplans ist unter `/Schaltplan/` zu finden.
+
+## PCB
+
+Das Fabmobil hat ein eigenes PCB für diesen Sensor entwickelt. Die Dokumentation dazu gibt es bald auch hier zu finden.
