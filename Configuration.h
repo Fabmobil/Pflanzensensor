@@ -16,6 +16,7 @@
 #define MODUL_BODENFEUCHTE  true // hat dein Pflanzensensor einen Bodenfeuchtemesser?
 #define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
 #define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
+#define MODUL_IFTTT         false // willst du das ifttt.com-Modul verwenden?
 // Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
 #if MODUL_BODENFEUCHTE && MODUL_HELLIGKEIT
   #define MODUL_MULTIPLEXER true
@@ -29,22 +30,32 @@
 #define pinEingebauteLed LED_BUILTIN // "D0"; worüber wird die interne LED des ESPs angesprochen?
 bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht?
 #define baudrateSeriell 9600 // Baudrate der seriellen Verbindung
-#if MODUL_BODENFEUCHTE || MODUL_HELLIGKEIT
-  #define pinAnalog A0
+#if MODUL_BODENFEUCHTE || MODUL_HELLIGKEIT // Wenn wir Analogsensoren benutzen
+  #define pinAnalog A0 // definieren wir hier den Analogpin
 #endif
-#if MODUL_BODENFEUCHTE
-  int bodenfeuchteMinimum = 840;
-  int bodenfeuchteMaximum = 380;
+#if MODUL_BODENFEUCHTE // wenn der Bodenfeuchtesensor aktiv ist:
+  /*
+   * Wenn der Bodenfeuchtesensor aktiv ist werden hier die initialen Grenzwerte
+   * für den Sensor festgelegt. Diese können später auch im Admin-Webinterface
+   * verändert werden.
+   */
+  int bodenfeuchteMinimum = 840; // Der Rohmesswert des Sensors, wenn er ganz trocken ist
+  int bodenfeuchteMaximum = 380; // Der Rohmesswert des Sensors, wenn er in Wasser ist
 #endif
-#if MODUL_DHT
+#if MODUL_DHT // falls ein Lufttemperatur- und -feuchtesensor verbaut ist:
   #define pinDht 2 // "D4"; an welchem Pin ist der Sensor angeschlossen?
   #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
 #endif
-#if MODUL_DISPLAY
-  int statusdauer = 1500; // Anzeigedauer der einzelnen Messwerte auf dem Display in Millisekunden
-  int status = 0;
+#if MODUL_HELLIGKEIT
+  /*
+   * Wenn der Helligkeitsensor aktiv ist werden hier die initialen Grenzwerte
+   * für den Sensor festgelegt. Diese können später auch im Admin-Webinterface
+   * verändert werden.
+   */
+  int helligkeitMinimum = 900; // Der Rohmesswert des Sensors wenn es ganz dunkel ist
+  int helligkeitMaximum = 20; // Der Rohmesswert des Sensors, wenn es ganz hell ist
 #endif
-#if MODUL_LEDAMPEL
+#if MODUL_LEDAMPEL // falls eine LED Ampel verbaut ist:
   #define pinAmpelRot 13 // "D7"; Pin der roten LED
   #define pinAmpelGelb 12 // "D6"; Pin der roten LED
   #define pinAmpelGruen 14 // "D5"; Pin der gruenen LED
@@ -52,26 +63,26 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
   int ampelBodenfeuchteGruen = 10; // Luftfeuchte in %, ab der die Ampel grün ist
   int ampelBodenfeuchteGelb = 50; // Luftfeuchte in %, ab der die Ampel gelb und unter der die Ampel rot ist
   int ampelBodenfeuchteRot = 90; // Luftfeuchte in %, ab der die Ampel grün ist
-  bool ampelHelligkeitInvertiert = true; // true: grün = klein, rot = groß. false: rot = klein, grün = groß
+  bool ampelHelligkeitInvertiert = true; // true: grün = kleiner Wert, rot = großer Wert. false: rot = kleiner Wert, grün = großer Wert
   int ampelHelligkeitGruen = 90; // Lichtstärke in %, bis zu der Ampel grün ist
   int ampelHelligkeitGelb = 50; // Lichtstärke in %, bis zu der Ampel grün ist
   int ampelHelligkeitRot = 10; // Lichtstärke in %, bis zu der Ampel grün ist
-  bool ampelUmschalten = true;
+  int ampelModus = 0; // 0: Helligkeits- und Bodenfeuchtesensor abwechselnd, 1: Helligkeitssensor, 2: Bodenfeuchtesensor
+  bool ampelUmschalten = true; // Schaltet zwischen Bodenfeuchte- und Helligkeitsanzeige um
 #endif
-#if MODUL_HELLIGKEIT
-  int helligkeitMinimum = 900;
-  int helligkeitMaximum = 20;
+#if MODUL_IFTTT
+  #define wifiIftttPasswort "IFTTT Schlüssel"
+  #define wifiIftttEreignis "Fabmobil_Pflanzensensor"
 #endif
 #if MODUL_MULTIPLEXER
-  #define pinMultiplexer 16 // "D0"; Pin des Multiplexers
+  #define pinMultiplexer1 16 // "D0"; Pin a des Multiplexers
+  #define pinMultiplexer2 0 // "D3"; Pin b des Multiplexers
 #endif
 #if MODUL_WIFI
   #define wifiAdminPasswort "admin" // Passwort für das Admininterface
   #define wifiHostname "pflanzensensor" // Das Gerät ist später unter diesem Name + .local erreichbar
   #define wifiSsid "Magrathea" // WLAN Name
   #define wifiPassword "Gemeinschaftskueche" // WLAN Passwort
-  #define wifiIftttPasswort "IFTTT Schlüssel"
-  #define wifiIftttEreignis "Fabmobil_Pflanzensensor"
 #endif
 
 /**
@@ -106,6 +117,7 @@ int module;
 #endif
 
 #if MODUL_DISPLAY
+  int status = 0; // diese Variable schaltet durch die unterschiedlichen Anzeigen des Displays
   #define displayBreite 128 // Breite des OLED-Displays in Pixeln
   #define displayHoehe 64 // Hoehe des OLED-Displays in Pixeln
   #define displayReset -1 // Display wird mit Arduino Reset Pin zurückgesetzt, wir haben keinen Restknopf..
@@ -113,6 +125,9 @@ int module;
   #include "modul_display.h"
 #endif
 
+#if MODUL_IFTTT
+  #include "modul_ifttt.h"
+#endif
 #if MODUL_LEDAMPEL
   #include "modul_ledampel.h"
 #endif

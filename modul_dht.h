@@ -1,7 +1,7 @@
 /*
- * DHT Modul
- * Dieses Modul enthält den Code für den DHT Luftfeuchte- und Lufttemperatursensor
- */
+   DHT Modul
+   Dieses Modul enthält den Code für den DHT Luftfeuchte- und Lufttemperatursensor
+*/
 
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
@@ -10,15 +10,15 @@
 DHT_Unified dht(pinDht, dhtSensortyp);
 
 /*
- * Funktion: DhtMessenLuftfeuchte()
- * Misst die Luftfeuchte in Prozent und gibt sie als Integer zurück
- */
+   Funktion: DhtMessenLuftfeuchte()
+   Misst die Luftfeuchte in Prozent und gibt sie als Integer zurück
+*/
 int DhtMessenLuftfeuchte() {
-  #if MODUL_DEBUG
-    Serial.print(F("# Beginn von DhtMessenLuftfeuchte("));
-    Serial.print(pinDht); Serial.print(F(", "));
-    Serial.print(dhtSensortyp); Serial.println(F(")"));
-  #endif
+#if MODUL_DEBUG
+  Serial.println(F("## Debug: Beginn von DhtMessenLuftfeuchte()"));
+  Serial.print(F("DHT PIN: ")); Serial.println(pinDht);
+  Serial.print(F("DHT Sensortyp: ")); Serial.println(dhtSensortyp);
+#endif
   sensors_event_t event;
   int luftfeuchte = -1;
   dht.humidity().getEvent(&event);
@@ -37,20 +37,20 @@ int DhtMessenLuftfeuchte() {
 
 
 /**
- * Funktion: DhtMessenLufttemperatur()
- * Misst die Lufttemperatur in °C und gibt sie als Integer zurück
- */
+   Funktion: DhtMessenLufttemperatur()
+   Misst die Lufttemperatur in °C und gibt sie als Integer zurück
+*/
 int DhtMessenLufttemperatur() {
-  #if MODUL_DEBUG
-    Serial.print(F("# Beginn von DhtMessenLufttemperatur("));
-    Serial.print(pinDht); Serial.print(F(", "));
-    Serial.print(dhtSensortyp); Serial.println(F(")"));
-  #endif
+#if MODUL_DEBUG
+  Serial.println(F("## Debug: Beginn von DhtMessenLufttemperatur()"));
+  Serial.print(F("DHT PIN: ")); Serial.println(pinDht);
+  Serial.print(F("DHT Sensortyp: ")); Serial.println(dhtSensortyp);
+#endif
   sensors_event_t event;
   int lufttemperatur = -1;
   dht.temperature().getEvent(&event);
   if (isnan(event.temperature)) {
-    Serial.println(F("Temperaturmessung nicht erfolgreich! :-("));
+    Serial.print(F("Temperaturmessung nicht erfolgreich! :-("));
   }
   else {
     Serial.print(F("Lufttemperatur: "));

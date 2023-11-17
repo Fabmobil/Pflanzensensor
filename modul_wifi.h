@@ -1,6 +1,6 @@
 /**
  * Wifi Modul
- * Diese Datei enthält den Code für das Wifi-Modul, den Webserver und IFTTT.com Benachrichtungen
+ * Diese Datei enthält den Code für das Wifi-Modul und den Webserver
  */
 
 #include <ESP8266WiFi.h> // für WLAN
@@ -94,7 +94,7 @@ void WebseiteDebugAusgeben() {
   #if MODUL_DISPLAY
     formatierterCode += "<ul>";
     formatierterCode += "<li>Anzeigedauer: ";
-    formatierterCode += statusdauer;
+    formatierterCode += status;
     formatierterCode += "</li>";
     formatierterCode += "<li>Breite in Pixel: ";
     formatierterCode += displayBreite;
@@ -191,13 +191,21 @@ void WebseiteDebugAusgeben() {
   formatierterCode += "<li>Passwort: ";
   formatierterCode += wifiPassword;
   formatierterCode += "</li>";
-  formatierterCode += "<li>IFTTT Passwort: ";
-  formatierterCode += wifiIftttPasswort;
-  formatierterCode += "</li>";
-  formatierterCode += "<li>IFTTT Ereignis: ";
-  formatierterCode += wifiIftttEreignis;
-  formatierterCode += "</li>";
   formatierterCode += "</ul>";
+
+  #if MODUL_IFTTT
+    formatierterCode += "<h3>IFTTT Modul</h3>";
+    formatierterCode += "<ul>";
+    formatierterCode += "<li>IFTTT Passwort: ";
+    formatierterCode += wifiIftttPasswort;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>IFTTT Ereignis: ";
+    formatierterCode += wifiIftttEreignis;
+    formatierterCode += "</li>";
+    formatierterCode += "</ul>";
+  #else
+    formatierterCode += "<p>IFTTT Modul deaktiviert!</p>";
+  #endif
 
   formatierterCode += "<h3>Eingebaute LED</h3>";
   formatierterCode += "<ul>";
@@ -251,9 +259,9 @@ void WebseiteAdminAusgeben() {
   formatierterCode += "</p>";
   #if MODUL_DISPLAY
     formatierterCode += "<h2>Display</h2>";
-    formatierterCode += "<p>Anzeigedauer für jeden Messwert:";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"statusdauer\" placeholder=\"";
-    formatierterCode += statusdauer;
+    formatierterCode += "<p>status (Anzeigenummer auf dem Display):";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"statis\" placeholder=\"";
+    formatierterCode += status;
     formatierterCode += "\"></p>";
   #endif
   #if MODUL_HELLIGKEIT
@@ -384,8 +392,8 @@ void WebseiteSetzeVariablen() {
       #endif
     #endif
     #if MODUL_DISPLAY
-      if ( Webserver.arg("statusdauer") != "" ) {
-          statusdauer = Webserver.arg("statusdauer").toInt();
+      if ( Webserver.arg("status") != "" ) {
+          status = Webserver.arg("status").toInt();
         }
     #endif
     #if MODUL_HELLIGKEIT
@@ -471,48 +479,4 @@ void WifiSetup(String hostname){
   Webserver.on("/debug.html", HTTP_GET, WebseiteDebugAusgeben);
   Webserver.on("/setzeVariablen", HTTP_POST, WebseiteSetzeVariablen);
   Webserver.begin(); // Webserver starten
-}
-
-
-/*
- * Funktion: ifttt_nachricht(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur)
- * Sendet Nachrichten über einen www.ifttt.com Webhook
- * bodenfeuchte: Bodenfeuchte in %
- * helligkeit: Helligkeit in %
- * luftfeuchte: Luftfeuchte in %
- * lufttemperatur: Lufttemperatur in °C
- */
-void ifttt_nachricht(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur) {
-  // JSON Datei zusammenbauen:
-  String jsonString = "";
-  jsonString += "{\"bodenfeuchte:\":\"";
-  jsonString += bodenfeuchte;
-  jsonString += "\",\"helligkeit:\":\"";
-  jsonString += helligkeit;
-  jsonString += "\",\"luftfeuchte\":\"";
-  jsonString += luftfeuchte;
-  jsonString += "\",\"lufttemperatur\":\"";
-  jsonString += lufttemperatur;
-  jsonString += "\"}";
-  int jsonLength = jsonString.length();
-  String lenString = String(jsonLength);
-  // connect to the Maker event server
-  client.connect("maker.ifttt.com", 80);
-  // construct the POST request
-  String postString = "";
-  postString += "POST /trigger/";
-  postString += wifiIftttEreignis;
-  postString += "/with/key/";
-  postString += wifiIftttEreignis;
-  postString += " HTTP/1.1\r\n";
-  postString += "Host: maker.ifttt.com\r\n";
-  postString += "Content-Type: application/json\r\n";
-  postString += "Content-Length: ";
-  postString += lenString + "\r\n";
-  postString += "\r\n";
-  postString += jsonString; // combine post request and JSON
-
-  client.print(postString);
-  delay(500);
-  client.stop();
 }
