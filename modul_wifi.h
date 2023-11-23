@@ -471,8 +471,8 @@ String WifiSetup(String hostname){
     }
     WiFi.begin(wifiSsid, wifiPassword);
     int i=0; // Es wird nur 30 mal versucht, eine WLAN Verbindung aufzubauen
+    Serial.println(F("WLAN Verbindungsversuch "));
     while (!(WiFi.status() == WL_CONNECTED) && i<30) {
-        Serial.println(F("WLAN Verbindungsversuch "));
         Serial.print(F("  ")); Serial.print(i); Serial.println(F(" von 30."));
         delay(1000);
         i++;
