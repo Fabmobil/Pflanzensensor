@@ -83,8 +83,8 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
   #define wifiApSsid "Fabmobil Pflanzensensor" // SSID des WLANs, falls vom ESP selbst aufgemacht
   #define wifiApPasswortAktiviert false // soll das selbst aufgemachte WLAN ein Passwort haben?
   #define wifiApPasswort "geheim" // Das Passwort für das selbst aufgemacht WLAN
-  #define wifiSsid "machbar" // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
-  #define wifiPassword "machbar-wireless" // WLAN Passwort für das fremde Wifi
+  #define wifiSsid "Tommy" // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
+  #define wifiPassword "freibier" // WLAN Passwort für das fremde Wifi
 #endif
 
 /**
@@ -97,11 +97,11 @@ unsigned long millisVorherBodenfeuchte = 0;
 unsigned long millisVorherDht = 0;
 unsigned long millisVorherLedampel = 0;
 unsigned long millisVorherDisplay = 0;
-const long intervallHelligkeit = 5000;
-const long intervallBodenfeuchte = 5000;
-const long intervallDht = 5000;
-const long intervallLedampel = 15000;
-const long intervallDisplay = 5000;
+const long intervallHelligkeit = 500; // Intervall der Helligkeitsmessung in Millisekunden. Vorschlag: 5000
+const long intervallBodenfeuchte = 500; // Intervall der Helligkeitsmessung in Millisekunden. Vorschlag: 5000
+const long intervallDht = 5000; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
+const long intervallLedampel = 15000; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15000
+const long intervallDisplay = 5000; // Anzeigedauer der unterschiedlichen Displayseiten in Millisekunden. Vorschlag: 5000
 int module;
 #if MODUL_BODENFEUCHTE
   int messwertBodenfeuchte = -1;

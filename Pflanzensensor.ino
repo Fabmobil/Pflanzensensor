@@ -100,7 +100,7 @@ void setup() {
     display.display(); // Display anschalten und initialen Buffer zeigen
     delay(1000); // 1 Sekunde warten
     display.clearDisplay(); // Display löschen
-    DisplayIntro(ip, wifiHostname); // Intro auf Display abspielen
+    // DisplayIntro(ip, wifiHostname); // Intro auf Display abspielen
   #endif
   #if MODUL_DHT // wenn das DHT Modul aktiv ist:
     // Initialisierung des Lufttemperatur und -feuchte Sensors:

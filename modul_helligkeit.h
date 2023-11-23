@@ -31,7 +31,7 @@ int HelligkeitUmrechnen(int helligkeit, int helligkeitMinimum, int helligkeitMax
   // Convert MIN reading (100) -> MAX reading (700) to a range 0->100.
   messwertHelligkeitProzent = map(helligkeit, helligkeitMinimum, helligkeitMaximum, 0, 100);
   Serial.print(F("Helligkeit: ")); Serial.print(messwertHelligkeitProzent);
-  Serial.print(F("%       (Messwert: ")); Serial.print(messwertHelligkeit);
+  Serial.print(F("%         (Messwert: ")); Serial.print(messwertHelligkeit);
   Serial.println(F(")"));
   return messwertHelligkeitProzent;
 }
