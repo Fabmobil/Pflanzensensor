@@ -481,11 +481,11 @@ String WifiSetup(String hostname){
       Serial.println(F("Keine WLAN-Verbindung möglich."));
     }
     // Nun sollte WLAN verbunden sein
-    Serial.print(F("meine IP: "));
+    Serial.print(F("Erfolgreich! Meine IP: "));
     Serial.println(WiFi.localIP());
     ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben?
   } else { // ansonsten wird hier das WLAN erstellt
-    Serial.print(F("Konfiguriere soft-AP ... "));
+    Serial.print(F("Konfiguriere Accesspoint ... "));
     boolean result = false;
     if ( wifiApPasswortAktiviert ) { // Falls ein WLAN mit Passwort erstellt werden soll
       result = WiFi.softAP(wifiApSsid, wifiApPasswort );
