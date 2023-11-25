@@ -67,9 +67,6 @@ void WebseiteDebugAusgeben() {
   String formatierterCode = htmlHeader;
   formatierterCode += "<h2>Debug-Informationen</h2>";
   formatierterCode += "<ul>";
-  formatierterCode += "<li>Status: ";
-  formatierterCode += status;
-  formatierterCode += "</li>";
   formatierterCode += "<li>Anzahl Module: ";
   formatierterCode += module;
   formatierterCode += "</li>";
@@ -263,7 +260,7 @@ void WebseiteAdminAusgeben() {
   #include "modul_wifi_header.h"
   #include "modul_wifi_footer.h"
   String formatierterCode = htmlHeader;
-  formatierterCode += "<h1>Administrationsseite</h1>";
+  formatierterCode += "<h1>Adminseite</h1>";
   formatierterCode += "<p>Auf dieser Seite können die Variablen verändert werden.</p>";
   formatierterCode += "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p>";
   formatierterCode += "<form action=\"/setzeVariablen\" method=\"POST\">";
@@ -298,10 +295,10 @@ void WebseiteAdminAusgeben() {
   #if MODUL_LEDAMPEL
     formatierterCode += "<h2>LED Ampel</h2>";
     formatierterCode += "<h3>Anzeigemodus</h3>";
-    formatierterCode += "<p>Modus: ";
+    formatierterCode += "<p>Modus: (0: Helligkeit und Bodenfeuchte; 1: Helligkeit; 2: Bodenfeuchte): ";
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelModus\" placeholder=\"";
     formatierterCode += ampelModus;
-    formatierterCode += "\"><br>(0: Helligkeit und Bodenfeuchte; 1: Helligkeit; 2: Bodenfeuchte)</p>";
+    formatierterCode += "\"></p>";
     #if MODUL_HELLIGKEIT
       formatierterCode += "<h3>Helligkeitsanzeige</h3>";
       formatierterCode += "<p>";
@@ -471,21 +468,22 @@ String WifiSetup(String hostname){
     }
     WiFi.begin(wifiSsid, wifiPassword);
     int i=0; // Es wird nur 30 mal versucht, eine WLAN Verbindung aufzubauen
-    Serial.println(F("WLAN Verbindungsversuch "));
+    Serial.print("WLAN-Verbindungsversuch: ");
     while (!(WiFi.status() == WL_CONNECTED) && i<30) {
-        Serial.print(F("  ")); Serial.print(i); Serial.println(F(" von 30."));
+        Serial.print(i);
+        Serial.println(" von 30.");
         delay(1000);
         i++;
     }
     if (WiFi.status() != WL_CONNECTED) {
-      Serial.println(F("Keine WLAN-Verbindung möglich."));
+      Serial.println("Keine WLAN-Verbindung möglich.");
     }
     // Nun sollte WLAN verbunden sein
-    Serial.print(F("Erfolgreich! Meine IP: "));
+    Serial.print("meine IP: ");
     Serial.println(WiFi.localIP());
     ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben?
   } else { // ansonsten wird hier das WLAN erstellt
-    Serial.print(F("Konfiguriere Accesspoint ... "));
+    Serial.print("Konfiguriere soft-AP ... ");
     boolean result = false;
     if ( wifiApPasswortAktiviert ) { // Falls ein WLAN mit Passwort erstellt werden soll
       result = WiFi.softAP(wifiApSsid, wifiApPasswort );
@@ -497,19 +495,19 @@ String WifiSetup(String hostname){
       Serial.println(F("NICHT "));
     }
     Serial.println(F("erfolgreich aufgebaut!"));
-    Serial.print(F("meine IP: "));
+    Serial.print("meine IP: ");
     Serial.println(WiFi.softAPIP());
     ip = WiFi.softAPIP().toString(); // IP Adresse in Variable schreiben?
   }
 
   // DNS Namensauflösung aktivieren:
   if (MDNS.begin(hostname)) {
-    Serial.print(F("Gerät unter "));
+    Serial.print("Gerät unter ");
     Serial.print(hostname);
-    Serial.println(F(".local erreichbar."));
+    Serial.println(".local erreichbar.");
     MDNS.addService("http", "tcp", 80);
   } else {
-    Serial.println(F("Fehler bein Einrichten der Namensauflösung."));
+    Serial.println("Fehler bein Einrichten der Namensauflösung.");
   }
   Webserver.on("/", HTTP_GET, WebseiteStartAusgeben);
   Webserver.on("/admin.html", HTTP_GET, WebseiteAdminAusgeben);

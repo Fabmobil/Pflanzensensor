@@ -10,11 +10,11 @@
  * "true" aktiviert sie, "false" deaktiviert sie
  */
 #define MODUL_DEBUG         false  // Debugmodus (de)aktivieren
-#define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
+#define MODUL_DISPLAY       false  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
-#define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
+#define MODUL_DHT           false // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
 #define MODUL_BODENFEUCHTE  true // hat dein Pflanzensensor einen Bodenfeuchtemesser?
-#define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
+#define MODUL_LEDAMPEL      false // hat dein Pflanzensensor eine LED Ampel?
 #define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
 #define MODUL_IFTTT         false // willst du das ifttt.com-Modul verwenden?
 // Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
@@ -73,8 +73,9 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
   #define wifiIftttEreignis "Fabmobil_Pflanzensensor" // und ein Ereignisnamen
 #endif
 #if MODUL_MULTIPLEXER // wenn der Multiplexer aktiv ist
-  #define pinMultiplexer1 16 // "D0"; Pin a des Multiplexers
-  #define pinMultiplexer2 0 // "D3"; Pin b des Multiplexers
+  // #define pinMultiplexer1 16 // "D0"; Pin a des Multiplexers ; Prototyp
+  #define pinMultiplexer1 15 // "D8"; Pin b des Multiplexers
+  #define pinMultiplexer2 0 // "D3"; Pin b des Multiplexers; Protoyp
 #endif
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
   String wifiAdminPasswort = "admin"; // Passwort für das Admininterface
@@ -97,8 +98,8 @@ unsigned long millisVorherBodenfeuchte = 0;
 unsigned long millisVorherDht = 0;
 unsigned long millisVorherLedampel = 0;
 unsigned long millisVorherDisplay = 0;
-const long intervallHelligkeit = 500; // Intervall der Helligkeitsmessung in Millisekunden. Vorschlag: 5000
-const long intervallBodenfeuchte = 500; // Intervall der Helligkeitsmessung in Millisekunden. Vorschlag: 5000
+const long intervallHelligkeit = 3000; // Intervall der Helligkeitsmessung in Millisekunden. Vorschlag: 5000
+const long intervallBodenfeuchte = 3000; // Intervall der Helligkeitsmessung in Millisekunden. Vorschlag: 5000
 const long intervallDht = 5000; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
 const long intervallLedampel = 15000; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15000
 const long intervallDisplay = 5000; // Anzeigedauer der unterschiedlichen Displayseiten in Millisekunden. Vorschlag: 5000
@@ -108,7 +109,8 @@ int module;
   int messwertBodenfeuchteProzent = -1;
   #include "modul_bodenfeuchte.h"
 #else
-  #define messwertBodenfeuchte -1
+  int messwertBodenfeuchte = -1;
+  int messwertBodenfeuchteProzent = -1;
 #endif
 
 #if MODUL_DHT
@@ -142,6 +144,7 @@ int module;
   int messwertHelligkeitProzent = -1;
   #include "modul_helligkeit.h"
 #else
+  #define messwertHelligkeit -1
   #define messwertHelligkeitProzent -1
 #endif
 

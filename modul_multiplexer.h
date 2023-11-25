@@ -25,4 +25,5 @@ void MultiplexerWechseln(int a, int b) {
   #endif
   digitalWrite(pinMultiplexer1, a);
   digitalWrite(pinMultiplexer1, a);
+  delay(1000); // warten, bis der IC umgeschalten hat
 }

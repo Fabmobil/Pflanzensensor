@@ -88,6 +88,9 @@ void setup() {
   #if MODUL_MULTIPLEXER // wenn das Multiplexer Modul aktiv ist werden die zwei Multiplexerpins als Ausgang gesetzt:
     pinMode(pinMultiplexer1, OUTPUT);
     pinMode(pinMultiplexer2, OUTPUT);
+  #else
+    pinMode(16, OUTPUT); // interne LED auf D0 / GPIO16
+    digitalWrite(16, HIGH); // wird ausgeschalten (invertiertes Verhalten!)
   #endif
   #if MODUL_WIFI // wenn das Wifi Modul aktiv ist:
     String ip = WifiSetup(wifiHostname); // Wifi-Verbindung herstellen und IP Adresse speichern
@@ -128,6 +131,7 @@ void setup() {
     #endif
   #endif
   digitalWrite(pinEingebauteLed, HIGH); // eingebaute LED ausschalten
+
 }
 
 /*
@@ -146,8 +150,10 @@ void loop() {
 
   #if MODUL_DEBUG
     Serial.println(F("############ Begin von loop() #############"));
-    Serial.print(F("# status: "));
-    Serial.print(status);
+    #if MODUL_DISPLAY
+      Serial.print(F("# status: "));
+      Serial.print(status);
+    #endif
     Serial.print(F(", millis: "));
     Serial.println(millisAktuell);
     Serial.print(F("# IP Adresse: "));
@@ -163,10 +169,10 @@ void loop() {
   MDNS.update(); // MDNS updaten
 
   // eingebaute LED blinken soll blinken falls sie aktiv ist:
-  if ( eingebauteLedAktiv ) {
-    EingebauteLedBlinken(3, 50); // in jedem neuen Loop blinkt die interne LED 3x kurz
-  } else {
+  if ( eingebauteLedAktiv == 0 ) {
     digitalWrite(pinEingebauteLed, HIGH); // Ausschalten
+  } else {
+    EingebauteLedBlinken(3, 50); // in jedem neuen Loop blinkt die interne LED 3x kurz
   }
 
   // Helligkeit messen:
