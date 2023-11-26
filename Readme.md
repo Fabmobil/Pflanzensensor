@@ -14,7 +14,20 @@ Dieser Pflanzensensor kann aus verschiedenen Modulen bestehen und kombiniert wer
 - LED Ampel
 - WiFi
 
-# Software
+
+# Quellcode
+
+## Software des Pflanzensensors aktualisieren
+
+### Über Arduino IDE
+
+#### Entwicklungsumgebung vorbereiten
+
+- [Arduino IDE](https://www.arduino.cc/en/software) herunterladen, installieren und starten
+- Dieses Repository herunterladen und entpacken.
+- Pflanzensensor.ino in der Arduino IDE öffnen
+
+## Erklärungen
 
 Der Quellcode ist modularisiert. Folgendes ist in den unterschiedlichen Dateien zu finden:
 
