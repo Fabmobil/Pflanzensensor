@@ -19,7 +19,7 @@ Dieser Pflanzensensor kann aus verschiedenen Modulen bestehen und kombiniert wer
 
 ## Software des Pflanzensensors aktualisieren
 
-### Über Arduino IDE
+### Arduino IDE
 
 #### Entwicklungsumgebung vorbereiten
 
@@ -44,6 +44,10 @@ Dieser Pflanzensensor kann aus verschiedenen Modulen bestehen und kombiniert wer
 - Pflanzensensor per USB an den PC anschließen
 - in der Arduino IDE unter `Werkzeuge` und `Port` den richtigen Port auswählen
 - in der Arduino IDE den Hochladen Button klicken
+
+### VSCode und platform.io
+
+.. kommt bald .. 
 
 ## Erklärungen
 
