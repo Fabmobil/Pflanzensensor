@@ -24,8 +24,26 @@ Dieser Pflanzensensor kann aus verschiedenen Modulen bestehen und kombiniert wer
 #### Entwicklungsumgebung vorbereiten
 
 - [Arduino IDE](https://www.arduino.cc/en/software) herunterladen, installieren und starten
-- Dieses Repository herunterladen und entpacken.
-- Pflanzensensor.ino in der Arduino IDE öffnen
+- `Datei` und `Voreinstellungen` auswählen
+- unter `Zusätzliche Boardverwalter-URLs` folgende URL eintragen: `http://arduino.esp8266.com/stable/package_esp8266com_index.json`
+- unter `Werkzeuge` erst `Board: Arduino Uno` und dann `Boardverwalter..` wählen
+- in der Suchleiste `esp8266` eingeben und das `esp8266` Board instalieren (dauert ein wenig .. )
+- Boardverwalter schließen
+- unter `Werkzeuge` erst `Board: Arduino Uno` dann `ESP8266 Boards` und dann `Generic ESP8266 Module` auswählen
+- Den [Quellcode](https://github.com/pippcat/Pflanzensensor/releases) herunterladen und entpacken.
+- `Pflanzensensor.ino` in der Arduino IDE öffnen (Achtung: der Ordner, in der die `Pflanzensensor.ino`-Datei liegt muss auch Pflanzensensor heißen, sonst beschwert sich die IDE)
+
+#### Anpassungen vornehmen
+
+- die `Configuration.h`-Datei in der Arduino IDE öffnen und die Einstellungen überprüfen:
+ - Module entsprechend (de)aktivieren
+ - WLAN Einstellungen (SSID und Passwort)
+
+#### Kompilieren und hochladen
+
+- Pflanzensensor per USB an den PC anschließen
+- in der Arduino IDE unter `Werkzeuge` und `Port` den richtigen Port auswählen
+- in der Arduino IDE den Hochladen Button klicken
 
 ## Erklärungen
 
