@@ -60,7 +60,6 @@ void WebseiteStartAusgeben() {
 
 
 void WebseiteDebugAusgeben() {
-  long zufallszahl;
   #include "modul_wifi_bilder.h"
   #include "modul_wifi_header.h"
   #include "modul_wifi_footer.h"
