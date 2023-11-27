@@ -206,7 +206,6 @@ void loop() {
         Serial.println(F(" < 100), alter Wert wird weiterverwendet"));
       } else {
         messwertBodenfeuchteProzent = BodenfeuchteUmrechnen(messwertBodenfeuchte, bodenfeuchteMinimum, bodenfeuchteMaximum); // Skalierung auf maximal 0 bis 100
-        delay(1000); Serial.println("@@ delay!");
       }
     }
   #endif
