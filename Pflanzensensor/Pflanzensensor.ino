@@ -59,7 +59,8 @@ void setup() {
     Serial.print(F("# Anzahl Module: "));
     Serial.println(module);
   #endif
-  pinMode(pinEingebauteLed, OUTPUT); // eingebaute LED intialisieren
+  pinMode(16, OUTPUT); // eingebaute LED intialisieren
+  pinMode(2, OUTPUT); // eingebaute LED intialisieren
   EingebauteLedBlinken(1,1000); // LED leuchtet 1s zum Neustart
   #if MODUL_LEDAMPEL // wenn das LED Ampel Modul aktiv is:
     pinMode(pinAmpelGruen, OUTPUT); // LED 1 (grün)
@@ -130,8 +131,8 @@ void setup() {
       Serial.print  (F("# Auflösung:       ")); Serial.print(sensor.resolution); Serial.println(F("%"));
     #endif
   #endif
-  digitalWrite(pinEingebauteLed, HIGH); // eingebaute LED ausschalten
-
+  digitalWrite(16, HIGH); // eingebaute LED ausschalten
+  digitalWrite(2, HIGH); // eingebaute LED ausschalten
 }
 
 /*
@@ -164,6 +165,7 @@ void loop() {
     } else {
       Serial.println(WiFi.localIP());
     }
+    delay(2000); // Programmablauf verlangsamen um Debuginformationen lesen zu können
   #endif
 
   MDNS.update(); // MDNS updaten
@@ -184,7 +186,7 @@ void loop() {
       millisVorherHelligkeit = millisAktuell; // neuen Wert übernehmen
       // Ggfs. Multiplexer umstellen:
       #if MODUL_MULTIPLEXER
-        MultiplexerWechseln(0, 0); // Multiplexer auf Ausgang 1 stellen
+        MultiplexerWechseln(0, 0); // Multiplexer auf Ausgang 0 stellen
         delay(500); // 0,5s warten
       #endif
       // Helligkeit messen:
@@ -209,7 +211,13 @@ void loop() {
       // Bodenfeuchte messen
       messwertBodenfeuchte = analogRead(pinAnalog);
       // und in Prozent umrechnen
-      messwertBodenfeuchteProzent = BodenfeuchteUmrechnen(messwertBodenfeuchte, bodenfeuchteMinimum, bodenfeuchteMaximum); // Skalierung auf maximal 0 bis 100
+      if ( messwertBodenfeuchte <= 100 ) {
+        Serial.print(F("Bodenfeuchtemessung fehlgeschlagen (")); Serial.print(messwertBodenfeuchte);
+        Serial.println(F(" < 100), alter Wert wird weiterverwendet"));
+      } else {
+        messwertBodenfeuchteProzent = BodenfeuchteUmrechnen(messwertBodenfeuchte, bodenfeuchteMinimum, bodenfeuchteMaximum); // Skalierung auf maximal 0 bis 100
+        delay(1000); Serial.println("@@ delay!");
+      }
     }
   #endif
 
@@ -296,5 +304,7 @@ void EingebauteLedBlinken(int anzahl, int dauer) {
       delay(dauer);
       digitalWrite(pinEingebauteLed, HIGH);
     }
+  } else {
+    digitalWrite(pinEingebauteLed, HIGH); // Ausschalten
   }
 }

@@ -9,12 +9,12 @@
  * Module
  * "true" aktiviert sie, "false" deaktiviert sie
  */
-#define MODUL_DEBUG         false  // Debugmodus (de)aktivieren
-#define MODUL_DISPLAY       false  // hat dein Pflanzensensor ein Display?
+#define MODUL_DEBUG         true  // Debugmodus (de)aktivieren
+#define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
-#define MODUL_DHT           false // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
+#define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
 #define MODUL_BODENFEUCHTE  true // hat dein Pflanzensensor einen Bodenfeuchtemesser?
-#define MODUL_LEDAMPEL      false // hat dein Pflanzensensor eine LED Ampel?
+#define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
 #define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
 #define MODUL_IFTTT         false // willst du das ifttt.com-Modul verwenden?
 // Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
@@ -43,7 +43,9 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
   int bodenfeuchteMaximum = 380; // Der Rohmesswert des Sensors, wenn er in Wasser ist
 #endif
 #if MODUL_DHT // falls ein Lufttemperatur- und -feuchtesensor verbaut ist:
-  #define pinDht 2 // "D4"; an welchem Pin ist der Sensor angeschlossen?
+  //#define pinDht 2 // "D4"; an welchem Pin ist der Sensor angeschlossen?
+  #define pinDht 0 // "D3"
+//  #define dhtSensortyp DHT22  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
   #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
 #endif
 #if MODUL_HELLIGKEIT
@@ -75,7 +77,7 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
 #if MODUL_MULTIPLEXER // wenn der Multiplexer aktiv ist
   // #define pinMultiplexer1 16 // "D0"; Pin a des Multiplexers ; Prototyp
   #define pinMultiplexer1 15 // "D8"; Pin b des Multiplexers
-  #define pinMultiplexer2 0 // "D3"; Pin b des Multiplexers; Protoyp
+  #define pinMultiplexer2 16 // "D0"; Pin b des Multiplexers; Protoyp
 #endif
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
   String wifiAdminPasswort = "admin"; // Passwort für das Admininterface
@@ -100,7 +102,7 @@ unsigned long millisVorherLedampel = 0;
 unsigned long millisVorherDisplay = 0;
 const long intervallHelligkeit = 3000; // Intervall der Helligkeitsmessung in Millisekunden. Vorschlag: 5000
 const long intervallBodenfeuchte = 3000; // Intervall der Helligkeitsmessung in Millisekunden. Vorschlag: 5000
-const long intervallDht = 5000; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
+const long intervallDht = 500; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
 const long intervallLedampel = 15000; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15000
 const long intervallDisplay = 5000; // Anzeigedauer der unterschiedlichen Displayseiten in Millisekunden. Vorschlag: 5000
 int module;
