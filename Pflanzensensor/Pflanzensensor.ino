@@ -83,9 +83,9 @@ void setup() {
     pinMode(pinAnalog, INPUT);  // wird der Analogpin als Eingang gesetzt
   #endif
   #if MODUL_MULTIPLEXER // wenn das Multiplexer Modul aktiv ist werden die zwei Multiplexerpins als Ausgang gesetzt:
-    pinMode(pinMultiplexerA, OUTPUT);
-    pinMode(pinMultiplexerB, OUTPUT);
-    pinMode(pinMultiplexerB, OUTPUT);
+    pinMode(pinMultiplexerA, OUTPUT); // Pin A des Multiplexers
+    pinMode(pinMultiplexerB, OUTPUT); // Pin B des Multiplexers
+    pinMode(pinMultiplexerB, OUTPUT); // Pin C des Multiplexers
   #else
     pinMode(16, OUTPUT); // interne LED auf D0 / GPIO16
     digitalWrite(16, HIGH); // wird ausgeschalten (invertiertes Verhalten!)
@@ -105,8 +105,8 @@ void setup() {
   #endif
   #if MODUL_DHT // wenn das DHT Modul aktiv ist:
     // Initialisierung des Lufttemperatur und -feuchte Sensors:
-    dht.begin();
-    sensor_t sensor;
+    dht.begin(); // Sensor initialisieren
+    sensor_t sensor; // Sensor-Objekt
     #if MODUL_DEBUG // Debuginformationen
       Serial.println(F("## DHT Sensor intialisieren und auslesen"));
       dht.temperature().getSensor(&sensor);
@@ -144,9 +144,9 @@ void loop() {
    * Alle Sensoren werden nach einem definierten Intervall, welches mit dem Millis-Wert verglichen wird,
    * ausgelesen. Dazwischen werden nur Anfragen an den Webserver abgefragt.
    */
-  unsigned long millisAktuell = millis();
+  unsigned long millisAktuell = millis(); // aktuelle Millisekunden auslesen
 
-  #if MODUL_DEBUG
+  #if MODUL_DEBUG // Debuginformation
     Serial.println(F("############ Begin von loop() #############"));
     #if MODUL_DISPLAY
       Serial.print(F("# status: "));
@@ -169,7 +169,7 @@ void loop() {
 
   // Helligkeit messen:
   #if MODUL_HELLIGKEIT  // wenn das Helligkeit Modul aktiv ist
-    if (millisAktuell - millisVorherHelligkeit >= intervallHelligkeit) {
+    if (millisAktuell - millisVorherHelligkeit >= intervallHelligkeit) { // wenn das Intervall erreicht ist
       #if MODUL_DEBUG
         Serial.println(F("### intervallHelligkeit erreicht."));
       #endif
@@ -180,26 +180,26 @@ void loop() {
         delay(500); // 0,5s warten
       #endif
       // Helligkeit messen:
-      messwertHelligkeit = HelligkeitMessen();
+      messwertHelligkeit = HelligkeitMessen(); // Messwert einlesen
       // Messwert in Prozent umrechnen:
-      messwertHelligkeitProzent = HelligkeitUmrechnen(messwertHelligkeit, helligkeitMinimum, helligkeitMaximum);
+      messwertHelligkeitProzent = HelligkeitUmrechnen(messwertHelligkeit, helligkeitMinimum, helligkeitMaximum); // Skalierung auf maximal 0 bis 100
     }
   #endif
 
   // Bodenfeuchte messen;
   #if MODUL_BODENFEUCHTE // wenn das Bodenfeuchte Modul aktiv is
-    if (millisAktuell - millisVorherBodenfeuchte >= intervallBodenfeuchte) {
+    if (millisAktuell - millisVorherBodenfeuchte >= intervallBodenfeuchte) { // wenn das Intervall erreicht ist
       #if MODUL_DEBUG
         Serial.println(F("### intervallBodenfeuchte erreicht."));
       #endif
-      millisVorherBodenfeuchte = millisAktuell;
+      millisVorherBodenfeuchte = millisAktuell; // neuen Wert übernehmen
       // Ggfs. Multiplexer umstellen:
-      #if MODUL_MULTIPLEXER
+      #if MODUL_MULTIPLEXER // wenn der Multiplexer aktiv ist
         MultiplexerWechseln(0, 1, 1); // Multiplexer auf Ausgang 1 stellen
         delay(500); // 0,5s warten
       #endif
       // Bodenfeuchte messen
-      messwertBodenfeuchte = analogRead(pinAnalog);
+      messwertBodenfeuchte = analogRead(pinAnalog); // Messwert einlesen
       // und in Prozent umrechnen
       if ( messwertBodenfeuchte <= 100 ) {
         Serial.print(F("Bodenfeuchtemessung fehlgeschlagen (")); Serial.print(messwertBodenfeuchte);
@@ -212,11 +212,11 @@ void loop() {
 
   // Luftfeuchte und -temperatur messen:
   #if MODUL_DHT // wenn das DHT Modul aktiv ist
-    if (millisAktuell - millisVorherDht >= intervallDht) {
+    if (millisAktuell - millisVorherDht >= intervallDht) { // wenn das Intervall erreicht ist
       #if MODUL_DEBUG
         Serial.println(F("### intervallDht erreicht."));
       #endif
-      millisVorherDht = millisAktuell;
+      millisVorherDht = millisAktuell; // neuen Wert übernehmen
       messwertLufttemperatur = DhtMessenLufttemperatur(); // Lufttemperatur messen
       messwertLuftfeuchte = DhtMessenLuftfeuchte(); // Luftfeuchte messen
     }
@@ -224,11 +224,11 @@ void loop() {
 
   // LED Ampel umschalten:
   #if MODUL_LEDAMPEL // Wenn das LED Ampel Modul aktiv ist:
-    if (millisAktuell - millisVorherLedampel >= intervallLedampel) {
+    if (millisAktuell - millisVorherLedampel >= intervallLedampel) { // wenn das Intervall erreicht ist
       #if MODUL_DEBUG // Debuginformation
         Serial.println(F("### intervallLedAmpel erreicht."));
       #endif
-      millisVorherLedampel = millisAktuell;
+      millisVorherLedampel = millisAktuell; // neuen Wert übernehmen
       LedampelUmschalten(messwertHelligkeitProzent, messwertBodenfeuchteProzent); // Ampel umschalten
     }
   #endif
@@ -243,7 +243,7 @@ void loop() {
       #if MODUL_DEBUG
         Serial.print(F("### intervallDisplay erreicht. status: ")); Serial.println(status);
       #endif
-      millisVorherDisplay = millisAktuell;
+      millisVorherDisplay = millisAktuell; // neuen Wert übernehmen
       // Diese Funktion kümmert sich um die Displayanzeige:
       DisplayMesswerte(messwertBodenfeuchteProzent, messwertHelligkeitProzent, messwertLuftfeuchte, messwertLufttemperatur, status);
     }
@@ -268,13 +268,13 @@ void loop() {
  */
 int ModuleZaehlen() {
     int aktiveModule = 0;
-    if (MODUL_BODENFEUCHTE) aktiveModule++;
-    if (MODUL_DEBUG) aktiveModule++;
-    if (MODUL_DISPLAY) aktiveModule++;
-    if (MODUL_DHT) aktiveModule++;
-    if (MODUL_HELLIGKEIT) aktiveModule++;
-    if (MODUL_IFTTT) aktiveModule++;
-    if (MODUL_LEDAMPEL) aktiveModule++;
-    if (MODUL_WIFI) aktiveModule++;
-    return aktiveModule;
+    if (MODUL_BODENFEUCHTE) aktiveModule++; // wenn das Bodenfeuchte Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_DEBUG) aktiveModule++; // wenn das Debug Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_DISPLAY) aktiveModule++; // wenn das Display Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_DHT) aktiveModule++; // wenn das DHT Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_HELLIGKEIT) aktiveModule++; // wenn das Helligkeit Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_IFTTT) aktiveModule++; // wenn das IFTTT Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_LEDAMPEL) aktiveModule++; // wenn das LED Ampel Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_WIFI) aktiveModule++; // wenn das Wifi Modul aktiv ist, wird die Variable um 1 erhöht
+    return aktiveModule; // die Anzahl der aktiven Module wird zurückgegeben
 }

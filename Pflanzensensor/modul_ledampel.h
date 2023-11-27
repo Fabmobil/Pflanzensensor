@@ -24,20 +24,20 @@ void LedampelBlinken(String farbe, int anzahl, int dauer) {
   digitalWrite(pinAmpelRot, LOW);
   digitalWrite(pinAmpelGelb, LOW);
   digitalWrite(pinAmpelGruen, LOW);
-  if (farbe == "rot") {
+  if (farbe == "rot") { // wenn die Farbe rot ist, wird der Pin für die rote LED gesetzt
     PIN_LED = pinAmpelRot;
   }
-  if (farbe =="gelb") {
+  if (farbe =="gelb") { // wenn die Farbe gelb ist, wird der Pin für die gelbe LED gesetzt
     PIN_LED = pinAmpelGelb;
   }
-  if (farbe == "gruen") {
+  if (farbe == "gruen") { // wenn die Farbe grün ist, wird der Pin für die grüne LED gesetzt
     PIN_LED = pinAmpelGruen;
   }
-  for (int i=0;i<anzahl;i++){
-    digitalWrite(PIN_LED, HIGH);
-    delay(dauer);
-    digitalWrite(PIN_LED, LOW);
-    delay(dauer);
+  for (int i=0;i<anzahl;i++){ // Schleife für die Anzahl der Blinkvorgänge
+    digitalWrite(PIN_LED, HIGH); // LED an
+    delay(dauer); // warten
+    digitalWrite(PIN_LED, LOW); // LED aus
+    delay(dauer); // warten
   }
 }
 
@@ -53,26 +53,26 @@ void LedampelAnzeigen(String farbe, int dauer) {
     Serial.print(F(", ")); Serial.print(dauer);
     Serial.println(F(")"));
   #endif
-  digitalWrite(pinAmpelRot, LOW);
+  digitalWrite(pinAmpelRot, LOW); // alle LEDs aus
   digitalWrite(pinAmpelGelb, LOW);
   digitalWrite(pinAmpelGruen, LOW);
-  if (farbe == "rot") {
+  if (farbe == "rot") { // wenn die Farbe rot ist, wird der Pin für die rote LED gesetzt
     digitalWrite(pinAmpelRot, HIGH);
-    if (dauer != -1) {
+    if (dauer != -1) { // wenn die Dauer nicht -1 ist, wird die LED nach der Dauer wieder ausgeschaltet
       delay(dauer);
       digitalWrite(pinAmpelRot, LOW);
     }
   }
-  if (farbe == "gelb") {
+  if (farbe == "gelb") { // wenn die Farbe gelb ist, wird der Pin für die gelbe LED gesetzt
     digitalWrite(pinAmpelGelb, HIGH);
-    if (dauer != -1) {
+    if (dauer != -1) { // wenn die Dauer nicht -1 ist, wird die LED nach der Dauer wieder ausgeschaltet
       delay(dauer);
       digitalWrite(pinAmpelGelb, LOW);
     }
   }
-  if (farbe == "gruen") {
+  if (farbe == "gruen") { // wenn die Farbe grün ist, wird der Pin für die grüne LED gesetzt
     digitalWrite(pinAmpelGruen, HIGH);
-    if (dauer != -1) {
+    if (dauer != -1) { // wenn die Dauer nicht -1 ist, wird die LED nach der Dauer wieder ausgeschaltet
       delay(dauer);
       digitalWrite(pinAmpelGruen, LOW);
     }
@@ -84,25 +84,25 @@ void LedampelUmschalten(int messwertHelligkeitProzent, int messwertBodenfeuchteP
   * Falls es auch das Bodenfeuchte Modul gibt, blinkt die LED Ampel kurz 5x gelb damit
   * klar ist, dass jetzt die Lichtstärke angezeigt wird..
   */
-  switch (ampelModus) {
+  switch (ampelModus) { // je nach Modus wird die LED Ampel anders angesteuert
 
     case 0: // im Modus 0 (Helligkeits- und Bodensensor):
       ampelUmschalten = !ampelUmschalten; // wird hier invertiert. true: Helligkeitsanzeige, false: Bodenfeuchteanzeige
-      if ( ampelUmschalten ) {
+      if ( ampelUmschalten ) { // Wenn ampelUmschalten true ist:
         // LED Ampel blinkt 5x gelb um zu signalisieren, dass jetzt der Bodenfeuchtewert angezeigt wird
         if ( MODUL_BODENFEUCHTE ) { LedampelBlinken("gelb", 2, 500); } // Ampel blinkt nur, falls es auch ein Bodenfeuchtemodul gibt
-        LedampelHelligkeit(messwertHelligkeitProzent);
-      } else {
+        LedampelHelligkeit(messwertHelligkeitProzent); // Funktion LedampelHelligkeit() wird aufgerufen
+      } else { // Wenn ampelUmschalten false ist:
         if ( MODUL_HELLIGKEIT ) { LedampelBlinken("gruen", 2, 500); } // Ampel blinkt nur, falls es auch ein Helligkeitsmodul gibt
-        LedampelBodenfeuchte(messwertBodenfeuchteProzent);
+        LedampelBodenfeuchte(messwertBodenfeuchteProzent); // Funktion LedampelBodenfeuchte() wird aufgerufen
       }
-      break;
+      break; // Ende von Modus 0
     case 1: // Helligkeitsmodus
-      LedampelHelligkeit(messwertHelligkeitProzent);
-      break;
+      LedampelHelligkeit(messwertHelligkeitProzent); // Funktion LedampelHelligkeit() wird aufgerufen
+      break; // Ende von Modus 1
     case 2: // Bodenfeuchtemodus
-      LedampelBodenfeuchte(messwertBodenfeuchteProzent);
-      break;
+      LedampelBodenfeuchte(messwertBodenfeuchteProzent); // Funktion LedampelBodenfeuchte() wird aufgerufen
+      break; // Ende von Modus 2
   }
 }
 

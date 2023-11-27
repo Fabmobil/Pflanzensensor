@@ -349,52 +349,51 @@ void WebseiteAdminAusgeben() {
  * Übernimmt die Änderungen, welche auf der Administrationsseite gemacht wurden.
  */
 void WebseiteSetzeVariablen() {
-  #include "modul_wifi_bilder.h"
-  #include "modul_wifi_header.h"
-  #include "modul_wifi_footer.h"
+  #include "modul_wifi_bilder.h" // Bilder die auf der Seite verwendet werden
+  #include "modul_wifi_header.h" // Kopf der HTML-Seite
+  #include "modul_wifi_footer.h" // Fuß der HTML-Seite
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von WebseiteSetzeVariablen()"));
   #endif
-  if ( ! Webserver.hasArg("Passwort") || Webserver.arg("Passwort") == NULL) { // If the POST request doesn't have username and password data
-    Webserver.send(400, "text/plain", "400: Invalid Request");         // The request is invalid, so send HTTP status 400
+  if ( ! Webserver.hasArg("Passwort") || Webserver.arg("Passwort") == NULL) { // wenn kein Passwort übergeben wurde
+    Webserver.send(400, "text/plain", "400: Invalid Request"); // Fehlermeldung ausgeben
     return;
   }
-  if ( Webserver.arg("Passwort") == wifiAdminPasswort) { // If both the username and the password are correct
-    #if MODUL_LEDAMPEL
-      if ( Webserver.arg("ampelModus") != "" ) {
-        ampelModus = Webserver.arg("ampelModus").toInt();
+  if ( Webserver.arg("Passwort") == wifiAdminPasswort) { // wenn das Passwort stimmt
+      if ( Webserver.arg("ampelModus") != "" ) { // wenn ein neuer Wert für ampelModus übergeben wurde
+        ampelModus = Webserver.arg("ampelModus").toInt(); // neuen Wert übernehmen
       }
       #if MODUL_HELLIGKEIT
-        if ( Webserver.arg("ampelHelligkeitGruen") != "" ) {
-          ampelHelligkeitGruen = Webserver.arg("ampelHelligkeitGruen").toInt();
+        if ( Webserver.arg("ampelHelligkeitGruen") != "" ) { // wenn ein neuer Wert für ampelHelligkeitGruen übergeben wurde
+          ampelHelligkeitGruen = Webserver.arg("ampelHelligkeitGruen").toInt(); // neuen Wert übernehmen
         }
-        if ( Webserver.arg("ampelHelligkeitRot") != "" ) {
-          ampelHelligkeitRot = Webserver.arg("ampelHelligkeitRot").toInt();
+        if ( Webserver.arg("ampelHelligkeitRot") != "" ) { // wenn ein neuer Wert für ampelHelligkeitRot übergeben wurde
+          ampelHelligkeitRot = Webserver.arg("ampelHelligkeitRot").toInt(); // neuen Wert übernehmen
         }
       #endif
       #if MODUL_BODENFEUCHTE
-        if ( Webserver.arg("ampelBodenfeuchteGruen") != "" ) {
-          ampelBodenfeuchteGruen = Webserver.arg("ampelBodenfeuchteGruen").toInt();
+        if ( Webserver.arg("ampelBodenfeuchteGruen") != "" ) { // wenn ein neuer Wert für ampelBodenfeuchteGruen übergeben wurde
+          ampelBodenfeuchteGruen = Webserver.arg("ampelBodenfeuchteGruen").toInt(); // neuen Wert übernehmen
         }
-        if ( Webserver.arg("ampelBodenfeuchteRot") != "" ) {
-          ampelBodenfeuchteRot = Webserver.arg("ampelBodenfeuchteRot").toInt();
+        if ( Webserver.arg("ampelBodenfeuchteRot") != "" ) { // wenn ein neuer Wert für ampelBodenfeuchteRot übergeben wurde
+          ampelBodenfeuchteRot = Webserver.arg("ampelBodenfeuchteRot").toInt(); // neuen Wert übernehmen
         }
       #endif
     #endif
     #if MODUL_DISPLAY
-      if ( Webserver.arg("status") != "" ) {
-          status = Webserver.arg("status").toInt();
+      if ( Webserver.arg("status") != "" ) { // wenn ein neuer Wert für status übergeben wurde
+          status = Webserver.arg("status").toInt(); // neuen Wert übernehmen
         }
     #endif
     #if MODUL_HELLIGKEIT
-      if ( Webserver.arg("helligkeitMinimum") != "" ) {
-        helligkeitMinimum = Webserver.arg("helligkeitMinimum").toInt();
+      if ( Webserver.arg("helligkeitMinimum") != "" ) { // wenn ein neuer Wert für helligkeitMinimum übergeben wurde
+        helligkeitMinimum = Webserver.arg("helligkeitMinimum").toInt(); // neuen Wert übernehmen
       }
-      if ( Webserver.arg("helligkeitMaximum") != "" ) {
-        helligkeitMaximum = Webserver.arg("helligkeitMaximum").toInt();
+      if ( Webserver.arg("helligkeitMaximum") != "" ) { // wenn ein neuer Wert für helligkeitMaximum übergeben wurde
+        helligkeitMaximum = Webserver.arg("helligkeitMaximum").toInt(); // neuen Wert übernehmen
       }
     #endif
-    String formatierterCode = htmlHeader;
+    String formatierterCode = htmlHeader; // formatierterCode beginnt mit Kopf der HTML-Seite
     formatierterCode += "<h2>Erfolgreich!</h2>";
     formatierterCode += "<ul>";
     formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
@@ -410,8 +409,8 @@ void WebseiteSetzeVariablen() {
     formatierterCode += "</ul>";
     formatierterCode += htmlFooter;
     Webserver.send(200, "text/html", formatierterCode);
-  } else {                                                                              // Username and password don't match
-    String formatierterCode = htmlHeader;
+  } else { // wenn das Passwort falsch ist
+    String formatierterCode = htmlHeader; // formatierterCode beginnt mit Kopf der HTML-Seite
     formatierterCode += "<h2>Falsches Passwort!</h2>";
     formatierterCode += "<ul>";
     formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
@@ -425,7 +424,7 @@ void WebseiteSetzeVariablen() {
     formatierterCode += logoFabmobil;
     formatierterCode += "\">&nbspHomepage</a></li>";
     formatierterCode += "</ul>";
-    formatierterCode += htmlFooter;
+    formatierterCode += htmlFooter; // formatierterCode endet mit Fuß der HTML-Seite
   }
 }
 
@@ -438,54 +437,54 @@ String WifiSetup(String hostname){
     Serial.println(F("# Beginn von WifiSetup()"));
   #endif
 // WLAN Verbindung herstellen
-  WiFi.mode(WIFI_OFF);
+  WiFi.mode(WIFI_OFF); // WLAN ausschalten
   String ip = "keine WLAN Verbindung."; // Initialisierung der IP Adresse mit Fehlermeldung
   if ( !wifiAp ) { // falls kein eigener Accesspoint aufgemacht werden soll wird sich mit dem definierten WLAN verbunden
-    WiFi.mode(WIFI_AP_STA);
-    if (WiFi.status() == WL_CONNECTED) {
+    WiFi.mode(WIFI_AP_STA); // WLAN als Client und Accesspoint
+    if (WiFi.status() == WL_CONNECTED) { // falls WLAN bereits verbunden ist
       Serial.println("WLAN war verbunden");
     }
-    WiFi.begin(wifiSsid, wifiPassword);
+    WiFi.begin(wifiSsid, wifiPassword); // WLAN Verbindung herstellen
     int i=0; // Es wird nur 30 mal versucht, eine WLAN Verbindung aufzubauen
     Serial.print("WLAN-Verbindungsversuch: ");
-    while (!(WiFi.status() == WL_CONNECTED) && i<30) {
+    while (!(WiFi.status() == WL_CONNECTED) && i<30) { // solange keine WLAN Verbindung besteht und i kleiner als 30 ist
         Serial.print(i);
         Serial.println(" von 30.");
-        delay(1000);
-        i++;
+        delay(1000); // 1 Sekunde warten
+        i++; // i um 1 erhöhen
     }
-    if (WiFi.status() != WL_CONNECTED) {
+    if (WiFi.status() != WL_CONNECTED) { // falls nach 30 Versuchen keine WLAN Verbindung besteht
       Serial.println("Keine WLAN-Verbindung möglich.");
     }
     // Nun sollte WLAN verbunden sein
-    Serial.print("meine IP: ");
+    Serial.print("meine IP: "); // IP Adresse ausgeben
     Serial.println(WiFi.localIP());
-    ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben?
+    ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
   } else { // ansonsten wird hier das WLAN erstellt
     Serial.print("Konfiguriere soft-AP ... ");
-    boolean result = false;
+    boolean result = false; // Variable für den Erfolg des Aufbaus des Accesspoints
     if ( wifiApPasswortAktiviert ) { // Falls ein WLAN mit Passwort erstellt werden soll
-      result = WiFi.softAP(wifiApSsid, wifiApPasswort );
+      result = WiFi.softAP(wifiApSsid, wifiApPasswort ); // WLAN mit Passwort erstellen
     } else { // ansonsten WLAN ohne Passwort
-      result = WiFi.softAP(wifiApSsid);
+      result = WiFi.softAP(wifiApSsid); // WLAN ohne Passwort erstellen
     }
     Serial.print(F("Accesspoint wurde "));
-    if( !result ) {
+    if( !result ) { // falls der Accesspoint nicht erfolgreich aufgebaut wurde
       Serial.println(F("NICHT "));
     }
     Serial.println(F("erfolgreich aufgebaut!"));
     Serial.print("meine IP: ");
-    Serial.println(WiFi.softAPIP());
-    ip = WiFi.softAPIP().toString(); // IP Adresse in Variable schreiben?
+    Serial.println(WiFi.softAPIP()); // IP Adresse ausgeben
+    ip = WiFi.softAPIP().toString(); // IP Adresse in Variable schreiben
   }
 
   // DNS Namensauflösung aktivieren:
-  if (MDNS.begin(hostname)) {
+  if (MDNS.begin(hostname)) { // falls Namensauflösung erfolgreich eingerichtet wurde
     Serial.print("Gerät unter ");
     Serial.print(hostname);
     Serial.println(".local erreichbar.");
-    MDNS.addService("http", "tcp", 80);
-  } else {
+    MDNS.addService("http", "tcp", 80); // Webserver unter Port 80 bekannt machen
+  } else { // falls Namensauflösung nicht erfolgreich eingerichtet wurde
     Serial.println("Fehler bein Einrichten der Namensauflösung.");
   }
   Webserver.on("/", HTTP_GET, WebseiteStartAusgeben);
@@ -493,5 +492,5 @@ String WifiSetup(String hostname){
   Webserver.on("/debug.html", HTTP_GET, WebseiteDebugAusgeben);
   Webserver.on("/setzeVariablen", HTTP_POST, WebseiteSetzeVariablen);
   Webserver.begin(); // Webserver starten
-  return ip;
+  return ip; // IP Adresse zurückgeben
 }

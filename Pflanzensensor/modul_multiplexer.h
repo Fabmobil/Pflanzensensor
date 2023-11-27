@@ -28,8 +28,8 @@ void MultiplexerWechseln(int a, int b, int c) {
     Serial.print(b); Serial.print(F(", "));
     Serial.print(c); Serial.println(F(")"));
   #endif
-  digitalWrite(pinMultiplexerA, a);
-  digitalWrite(pinMultiplexerB, b);
-  digitalWrite(pinMultiplexerC, c);
+  digitalWrite(pinMultiplexerA, a); // Digitaleingang A setzen
+  digitalWrite(pinMultiplexerB, b); // Digitaleingang B setzen
+  digitalWrite(pinMultiplexerC, c); // Digitaleingang C setzen
   delay(1000); // warten, bis der IC umgeschalten hat
 }

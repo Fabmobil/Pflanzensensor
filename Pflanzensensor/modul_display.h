@@ -11,10 +11,10 @@
  * \xf8 -> °
  */
 
-#include <SPI.h>
-#include <Wire.h>
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>
+#include <SPI.h> // SPI Library
+#include <Wire.h> // Wire Library
+#include <Adafruit_GFX.h> // Adafruit GFX Library
+#include <Adafruit_SSD1306.h> // Adafruit SSD1306 Library
 
 Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // Initialisierung des Displays
 
@@ -29,14 +29,14 @@ void DisplayIntro(String ip, String hostname) {
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von DisplayIntro()"));
   #endif
-  display.clearDisplay();
+  display.clearDisplay(); // Display löschen
 
   display.setTextSize(2); // Doppelt großer Text
-  display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0, 0);
-  display.println(F("FABMOBIL"));
+  display.setTextColor(SSD1306_WHITE); // Weißer Text
+  display.setCursor(0, 0); // Cursor auf 0,0 setzen
+  display.println(F("FABMOBIL")); // Text ausgeben
   display.display();      // Display aktualisieren
-  delay(100);
+  delay(100); // 100 Millisekunden warten
 
   // in verschiedene Richtungen scrollen:
   display.startscrollright(0x00, 0x06);
@@ -60,21 +60,21 @@ void DisplayIntro(String ip, String hostname) {
   display.display();      // Display aktualisieren
   delay(2000);
 
-  display.clearDisplay();
-  display.setCursor(0, 0);
-  display.setTextSize(2);
-  display.println(F("IP Adresse"));
-  display.setTextSize(1);
-  display.setCursor(0, 17);
-  display.println(ip);
-  display.setCursor(0, 35);
-  display.setTextSize(2);
-  display.println(F("Hostname"));
-  display.setTextSize(1);
-  display.setCursor(0, 52);
-  display.print(hostname);
-  display.println(".local");
-  display.display();
+  display.clearDisplay(); // Display löschen
+  display.setCursor(0, 0); // Cursor auf 0,0 setzen
+  display.setTextSize(2); // Doppelt großer Text
+  display.println(F("IP Adresse")); // Text ausgeben
+  display.setTextSize(1); // Normaler Text
+  display.setCursor(0, 17); // Cursor auf 0,17 setzen
+  display.println(ip); // IP Adresse ausgeben
+  display.setCursor(0, 35); // Cursor auf 0,35 setzen
+  display.setTextSize(2);   // Doppelt großer Text
+  display.println(F("Hostname")); // Text ausgeben
+  display.setTextSize(1);   // Normaler Text
+  display.setCursor(0, 52); // Cursor auf 0,52 setzen
+  display.print(hostname); // Hostname ausgeben
+  display.println(".local"); // .local anhängen
+  display.display();     // Display aktualisieren
   delay(5000);
 
 }

@@ -42,9 +42,7 @@
   int bodenfeuchteMaximum = 380; // Der Rohmesswert des Sensors, wenn er in Wasser ist
 #endif
 #if MODUL_DHT // falls ein Lufttemperatur- und -feuchtesensor verbaut ist:
-  //#define pinDht 2 // "D4"; an welchem Pin ist der Sensor angeschlossen?
-  #define pinDht 0 // "D3"
-//  #define dhtSensortyp DHT22  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
+  #define pinDht 0 // "D3", Pin des DHT Sensors
   #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
 #endif
 #if MODUL_HELLIGKEIT
@@ -94,21 +92,21 @@
  * hier muss eigentlich nichts verändert werden sondern die notewendigen globalen Variablen werden hier
  * definiert.
  */
-unsigned long millisVorherHelligkeit = 0;
-unsigned long millisVorherBodenfeuchte = 0;
-unsigned long millisVorherDht = 0;
-unsigned long millisVorherLedampel = 0;
-unsigned long millisVorherDisplay = 0;
+unsigned long millisVorherHelligkeit = 0; // Variable für die Messung des Intervalls der Helligkeitsmessung
+unsigned long millisVorherBodenfeuchte = 0; // Variable für die Messung des Intervalls der Bodenfeuchtemessung
+unsigned long millisVorherDht = 0; // Variable für die Messung des Intervalls der Luftfeuchte- und -temperaturmessung
+unsigned long millisVorherLedampel = 0; // Variable für die Messung des Intervalls des Umschaltens der LED Ampel
+unsigned long millisVorherDisplay = 0; // Variable für die Messung des Intervalls der Anzeige des Displays
 const long intervallHelligkeit = 3000; // Intervall der Helligkeitsmessung in Millisekunden. Vorschlag: 5000
 const long intervallBodenfeuchte = 3000; // Intervall der Helligkeitsmessung in Millisekunden. Vorschlag: 5000
 const long intervallDht = 500; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
 const long intervallLedampel = 15000; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15000
 const long intervallDisplay = 5000; // Anzeigedauer der unterschiedlichen Displayseiten in Millisekunden. Vorschlag: 5000
-int module;
+int module; // Variable für die Anzahl der Module
 #if MODUL_BODENFEUCHTE
   int messwertBodenfeuchte = -1;
   int messwertBodenfeuchteProzent = -1;
-  #include "modul_bodenfeuchte.h"
+  #include "modul_bodenfeuchte.h" // Bodenfeuchtemodul einbinden
 #else
   int messwertBodenfeuchte = -1;
   int messwertBodenfeuchteProzent = -1;
@@ -117,7 +115,7 @@ int module;
 #if MODUL_DHT
   float messwertLufttemperatur = -1;
   float messwertLuftfeuchte = -1;
-  #include "modul_dht.h"
+  #include "modul_dht.h" // Luftfeuchte- und -temperaturmodul einbinden
 #else
   #define messwertLufttemperatur -1
   #define messwertLuftfeuchte -1
@@ -129,30 +127,30 @@ int module;
   #define displayHoehe 64 // Hoehe des OLED-Displays in Pixeln
   #define displayReset -1 // Display wird mit Arduino Reset Pin zurückgesetzt, wir haben keinen Restknopf..
   #define displayAdresse 0x3C // I2C Adresse des Displays
-  #include "modul_display.h"
+  #include "modul_display.h" // Displaymodul einbinden
 #endif
 
 #if MODUL_IFTTT
-  #include "modul_ifttt.h"
+  #include "modul_ifttt.h" // IFTTT Modul einbinden
 #endif
 
 #if MODUL_LEDAMPEL
-  #include "modul_ledampel.h"
+  #include "modul_ledampel.h" // LED Ampel Modul einbinden
 #endif
 
 #if MODUL_HELLIGKEIT
   int messwertHelligkeit = -1;
   int messwertHelligkeitProzent = -1;
-  #include "modul_helligkeit.h"
+  #include "modul_helligkeit.h" // Helligkeitsmodul einbinden
 #else
   #define messwertHelligkeit -1
   #define messwertHelligkeitProzent -1
 #endif
 
 #if MODUL_MULTIPLEXER
-  #include "modul_multiplexer.h"
+  #include "modul_multiplexer.h" // Multiplexermodul einbinden
 #endif
 
 #if MODUL_WIFI
-  #include "modul_wifi.h"
+  #include "modul_wifi.h" // Wifimodul einbinden
 #endif

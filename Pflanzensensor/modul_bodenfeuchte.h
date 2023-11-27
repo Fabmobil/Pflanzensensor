@@ -20,7 +20,7 @@ int BodenfeuchteUmrechnen(int bodenfeuchte, int bodenfeuchteMinimum, int bodenfe
      20 und kleiner -> 0%
      80 und größer -> 100%
   */
-  #if MODUL_DEBUG
+  #if MODUL_DEBUG // Debugausgaben
     Serial.print(F("# Beginn von BodenfeuchteUmrechnen("));
     Serial.print(bodenfeuchte);
     Serial.print(F(", "));
@@ -31,10 +31,10 @@ int BodenfeuchteUmrechnen(int bodenfeuchte, int bodenfeuchteMinimum, int bodenfe
   #endif
 
   // Convert MIN reading (100) -> MAX reading (700) to a range 0->100.
-  messwertBodenfeuchteProzent = map(bodenfeuchte, bodenfeuchteMinimum, bodenfeuchteMaximum, 0, 100);
+  messwertBodenfeuchteProzent = map(bodenfeuchte, bodenfeuchteMinimum, bodenfeuchteMaximum, 0, 100); // Umrechnung in Prozent
   Serial.print(F("bodenfeuchte: ")); Serial.print(messwertBodenfeuchteProzent);
   Serial.print(F("%       (Messwert: ")); Serial.print(messwertBodenfeuchte);
   Serial.println(F(")"));
-  return messwertBodenfeuchteProzent;
+  return messwertBodenfeuchteProzent; // Prozentwert zurückgeben
 }
 
