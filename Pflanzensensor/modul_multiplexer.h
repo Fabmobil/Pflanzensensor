@@ -12,18 +12,24 @@
 /*
  * Funktion: MultiplexerWechseln(int a, int b)
  * Schaltet den Eingang des analog Multiplexers um:
- * a=0, b=0 -> Eingang 0, Helligkeitsmesser / Fotowiderstand
- * a=1, b=0 -> Eingang 1 Bodenfeuchtigkeitsmesser / kapazitiver Feuchtemesser
- * a=0, b=1 -> Eingang 3, derzeit ungenutzt
- * a=1, b=1 -> Eingang 4, derzeit ungenutzt
+ * a=0, b=0, c=0 -> Eingang 0, derzeit ungenutzt
+ * a=1, b=0, c=0 -> Eingang 1, derzeit ungenutzt
+ * a=0, b=1, c=0 -> Eingang 2, derzeit ungenutzt
+ * a=1, b=1, c=0 -> Eingang 3, derzeit ungenutzt
+ * a=0, b=0, c=1 -> Eingang 4, derzeit ungenutzt
+ * a=1, b=0, c=1 -> Eingang 5, derzeit ungenutzt
+ * a=0, b=1, c=1 -> Eingang 6, Bodenfeuchtigkeitsmesser
+ * a=1, b=1, c=1 -> Eingang 7, Helligkeitssensor
  */
-void MultiplexerWechseln(int a, int b) {
+void MultiplexerWechseln(int a, int b, int c) {
   #if MODUL_DEBUG
     Serial.print(F("# Beginn von MultiplexerWechseln("));
     Serial.print(a); Serial.print(F(", "));
-    Serial.print(b); Serial.println(F(")"));
+    Serial.print(b); Serial.print(F(", "));
+    Serial.print(c); Serial.println(F(")"));
   #endif
-  digitalWrite(pinMultiplexer1, a);
-  digitalWrite(pinMultiplexer1, a);
+  digitalWrite(pinMultiplexerA, a);
+  digitalWrite(pinMultiplexerB, b);
+  digitalWrite(pinMultiplexerC, c);
   delay(1000); // warten, bis der IC umgeschalten hat
 }

@@ -24,8 +24,7 @@
 
 #include "Configuration.h" // Alle Einstellungen werden dort vorgenommen!
 
-int ModuleZaehlen();
-void EingebauteLedBlinken(int anzahl, int dauer);
+int ModuleZaehlen(); // Funktion, um die Anzahl der aktiven Module zu zählen  (siehe unten)
 
 /*
  * Funktion: setup()
@@ -59,9 +58,6 @@ void setup() {
     Serial.print(F("# Anzahl Module: "));
     Serial.println(module);
   #endif
-  pinMode(16, OUTPUT); // eingebaute LED intialisieren
-  pinMode(2, OUTPUT); // eingebaute LED intialisieren
-  EingebauteLedBlinken(1,1000); // LED leuchtet 1s zum Neustart
   #if MODUL_LEDAMPEL // wenn das LED Ampel Modul aktiv is:
     pinMode(pinAmpelGruen, OUTPUT); // LED 1 (grün)
     pinMode(pinAmpelGelb, OUTPUT); // LED 2 (gelb)
@@ -87,8 +83,9 @@ void setup() {
     pinMode(pinAnalog, INPUT);  // wird der Analogpin als Eingang gesetzt
   #endif
   #if MODUL_MULTIPLEXER // wenn das Multiplexer Modul aktiv ist werden die zwei Multiplexerpins als Ausgang gesetzt:
-    pinMode(pinMultiplexer1, OUTPUT);
-    pinMode(pinMultiplexer2, OUTPUT);
+    pinMode(pinMultiplexerA, OUTPUT);
+    pinMode(pinMultiplexerB, OUTPUT);
+    pinMode(pinMultiplexerB, OUTPUT);
   #else
     pinMode(16, OUTPUT); // interne LED auf D0 / GPIO16
     digitalWrite(16, HIGH); // wird ausgeschalten (invertiertes Verhalten!)
@@ -131,8 +128,8 @@ void setup() {
       Serial.print  (F("# Auflösung:       ")); Serial.print(sensor.resolution); Serial.println(F("%"));
     #endif
   #endif
-  digitalWrite(16, HIGH); // eingebaute LED ausschalten
-  digitalWrite(2, HIGH); // eingebaute LED ausschalten
+  digitalWrite(pinMultiplexerB, HIGH); // eingebaute LED ausschalten
+  digitalWrite(pinMultiplexerC, HIGH); // eingebaute LED ausschalten
 }
 
 /*
@@ -170,13 +167,6 @@ void loop() {
 
   MDNS.update(); // MDNS updaten
 
-  // eingebaute LED blinken soll blinken falls sie aktiv ist:
-  if ( eingebauteLedAktiv == 0 ) {
-    digitalWrite(pinEingebauteLed, HIGH); // Ausschalten
-  } else {
-    EingebauteLedBlinken(3, 50); // in jedem neuen Loop blinkt die interne LED 3x kurz
-  }
-
   // Helligkeit messen:
   #if MODUL_HELLIGKEIT  // wenn das Helligkeit Modul aktiv ist
     if (millisAktuell - millisVorherHelligkeit >= intervallHelligkeit) {
@@ -186,7 +176,7 @@ void loop() {
       millisVorherHelligkeit = millisAktuell; // neuen Wert übernehmen
       // Ggfs. Multiplexer umstellen:
       #if MODUL_MULTIPLEXER
-        MultiplexerWechseln(0, 0); // Multiplexer auf Ausgang 0 stellen
+        MultiplexerWechseln(1, 1, 1); // Multiplexer auf Ausgang 0 stellen
         delay(500); // 0,5s warten
       #endif
       // Helligkeit messen:
@@ -205,7 +195,7 @@ void loop() {
       millisVorherBodenfeuchte = millisAktuell;
       // Ggfs. Multiplexer umstellen:
       #if MODUL_MULTIPLEXER
-        MultiplexerWechseln(1, 0); // Multiplexer auf Ausgang 1 stellen
+        MultiplexerWechseln(0, 1, 1); // Multiplexer auf Ausgang 1 stellen
         delay(500); // 0,5s warten
       #endif
       // Bodenfeuchte messen
@@ -288,23 +278,4 @@ int ModuleZaehlen() {
     if (MODUL_LEDAMPEL) aktiveModule++;
     if (MODUL_WIFI) aktiveModule++;
     return aktiveModule;
-}
-
-/*
- * Funktion: EingebauteLedBlinken(int anzahl, int dauer)
- * Lässt die interne LED blinken.
- * anzahl: Anzahl der Blinkvorgänge
- * dauer: Dauer der Blinkvorgänge
- */
-void EingebauteLedBlinken(int anzahl, int dauer) {
-  if ( eingebauteLedAktiv ) {
-    for (int i=0;i<anzahl;i++){
-      delay(500);
-      digitalWrite(pinEingebauteLed, LOW);
-      delay(dauer);
-      digitalWrite(pinEingebauteLed, HIGH);
-    }
-  } else {
-    digitalWrite(pinEingebauteLed, HIGH); // Ausschalten
-  }
 }

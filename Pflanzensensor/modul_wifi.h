@@ -223,13 +223,6 @@ void WebseiteDebugAusgeben() {
     formatierterCode += "<p>IFTTT Modul deaktiviert!</p>";
   #endif
 
-  formatierterCode += "<h3>Eingebaute LED</h3>";
-  formatierterCode += "<ul>";
-  formatierterCode += "<li>Aktiviert?: ";
-  formatierterCode += eingebauteLedAktiv;
-  formatierterCode += "</li>";
-  formatierterCode += "</ul>";
-
   formatierterCode += "<h2>Links</h2>";
   formatierterCode += "<ul>";
   formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
@@ -263,16 +256,6 @@ void WebseiteAdminAusgeben() {
   formatierterCode += "<p>Auf dieser Seite können die Variablen verändert werden.</p>";
   formatierterCode += "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p>";
   formatierterCode += "<form action=\"/setzeVariablen\" method=\"POST\">";
-  formatierterCode += "<h2>Eingebaute LED</h2>";
-  formatierterCode += "<p>";
-  if ( eingebauteLedAktiv ) {
-    formatierterCode += "<input type=\"radio\" name=\"eingebauteLedAktiv\" value=\"true\" checked> An<br>";
-    formatierterCode += "<input type=\"radio\" name=\"eingebauteLedAktiv\" value=\"false\"> Aus";
-  } else {
-    formatierterCode += "<input type=\"radio\" name=\"eingebauteLedAktiv\" value=\"true\"><br> An";
-    formatierterCode += "<input type=\"radio\" name=\"eingebauteLedAktiv\" value=\"false\" checked> Aus";
-  }
-  formatierterCode += "</p>";
   #if MODUL_DISPLAY
     formatierterCode += "<h2>Display</h2>";
     formatierterCode += "<p>status (Anzeigenummer auf dem Display):";
@@ -377,9 +360,6 @@ void WebseiteSetzeVariablen() {
     return;
   }
   if ( Webserver.arg("Passwort") == wifiAdminPasswort) { // If both the username and the password are correct
-    if ( Webserver.arg("eingebauteLedAktiv") != "" ) {
-      eingebauteLedAktiv = Webserver.arg("eingebauteLedAktiv").toInt();
-    }
     #if MODUL_LEDAMPEL
       if ( Webserver.arg("ampelModus") != "" ) {
         ampelModus = Webserver.arg("ampelModus").toInt();

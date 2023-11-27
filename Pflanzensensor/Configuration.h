@@ -9,7 +9,7 @@
  * Module
  * "true" aktiviert sie, "false" deaktiviert sie
  */
-#define MODUL_DEBUG         true  // Debugmodus (de)aktivieren
+#define MODUL_DEBUG         false  // Debugmodus (de)aktivieren
 #define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
 #define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
@@ -28,7 +28,6 @@
  * Pinbelegungen und Variablen
  */
 #define pinEingebauteLed LED_BUILTIN // "D0"; worüber wird die interne LED des ESPs angesprochen?
-bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht?
 #define baudrateSeriell 9600 // Baudrate der seriellen Verbindung
 #if MODUL_BODENFEUCHTE || MODUL_HELLIGKEIT // Wenn wir Analogsensoren benutzen
   #define pinAnalog A0 // definieren wir hier den Analogpin
@@ -75,9 +74,9 @@ bool eingebauteLedAktiv = false; // wird die eingebaute LED verwendet oder nicht
   #define wifiIftttEreignis "Fabmobil_Pflanzensensor" // und ein Ereignisnamen
 #endif
 #if MODUL_MULTIPLEXER // wenn der Multiplexer aktiv ist
-  // #define pinMultiplexer1 16 // "D0"; Pin a des Multiplexers ; Prototyp
-  #define pinMultiplexer1 15 // "D8"; Pin b des Multiplexers
-  #define pinMultiplexer2 16 // "D0"; Pin b des Multiplexers; Protoyp
+  #define pinMultiplexerA 15 // "D8"; Pin A des Multiplexers
+  #define pinMultiplexerB 2 // "D4"; Pin B des Multiplexers
+  #define pinMultiplexerC 16 // "D0"; Pin C des Multiplexers
 #endif
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
   String wifiAdminPasswort = "admin"; // Passwort für das Admininterface
