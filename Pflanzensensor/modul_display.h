@@ -19,7 +19,47 @@
 Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // Initialisierung des Displays
 
 #include "modul_display_bilder.h" // Bilder fürs Display
-/**
+
+
+/* Funktion: NamenTeilen(String name)
+ * Teilt einen Namen, falls er länger als 10 Zeichen ist, in zwei Teile
+ * String name: Name, der geteilt werden soll
+ * Rückgabe: std::pair<String, String> mit den beiden Teilen
+ */
+std::pair<String, String> NamenTeilen(String name) {
+  int laenge = name.length();
+  if (laenge >= 10) {
+    int mitte = laenge / 2;
+    String teil1 = name.substring(0, mitte);
+    teil1 += "-";
+    String teil2 = name.substring(mitte, laenge);
+    teil2 += ":";
+    return std::make_pair(teil1, teil2);
+  } else {
+    return std::make_pair(name + ":", "");
+  }
+}
+
+/* Funktion: MesswertAnzeigen(String name1, String name2, float messwert, String einheit)
+ * Zeigt einen Messwert auf dem Display an
+ * String name1: Erster Teil des Namens
+ * String name2: Zweiter Teil des Namens
+ * float messwert: Messwert
+ * String einheit: Einheit des Messwertes
+ */
+void MesswertAnzeigen(String name1, String name2, int messwert, String einheit){
+  display.setCursor(0, 0);
+  display.println(name1);
+  display.setCursor(10, 20);
+  display.println(name2);
+  display.setCursor(20, 40);
+  display.println(messwert);
+  display.setCursor(70, 40);
+  display.println(einheit);
+  display.display();      // Display aktualisieren
+}
+
+/*
  * Funktion: DisplayIntro()
  * Spielt den Bootscreen auf dem Display ab und zeigt die IP Adresse an
  * String ip: IP Adresse des Chips
@@ -88,7 +128,10 @@ void DisplayIntro(String ip, String hostname) {
  * luftfeuchte: Luftfeuchte in %
  * lufttemperatur: Lufttemperatur in °C
  */
-void DisplayMesswerte(int bodenfeuchte, int helligkeit, float luftfeuchte, float lufttemperatur, int status) {
+void DisplayMesswerte(int bodenfeuchte, String bodenfeuchteName, int helligkeit, String helligkeitName,
+  float luftfeuchte, float lufttemperatur, int analog3, String analog3Name, int analog4, String analog4Name,
+  int analog5, String analog5Name, int analog6, String analog6Name, int analog7, String analog7Name,
+  int analog8, String analog8Name, int status) {
   #if MODUL_DEBUG
     Serial.print(F("# Beginn von DisplayMesswerte(")); Serial.print(helligkeit);
     Serial.print(F(", ")); Serial.print(luftfeuchte);
@@ -103,52 +146,19 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, float luftfeuchte, float
 
   switch (status) {
     case 0:
-      if (bodenfeuchte != -1) {
-        display.setCursor(0, 0);
-        display.println(F("Boden-"));
-        display.setCursor(10, 20);
-        display.println(F("feuchte:"));
-        display.setCursor(20, 40);
-        display.println(bodenfeuchte);
-        display.setCursor(70, 40);
-        display.println("%");
-        display.display();      // Display aktualisieren
-      } else {
-        display.clearDisplay();
-        display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
-        display.display();
-      }
+      display.clearDisplay();
+      display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
+      display.display();
       break;
     case 1:
-      if (helligkeit != -1) {
-        display.setCursor(0, 0);
-        display.println(F("Hellig-"));
-        display.setCursor(10, 20);
-        display.println(F("keit:"));
-        display.setCursor(20, 40);
-        display.println(helligkeit);
-        display.setCursor(70, 40);
-        display.println("%");
-        display.display();      // Display aktualisieren
-      } else {
-        display.clearDisplay();
-        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
-        display.display();
-      }
+      display.clearDisplay();
+      display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+      display.display();
       break;
     case 2:
-      if (lufttemperatur != -1) {
-        display.setCursor(0, 0);
-        display.println(F("Lufttemp-"));
-        display.setCursor(10, 20);
-        display.println(F("eratur:"));
-        display.setCursor(20, 40);
-        display.println(lufttemperatur);
-        display.setCursor(85, 40);
-        display.println("\xf8");
-        display.setCursor(95, 40);
-        display.println("C");
-        display.display();      // Display aktualisieren
+      if (bodenfeuchte != -1) {
+        std::pair<String, String> namen = NamenTeilen(bodenfeuchteName);
+        MesswertAnzeigen(namen.first, namen.second, bodenfeuchte, "%");
       } else {
         display.clearDisplay();
         display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
@@ -156,16 +166,9 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, float luftfeuchte, float
       }
       break;
     case 3:
-      if (luftfeuchte != -1) {
-        display.setCursor(0, 0);
-        display.println(F("Luft-"));
-        display.setCursor(10, 20);
-        display.println(F("feuchte:"));
-        display.setCursor(20, 40);
-        display.println(luftfeuchte);
-        display.setCursor(85, 40);
-        display.println("%");
-        display.display();      // Display aktualisieren
+      if (helligkeit != -1) {
+        std::pair<String, String> namen = NamenTeilen(helligkeitName);
+        MesswertAnzeigen(namen.first, namen.second, helligkeit, "%");
       } else {
         display.clearDisplay();
         display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
@@ -173,14 +176,82 @@ void DisplayMesswerte(int bodenfeuchte, int helligkeit, float luftfeuchte, float
       }
       break;
     case 4:
-      display.clearDisplay();
-      display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
-      display.display();
+      if (lufttemperatur != -1) {
+        MesswertAnzeigen("Lufttemp-", "eratur:", lufttemperatur, "\xf8 C");
+      } else {
+        display.clearDisplay();
+        display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
+        display.display();
+      }
       break;
     case 5:
-      display.clearDisplay();
-      display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
-      display.display();
+      if (luftfeuchte != -1) {
+        MesswertAnzeigen("Luft-", "feuchte:", luftfeuchte, "%");
+      } else {
+        display.clearDisplay();
+        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+        display.display();
+      }
+      break;
+    case 6:
+      if (analog3 != -1) {
+        std::pair<String, String> namen = NamenTeilen(analog3Name);
+        MesswertAnzeigen(namen.first, namen.second, analog3, "%");
+      } else {
+        display.clearDisplay();
+        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+        display.display();
+      }
+      break;
+    case 7:
+      if (analog4 != -1) {
+        std::pair<String, String> namen = NamenTeilen(analog4Name);
+        MesswertAnzeigen(namen.first, namen.second, analog4, "%");
+      } else {
+        display.clearDisplay();
+        display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
+        display.display();
+      }
+      break;
+    case 8:
+      if (analog5 != -1) {
+        std::pair<String, String> namen = NamenTeilen(analog5Name);
+        MesswertAnzeigen(namen.first, namen.second, analog5, "%");
+      } else {
+        display.clearDisplay();
+        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+        display.display();
+      }
+      break;
+    case 9:
+      if (analog6 != -1) {
+        std::pair<String, String> namen = NamenTeilen(analog6Name);
+        MesswertAnzeigen(namen.first, namen.second, analog6, "%");
+      } else {
+        display.clearDisplay();
+        display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
+        display.display();
+      }
+      break;
+    case 10:
+      if (analog7 != -1) {
+        std::pair<String, String> namen = NamenTeilen(analog7Name);
+        MesswertAnzeigen(namen.first, namen.second, analog7, "%");
+      } else {
+        display.clearDisplay();
+        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+        display.display();
+      }
+      break;
+    case 11:
+      if (analog8 != -1) {
+        std::pair<String, String> namen = NamenTeilen(analog8Name);
+        MesswertAnzeigen(namen.first, namen.second, analog8, "%");
+      } else {
+        display.clearDisplay();
+        display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
+        display.display();
+      }
       break;
   }
 }

@@ -25,7 +25,7 @@
 #include "Configuration.h" // Alle Einstellungen werden dort vorgenommen!
 
 int ModuleZaehlen(); // Funktion, um die Anzahl der aktiven Module zu zählen  (siehe unten)
-
+int AnalogsensorenZaehlen(); // Funktion, um die Anzahl der aktiven Analogmodule zu zählen (siehe unten)
 /*
  * Funktion: setup()
  * Diese Funktion wird beim booten des Mikrocontrollers einmalig ausgeführt
@@ -54,18 +54,21 @@ void setup() {
    */
   Serial.println(" Fabmobil Pflanzensensor, V0.2");
   module = ModuleZaehlen(); // wie viele Module sind aktiv?
+  displayseiten = AnalogsensorenZaehlen() + 6;  // Wir haben 6 Displayseiten plus je eine pro Analogmodul
   #if MODUL_DEBUG // Debuginformationen
     Serial.print(F("# Anzahl Module: "));
     Serial.println(module);
+    Serial.print(F("# Anzahl Displayseiten: "));
+    Serial.println(displayseiten);
   #endif
   #if MODUL_LEDAMPEL // wenn das LED Ampel Modul aktiv is:
     pinMode(pinAmpelGruen, OUTPUT); // LED 1 (grün)
     pinMode(pinAmpelGelb, OUTPUT); // LED 2 (gelb)
     pinMode(pinAmpelRot, OUTPUT); // LED 3 (rot)
     // alle LEDs blinken beim Start als Funktionstest:
-    LedampelBlinken("gruen", 1, 1000);
-    LedampelBlinken("gelb", 1, 1000);
-    LedampelBlinken("rot", 1, 1000);
+    LedampelBlinken("gruen", 1, 300);
+    LedampelBlinken("gelb", 1, 300);
+    LedampelBlinken("rot", 1, 300);
     #if MODUL_DEBUG // Debuginformationen
       Serial.println(F("## Setup der Ledampel"));
       Serial.print(F("# PIN gruene LED:                 ")); Serial.println(pinAmpelGruen);
@@ -85,7 +88,7 @@ void setup() {
   #if MODUL_MULTIPLEXER // wenn das Multiplexer Modul aktiv ist werden die zwei Multiplexerpins als Ausgang gesetzt:
     pinMode(pinMultiplexerA, OUTPUT); // Pin A des Multiplexers
     pinMode(pinMultiplexerB, OUTPUT); // Pin B des Multiplexers
-    pinMode(pinMultiplexerB, OUTPUT); // Pin C des Multiplexers
+    pinMode(pinMultiplexerC, OUTPUT); // Pin C des Multiplexers
   #else
     pinMode(16, OUTPUT); // interne LED auf D0 / GPIO16
     digitalWrite(16, HIGH); // wird ausgeschalten (invertiertes Verhalten!)
@@ -145,7 +148,6 @@ void loop() {
    * ausgelesen. Dazwischen werden nur Anfragen an den Webserver abgefragt.
    */
   unsigned long millisAktuell = millis(); // aktuelle Millisekunden auslesen
-
   #if MODUL_DEBUG // Debuginformation
     Serial.println(F("############ Begin von loop() #############"));
     #if MODUL_DISPLAY
@@ -167,48 +169,112 @@ void loop() {
 
   MDNS.update(); // MDNS updaten
 
-  // Helligkeit messen:
-  #if MODUL_HELLIGKEIT  // wenn das Helligkeit Modul aktiv ist
-    if (millisAktuell - millisVorherHelligkeit >= intervallHelligkeit) { // wenn das Intervall erreicht ist
-      #if MODUL_DEBUG
-        Serial.println(F("### intervallHelligkeit erreicht."));
-      #endif
-      millisVorherHelligkeit = millisAktuell; // neuen Wert übernehmen
+  // Alle Analogsensoren werden hintereinander gemessen
+  if (millisAktuell - millisVorherAnalog >= intervallAnalog) { // wenn das Intervall erreicht ist
+    millisVorherAnalog = millisAktuell; // neuen Wert übernehmen
+    #if MODUL_DEBUG
+      Serial.println(F("### intervallAnalog erreicht."));
+    #endif
+
+    // Helligkeit messen:
+    #if MODUL_HELLIGKEIT  // wenn das Helligkeit Modul aktiv ist
       // Ggfs. Multiplexer umstellen:
       #if MODUL_MULTIPLEXER
         MultiplexerWechseln(1, 1, 1); // Multiplexer auf Ausgang 0 stellen
-        delay(500); // 0,5s warten
       #endif
       // Helligkeit messen:
-      messwertHelligkeit = HelligkeitMessen(); // Messwert einlesen
+      messwertHelligkeit = analogRead(pinAnalog); // Messwert einlesen
       // Messwert in Prozent umrechnen:
-      messwertHelligkeitProzent = HelligkeitUmrechnen(messwertHelligkeit, helligkeitMinimum, helligkeitMaximum); // Skalierung auf maximal 0 bis 100
-    }
-  #endif
+      messwertHelligkeitProzent = map(messwertHelligkeit, helligkeitMinimum, helligkeitMaximum, 0, 100); // Skalierung auf maximal 0 bis 100
+      Serial.print(F("Helligkeit: ")); Serial.print(messwertHelligkeitProzent);
+      Serial.print(F("%       (Messwert: ")); Serial.print(messwertHelligkeit);
+      Serial.println(F(")"));
+    #endif
 
-  // Bodenfeuchte messen;
-  #if MODUL_BODENFEUCHTE // wenn das Bodenfeuchte Modul aktiv is
-    if (millisAktuell - millisVorherBodenfeuchte >= intervallBodenfeuchte) { // wenn das Intervall erreicht ist
-      #if MODUL_DEBUG
-        Serial.println(F("### intervallBodenfeuchte erreicht."));
-      #endif
-      millisVorherBodenfeuchte = millisAktuell; // neuen Wert übernehmen
+    // Bodenfeuchte messen:
+    #if MODUL_BODENFEUCHTE // wenn das Bodenfeuchte Modul aktiv is
       // Ggfs. Multiplexer umstellen:
       #if MODUL_MULTIPLEXER // wenn der Multiplexer aktiv ist
         MultiplexerWechseln(0, 1, 1); // Multiplexer auf Ausgang 1 stellen
-        delay(500); // 0,5s warten
       #endif
       // Bodenfeuchte messen
       messwertBodenfeuchte = analogRead(pinAnalog); // Messwert einlesen
       // und in Prozent umrechnen
-      if ( messwertBodenfeuchte <= 100 ) {
-        Serial.print(F("Bodenfeuchtemessung fehlgeschlagen (")); Serial.print(messwertBodenfeuchte);
-        Serial.println(F(" < 100), alter Wert wird weiterverwendet"));
-      } else {
-        messwertBodenfeuchteProzent = BodenfeuchteUmrechnen(messwertBodenfeuchte, bodenfeuchteMinimum, bodenfeuchteMaximum); // Skalierung auf maximal 0 bis 100
-      }
-    }
-  #endif
+      messwertBodenfeuchteProzent = map(messwertBodenfeuchte, bodenfeuchteMinimum, bodenfeuchteMaximum, 0, 100); // Skalierung auf maximal 0 bis 100
+      Serial.print(F("Bodenfeuchte: ")); Serial.print(messwertBodenfeuchteProzent);
+      Serial.print(F("%     (Messwert: ")); Serial.print(messwertBodenfeuchte);
+      Serial.println(F(")"));
+    #endif
+
+    // Analogsensor3 messen:
+    #if MODUL_ANALOG3 // wenn das Analog3 Modul aktiv ist
+      MultiplexerWechseln(1, 0, 1); // Multiplexer auf Eingang 2 stellen
+      messwertAnalog3 = analogRead(pinAnalog); // Messwert einlesen
+      // und in Prozent umrechnen
+      messwertAnalog3Prozent = map(messwertAnalog3, analog3Minimum, analog3Maximum, 0, 100); // Skalierung auf maximal 0 bis 100
+      Serial.print(F("Analog3: ")); Serial.print(messwertAnalog3Prozent);
+      Serial.print(F("%         (Messwert: ")); Serial.print(messwertAnalog3);
+      Serial.println(F(")"));
+    #endif
+
+    // Analogsensor4 messen:
+    #if MODUL_ANALOG4 // wenn das Analog4 Modul aktiv ist
+      MultiplexerWechseln(0, 0, 1); // Multiplexer auf Eingang 3 stellen
+      messwertAnalog4 = analogRead(pinAnalog); // Messwert einlesen
+      // und in Prozent umrechnen
+      messwertAnalog4Prozent = map(messwertAnalog4, analog4Minimum, analog4Maximum, 0, 100); // Skalierung auf maximal 0 bis 100
+      Serial.print(F("Analog4: ")); Serial.print(messwertAnalog4Prozent);
+      Serial.print(F("%         (Messwert: ")); Serial.print(messwertAnalog4);
+      Serial.println(F(")"));
+    #endif
+
+    // Analogsensor5 messen:
+    #if MODUL_ANALOG5 // wenn das Analog5 Modul aktiv ist
+      MultiplexerWechseln(1, 1, 0); // Multiplexer auf Eingang 4 stellen
+      messwertAnalog5 = analogRead(pinAnalog); // Messwert einlesen
+      // und in Prozent umrechnen
+      messwertAnalog5Prozent = map(messwertAnalog5, analog5Minimum, analog5Maximum, 0, 100); // Skalierung auf maximal 0 bis 100
+      Serial.print(F("Analog5: ")); Serial.print(messwertAnalog5Prozent);
+      Serial.print(F("%         (Messwert: ")); Serial.print(messwertAnalog5);
+      Serial.println(F(")"));
+    #endif
+
+    // Analogsensor6 messen:
+    #if MODUL_ANALOG6 // wenn das Analog6 Modul aktiv ist
+      MultiplexerWechseln(0, 1, 0); // Multiplexer auf Eingang 5 stellen
+      messwertAnalog6 = analogRead(pinAnalog); // Messwert einlesen
+      // und in Prozent umrechnen
+      messwertAnalog6Prozent = map(messwertAnalog6, analog6Minimum, analog6Maximum, 0, 100); // Skalierung auf maximal 0 bis 100
+      Serial.print(F("Analog6: ")); Serial.print(messwertAnalog6Prozent);
+      Serial.print(F("%         (Messwert: ")); Serial.print(messwertAnalog6);
+      Serial.println(F(")"));
+    #endif
+
+    // Analogsensor7 messen:
+    #if MODUL_ANALOG7 // wenn das Analog7 Modul aktiv ist
+      MultiplexerWechseln(1, 0, 0); // Multiplexer auf Eingang 6 stellen
+      messwertAnalog7 = analogRead(pinAnalog); // Messwert einlesen
+      // und in Prozent umrechnen
+      messwertAnalog7Prozent = map(messwertAnalog7, analog7Minimum, analog7Maximum, 0, 100); // Skalierung auf maximal 0 bis 100
+      Serial.print(F("Analog7: ")); Serial.print(messwertAnalog7Prozent);
+      Serial.print(F("%         (Messwert: ")); Serial.print(messwertAnalog7);
+      Serial.println(F(")"));
+    #endif
+
+    // Analogsensor8 messen:
+    #if MODUL_ANALOG8 // wenn das Analog8 Modul aktiv ist
+      MultiplexerWechseln(0, 0, 0); // Multiplexer auf Eingang 7 stellen
+      messwertAnalog8 = analogRead(pinAnalog); // Messwert einlesen
+      // und in Prozent umrechnen
+      messwertAnalog8Prozent = map(messwertAnalog8, analog8Minimum, analog8Maximum, 0, 100); // Skalierung auf maximal 0 bis 100
+      Serial.print(F("Analog8: ")); Serial.print(messwertAnalog8Prozent);
+      Serial.print(F("%         (Messwert: ")); Serial.print(messwertAnalog8);
+      Serial.println(F(")"));
+    #endif
+
+    digitalWrite(pinMultiplexerB, HIGH); // eingebaute LED ausschalten
+    digitalWrite(pinMultiplexerC, HIGH); // eingebaute LED ausschalten
+  }
 
   // Luftfeuchte und -temperatur messen:
   #if MODUL_DHT // wenn das DHT Modul aktiv ist
@@ -237,7 +303,7 @@ void loop() {
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist
     if (millisAktuell - millisVorherDisplay >= intervallDisplay) {
       status += 1; // status gibt an, welche Anzeige auf dem Display aktiv ist
-      if ( status == 6) { // wir haben 6 unterschiedliche Bilder
+      if ( status == displayseiten) { // wenn wir das letzte Displaybild erreicht haben
         status = 0; // danach geht es von neuem los
       }
       #if MODUL_DEBUG
@@ -245,7 +311,10 @@ void loop() {
       #endif
       millisVorherDisplay = millisAktuell; // neuen Wert übernehmen
       // Diese Funktion kümmert sich um die Displayanzeige:
-      DisplayMesswerte(messwertBodenfeuchteProzent, messwertHelligkeitProzent, messwertLuftfeuchte, messwertLufttemperatur, status);
+      DisplayMesswerte(messwertBodenfeuchteProzent, bodenfeuchteName, messwertHelligkeitProzent, helligkeitName,
+        messwertLufttemperatur, messwertLuftfeuchte, messwertAnalog3Prozent, analog3Name, messwertAnalog4Prozent,
+        analog4Name, messwertAnalog5Prozent, analog5Name, messwertAnalog6Prozent, analog6Name, messwertAnalog7Prozent,
+        analog7Name, messwertAnalog8Prozent, analog8Name, status);
     }
   #endif
 
@@ -277,4 +346,19 @@ int ModuleZaehlen() {
     if (MODUL_LEDAMPEL) aktiveModule++; // wenn das LED Ampel Modul aktiv ist, wird die Variable um 1 erhöht
     if (MODUL_WIFI) aktiveModule++; // wenn das Wifi Modul aktiv ist, wird die Variable um 1 erhöht
     return aktiveModule; // die Anzahl der aktiven Module wird zurückgegeben
+}
+
+/* Funktion: AnalogsensorenZaehlen()
+ * Funktion, um die Anzahl der aktiven Analogsensormodule zu zählen
+* gibt die Anzahl der Module als Integer zurück.
+*/
+int AnalogsensorenZaehlen() {
+  int aktiveModule = 0;
+  if (MODUL_ANALOG3) aktiveModule++; // wenn das Analog3 Modul aktiv ist, wird die Variable um 1 erhöht
+  if (MODUL_ANALOG4) aktiveModule++; // wenn das Analog4 Modul aktiv ist, wird die Variable um 1 erhöht
+  if (MODUL_ANALOG5) aktiveModule++; // wenn das Analog5 Modul aktiv ist, wird die Variable um 1 erhöht
+  if (MODUL_ANALOG6) aktiveModule++; // wenn das Analog6 Modul aktiv ist, wird die Variable um 1 erhöht
+  if (MODUL_ANALOG7) aktiveModule++; // wenn das Analog7 Modul aktiv ist, wird die Variable um 1 erhöht
+  if (MODUL_ANALOG8) aktiveModule++; // wenn das Analog8 Modul aktiv ist, wird die Variable um 1 erhöht
+  return aktiveModule; // die Anzahl der aktiven Module wird zurückgegeben
 }

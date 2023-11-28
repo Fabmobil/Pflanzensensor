@@ -24,12 +24,16 @@ void WebseiteStartAusgeben() {
   String formatierterCode = htmlHeader;
   formatierterCode += "<p>Diese Seite zeigt die Sensordaten deines Pflanzensensors an. Sie aktualisiert sich automatisch aller 10 Sekunden.</p>";
   #if MODUL_HELLIGKEIT
-    formatierterCode += "<h2>Helligkeit</h2><p>";
+    formatierterCode += "<h2>Helligkeit: ";
+    formatierterCode += helligkeitName;
+    formatierterCode += "</h2><p>";
     formatierterCode += messwertHelligkeitProzent;
     formatierterCode += "%</p>";
   #endif
   #if MODUL_BODENFEUCHTE
-    formatierterCode += "<h2>Bodenfeuchte</h2><p>";
+    formatierterCode += "<h2>Bodenfeuchte: ";
+    formatierterCode += bodenfeuchteName;
+    formatierterCode += "</h2><p>";
     formatierterCode += messwertBodenfeuchteProzent;
     formatierterCode += "%</p>";
   #endif
@@ -39,6 +43,48 @@ void WebseiteStartAusgeben() {
     formatierterCode += "°C</p>";
     formatierterCode += "<h2>Luftfeuchte</h2><p>";
     formatierterCode += messwertLuftfeuchte;
+    formatierterCode += "%</p>";
+  #endif
+  #if MODUL_ANALOG3
+    formatierterCode += "<h2>Analogsensor 3: ";
+    formatierterCode += analog3Name;
+    formatierterCode += "</h2><p>";
+    formatierterCode += messwertAnalog3;
+    formatierterCode += "%</p>";
+  #endif
+  #if MODUL_ANALOG4
+    formatierterCode += "<h2>Analogsensor 4: ";
+    formatierterCode += analog4Name;
+    formatierterCode += "</h2><p>";
+    formatierterCode += messwertAnalog4;
+    formatierterCode += "%</p>";
+  #endif
+  #if MODUL_ANALOG5
+    formatierterCode += "<h2>Analogsensor 5: ";
+    formatierterCode += analog5Name;
+    formatierterCode += "</h2><p>";
+    formatierterCode += messwertAnalog5;
+    formatierterCode += "%</p>";
+  #endif
+  #if MODUL_ANALOG6
+    formatierterCode += "<h2>Analogsensor 6: ";
+    formatierterCode += analog6Name;
+    formatierterCode += "</h2><p>";
+    formatierterCode += messwertAnalog6;
+    formatierterCode += "%</p>";
+  #endif
+  #if MODUL_ANALOG7
+    formatierterCode += "<h2>Analogsensor 7: ";
+    formatierterCode += analog7Name;
+    formatierterCode += "</h2><p>";
+    formatierterCode += messwertAnalog7;
+    formatierterCode += "%</p>";
+  #endif
+  #if MODUL_ANALOG8
+    formatierterCode += "<h2>Analogsensor 8: ";
+    formatierterCode += analog8Name;
+    formatierterCode += "</h2><p>";
+    formatierterCode += messwertAnalog8;
     formatierterCode += "%</p>";
   #endif
   formatierterCode += "<h2>Links</h2>";
@@ -223,6 +269,139 @@ void WebseiteDebugAusgeben() {
     formatierterCode += "<p>IFTTT Modul deaktiviert!</p>";
   #endif
 
+  #if MODUL_ANALOG3
+    formatierterCode += "<h3>Analogsensor 3 Modul</h3>";
+    formatierterCode += "<ul>";
+    formatierterCode += "<li>Sensorname: ";
+    formatierterCode += analog3Name;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert Prozent: ";
+    formatierterCode += messwertAnalog3;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert: ";
+    formatierterCode += messwertAnalog3;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Minimalwert: ";
+    formatierterCode += analog3Minimum;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Maximalwert: ";
+    formatierterCode += analog3Maximum;
+    formatierterCode += "</li>";
+    formatierterCode += "</ul>";
+  #else
+    formatierterCode += "<p>Analogsensor 3 Modul deaktiviert!</p>";
+  #endif
+  #if MODUL_ANALOG4
+    formatierterCode += "<h3>Analogsensor 4 Modul</h3>";
+    formatierterCode += "<ul>";
+    formatierterCode += "<li>Sensorname: ";
+    formatierterCode += analog4Name;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert Prozent: ";
+    formatierterCode += messwertAnalog4;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert: ";
+    formatierterCode += messwertAnalog4;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Minimalwert: ";
+    formatierterCode += analog4Minimum;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Maximalwert: ";
+    formatierterCode += analog4Maximum;
+    formatierterCode += "</li>";
+    formatierterCode += "</ul>";
+  #else
+    formatierterCode += "<p>Analogsensor 4 Modul deaktiviert!</p>";
+  #endif
+  #if MODUL_ANALOG5
+    formatierterCode += "<h3>Analogsensor 5 Modul</h3>";
+    formatierterCode += "<ul>";
+    formatierterCode += "<li>Sensorname: ";
+    formatierterCode += analog5Name;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert Prozent: ";
+    formatierterCode += messwertAnalog5;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert: ";
+    formatierterCode += messwertAnalog5;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Minimalwert: ";
+    formatierterCode += analog5Minimum;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Maximalwert: ";
+    formatierterCode += analog5Maximum;
+    formatierterCode += "</li>";
+    formatierterCode += "</ul>";
+  #else
+    formatierterCode += "<p>Analogsensor 5 Modul deaktiviert!</p>";
+  #endif
+  #if MODUL_ANALOG6
+    formatierterCode += "<h3>Analogsensor 6 Modul</h3>";
+    formatierterCode += "<ul>";
+    formatierterCode += "<li>Sensorname: ";
+    formatierterCode += analog6Name;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert Prozent: ";
+    formatierterCode += messwertAnalog6;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert: ";
+    formatierterCode += messwertAnalog6;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Minimalwert: ";
+    formatierterCode += analog6Minimum;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Maximalwert: ";
+    formatierterCode += analog6Maximum;
+    formatierterCode += "</li>";
+    formatierterCode += "</ul>";
+  #else
+    formatierterCode += "<p>Analogsensor 6 Modul deaktiviert!</p>";
+  #endif
+  #if MODUL_ANALOG7
+    formatierterCode += "<h3>Analogsensor 7 Modul</h3>";
+    formatierterCode += "<ul>";
+    formatierterCode += "<li>Sensorname: ";
+    formatierterCode += analog7Name;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert Prozent: ";
+    formatierterCode += messwertAnalog7;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert: ";
+    formatierterCode += messwertAnalog7;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Minimalwert: ";
+    formatierterCode += analog7Minimum;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Maximalwert: ";
+    formatierterCode += analog7Maximum;
+    formatierterCode += "</li>";
+    formatierterCode += "</ul>";
+  #else
+    formatierterCode += "<p>Analogsensor 7 Modul deaktiviert!</p>";
+  #endif
+  #if MODUL_ANALOG8
+    formatierterCode += "<h3>Analogsensor 8 Modul</h3>";
+    formatierterCode += "<ul>";
+    formatierterCode += "<li>Sensorname: ";
+    formatierterCode += analog8Name;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert Prozent: ";
+    formatierterCode += messwertAnalog8;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Messwert: ";
+    formatierterCode += messwertAnalog8;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Minimalwert: ";
+    formatierterCode += analog8Minimum;
+    formatierterCode += "</li>";
+    formatierterCode += "<li>Maximalwert: ";
+    formatierterCode += analog8Maximum;
+    formatierterCode += "</li>";
+    formatierterCode += "</ul>";
+  #else
+    formatierterCode += "<p>Analogsensor 8 Modul deaktiviert!</p>";
+  #endif
+
   formatierterCode += "<h2>Links</h2>";
   formatierterCode += "<ul>";
   formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
@@ -256,6 +435,21 @@ void WebseiteAdminAusgeben() {
   formatierterCode += "<p>Auf dieser Seite können die Variablen verändert werden.</p>";
   formatierterCode += "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p>";
   formatierterCode += "<form action=\"/setzeVariablen\" method=\"POST\">";
+  #if MODUL_BODENFEUCHTE
+    formatierterCode += "<h2>Bodenfeuchte</h2>";
+    formatierterCode += "<p>Sensorname: ";
+    formatierterCode += "<input type=\"text\" size=\"20\" name=\"bodenfeuchteName\" placeholder=\"";
+    formatierterCode += bodenfeuchteName;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Minimalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteMinimum\" placeholder=\"";
+    formatierterCode += bodenfeuchteMinimum;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Maximalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteMaximum\" placeholder=\"";
+    formatierterCode += bodenfeuchteMaximum;
+    formatierterCode += "\"></p>";
+  #endif
   #if MODUL_DISPLAY
     formatierterCode += "<h2>Display</h2>";
     formatierterCode += "<p>status (Anzeigenummer auf dem Display):";
@@ -265,6 +459,10 @@ void WebseiteAdminAusgeben() {
   #endif
   #if MODUL_HELLIGKEIT
     formatierterCode += "<h2>Helligkeitssensor</h2>";
+    formatierterCode += "<p>Sensorname: ";
+    formatierterCode += "<input type=\"text\" size=\"20\" name=\"helligkeitName\" placeholder=\"";
+    formatierterCode += helligkeitName;
+    formatierterCode += "\"></p>";
     formatierterCode += "<p>Minimalwert: ";
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitMinimum\" placeholder=\"";
     formatierterCode += helligkeitMinimum;
@@ -322,13 +520,104 @@ void WebseiteAdminAusgeben() {
       formatierterCode += "\"></p>";
     #endif
   #endif
+  #if MODUL_ANALOG3
+    formatierterCode += "<h2>Analogsensor 3</h2>";
+    formatierterCode += "<p>Sensorname: ";
+    formatierterCode += "<input type=\"text\" size=\"20\" name=\"analog3Name\" placeholder=\"";
+    formatierterCode += analog3Name;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Minimalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog3Minimum\" placeholder=\"";
+    formatierterCode += analog3Minimum;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Maximalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog3Maximum\" placeholder=\"";
+    formatierterCode += analog3Maximum;
+    formatierterCode += "\"></p>";
+  #endif
+  #if MODUL_ANALOG4
+    formatierterCode += "<h2>Analogsensor 4</h2>";
+    formatierterCode += "<p>Sensorname: ";
+    formatierterCode += "<input type=\"text\" size=\"20\" name=\"analog4Name\" placeholder=\"";
+    formatierterCode += analog4Name;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Minimalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog4Minimum\" placeholder=\"";
+    formatierterCode += analog4Minimum;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Maximalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog4Maximum\" placeholder=\"";
+    formatierterCode += analog4Maximum;
+    formatierterCode += "\"></p>";
+  #endif
+  #if MODUL_ANALOG5
+    formatierterCode += "<h2>Analogsensor 5</h2>";
+    formatierterCode += "<p>Sensorname: ";
+    formatierterCode += "<input type=\"text\" size=\"20\" name=\"analog5Name\" placeholder=\"";
+    formatierterCode += analog5Name;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Minimalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog5Minimum\" placeholder=\"";
+    formatierterCode += analog5Minimum;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Maximalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog5Maximum\" placeholder=\"";
+    formatierterCode += analog5Maximum;
+    formatierterCode += "\"></p>";
+  #endif
+  #if MODUL_ANALOG6
+    formatierterCode += "<h2>Analogsensor 6</h2>";
+    formatierterCode += "<p>Sensorname: ";
+    formatierterCode += "<input type=\"text\" size=\"20\" name=\"analog6Name\" placeholder=\"";
+    formatierterCode += analog6Name;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Minimalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog6Minimum\" placeholder=\"";
+    formatierterCode += analog6Minimum;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Maximalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog6Maximum\" placeholder=\"";
+    formatierterCode += analog6Maximum;
+    formatierterCode += "\"></p>";
+  #endif
+  #if MODUL_ANALOG7
+    formatierterCode += "<h2>Analogsensor 7</h2>";
+    formatierterCode += "<p>Sensorname: ";
+    formatierterCode += "<input type=\"text\" size=\"20\" name=\"analog7Name\" placeholder=\"";
+    formatierterCode += analog7Name;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Minimalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog7Minimum\" placeholder=\"";
+    formatierterCode += analog7Minimum;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Maximalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog7Maximum\" placeholder=\"";
+    formatierterCode += analog7Maximum;
+    formatierterCode += "\"></p>";
+  #endif
+  #if MODUL_ANALOG8
+    formatierterCode += "<h2>Analogsensor 8</h2>";
+    formatierterCode += "<p>Sensorname: ";
+    formatierterCode += "<input type=\"text\" size=\"20\" name=\"analog8Name\" placeholder=\"";
+    formatierterCode += analog8Name;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Minimalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog8Minimum\" placeholder=\"";
+    formatierterCode += analog8Minimum;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>Maximalwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog8Maximum\" placeholder=\"";
+    formatierterCode += analog8Maximum;
+    formatierterCode += "\"></p>";
+  #endif
+
   formatierterCode += "<h2>Passwort</h2>";
   formatierterCode += "<p><input type=\"password\" name=\"Passwort\" placeholder=\"Passwort\"><br>";
   formatierterCode += "<input type=\"submit\" value=\"Absenden\"></p></form>";
 
   formatierterCode += "<h2>Links</h2>";
   formatierterCode += "<ul>";
-  formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
+  formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
   #if MODUL_DEBUG
   formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
   #endif
@@ -360,25 +649,27 @@ void WebseiteSetzeVariablen() {
     return;
   }
   if ( Webserver.arg("Passwort") == wifiAdminPasswort) { // wenn das Passwort stimmt
-      if ( Webserver.arg("ampelModus") != "" ) { // wenn ein neuer Wert für ampelModus übergeben wurde
-        ampelModus = Webserver.arg("ampelModus").toInt(); // neuen Wert übernehmen
+    if ( Webserver.arg("ampelModus") != "" ) { // wenn ein neuer Wert für ampelModus übergeben wurde
+      ampelModus = Webserver.arg("ampelModus").toInt(); // neuen Wert übernehmen
+    }
+    #if MODUL_HELLIGKEIT
+      if ( Webserver.arg("ampelHelligkeitGruen") != "" ) { // wenn ein neuer Wert für ampelHelligkeitGruen übergeben wurde
+        ampelHelligkeitGruen = Webserver.arg("ampelHelligkeitGruen").toInt(); // neuen Wert übernehmen
       }
-      #if MODUL_HELLIGKEIT
-        if ( Webserver.arg("ampelHelligkeitGruen") != "" ) { // wenn ein neuer Wert für ampelHelligkeitGruen übergeben wurde
-          ampelHelligkeitGruen = Webserver.arg("ampelHelligkeitGruen").toInt(); // neuen Wert übernehmen
-        }
-        if ( Webserver.arg("ampelHelligkeitRot") != "" ) { // wenn ein neuer Wert für ampelHelligkeitRot übergeben wurde
-          ampelHelligkeitRot = Webserver.arg("ampelHelligkeitRot").toInt(); // neuen Wert übernehmen
-        }
-      #endif
-      #if MODUL_BODENFEUCHTE
-        if ( Webserver.arg("ampelBodenfeuchteGruen") != "" ) { // wenn ein neuer Wert für ampelBodenfeuchteGruen übergeben wurde
-          ampelBodenfeuchteGruen = Webserver.arg("ampelBodenfeuchteGruen").toInt(); // neuen Wert übernehmen
-        }
-        if ( Webserver.arg("ampelBodenfeuchteRot") != "" ) { // wenn ein neuer Wert für ampelBodenfeuchteRot übergeben wurde
-          ampelBodenfeuchteRot = Webserver.arg("ampelBodenfeuchteRot").toInt(); // neuen Wert übernehmen
-        }
-      #endif
+      if ( Webserver.arg("ampelHelligkeitRot") != "" ) { // wenn ein neuer Wert für ampelHelligkeitRot übergeben wurde
+        ampelHelligkeitRot = Webserver.arg("ampelHelligkeitRot").toInt(); // neuen Wert übernehmen
+      }
+    #endif
+    #if MODUL_BODENFEUCHTE
+      if ( Webserver.arg("bodenfeuchteName") != "" ) { // wenn ein neuer Wert für bodenfeuchteName übergeben wurde
+        bodenfeuchteName = Webserver.arg("bodenfeuchteName"); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("ampelBodenfeuchteGruen") != "" ) { // wenn ein neuer Wert für ampelBodenfeuchteGruen übergeben wurde
+        ampelBodenfeuchteGruen = Webserver.arg("ampelBodenfeuchteGruen").toInt(); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("ampelBodenfeuchteRot") != "" ) { // wenn ein neuer Wert für ampelBodenfeuchteRot übergeben wurde
+        ampelBodenfeuchteRot = Webserver.arg("ampelBodenfeuchteRot").toInt(); // neuen Wert übernehmen
+      }
     #endif
     #if MODUL_DISPLAY
       if ( Webserver.arg("status") != "" ) { // wenn ein neuer Wert für status übergeben wurde
@@ -386,6 +677,9 @@ void WebseiteSetzeVariablen() {
         }
     #endif
     #if MODUL_HELLIGKEIT
+      if ( Webserver.arg("helligkeitName") != "" ) { // wenn ein neuer Wert für helligkeitName übergeben wurde
+        helligkeitName = Webserver.arg("helligkeitName"); // neuen Wert übernehmen
+      }
       if ( Webserver.arg("helligkeitMinimum") != "" ) { // wenn ein neuer Wert für helligkeitMinimum übergeben wurde
         helligkeitMinimum = Webserver.arg("helligkeitMinimum").toInt(); // neuen Wert übernehmen
       }
@@ -393,9 +687,76 @@ void WebseiteSetzeVariablen() {
         helligkeitMaximum = Webserver.arg("helligkeitMaximum").toInt(); // neuen Wert übernehmen
       }
     #endif
+    #if MODUL_ANALOG3
+      if ( Webserver.arg("analog3Name") != "" ) { // wenn ein neuer Wert für analog3Name übergeben wurde
+        analog3Name = Webserver.arg("analog3Name"); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("analog3Minimum") != "" ) { // wenn ein neuer Wert für analog3Minimum übergeben wurde
+        analog3Minimum = Webserver.arg("analog3Minimum").toInt(); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("analog3Maximum") != "" ) { // wenn ein neuer Wert für analog3Maximum übergeben wurde
+        analog3Maximum = Webserver.arg("analog3Maximum").toInt(); // neuen Wert übernehmen
+      }
+    #endif
+    #if MODUL_ANALOG4
+      if ( Webserver.arg("analog4Name") != "" ) { // wenn ein neuer Wert für analog4Name übergeben wurde
+        analog4Name = Webserver.arg("analog4Name"); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("analog4Minimum") != "" ) { // wenn ein neuer Wert für analog4Minimum übergeben wurde
+        analog4Minimum = Webserver.arg("analog4Minimum").toInt(); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("analog4Maximum") != "" ) { // wenn ein neuer Wert für analog4Maximum übergeben wurde
+        analog4Maximum = Webserver.arg("analog4Maximum").toInt(); // neuen Wert übernehmen
+      }
+    #endif
+    #if MODUL_ANALOG5
+      if ( Webserver.arg("analog5Name") != "" ) { // wenn ein neuer Wert für analog5Name übergeben wurde
+        analog5Name = Webserver.arg("analog5Name"); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("analog5Minimum") != "" ) { // wenn ein neuer Wert für analog5Minimum übergeben wurde
+        analog5Minimum = Webserver.arg("analog5Minimum").toInt(); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("analog5Maximum") != "" ) { // wenn ein neuer Wert für analog5Maximum übergeben wurde
+        analog5Maximum = Webserver.arg("analog5Maximum").toInt(); // neuen Wert übernehmen
+      }
+    #endif
+    #if MODUL_ANALOG6
+      if ( Webserver.arg("analog6Name") != "" ) { // wenn ein neuer Wert für analog6Name übergeben wurde
+        analog6Name = Webserver.arg("analog6Name"); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("analog6Minimum") != "" ) { // wenn ein neuer Wert für analog6Minimum übergeben wurde
+        analog6Minimum = Webserver.arg("analog6Minimum").toInt(); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("analog6Maximum") != "" ) { // wenn ein neuer Wert für analog6Maximum übergeben wurde
+        analog6Maximum = Webserver.arg("analog6Maximum").toInt(); // neuen Wert übernehmen
+      }
+    #endif
+    #if MODUL_ANALOG7
+      if ( Webserver.arg("analog7Name") != "" ) { // wenn ein neuer Wert für analog7Name übergeben wurde
+        analog7Name = Webserver.arg("analog7Name"); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("analog7Minimum") != "" ) { // wenn ein neuer Wert für analog7Minimum übergeben wurde
+        analog7Minimum = Webserver.arg("analog7Minimum").toInt(); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("analog7Maximum") != "" ) { // wenn ein neuer Wert für analog7Maximum übergeben wurde
+        analog7Maximum = Webserver.arg("analog7Maximum").toInt(); // neuen Wert übernehmen
+      }
+    #endif
+    #if MODUL_ANALOG8
+      if ( Webserver.arg("analog8Name") != "" ) { // wenn ein neuer Wert für analog8Name übergeben wurde
+        analog8Name = Webserver.arg("analog8Name"); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("analog8Minimum") != "" ) { // wenn ein neuer Wert für analog8Minimum übergeben wurde
+        analog8Minimum = Webserver.arg("analog8Minimum").toInt(); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("analog8Maximum") != "" ) { // wenn ein neuer Wert für analog8Maximum übergeben wurde
+        analog8Maximum = Webserver.arg("analog8Maximum").toInt(); // neuen Wert übernehmen
+      }
+    #endif
     String formatierterCode = htmlHeader; // formatierterCode beginnt mit Kopf der HTML-Seite
     formatierterCode += "<h2>Erfolgreich!</h2>";
     formatierterCode += "<ul>";
+    formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
     formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
     #if MODUL_DEBUG
     formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";

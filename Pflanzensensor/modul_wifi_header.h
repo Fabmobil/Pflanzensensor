@@ -2,7 +2,7 @@ String htmlHeader = F(R"====(
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="utf-8" http-equiv="refresh" content="10">
+  <meta charset="utf-8" http-equiv="refresh" content="60">
   <title>Fabmobil Pflanzensensor</title>
   <style>
     h1, h2, h3, h4, h5 {
@@ -18,7 +18,7 @@ String htmlHeader = F(R"====(
     }
 
     input {
-      font-size: 2em;
+      font-size: 1.5em;
     }
 
     h1 {

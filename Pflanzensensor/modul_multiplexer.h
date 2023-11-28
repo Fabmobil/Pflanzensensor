@@ -31,5 +31,6 @@ void MultiplexerWechseln(int a, int b, int c) {
   digitalWrite(pinMultiplexerA, a); // Digitaleingang A setzen
   digitalWrite(pinMultiplexerB, b); // Digitaleingang B setzen
   digitalWrite(pinMultiplexerC, c); // Digitaleingang C setzen
-  delay(1000); // warten, bis der IC umgeschalten hat
+  delay(100); // warten, bis der IC umgeschalten hat
+
 }
