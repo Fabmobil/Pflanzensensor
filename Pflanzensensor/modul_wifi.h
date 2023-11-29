@@ -10,6 +10,71 @@
 WiFiClient client;
 ESP8266WebServer Webserver(80); //
 
+/* Funktion: String GeneriereSensorString(int sensorNummer, const String& sensorName, const String& messwert, const String& einheit)
+ * Generiert einen String für einen Sensor
+ * Parameter:
+ * int sensorNummer: Nummer des Sensors
+ * String sensorName: Name des Sensors
+ * int messwert: Messwert des Sensors
+ * String einheit: Einheit des Messwerts
+ * Rückgabewert: formatierter String
+ */
+String GeneriereSensorString(const int sensorNummer, const String& sensorName, const int messwert, const String& einheit) {
+  String sensorString;
+  if (sensorNummer == 0) {
+    sensorString += "<h2>" + sensorName + "</h2><p>" + messwert + " " + einheit + "</p>";
+    return sensorString;
+  } else {
+    sensorString += "<h2>Analogsensor " + String(sensorNummer) + ": " + sensorName + "</h2><p>";
+    sensorString += messwert + " " + einheit + "</p>";
+    return sensorString;
+  }
+}
+
+/* Funktion: String GeneriereAnalogsensorDebugString(int sensorNummer, const String& sensorName, const int messwert, const int messwertProzent, const int minimum, const int maximum)
+ * Generiert einen String für einen Analogsensor
+ * Parameter:
+ * int sensorNummer: Nummer des Sensors
+ * String sensorName: Name des Sensors
+ * int messwert: Messwert des Sensors
+ * int messwertProzent: Messwert des Sensors in Prozent
+ * int minimum: Minimalwert des Sensors
+ * int maximum: Maximalwert des Sensors
+ * Rückgabewert: formatierter String
+ */
+String GeneriereAnalogsensorDebugString(const int sensorNummer, const String& sensorName, const int messwert,
+    const int messwertProzent, const int minimum, const int maximum) {
+  String analogsensorDebugString;
+  analogsensorDebugString += "<h3>Analogsensor " + String(sensorNummer) + " Modul</h3><ul>";
+  analogsensorDebugString += "<li>Sensorname: " + String(sensorName) + "</li>";
+  analogsensorDebugString += "<li>Messwert Prozent: " + String(messwertProzent) + "</li>";
+  analogsensorDebugString += "<li>Messwert: " + String(messwert) + "</li>";
+  analogsensorDebugString += "<li>Minimalwert: " + String(minimum) + "</li>";
+  analogsensorDebugString += "<li>Maximalwert: " + String(maximum) + "</li></ul>";
+  return analogsensorDebugString;
+}
+
+/* Funktion: String GeneriereAnalogsensorAdminString(int sensorNummer, const String& sensorName, const int minimum, const int maximum)
+ * Generiert einen String für einen Analogsensor
+ * Parameter:
+ * int sensorNummer: Nummer des Sensors
+ * String sensorName: Name des Sensors
+ * int minimum: Minimalwert des Sensors
+ * int maximum: Maximalwert des Sensors
+ * Rückgabewert: formatierter String
+ */
+String GeneriereAnalogsensorAdminString(int sensorNummer, const String& sensorName, const int minimum, const int maximum) {
+  String analogsensorAdminString;
+  analogsensorAdminString += "<h2>Analogsensor " + String(sensorNummer) + "</h2>";
+  analogsensorAdminString += "<p>Sensorname: ";
+  analogsensorAdminString += "<input type=\"text\" size=\"20\" name=\"analog" + String(sensorNummer) + "Name\" placeholder=\"" + String(sensorName) + "\"></p>";
+  analogsensorAdminString += "<p>Minimalwert: ";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "Minimum\" placeholder=\"" + String(minimum) + "\"></p>";
+  analogsensorAdminString += "<p>Maximalwert: ";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "Maximum\" placeholder=\"" + String(maximum) + "\"></p>";
+  return analogsensorAdminString;
+}
+
 /*
  * Funktion: Void WebseiteStartAusgeben()
  * Gibt die Startseite des Webservers aus.
@@ -24,68 +89,32 @@ void WebseiteStartAusgeben() {
   String formatierterCode = htmlHeader;
   formatierterCode += "<p>Diese Seite zeigt die Sensordaten deines Pflanzensensors an. Sie aktualisiert sich automatisch aller 10 Sekunden.</p>";
   #if MODUL_HELLIGKEIT
-    formatierterCode += "<h2>Helligkeit: ";
-    formatierterCode += helligkeitName;
-    formatierterCode += "</h2><p>";
-    formatierterCode += messwertHelligkeitProzent;
-    formatierterCode += "%</p>";
+    formatierterCode += GeneriereSensorString(0, helligkeitName, messwertHelligkeitProzent, "%");
   #endif
   #if MODUL_BODENFEUCHTE
-    formatierterCode += "<h2>Bodenfeuchte: ";
-    formatierterCode += bodenfeuchteName;
-    formatierterCode += "</h2><p>";
-    formatierterCode += messwertBodenfeuchteProzent;
-    formatierterCode += "%</p>";
+    formatierterCode += GeneriereSensorString(0, bodenfeuchteName, messwertBodenfeuchteProzent, "%");
   #endif
   #if MODUL_DHT
-    formatierterCode += "<h2>Lufttemperatur</h2><p>";
-    formatierterCode += messwertLufttemperatur;
-    formatierterCode += "°C</p>";
-    formatierterCode += "<h2>Luftfeuchte</h2><p>";
-    formatierterCode += messwertLuftfeuchte;
-    formatierterCode += "%</p>";
+    formatierterCode += GeneriereSensorString(0, "Lufttemperatur", messwertLufttemperatur, "°C");
+    formatierterCode += GeneriereSensorString(0, "Luftfeuchte", messwertLuftfeuchte, "%");
   #endif
   #if MODUL_ANALOG3
-    formatierterCode += "<h2>Analogsensor 3: ";
-    formatierterCode += analog3Name;
-    formatierterCode += "</h2><p>";
-    formatierterCode += messwertAnalog3;
-    formatierterCode += "%</p>";
+    formatierterCode += GeneriereSensorString(3, analog3Name, messwertAnalog3Prozent, "%");
   #endif
   #if MODUL_ANALOG4
-    formatierterCode += "<h2>Analogsensor 4: ";
-    formatierterCode += analog4Name;
-    formatierterCode += "</h2><p>";
-    formatierterCode += messwertAnalog4;
-    formatierterCode += "%</p>";
+    formatierterCode += GeneriereSensorString(4, analog4Name, messwertAnalog4Prozent, "%");
   #endif
   #if MODUL_ANALOG5
-    formatierterCode += "<h2>Analogsensor 5: ";
-    formatierterCode += analog5Name;
-    formatierterCode += "</h2><p>";
-    formatierterCode += messwertAnalog5;
-    formatierterCode += "%</p>";
+    formatierterCode += GeneriereSensorString(5, analog5Name, messwertAnalog5Prozent, "%");
   #endif
   #if MODUL_ANALOG6
-    formatierterCode += "<h2>Analogsensor 6: ";
-    formatierterCode += analog6Name;
-    formatierterCode += "</h2><p>";
-    formatierterCode += messwertAnalog6;
-    formatierterCode += "%</p>";
+    formatierterCode += GeneriereSensorString(6, analog6Name, messwertAnalog6Prozent, "%");
   #endif
   #if MODUL_ANALOG7
-    formatierterCode += "<h2>Analogsensor 7: ";
-    formatierterCode += analog7Name;
-    formatierterCode += "</h2><p>";
-    formatierterCode += messwertAnalog7;
-    formatierterCode += "%</p>";
+    formatierterCode += GeneriereSensorString(7, analog7Name, messwertAnalog7Prozent, "%");
   #endif
   #if MODUL_ANALOG8
-    formatierterCode += "<h2>Analogsensor 8: ";
-    formatierterCode += analog8Name;
-    formatierterCode += "</h2><p>";
-    formatierterCode += messwertAnalog8;
-    formatierterCode += "%</p>";
+    formatierterCode += GeneriereSensorString(8, analog8Name, messwertAnalog8Prozent, "%");
   #endif
   formatierterCode += "<h2>Links</h2>";
   formatierterCode += "<ul>";
@@ -104,7 +133,10 @@ void WebseiteStartAusgeben() {
   Webserver.send(200, "text/html", formatierterCode);
 }
 
-
+/*
+ * Funktion: Void WebseiteSetzeVariablen()
+ * Setzt die Variablen, die über die Adminseite geändert werden können.
+ */
 void WebseiteDebugAusgeben() {
   #include "modul_wifi_bilder.h"
   #include "modul_wifi_header.h"
@@ -117,8 +149,8 @@ void WebseiteDebugAusgeben() {
   formatierterCode += "</li>";
   formatierterCode += "</ul>";
 
-  formatierterCode += "<h3>DHT Modul</h3>";
   #if MODUL_DHT
+    formatierterCode += "<h3>DHT Modul</h3>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Lufttemperatur: ";
     formatierterCode += messwertLufttemperatur;
@@ -133,12 +165,10 @@ void WebseiteDebugAusgeben() {
     formatierterCode += dhtSensortyp;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
-  #else
-    formatierterCode += "<p>DHT Modul deaktiviert!</p>";
   #endif
 
-  formatierterCode += "<h3>Display Modul</h3>";
   #if MODUL_DISPLAY
+    formatierterCode += "<h3>Display Modul</h3>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Aktives Displaybild: ";
     formatierterCode += status;
@@ -153,12 +183,10 @@ void WebseiteDebugAusgeben() {
     formatierterCode += displayAdresse;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
-  #else
-    formatierterCode += "<p>Display Modul deaktiviert!</p>";
   #endif
 
-  formatierterCode += "<h3>Bodenfeuchte Modul</h3>";
   #if MODUL_BODENFEUCHTE
+    formatierterCode += "<h3>Bodenfeuchte Modul</h3>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Messwert Prozent: ";
     formatierterCode += messwertBodenfeuchteProzent;
@@ -167,12 +195,10 @@ void WebseiteDebugAusgeben() {
     formatierterCode += messwertBodenfeuchte;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
-  #else
-    formatierterCode += "<p>Bodenfeuchte Modul deaktiviert!</p>";
-  #endif
+ #endif
 
-  formatierterCode += "<h3>LEDAmpel Modul</h3>";
   #if MODUL_LEDAMPEL
+    formatierterCode += "<h3>LEDAmpel Modul</h3>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Modus: ";
     formatierterCode += ampelModus;
@@ -208,12 +234,10 @@ void WebseiteDebugAusgeben() {
     formatierterCode += ampelHelligkeitInvertiert;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
-  #else
-    formatierterCode += "<p>Bodenfeuchte Modul deaktiviert!</p>";
   #endif
 
-  formatierterCode += "<h3>Helligkeit Modul</h3>";
   #if MODUL_HELLIGKEIT
+    formatierterCode += "<h3>Helligkeit Modul</h3>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Messwert Prozent: ";
     formatierterCode += messwertHelligkeitProzent;
@@ -222,12 +246,10 @@ void WebseiteDebugAusgeben() {
     formatierterCode += messwertHelligkeit;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
-  #else
-    formatierterCode += "<p>Helligkeit Modul deaktiviert!</p>";
   #endif
 
-  formatierterCode += "<h3>Wifi Modul</h3>";
   #if MODUL_WIFI
+    formatierterCode += "<h3>Wifi Modul</h3>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Hostname: ";
     formatierterCode += wifiHostname;
@@ -252,11 +274,9 @@ void WebseiteDebugAusgeben() {
       formatierterCode += "</li>";
     }
     formatierterCode += "</ul>";
-  #else
-    formatierterCode += "<p>Wifi Modul deaktiviert!</p>";
   #endif
-  formatierterCode += "<h3>IFTTT Modul</h3>";
   #if MODUL_IFTTT
+    formatierterCode += "<h3>IFTTT Modul</h3>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>IFTTT Passwort: ";
     formatierterCode += wifiIftttPasswort;
@@ -265,145 +285,70 @@ void WebseiteDebugAusgeben() {
     formatierterCode += wifiIftttEreignis;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
-  #else
-    formatierterCode += "<p>IFTTT Modul deaktiviert!</p>";
-  #endif
+ #endif
 
   #if MODUL_ANALOG3
-    formatierterCode += "<h3>Analogsensor 3 Modul</h3>";
-    formatierterCode += "<ul>";
-    formatierterCode += "<li>Sensorname: ";
-    formatierterCode += analog3Name;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Messwert Prozent: ";
-    formatierterCode += messwertAnalog3;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Messwert: ";
-    formatierterCode += messwertAnalog3;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Minimalwert: ";
-    formatierterCode += analog3Minimum;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Maximalwert: ";
-    formatierterCode += analog3Maximum;
-    formatierterCode += "</li>";
-    formatierterCode += "</ul>";
-  #else
-    formatierterCode += "<p>Analogsensor 3 Modul deaktiviert!</p>";
+    formatierterCode += GeneriereAnalogsensorDebugString(3, analog3Name, messwertAnalog3, messwertAnalog3Prozent, analog3Minimum, analog3Maximum);
   #endif
   #if MODUL_ANALOG4
-    formatierterCode += "<h3>Analogsensor 4 Modul</h3>";
-    formatierterCode += "<ul>";
-    formatierterCode += "<li>Sensorname: ";
-    formatierterCode += analog4Name;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Messwert Prozent: ";
-    formatierterCode += messwertAnalog4;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Messwert: ";
-    formatierterCode += messwertAnalog4;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Minimalwert: ";
-    formatierterCode += analog4Minimum;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Maximalwert: ";
-    formatierterCode += analog4Maximum;
-    formatierterCode += "</li>";
-    formatierterCode += "</ul>";
-  #else
-    formatierterCode += "<p>Analogsensor 4 Modul deaktiviert!</p>";
+    formatierterCode += GeneriereAnalogsensorDebugString(4, analog4Name, messwertAnalog4, messwertAnalog4Prozent, analog4Minimum, analog4Maximum);
   #endif
   #if MODUL_ANALOG5
-    formatierterCode += "<h3>Analogsensor 5 Modul</h3>";
-    formatierterCode += "<ul>";
-    formatierterCode += "<li>Sensorname: ";
-    formatierterCode += analog5Name;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Messwert Prozent: ";
-    formatierterCode += messwertAnalog5;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Messwert: ";
-    formatierterCode += messwertAnalog5;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Minimalwert: ";
-    formatierterCode += analog5Minimum;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Maximalwert: ";
-    formatierterCode += analog5Maximum;
-    formatierterCode += "</li>";
-    formatierterCode += "</ul>";
-  #else
-    formatierterCode += "<p>Analogsensor 5 Modul deaktiviert!</p>";
+    formatierterCode += GeneriereAnalogsensorDebugString(5, analog5Name, messwertAnalog5, messwertAnalog5Prozent, analog5Minimum, analog5Maximum);
   #endif
   #if MODUL_ANALOG6
-    formatierterCode += "<h3>Analogsensor 6 Modul</h3>";
-    formatierterCode += "<ul>";
-    formatierterCode += "<li>Sensorname: ";
-    formatierterCode += analog6Name;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Messwert Prozent: ";
-    formatierterCode += messwertAnalog6;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Messwert: ";
-    formatierterCode += messwertAnalog6;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Minimalwert: ";
-    formatierterCode += analog6Minimum;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Maximalwert: ";
-    formatierterCode += analog6Maximum;
-    formatierterCode += "</li>";
-    formatierterCode += "</ul>";
-  #else
-    formatierterCode += "<p>Analogsensor 6 Modul deaktiviert!</p>";
+    formatierterCode += GeneriereAnalogsensorDebugString(6, analog6Name, messwertAnalog6, messwertAnalog6Prozent, analog6Minimum, analog6Maximum);
   #endif
   #if MODUL_ANALOG7
-    formatierterCode += "<h3>Analogsensor 7 Modul</h3>";
-    formatierterCode += "<ul>";
-    formatierterCode += "<li>Sensorname: ";
-    formatierterCode += analog7Name;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Messwert Prozent: ";
-    formatierterCode += messwertAnalog7;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Messwert: ";
-    formatierterCode += messwertAnalog7;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Minimalwert: ";
-    formatierterCode += analog7Minimum;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Maximalwert: ";
-    formatierterCode += analog7Maximum;
-    formatierterCode += "</li>";
-    formatierterCode += "</ul>";
-  #else
-    formatierterCode += "<p>Analogsensor 7 Modul deaktiviert!</p>";
+    formatierterCode += GeneriereAnalogsensorDebugString(7, analog7Name, messwertAnalog7, messwertAnalog7Prozent, analog7Minimum, analog7Maximum);
   #endif
   #if MODUL_ANALOG8
-    formatierterCode += "<h3>Analogsensor 8 Modul</h3>";
-    formatierterCode += "<ul>";
-    formatierterCode += "<li>Sensorname: ";
-    formatierterCode += analog8Name;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Messwert Prozent: ";
-    formatierterCode += messwertAnalog8;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Messwert: ";
-    formatierterCode += messwertAnalog8;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Minimalwert: ";
-    formatierterCode += analog8Minimum;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Maximalwert: ";
-    formatierterCode += analog8Maximum;
-    formatierterCode += "</li>";
-    formatierterCode += "</ul>";
-  #else
-    formatierterCode += "<p>Analogsensor 8 Modul deaktiviert!</p>";
+    formatierterCode += GeneriereAnalogsensorDebugString(8, analog8Name, messwertAnalog8, messwertAnalog8Prozent, analog8Minimum, analog8Maximum);
   #endif
-
+  formatierterCode += "<h2>Deaktivierte Module</h2><ul>";
+  #if !MODUL_DHT
+    formatierterCode += "<li>DHT Modul</li>";
+  #endif
+  #if !MODUL_DISPLAY
+    formatierterCode += "<li>Display Modul</li>";
+  #endif
+  #if !MODUL_BODENFEUCHTE
+    formatierterCode += "<li>Bodenfeuchte Modul</li>";
+  #endif
+  #if !MODUL_LEDAMPEL
+    formatierterCode += "<li>LED Ampel Modul</li>";
+  #endif
+  #if !MODUL_HELLIGKEIT
+    formatierterCode += "<li>Helligkeit Modul</li>";
+  #endif
+  #if !MODUL_WIFI
+    formatierterCode += "<li>Wifi Modul</li>";
+  #endif
+  #if !MODUL_IFTTT
+    formatierterCode += "<li>IFTTT Modul</li>";
+  #endif
+  #if !MODUL_ANALOG3
+    formatierterCode += "<li>Analogsensor 3 Modul</li>";
+  #endif
+  #if !MODUL_ANALOG4
+    formatierterCode += "<li>Analogsensor 4 Modul</li>";
+  #endif
+  #if !MODUL_ANALOG5
+    formatierterCode += "<li>Analogsensor 5 Modul</li>";
+  #endif
+  #if !MODUL_ANALOG6
+    formatierterCode += "<li>Analogsensor 6 Modul</li>";
+  #endif
+  #if !MODUL_ANALOG7
+    formatierterCode += "<li>Analogsensor 7 Modul</li>";
+  #endif
+  #if !MODUL_ANALOG8
+    formatierterCode += "<li>Analogsensor 8 Modul</li>";
+  #endif
+  formatierterCode += "</ul>";
   formatierterCode += "<h2>Links</h2>";
   formatierterCode += "<ul>";
+  formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
   formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
   #if MODUL_DEBUG
   formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
@@ -521,94 +466,22 @@ void WebseiteAdminAusgeben() {
     #endif
   #endif
   #if MODUL_ANALOG3
-    formatierterCode += "<h2>Analogsensor 3</h2>";
-    formatierterCode += "<p>Sensorname: ";
-    formatierterCode += "<input type=\"text\" size=\"20\" name=\"analog3Name\" placeholder=\"";
-    formatierterCode += analog3Name;
-    formatierterCode += "\"></p>";
-    formatierterCode += "<p>Minimalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog3Minimum\" placeholder=\"";
-    formatierterCode += analog3Minimum;
-    formatierterCode += "\"></p>";
-    formatierterCode += "<p>Maximalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog3Maximum\" placeholder=\"";
-    formatierterCode += analog3Maximum;
-    formatierterCode += "\"></p>";
+    formatierterCode += GeneriereAnalogsensorAdminString(3, analog3Name, analog3Minimum, analog3Maximum);
   #endif
   #if MODUL_ANALOG4
-    formatierterCode += "<h2>Analogsensor 4</h2>";
-    formatierterCode += "<p>Sensorname: ";
-    formatierterCode += "<input type=\"text\" size=\"20\" name=\"analog4Name\" placeholder=\"";
-    formatierterCode += analog4Name;
-    formatierterCode += "\"></p>";
-    formatierterCode += "<p>Minimalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog4Minimum\" placeholder=\"";
-    formatierterCode += analog4Minimum;
-    formatierterCode += "\"></p>";
-    formatierterCode += "<p>Maximalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog4Maximum\" placeholder=\"";
-    formatierterCode += analog4Maximum;
-    formatierterCode += "\"></p>";
+    formatierterCode += GeneriereAnalogsensorAdminString(4, analog4Name, analog4Minimum, analog4Maximum);
   #endif
   #if MODUL_ANALOG5
-    formatierterCode += "<h2>Analogsensor 5</h2>";
-    formatierterCode += "<p>Sensorname: ";
-    formatierterCode += "<input type=\"text\" size=\"20\" name=\"analog5Name\" placeholder=\"";
-    formatierterCode += analog5Name;
-    formatierterCode += "\"></p>";
-    formatierterCode += "<p>Minimalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog5Minimum\" placeholder=\"";
-    formatierterCode += analog5Minimum;
-    formatierterCode += "\"></p>";
-    formatierterCode += "<p>Maximalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog5Maximum\" placeholder=\"";
-    formatierterCode += analog5Maximum;
-    formatierterCode += "\"></p>";
+    formatierterCode += GeneriereAnalogsensorAdminString(5, analog5Name, analog5Minimum, analog5Maximum);
   #endif
   #if MODUL_ANALOG6
-    formatierterCode += "<h2>Analogsensor 6</h2>";
-    formatierterCode += "<p>Sensorname: ";
-    formatierterCode += "<input type=\"text\" size=\"20\" name=\"analog6Name\" placeholder=\"";
-    formatierterCode += analog6Name;
-    formatierterCode += "\"></p>";
-    formatierterCode += "<p>Minimalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog6Minimum\" placeholder=\"";
-    formatierterCode += analog6Minimum;
-    formatierterCode += "\"></p>";
-    formatierterCode += "<p>Maximalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog6Maximum\" placeholder=\"";
-    formatierterCode += analog6Maximum;
-    formatierterCode += "\"></p>";
+    formatierterCode += GeneriereAnalogsensorAdminString(6, analog6Name, analog6Minimum, analog6Maximum);
   #endif
   #if MODUL_ANALOG7
-    formatierterCode += "<h2>Analogsensor 7</h2>";
-    formatierterCode += "<p>Sensorname: ";
-    formatierterCode += "<input type=\"text\" size=\"20\" name=\"analog7Name\" placeholder=\"";
-    formatierterCode += analog7Name;
-    formatierterCode += "\"></p>";
-    formatierterCode += "<p>Minimalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog7Minimum\" placeholder=\"";
-    formatierterCode += analog7Minimum;
-    formatierterCode += "\"></p>";
-    formatierterCode += "<p>Maximalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog7Maximum\" placeholder=\"";
-    formatierterCode += analog7Maximum;
-    formatierterCode += "\"></p>";
+    formatierterCode += GeneriereAnalogsensorAdminString(7, analog7Name, analog7Minimum, analog7Maximum);
   #endif
   #if MODUL_ANALOG8
-    formatierterCode += "<h2>Analogsensor 8</h2>";
-    formatierterCode += "<p>Sensorname: ";
-    formatierterCode += "<input type=\"text\" size=\"20\" name=\"analog8Name\" placeholder=\"";
-    formatierterCode += analog8Name;
-    formatierterCode += "\"></p>";
-    formatierterCode += "<p>Minimalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog8Minimum\" placeholder=\"";
-    formatierterCode += analog8Minimum;
-    formatierterCode += "\"></p>";
-    formatierterCode += "<p>Maximalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"analog8Maximum\" placeholder=\"";
-    formatierterCode += analog8Maximum;
-    formatierterCode += "\"></p>";
+    formatierterCode += GeneriereAnalogsensorAdminString(8, analog8Name, analog8Minimum, analog8Maximum);
   #endif
 
   formatierterCode += "<h2>Passwort</h2>";
