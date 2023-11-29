@@ -96,7 +96,7 @@ void DisplayIntro(String ip, String hostname) {
   delay(500);
   display.setTextSize(1);
   display.setCursor(95, 54);
-  display.println(F("V0.2"));
+  display.println(pflanzensensorVersion);
   display.display();      // Display aktualisieren
   delay(2000);
 

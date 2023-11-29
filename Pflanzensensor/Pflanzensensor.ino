@@ -51,7 +51,7 @@ void setup() {
    * im Programmspeicher (flash) und nicht im Arbeitsspeicher (RAM) abgelegt
    * wird, dass funktioniert aber nicht mit Variablen.
    */
-  Serial.println(" Fabmobil Pflanzensensor, V0.2");
+  Serial.println(" Fabmobil Pflanzensensor, v" + String(pflanzensensorVersion));
   module = ModuleZaehlen(); // wie viele Module sind aktiv?
   displayseiten = AnalogsensorenZaehlen() + 6;  // Wir haben 6 Displayseiten plus je eine pro Analogmodul
 
