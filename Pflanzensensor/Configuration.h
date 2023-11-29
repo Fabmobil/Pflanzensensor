@@ -33,9 +33,8 @@
 /**
  * Pinbelegungen und Variablen
  */
-#define pinEingebauteLed LED_BUILTIN // "D0"; worüber wird die interne LED des ESPs angesprochen?
 #define baudrateSeriell 9600 // Baudrate der seriellen Verbindung
-const long intervallAnalog = 5000; // Intervall der Messung der Analogsensoren in Millisekunden. Vorschlag: 5000
+int intervallAnalog = 5000; // Intervall der Messung der Analogsensoren in Millisekunden. Vorschlag: 5000
 #if MODUL_BODENFEUCHTE // wenn der Bodenfeuchtesensor aktiv ist:
   /*
    * Wenn der Bodenfeuchtesensor aktiv ist werden hier die initialen Grenzwerte
@@ -51,12 +50,12 @@ const long intervallAnalog = 5000; // Intervall der Messung der Analogsensoren i
   int bodenfeuchteGelbOben = 80; // oberer Wert des gelben Bereichs
 #endif
 #if MODUL_DISPLAY
-  const long intervallDisplay = 4874; // Anzeigedauer der unterschiedlichen Displayseiten in Millisekunden. Vorschlag: 4874
+  int intervallDisplay = 4874; // Anzeigedauer der unterschiedlichen Displayseiten in Millisekunden. Vorschlag: 4874
 #endif
 #if MODUL_DHT // falls ein Lufttemperatur- und -feuchtesensor verbaut ist:
-  #define pinDht 0 // "D3", Pin des DHT Sensors
+  #define dhtPin 0 // "D3", Pin des DHT Sensors
   #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
-  const long intervallDht = 5000; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
+  int intervallDht = 5000; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
   int lufttemperaturGruenUnten = 19; // unter Wert des grünen Bereichs
   int lufttemperaturGruenOben = 22; // oberer Wert des grünen Bereichs
   int lufttemperaturGelbUnten = 17; // unterer Wert des gelben Bereichs
@@ -82,21 +81,21 @@ const long intervallAnalog = 5000; // Intervall der Messung der Analogsensoren i
 #endif
 #if MODUL_LEDAMPEL // falls eine LED Ampel verbaut ist:
   int ampelModus = 1; // 0: Helligkeits- und Bodenfeuchtesensor abwechselnd, 1: Helligkeitssensor, 2: Bodenfeuchtesensor
-  const long intervallLedampel = 5000; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15273
+  int intervallAmpel = 5000; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15273
 #endif
 #if MODUL_IFTTT // wenn das IFTTT Modul aktiviert ist
   #define wifiIftttPasswort "IFTTT Schlüssel" // brauchen wir einen Schlüssel
   #define wifiIftttEreignis "Fabmobil_Pflanzensensor" // und ein Ereignisnamen
 #endif
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
-  #define wifiAdminPasswort "admin" // Passwort für das Admininterface
-  #define wifiHostname "pflanzensensor" // Das Gerät ist später unter diesem Name + .local erreichbar
-  #define wifiAp false // true: ESP macht seinen eigenen AP auf; false: ESP verbindet sich mit fremden WLAN
-  #define wifiApSsid "Fabmobil Pflanzensensor" // SSID des WLANs, falls vom ESP selbst aufgemacht
-  #define wifiApPasswortAktiviert false // soll das selbst aufgemachte WLAN ein Passwort haben?
-  #define wifiApPasswort "geheim" // Das Passwort für das selbst aufgemacht WLAN
-  #define wifiSsid "Tommy" // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
-  #define wifiPassword "freibier" // WLAN Passwort für das fremde Wifi
+  String wifiAdminPasswort = "admin"; // Passwort für das Admininterface
+  String wifiHostname = "pflanzensensor"; // Das Gerät ist später unter diesem Name + .local erreichbar
+  bool wifiAp = false; // true: ESP macht seinen eigenen AP auf; false: ESP verbindet sich mit fremden WLAN
+  String wifiApSsid = "Fabmobil Pflanzensensor"; // SSID des WLANs, falls vom ESP selbst aufgemacht
+  bool wifiApPasswortAktiviert = false; // soll das selbst aufgemachte WLAN ein Passwort haben?
+  String wifiApPasswort = "geheim"; // Das Passwort für das selbst aufgemacht WLAN
+  String wifiSsid = "Tommy"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
+  String wifiPassword = "freibier"; // WLAN Passwort für das fremde Wifi
 #endif
 String analog3Name = "Analog 3"; // Name des Sensors
 #if MODUL_ANALOG3 // wenn ein dritter Analogsensor verwendet wird
@@ -212,9 +211,9 @@ String analog8Farbe = "rot";
 
 #if MODUL_LEDAMPEL
   bool ampelUmschalten = true; // Schaltet zwischen Bodenfeuchte- und Helligkeitsanzeige um
-  #define pinAmpelRot 13 // "D7"; Pin der roten LED
-  #define pinAmpelGelb 12 // "D6"; Pin der roten LED
-  #define pinAmpelGruen 14 // "D5"; Pin der gruenen LED
+  #define ampelPinRot 13 // "D7"; Pin der roten LED
+  #define ampelPinGelb 12 // "D6"; Pin der roten LED
+  #define ampelPinGruen 14 // "D5"; Pin der gruenen LED
   #include "ledampel.h" // LED Ampel Modul einbinden
 #endif
 
@@ -227,9 +226,9 @@ String analog8Farbe = "rot";
 #endif
 
 #if MODUL_MULTIPLEXER
-  #define pinMultiplexerA 15 // "D8"; Pin A des Multiplexers
-  #define pinMultiplexerB 2 // "D4"; Pin B des Multiplexers
-  #define pinMultiplexerC 16 // "D0"; Pin C des Multiplexers
+  #define multiplexerPinA 15 // "D8"; Pin A des Multiplexers
+  #define multiplexerPinB 2 // "D4"; Pin B des Multiplexers
+  #define multiplexerPinC 16 // "D0"; Pin C des Multiplexers
   #include "multiplexer.h" // Multiplexermodul einbinden
 #endif
 
@@ -243,8 +242,11 @@ String analog8Farbe = "rot";
   #include "display.h" // Displaymodul einbinden
 #endif
 
+#include "variablenspeicher.h" // Funktionen für das Speichern und Laden der Variablen
 #if MODUL_WIFI
   #include "wifi.h" // Wifimodul einbinden
 #endif
 
 #include "analogsensor.h" // Funktionen für die Analogsensoren
+#include "mutex.h" // Mutexmodul einbinden
+mutex_t mutex;

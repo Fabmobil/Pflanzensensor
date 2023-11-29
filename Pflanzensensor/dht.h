@@ -7,7 +7,7 @@
 #include <DHT.h> // DHT Sensor Library
 #include <DHT_U.h> // DHT Unified Sensor Library
 
-DHT_Unified dht(pinDht, dhtSensortyp); // DHT Sensor initialisieren
+DHT_Unified dht(dhtPin, dhtSensortyp); // DHT Sensor initialisieren
 
 /*
  * Funktion: DhtMessenLuftfeuchte()
@@ -16,7 +16,7 @@ DHT_Unified dht(pinDht, dhtSensortyp); // DHT Sensor initialisieren
 float DhtMessenLuftfeuchte() { // Luftfeuchte messen
   #if MODUL_DEBUG // Debuginformation
     Serial.println(F("## Debug: Beginn von DhtMessenLuftfeuchte()"));
-    Serial.print(F("DHT PIN: ")); Serial.println(pinDht);
+    Serial.print(F("DHT PIN: ")); Serial.println(dhtPin);
     Serial.print(F("DHT Sensortyp: ")); Serial.println(dhtSensortyp);
   #endif
   sensors_event_t event; // Event für die Messung
@@ -43,7 +43,7 @@ float DhtMessenLuftfeuchte() { // Luftfeuchte messen
 float DhtMessenLufttemperatur() { // Lufttemperatur messen
 #if MODUL_DEBUG
   Serial.println(F("## Debug: Beginn von DhtMessenLufttemperatur()"));
-  Serial.print(F("DHT PIN: ")); Serial.println(pinDht);
+  Serial.print(F("DHT PIN: ")); Serial.println(dhtPin);
   Serial.print(F("DHT Sensortyp: ")); Serial.println(dhtSensortyp);
 #endif
   sensors_event_t event; // Event für die Messung

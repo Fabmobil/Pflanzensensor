@@ -21,17 +21,17 @@ void LedampelBlinken(String farbe, int anzahl, int dauer) {
     Serial.print(F(", Dauer: ")); Serial.println(dauer);
   #endif
   char PIN_LED;
-  digitalWrite(pinAmpelRot, LOW);
-  digitalWrite(pinAmpelGelb, LOW);
-  digitalWrite(pinAmpelGruen, LOW);
+  digitalWrite(ampelPinRot, LOW);
+  digitalWrite(ampelPinGelb, LOW);
+  digitalWrite(ampelPinGruen, LOW);
   if (farbe == "rot") { // wenn die Farbe rot ist, wird der Pin für die rote LED gesetzt
-    PIN_LED = pinAmpelRot;
+    PIN_LED = ampelPinRot;
   }
   if (farbe =="gelb") { // wenn die Farbe gelb ist, wird der Pin für die gelbe LED gesetzt
-    PIN_LED = pinAmpelGelb;
+    PIN_LED = ampelPinGelb;
   }
   if (farbe == "gruen") { // wenn die Farbe grün ist, wird der Pin für die grüne LED gesetzt
-    PIN_LED = pinAmpelGruen;
+    PIN_LED = ampelPinGruen;
   }
   for (int i=0;i<anzahl;i++){ // Schleife für die Anzahl der Blinkvorgänge
     digitalWrite(PIN_LED, HIGH); // LED an
@@ -53,28 +53,28 @@ void LedampelAnzeigen(String farbe, int dauer) {
     Serial.print(F(", ")); Serial.print(dauer);
     Serial.println(F(")"));
   #endif
-  digitalWrite(pinAmpelRot, LOW); // alle LEDs aus
-  digitalWrite(pinAmpelGelb, LOW);
-  digitalWrite(pinAmpelGruen, LOW);
+  digitalWrite(ampelPinRot, LOW); // alle LEDs aus
+  digitalWrite(ampelPinGelb, LOW);
+  digitalWrite(ampelPinGruen, LOW);
   if (farbe == "rot") { // wenn die Farbe rot ist, wird der Pin für die rote LED gesetzt
-    digitalWrite(pinAmpelRot, HIGH);
+    digitalWrite(ampelPinRot, HIGH);
     if (dauer != -1) { // wenn die Dauer nicht -1 ist, wird die LED nach der Dauer wieder ausgeschaltet
       delay(dauer);
-      digitalWrite(pinAmpelRot, LOW);
+      digitalWrite(ampelPinRot, LOW);
     }
   }
   if (farbe == "gelb") { // wenn die Farbe gelb ist, wird der Pin für die gelbe LED gesetzt
-    digitalWrite(pinAmpelGelb, HIGH);
+    digitalWrite(ampelPinGelb, HIGH);
     if (dauer != -1) { // wenn die Dauer nicht -1 ist, wird die LED nach der Dauer wieder ausgeschaltet
       delay(dauer);
-      digitalWrite(pinAmpelGelb, LOW);
+      digitalWrite(ampelPinGelb, LOW);
     }
   }
   if (farbe == "gruen") { // wenn die Farbe grün ist, wird der Pin für die grüne LED gesetzt
-    digitalWrite(pinAmpelGruen, HIGH);
+    digitalWrite(ampelPinGruen, HIGH);
     if (dauer != -1) { // wenn die Dauer nicht -1 ist, wird die LED nach der Dauer wieder ausgeschaltet
       delay(dauer);
-      digitalWrite(pinAmpelGruen, LOW);
+      digitalWrite(ampelPinGruen, LOW);
     }
   }
 }
