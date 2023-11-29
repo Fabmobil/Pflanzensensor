@@ -8,7 +8,7 @@
 #include <ESP8266mDNS.h> // für Namensauflösung
 
 WiFiClient client;
-ESP8266WebServer Webserver(80); //
+ESP8266WebServer Webserver(80); // Webserver auf Port 80
 
 /* Funktion: String GeneriereSensorString(int sensorNummer, const String& sensorName, const String& messwert, const String& einheit)
  * Generiert einen String für einen Sensor
@@ -25,8 +25,8 @@ String GeneriereSensorString(const int sensorNummer, const String& sensorName, c
     sensorString += "<h2>" + sensorName + "</h2><p>" + messwert + " " + einheit + "</p>";
     return sensorString;
   } else {
-    sensorString += "<h2>Analogsensor " + String(sensorNummer) + ": " + sensorName + "</h2><p>";
-    sensorString += messwert + " " + einheit + "</p>";
+    sensorString += "<h2>Analogsensor " + String(sensorNummer) + ": " + sensorName + "</h2>";
+    sensorString += "<p>" + String(messwert) + " " + einheit + "</p>";
     return sensorString;
   }
 }
@@ -73,6 +73,21 @@ String GeneriereAnalogsensorAdminString(int sensorNummer, const String& sensorNa
   analogsensorAdminString += "<p>Maximalwert: ";
   analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "Maximum\" placeholder=\"" + String(maximum) + "\"></p>";
   return analogsensorAdminString;
+}
+
+/* Funktion: ArgumenteAusgeben()
+ * Gibt alle Argumente aus, die übergeben wurden.
+ */
+void ArgumenteAusgeben() {
+  Serial.println("Gebe alle Argumente des POST requests aus:");
+  int numArgs = Webserver.args();
+  for (int i = 0; i < numArgs; i++) {
+    String argName = Webserver.argName(i);
+    String argValue = Webserver.arg(i);
+    Serial.print(argName);
+    Serial.print(": ");
+    Serial.println(argValue);
+  }
 }
 
 /*
@@ -395,13 +410,6 @@ void WebseiteAdminAusgeben() {
     formatierterCode += bodenfeuchteMaximum;
     formatierterCode += "\"></p>";
   #endif
-  #if MODUL_DISPLAY
-    formatierterCode += "<h2>Display</h2>";
-    formatierterCode += "<p>status (Anzeigenummer auf dem Display):";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"statis\" placeholder=\"";
-    formatierterCode += status;
-    formatierterCode += "\"></p>";
-  #endif
   #if MODUL_HELLIGKEIT
     formatierterCode += "<h2>Helligkeitssensor</h2>";
     formatierterCode += "<p>Sensorname: ";
@@ -516,15 +524,15 @@ void WebseiteSetzeVariablen() {
   #include "modul_wifi_footer.h" // Fuß der HTML-Seite
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von WebseiteSetzeVariablen()"));
+    ArgumenteAusgeben();
   #endif
-  if ( ! Webserver.hasArg("Passwort") || Webserver.arg("Passwort") == NULL) { // wenn kein Passwort übergeben wurde
-    Webserver.send(400, "text/plain", "400: Invalid Request"); // Fehlermeldung ausgeben
-    return;
-  }
+  String formatierterCode = htmlHeader; // formatierterCode beginnt mit Kopf der HTML-Seite
   if ( Webserver.arg("Passwort") == wifiAdminPasswort) { // wenn das Passwort stimmt
-    if ( Webserver.arg("ampelModus") != "" ) { // wenn ein neuer Wert für ampelModus übergeben wurde
-      ampelModus = Webserver.arg("ampelModus").toInt(); // neuen Wert übernehmen
-    }
+    #if MODUL_LEDAMPEL
+      if ( Webserver.arg("ampelModus") != "" ) { // wenn ein neuer Wert für ampelModus übergeben wurde
+        ampelModus = Webserver.arg("ampelModus").toInt(); // neuen Wert übernehmen
+      }
+    #endif
     #if MODUL_HELLIGKEIT
       if ( Webserver.arg("ampelHelligkeitGruen") != "" ) { // wenn ein neuer Wert für ampelHelligkeitGruen übergeben wurde
         ampelHelligkeitGruen = Webserver.arg("ampelHelligkeitGruen").toInt(); // neuen Wert übernehmen
@@ -626,40 +634,25 @@ void WebseiteSetzeVariablen() {
         analog8Maximum = Webserver.arg("analog8Maximum").toInt(); // neuen Wert übernehmen
       }
     #endif
-    String formatierterCode = htmlHeader; // formatierterCode beginnt mit Kopf der HTML-Seite
     formatierterCode += "<h2>Erfolgreich!</h2>";
-    formatierterCode += "<ul>";
-    formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
-    formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
-    #if MODUL_DEBUG
-    formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
-    #endif
-    formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\"><img src=\"";
-    formatierterCode += logoGithub;
-    formatierterCode += "\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
-    formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\"><img src=\"";
-    formatierterCode += logoFabmobil;
-    formatierterCode += "\">&nbspHomepage</a></li>";
-    formatierterCode += "</ul>";
-    formatierterCode += htmlFooter;
-    Webserver.send(200, "text/html", formatierterCode);
   } else { // wenn das Passwort falsch ist
-    String formatierterCode = htmlHeader; // formatierterCode beginnt mit Kopf der HTML-Seite
     formatierterCode += "<h2>Falsches Passwort!</h2>";
-    formatierterCode += "<ul>";
-    formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
-    #if MODUL_DEBUG
-    formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
-    #endif
-    formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\"><img src=\"";
-    formatierterCode += logoGithub;
-    formatierterCode += "\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
-    formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\"><img src=\"";
-    formatierterCode += logoFabmobil;
-    formatierterCode += "\">&nbspHomepage</a></li>";
-    formatierterCode += "</ul>";
-    formatierterCode += htmlFooter; // formatierterCode endet mit Fuß der HTML-Seite
   }
+  formatierterCode += "<ul>";
+  formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
+  formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
+  #if MODUL_DEBUG
+  formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
+  #endif
+  formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\"><img src=\"";
+  formatierterCode += logoGithub;
+  formatierterCode += "\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
+  formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\"><img src=\"";
+  formatierterCode += logoFabmobil;
+  formatierterCode += "\">&nbspHomepage</a></li>";
+  formatierterCode += "</ul>";
+  formatierterCode += htmlFooter;
+  Webserver.send(200, "text/html", formatierterCode);
 }
 
 /*
