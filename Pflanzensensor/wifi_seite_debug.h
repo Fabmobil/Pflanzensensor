@@ -47,7 +47,7 @@ void WebseiteDebugAusgeben() {
     formatierterCode += luftfeuchteMesswert;
     formatierterCode += "</li>";
     formatierterCode += "<li>DHT Pin: ";
-    formatierterCode += pinDht;
+    formatierterCode += dhtPin;
     formatierterCode += "</li>";
     formatierterCode += "<li>DHT Sensortyp: ";
     formatierterCode += dhtSensortyp;
@@ -95,13 +95,13 @@ void WebseiteDebugAusgeben() {
     formatierterCode += ampelUmschalten;
     formatierterCode += "</li>";
     formatierterCode += "<li>Pin gruene LED: ";
-    formatierterCode += pinAmpelGruen;
+    formatierterCode += ampelPinGruen;
     formatierterCode += "</li>";
     formatierterCode += "<li>Pin gelbe LED: ";
-    formatierterCode += pinAmpelGelb;
+    formatierterCode += ampelPinGelb;
     formatierterCode += "</li>";
     formatierterCode += "<li>Pin rote LED: ";
-    formatierterCode += pinAmpelRot;
+    formatierterCode += ampelPinRot;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
   #endif

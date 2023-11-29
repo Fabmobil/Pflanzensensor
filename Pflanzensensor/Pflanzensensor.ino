@@ -21,13 +21,8 @@
  *
  * Die verwendeten Bauteile sind in der Readme.md aufgeführt.
  */
-int ModuleZaehlen(); // Funktion, um die Anzahl der aktiven Module zu zählen  (siehe unten)
-int AnalogsensorenZaehlen(); // Funktion, um die Anzahl der aktiven Analogmodule zu zählen (siehe unten)
-String FarbeBerechnen(int messwert, int gruenUnten, int gruenOben, int gelbUnten, int gelbOben); // Funktion, um die Farbe für die LED Ampel zu berechnen (siehe unten)
 
 #include "Configuration.h" // Alle Einstellungen werden dort vorgenommen!
-#include "mutex.h" // Mutex für die Sensoren
-mutex_t mutex;
 
 /*
  * Funktion: setup()
@@ -67,18 +62,18 @@ void setup() {
     Serial.println(displayseiten);
   #endif
   #if MODUL_LEDAMPEL // wenn das LED Ampel Modul aktiv is:
-    pinMode(pinAmpelGruen, OUTPUT); // LED 1 (grün)
-    pinMode(pinAmpelGelb, OUTPUT); // LED 2 (gelb)
-    pinMode(pinAmpelRot, OUTPUT); // LED 3 (rot)
+    pinMode(ampelPinGruen, OUTPUT); // LED 1 (grün)
+    pinMode(ampelPinGelb, OUTPUT); // LED 2 (gelb)
+    pinMode(ampelPinRot, OUTPUT); // LED 3 (rot)
     // alle LEDs blinken beim Start als Funktionstest:
     LedampelBlinken("gruen", 1, 300);
     LedampelBlinken("gelb", 1, 300);
     LedampelBlinken("rot", 1, 300);
     #if MODUL_DEBUG // Debuginformationen
       Serial.println(F("## Setup der Ledampel"));
-      Serial.print(F("# PIN gruene LED:                 ")); Serial.println(pinAmpelGruen);
-      Serial.print(F("# PIN gelbe LED:                  ")); Serial.println(pinAmpelGelb);
-      Serial.print(F("# PIN rote LED:                   ")); Serial.println(pinAmpelRot);
+      Serial.print(F("# PIN gruene LED:                 ")); Serial.println(ampelPinGruen);
+      Serial.print(F("# PIN gelbe LED:                  ")); Serial.println(ampelPinGelb);
+      Serial.print(F("# PIN rote LED:                   ")); Serial.println(ampelPinRot);
       Serial.print(F("# Bodenfeuchte Skala invertiert:  ")); Serial.println(ampelBodenfeuchteInvertiert);
       Serial.print(F("# Schwellwert Bodenfeuchte grün:  ")); Serial.println(ampelBodenfeuchteGruen);
       Serial.print(F("# Schwellwert Bodenfeuchte rot:   ")); Serial.println(ampelBodenfeuchteRot);
@@ -91,9 +86,9 @@ void setup() {
     pinMode(pinAnalog, INPUT);  // wird der Analogpin als Eingang gesetzt
   #endif
   #if MODUL_MULTIPLEXER // wenn das Multiplexer Modul aktiv ist werden die zwei Multiplexerpins als Ausgang gesetzt:
-    pinMode(pinMultiplexerA, OUTPUT); // Pin A des Multiplexers
-    pinMode(pinMultiplexerB, OUTPUT); // Pin B des Multiplexers
-    pinMode(pinMultiplexerC, OUTPUT); // Pin C des Multiplexers
+    pinMode(multiplexerPinA, OUTPUT); // Pin A des Multiplexers
+    pinMode(multiplexerPinB, OUTPUT); // Pin B des Multiplexers
+    pinMode(multiplexerPinC, OUTPUT); // Pin C des Multiplexers
   #else
     pinMode(16, OUTPUT); // interne LED auf D0 / GPIO16
     digitalWrite(16, HIGH); // wird ausgeschalten (invertiertes Verhalten!)
@@ -136,9 +131,25 @@ void setup() {
     #endif
   #endif
   #if MODUL_MULTIPLEXER
-    digitalWrite(pinMultiplexerB, HIGH); // eingebaute LED ausschalten
-    digitalWrite(pinMultiplexerC, HIGH); // eingebaute LED ausschalten
+    digitalWrite(multiplexerPinB, HIGH); // eingebaute LED ausschalten
+    digitalWrite(multiplexerPinC, HIGH); // eingebaute LED ausschalten
   #endif
+  if (VariablenDa()) {
+      // Load the preferences from flash
+      VariablenLaden();
+    } else {
+      // Save the preferences to flash
+      VariablenSpeichern();
+    }
+
+  variablen.begin("pflanzensensor", false); // Variablen initialisieren
+  int neustarts = variablen.getInt("neustarts", 1); // default to 1
+  #if MODUL_DEBUG
+    Serial.print(F("# Reboot count: )");
+    Serial.println(neustarts);
+  #endif
+  neustarts++;
+  variablen.end();
 }
 
 /*
@@ -238,8 +249,8 @@ void loop() {
         analog8Farbe = FarbeBerechnen(analog8MesswertProzent, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben);
       #endif
       #if MODUL_MULTIPLEXER
-        digitalWrite(pinMultiplexerB, HIGH); // eingebaute LED ausschalten
-        digitalWrite(pinMultiplexerC, HIGH); // eingebaute LED ausschalten
+        digitalWrite(multiplexerPinB, HIGH); // eingebaute LED ausschalten
+        digitalWrite(multiplexerPinC, HIGH); // eingebaute LED ausschalten
       #endif
       ReleaseMutex(&mutex);
     }
@@ -261,7 +272,7 @@ void loop() {
 
   // LED Ampel umschalten:
   #if MODUL_LEDAMPEL // Wenn das LED Ampel Modul aktiv ist:
-    if (millisAktuell - millisVorherLedampel >= intervallLedampel) { // wenn das Intervall erreicht ist
+    if (millisAktuell - millisVorherLedampel >= intervallAmpel) { // wenn das Intervall erreicht ist
       #if MODUL_DEBUG // Debuginformation
         Serial.println(F("### intervallLedAmpel erreicht."));
       #endif

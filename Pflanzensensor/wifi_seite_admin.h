@@ -19,19 +19,19 @@ const int gelbOben) {
   String analogsensorAdminString;
   analogsensorAdminString += "<h2>Analogsensor " + String(sensorNummer) + "</h2>";
   analogsensorAdminString += "<p>Sensorname: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"20\" name=\"Name: \" placeholder=\"" + String(sensorName) + "\"></p>";
+  analogsensorAdminString += "<input type=\"text\" size=\"20\" name=\"analog" + String(sensorNummer) + "Name\" placeholder=\"" + String(sensorName) + "\"></p>";
   analogsensorAdminString += "<p>Minimalwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"Minimum: \" placeholder=\"" + String(minimum) + "\"></p>";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "Minimum\" placeholder=\"" + String(minimum) + "\"></p>";
   analogsensorAdminString += "<p>Maximalwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"Maximum: \" placeholder=\"" + String(maximum) + "\"></p>";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "Maximum\" placeholder=\"" + String(maximum) + "\"></p>";
   analogsensorAdminString += "<p>unterer grüner Schwellwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"unterer grüner Schwellwert: \" placeholder=\"" + String(gruenUnten) + "\"></p>";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "GruenUnten\" placeholder=\"" + String(gruenUnten) + "\"></p>";
   analogsensorAdminString += "<p>oberer grüner Schwellwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"oberer grüner Schwellwert: \" placeholder=\"" + String(gruenOben) + "\"></p>";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "GruenOben\" placeholder=\"" + String(gruenOben) + "\"></p>";
   analogsensorAdminString += "<p>unterer gelber Schwellwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"unterer gelber Schwellwert: \" placeholder=\"" + String(gelbUnten) + "\"></p>";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "GelbUnten\" placeholder=\"" + String(gelbUnten) + "\"></p>";
   analogsensorAdminString += "<p>oberer gelber Schwellwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"oberer gelber Schwellwert: \" placeholder=\"" + String(gelbOben) + "\"></p>";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "GelbOben\" placeholder=\"" + String(gelbOben) + "\"></p>";
   return analogsensorAdminString;
 }
 
@@ -178,6 +178,11 @@ void WebseiteAdminAusgeben() {
     formatierterCode += GeneriereAnalogsensorAdminString(8, analog8Name, analog8Minimum, analog8Maximum, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben);
   #endif
 
+  formatierterCode += "<h2>Einstellungen löschen?</h2>";
+  formatierterCode += "<div id=\"rot\"><p>";
+  formatierterCode += "GEFAHR: Wenn du hier \"Ja!\" eingibst, werden alle Einstellungen gelöscht und die Werte, ";
+  formatierterCode += "die beim Flashen eingetragen wurden, werden wieder gesetzt. Der Pflanzensensor startet neu.";
+  formatierterCode += "</p><p><input type=\"text\" size=\"4\" name=\"loeschen\" placeholder=\"nein\"></p></div>";
   formatierterCode += "<h2>Passwort</h2>";
   formatierterCode += "<p><input type=\"password\" name=\"Passwort\" placeholder=\"Passwort\"><br>";
   formatierterCode += "<input type=\"submit\" value=\"Absenden\"></p></form>";

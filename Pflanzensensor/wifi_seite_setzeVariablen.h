@@ -239,19 +239,31 @@ void WebseiteSetzeVariablen() {
   } else { // wenn das Passwort falsch ist
     formatierterCode += "<h2>Falsches Passwort!</h2>";
   }
-  formatierterCode += "<ul>";
-  formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
-  formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
-  #if MODUL_DEBUG
-  formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
-  #endif
-  formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\"><img src=\"";
-  formatierterCode += logoGithub;
-  formatierterCode += "\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
-  formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\"><img src=\"";
-  formatierterCode += logoFabmobil;
-  formatierterCode += "\">&nbspHomepage</a></li>";
-  formatierterCode += "</ul>";
+  if ( Webserver.arg("loeschen") == "Ja!" ) {
+    formatierterCode += "<div id=\"rot\"><p>Alle Variablen wurden gelöscht.</p>";
+    formatierterCode += "<p>Der Pflanzensensor wird neu gestartet.</p></div>";
+    formatierterCode += "<p><a href=\"/\">Warte ein paar Sekunden, dann kannt du hier zur Startseite zurück.</a>";
+  } else {
+    formatierterCode += "<ul>";
+    formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
+    formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
+    #if MODUL_DEBUG
+    formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
+    #endif
+    formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\"><img src=\"";
+    formatierterCode += logoGithub;
+    formatierterCode += "\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
+    formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\"><img src=\"";
+    formatierterCode += logoFabmobil;
+    formatierterCode += "\">&nbspHomepage</a></li>";
+    formatierterCode += "</ul>";
+  }
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
+  if ( Webserver.arg("loeschen") == "Ja!" ) {
+    VariablenLoeschen(); // Variablen löschen
+    ESP.restart(); // ESP neu starten
+  } else {
+    VariablenSpeichern(); // Variablen in den Flash speichern
+  }
 }

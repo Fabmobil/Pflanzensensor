@@ -7,7 +7,8 @@
  * String einheit: Einheit des Messwerts
  * Rückgabewert: formatierter String
  */
-String GeneriereSensorString(const int sensorNummer, const String& sensorName, const String& sensorFarbe, const int messwert, const String& einheit) {
+String GeneriereSensorString(const int sensorNummer, const String& sensorName, const String& sensorFarbe,
+const int messwert, const String& einheit) {
   String sensorString;
   if (sensorNummer == 0) {
     sensorString += "<h2>" + sensorName + "</h2><div id=\"" + sensorFarbe + "\"><p>" + messwert + " " + einheit + "</p></div>";
