@@ -345,6 +345,12 @@ int ModuleZaehlen() {
     if (MODUL_IFTTT) aktiveModule++; // wenn das IFTTT Modul aktiv ist, wird die Variable um 1 erhöht
     if (MODUL_LEDAMPEL) aktiveModule++; // wenn das LED Ampel Modul aktiv ist, wird die Variable um 1 erhöht
     if (MODUL_WIFI) aktiveModule++; // wenn das Wifi Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_ANALOG3) aktiveModule++; // wenn das Analog3 Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_ANALOG4) aktiveModule++; // wenn das Analog4 Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_ANALOG5) aktiveModule++; // wenn das Analog5 Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_ANALOG6) aktiveModule++; // wenn das Analog6 Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_ANALOG7) aktiveModule++; // wenn das Analog7 Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_ANALOG8) aktiveModule++; // wenn das Analog8 Modul aktiv ist, wird die Variable um 1 erhöht
     return aktiveModule; // die Anzahl der aktiven Module wird zurückgegeben
 }
 
@@ -353,12 +359,12 @@ int ModuleZaehlen() {
 * gibt die Anzahl der Module als Integer zurück.
 */
 int AnalogsensorenZaehlen() {
-  int aktiveModule = 0;
-  if (MODUL_ANALOG3) aktiveModule++; // wenn das Analog3 Modul aktiv ist, wird die Variable um 1 erhöht
-  if (MODUL_ANALOG4) aktiveModule++; // wenn das Analog4 Modul aktiv ist, wird die Variable um 1 erhöht
-  if (MODUL_ANALOG5) aktiveModule++; // wenn das Analog5 Modul aktiv ist, wird die Variable um 1 erhöht
-  if (MODUL_ANALOG6) aktiveModule++; // wenn das Analog6 Modul aktiv ist, wird die Variable um 1 erhöht
-  if (MODUL_ANALOG7) aktiveModule++; // wenn das Analog7 Modul aktiv ist, wird die Variable um 1 erhöht
-  if (MODUL_ANALOG8) aktiveModule++; // wenn das Analog8 Modul aktiv ist, wird die Variable um 1 erhöht
-  return aktiveModule; // die Anzahl der aktiven Module wird zurückgegeben
+  int analogsensoren = 0;
+  if (MODUL_ANALOG3) analogsensoren++; // wenn das Analog3 Modul aktiv ist, wird die Variable um 1 erhöht
+  if (MODUL_ANALOG4) analogsensoren++; // wenn das Analog4 Modul aktiv ist, wird die Variable um 1 erhöht
+  if (MODUL_ANALOG5) analogsensoren++; // wenn das Analog5 Modul aktiv ist, wird die Variable um 1 erhöht
+  if (MODUL_ANALOG6) analogsensoren++; // wenn das Analog6 Modul aktiv ist, wird die Variable um 1 erhöht
+  if (MODUL_ANALOG7) analogsensoren++; // wenn das Analog7 Modul aktiv ist, wird die Variable um 1 erhöht
+  if (MODUL_ANALOG8) analogsensoren++; // wenn das Analog8 Modul aktiv ist, wird die Variable um 1 erhöht
+  return analogsensoren; // die Anzahl der aktiven Module wird zurückgegeben
 }
