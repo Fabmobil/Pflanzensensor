@@ -128,10 +128,7 @@ void DisplayIntro(String ip, String hostname) {
  * luftfeuchte: Luftfeuchte in %
  * lufttemperatur: Lufttemperatur in °C
  */
-void DisplayMesswerte(int bodenfeuchte, String bodenfeuchteName, int helligkeit, String helligkeitName,
-  float luftfeuchte, float lufttemperatur, int analog3, String analog3Name, int analog4, String analog4Name,
-  int analog5, String analog5Name, int analog6, String analog6Name, int analog7, String analog7Name,
-  int analog8, String analog8Name, int status) {
+void DisplayMesswerte() {
   #if MODUL_DEBUG
     Serial.print(F("# Beginn von DisplayMesswerte(")); Serial.print(helligkeit);
     Serial.print(F(", ")); Serial.print(luftfeuchte);
@@ -156,9 +153,9 @@ void DisplayMesswerte(int bodenfeuchte, String bodenfeuchteName, int helligkeit,
       display.display();
       break;
     case 2:
-      if (bodenfeuchte != -1) {
+      if (bodenfeuchteMesswertProzent != -1) {
         std::pair<String, String> namen = NamenTeilen(bodenfeuchteName);
-        MesswertAnzeigen(namen.first, namen.second, bodenfeuchte, "%");
+        MesswertAnzeigen(namen.first, namen.second, bodenfeuchteMesswertProzent, "%");
       } else {
         display.clearDisplay();
         display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
@@ -166,9 +163,9 @@ void DisplayMesswerte(int bodenfeuchte, String bodenfeuchteName, int helligkeit,
       }
       break;
     case 3:
-      if (helligkeit != -1) {
+      if (helligkeitMesswertProzent != -1) {
         std::pair<String, String> namen = NamenTeilen(helligkeitName);
-        MesswertAnzeigen(namen.first, namen.second, helligkeit, "%");
+        MesswertAnzeigen(namen.first, namen.second, helligkeitMesswertProzent, "%");
       } else {
         display.clearDisplay();
         display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
@@ -176,8 +173,8 @@ void DisplayMesswerte(int bodenfeuchte, String bodenfeuchteName, int helligkeit,
       }
       break;
     case 4:
-      if (lufttemperatur != -1) {
-        MesswertAnzeigen("Lufttemp-", "eratur:", lufttemperatur, "\xf8 C");
+      if (lufttemperaturMesswert != -1) {
+        MesswertAnzeigen("Lufttemp-", "eratur:", lufttemperaturMesswert, "\xf8 C");
       } else {
         display.clearDisplay();
         display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
@@ -185,73 +182,85 @@ void DisplayMesswerte(int bodenfeuchte, String bodenfeuchteName, int helligkeit,
       }
       break;
     case 5:
-      if (luftfeuchte != -1) {
-        MesswertAnzeigen("Luft-", "feuchte:", luftfeuchte, "%");
+      if (luftfeuchteMesswert != -1) {
+        MesswertAnzeigen("Luft-", "feuchte:", luftfeuchteMesswert, "%");
       } else {
         display.clearDisplay();
         display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
         display.display();
       }
       break;
-    case 6:
-      if (analog3 != -1) {
-        std::pair<String, String> namen = NamenTeilen(analog3Name);
-        MesswertAnzeigen(namen.first, namen.second, analog3, "%");
-      } else {
-        display.clearDisplay();
-        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
-        display.display();
-      }
-      break;
-    case 7:
-      if (analog4 != -1) {
-        std::pair<String, String> namen = NamenTeilen(analog4Name);
-        MesswertAnzeigen(namen.first, namen.second, analog4, "%");
-      } else {
-        display.clearDisplay();
-        display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
-        display.display();
-      }
-      break;
-    case 8:
-      if (analog5 != -1) {
-        std::pair<String, String> namen = NamenTeilen(analog5Name);
-        MesswertAnzeigen(namen.first, namen.second, analog5, "%");
-      } else {
-        display.clearDisplay();
-        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
-        display.display();
-      }
-      break;
-    case 9:
-      if (analog6 != -1) {
-        std::pair<String, String> namen = NamenTeilen(analog6Name);
-        MesswertAnzeigen(namen.first, namen.second, analog6, "%");
-      } else {
-        display.clearDisplay();
-        display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
-        display.display();
-      }
-      break;
-    case 10:
-      if (analog7 != -1) {
-        std::pair<String, String> namen = NamenTeilen(analog7Name);
-        MesswertAnzeigen(namen.first, namen.second, analog7, "%");
-      } else {
-        display.clearDisplay();
-        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
-        display.display();
-      }
-      break;
-    case 11:
-      if (analog8 != -1) {
-        std::pair<String, String> namen = NamenTeilen(analog8Name);
-        MesswertAnzeigen(namen.first, namen.second, analog8, "%");
-      } else {
-        display.clearDisplay();
-        display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
-        display.display();
-      }
-      break;
+    #if MODUL_ANALOG3
+      case 6:
+        if (analog3MesswertProzent != -1) {
+          std::pair<String, String> namen = NamenTeilen(analog3Name);
+          MesswertAnzeigen(namen.first, namen.second, analog3MesswertProzent, "%");
+        } else {
+          display.clearDisplay();
+          display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+          display.display();
+        }
+        break;
+    #endif
+    #if MODUL_ANALOG4
+      case 7:
+        if (analog4MesswertProzent != -1) {
+          std::pair<String, String> namen = NamenTeilen(analog4Name);
+          MesswertAnzeigen(namen.first, namen.second, analog4MesswertProzent, "%");
+        } else {
+          display.clearDisplay();
+          display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
+          display.display();
+        }
+        break;
+    #endif
+    #if MODUL_ANALOG5
+      case 8:
+        if (analog5MesswertProzent != -1) {
+          std::pair<String, String> namen = NamenTeilen(analog5Name);
+          MesswertAnzeigen(namen.first, namen.second, analog5MesswertProzent, "%");
+        } else {
+          display.clearDisplay();
+          display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+          display.display();
+        }
+        break;
+    #endif
+    #if MODUL_ANALOG6
+      case 9:
+        if (analog6MesswertProzent != -1) {
+          std::pair<String, String> namen = NamenTeilen(analog6Name);
+          MesswertAnzeigen(namen.first, namen.second, analog6MesswertProzent, "%");
+        } else {
+          display.clearDisplay();
+          display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
+          display.display();
+        }
+        break;
+    #endif
+    #if MODUL_ANALOG7
+      case 10:
+        if (analog7MesswertProzent != -1) {
+          std::pair<String, String> namen = NamenTeilen(analog7Name);
+          MesswertAnzeigen(namen.first, namen.second, analog7MesswertProzent, "%");
+        } else {
+          display.clearDisplay();
+          display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+          display.display();
+        }
+        break;
+    #endif
+    #if MODUL_ANALOG8
+      case 11:
+        if (analog8MesswertProzent != -1) {
+          std::pair<String, String> namen = NamenTeilen(analog8Name);
+          MesswertAnzeigen(namen.first, namen.second, analog8MesswertProzent, "%");
+        } else {
+          display.clearDisplay();
+          display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
+          display.display();
+        }
+        break;
+    #endif
   }
 }

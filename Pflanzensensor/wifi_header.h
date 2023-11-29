@@ -7,7 +7,7 @@ String htmlHeader = F(R"====(
   <style>
     h1, h2, h3, h4, h5 {
       padding: 0.5em;
-      margin-bottom: 0.5em;
+      margin-bottom: 0em;
       font-weight: bold;
       font-style: normal;
       text-transform: uppercase;
@@ -54,15 +54,13 @@ String htmlHeader = F(R"====(
 
     p, ul, ol {
       line-height: 1.4;
-      color: #4a4a4a;
-      font-weight: normal;
       text-align: left;
       margin-left: 5.5em;
       margin-bottom: 0;
       margin-top: 0;
       padding-left: 1em;
       padding-right: 2em;
-      padding-top: 0;
+      padding-top: 0.5em;
       padding-bottom: 0.5em;
       font-size: 2em;
     }
@@ -91,10 +89,43 @@ String htmlHeader = F(R"====(
       display: none;
     }
 
+    @keyframes blink {
+       0% {background-color: darkred;}
+       50% {background-color: orangered;}
+       100% {background-color: darkred;}
+    }
+
     #container {
       border-right: 2em solid #560245;
       border-radius: 30px;
     }
+
+    #gruen {
+      background-color: darkgreen;
+      border-radius: 0px 0px 0px 30px;
+      margin-left: 6em;
+      font-weight: bold;
+      color: white;
+    }
+
+    #gelb {
+      background-color: yellow;
+      border-radius: 0px 0px 0px 30px;
+      margin-left: 6em;
+      font-weight: bold;
+    }
+
+    #rot {
+      border-radius: 0px 0px 0px 30px;
+      margin-left: 6em;
+      font-weight: bold;
+      color: white;
+      animation-name: blink;
+      animation-duration: 1s;
+      animation-iteration-count: infinite;
+    }
+
+
   </style>
 </head>
 <body>

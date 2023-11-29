@@ -41,10 +41,10 @@ void WebseiteDebugAusgeben() {
     formatierterCode += "<h3>DHT Modul</h3>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Lufttemperatur: ";
-    formatierterCode += messwertLufttemperatur;
+    formatierterCode += lufttemperaturMesswert;
     formatierterCode += "</li>";
     formatierterCode += "<li>Luftfeuchte: ";
-    formatierterCode += messwertLuftfeuchte;
+    formatierterCode += luftfeuchteMesswert;
     formatierterCode += "</li>";
     formatierterCode += "<li>DHT Pin: ";
     formatierterCode += pinDht;
@@ -77,10 +77,10 @@ void WebseiteDebugAusgeben() {
     formatierterCode += "<h3>Bodenfeuchte Modul</h3>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Messwert Prozent: ";
-    formatierterCode += messwertBodenfeuchteProzent;
+    formatierterCode += bodenfeuchteMesswertProzent;
     formatierterCode += "</li>";
     formatierterCode += "<li>Messwert absolut: ";
-    formatierterCode += messwertBodenfeuchte;
+    formatierterCode += bodenfeuchteMesswert;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
  #endif
@@ -103,24 +103,6 @@ void WebseiteDebugAusgeben() {
     formatierterCode += "<li>Pin rote LED: ";
     formatierterCode += pinAmpelRot;
     formatierterCode += "</li>";
-    formatierterCode += "<li>Bodenfeuchte Schwellwert gruen: ";
-    formatierterCode += ampelBodenfeuchteGruen;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Bodenfeuchte Schwellwert rot: ";
-    formatierterCode += ampelBodenfeuchteRot;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Bodenfeuchte Skala invertiert?: ";
-    formatierterCode += ampelBodenfeuchteInvertiert;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Helligkeit Schwellwert gruen: ";
-    formatierterCode += ampelHelligkeitGruen;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Helligkeit Schwellwert rot: ";
-    formatierterCode += ampelHelligkeitRot;
-    formatierterCode += "</li>";
-    formatierterCode += "<li>Helligkeit Skala invertiert?: ";
-    formatierterCode += ampelHelligkeitInvertiert;
-    formatierterCode += "</li>";
     formatierterCode += "</ul>";
   #endif
 
@@ -128,10 +110,10 @@ void WebseiteDebugAusgeben() {
     formatierterCode += "<h3>Helligkeit Modul</h3>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Messwert Prozent: ";
-    formatierterCode += messwertHelligkeitProzent;
+    formatierterCode += helligkeitMesswertProzent;
     formatierterCode += "</li>";
     formatierterCode += "<li>Messwert absolut: ";
-    formatierterCode += messwertHelligkeit;
+    formatierterCode += helligkeitMesswert;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
   #endif
@@ -176,22 +158,22 @@ void WebseiteDebugAusgeben() {
  #endif
 
   #if MODUL_ANALOG3
-    formatierterCode += GeneriereAnalogsensorDebugString(3, analog3Name, messwertAnalog3, messwertAnalog3Prozent, analog3Minimum, analog3Maximum);
+    formatierterCode += GeneriereAnalogsensorDebugString(3, analog3Name, analog3Messwert, analog3MesswertProzent, analog3Minimum, analog3Maximum);
   #endif
   #if MODUL_ANALOG4
-    formatierterCode += GeneriereAnalogsensorDebugString(4, analog4Name, messwertAnalog4, messwertAnalog4Prozent, analog4Minimum, analog4Maximum);
+    formatierterCode += GeneriereAnalogsensorDebugString(4, analog4Name, analog4Messwert, analog4MesswertProzent, analog4Minimum, analog4Maximum);
   #endif
   #if MODUL_ANALOG5
-    formatierterCode += GeneriereAnalogsensorDebugString(5, analog5Name, messwertAnalog5, messwertAnalog5Prozent, analog5Minimum, analog5Maximum);
+    formatierterCode += GeneriereAnalogsensorDebugString(5, analog5Name, analog5Messwert, analog5MesswertProzent, analog5Minimum, analog5Maximum);
   #endif
   #if MODUL_ANALOG6
-    formatierterCode += GeneriereAnalogsensorDebugString(6, analog6Name, messwertAnalog6, messwertAnalog6Prozent, analog6Minimum, analog6Maximum);
+    formatierterCode += GeneriereAnalogsensorDebugString(6, analog6Name, analog6Messwert, analog6MesswertProzent, analog6Minimum, analog6Maximum);
   #endif
   #if MODUL_ANALOG7
-    formatierterCode += GeneriereAnalogsensorDebugString(7, analog7Name, messwertAnalog7, messwertAnalog7Prozent, analog7Minimum, analog7Maximum);
+    formatierterCode += GeneriereAnalogsensorDebugString(7, analog7Name, analog7Messwert, analog7MesswertProzent, analog7Minimum, analog7Maximum);
   #endif
   #if MODUL_ANALOG8
-    formatierterCode += GeneriereAnalogsensorDebugString(8, analog8Name, messwertAnalog8, messwertAnalog8Prozent, analog8Minimum, analog8Maximum);
+    formatierterCode += GeneriereAnalogsensorDebugString(8, analog8Name, analog8Messwert, analog8MesswertProzent, analog8Minimum, analog8Maximum);
   #endif
   formatierterCode += "<h2>Deaktivierte Module</h2><ul>";
   #if !MODUL_DHT

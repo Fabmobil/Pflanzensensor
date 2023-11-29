@@ -21,11 +21,14 @@
  *
  * Die verwendeten Bauteile sind in der Readme.md aufgeführt.
  */
-
-#include "Configuration.h" // Alle Einstellungen werden dort vorgenommen!
-
 int ModuleZaehlen(); // Funktion, um die Anzahl der aktiven Module zu zählen  (siehe unten)
 int AnalogsensorenZaehlen(); // Funktion, um die Anzahl der aktiven Analogmodule zu zählen (siehe unten)
+String FarbeBerechnen(int messwert, int gruenUnten, int gruenOben, int gelbUnten, int gelbOben); // Funktion, um die Farbe für die LED Ampel zu berechnen (siehe unten)
+
+#include "Configuration.h" // Alle Einstellungen werden dort vorgenommen!
+#include "mutex.h" // Mutex für die Sensoren
+mutex_t mutex;
+
 /*
  * Funktion: setup()
  * Diese Funktion wird beim booten des Mikrocontrollers einmalig ausgeführt
@@ -40,6 +43,7 @@ void setup() {
    * zwischen dem #if und #endif ignoriert und landet nicht auf dem Chip.
    */
   delay(1000);
+  CreateMutex(&mutex);
   #if MODUL_DEBUG
     Serial.println(F("#### Start von setup()"));
   #endif
@@ -55,6 +59,7 @@ void setup() {
   Serial.println(" Fabmobil Pflanzensensor, V0.2");
   module = ModuleZaehlen(); // wie viele Module sind aktiv?
   displayseiten = AnalogsensorenZaehlen() + 6;  // Wir haben 6 Displayseiten plus je eine pro Analogmodul
+
   #if MODUL_DEBUG // Debuginformationen
     Serial.print(F("# Anzahl Module: "));
     Serial.println(module);
@@ -109,7 +114,6 @@ void setup() {
   #if MODUL_DHT // wenn das DHT Modul aktiv ist:
     // Initialisierung des Lufttemperatur und -feuchte Sensors:
     dht.begin(); // Sensor initialisieren
-    sensor_t sensor; // Sensor-Objekt
     #if MODUL_DEBUG // Debuginformationen
       Serial.println(F("## DHT Sensor intialisieren und auslesen"));
       dht.temperature().getSensor(&sensor);
@@ -131,8 +135,10 @@ void setup() {
       Serial.print  (F("# Auflösung:       ")); Serial.print(sensor.resolution); Serial.println(F("%"));
     #endif
   #endif
-  digitalWrite(pinMultiplexerB, HIGH); // eingebaute LED ausschalten
-  digitalWrite(pinMultiplexerC, HIGH); // eingebaute LED ausschalten
+  #if MODUL_MULTIPLEXER
+    digitalWrite(pinMultiplexerB, HIGH); // eingebaute LED ausschalten
+    digitalWrite(pinMultiplexerC, HIGH); // eingebaute LED ausschalten
+  #endif
 }
 
 /*
@@ -171,109 +177,72 @@ void loop() {
 
   // Alle Analogsensoren werden hintereinander gemessen
   if (millisAktuell - millisVorherAnalog >= intervallAnalog) { // wenn das Intervall erreicht ist
-    millisVorherAnalog = millisAktuell; // neuen Wert übernehmen
-    #if MODUL_DEBUG
-      Serial.println(F("### intervallAnalog erreicht."));
-    #endif
-
-    // Helligkeit messen:
-    #if MODUL_HELLIGKEIT  // wenn das Helligkeit Modul aktiv ist
-      // Ggfs. Multiplexer umstellen:
-      #if MODUL_MULTIPLEXER
-        MultiplexerWechseln(1, 1, 1); // Multiplexer auf Ausgang 0 stellen
+    if (GetMutex(&mutex)) {
+      millisVorherAnalog = millisAktuell; // neuen Wert übernehmen
+      #if MODUL_DEBUG
+        Serial.println(F("### intervallAnalog erreicht."));
       #endif
       // Helligkeit messen:
-      messwertHelligkeit = analogRead(pinAnalog); // Messwert einlesen
-      // Messwert in Prozent umrechnen:
-      messwertHelligkeitProzent = map(messwertHelligkeit, helligkeitMinimum, helligkeitMaximum, 0, 100); // Skalierung auf maximal 0 bis 100
-      Serial.print(F("Helligkeit: ")); Serial.print(messwertHelligkeitProzent);
-      Serial.print(F("%       (Messwert: ")); Serial.print(messwertHelligkeit);
-      Serial.println(F(")"));
-    #endif
-
-    // Bodenfeuchte messen:
-    #if MODUL_BODENFEUCHTE // wenn das Bodenfeuchte Modul aktiv is
-      // Ggfs. Multiplexer umstellen:
-      #if MODUL_MULTIPLEXER // wenn der Multiplexer aktiv ist
-        MultiplexerWechseln(0, 1, 1); // Multiplexer auf Ausgang 1 stellen
+      #if MODUL_HELLIGKEIT  // wenn das Helligkeit Modul aktiv ist
+        std::tie(helligkeitMesswert, helligkeitMesswertProzent) =
+          AnalogsensorMessen(1,1,1, helligkeitName, helligkeitMinimum, helligkeitMaximum);
+        helligkeitFarbe = FarbeBerechnen(helligkeitMesswertProzent, helligkeitGruenUnten, helligkeitGruenOben, helligkeitGelbUnten, helligkeitGelbOben);
       #endif
-      // Bodenfeuchte messen
-      messwertBodenfeuchte = analogRead(pinAnalog); // Messwert einlesen
-      // und in Prozent umrechnen
-      messwertBodenfeuchteProzent = map(messwertBodenfeuchte, bodenfeuchteMinimum, bodenfeuchteMaximum, 0, 100); // Skalierung auf maximal 0 bis 100
-      Serial.print(F("Bodenfeuchte: ")); Serial.print(messwertBodenfeuchteProzent);
-      Serial.print(F("%     (Messwert: ")); Serial.print(messwertBodenfeuchte);
-      Serial.println(F(")"));
-    #endif
 
-    // Analogsensor3 messen:
-    #if MODUL_ANALOG3 // wenn das Analog3 Modul aktiv ist
-      MultiplexerWechseln(1, 0, 1); // Multiplexer auf Eingang 2 stellen
-      messwertAnalog3 = analogRead(pinAnalog); // Messwert einlesen
-      // und in Prozent umrechnen
-      messwertAnalog3Prozent = map(messwertAnalog3, analog3Minimum, analog3Maximum, 0, 100); // Skalierung auf maximal 0 bis 100
-      Serial.print(F("Analog3: ")); Serial.print(messwertAnalog3Prozent);
-      Serial.print(F("%         (Messwert: ")); Serial.print(messwertAnalog3);
-      Serial.println(F(")"));
-    #endif
+      // Bodenfeuchte messen:
+      #if MODUL_BODENFEUCHTE // wenn das Bodenfeuchte Modul aktiv is
+        std::tie(bodenfeuchteMesswert, bodenfeuchteMesswertProzent) =
+          AnalogsensorMessen(0,1,1, bodenfeuchteName, bodenfeuchteMinimum, bodenfeuchteMaximum);
+        bodenfeuchteFarbe = FarbeBerechnen(bodenfeuchteMesswertProzent, bodenfeuchteGruenUnten, bodenfeuchteGruenOben, bodenfeuchteGelbUnten, bodenfeuchteGelbOben);
+      #endif
 
-    // Analogsensor4 messen:
-    #if MODUL_ANALOG4 // wenn das Analog4 Modul aktiv ist
-      MultiplexerWechseln(0, 0, 1); // Multiplexer auf Eingang 3 stellen
-      messwertAnalog4 = analogRead(pinAnalog); // Messwert einlesen
-      // und in Prozent umrechnen
-      messwertAnalog4Prozent = map(messwertAnalog4, analog4Minimum, analog4Maximum, 0, 100); // Skalierung auf maximal 0 bis 100
-      Serial.print(F("Analog4: ")); Serial.print(messwertAnalog4Prozent);
-      Serial.print(F("%         (Messwert: ")); Serial.print(messwertAnalog4);
-      Serial.println(F(")"));
-    #endif
+      // Analogsensor3 messen:
+      #if MODUL_ANALOG3 // wenn das Analog3 Modul aktiv ist
+        std::tie(analog3Messwert, analog3MesswertProzent) =
+          AnalogsensorMessen(1,0,1, analog3Name, analog3Minimum, analog3Maximum);
+        analog3Farbe = FarbeBerechnen(analog3MesswertProzent, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben);
+      #endif
 
-    // Analogsensor5 messen:
-    #if MODUL_ANALOG5 // wenn das Analog5 Modul aktiv ist
-      MultiplexerWechseln(1, 1, 0); // Multiplexer auf Eingang 4 stellen
-      messwertAnalog5 = analogRead(pinAnalog); // Messwert einlesen
-      // und in Prozent umrechnen
-      messwertAnalog5Prozent = map(messwertAnalog5, analog5Minimum, analog5Maximum, 0, 100); // Skalierung auf maximal 0 bis 100
-      Serial.print(F("Analog5: ")); Serial.print(messwertAnalog5Prozent);
-      Serial.print(F("%         (Messwert: ")); Serial.print(messwertAnalog5);
-      Serial.println(F(")"));
-    #endif
+      // Analogsensor4 messen:
+      #if MODUL_ANALOG4 // wenn das Analog4 Modul aktiv ist
+        std::tie(analog4Messwert, analog4MesswertProzent) =
+          AnalogsensorMessen(0,0,1, analog4Name, analog4Minimum, analog4Maximum);
+        analog4Farbe = FarbeBerechnen(analog4MesswertProzent, analog4GruenUnten, analog4GruenOben, analog4GelbUnten, analog4GelbOben);
+      #endif
 
-    // Analogsensor6 messen:
-    #if MODUL_ANALOG6 // wenn das Analog6 Modul aktiv ist
-      MultiplexerWechseln(0, 1, 0); // Multiplexer auf Eingang 5 stellen
-      messwertAnalog6 = analogRead(pinAnalog); // Messwert einlesen
-      // und in Prozent umrechnen
-      messwertAnalog6Prozent = map(messwertAnalog6, analog6Minimum, analog6Maximum, 0, 100); // Skalierung auf maximal 0 bis 100
-      Serial.print(F("Analog6: ")); Serial.print(messwertAnalog6Prozent);
-      Serial.print(F("%         (Messwert: ")); Serial.print(messwertAnalog6);
-      Serial.println(F(")"));
-    #endif
+      // Analogsensor5 messen:
+      #if MODUL_ANALOG5 // wenn das Analog5 Modul aktiv ist
+      std::tie(analog5Messwert, analog5MesswertProzent) =
+          AnalogsensorMessen(1,1,0, analog5Name, analog5Minimum, analog5Maximum);
+        analog5Farbe = FarbeBerechnen(analog5MesswertProzent, analog5GruenUnten, analog5GruenOben, analog5GelbUnten, analog5GelbOben);
+      #endif
 
-    // Analogsensor7 messen:
-    #if MODUL_ANALOG7 // wenn das Analog7 Modul aktiv ist
-      MultiplexerWechseln(1, 0, 0); // Multiplexer auf Eingang 6 stellen
-      messwertAnalog7 = analogRead(pinAnalog); // Messwert einlesen
-      // und in Prozent umrechnen
-      messwertAnalog7Prozent = map(messwertAnalog7, analog7Minimum, analog7Maximum, 0, 100); // Skalierung auf maximal 0 bis 100
-      Serial.print(F("Analog7: ")); Serial.print(messwertAnalog7Prozent);
-      Serial.print(F("%         (Messwert: ")); Serial.print(messwertAnalog7);
-      Serial.println(F(")"));
-    #endif
+      // Analogsensor6 messen:
+      #if MODUL_ANALOG6 // wenn das Analog6 Modul aktiv ist
+        std::tie(analog6Messwert, analog6MesswertProzent) =
+          AnalogsensorMessen(0,1,0, analog6Name, analog6Minimum, analog6Maximum);
+        analog6Farbe = FarbeBerechnen(analog6MesswertProzent, analog6GruenUnten, analog6GruenOben, analog6GelbUnten, analog6GelbOben);
+      #endif
 
-    // Analogsensor8 messen:
-    #if MODUL_ANALOG8 // wenn das Analog8 Modul aktiv ist
-      MultiplexerWechseln(0, 0, 0); // Multiplexer auf Eingang 7 stellen
-      messwertAnalog8 = analogRead(pinAnalog); // Messwert einlesen
-      // und in Prozent umrechnen
-      messwertAnalog8Prozent = map(messwertAnalog8, analog8Minimum, analog8Maximum, 0, 100); // Skalierung auf maximal 0 bis 100
-      Serial.print(F("Analog8: ")); Serial.print(messwertAnalog8Prozent);
-      Serial.print(F("%         (Messwert: ")); Serial.print(messwertAnalog8);
-      Serial.println(F(")"));
-    #endif
+      // Analogsensor7 messen:
+      #if MODUL_ANALOG7 // wenn das Analog7 Modul aktiv ist
+        std::tie(analog7Messwert, analog7MesswertProzent) =
+          AnalogsensorMessen(1,0,0, analog7Name, analog7Minimum, analog7Maximum);
+        analog7Farbe = FarbeBerechnen(analog7MesswertProzent, analog7GruenUnten, analog7GruenOben, analog7GelbUnten, analog7GelbOben);
+      #endif
 
-    digitalWrite(pinMultiplexerB, HIGH); // eingebaute LED ausschalten
-    digitalWrite(pinMultiplexerC, HIGH); // eingebaute LED ausschalten
+      // Analogsensor8 messen:
+      #if MODUL_ANALOG8 // wenn das Analog8 Modul aktiv ist
+        std::tie(analog8Messwert, analog8MesswertProzent) =
+          AnalogsensorMessen(0,0,0, analog8Name, analog8Minimum, analog8Maximum);
+        analog8Farbe = FarbeBerechnen(analog8MesswertProzent, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben);
+      #endif
+      #if MODUL_MULTIPLEXER
+        digitalWrite(pinMultiplexerB, HIGH); // eingebaute LED ausschalten
+        digitalWrite(pinMultiplexerC, HIGH); // eingebaute LED ausschalten
+      #endif
+      ReleaseMutex(&mutex);
+    }
   }
 
   // Luftfeuchte und -temperatur messen:
@@ -283,8 +252,10 @@ void loop() {
         Serial.println(F("### intervallDht erreicht."));
       #endif
       millisVorherDht = millisAktuell; // neuen Wert übernehmen
-      messwertLufttemperatur = DhtMessenLufttemperatur(); // Lufttemperatur messen
-      messwertLuftfeuchte = DhtMessenLuftfeuchte(); // Luftfeuchte messen
+      lufttemperaturMesswert = DhtMessenLufttemperatur(); // Lufttemperatur messen
+      lufttemperaturFarbe = FarbeBerechnen(lufttemperaturMesswert, lufttemperaturGruenUnten, lufttemperaturGruenOben, lufttemperaturGelbUnten, lufttemperaturGelbOben);
+      luftfeuchteMesswert = DhtMessenLuftfeuchte(); // Luftfeuchte messen
+      luftfeuchteFarbe = FarbeBerechnen(luftfeuchteMesswert, luftfeuchteGruenUnten, luftfeuchteGruenOben, luftfeuchteGelbUnten, luftfeuchteGelbOben);
     }
   #endif
 
@@ -295,7 +266,7 @@ void loop() {
         Serial.println(F("### intervallLedAmpel erreicht."));
       #endif
       millisVorherLedampel = millisAktuell; // neuen Wert übernehmen
-      LedampelUmschalten(messwertHelligkeitProzent, messwertBodenfeuchteProzent); // Ampel umschalten
+      LedampelUmschalten(helligkeitMesswertProzent, bodenfeuchteMesswertProzent); // Ampel umschalten
     }
   #endif
 
@@ -311,17 +282,17 @@ void loop() {
       #endif
       millisVorherDisplay = millisAktuell; // neuen Wert übernehmen
       // Diese Funktion kümmert sich um die Displayanzeige:
-      DisplayMesswerte(messwertBodenfeuchteProzent, bodenfeuchteName, messwertHelligkeitProzent, helligkeitName,
-        messwertLufttemperatur, messwertLuftfeuchte, messwertAnalog3Prozent, analog3Name, messwertAnalog4Prozent,
-        analog4Name, messwertAnalog5Prozent, analog5Name, messwertAnalog6Prozent, analog6Name, messwertAnalog7Prozent,
-        analog7Name, messwertAnalog8Prozent, analog8Name, status);
+      DisplayMesswerte();
     }
   #endif
 
 
   // Wifi und Webserver:
   #if MODUL_WIFI // wenn das Wifi-Modul aktiv ist
-    Webserver.handleClient(); // der Webserver soll in jedem loop nach Anfragen schauen!
+    if (GetMutex(&mutex)) {
+      Webserver.handleClient(); // der Webserver soll in jedem loop nach Anfragen schauen!
+      ReleaseMutex(&mutex);
+    }
   #endif
 
   #if MODUL_DEBUG // Debuginformation
@@ -367,4 +338,18 @@ int AnalogsensorenZaehlen() {
   if (MODUL_ANALOG7) analogsensoren++; // wenn das Analog7 Modul aktiv ist, wird die Variable um 1 erhöht
   if (MODUL_ANALOG8) analogsensoren++; // wenn das Analog8 Modul aktiv ist, wird die Variable um 1 erhöht
   return analogsensoren; // die Anzahl der aktiven Module wird zurückgegeben
+}
+
+/* Funktion: FarbeBerechnen()
+ * Funktion, um die Farbe der LED Ampel zu berechnen
+ * gibt die Farbe als String zurück.
+ */
+String FarbeBerechnen(int messwert, int gruenUnten, int gruenOben, int gelbUnten, int gelbOben) {
+  if (messwert >= gruenUnten && messwert <= gruenOben) {
+    return "gruen";
+  } else if (messwert < gelbUnten || messwert > gelbOben) {
+    return "rot";
+  } else {
+    return "gelb";
+  }
 }

@@ -19,7 +19,7 @@
 #define MODUL_IFTTT         false // willst du das ifttt.com-Modul verwenden?
 #define MODUL_ANALOG3       true // hat dein Pflanzensensor einen dritten Analogsensor?
 #define MODUL_ANALOG4       true // hat dein Pflanzensensor einen vierten Analogsensor?
-#define MODUL_ANALOG5       false // hat dein Pflanzensensor einen fünften Analogsensor?
+#define MODUL_ANALOG5       true // hat dein Pflanzensensor einen fünften Analogsensor?
 #define MODUL_ANALOG6       false // hat dein Pflanzensensor einen sechsten Analogsensor?
 #define MODUL_ANALOG7       false // hat dein Pflanzensensor einen siebten Analogsensor?
 #define MODUL_ANALOG8       false // hat dein Pflanzensensor einen achten Analogsensor?
@@ -35,19 +35,20 @@
  */
 #define pinEingebauteLed LED_BUILTIN // "D0"; worüber wird die interne LED des ESPs angesprochen?
 #define baudrateSeriell 9600 // Baudrate der seriellen Verbindung
- const long intervallAnalog = 5000; // Intervall der Messung des dritten Analogsensors in Millisekunden. Vorschlag: 5000
-#if MODUL_BODENFEUCHTE || MODUL_HELLIGKEIT // Wenn wir Analogsensoren benutzen
-  #define pinAnalog A0 // definieren wir hier den Analogpin
-#endif
+const long intervallAnalog = 5000; // Intervall der Messung der Analogsensoren in Millisekunden. Vorschlag: 5000
 #if MODUL_BODENFEUCHTE // wenn der Bodenfeuchtesensor aktiv ist:
   /*
    * Wenn der Bodenfeuchtesensor aktiv ist werden hier die initialen Grenzwerte
    * für den Sensor festgelegt. Diese können später auch im Admin-Webinterface
    * verändert werden.
    */
+  String bodenfeuchteName = "Bodenfeuchte"; // Name des Sensors
   int bodenfeuchteMinimum = 900; // Der Rohmesswert des Sensors, wenn er ganz trocken ist
   int bodenfeuchteMaximum = 380; // Der Rohmesswert des Sensors, wenn er in Wasser ist
-  String bodenfeuchteName = "Bodenfeuchte"; // Name des Sensors
+  int bodenfeuchteGruenUnten = 40; // unter Wert des grünen Bereichs
+  int bodenfeuchteGruenOben = 60; // oberer Wert des grünen Bereichs
+  int bodenfeuchteGelbUnten = 20; // unterer Wert des gelben Bereichs
+  int bodenfeuchteGelbOben = 80; // oberer Wert des gelben Bereichs
 #endif
 #if MODUL_DISPLAY
   const long intervallDisplay = 4874; // Anzeigedauer der unterschiedlichen Displayseiten in Millisekunden. Vorschlag: 4874
@@ -56,6 +57,14 @@
   #define pinDht 0 // "D3", Pin des DHT Sensors
   #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
   const long intervallDht = 5000; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
+  int lufttemperaturGruenUnten = 19; // unter Wert des grünen Bereichs
+  int lufttemperaturGruenOben = 22; // oberer Wert des grünen Bereichs
+  int lufttemperaturGelbUnten = 17; // unterer Wert des gelben Bereichs
+  int lufttemperaturGelbOben = 24; // oberer Wert des gelben Bereichs
+  int luftfeuchteGruenUnten = 40; // unter Wert des grünen Bereichs
+  int luftfeuchteGruenOben = 60; // oberer Wert des grünen Bereichs
+  int luftfeuchteGelbUnten = 20; // unterer Wert des gelben Bereichs
+  int luftfeuchteGelbOben = 80; // oberer Wert des gelben Bereichs
 #endif
 #if MODUL_HELLIGKEIT
   /*
@@ -63,36 +72,25 @@
    * für den Sensor festgelegt. Diese können später auch im Admin-Webinterface
    * verändert werden.
    */
-  int helligkeitMinimum = 950; // Der Rohmesswert des Sensors wenn es ganz dunkel ist
-  int helligkeitMaximum = 14; // Der Rohmesswert des Sensors, wenn es ganz hell ist
   String helligkeitName = "Helligkeit"; // Name des Sensors
+  int helligkeitMinimum = 1024; // Der Rohmesswert des Sensors wenn es ganz dunkel ist
+  int helligkeitMaximum = 8; // Der Rohmesswert des Sensors, wenn es ganz hell ist
+  int helligkeitGruenUnten = 40; // unter Wert des grünen Bereichs
+  int helligkeitGruenOben = 60; // oberer Wert des grünen Bereichs
+  int helligkeitGelbUnten = 20; // unterer Wert des gelben Bereichs
+  int helligkeitGelbOben = 80; // oberer Wert des gelben Bereichs
 #endif
 #if MODUL_LEDAMPEL // falls eine LED Ampel verbaut ist:
-  #define pinAmpelRot 13 // "D7"; Pin der roten LED
-  #define pinAmpelGelb 12 // "D6"; Pin der roten LED
-  #define pinAmpelGruen 14 // "D5"; Pin der gruenen LED
-  bool ampelBodenfeuchteInvertiert = false; // true: grün = großer Wert, rot = kleiner Wert. false: rot = großer Wert, grün = kleiner Wert
-  int ampelBodenfeuchteGruen = 10; // Luftfeuchte in %, ab der die Ampel grün ist
-  int ampelBodenfeuchteRot = 90; // Luftfeuchte in %, ab der die Ampel grün ist
-  bool ampelHelligkeitInvertiert = true; // true: grün = kleiner Wert, rot = großer Wert. false: rot = kleiner Wert, grün = großer Wert
-  int ampelHelligkeitGruen = 90; // Lichtstärke in %, bis zu der Ampel grün ist
-  int ampelHelligkeitRot = 10; // Lichtstärke in %, bis zu der Ampel grün ist
-  int ampelModus = 0; // 0: Helligkeits- und Bodenfeuchtesensor abwechselnd, 1: Helligkeitssensor, 2: Bodenfeuchtesensor
-  bool ampelUmschalten = true; // Schaltet zwischen Bodenfeuchte- und Helligkeitsanzeige um
-  const long intervallLedampel = 15273; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15273
+  int ampelModus = 1; // 0: Helligkeits- und Bodenfeuchtesensor abwechselnd, 1: Helligkeitssensor, 2: Bodenfeuchtesensor
+  const long intervallLedampel = 5000; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15273
 #endif
 #if MODUL_IFTTT // wenn das IFTTT Modul aktiviert ist
   #define wifiIftttPasswort "IFTTT Schlüssel" // brauchen wir einen Schlüssel
   #define wifiIftttEreignis "Fabmobil_Pflanzensensor" // und ein Ereignisnamen
 #endif
-#if MODUL_MULTIPLEXER // wenn der Multiplexer aktiv ist
-  #define pinMultiplexerA 15 // "D8"; Pin A des Multiplexers
-  #define pinMultiplexerB 2 // "D4"; Pin B des Multiplexers
-  #define pinMultiplexerC 16 // "D0"; Pin C des Multiplexers
-#endif
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
-  String wifiAdminPasswort = "admin"; // Passwort für das Admininterface
-  String wifiHostname = "pflanzensensor"; // Das Gerät ist später unter diesem Name + .local erreichbar
+  #define wifiAdminPasswort "admin" // Passwort für das Admininterface
+  #define wifiHostname "pflanzensensor" // Das Gerät ist später unter diesem Name + .local erreichbar
   #define wifiAp false // true: ESP macht seinen eigenen AP auf; false: ESP verbindet sich mit fremden WLAN
   #define wifiApSsid "Fabmobil Pflanzensensor" // SSID des WLANs, falls vom ESP selbst aufgemacht
   #define wifiApPasswortAktiviert false // soll das selbst aufgemachte WLAN ein Passwort haben?
@@ -104,31 +102,55 @@ String analog3Name = "Analog 3"; // Name des Sensors
 #if MODUL_ANALOG3 // wenn ein dritter Analogsensor verwendet wird
   int analog3Minimum = 900; // Minimalwert des Sensors
   int analog3Maximum = 380; // Maximalwert des Sensors
+  int analog3GruenUnten = 40;
+  int analog3GruenOben = 60;
+  int analog3GelbUnten = 20;
+  int analog3GelbOben = 80;
 #endif
 String analog4Name = "Analog 4"; // Name des Sensors
 #if MODUL_ANALOG4 // wenn ein vierter Analogsensor verwendet wird
   int analog4Minimum = 900; // Minimalwert des Sensors
   int analog4Maximum = 380; // Maximalwert des Sensors
+  int analog4GruenUnten = 40;
+  int analog4GruenOben = 60;
+  int analog4GelbUnten = 20;
+  int analog4GelbOben = 80;
 #endif
 String analog5Name = "Analog 5"; // Name des Sensors
 #if MODUL_ANALOG5 // wenn ein fünfter Analogsensor verwendet wird
   int analog5Minimum = 900; // Minimalwert des Sensors
   int analog5Maximum = 380; // Maximalwert des Sensors
+  int analog5GruenUnten = 40;
+  int analog5GruenOben = 60;
+  int analog5GelbUnten = 20;
+  int analog5GelbOben = 80;
 #endif
-String analog6Name = "Analog 6"; // Name des Sensors
 #if MODUL_ANALOG6 // wenn ein sechster Analogsensor verwendet wird
+  String analog6Name = "Analog 6"; // Name des Sensors
   int analog6Minimum = 900; // Minimalwert des Sensors
   int analog6Maximum = 380; // Maximalwert des Sensors
+  int analog6GruenUnten = 40;
+  int analog6GruenOben = 60;
+  int analog6GelbUnten = 20;
+  int analog6GelbOben = 80;
 #endif
 String analog7Name = "Analog 7"; // Name des Sensors
 #if MODUL_ANALOG7 // wenn ein siebter Analogsensor verwendet wird
   int analog7Minimum = 900; // Minimalwert des Sensors
   int analog7Maximum = 380; // Maximalwert des Sensors
+  int analog7GruenUnten = 40;
+  int analog7GruenOben = 60;
+  int analog7GelbUnten = 20;
+  int analog7GelbOben = 80;
 #endif
 String analog8Name = "Analog 8"; // Name des Sensors
 #if MODUL_ANALOG8 // wenn ein achter Analogsensor verwendet wird
   int analog8Minimum = 900; // Minimalwert des Sensors
   int analog8Maximum = 380; // Maximalwert des Sensors
+  int analog8GruenUnten = 40;
+  int analog8GruenOben = 60;
+  int analog8GelbUnten = 20;
+  int analog8GelbOben = 80;
 #endif
 
 /**
@@ -142,35 +164,75 @@ unsigned long millisVorherLedampel = 0; // Variable für die Messung des Interva
 unsigned long millisVorherDisplay = 0; // Variable für die Messung des Intervalls der Anzeige des Displays
 int module; // Variable für die Anzahl der Module
 int displayseiten; // Variable für die Anzahl der Analogsensoren
-int messwertAnalog3 = -1; // Variable für den Messwert des dritten Analogsensors
-int messwertAnalog3Prozent = -1; // Variable für den Messwert des dritten Analogsensors in Prozent
-int messwertAnalog4 = -1; // Variable für den Messwert des vierten Analogsensors
-int messwertAnalog4Prozent = -1; // Variable für den Messwert des vierten Analogsensors in Prozent
-int messwertAnalog5 = -1; // Variable für den Messwert des fünften Analogsensors
-int messwertAnalog5Prozent = -1; // Variable für den Messwert des fünften Analogsensors in Prozent
-int messwertAnalog6 = -1; // Variable für den Messwert des sechsten Analogsensors
-int messwertAnalog6Prozent = -1; // Variable für den Messwert des sechsten Analogsensors in Prozent
-int messwertAnalog7 = -1; // Variable für den Messwert des siebten Analogsensors
-int messwertAnalog7Prozent = -1; // Variable für den Messwert des siebten Analogsensors in Prozent
-int messwertAnalog8 = -1; // Variable für den Messwert des achter Analogsensors
-int messwertAnalog8Prozent = -1; // Variable für den Messwert des achter Analogsensors in Prozent
-
+int analog3Messwert = -1; // Variable für den Messwert des dritten Analogsensors
+int analog3MesswertProzent = -1; // Variable für den Messwert des dritten Analogsensors in Prozent
+int analog4Messwert = -1; // Variable für den Messwert des vierten Analogsensors
+int analog4MesswertProzent = -1; // Variable für den Messwert des vierten Analogsensors in Prozent
+int analog5Messwert = -1; // Variable für den Messwert des fünften Analogsensors
+int analog5MesswertProzent = -1; // Variable für den Messwert des fünften Analogsensors in Prozent
+int analog6Messwert = -1; // Variable für den Messwert des sechsten Analogsensors
+int analog6MesswertProzent = -1; // Variable für den Messwert des sechsten Analogsensors in Prozent
+int analog7Messwert = -1; // Variable für den Messwert des siebten Analogsensors
+int analog7MesswertProzent = -1; // Variable für den Messwert des siebten Analogsensors in Prozent
+int analog8Messwert = -1; // Variable für den Messwert des achter Analogsensors
+int analog8MesswertProzent = -1; // Variable für den Messwert des achter Analogsensors in Prozent
+String helligkeitFarbe = "rot";
+String bodenfeuchteFarbe = "rot";
+String luftfeuchteFarbe = "rot";
+String lufttemperaturFarbe = "rot";
+String analog3Farbe = "rot";
+String analog4Farbe = "rot";
+String analog5Farbe = "rot";
+String analog6Farbe = "rot";
+String analog7Farbe = "rot";
+String analog8Farbe = "rot";
+#define pinAnalog A0 // Analogpin
+#
 #if MODUL_BODENFEUCHTE
-  int messwertBodenfeuchte = -1;
-  int messwertBodenfeuchteProzent = -1;
+  int bodenfeuchteMesswert = -1;
+  int bodenfeuchteMesswertProzent = -1;
 #else
-  int messwertBodenfeuchte = -1;
-  int messwertBodenfeuchteProzent = -1;
+  int bodenfeuchteMesswert = -1;
+  int bodenfeuchteMesswertProzent = -1;
+  #define bodenfeuchteName "Bodenfeuchte"
 #endif
 
 #if MODUL_DHT
-  float messwertLufttemperatur = -1;
-  float messwertLuftfeuchte = -1;
+  float lufttemperaturMesswert = -1;
+  float luftfeuchteMesswert = -1;
   #include "dht.h" // Luftfeuchte- und -temperaturmodul einbinden
 #else
-  #define messwertLufttemperatur -1
-  #define messwertLuftfeuchte -1
+  #define lufttemperaturMesswert -1
+  #define luftfeuchteMesswert -1
 #endif
+
+#if MODUL_IFTTT
+  #include "ifttt.h" // IFTTT Modul einbinden
+#endif
+
+#if MODUL_LEDAMPEL
+  bool ampelUmschalten = true; // Schaltet zwischen Bodenfeuchte- und Helligkeitsanzeige um
+  #define pinAmpelRot 13 // "D7"; Pin der roten LED
+  #define pinAmpelGelb 12 // "D6"; Pin der roten LED
+  #define pinAmpelGruen 14 // "D5"; Pin der gruenen LED
+  #include "ledampel.h" // LED Ampel Modul einbinden
+#endif
+
+#if MODUL_HELLIGKEIT
+  int helligkeitMesswert = -1;
+  int helligkeitMesswertProzent = -1;
+#else
+  #define helligkeitMesswert -1
+  #define helligkeitMesswertProzent -1
+#endif
+
+#if MODUL_MULTIPLEXER
+  #define pinMultiplexerA 15 // "D8"; Pin A des Multiplexers
+  #define pinMultiplexerB 2 // "D4"; Pin B des Multiplexers
+  #define pinMultiplexerC 16 // "D0"; Pin C des Multiplexers
+  #include "multiplexer.h" // Multiplexermodul einbinden
+#endif
+
 
 #if MODUL_DISPLAY
   int status = 0; // diese Variable schaltet durch die unterschiedlichen Anzeigen des Displays
@@ -181,26 +243,8 @@ int messwertAnalog8Prozent = -1; // Variable für den Messwert des achter Analog
   #include "display.h" // Displaymodul einbinden
 #endif
 
-#if MODUL_IFTTT
-  #include "ifttt.h" // IFTTT Modul einbinden
-#endif
-
-#if MODUL_LEDAMPEL
-  #include "ledampel.h" // LED Ampel Modul einbinden
-#endif
-
-#if MODUL_HELLIGKEIT
-  int messwertHelligkeit = -1;
-  int messwertHelligkeitProzent = -1;
-#else
-  #define messwertHelligkeit -1
-  #define messwertHelligkeitProzent -1
-#endif
-
-#if MODUL_MULTIPLEXER
-  #include "multiplexer.h" // Multiplexermodul einbinden
-#endif
-
 #if MODUL_WIFI
   #include "wifi.h" // Wifimodul einbinden
 #endif
+
+#include "analogsensor.h" // Funktionen für die Analogsensoren

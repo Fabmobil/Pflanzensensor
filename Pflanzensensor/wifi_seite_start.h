@@ -2,18 +2,19 @@
  * Generiert einen String für einen Sensor
  * int sensorNummer: Nummer des Sensors
  * String sensorName: Name des Sensors
+ * String sensorFarbe: Farbe des Sensors
  * int messwert: Messwert des Sensors
  * String einheit: Einheit des Messwerts
  * Rückgabewert: formatierter String
  */
-String GeneriereSensorString(const int sensorNummer, const String& sensorName, const int messwert, const String& einheit) {
+String GeneriereSensorString(const int sensorNummer, const String& sensorName, const String& sensorFarbe, const int messwert, const String& einheit) {
   String sensorString;
   if (sensorNummer == 0) {
-    sensorString += "<h2>" + sensorName + "</h2><p>" + messwert + " " + einheit + "</p>";
+    sensorString += "<h2>" + sensorName + "</h2><div id=\"" + sensorFarbe + "\"><p>" + messwert + " " + einheit + "</p></div>";
     return sensorString;
   } else {
     sensorString += "<h2>Analogsensor " + String(sensorNummer) + ": " + sensorName + "</h2>";
-    sensorString += "<p>" + String(messwert) + " " + einheit + "</p>";
+    sensorString += "<div id=\"" + sensorFarbe + "\"><p>" + String(messwert) + " " + einheit + "</p></div>";
     return sensorString;
   }
 }
@@ -33,32 +34,32 @@ void WebseiteStartAusgeben() {
   String formatierterCode = htmlHeader;
   formatierterCode += "<p>Diese Seite zeigt die Sensordaten deines Pflanzensensors an. Sie aktualisiert sich automatisch aller 10 Sekunden.</p>";
   #if MODUL_HELLIGKEIT
-    formatierterCode += GeneriereSensorString(0, helligkeitName, messwertHelligkeitProzent, "%");
+    formatierterCode += GeneriereSensorString(0, helligkeitName, helligkeitFarbe, helligkeitMesswertProzent, "%");
   #endif
   #if MODUL_BODENFEUCHTE
-    formatierterCode += GeneriereSensorString(0, bodenfeuchteName, messwertBodenfeuchteProzent, "%");
+    formatierterCode += GeneriereSensorString(0, bodenfeuchteName, bodenfeuchteFarbe, bodenfeuchteMesswertProzent, "%");
   #endif
   #if MODUL_DHT
-    formatierterCode += GeneriereSensorString(0, "Lufttemperatur", messwertLufttemperatur, "°C");
-    formatierterCode += GeneriereSensorString(0, "Luftfeuchte", messwertLuftfeuchte, "%");
+    formatierterCode += GeneriereSensorString(0, "Lufttemperatur", lufttemperaturFarbe, lufttemperaturMesswert, "°C");
+    formatierterCode += GeneriereSensorString(0, "Luftfeuchte", luftfeuchteFarbe, luftfeuchteMesswert, "%");
   #endif
   #if MODUL_ANALOG3
-    formatierterCode += GeneriereSensorString(3, analog3Name, messwertAnalog3Prozent, "%");
+    formatierterCode += GeneriereSensorString(3, analog3Name, analog3Farbe, analog3MesswertProzent, "%");
   #endif
   #if MODUL_ANALOG4
-    formatierterCode += GeneriereSensorString(4, analog4Name, messwertAnalog4Prozent, "%");
+    formatierterCode += GeneriereSensorString(4, analog4Name, analog4Farbe, analog4MesswertProzent, "%");
   #endif
   #if MODUL_ANALOG5
-    formatierterCode += GeneriereSensorString(5, analog5Name, messwertAnalog5Prozent, "%");
+    formatierterCode += GeneriereSensorString(5, analog5Name, analog5Farbe, analog5MesswertProzent, "%");
   #endif
   #if MODUL_ANALOG6
-    formatierterCode += GeneriereSensorString(6, analog6Name, messwertAnalog6Prozent, "%");
+    formatierterCode += GeneriereSensorString(6, analog6Name, analog6Farbe, analog6MesswertProzent, "%");
   #endif
   #if MODUL_ANALOG7
-    formatierterCode += GeneriereSensorString(7, analog7Name, messwertAnalog7Prozent, "%");
+    formatierterCode += GeneriereSensorString(7, analog7Name, analog7Farbe, analog7MesswertProzent, "%");
   #endif
   #if MODUL_ANALOG8
-    formatierterCode += GeneriereSensorString(8, analog8Name, messwertAnalog8Prozent, "%");
+    formatierterCode += GeneriereSensorString(8, analog8Name, analog8Farbe, analog8MesswertProzent, "%");
   #endif
   formatierterCode += "<h2>Links</h2>";
   formatierterCode += "<ul>";

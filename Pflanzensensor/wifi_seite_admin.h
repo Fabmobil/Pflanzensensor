@@ -7,15 +7,31 @@
  * int maximum: Maximalwert des Sensors
  * Rückgabewert: formatierter String
  */
-String GeneriereAnalogsensorAdminString(int sensorNummer, const String& sensorName, const int minimum, const int maximum) {
+String GeneriereAnalogsensorAdminString(
+int sensorNummer,
+const String& sensorName,
+const int minimum,
+const int maximum,
+const int gruenUnten,
+const int gruenOben,
+const int gelbUnten,
+const int gelbOben) {
   String analogsensorAdminString;
   analogsensorAdminString += "<h2>Analogsensor " + String(sensorNummer) + "</h2>";
   analogsensorAdminString += "<p>Sensorname: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"20\" name=\"analog" + String(sensorNummer) + "Name\" placeholder=\"" + String(sensorName) + "\"></p>";
+  analogsensorAdminString += "<input type=\"text\" size=\"20\" name=\"Name: \" placeholder=\"" + String(sensorName) + "\"></p>";
   analogsensorAdminString += "<p>Minimalwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "Minimum\" placeholder=\"" + String(minimum) + "\"></p>";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"Minimum: \" placeholder=\"" + String(minimum) + "\"></p>";
   analogsensorAdminString += "<p>Maximalwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "Maximum\" placeholder=\"" + String(maximum) + "\"></p>";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"Maximum: \" placeholder=\"" + String(maximum) + "\"></p>";
+  analogsensorAdminString += "<p>unterer grüner Schwellwert: ";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"unterer grüner Schwellwert: \" placeholder=\"" + String(gruenUnten) + "\"></p>";
+  analogsensorAdminString += "<p>oberer grüner Schwellwert: ";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"oberer grüner Schwellwert: \" placeholder=\"" + String(gruenOben) + "\"></p>";
+  analogsensorAdminString += "<p>unterer gelber Schwellwert: ";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"unterer gelber Schwellwert: \" placeholder=\"" + String(gelbUnten) + "\"></p>";
+  analogsensorAdminString += "<p>oberer gelber Schwellwert: ";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"oberer gelber Schwellwert: \" placeholder=\"" + String(gelbOben) + "\"></p>";
   return analogsensorAdminString;
 }
 
@@ -49,7 +65,61 @@ void WebseiteAdminAusgeben() {
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteMaximum\" placeholder=\"";
     formatierterCode += bodenfeuchteMaximum;
     formatierterCode += "\"></p>";
+    formatierterCode += "<p>unterer grüner Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteGruenUnten\" placeholder=\"";
+    formatierterCode += bodenfeuchteGruenUnten;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>oberer grüner Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteGruenOben\" placeholder=\"";
+    formatierterCode += bodenfeuchteGruenOben;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>unterer gelber Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteGelbUnten\" placeholder=\"";
+    formatierterCode += bodenfeuchteGelbUnten;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>oberer gelber Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteGelbOben\" placeholder=\"";
+    formatierterCode += bodenfeuchteGelbOben;
+    formatierterCode += "\"></p>";
   #endif
+  #if MODUL_DHT
+    formatierterCode += "<h2>DHT Modul</h2>";
+    formatierterCode += "<h3>Lufttemperatur</h3>";
+    formatierterCode += "<p>unterer grüner Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"lufttemperaturGruenUnten\" placeholder=\"";
+    formatierterCode += lufttemperaturGruenUnten;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>oberer grüner Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"lufttemperaturGruenOben\" placeholder=\"";
+    formatierterCode += lufttemperaturGruenOben;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>unterer gelber Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"lufttemperaturGelbUnten\" placeholder=\"";
+    formatierterCode += lufttemperaturGelbUnten;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>oberer gelber Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"lufttemperaturGelbOben\" placeholder=\"";
+    formatierterCode += lufttemperaturGelbOben;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<h3>Luftfeuchte</h3>";
+    formatierterCode += "<p>unterer grüner Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"luftfeuchteGruenUnten\" placeholder=\"";
+    formatierterCode += luftfeuchteGruenUnten;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>oberer grüner Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"luftfeuchteGruenOben\" placeholder=\"";
+    formatierterCode += luftfeuchteGruenOben;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>unterer gelber Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"luftfeuchteGelbUnten\" placeholder=\"";
+    formatierterCode += luftfeuchteGelbUnten;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>oberer gelber Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"luftfeuchteGelbOben\" placeholder=\"";
+    formatierterCode += luftfeuchteGelbOben;
+    formatierterCode += "\"></p>";
+  #endif
+
   #if MODUL_HELLIGKEIT
     formatierterCode += "<h2>Helligkeitssensor</h2>";
     formatierterCode += "<p>Sensorname: ";
@@ -64,6 +134,22 @@ void WebseiteAdminAusgeben() {
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitMaximum\" placeholder=\"";
     formatierterCode += helligkeitMaximum;
     formatierterCode += "\"></p>";
+    formatierterCode += "<p>unterer grüner Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitGruenUnten\" placeholder=\"";
+    formatierterCode += helligkeitGruenUnten;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>oberer grüner Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitGruenOben\" placeholder=\"";
+    formatierterCode += helligkeitGruenOben;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>unterer gelber Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitGelbUnten\" placeholder=\"";
+    formatierterCode += helligkeitGelbUnten;
+    formatierterCode += "\"></p>";
+    formatierterCode += "<p>oberer gelber Schwellwert: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitGelbOben\" placeholder=\"";
+    formatierterCode += helligkeitGelbOben;
+    formatierterCode += "\"></p>";
   #endif
   #if MODUL_LEDAMPEL
     formatierterCode += "<h2>LED Ampel</h2>";
@@ -72,64 +158,24 @@ void WebseiteAdminAusgeben() {
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelModus\" placeholder=\"";
     formatierterCode += ampelModus;
     formatierterCode += "\"></p>";
-    #if MODUL_HELLIGKEIT
-      formatierterCode += "<h3>Helligkeitsanzeige</h3>";
-      formatierterCode += "<p>";
-      if ( ampelHelligkeitInvertiert ) {
-        formatierterCode += "<input type=\"radio\" name=\"ampelHelligkeitInvertiert\" value=\"true\" checked> Skale invertiert<br>";
-        formatierterCode += "<input type=\"radio\" name=\"ampelHelligkeitInvertiert\" value=\"false\"> Skale nicht invertiert";
-      } else {
-        formatierterCode += "<input type=\"radio\" name=\"ampelHelligkeitInvertiert\" value=\"true\"> Skale invertiert<br>";
-        formatierterCode += "<input type=\"radio\" name=\"ampelHelligkeitInvertiert\" value=\"false\" checked> Skale nicht invertiert";
-      }
-      formatierterCode += "</p>";
-      formatierterCode += "<p>Schwellwert gruen: ";
-      formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelHelligkeitGruen\" placeholder=\"";
-      formatierterCode += ampelHelligkeitGruen;
-      formatierterCode += "\"></p>";
-      formatierterCode += "<p>Schwellwert rot: ";
-      formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelHelligkeitRot\" placeholder=\"";
-      formatierterCode += ampelHelligkeitRot;
-      formatierterCode += "\"></p>";
-    #endif
-    #if MODUL_BODENFEUCHTE
-      formatierterCode += "<h3>Bodenfeuchteanzeige</h3>";
-      formatierterCode += "<p>";
-      if ( ampelBodenfeuchteInvertiert ) {
-        formatierterCode += "<input type=\"radio\" name=\"ampelBodenfeuchteInvertiert\" value=\"true\" checked> Skale invertiert<br>";
-        formatierterCode += "<input type=\"radio\" name=\"ampelBodenfeuchteInvertiert\" value=\"false\"> Skale nicht invertiert";
-      } else {
-        formatierterCode += "<input type=\"radio\" name=\"ampelBodenfeuchteInvertiert\" value=\"true\"> Skale invertiert<br>";
-        formatierterCode += "<input type=\"radio\" name=\"ampelBodenfeuchteInvertiert\" value=\"false\" checked> Skale nicht invertiert";
-      }
-      formatierterCode += "</p>";
-      formatierterCode += "<p>Schwellwert gruen: ";
-      formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelBodenfeuchteGruen\" placeholder=\"";
-      formatierterCode += ampelBodenfeuchteGruen;
-      formatierterCode += "\"></p>";
-      formatierterCode += "<p>Schwellwert rot: ";
-      formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelBodenfeuchteRot\" placeholder=\"";
-      formatierterCode += ampelBodenfeuchteRot;
-      formatierterCode += "\"></p>";
-    #endif
   #endif
   #if MODUL_ANALOG3
-    formatierterCode += GeneriereAnalogsensorAdminString(3, analog3Name, analog3Minimum, analog3Maximum);
+    formatierterCode += GeneriereAnalogsensorAdminString(3, analog3Name, analog3Minimum, analog3Maximum, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben);
   #endif
   #if MODUL_ANALOG4
-    formatierterCode += GeneriereAnalogsensorAdminString(4, analog4Name, analog4Minimum, analog4Maximum);
+    formatierterCode += GeneriereAnalogsensorAdminString(4, analog4Name, analog4Minimum, analog4Maximum, analog4GruenUnten, analog4GruenOben, analog4GelbUnten, analog4GelbOben);
   #endif
   #if MODUL_ANALOG5
-    formatierterCode += GeneriereAnalogsensorAdminString(5, analog5Name, analog5Minimum, analog5Maximum);
+    formatierterCode += GeneriereAnalogsensorAdminString(5, analog5Name, analog5Minimum, analog5Maximum, analog5GruenUnten, analog5GruenOben, analog5GelbUnten, analog5GelbOben);
   #endif
   #if MODUL_ANALOG6
-    formatierterCode += GeneriereAnalogsensorAdminString(6, analog6Name, analog6Minimum, analog6Maximum);
+    formatierterCode += GeneriereAnalogsensorAdminString(6, analog6Name, analog6Minimum, analog6Maximum, analog6GruenUnten, analog6GruenOben, analog6GelbUnten, analog6GelbOben);
   #endif
   #if MODUL_ANALOG7
-    formatierterCode += GeneriereAnalogsensorAdminString(7, analog7Name, analog7Minimum, analog7Maximum);
+    formatierterCode += GeneriereAnalogsensorAdminString(7, analog7Name, analog7Minimum, analog7Maximum, analog7GruenUnten, analog7GruenOben, analog7GelbUnten, analog7GelbOben);
   #endif
   #if MODUL_ANALOG8
-    formatierterCode += GeneriereAnalogsensorAdminString(8, analog8Name, analog8Minimum, analog8Maximum);
+    formatierterCode += GeneriereAnalogsensorAdminString(8, analog8Name, analog8Minimum, analog8Maximum, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben);
   #endif
 
   formatierterCode += "<h2>Passwort</h2>";
