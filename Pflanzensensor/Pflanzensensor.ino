@@ -9,15 +9,15 @@
  * - Configuration.h enthält Konfigurationsdefinitionen und ermöglicht es, Module an- oder aus-
  *   zuschalten, die Pins der Sensoren zu definieren und verschiedene Variablen zu setzen
  * - modul_bodenfeuchte.h ist die Datei mit den Funktionen für den Bodenfeuchtesensor
- * - modul_dht.h ist die Datei mit den Funktionen für den Lufttemperatur und -feuchtesensor
- * - modul_display.h ist die Datei mit den Funktionen für das Display
- * - modul_ledampel.h ist die Datei mit den Funktionen für die LED Ampel
+ * - dht.h ist die Datei mit den Funktionen für den Lufttemperatur und -feuchtesensor
+ * - display.h ist die Datei mit den Funktionen für das Display
+ * - ledampel.h ist die Datei mit den Funktionen für die LED Ampel
  * - MODUL_HELLIGKEIT.h ist die Datei mit den Funktionen für den Lichtsensor
- * - modul_multiplexer.h ist die Datei mit den Funktionen für den Analogmultiplexer. Dieser
+ * - multiplexer.h ist die Datei mit den Funktionen für den Analogmultiplexer. Dieser
  *   kommt zum Einsatz wenn sowohl der Licht- als auch der Bodenfeuchtesensor eingesetzt
  *   werden, da beide Analogsignale liefern und der verwendete ESP8266 Chip nur einen
  *   Analogeingang hat.
- * - modul_wifi.h ist die Datei mit den Funktionen für die Wifiverbindung
+ * - wifi.h ist die Datei mit den Funktionen für die Wifiverbindung
  *
  * Die verwendeten Bauteile sind in der Readme.md aufgeführt.
  */

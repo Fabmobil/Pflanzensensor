@@ -166,7 +166,7 @@ int messwertAnalog8Prozent = -1; // Variable für den Messwert des achter Analog
 #if MODUL_DHT
   float messwertLufttemperatur = -1;
   float messwertLuftfeuchte = -1;
-  #include "modul_dht.h" // Luftfeuchte- und -temperaturmodul einbinden
+  #include "dht.h" // Luftfeuchte- und -temperaturmodul einbinden
 #else
   #define messwertLufttemperatur -1
   #define messwertLuftfeuchte -1
@@ -178,15 +178,15 @@ int messwertAnalog8Prozent = -1; // Variable für den Messwert des achter Analog
   #define displayHoehe 64 // Hoehe des OLED-Displays in Pixeln
   #define displayReset -1 // Display wird mit Arduino Reset Pin zurückgesetzt, wir haben keinen Restknopf..
   #define displayAdresse 0x3C // I2C Adresse des Displays
-  #include "modul_display.h" // Displaymodul einbinden
+  #include "display.h" // Displaymodul einbinden
 #endif
 
 #if MODUL_IFTTT
-  #include "modul_ifttt.h" // IFTTT Modul einbinden
+  #include "ifttt.h" // IFTTT Modul einbinden
 #endif
 
 #if MODUL_LEDAMPEL
-  #include "modul_ledampel.h" // LED Ampel Modul einbinden
+  #include "ledampel.h" // LED Ampel Modul einbinden
 #endif
 
 #if MODUL_HELLIGKEIT
@@ -198,9 +198,9 @@ int messwertAnalog8Prozent = -1; // Variable für den Messwert des achter Analog
 #endif
 
 #if MODUL_MULTIPLEXER
-  #include "modul_multiplexer.h" // Multiplexermodul einbinden
+  #include "multiplexer.h" // Multiplexermodul einbinden
 #endif
 
 #if MODUL_WIFI
-  #include "modul_wifi.h" // Wifimodul einbinden
+  #include "wifi.h" // Wifimodul einbinden
 #endif

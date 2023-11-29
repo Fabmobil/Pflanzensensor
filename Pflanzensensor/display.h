@@ -18,7 +18,7 @@
 
 Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // Initialisierung des Displays
 
-#include "modul_display_bilder.h" // Bilder fürs Display
+#include "display_bilder.h" // Bilder fürs Display
 
 
 /* Funktion: NamenTeilen(String name)
