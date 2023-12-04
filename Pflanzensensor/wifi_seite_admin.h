@@ -162,7 +162,7 @@ void WebseiteAdminAusgeben() {
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelModus\" placeholder=\"";
     formatierterCode += ampelModus;
     formatierterCode += "\"></p>";
-    formatierterCode += "<div>";
+    formatierterCode += "</div>";
   #endif
   #if MODUL_ANALOG3
     formatierterCode += GeneriereAnalogsensorAdminString(3, analog3Name, analog3Minimum, analog3Maximum, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben);
@@ -204,7 +204,7 @@ void WebseiteAdminAusgeben() {
   formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">";
   formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>";
   formatierterCode += "</ul>";
-  formatierterCode += "<div>";
+  formatierterCode += "</div>";
 
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
