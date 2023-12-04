@@ -251,3 +251,8 @@ String analog8Farbe = "rot";
 #include "analogsensor.h" // Funktionen für die Analogsensoren
 #include "mutex.h" // Mutexmodul einbinden
 mutex_t mutex;
+
+// Fürs debugging:
+#ifdef WITH_GDB
+#include <GDBStub.h>
+#endif

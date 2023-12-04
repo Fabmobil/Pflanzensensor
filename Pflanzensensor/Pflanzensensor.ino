@@ -37,6 +37,9 @@ void setup() {
    * der Configuration.h-Datei. Ist das Modul deaktiviert, wird der Code
    * zwischen dem #if und #endif ignoriert und landet nicht auf dem Chip.
    */
+  #ifdef WITH_GDB // fürs debugging
+    gdbstub_init();
+  #endif
   delay(1000);
   CreateMutex(&mutex);
   #if MODUL_DEBUG
