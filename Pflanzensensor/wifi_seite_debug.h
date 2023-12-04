@@ -13,11 +13,13 @@ String GeneriereAnalogsensorDebugString(const int sensorNummer, const String& se
     const int messwertProzent, const int minimum, const int maximum) {
   String analogsensorDebugString;
   analogsensorDebugString += "<h3>Analogsensor " + String(sensorNummer) + " Modul</h3><ul>";
+  analogsensorDebugString += "<div>";
   analogsensorDebugString += "<li>Sensorname: " + String(sensorName) + "</li>";
   analogsensorDebugString += "<li>Messwert Prozent: " + String(messwertProzent) + "</li>";
   analogsensorDebugString += "<li>Messwert: " + String(messwert) + "</li>";
   analogsensorDebugString += "<li>Minimalwert: " + String(minimum) + "</li>";
   analogsensorDebugString += "<li>Maximalwert: " + String(maximum) + "</li></ul>";
+  analogsensorDebugString += "</div>";
   return analogsensorDebugString;
 }
 
@@ -30,14 +32,17 @@ void WebseiteDebugAusgeben() {
   #include "wifi_footer.h"
   String formatierterCode = htmlHeader;
   formatierterCode += "<h2>Debug-Informationen</h2>";
+  formatierterCode += "<div>";
   formatierterCode += "<ul>";
   formatierterCode += "<li>Anzahl Module: ";
   formatierterCode += module;
   formatierterCode += "</li>";
   formatierterCode += "</ul>";
+  formatierterCode += "</div>";
 
   #if MODUL_DHT
     formatierterCode += "<h3>DHT Modul</h3>";
+    formatierterCode += "<div>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Lufttemperatur: ";
     formatierterCode += lufttemperaturMesswert;
@@ -52,10 +57,12 @@ void WebseiteDebugAusgeben() {
     formatierterCode += dhtSensortyp;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
+    formatierterCode += "</div>";
   #endif
 
   #if MODUL_DISPLAY
     formatierterCode += "<h3>Display Modul</h3>";
+    formatierterCode += "<div>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Aktives Displaybild: ";
     formatierterCode += status;
@@ -70,10 +77,12 @@ void WebseiteDebugAusgeben() {
     formatierterCode += displayAdresse;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
+    formatierterCode += "</div>";
   #endif
 
   #if MODUL_BODENFEUCHTE
     formatierterCode += "<h3>Bodenfeuchte Modul</h3>";
+    formatierterCode += "<div>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Messwert Prozent: ";
     formatierterCode += bodenfeuchteMesswertProzent;
@@ -82,10 +91,12 @@ void WebseiteDebugAusgeben() {
     formatierterCode += bodenfeuchteMesswert;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
+    formatierterCode += "</div>";
  #endif
 
   #if MODUL_LEDAMPEL
     formatierterCode += "<h3>LEDAmpel Modul</h3>";
+    formatierterCode += "<div>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Modus: ";
     formatierterCode += ampelModus;
@@ -103,10 +114,12 @@ void WebseiteDebugAusgeben() {
     formatierterCode += ampelPinRot;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
+    formatierterCode += "</div>";
   #endif
 
   #if MODUL_HELLIGKEIT
     formatierterCode += "<h3>Helligkeit Modul</h3>";
+    formatierterCode += "<div>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Messwert Prozent: ";
     formatierterCode += helligkeitMesswertProzent;
@@ -115,10 +128,12 @@ void WebseiteDebugAusgeben() {
     formatierterCode += helligkeitMesswert;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
+    formatierterCode += "</div>";
   #endif
 
   #if MODUL_WIFI
     formatierterCode += "<h3>Wifi Modul</h3>";
+    formatierterCode += "<div>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Hostname: ";
     formatierterCode += wifiHostname;
@@ -155,9 +170,11 @@ void WebseiteDebugAusgeben() {
       formatierterCode += "</li>";
     }
     formatierterCode += "</ul>";
+    formatierterCode += "</div>";
   #endif
   #if MODUL_IFTTT
     formatierterCode += "<h3>IFTTT Modul</h3>";
+    formatierterCode += "<div>";
     formatierterCode += "<ul>";
     formatierterCode += "<li>IFTTT Passwort: ";
     formatierterCode += wifiIftttPasswort;
@@ -166,6 +183,7 @@ void WebseiteDebugAusgeben() {
     formatierterCode += wifiIftttEreignis;
     formatierterCode += "</li>";
     formatierterCode += "</ul>";
+    formatierterCode += "</div>";
  #endif
 
   #if MODUL_ANALOG3
@@ -187,6 +205,7 @@ void WebseiteDebugAusgeben() {
     formatierterCode += GeneriereAnalogsensorDebugString(8, analog8Name, analog8Messwert, analog8MesswertProzent, analog8Minimum, analog8Maximum);
   #endif
   formatierterCode += "<h2>Deaktivierte Module</h2><ul>";
+  formatierterCode += "<div>";
   #if !MODUL_DHT
     formatierterCode += "<li>DHT Modul</li>";
   #endif
@@ -227,7 +246,9 @@ void WebseiteDebugAusgeben() {
     formatierterCode += "<li>Analogsensor 8 Modul</li>";
   #endif
   formatierterCode += "</ul>";
+  formatierterCode += "</div>";
   formatierterCode += "<h2>Links</h2>";
+  formatierterCode += "<div>";
   formatierterCode += "<ul>";
   formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
   formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
@@ -239,6 +260,7 @@ void WebseiteDebugAusgeben() {
   formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">";
   formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>";
   formatierterCode += "</ul>";
+  formatierterCode += "</div>";
 
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);

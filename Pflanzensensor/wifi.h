@@ -95,6 +95,7 @@ String WifiSetup(String hostname){
   Webserver.on("/setzeVariablen", HTTP_POST, WebseiteSetzeVariablen);
   Webserver.on("/Bilder/logoFabmobil.png", HTTP_GET, WebseiteBildLogoFabmobil);
   Webserver.on("/Bilder/logoGithub.png", HTTP_GET, WebseiteBildLogoGithub);
+  Webserver.on("/Bilder/hintergrund.png", HTTP_GET, WebseiteBildHintergrund);
   Webserver.on("/style.css", HTTP_GET, WebseiteCss);
 
   Webserver.onNotFound(WebseiteNichtGefundenAusgeben);

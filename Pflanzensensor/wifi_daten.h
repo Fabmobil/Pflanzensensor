@@ -13,6 +13,16 @@ void WebseiteBildLogoFabmobil() {
     bild.close();
 }
 
+void WebseiteBildHintergrund() {
+    File bild = LittleFS.open("/Bilder/hintergrund.jpg", "r");
+    if (!bild) {
+        Serial.println("Fehler: /Bilder/hintergrund.png konnte nicht geöffnet werden!");
+        return;
+    }
+    Webserver.streamFile(bild, "image/jpg");
+    bild.close();
+}
+
 void WebseiteBildLogoGithub() {
     File bild = LittleFS.open("/Bilder/logoGithub.png", "r");
     if (!bild) {

@@ -18,7 +18,7 @@ const int gelbUnten,
 const int gelbOben) {
   String analogsensorAdminString;
   analogsensorAdminString += "<h2>Analogsensor " + String(sensorNummer) + "</h2>";
-  analogsensorAdminString += "<p>Sensorname: ";
+  analogsensorAdminString += "<div><p>Sensorname: ";
   analogsensorAdminString += "<input type=\"text\" size=\"20\" name=\"analog" + String(sensorNummer) + "Name\" placeholder=\"" + String(sensorName) + "\"></p>";
   analogsensorAdminString += "<p>Minimalwert: ";
   analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "Minimum\" placeholder=\"" + String(minimum) + "\"></p>";
@@ -31,7 +31,7 @@ const int gelbOben) {
   analogsensorAdminString += "<p>unterer gelber Schwellwert: ";
   analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "GelbUnten\" placeholder=\"" + String(gelbUnten) + "\"></p>";
   analogsensorAdminString += "<p>oberer gelber Schwellwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "GelbOben\" placeholder=\"" + String(gelbOben) + "\"></p>";
+  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "GelbOben\" placeholder=\"" + String(gelbOben) + "\"></p></div>";
   return analogsensorAdminString;
 }
 
@@ -47,12 +47,12 @@ void WebseiteAdminAusgeben() {
   #include "wifi_footer.h"
   String formatierterCode = htmlHeader;
   formatierterCode += "<h1>Adminseite</h1>";
-  formatierterCode += "<p>Auf dieser Seite können die Variablen verändert werden.</p>";
-  formatierterCode += "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p>";
+  formatierterCode += "<div><p>Auf dieser Seite können die Variablen verändert werden.</p>";
+  formatierterCode += "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p></div>";
   formatierterCode += "<form action=\"/setzeVariablen\" method=\"POST\">";
   #if MODUL_BODENFEUCHTE
     formatierterCode += "<h2>Bodenfeuchte</h2>";
-    formatierterCode += "<p>Sensorname: ";
+    formatierterCode += "<div><p>Sensorname: ";
     formatierterCode += "<input type=\"text\" size=\"20\" name=\"bodenfeuchteName\" placeholder=\"";
     formatierterCode += bodenfeuchteName;
     formatierterCode += "\"></p>";
@@ -79,11 +79,12 @@ void WebseiteAdminAusgeben() {
     formatierterCode += "<p>oberer gelber Schwellwert: ";
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteGelbOben\" placeholder=\"";
     formatierterCode += bodenfeuchteGelbOben;
-    formatierterCode += "\"></p>";
+    formatierterCode += "\"></p></div>";
   #endif
   #if MODUL_DHT
     formatierterCode += "<h2>DHT Modul</h2>";
     formatierterCode += "<h3>Lufttemperatur</h3>";
+    formatierterCode += "<div>";
     formatierterCode += "<p>unterer grüner Schwellwert: ";
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"lufttemperaturGruenUnten\" placeholder=\"";
     formatierterCode += lufttemperaturGruenUnten;
@@ -117,10 +118,12 @@ void WebseiteAdminAusgeben() {
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"luftfeuchteGelbOben\" placeholder=\"";
     formatierterCode += luftfeuchteGelbOben;
     formatierterCode += "\"></p>";
+    formatierterCode += "</div>";
   #endif
 
   #if MODUL_HELLIGKEIT
     formatierterCode += "<h2>Helligkeitssensor</h2>";
+    formatierterCode += "<div>";
     formatierterCode += "<p>Sensorname: ";
     formatierterCode += "<input type=\"text\" size=\"20\" name=\"helligkeitName\" placeholder=\"";
     formatierterCode += helligkeitName;
@@ -149,14 +152,17 @@ void WebseiteAdminAusgeben() {
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitGelbOben\" placeholder=\"";
     formatierterCode += helligkeitGelbOben;
     formatierterCode += "\"></p>";
+    formatierterCode += "</div>";
   #endif
   #if MODUL_LEDAMPEL
     formatierterCode += "<h2>LED Ampel</h2>";
     formatierterCode += "<h3>Anzeigemodus</h3>";
+    formatierterCode += "<div>";
     formatierterCode += "<p>Modus: (0: Helligkeit und Bodenfeuchte; 1: Helligkeit; 2: Bodenfeuchte): ";
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelModus\" placeholder=\"";
     formatierterCode += ampelModus;
     formatierterCode += "\"></p>";
+    formatierterCode += "<div>";
   #endif
   #if MODUL_ANALOG3
     formatierterCode += GeneriereAnalogsensorAdminString(3, analog3Name, analog3Minimum, analog3Maximum, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben);
@@ -187,6 +193,7 @@ void WebseiteAdminAusgeben() {
   formatierterCode += "<input type=\"submit\" value=\"Absenden\"></p></form>";
 
   formatierterCode += "<h2>Links</h2>";
+  formatierterCode += "<div>";
   formatierterCode += "<ul>";
   formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
   #if MODUL_DEBUG
@@ -197,6 +204,7 @@ void WebseiteAdminAusgeben() {
   formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">";
   formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>";
   formatierterCode += "</ul>";
+  formatierterCode += "<div>";
 
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);

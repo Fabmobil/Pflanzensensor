@@ -8,6 +8,8 @@ h1, h2, h3, h4, h5 {
     background-color: #560245;
     text-align: left;
     border-radius: 0px 0px 0px 30px;
+    border-left: medium solid black;
+    border-top: medium solid black;
 }
 
 input {
@@ -73,6 +75,10 @@ figure {
     padding-right: 2em;
 }
 
+body {
+    background-image: url("Bilder/hintergrund.png");
+    background-size:cover;
+}
 img {
     max-width: 100%;
     height: auto;
@@ -91,10 +97,24 @@ figcaption {
 #container {
     border-right: 2em solid #560245;
     border-radius: 30px;
+    border-left: 0;
+    border-bottom: 0;
+}
+
+div {
+    background-color: white;
+    border-left: medium solid black;
+    border-bottom: medium solid black;
+    border-radius: 0px 0px 0px 30px;
+    margin-left: 6em;
+    font-weight: bold;
+    color: black;
 }
 
 #gruen {
     background-color: darkgreen;
+    border-left: medium solid black;
+    border-bottom: medium solid black;
     border-radius: 0px 0px 0px 30px;
     margin-left: 6em;
     font-weight: bold;
@@ -103,6 +123,8 @@ figcaption {
 
 #gelb {
     background-color: yellow;
+    border-left: medium solid black;
+    border-bottom: medium solid black;
     border-radius: 0px 0px 0px 30px;
     margin-left: 6em;
     font-weight: bold;
@@ -112,6 +134,8 @@ figcaption {
     border-radius: 0px 0px 0px 30px;
     margin-left: 6em;
     font-weight: bold;
+    border-left: medium solid black;
+    border-bottom: medium solid black;
     color: white;
     animation-name: blink;
     animation-duration: 1s;

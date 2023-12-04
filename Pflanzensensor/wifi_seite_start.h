@@ -62,6 +62,7 @@ void WebseiteStartAusgeben() {
     formatierterCode += GeneriereSensorString(8, analog8Name, analog8Farbe, analog8MesswertProzent, "%");
   #endif
   formatierterCode += "<h2>Links</h2>";
+  formatierterCode += "<div>";
   formatierterCode += "<ul>";
   formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
   #if MODUL_DEBUG
@@ -72,6 +73,7 @@ void WebseiteStartAusgeben() {
   formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">";
   formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>";
   formatierterCode += "</ul>";
+  formatierterCode += "</div>";
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
 }

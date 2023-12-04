@@ -241,8 +241,11 @@ void WebseiteSetzeVariablen() {
   if ( Webserver.arg("loeschen") == "Ja!" ) {
     formatierterCode += "<div id=\"rot\"><p>Alle Variablen wurden gelöscht.</p>";
     formatierterCode += "<p>Der Pflanzensensor wird neu gestartet.</p></div>";
+    formatierterCode += "<div>";
     formatierterCode += "<p><a href=\"/\">Warte ein paar Sekunden, dann kannt du hier zur Startseite zurück.</a>";
+    formatierterCode += "</div>";
   } else {
+    formatierterCode += "<div>";
     formatierterCode += "<ul>";
     formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
     formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
@@ -254,6 +257,7 @@ void WebseiteSetzeVariablen() {
     formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">";
     formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>";
     formatierterCode += "</ul>";
+    formatierterCode += "</div>";
   }
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
