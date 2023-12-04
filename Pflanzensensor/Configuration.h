@@ -18,8 +18,8 @@
 #define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
 #define MODUL_IFTTT         false // willst du das ifttt.com-Modul verwenden?
 #define MODUL_ANALOG3       true // hat dein Pflanzensensor einen dritten Analogsensor?
-#define MODUL_ANALOG4       true // hat dein Pflanzensensor einen vierten Analogsensor?
-#define MODUL_ANALOG5       true // hat dein Pflanzensensor einen fünften Analogsensor?
+#define MODUL_ANALOG4       false // hat dein Pflanzensensor einen vierten Analogsensor?
+#define MODUL_ANALOG5       false // hat dein Pflanzensensor einen fünften Analogsensor?
 #define MODUL_ANALOG6       false // hat dein Pflanzensensor einen sechsten Analogsensor?
 #define MODUL_ANALOG7       false // hat dein Pflanzensensor einen siebten Analogsensor?
 #define MODUL_ANALOG8       false // hat dein Pflanzensensor einen achten Analogsensor?
@@ -34,7 +34,7 @@
  * Pinbelegungen und Variablen
  */
 #define baudrateSeriell 9600 // Baudrate der seriellen Verbindung
-int intervallAnalog = 5000; // Intervall der Messung der Analogsensoren in Millisekunden. Vorschlag: 5000
+unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensoren in Millisekunden. Vorschlag: 5000
 #if MODUL_BODENFEUCHTE // wenn der Bodenfeuchtesensor aktiv ist:
   /*
    * Wenn der Bodenfeuchtesensor aktiv ist werden hier die initialen Grenzwerte
@@ -50,12 +50,12 @@ int intervallAnalog = 5000; // Intervall der Messung der Analogsensoren in Milli
   int bodenfeuchteGelbOben = 80; // oberer Wert des gelben Bereichs
 #endif
 #if MODUL_DISPLAY
-  int intervallDisplay = 4874; // Anzeigedauer der unterschiedlichen Displayseiten in Millisekunden. Vorschlag: 4874
+  unsigned long intervallDisplay = 4874; // Anzeigedauer der unterschiedlichen Displayseiten in Millisekunden. Vorschlag: 4874
 #endif
 #if MODUL_DHT // falls ein Lufttemperatur- und -feuchtesensor verbaut ist:
   #define dhtPin 0 // "D3", Pin des DHT Sensors
   #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
-  int intervallDht = 5000; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
+  unsigned long intervallDht = 5000; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
   int lufttemperaturGruenUnten = 19; // unter Wert des grünen Bereichs
   int lufttemperaturGruenOben = 22; // oberer Wert des grünen Bereichs
   int lufttemperaturGelbUnten = 17; // unterer Wert des gelben Bereichs
@@ -81,12 +81,13 @@ int intervallAnalog = 5000; // Intervall der Messung der Analogsensoren in Milli
 #endif
 #if MODUL_LEDAMPEL // falls eine LED Ampel verbaut ist:
   int ampelModus = 1; // 0: Helligkeits- und Bodenfeuchtesensor abwechselnd, 1: Helligkeitssensor, 2: Bodenfeuchtesensor
-  int intervallAmpel = 5000; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15273
+  unsigned long intervallAmpel = 5000; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15273
 #endif
 #if MODUL_IFTTT // wenn das IFTTT Modul aktiviert ist
   #define wifiIftttPasswort "IFTTT Schlüssel" // brauchen wir einen Schlüssel
   #define wifiIftttEreignis "Fabmobil_Pflanzensensor" // und ein Ereignisnamen
 #endif
+#include <LittleFS.h> // für das Speichern auf dem Flash des ESP; muss vor Wifi geladen werden
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
   String wifiAdminPasswort = "admin"; // Passwort für das Admininterface
   String wifiHostname = "pflanzensensor"; // Das Gerät ist später unter diesem Name + .local erreichbar
@@ -94,8 +95,14 @@ int intervallAnalog = 5000; // Intervall der Messung der Analogsensoren in Milli
   String wifiApSsid = "Fabmobil Pflanzensensor"; // SSID des WLANs, falls vom ESP selbst aufgemacht
   bool wifiApPasswortAktiviert = false; // soll das selbst aufgemachte WLAN ein Passwort haben?
   String wifiApPasswort = "geheim"; // Das Passwort für das selbst aufgemacht WLAN
-  String wifiSsid = "Tommy"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
-  String wifiPassword = "freibier"; // WLAN Passwort für das fremde Wifi
+  // Es können mehrere WLANs angegeben werden, mit denen sich der ESP verbinden soll. Ggfs. in allen Dateien
+  // nach "wifiSsid1" suchen und die Zeilen kopieren und mehr hinzufügen:
+  const char* wifiSsid1 = "Magrathea"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
+  const char* wifiPassword1 = "Gemeinschaftskueche"; // WLAN Passwort für das fremde Wifi
+  const char* wifiSsid2 = "Tommy"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
+  const char* wifiPassword2 = "freibier"; // WLAN Passwort für das fremde Wifi
+  const char* wifiSsid3 = ""; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
+  const char* wifiPassword3 = ""; // WLAN Passwort für das fremde Wifi
 #endif
 String analog3Name = "Analog 3"; // Name des Sensors
 #if MODUL_ANALOG3 // wenn ein dritter Analogsensor verwendet wird
@@ -157,13 +164,15 @@ String analog8Name = "Analog 8"; // Name des Sensors
  * hier muss eigentlich nichts verändert werden sondern die notewendigen globalen Variablen werden hier
  * definiert.
  */
-#define pflanzensensorVersion "0.3" // Versionsnummer
+#define pflanzensensorVersion "0.4" // Versionsnummer
 unsigned long millisVorherAnalog = 0; // Variable für die Messung des Intervalls der Analogsensormessung
 unsigned long millisVorherDht = 0; // Variable für die Messung des Intervalls der Luftfeuchte- und -temperaturmessung
 unsigned long millisVorherLedampel = 0; // Variable für die Messung des Intervalls des Umschaltens der LED Ampel
 unsigned long millisVorherDisplay = 0; // Variable für die Messung des Intervalls der Anzeige des Displays
 int module; // Variable für die Anzahl der Module
 int displayseiten; // Variable für die Anzahl der Analogsensoren
+String ip = "keine WLAN Verbindung."; // Initialisierung der IP Adresse mit Fehlermeldung
+const uint32_t wifiTimeout = 5000; // Timeout für Verbindungsversuche in ms
 int analog3Messwert = -1; // Variable für den Messwert des dritten Analogsensors
 int analog3MesswertProzent = -1; // Variable für den Messwert des dritten Analogsensors in Prozent
 int analog4Messwert = -1; // Variable für den Messwert des vierten Analogsensors
@@ -187,7 +196,6 @@ String analog6Farbe = "rot";
 String analog7Farbe = "rot";
 String analog8Farbe = "rot";
 #define pinAnalog A0 // Analogpin
-#
 #if MODUL_BODENFEUCHTE
   int bodenfeuchteMesswert = -1;
   int bodenfeuchteMesswertProzent = -1;
@@ -235,7 +243,7 @@ String analog8Farbe = "rot";
 
 
 #if MODUL_DISPLAY
-  int status = 0; // diese Variable schaltet durch die unterschiedlichen Anzeigen des Displays
+  int status = 0; // diese Variable schaltet durch die unterschiedlichen Anzeigen des Displays.
   #define displayBreite 128 // Breite des OLED-Displays in Pixeln
   #define displayHoehe 64 // Hoehe des OLED-Displays in Pixeln
   #define displayReset -1 // Display wird mit Arduino Reset Pin zurückgesetzt, wir haben keinen Restknopf..
@@ -244,6 +252,7 @@ String analog8Farbe = "rot";
 #endif
 
 #include "variablenspeicher.h" // Funktionen für das Speichern und Laden der Variablen
+
 #if MODUL_WIFI
   #include "wifi.h" // Wifimodul einbinden
 #endif
@@ -256,3 +265,4 @@ mutex_t mutex;
 #ifdef WITH_GDB
 #include <GDBStub.h>
 #endif
+

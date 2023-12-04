@@ -18,7 +18,6 @@ void ArgumenteAusgeben() {
  * Übernimmt die Änderungen, welche auf der Administrationsseite gemacht wurden.
  */
 void WebseiteSetzeVariablen() {
-  #include "wifi_bilder.h" // Bilder die auf der Seite verwendet werden
   #include "wifi_header.h" // Kopf der HTML-Seite
   #include "wifi_footer.h" // Fuß der HTML-Seite
   #if MODUL_DEBUG
@@ -250,12 +249,10 @@ void WebseiteSetzeVariablen() {
     #if MODUL_DEBUG
     formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
     #endif
-    formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\"><img src=\"";
-    formatierterCode += logoGithub;
-    formatierterCode += "\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
-    formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\"><img src=\"";
-    formatierterCode += logoFabmobil;
-    formatierterCode += "\">&nbspHomepage</a></li>";
+    formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\">";
+    formatierterCode += "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
+    formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">";
+    formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>";
     formatierterCode += "</ul>";
   }
   formatierterCode += htmlFooter;

@@ -48,6 +48,7 @@ std::pair<String, String> NamenTeilen(String name) {
  * String einheit: Einheit des Messwertes
  */
 void MesswertAnzeigen(String name1, String name2, int messwert, String einheit){
+  display.clearDisplay(); // Display löschen
   display.setCursor(0, 0);
   display.println(name1);
   display.setCursor(10, 20);
@@ -120,7 +121,7 @@ void DisplayIntro(String ip, String hostname) {
 }
 
 /**
- * Funktion: DisplayMesswerte(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur)
+ * Funktion: DisplayAnzeigen(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur)
  * Stellt die Messwerte auf dem Display dar.
  * Wenn ein Messwert "-1" ist, wird die Anzeige übersprungen.
  * bodenfeuchte: Bodenfeuchte in %
@@ -128,9 +129,9 @@ void DisplayIntro(String ip, String hostname) {
  * luftfeuchte: Luftfeuchte in %
  * lufttemperatur: Lufttemperatur in °C
  */
-void DisplayMesswerte() {
+void DisplayAnzeigen() {
   #if MODUL_DEBUG
-    Serial.print(F("# Beginn von DisplayMesswerte(")); Serial.print(helligkeit);
+    Serial.print(F("# Beginn von DisplayAnzeigen(")); Serial.print(helligkeit);
     Serial.print(F(", ")); Serial.print(luftfeuchte);
     Serial.print(F(", ")); Serial.print(lufttemperatur);
     Serial.print(F(", ")); Serial.print(status);
@@ -139,7 +140,6 @@ void DisplayMesswerte() {
 
   display.clearDisplay();
   display.setTextSize(2);
-  display.setTextColor(SSD1306_WHITE);
 
   switch (status) {
     case 0:
@@ -263,4 +263,73 @@ void DisplayMesswerte() {
         break;
     #endif
   }
+}
+
+/*
+ * Funktion: DisplayDreiWoerter(String wort1, String wort2, String wort3)
+ * Zeigt 3 Wörter auf dem Display an
+ * String wort1: Erstes Wort
+ * String wort2: Zweites Wort
+ * String wort3: Drittes Wort
+ */
+void DisplayDreiWoerter(String wort1, String wort2, String wort3) {
+  display.setTextSize(2);
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println(wort1);
+  display.setCursor(0, 20);
+  display.println(wort2);
+  display.setCursor(0, 40);
+  display.println(wort3);
+  display.display();
+  delay(1000); // mindestens 1s Zeit zum lesen
+}
+
+/*
+ * Funktion: DisplaySechsZeilen(String zeile1, String zeile2, String zeile3, String zeile4, String zeile5, String zeile6)
+ * Zeigt 6 Zeilen auf dem Display an
+ * String zeile1: Erste Zeile
+ * String zeile2: Zweite Zeile
+ * String zeile3: Dritte Zeile
+ * String zeile4: Vierte Zeile
+ * String zeile5: Fünfte Zeile
+ * String zeile6: Sechste Zeile
+ */
+void DisplaySechsZeilen(String zeile1, String zeile2, String zeile3, String zeile4, String zeile5, String zeile6) {
+  display.setTextSize(1);
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println(zeile1);
+  display.setCursor(0, 10);
+  display.println(zeile2);
+  display.setCursor(0, 20);
+  display.println(zeile3);
+  display.setCursor(0, 30);
+  display.println(zeile4);
+  display.setCursor(0, 40);
+  display.println(zeile5);
+  display.setCursor(0, 50);
+  display.println(zeile6);
+  display.display();
+  delay(3000); // mindestens 1s Zeit zum lesen
+}
+/*
+ * Funktion: DisplaySetup()
+ * Initialisiert das Display
+ */
+void DisplaySetup() {
+  #if MODUL_DEBUG
+    Serial.println(F("# Beginn von DisplaySetup()"));
+  #endif
+  // hier wird überprüft, ob die Verbindung zum Display erfolgreich war:
+  if(!display.begin(SSD1306_SWITCHCAPVCC, displayAdresse)) {
+    Serial.println(F("Fehler: Display konnte nicht geöffnet werden."));
+  }
+  display.display(); // Display anschalten und initialen Buffer zeigen
+  delay(100); // 1 Sekunde warten
+  display.setTextColor(SSD1306_WHITE);
+  display.setTextSize(2);
+  display.clearDisplay(); // Display löschen
+  // DisplayIntro(ip, wifiHostname); // Intro auf Display abspielen
+  DisplayDreiWoerter("Start..", " bitte", " warten!");
 }

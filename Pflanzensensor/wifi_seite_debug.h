@@ -26,7 +26,6 @@ String GeneriereAnalogsensorDebugString(const int sensorNummer, const String& se
  * Gibt die Debugseite des Webservers aus.
  */
 void WebseiteDebugAusgeben() {
-  #include "wifi_bilder.h"
   #include "wifi_header.h"
   #include "wifi_footer.h"
   String formatierterCode = htmlHeader;
@@ -125,11 +124,23 @@ void WebseiteDebugAusgeben() {
     formatierterCode += wifiHostname;
     formatierterCode += ".local</li>";
     if ( wifiAp == false ) { // falls der ESP in einem anderen WLAN ist:
-      formatierterCode += "<li>SSID: ";
-      formatierterCode += wifiSsid;
+      formatierterCode += "<li>SSID 1: ";
+      formatierterCode += wifiSsid1;
       formatierterCode += "</li>";
-      formatierterCode += "<li>Passwort: ";
-      formatierterCode += wifiPassword;
+      formatierterCode += "<li>Passwort 1: ";
+      formatierterCode += wifiPassword1;
+      formatierterCode += "</li>";
+      formatierterCode += "<li>SSID 2: ";
+      formatierterCode += wifiSsid2;
+      formatierterCode += "</li>";
+      formatierterCode += "<li>Passwort 2: ";
+      formatierterCode += wifiPassword2;
+      formatierterCode += "</li>";
+      formatierterCode += "<li>SSID 3: ";
+      formatierterCode += wifiSsid3;
+      formatierterCode += "</li>";
+      formatierterCode += "<li>Passwort 3: ";
+      formatierterCode += wifiPassword3;
       formatierterCode += "</li>";
     } else { // falls der ESP sein eigenes WLAN aufmacht:
       formatierterCode += "<li>Name des WLANs: ";
@@ -137,7 +148,7 @@ void WebseiteDebugAusgeben() {
       formatierterCode += "</li>";
       formatierterCode += "<li>Passwort: ";
       if ( wifiApPasswortAktiviert ) {
-        formatierterCode += wifiPassword;
+        formatierterCode += wifiApPasswort;
       } else {
         formatierterCode += "WLAN ohne Passwortschutz!";
       }
@@ -223,12 +234,10 @@ void WebseiteDebugAusgeben() {
   #if MODUL_DEBUG
   formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
   #endif
-  formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\"><img src=\"";
-  formatierterCode += logoGithub;
-  formatierterCode += "\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
-  formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\"><img src=\"";
-  formatierterCode += logoFabmobil;
-  formatierterCode += "\">&nbspHomepage</a></li>";
+  formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\">";
+  formatierterCode += "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
+  formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">";
+  formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>";
   formatierterCode += "</ul>";
 
   formatierterCode += htmlFooter;

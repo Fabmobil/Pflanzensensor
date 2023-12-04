@@ -41,6 +41,12 @@ void setup() {
     gdbstub_init();
   #endif
   delay(1000);
+  #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+    #if MODUL_DEBUG
+      Serial.println(F("# Beginn von DisplaySetup()"));
+    #endif
+    DisplaySetup(); // Display initialisieren
+  #endif
   CreateMutex(&mutex);
   #if MODUL_DEBUG
     Serial.println(F("#### Start von setup()"));
@@ -59,12 +65,20 @@ void setup() {
   displayseiten = AnalogsensorenZaehlen() + 6;  // Wir haben 6 Displayseiten plus je eine pro Analogmodul
 
   #if MODUL_DEBUG // Debuginformationen
+    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+      DisplayDreiWoerter("Start..", " Debug-", "  modul");
+    #endif
+    Serial.println(F("Start von Debug-Modul ... "));
     Serial.print(F("# Anzahl Module: "));
     Serial.println(module);
     Serial.print(F("# Anzahl Displayseiten: "));
     Serial.println(displayseiten);
   #endif
   #if MODUL_LEDAMPEL // wenn das LED Ampel Modul aktiv is:
+    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+      DisplayDreiWoerter("Start..", " Ampel-", "  modul");
+    #endif
+    Serial.println(F("Start von Ledampel-Modul ... "));
     pinMode(ampelPinGruen, OUTPUT); // LED 1 (grün)
     pinMode(ampelPinGelb, OUTPUT); // LED 2 (gelb)
     pinMode(ampelPinRot, OUTPUT); // LED 3 (rot)
@@ -89,6 +103,10 @@ void setup() {
     pinMode(pinAnalog, INPUT);  // wird der Analogpin als Eingang gesetzt
   #endif
   #if MODUL_MULTIPLEXER // wenn das Multiplexer Modul aktiv ist werden die zwei Multiplexerpins als Ausgang gesetzt:
+    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+      DisplayDreiWoerter("Start..", " Multiplexer-", "  modul");
+    #endif
+    Serial.println(F("Start von Multiplexer-Modul ... "));
     pinMode(multiplexerPinA, OUTPUT); // Pin A des Multiplexers
     pinMode(multiplexerPinB, OUTPUT); // Pin B des Multiplexers
     pinMode(multiplexerPinC, OUTPUT); // Pin C des Multiplexers
@@ -96,20 +114,25 @@ void setup() {
     pinMode(16, OUTPUT); // interne LED auf D0 / GPIO16
     digitalWrite(16, HIGH); // wird ausgeschalten (invertiertes Verhalten!)
   #endif
+  if (!LittleFS.begin()) {  // Dateisystem initialisieren, muss vor Wifi geschehen
+    Serial.println("Fehler: LittleFS konnte nicht initialisiert werden!");
+    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+      DisplayDreiWoerter("Start..", " LittleFS", "  Fehler!");
+    #endif
+    return;
+  }
   #if MODUL_WIFI // wenn das Wifi Modul aktiv ist:
+    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+      DisplayDreiWoerter("Start..", " Wifi-", "  modul");
+    #endif
+    Serial.println(F("Start von Wifi-Modul ... "));
     String ip = WifiSetup(wifiHostname); // Wifi-Verbindung herstellen und IP Adresse speichern
   #endif
-  #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-    // hier wird überprüft, ob die Verbindung zum Display erfolgreich war
-    if(!display.begin(SSD1306_SWITCHCAPVCC, displayAdresse)) {
-      Serial.println(F("Display konnte nicht geöffnet werden."));
-    }
-    display.display(); // Display anschalten und initialen Buffer zeigen
-    delay(1000); // 1 Sekunde warten
-    display.clearDisplay(); // Display löschen
-    // DisplayIntro(ip, wifiHostname); // Intro auf Display abspielen
-  #endif
   #if MODUL_DHT // wenn das DHT Modul aktiv ist:
+    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+      DisplayDreiWoerter("Start..", " DHT-", "  modul");
+    #endif
+    Serial.println(F("Start von DHT-Modul ... "));
     // Initialisierung des Lufttemperatur und -feuchte Sensors:
     dht.begin(); // Sensor initialisieren
     #if MODUL_DEBUG // Debuginformationen
@@ -138,9 +161,15 @@ void setup() {
     digitalWrite(multiplexerPinC, HIGH); // eingebaute LED ausschalten
   #endif
   if (VariablenDa()) {
+      #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+        DisplayDreiWoerter("Start..", " Variablen", "  laden");
+      #endif
       // Load the preferences from flash
       VariablenLaden();
     } else {
+      #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+        DisplayDreiWoerter("Start..", " Variablen", "  speichern");
+      #endif
       // Save the preferences to flash
       VariablenSpeichern();
     }
@@ -150,9 +179,17 @@ void setup() {
   #if MODUL_DEBUG
     Serial.print(F("# Reboot count: )");
     Serial.println(neustarts);
+    Serial.println("# Inhalte des Flashspeichers:");
+    File root = LittleFS.open("/", "r");
+    WebseiteDatenFlashAuflisten(root, 0);
   #endif
   neustarts++;
   variablen.end();
+
+  #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+    DisplayDreiWoerter("Start..", " abge-", "  schlossen");
+  #endif
+  Serial.println(F("Start abgeschlossen!"));
 }
 
 /*
@@ -296,16 +333,26 @@ void loop() {
       #endif
       millisVorherDisplay = millisAktuell; // neuen Wert übernehmen
       // Diese Funktion kümmert sich um die Displayanzeige:
-      DisplayMesswerte();
+      DisplayAnzeigen();
     }
   #endif
 
 
   // Wifi und Webserver:
   #if MODUL_WIFI // wenn das Wifi-Modul aktiv ist
-    if (GetMutex(&mutex)) {
+    if (GetMutex(&mutex)) { // Mutex holen
+      // WLAN Verbindung aufrecht erhalten:
+      // https://github.com/esp8266/Arduino/blob/master/libraries/ESP8266WiFi/examples/WiFiMulti/WiFiMulti.ino
+        if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
+          ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
+        } else {
+          Serial.println("Fehler: WLAN Verbindung verloren!");
+          #if MODUL_DISPLAY
+            DisplayDreiWoerter("WLAN", "Verbindung", "verloren!");
+          #endif
+      }
       Webserver.handleClient(); // der Webserver soll in jedem loop nach Anfragen schauen!
-      ReleaseMutex(&mutex);
+      ReleaseMutex(&mutex); // Mutex wieder freigeben
     }
   #endif
 

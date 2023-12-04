@@ -10,6 +10,9 @@ bool VariablenDa() {
 }
 
 void VariablenSpeichern() {
+  #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+    DisplayDreiWoerter("Start..", " Variablen", "  speichern");
+  #endif
   variablen.begin("pflanzensensor", false);
 
   // Save the variablen to flash
@@ -104,14 +107,21 @@ void VariablenSpeichern() {
     variablen.putString("apSsid", wifiApSsid);
     variablen.putBool("apPwAktiv", wifiApPasswortAktiviert);
     variablen.putString("apPw", wifiApPasswort);
-    variablen.putString("wifiSsid", wifiSsid);
-    variablen.putString("wifiPw", wifiPassword);
+    variablen.putString("wifiSsid1", wifiSsid1);
+    variablen.putString("wifiPw1", wifiPassword1);
+    variablen.putString("wifiSsid2", wifiSsid2);
+    variablen.putString("wifiPw2", wifiPassword2);
+    variablen.putString("wifiSsid3", wifiSsid3);
+    variablen.putString("wifiPw3", wifiPassword3);
   #endif
   variablen.end();
 }
 
 // Function to load the variablen from flash
 void VariablenLaden() {
+  #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+    DisplayDreiWoerter("Start..", " Variablen", "  laden");
+  #endif
   variablen.begin("pflanzensensor", true);
 
   // Load the variables from flash
@@ -196,14 +206,12 @@ void VariablenLaden() {
     wifiIftttEreignis = variablen.getString("iftttEreignis", wifiIftttEreignis);
   #endif
   #if MODUL_WIFI
-    wifiAdminPasswort = variablen.getString("adminPw", wifiAdminPasswort);
-    wifiHostname = variablen.getString("hostname", wifiHostname);
-    wifiAp = variablen.getBool("apAktiv", wifiAp);
-    wifiApSsid = variablen.getString("apSsid", wifiApSsid);
-    wifiApPasswortAktiviert = variablen.getBool("apPwAktiv", wifiApPasswortAktiviert);
-    wifiApPasswort = variablen.getString("apPw", wifiApPasswort);
-    wifiSsid = variablen.getString("wifiSsid", wifiSsid);
-    wifiPassword = variablen.getString("wifiPw", wifiPassword);
+    wifiSsid1 = variablen.getString("wifiSsid1", wifiSsid1).c_str();
+    wifiPassword1 = variablen.getString("wifiPw1", wifiPassword1).c_str();
+    wifiSsid2 = variablen.getString("wifiSsid2", wifiSsid2).c_str();
+    wifiPassword2 = variablen.getString("wifiPw2", wifiPassword2).c_str();
+    wifiSsid3 = variablen.getString("wifiSsid3", wifiSsid3).c_str();
+    wifiPassword3 = variablen.getString("wifiPw3", wifiPassword3).c_str();
   #endif
   variablen.end();
 }
