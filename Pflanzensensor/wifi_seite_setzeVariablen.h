@@ -239,13 +239,13 @@ void WebseiteSetzeVariablen() {
     formatierterCode += "<h2>Falsches Passwort!</h2>";
   }
   if ( Webserver.arg("loeschen") == "Ja!" ) {
-    formatierterCode += "<div id=\"rot\"><p>Alle Variablen wurden gelöscht.</p>";
+    formatierterCode += "<div class=\"rot\"><p>Alle Variablen wurden gelöscht.</p>";
     formatierterCode += "<p>Der Pflanzensensor wird neu gestartet.</p></div>";
-    formatierterCode += "<div>";
+    formatierterCode += "<div class=\"weiss\">";
     formatierterCode += "<p><a href=\"/\">Warte ein paar Sekunden, dann kannt du hier zur Startseite zurück.</a>";
     formatierterCode += "</div>";
   } else {
-    formatierterCode += "<div>";
+    formatierterCode += "<div class=\"weiss\">";
     formatierterCode += "<ul>";
     formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
     formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";

@@ -18,7 +18,7 @@ const int gelbUnten,
 const int gelbOben) {
   String analogsensorAdminString;
   analogsensorAdminString += "<h2>Analogsensor " + String(sensorNummer) + "</h2>";
-  analogsensorAdminString += "<div><p>Sensorname: ";
+  analogsensorAdminString += "<div class=\"weiss\"><p>Sensorname: ";
   analogsensorAdminString += "<input type=\"text\" size=\"20\" name=\"analog" + String(sensorNummer) + "Name\" placeholder=\"" + String(sensorName) + "\"></p>";
   analogsensorAdminString += "<p>Minimalwert: ";
   analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "Minimum\" placeholder=\"" + String(minimum) + "\"></p>";
@@ -47,12 +47,12 @@ void WebseiteAdminAusgeben() {
   #include "wifi_footer.h"
   String formatierterCode = htmlHeader;
   formatierterCode += "<h1>Adminseite</h1>";
-  formatierterCode += "<div><p>Auf dieser Seite können die Variablen verändert werden.</p>";
+  formatierterCode += "<div class=\"weiss\"><p>Auf dieser Seite können die Variablen verändert werden.</p>";
   formatierterCode += "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p></div>";
   formatierterCode += "<form action=\"/setzeVariablen\" method=\"POST\">";
   #if MODUL_BODENFEUCHTE
     formatierterCode += "<h2>Bodenfeuchte</h2>";
-    formatierterCode += "<div><p>Sensorname: ";
+    formatierterCode += "<div class=\"weiss\"><p>Sensorname: ";
     formatierterCode += "<input type=\"text\" size=\"20\" name=\"bodenfeuchteName\" placeholder=\"";
     formatierterCode += bodenfeuchteName;
     formatierterCode += "\"></p>";
@@ -84,7 +84,7 @@ void WebseiteAdminAusgeben() {
   #if MODUL_DHT
     formatierterCode += "<h2>DHT Modul</h2>";
     formatierterCode += "<h3>Lufttemperatur</h3>";
-    formatierterCode += "<div>";
+    formatierterCode += "<div class=\"weiss\">";
     formatierterCode += "<p>unterer grüner Schwellwert: ";
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"lufttemperaturGruenUnten\" placeholder=\"";
     formatierterCode += lufttemperaturGruenUnten;
@@ -101,7 +101,9 @@ void WebseiteAdminAusgeben() {
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"lufttemperaturGelbOben\" placeholder=\"";
     formatierterCode += lufttemperaturGelbOben;
     formatierterCode += "\"></p>";
+    formatierterCode += "</div>";
     formatierterCode += "<h3>Luftfeuchte</h3>";
+    formatierterCode += "<div class=\"weiss\">";
     formatierterCode += "<p>unterer grüner Schwellwert: ";
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"luftfeuchteGruenUnten\" placeholder=\"";
     formatierterCode += luftfeuchteGruenUnten;
@@ -123,7 +125,7 @@ void WebseiteAdminAusgeben() {
 
   #if MODUL_HELLIGKEIT
     formatierterCode += "<h2>Helligkeitssensor</h2>";
-    formatierterCode += "<div>";
+    formatierterCode += "<div class=\"weiss\">";
     formatierterCode += "<p>Sensorname: ";
     formatierterCode += "<input type=\"text\" size=\"20\" name=\"helligkeitName\" placeholder=\"";
     formatierterCode += helligkeitName;
@@ -157,7 +159,7 @@ void WebseiteAdminAusgeben() {
   #if MODUL_LEDAMPEL
     formatierterCode += "<h2>LED Ampel</h2>";
     formatierterCode += "<h3>Anzeigemodus</h3>";
-    formatierterCode += "<div>";
+    formatierterCode += "<div class=\"weiss\">";
     formatierterCode += "<p>Modus: (0: Helligkeit und Bodenfeuchte; 1: Helligkeit; 2: Bodenfeuchte): ";
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelModus\" placeholder=\"";
     formatierterCode += ampelModus;
@@ -184,16 +186,18 @@ void WebseiteAdminAusgeben() {
   #endif
 
   formatierterCode += "<h2>Einstellungen löschen?</h2>";
-  formatierterCode += "<div id=\"rot\"><p>";
+  formatierterCode += "<div class=\"rot\"><p>";
   formatierterCode += "GEFAHR: Wenn du hier \"Ja!\" eingibst, werden alle Einstellungen gelöscht und die Werte, ";
   formatierterCode += "die beim Flashen eingetragen wurden, werden wieder gesetzt. Der Pflanzensensor startet neu.";
   formatierterCode += "</p><p><input type=\"text\" size=\"4\" name=\"loeschen\" placeholder=\"nein\"></p></div>";
   formatierterCode += "<h2>Passwort</h2>";
+  formatierterCode += "<div class=\"weiss\">";
   formatierterCode += "<p><input type=\"password\" name=\"Passwort\" placeholder=\"Passwort\"><br>";
   formatierterCode += "<input type=\"submit\" value=\"Absenden\"></p></form>";
+  formatierterCode += "</div>";
 
   formatierterCode += "<h2>Links</h2>";
-  formatierterCode += "<div>";
+  formatierterCode += "<div class=\"weiss\">";
   formatierterCode += "<ul>";
   formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
   #if MODUL_DEBUG

@@ -72,7 +72,6 @@ String WifiSetup(String hostname){
         } else {
           DisplaySechsZeilen("Accesspoint OK", "SSID: " + wifiApSsid, "PW: ohne", "IP: "+ ip, "Hostname: ", hostname + ".local" );
         }
-        delay(5000); // genug Zeit um die IP Adresse zu lesen
       #endif
     }
     Serial.println(F("erfolgreich aufgebaut!"));

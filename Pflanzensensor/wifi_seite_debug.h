@@ -13,7 +13,7 @@ String GeneriereAnalogsensorDebugString(const int sensorNummer, const String& se
     const int messwertProzent, const int minimum, const int maximum) {
   String analogsensorDebugString;
   analogsensorDebugString += "<h3>Analogsensor " + String(sensorNummer) + " Modul</h3><ul>";
-  analogsensorDebugString += "<div>";
+  analogsensorDebugString += "<div class=\"weiss\">";
   analogsensorDebugString += "<li>Sensorname: " + String(sensorName) + "</li>";
   analogsensorDebugString += "<li>Messwert Prozent: " + String(messwertProzent) + "</li>";
   analogsensorDebugString += "<li>Messwert: " + String(messwert) + "</li>";
@@ -32,7 +32,7 @@ void WebseiteDebugAusgeben() {
   #include "wifi_footer.h"
   String formatierterCode = htmlHeader;
   formatierterCode += "<h2>Debug-Informationen</h2>";
-  formatierterCode += "<div>";
+  formatierterCode += "<div class=\"weiss\">";
   formatierterCode += "<ul>";
   formatierterCode += "<li>Anzahl Module: ";
   formatierterCode += module;
@@ -42,7 +42,7 @@ void WebseiteDebugAusgeben() {
 
   #if MODUL_DHT
     formatierterCode += "<h3>DHT Modul</h3>";
-    formatierterCode += "<div>";
+    formatierterCode += "<div class=\"weiss\">";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Lufttemperatur: ";
     formatierterCode += lufttemperaturMesswert;
@@ -62,7 +62,7 @@ void WebseiteDebugAusgeben() {
 
   #if MODUL_DISPLAY
     formatierterCode += "<h3>Display Modul</h3>";
-    formatierterCode += "<div>";
+    formatierterCode += "<div class=\"weiss\">";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Aktives Displaybild: ";
     formatierterCode += status;
@@ -82,7 +82,7 @@ void WebseiteDebugAusgeben() {
 
   #if MODUL_BODENFEUCHTE
     formatierterCode += "<h3>Bodenfeuchte Modul</h3>";
-    formatierterCode += "<div>";
+    formatierterCode += "<div class=\"weiss\">";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Messwert Prozent: ";
     formatierterCode += bodenfeuchteMesswertProzent;
@@ -96,7 +96,7 @@ void WebseiteDebugAusgeben() {
 
   #if MODUL_LEDAMPEL
     formatierterCode += "<h3>LEDAmpel Modul</h3>";
-    formatierterCode += "<div>";
+    formatierterCode += "<div class=\"weiss\">";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Modus: ";
     formatierterCode += ampelModus;
@@ -119,7 +119,7 @@ void WebseiteDebugAusgeben() {
 
   #if MODUL_HELLIGKEIT
     formatierterCode += "<h3>Helligkeit Modul</h3>";
-    formatierterCode += "<div>";
+    formatierterCode += "<div class=\"weiss\">";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Messwert Prozent: ";
     formatierterCode += helligkeitMesswertProzent;
@@ -133,7 +133,7 @@ void WebseiteDebugAusgeben() {
 
   #if MODUL_WIFI
     formatierterCode += "<h3>Wifi Modul</h3>";
-    formatierterCode += "<div>";
+    formatierterCode += "<div class=\"weiss\">";
     formatierterCode += "<ul>";
     formatierterCode += "<li>Hostname: ";
     formatierterCode += wifiHostname;
@@ -174,7 +174,7 @@ void WebseiteDebugAusgeben() {
   #endif
   #if MODUL_IFTTT
     formatierterCode += "<h3>IFTTT Modul</h3>";
-    formatierterCode += "<div>";
+    formatierterCode += "<div class=\"weiss\">";
     formatierterCode += "<ul>";
     formatierterCode += "<li>IFTTT Passwort: ";
     formatierterCode += wifiIftttPasswort;
@@ -205,7 +205,7 @@ void WebseiteDebugAusgeben() {
     formatierterCode += GeneriereAnalogsensorDebugString(8, analog8Name, analog8Messwert, analog8MesswertProzent, analog8Minimum, analog8Maximum);
   #endif
   formatierterCode += "<h2>Deaktivierte Module</h2><ul>";
-  formatierterCode += "<div>";
+  formatierterCode += "<div class=\"weiss\">";
   #if !MODUL_DHT
     formatierterCode += "<li>DHT Modul</li>";
   #endif
@@ -248,7 +248,7 @@ void WebseiteDebugAusgeben() {
   formatierterCode += "</ul>";
   formatierterCode += "</div>";
   formatierterCode += "<h2>Links</h2>";
-  formatierterCode += "<div>";
+  formatierterCode += "<div class=\"weiss\">";
   formatierterCode += "<ul>";
   formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
   formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";

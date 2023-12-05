@@ -11,11 +11,11 @@ String GeneriereSensorString(const int sensorNummer, const String& sensorName, c
 const int messwert, const String& einheit) {
   String sensorString;
   if (sensorNummer == 0) {
-    sensorString += "<h2>" + sensorName + "</h2><div id=\"" + sensorFarbe + "\"><p>" + messwert + " " + einheit + "</p></div>";
+    sensorString += "<h2>" + sensorName + "</h2><div class=\"" + sensorFarbe + "\"><p>" + messwert + " " + einheit + "</p></div>";
     return sensorString;
   } else {
     sensorString += "<h2>Analogsensor " + String(sensorNummer) + ": " + sensorName + "</h2>";
-    sensorString += "<div id=\"" + sensorFarbe + "\"><p>" + String(messwert) + " " + einheit + "</p></div>";
+    sensorString += "<div class=\"" + sensorFarbe + "\"><p>" + String(messwert) + " " + einheit + "</p></div>";
     return sensorString;
   }
 }
@@ -32,7 +32,7 @@ void WebseiteStartAusgeben() {
   #include "wifi_header.h" // Kopf der HTML-Seite
   #include "wifi_footer.h" // Fuß der HTML-Seite
   String formatierterCode = htmlHeader;
-  formatierterCode += "<div>";
+  formatierterCode += "<div class=\"weiss\">";
   formatierterCode += "<p>Diese Seite zeigt die Sensordaten deines Pflanzensensors an. Sie aktualisiert sich automatisch aller 10 Sekunden.</p>";
   formatierterCode += "</div>";
   #if MODUL_HELLIGKEIT
@@ -64,7 +64,7 @@ void WebseiteStartAusgeben() {
     formatierterCode += GeneriereSensorString(8, analog8Name, analog8Farbe, analog8MesswertProzent, "%");
   #endif
   formatierterCode += "<h2>Links</h2>";
-  formatierterCode += "<div>";
+  formatierterCode += "<div class=\"weiss\">";
   formatierterCode += "<ul>";
   formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
   #if MODUL_DEBUG
