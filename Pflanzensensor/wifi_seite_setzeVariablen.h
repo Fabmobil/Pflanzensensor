@@ -234,30 +234,30 @@ void WebseiteSetzeVariablen() {
         analog8GelbOben = Webserver.arg("analog8GelbOben").toInt(); // neuen Wert übernehmen
       }
     #endif
-    formatierterCode += "<h2>Erfolgreich!</h2>";
+    formatierterCode += "<h2>Erfolgreich!</h2>\n";
   } else { // wenn das Passwort falsch ist
-    formatierterCode += "<h2>Falsches Passwort!</h2>";
+    formatierterCode += "<h2>Falsches Passwort!</h2>\n";
   }
   if ( Webserver.arg("loeschen") == "Ja!" ) {
-    formatierterCode += "<div class=\"rot\"><p>Alle Variablen wurden gelöscht.</p>";
-    formatierterCode += "<p>Der Pflanzensensor wird neu gestartet.</p></div>";
-    formatierterCode += "<div class=\"weiss\">";
-    formatierterCode += "<p><a href=\"/\">Warte ein paar Sekunden, dann kannt du hier zur Startseite zurück.</a>";
-    formatierterCode += "</div>";
+    formatierterCode += "<div class=\"rot\">\n<p>Alle Variablen wurden gelöscht.</p>\n";
+    formatierterCode += "<p>Der Pflanzensensor wird neu gestartet.</p>\n</div>\n";
+    formatierterCode += "<div class=\"weiss\">\n";
+    formatierterCode += "<p><a href=\"/\">Warte ein paar Sekunden, dann kannst du hier zur Startseite zurück.</a></p>\n";
+    formatierterCode += "</div>\n";
   } else {
-    formatierterCode += "<div class=\"weiss\">";
-    formatierterCode += "<ul>";
-    formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>";
-    formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
+    formatierterCode += "<div class=\"weiss\">\n";
+    formatierterCode += "<ul>\n";
+    formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>\n";
+    formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n";
     #if MODUL_DEBUG
-    formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
+    formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n";
     #endif
     formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\">";
-    formatierterCode += "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
+    formatierterCode += "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>\n";
     formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">";
-    formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>";
-    formatierterCode += "</ul>";
-    formatierterCode += "</div>";
+    formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>\n";
+    formatierterCode += "</ul>\n";
+    formatierterCode += "</div>\n";
   }
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);

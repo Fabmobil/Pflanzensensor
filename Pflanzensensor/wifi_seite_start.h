@@ -11,11 +11,11 @@ String GeneriereSensorString(const int sensorNummer, const String& sensorName, c
 const int messwert, const String& einheit) {
   String sensorString;
   if (sensorNummer == 0) {
-    sensorString += "<h2>" + sensorName + "</h2><div class=\"" + sensorFarbe + "\"><p>" + messwert + " " + einheit + "</p></div>";
+    sensorString += "<h2>" + sensorName + "</h2>\n<div class=\"" + sensorFarbe + "\"><p>" + messwert + " " + einheit + "</p></div>\n";
     return sensorString;
   } else {
-    sensorString += "<h2>Analogsensor " + String(sensorNummer) + ": " + sensorName + "</h2>";
-    sensorString += "<div class=\"" + sensorFarbe + "\"><p>" + String(messwert) + " " + einheit + "</p></div>";
+    sensorString += "<h2>Analogsensor " + String(sensorNummer) + ": " + sensorName + "</h2>\n";
+    sensorString += "<div class=\"" + sensorFarbe + "\"><p>" + String(messwert) + " " + einheit + "</p></div>\n";
     return sensorString;
   }
 }
@@ -34,7 +34,7 @@ void WebseiteStartAusgeben() {
   String formatierterCode = htmlHeader;
   formatierterCode += "<div class=\"weiss\">";
   formatierterCode += "<p>Diese Seite zeigt die Sensordaten deines Pflanzensensors an. Sie aktualisiert sich automatisch aller 10 Sekunden.</p>";
-  formatierterCode += "</div>";
+  formatierterCode += "</div>\n";
   #if MODUL_HELLIGKEIT
     formatierterCode += GeneriereSensorString(0, helligkeitName, helligkeitFarbe, helligkeitMesswertProzent, "%");
   #endif
@@ -63,19 +63,19 @@ void WebseiteStartAusgeben() {
   #if MODUL_ANALOG8
     formatierterCode += GeneriereSensorString(8, analog8Name, analog8Farbe, analog8MesswertProzent, "%");
   #endif
-  formatierterCode += "<h2>Links</h2>";
-  formatierterCode += "<div class=\"weiss\">";
-  formatierterCode += "<ul>";
-  formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>";
+  formatierterCode += "<h2>Links</h2>\n";
+  formatierterCode += "<div class=\"weiss\">\n";
+  formatierterCode += "<ul>\n";
+  formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n";
   #if MODUL_DEBUG
-  formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>";
+  formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n";
   #endif
   formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\">";
-  formatierterCode += "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>";
+  formatierterCode += "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>\n";
   formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">";
-  formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>";
-  formatierterCode += "</ul>";
-  formatierterCode += "</div>";
+  formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>\n";
+  formatierterCode += "</ul>\n";
+  formatierterCode += "</div>\n";
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
 }
