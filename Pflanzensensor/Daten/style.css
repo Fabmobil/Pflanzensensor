@@ -139,7 +139,7 @@ figcaption {
     font-weight: bold;
     border-left: medium solid #560245;
     border-bottom: medium solid #560245;
-    color: red;
+    color: white;
     animation-name: blink;
     animation-duration: 1s;
     animation-iteration-count: infinite;
