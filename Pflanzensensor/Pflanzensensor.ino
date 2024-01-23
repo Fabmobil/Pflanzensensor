@@ -91,12 +91,6 @@ void setup() {
       Serial.print(F("# PIN gruene LED:                 ")); Serial.println(ampelPinGruen);
       Serial.print(F("# PIN gelbe LED:                  ")); Serial.println(ampelPinGelb);
       Serial.print(F("# PIN rote LED:                   ")); Serial.println(ampelPinRot);
-      Serial.print(F("# Bodenfeuchte Skala invertiert:  ")); Serial.println(ampelBodenfeuchteInvertiert);
-      Serial.print(F("# Schwellwert Bodenfeuchte grün:  ")); Serial.println(ampelBodenfeuchteGruen);
-      Serial.print(F("# Schwellwert Bodenfeuchte rot:   ")); Serial.println(ampelBodenfeuchteRot);
-      Serial.print(F("# Lichtstärke Skala invertiert:   ")); Serial.println(ampelHelligkeitInvertiert);
-      Serial.print(F("# Schwellwert Lichtstärke grün:   ")); Serial.println(ampelHelligkeitGruen);
-      Serial.print(F("# Schwellwert Lichtstärke rot:    ")); Serial.println(ampelHelligkeitRot);
     #endif
   #endif
   #if MODUL_HELLIGKEIT || MODUL_BODENFEUCHTE // "||" ist ein logisches Oder: Wenn Helligkeits- oder Bodenfeuchtemodul aktiv ist
@@ -135,26 +129,6 @@ void setup() {
     Serial.println(F("Start von DHT-Modul ... "));
     // Initialisierung des Lufttemperatur und -feuchte Sensors:
     dht.begin(); // Sensor initialisieren
-    #if MODUL_DEBUG // Debuginformationen
-      Serial.println(F("## DHT Sensor intialisieren und auslesen"));
-      dht.temperature().getSensor(&sensor);
-      Serial.println(F("# Lufttemperatursensor"));
-      Serial.print  (F("# Sensortyp:       ")); Serial.println(sensor.name);
-      Serial.print  (F("# Treiberversion:  ")); Serial.println(sensor.version);
-      Serial.print  (F("# ID:              ")); Serial.println(sensor.sensor_id);
-      Serial.print  (F("# Maximalwert:     ")); Serial.print(sensor.max_value); Serial.println(F("°C"));
-      Serial.print  (F("# Minimalwert:     ")); Serial.print(sensor.min_value); Serial.println(F("°C"));
-      Serial.print  (F("# Auflösung:       ")); Serial.print(sensor.resolution); Serial.println(F("°C"));
-      // Print humidity sensor details.
-      dht.humidity().getSensor(&sensor);
-      Serial.println(F("# Luftfeuchtesensor"));
-      Serial.print  (F("# Sensortyp:       ")); Serial.println(sensor.name);
-      Serial.print  (F("# Treiberversion:  ")); Serial.println(sensor.version);
-      Serial.print  (F("# ID:              ")); Serial.println(sensor.sensor_id);
-      Serial.print  (F("# Maximalwert:     ")); Serial.print(sensor.max_value); Serial.println(F("%"));
-      Serial.print  (F("# Minimalwert:     ")); Serial.print(sensor.min_value); Serial.println(F("%"));
-      Serial.print  (F("# Auflösung:       ")); Serial.print(sensor.resolution); Serial.println(F("%"));
-    #endif
   #endif
   #if MODUL_MULTIPLEXER
     digitalWrite(multiplexerPinB, HIGH); // eingebaute LED ausschalten
@@ -177,7 +151,7 @@ void setup() {
   variablen.begin("pflanzensensor", false); // Variablen initialisieren
   int neustarts = variablen.getInt("neustarts", 1); // default to 1
   #if MODUL_DEBUG
-    Serial.print(F("# Reboot count: )");
+    Serial.print(F("# Reboot count: )"));
     Serial.println(neustarts);
     Serial.println("# Inhalte des Flashspeichers:");
     File root = LittleFS.open("/", "r");

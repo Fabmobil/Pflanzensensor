@@ -131,9 +131,9 @@ void DisplayIntro(String ip, String hostname) {
  */
 void DisplayAnzeigen() {
   #if MODUL_DEBUG
-    Serial.print(F("# Beginn von DisplayAnzeigen(")); Serial.print(helligkeit);
-    Serial.print(F(", ")); Serial.print(luftfeuchte);
-    Serial.print(F(", ")); Serial.print(lufttemperatur);
+    Serial.print(F("# Beginn von DisplayAnzeigen(")); Serial.print(helligkeitMesswertProzent);
+    Serial.print(F(", ")); Serial.print(luftfeuchteMesswert);
+    Serial.print(F(", ")); Serial.print(lufttemperaturMesswert);
     Serial.print(F(", ")); Serial.print(status);
     Serial.println(F(")"));
   #endif

@@ -78,4 +78,7 @@ void WebseiteStartAusgeben() {
   formatierterCode += "</div>\n";
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
+  #if MODUL_DEBUG
+    Serial.println(F("# Ende von WebsiteStartAusgeben()"));
+  #endif
 }

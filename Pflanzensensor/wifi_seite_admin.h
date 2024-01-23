@@ -40,10 +40,10 @@ const int gelbOben) {
  * Gibt die Administrationsseite des Webservers aus.
  */
 void WebseiteAdminAusgeben() {
-   #if MODUL_DEBUG
+  #if MODUL_DEBUG
     Serial.println(F("# Beginn von WebsiteAdminAusgeben()"));
   #endif
-  #include "wifi_header.h"
+  #include "wifi_header_2.h"
   #include "wifi_footer.h"
   String formatierterCode = htmlHeader;
   formatierterCode += "<h1>Adminseite</h1>\n";
@@ -212,4 +212,7 @@ void WebseiteAdminAusgeben() {
 
   formatierterCode += htmlFooter;
   Webserver.send(200, "text/html", formatierterCode);
+  #if MODUL_DEBUG
+    Serial.println(F("# Ende von WebsiteAdminAusgeben()"));
+  #endif
 }

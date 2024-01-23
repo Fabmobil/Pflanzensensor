@@ -9,7 +9,7 @@
  * Module
  * "true" aktiviert sie, "false" deaktiviert sie
  */
-#define MODUL_DEBUG         false  // Debugmodus (de)aktivieren
+#define MODUL_DEBUG         true  // Debugmodus (de)aktivieren
 #define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
 #define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
@@ -101,8 +101,8 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
   const char* wifiPassword1 = "uxaiSiS9ai"; // WLAN Passwort für das fremde Wifi
   const char* wifiSsid2 = "Tommy"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
   const char* wifiPassword2 = "freibier"; // WLAN Passwort für das fremde Wifi
-  const char* wifiSsid3 = "Fabmobil_2.4GHz"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
-  const char* wifiPassword3 = "Fabmobil2400"; // WLAN Passwort für das fremde Wifi
+  const char* wifiSsid3 = "Magrathea"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
+  const char* wifiPassword3 = "Gemeinschaftskueche"; // WLAN Passwort für das fremde Wifi
 #endif
 String analog3Name = "Analog 3"; // Name des Sensors
 #if MODUL_ANALOG3 // wenn ein dritter Analogsensor verwendet wird
