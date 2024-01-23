@@ -9,7 +9,7 @@
  * Module
  * "true" aktiviert sie, "false" deaktiviert sie
  */
-#define MODUL_DEBUG         true  // Debugmodus (de)aktivieren
+#define MODUL_DEBUG         false  // Debugmodus (de)aktivieren
 #define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
 #define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
@@ -17,7 +17,7 @@
 #define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
 #define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
 #define MODUL_IFTTT         false // willst du das ifttt.com-Modul verwenden?
-#define MODUL_ANALOG3       true // hat dein Pflanzensensor einen dritten Analogsensor?
+#define MODUL_ANALOG3       false // hat dein Pflanzensensor einen dritten Analogsensor?
 #define MODUL_ANALOG4       false // hat dein Pflanzensensor einen vierten Analogsensor?
 #define MODUL_ANALOG5       false // hat dein Pflanzensensor einen fünften Analogsensor?
 #define MODUL_ANALOG6       false // hat dein Pflanzensensor einen sechsten Analogsensor?
@@ -54,7 +54,7 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
 #endif
 #if MODUL_DHT // falls ein Lufttemperatur- und -feuchtesensor verbaut ist:
   #define dhtPin 0 // "D3", Pin des DHT Sensors
-  #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
+  #define dhtSensortyp DHT22  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
   unsigned long intervallDht = 5000; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
   int lufttemperaturGruenUnten = 19; // unter Wert des grünen Bereichs
   int lufttemperaturGruenOben = 22; // oberer Wert des grünen Bereichs
@@ -101,8 +101,8 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
   const char* wifiPassword1 = "uxaiSiS9ai"; // WLAN Passwort für das fremde Wifi
   const char* wifiSsid2 = "Tommy"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
   const char* wifiPassword2 = "freibier"; // WLAN Passwort für das fremde Wifi
-  const char* wifiSsid3 = "Magrathea"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
-  const char* wifiPassword3 = "Gemeinschaftskueche"; // WLAN Passwort für das fremde Wifi
+  const char* wifiSsid3 = "SKD1"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
+  const char* wifiPassword3 = "*4914Start#2021"; // WLAN Passwort für das fremde Wifi
 #endif
 String analog3Name = "Analog 3"; // Name des Sensors
 #if MODUL_ANALOG3 // wenn ein dritter Analogsensor verwendet wird
@@ -265,4 +265,3 @@ mutex_t mutex;
 #ifdef WITH_GDB
 #include <GDBStub.h>
 #endif
-
