@@ -97,12 +97,12 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
   String wifiApPasswort = "geheim"; // Das Passwort für das selbst aufgemacht WLAN
   // Es können mehrere WLANs angegeben werden, mit denen sich der ESP verbinden soll. Ggfs. in allen Dateien
   // nach "wifiSsid1" suchen und die Zeilen kopieren und mehr hinzufügen:
-  const char* wifiSsid1 = "Magrathea"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
-  const char* wifiPassword1 = "Gemeinschaftskueche"; // WLAN Passwort für das fremde Wifi
+  const char* wifiSsid1 = "Fabmobil"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
+  const char* wifiPassword1 = "uxaiSiS9ai"; // WLAN Passwort für das fremde Wifi
   const char* wifiSsid2 = "Tommy"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
   const char* wifiPassword2 = "freibier"; // WLAN Passwort für das fremde Wifi
-  const char* wifiSsid3 = ""; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
-  const char* wifiPassword3 = ""; // WLAN Passwort für das fremde Wifi
+  const char* wifiSsid3 = "Fabmobil_2.4GHz"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
+  const char* wifiPassword3 = "Fabmobil2400"; // WLAN Passwort für das fremde Wifi
 #endif
 String analog3Name = "Analog 3"; // Name des Sensors
 #if MODUL_ANALOG3 // wenn ein dritter Analogsensor verwendet wird
