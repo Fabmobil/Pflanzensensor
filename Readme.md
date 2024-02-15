@@ -9,3 +9,5 @@ Der Quellcode befindet sich im `Pflanzensensor`-Verzeichnis. Das `Dokumentation`
 
 https://github.com/Fabmobil/Pflanzensensor/assets/19587872/cb0c00b8-c6c9-4e3b-ad43-b228fb3646fc
 
+| 💜 [Fabmobil](https://www.fabmobil.org) 💜 [Silicon Saxony](https://silicon-saxony.de) 💜 [Bosch](https://www.bosch.de/) 💜 [GlobalFoundries](https://gf.com/) 💜 [Infineon](https://www.infineon.com/) 💜 [XFab](https://www.xfab.com/) 💜 |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
