@@ -11,13 +11,13 @@
  * Module
  * "true" aktiviert sie, "false" deaktiviert sie
  */
-#define MODUL_DEBUG         false  // Debugmodus (de)aktivieren
+#define MODUL_DEBUG         false  // Debugausgaben (de)aktivieren
 #define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
 #define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
 #define MODUL_BODENFEUCHTE  true // hat dein Pflanzensensor einen Bodenfeuchtemesser?
 #define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
-#define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
+#define MODUL_HELLIGKEIT    false // hat dein Pflanzensensor einen Lichtsensor?
 #define MODUL_WEBHOOK       true // willst du das ifttt.com-Modul verwenden?
 #define MODUL_ANALOG3       false // hat dein Pflanzensensor einen dritten Analogsensor?
 #define MODUL_ANALOG4       false // hat dein Pflanzensensor einen vierten Analogsensor?
@@ -41,13 +41,13 @@
  */
 #define baudrateSeriell 9600 // Baudrate der seriellen Verbindung
 unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensoren in Millisekunden. Vorschlag: 5000
+String bodenfeuchteName = "Bodenfeuchte"; // Name des Sensors
 #if MODUL_BODENFEUCHTE // wenn der Bodenfeuchtesensor aktiv ist:
   /*
    * Wenn der Bodenfeuchtesensor aktiv ist werden hier die initialen Grenzwerte
    * für den Sensor festgelegt. Diese können später auch im Admin-Webinterface
    * verändert werden.
    */
-  String bodenfeuchteName = "Bodenfeuchte"; // Name des Sensors
   int bodenfeuchteMinimum = 900; // Der Rohmesswert des Sensors, wenn er ganz trocken ist
   int bodenfeuchteMaximum = 380; // Der Rohmesswert des Sensors, wenn er in Wasser ist
   int bodenfeuchteGruenUnten = 40; // unter Wert des grünen Bereichs
@@ -71,13 +71,13 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
   int luftfeuchteGelbUnten = 20; // unterer Wert des gelben Bereichs
   int luftfeuchteGelbOben = 80; // oberer Wert des gelben Bereichs
 #endif
+String helligkeitName = "Helligkeit"; // Name des Sensors
 #if MODUL_HELLIGKEIT
   /*
    * Wenn der Helligkeitsensor aktiv ist werden hier die initialen Grenzwerte
    * für den Sensor festgelegt. Diese können später auch im Admin-Webinterface
    * verändert werden.
    */
-  String helligkeitName = "Helligkeit"; // Name des Sensors
   int helligkeitMinimum = 1024; // Der Rohmesswert des Sensors wenn es ganz dunkel ist
   int helligkeitMaximum = 8; // Der Rohmesswert des Sensors, wenn es ganz hell ist
   int helligkeitGruenUnten = 40; // unter Wert des grünen Bereichs
@@ -92,21 +92,6 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
 #if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
   // URL und seceret in der passwoerter.h
   bool webhookSchalter = true;
-  const char* webhookRootCa= \
-     "-----BEGIN CERTIFICATE-----\n" \
-     "MIICGzCCAaGgAwIBAgIQQdKd0XLq7qeAwSxs6S+HUjAKBggqhkjOPQQDAzBPMQsw\n" \
-     "CQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJuZXQgU2VjdXJpdHkgUmVzZWFyY2gg\n" \
-     "R3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBYMjAeFw0yMDA5MDQwMDAwMDBaFw00\n" \
-     "MDA5MTcxNjAwMDBaME8xCzAJBgNVBAYTAlVTMSkwJwYDVQQKEyBJbnRlcm5ldCBT\n" \
-     "ZWN1cml0eSBSZXNlYXJjaCBHcm91cDEVMBMGA1UEAxMMSVNSRyBSb290IFgyMHYw\n" \
-     "EAYHKoZIzj0CAQYFK4EEACIDYgAEzZvVn4CDCuwJSvMWSj5cz3es3mcFDR0HttwW\n" \
-     "+1qLFNvicWDEukWVEYmO6gbf9yoWHKS5xcUy4APgHoIYOIvXRdgKam7mAHf7AlF9\n" \
-     "ItgKbppbd9/w+kHsOdx1ymgHDB/qo0IwQDAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0T\n" \
-     "AQH/BAUwAwEB/zAdBgNVHQ4EFgQUfEKWrt5LSDv6kviejM9ti6lyN5UwCgYIKoZI\n" \
-     "zj0EAwMDaAAwZQIwe3lORlCEwkSHRhtFcP9Ymd70/aTSVaYgLXTWNLxBo1BfASdW\n" \
-     "tL4ndQavEi51mI38AjEAi/V3bNTIZargCyzuFJ0nN6T5U6VR5CmD1/iQMVtCnwr1\n" \
-     "/q4AaOeMSQ+2b1tbFfLn\n" \
-     "-----END CERTIFICATE-----\n";
 #endif
 #include <LittleFS.h> // für das Speichern auf dem Flash des ESP; muss vor Wifi geladen werden
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
