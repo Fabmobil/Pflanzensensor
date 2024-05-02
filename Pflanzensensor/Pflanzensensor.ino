@@ -134,6 +134,22 @@ void setup() {
     digitalWrite(multiplexerPinB, HIGH); // eingebaute LED ausschalten
     digitalWrite(multiplexerPinC, HIGH); // eingebaute LED ausschalten
   #endif
+  #if MODUL_WEBHOOK
+    // Set time via NTP, as required for x.509 validation
+    configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+    Serial.print("Waiting for NTP time sync: ");
+    time_t now = time(nullptr);
+    while (now < 8 * 3600 * 2) {
+      delay(500);
+      Serial.print(".");
+      now = time(nullptr);
+    }
+    Serial.println("");
+    struct tm timeinfo;
+    gmtime_r(&now, &timeinfo);
+    Serial.print("Current time: ");
+    Serial.print(asctime(&timeinfo));
+  #endif
   if (VariablenDa()) {
       #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
         DisplayDreiWoerter("Start..", " Variablen", "  laden");
@@ -334,7 +350,7 @@ void loop() {
   #if MODUL_WEBHOOK // wenn das Webhook-Modul aktiv ist
     if (webhookSchalter) {
       Serial.println("Webhook ausgelöst!");
-      webhook_nachricht(bodenfeuchteMesswertProzent, luftfeuchteMesswert, lufttemperaturMesswert);
+      WebhookNachricht(bodenfeuchteMesswertProzent, luftfeuchteMesswert, lufttemperaturMesswert);
     }
     webhookSchalter = false;
   #endif

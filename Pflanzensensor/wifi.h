@@ -8,7 +8,6 @@ ESP8266WiFiMulti wifiMulti;
 #include <ESP8266WebServer.h> // für Webserver
 #include <ESP8266mDNS.h> // für Namensauflösung
 
-WiFiClientSecure client;
 ESP8266WebServer Webserver(80); // Webserver auf Port 80
 
 #include "wifi_daten.h" // Bilder die auf der Seite verwendet werden
@@ -100,5 +99,4 @@ String WifiSetup(String hostname){
   Webserver.onNotFound(WebseiteNichtGefundenAusgeben);
   Webserver.begin(); // Webserver starten
   return ip; // IP Adresse zurückgeben
-  client.setInsecure(); // wir trauen jedem Zertifikat..
 }

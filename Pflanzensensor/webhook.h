@@ -7,50 +7,68 @@
  */
 
 /*
- * Funktion: webhook_nachricht(int bodenfeuchte, int luftfeuchte, int lufttemperatur)
+ * Funktion: WebhookNachricht(int bodenfeuchte, int luftfeuchte, int lufttemperatur)
  * Sendet Nachrichten über einen www.ifttt.com Webhook
  * bodenfeuchte: Bodenfeuchte in %
  * helligkeit: Helligkeit in %
  * luftfeuchte: Luftfeuchte in %
  * lufttemperatur: Lufttemperatur in °C
  */
+#include <WiFiClientSecure.h>
+#include <ESP8266HTTPClient.h>
+#include "webhook_zertifikat.h"
 
-void webhook_nachricht(int bodenfeuchte, int luftfeuchte, int lufttemperatur) {
-  // JSON Datei zusammenbauen:
+X509List cert(makeComRootZertifikat);
+
+
+
+void WebhookNachricht(int bodenfeuchte, int luftfeuchte, int lufttemperatur) {
+  #if MODUL_DEBUG
+    Serial.println(F("# Beginn von WebhookNachricht()"));
+    Serial.print(F("# Bodenfeuchte: ")); Serial.print(bodenfeuchte);
+    Serial.print(F(", Luftfeuchte: ")); Serial.print(luftfeuchte);
+    Serial.print(F(", Lufttemperatur: ")); Serial.println(lufttemperatur);
+  #endif
+
+  // Stellt die https-Verbindung zum maker.com - Webhook Server her:
+  WiFiClientSecure client;
+  Serial.println("Verbinde zum Webhook-Server " + webhookDomain);
+  Serial.printf("Mit dem Zertifikat: %s\n", makeComRootZertifikat);
+  client.setTrustAnchors(&cert);
+  if (!client.connect(webhookDomain, 443)) {
+      Serial.println("Verbindung fehlgeschlagen!");
+      return;
+  }
+  Serial.println("Verbindung erfolgreich!");
+
+  // JSON Daten zusammenbauen:
   String jsonString = "";
   jsonString += "{\"bodenfeuchte:\":\"";
   jsonString += bodenfeuchte;
-  jsonString += "\",\"luftfeuchte\":\"";
-  jsonString += luftfeuchte;
-  jsonString += "\",\"lufttemperatur\":\"";
-  jsonString += lufttemperatur;
+ // jsonString += "\",\"luftfeuchte\":\"";
+ // jsonString += luftfeuchte;
+ // jsonString += "\",\"lufttemperatur\":\"";
+ // jsonString += lufttemperatur;
   jsonString += "\"}";
   int jsonLength = jsonString.length();
   String lenString = String(jsonLength);
-  // connect to the Maker event server
-  Serial.println("\nVerbinde zum Webhook-Server...");
-  if (!client.connect(webhookDomain, 443))
-    Serial.println("Verbindung fehlgeschlagen!");
-  else {
-    Serial.println("Verbindung erfolgreich!");
-    client.connect(webhookDomain, 443);
-    // construct the POST request
-    String postString = "";
-    postString += "POST ";
-    postString += webhookPfad;
-    postString += " HTTP/1.1\r\n";
-    postString += "Host: ";
-    postString += webhookDomain;
-    postString += "\r\n";
-    postString += "Content-Type: application/json\r\n";
-    postString += "Content-Length: ";
-    postString += lenString + "\r\n";
-    postString += "\r\n";
-    postString += jsonString; // combine post request and JSON
 
-    client.print(postString);
-    delay(500);
-    client.stop();
-    Serial.println(postString);
-  }
+  // POST-request zusammenbauen:
+  String postString = "";
+  postString += "POST ";
+  postString += webhookPfad;
+  postString += " HTTP/1.1\r\n";
+  postString += "Host: ";
+  postString += webhookDomain;
+  postString += "\r\n";
+  postString += "Content-Type: application/json\r\n";
+  postString += "Content-Length: ";
+  postString += lenString + "\r\n";
+  postString += "\r\n";
+  postString += jsonString; // combine post request and JSON
+
+  client.print(postString);
+  delay(500);
+  client.stop();
+  Serial.println(postString);
 }
