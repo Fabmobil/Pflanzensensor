@@ -96,9 +96,9 @@ void VariablenSpeichern() {
     variablen.putInt("ampelModus", ampelModus);
     variablen.putInt("intAmpel", intervallAmpel);
   #endif
-  #if MODUL_IFTTT
-    variablen.putString("iftttPw", wifiIftttPasswort);
-    variablen.putString("iftttEreignis", wifiIftttEreignis);
+  #if MODUL_WEBHOOK
+    variablen.putString("webhookPfad", webhookPfad);
+    variablen.putString("webhookDomain", webhookDomain);
   #endif
   #if MODUL_WIFI
     variablen.putString("adminPw", wifiAdminPasswort);
@@ -201,9 +201,9 @@ void VariablenLaden() {
     ampelModus = variablen.getInt("ampelModus", ampelModus);
     intervallAmpel = variablen.getInt("intAmpel", intervallAmpel);
   #endif
-  #if MODUL_IFTTT
-    wifiIftttPasswort = variablen.getString("iftttPw", wifiIftttPasswort);
-    wifiIftttEreignis = variablen.getString("iftttEreignis", wifiIftttEreignis);
+  #if MODUL_WEBHOOK
+    webhookPfad = variablen.getString("webhookPfad", webhookPfad).c_str();
+    webhookDomain = variablen.getString("webhookDomain", webhookDomain).c_str();
   #endif
   #if MODUL_WIFI
     wifiSsid1 = variablen.getString("wifiSsid1", wifiSsid1).c_str();

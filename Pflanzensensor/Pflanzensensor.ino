@@ -324,10 +324,19 @@ void loop() {
           #if MODUL_DISPLAY
             DisplayDreiWoerter("WLAN", "Verbindung", "verloren!");
           #endif
-      }
+        }
       Webserver.handleClient(); // der Webserver soll in jedem loop nach Anfragen schauen!
       ReleaseMutex(&mutex); // Mutex wieder freigeben
     }
+  #endif
+
+  // Webhook für Alarm:
+  #if MODUL_WEBHOOK // wenn das Webhook-Modul aktiv ist
+    if (webhookSchalter) {
+      Serial.println("Webhook ausgelöst!");
+      webhook_nachricht(bodenfeuchteMesswertProzent, luftfeuchteMesswert, lufttemperaturMesswert);
+    }
+    webhookSchalter = false;
   #endif
 
   #if MODUL_DEBUG // Debuginformation
@@ -348,7 +357,7 @@ int ModuleZaehlen() {
     if (MODUL_DISPLAY) aktiveModule++; // wenn das Display Modul aktiv ist, wird die Variable um 1 erhöht
     if (MODUL_DHT) aktiveModule++; // wenn das DHT Modul aktiv ist, wird die Variable um 1 erhöht
     if (MODUL_HELLIGKEIT) aktiveModule++; // wenn das Helligkeit Modul aktiv ist, wird die Variable um 1 erhöht
-    if (MODUL_IFTTT) aktiveModule++; // wenn das IFTTT Modul aktiv ist, wird die Variable um 1 erhöht
+    if (MODUL_WEBHOOK) aktiveModule++; // wenn das IFTTT Modul aktiv ist, wird die Variable um 1 erhöht
     if (MODUL_LEDAMPEL) aktiveModule++; // wenn das LED Ampel Modul aktiv ist, wird die Variable um 1 erhöht
     if (MODUL_WIFI) aktiveModule++; // wenn das Wifi Modul aktiv ist, wird die Variable um 1 erhöht
     if (MODUL_ANALOG3) aktiveModule++; // wenn das Analog3 Modul aktiv ist, wird die Variable um 1 erhöht

@@ -173,15 +173,12 @@ void WebseiteDebugAusgeben() {
     formatierterCode += "</ul>\n";
     formatierterCode += "</div>\n";
   #endif
-  #if MODUL_IFTTT
-    formatierterCode += "<h3>IFTTT Modul</h3>\n";
+  #if MODUL_WEBHOOK
+    formatierterCode += "<h3>Webhook Modul</h3>\n";
     formatierterCode += "<div class=\"weiss\">\n";
     formatierterCode += "<ul>\n";
-    formatierterCode += "<li>IFTTT Passwort: ";
-    formatierterCode += wifiIftttPasswort;
-    formatierterCode += "</li>\n";
-    formatierterCode += "<li>IFTTT Ereignis: ";
-    formatierterCode += wifiIftttEreignis;
+    formatierterCode += "<li>Webhook URL: ";
+    formatierterCode += webhookPfad;
     formatierterCode += "</li>\n";
     formatierterCode += "</ul>\n";
     formatierterCode += "</div>\n";
@@ -226,7 +223,7 @@ void WebseiteDebugAusgeben() {
   #if !MODUL_WIFI
     formatierterCode += "<li>Wifi Modul</li>\n";
   #endif
-  #if !MODUL_IFTTT
+  #if !MODUL_WEBHOOK
     formatierterCode += "<li>IFTTT Modul</li>\n";
   #endif
   #if !MODUL_ANALOG3
