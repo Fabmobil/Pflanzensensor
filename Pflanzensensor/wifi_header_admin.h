@@ -9,5 +9,5 @@ String htmlHeader = (R"====(
 <body class="not-loaded">
 <div class="foreground">
   <div id="container">
-  <h1>Fabmobil Pflanzensensor</h1>
+  <h1>Pflanzensensor Adminseite</h1>
 )====");
