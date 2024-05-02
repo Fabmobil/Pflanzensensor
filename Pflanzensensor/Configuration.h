@@ -3,6 +3,8 @@
  *
  * hier werden die Module ausgewählt sowie die PINs und
  * Variablen festgelegt.
+ *
+ * Die Passwörter fürs WLAN usw. sind in der passwoerter.h zu finden.
  */
 
 /**
@@ -16,13 +18,17 @@
 #define MODUL_BODENFEUCHTE  true // hat dein Pflanzensensor einen Bodenfeuchtemesser?
 #define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
 #define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
-#define MODUL_IFTTT         false // willst du das ifttt.com-Modul verwenden?
+#define MODUL_WEBHOOK       true // willst du das ifttt.com-Modul verwenden?
 #define MODUL_ANALOG3       false // hat dein Pflanzensensor einen dritten Analogsensor?
 #define MODUL_ANALOG4       false // hat dein Pflanzensensor einen vierten Analogsensor?
 #define MODUL_ANALOG5       false // hat dein Pflanzensensor einen fünften Analogsensor?
 #define MODUL_ANALOG6       false // hat dein Pflanzensensor einen sechsten Analogsensor?
 #define MODUL_ANALOG7       false // hat dein Pflanzensensor einen siebten Analogsensor?
 #define MODUL_ANALOG8       false // hat dein Pflanzensensor einen achten Analogsensor?
+
+// Hier werden die Passwörter nachgeladen
+#include "passwoerter.h"
+
 // Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
 #if MODUL_BODENFEUCHTE && MODUL_HELLIGKEIT
   #define MODUL_MULTIPLEXER true
@@ -54,7 +60,7 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
 #endif
 #if MODUL_DHT // falls ein Lufttemperatur- und -feuchtesensor verbaut ist:
   #define dhtPin 0 // "D3", Pin des DHT Sensors
-  #define dhtSensortyp DHT22  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
+  #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
   unsigned long intervallDht = 5000; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
   int lufttemperaturGruenUnten = 19; // unter Wert des grünen Bereichs
   int lufttemperaturGruenOben = 22; // oberer Wert des grünen Bereichs
@@ -83,9 +89,24 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
   int ampelModus = 1; // 0: Helligkeits- und Bodenfeuchtesensor abwechselnd, 1: Helligkeitssensor, 2: Bodenfeuchtesensor
   unsigned long intervallAmpel = 5000; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15273
 #endif
-#if MODUL_IFTTT // wenn das IFTTT Modul aktiviert ist
-  #define wifiIftttPasswort "IFTTT Schlüssel" // brauchen wir einen Schlüssel
-  #define wifiIftttEreignis "Fabmobil_Pflanzensensor" // und ein Ereignisnamen
+#if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
+  // URL und seceret in der passwoerter.h
+  bool webhookSchalter = true;
+  const char* webhookRootCa= \
+     "-----BEGIN CERTIFICATE-----\n" \
+     "MIICGzCCAaGgAwIBAgIQQdKd0XLq7qeAwSxs6S+HUjAKBggqhkjOPQQDAzBPMQsw\n" \
+     "CQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJuZXQgU2VjdXJpdHkgUmVzZWFyY2gg\n" \
+     "R3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBYMjAeFw0yMDA5MDQwMDAwMDBaFw00\n" \
+     "MDA5MTcxNjAwMDBaME8xCzAJBgNVBAYTAlVTMSkwJwYDVQQKEyBJbnRlcm5ldCBT\n" \
+     "ZWN1cml0eSBSZXNlYXJjaCBHcm91cDEVMBMGA1UEAxMMSVNSRyBSb290IFgyMHYw\n" \
+     "EAYHKoZIzj0CAQYFK4EEACIDYgAEzZvVn4CDCuwJSvMWSj5cz3es3mcFDR0HttwW\n" \
+     "+1qLFNvicWDEukWVEYmO6gbf9yoWHKS5xcUy4APgHoIYOIvXRdgKam7mAHf7AlF9\n" \
+     "ItgKbppbd9/w+kHsOdx1ymgHDB/qo0IwQDAOBgNVHQ8BAf8EBAMCAQYwDwYDVR0T\n" \
+     "AQH/BAUwAwEB/zAdBgNVHQ4EFgQUfEKWrt5LSDv6kviejM9ti6lyN5UwCgYIKoZI\n" \
+     "zj0EAwMDaAAwZQIwe3lORlCEwkSHRhtFcP9Ymd70/aTSVaYgLXTWNLxBo1BfASdW\n" \
+     "tL4ndQavEi51mI38AjEAi/V3bNTIZargCyzuFJ0nN6T5U6VR5CmD1/iQMVtCnwr1\n" \
+     "/q4AaOeMSQ+2b1tbFfLn\n" \
+     "-----END CERTIFICATE-----\n";
 #endif
 #include <LittleFS.h> // für das Speichern auf dem Flash des ESP; muss vor Wifi geladen werden
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
@@ -94,15 +115,7 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
   bool wifiAp = false; // true: ESP macht seinen eigenen AP auf; false: ESP verbindet sich mit fremden WLAN
   String wifiApSsid = "Fabmobil Pflanzensensor"; // SSID des WLANs, falls vom ESP selbst aufgemacht
   bool wifiApPasswortAktiviert = false; // soll das selbst aufgemachte WLAN ein Passwort haben?
-  String wifiApPasswort = "geheim"; // Das Passwort für das selbst aufgemacht WLAN
-  // Es können mehrere WLANs angegeben werden, mit denen sich der ESP verbinden soll. Ggfs. in allen Dateien
-  // nach "wifiSsid1" suchen und die Zeilen kopieren und mehr hinzufügen:
-  const char* wifiSsid1 = "Fabmobil"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
-  const char* wifiPassword1 = "uxaiSiS9ai"; // WLAN Passwort für das fremde Wifi
-  const char* wifiSsid2 = "Tommy"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
-  const char* wifiPassword2 = "freibier"; // WLAN Passwort für das fremde Wifi
-  const char* wifiSsid3 = "SKD1"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
-  const char* wifiPassword3 = "*4914Start#2021"; // WLAN Passwort für das fremde Wifi
+  // WiFi Logindaten sind in der passwoerter.h gespeichert!
 #endif
 String analog3Name = "Analog 3"; // Name des Sensors
 #if MODUL_ANALOG3 // wenn ein dritter Analogsensor verwendet wird
@@ -164,7 +177,7 @@ String analog8Name = "Analog 8"; // Name des Sensors
  * hier muss eigentlich nichts verändert werden sondern die notewendigen globalen Variablen werden hier
  * definiert.
  */
-#define pflanzensensorVersion "0.4" // Versionsnummer
+#define pflanzensensorVersion "0.5" // Versionsnummer
 unsigned long millisVorherAnalog = 0; // Variable für die Messung des Intervalls der Analogsensormessung
 unsigned long millisVorherDht = 0; // Variable für die Messung des Intervalls der Luftfeuchte- und -temperaturmessung
 unsigned long millisVorherLedampel = 0; // Variable für die Messung des Intervalls des Umschaltens der LED Ampel
@@ -214,10 +227,6 @@ String analog8Farbe = "rot";
   #define luftfeuchteMesswert -1
 #endif
 
-#if MODUL_IFTTT
-  #include "ifttt.h" // IFTTT Modul einbinden
-#endif
-
 #if MODUL_LEDAMPEL
   bool ampelUmschalten = true; // Schaltet zwischen Bodenfeuchte- und Helligkeitsanzeige um
   #define ampelPinRot 13 // "D7"; Pin der roten LED
@@ -255,6 +264,10 @@ String analog8Farbe = "rot";
 
 #if MODUL_WIFI
   #include "wifi.h" // Wifimodul einbinden
+#endif
+
+#if MODUL_WEBHOOK
+  #include "webhook.h" // Webhook Modul einbinden
 #endif
 
 #include "analogsensor.h" // Funktionen für die Analogsensoren
