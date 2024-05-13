@@ -17,8 +17,8 @@
 #define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
 #define MODUL_BODENFEUCHTE  true // hat dein Pflanzensensor einen Bodenfeuchtemesser?
 #define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
-#define MODUL_HELLIGKEIT    false // hat dein Pflanzensensor einen Lichtsensor?
-#define MODUL_WEBHOOK       true // willst du das ifttt.com-Modul verwenden?
+#define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
+#define MODUL_WEBHOOK       false // willst du das ifttt.com-Modul verwenden?
 #define MODUL_ANALOG3       false // hat dein Pflanzensensor einen dritten Analogsensor?
 #define MODUL_ANALOG4       false // hat dein Pflanzensensor einen vierten Analogsensor?
 #define MODUL_ANALOG5       false // hat dein Pflanzensensor einen fünften Analogsensor?
@@ -97,7 +97,7 @@ String helligkeitName = "Helligkeit"; // Name des Sensors
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
   String wifiAdminPasswort = "admin"; // Passwort für das Admininterface
   String wifiHostname = "pflanzensensor"; // Das Gerät ist später unter diesem Name + .local erreichbar
-  bool wifiAp = false; // true: ESP macht seinen eigenen AP auf; false: ESP verbindet sich mit fremden WLAN
+  bool wifiAp = true; // true: ESP macht seinen eigenen AP auf; false: ESP verbindet sich mit fremden WLAN
   String wifiApSsid = "Fabmobil Pflanzensensor"; // SSID des WLANs, falls vom ESP selbst aufgemacht
   bool wifiApPasswortAktiviert = false; // soll das selbst aufgemachte WLAN ein Passwort haben?
   // WiFi Logindaten sind in der passwoerter.h gespeichert!

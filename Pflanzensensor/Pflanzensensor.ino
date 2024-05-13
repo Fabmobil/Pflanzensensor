@@ -333,13 +333,15 @@ void loop() {
     if (GetMutex(&mutex)) { // Mutex holen
       // WLAN Verbindung aufrecht erhalten:
       // https://github.com/esp8266/Arduino/blob/master/libraries/ESP8266WiFi/examples/WiFiMulti/WiFiMulti.ino
-        if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
-          ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
-        } else {
-          Serial.println("Fehler: WLAN Verbindung verloren!");
-          #if MODUL_DISPLAY
-            DisplayDreiWoerter("WLAN", "Verbindung", "verloren!");
-          #endif
+        if (!wifiAp) {
+          if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
+            ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
+          } else {
+            Serial.println("Fehler: WLAN Verbindung verloren!");
+            #if MODUL_DISPLAY
+              DisplayDreiWoerter("WLAN", "Verbindung", "verloren!");
+            #endif
+          }
         }
       Webserver.handleClient(); // der Webserver soll in jedem loop nach Anfragen schauen!
       ReleaseMutex(&mutex); // Mutex wieder freigeben
