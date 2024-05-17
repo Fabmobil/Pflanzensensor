@@ -5,11 +5,11 @@ h1, h2, h3, h4, h5 {
     font-style: normal;
     text-transform: uppercase;
     color: white;
-    background-color: #560245;
+    background-color: #36bdcb;
     text-align: left;
     border-radius: 00px 0px 0px 30px;
-    border-left: medium solid #560245;
-    border-top: medium solid #560245;
+    border-left: medium solid #1b6268;
+    border-top: medium solid #1b6268;
     box-shadow: 0px 20px 10px -10px black;
     z-index: 100;
 }
@@ -33,7 +33,7 @@ h3 {
 
 strong {
     font-weight: bolder;
-    color: #560245;
+    color: #36bdcb;
     font-size: 1.5em;
 }
 
@@ -50,7 +50,7 @@ p, ul, ol {
 }
 
 a {
-    color: #560245;
+    color: #36bdcb;
     text-decoration: none;
 }
 
@@ -80,7 +80,7 @@ figcaption {
 }
 
 #container {
-    border-right: 2em solid #560245;
+    border-right: 2em solid #1b6268;
     border-radius: 0px 30px 0px 0px;
     border-left: 0;
     border-bottom: 0;
@@ -97,8 +97,8 @@ figcaption {
 
 .weiss {
     background-color: white;
-    border-left: thick solid #560245;
-    border-bottom: thick solid #560245;
+    border-left: thick solid #1b6268;
+    border-bottom: thick solid #1b6268;
     border-radius: 0px 0px 0px 30px;
     margin-left: 5em;
     margin-bottom: 1em;
@@ -111,8 +111,8 @@ figcaption {
 .gruen {
     position: relative;
     background-color: darkgreen;
-    border-left: medium solid #560245;
-    border-bottom: medium solid #560245;
+    border-left: medium solid #1b6268;
+    border-bottom: medium solid #1b6268;
     border-radius: 0px 0px 0px 30px;
     margin-left: 5em;
     margin-bottom: 1em;
@@ -123,8 +123,8 @@ figcaption {
 
 .gelb {
     background-color: yellow;
-    border-left: medium solid #560245;
-    border-bottom: medium solid #560245;
+    border-left: medium solid #1b6268;
+    border-bottom: medium solid #1b6268;
     border-radius: 0px 0px 0px 30px;
     margin-left: 5em;
     margin-bottom: 1em;
@@ -137,8 +137,8 @@ figcaption {
     margin-left: 5em;
     margin-bottom: 1em;
     font-weight: bold;
-    border-left: medium solid #560245;
-    border-bottom: medium solid #560245;
+    border-left: medium solid #1b6268;
+    border-bottom: medium solid #1b6268;
     color: white;
     animation-name: blink;
     animation-duration: 1s;
