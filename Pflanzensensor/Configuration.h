@@ -19,12 +19,12 @@
 #define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
 #define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
 #define MODUL_WEBHOOK       false // willst du das ifttt.com-Modul verwenden?
-#define MODUL_ANALOG3       false // hat dein Pflanzensensor einen dritten Analogsensor?
-#define MODUL_ANALOG4       false // hat dein Pflanzensensor einen vierten Analogsensor?
-#define MODUL_ANALOG5       false // hat dein Pflanzensensor einen fünften Analogsensor?
-#define MODUL_ANALOG6       false // hat dein Pflanzensensor einen sechsten Analogsensor?
-#define MODUL_ANALOG7       false // hat dein Pflanzensensor einen siebten Analogsensor?
-#define MODUL_ANALOG8       false // hat dein Pflanzensensor einen achten Analogsensor?
+#define MODUL_ANALOG3       true // hat dein Pflanzensensor einen dritten Analogsensor?
+#define MODUL_ANALOG4       true // hat dein Pflanzensensor einen vierten Analogsensor?
+#define MODUL_ANALOG5       true // hat dein Pflanzensensor einen fünften Analogsensor?
+#define MODUL_ANALOG6       true // hat dein Pflanzensensor einen sechsten Analogsensor?
+#define MODUL_ANALOG7       true // hat dein Pflanzensensor einen siebten Analogsensor?
+#define MODUL_ANALOG8       true // hat dein Pflanzensensor einen achten Analogsensor?
 
 // Hier werden die Passwörter nachgeladen
 #include "passwoerter.h"
@@ -78,8 +78,8 @@ String helligkeitName = "Helligkeit"; // Name des Sensors
    * für den Sensor festgelegt. Diese können später auch im Admin-Webinterface
    * verändert werden.
    */
-  int helligkeitMinimum = 1024; // Der Rohmesswert des Sensors wenn es ganz dunkel ist
-  int helligkeitMaximum = 8; // Der Rohmesswert des Sensors, wenn es ganz hell ist
+  int helligkeitMinimum = 8; // Der Rohmesswert des Sensors wenn es ganz dunkel ist
+  int helligkeitMaximum = 1024; // Der Rohmesswert des Sensors, wenn es ganz hell ist
   int helligkeitGruenUnten = 40; // unter Wert des grünen Bereichs
   int helligkeitGruenOben = 60; // oberer Wert des grünen Bereichs
   int helligkeitGelbUnten = 20; // unterer Wert des gelben Bereichs
@@ -97,7 +97,7 @@ String helligkeitName = "Helligkeit"; // Name des Sensors
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
   String wifiAdminPasswort = "admin"; // Passwort für das Admininterface
   String wifiHostname = "pflanzensensor"; // Das Gerät ist später unter diesem Name + .local erreichbar
-  bool wifiAp = true; // true: ESP macht seinen eigenen AP auf; false: ESP verbindet sich mit fremden WLAN
+  bool wifiAp = false; // true: ESP macht seinen eigenen AP auf; false: ESP verbindet sich mit fremden WLAN
   String wifiApSsid = "Fabmobil Pflanzensensor"; // SSID des WLANs, falls vom ESP selbst aufgemacht
   bool wifiApPasswortAktiviert = false; // soll das selbst aufgemachte WLAN ein Passwort haben?
   // WiFi Logindaten sind in der passwoerter.h gespeichert!
