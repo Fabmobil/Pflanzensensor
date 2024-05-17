@@ -33,10 +33,9 @@ std::pair<String, String> NamenTeilen(String name) {
     String teil1 = name.substring(0, mitte);
     teil1 += "-";
     String teil2 = name.substring(mitte, laenge);
-    teil2 += ":";
     return std::make_pair(teil1, teil2);
   } else {
-    return std::make_pair(name + ":", "");
+    return std::make_pair(name, "");
   }
 }
 
@@ -49,14 +48,14 @@ std::pair<String, String> NamenTeilen(String name) {
  */
 void MesswertAnzeigen(String name1, String name2, int messwert, String einheit){
   display.clearDisplay(); // Display löschen
-  display.setCursor(0, 0);
-  display.println(name1);
-  display.setCursor(10, 20);
-  display.println(name2);
-  display.setCursor(20, 40);
+  display.setCursor(40, 0);
   display.println(messwert);
-  display.setCursor(70, 40);
+  display.setCursor(80, 0);
   display.println(einheit);
+  display.setCursor(0, 20);
+  display.println(name1);
+  display.setCursor(5, 40);
+  display.println(name2);
   display.display();      // Display aktualisieren
 }
 
@@ -174,7 +173,7 @@ void DisplayAnzeigen() {
       break;
     case 4:
       if (lufttemperaturMesswert != -1) {
-        MesswertAnzeigen("Lufttemp-", "eratur:", lufttemperaturMesswert, "\xf8 C");
+        MesswertAnzeigen("Luft-", "temperatur", lufttemperaturMesswert, "\xf8 C");
       } else {
         display.clearDisplay();
         display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
@@ -183,7 +182,7 @@ void DisplayAnzeigen() {
       break;
     case 5:
       if (luftfeuchteMesswert != -1) {
-        MesswertAnzeigen("Luft-", "feuchte:", luftfeuchteMesswert, "%");
+        MesswertAnzeigen("Luft-", "feuchte", luftfeuchteMesswert, "%");
       } else {
         display.clearDisplay();
         display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
