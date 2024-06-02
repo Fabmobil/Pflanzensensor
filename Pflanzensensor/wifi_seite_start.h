@@ -70,7 +70,7 @@ void WebseiteStartAusgeben() {
   #if MODUL_DEBUG
   formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n";
   #endif
-  formatierterCode += "<li><a href=\"https://www.github.com/pippcat/Pflanzensensor\" target=\"_blank\">";
+  formatierterCode += "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">";
   formatierterCode += "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>\n";
   formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">";
   formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>\n";
