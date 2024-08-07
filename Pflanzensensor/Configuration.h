@@ -18,13 +18,13 @@
 #define MODUL_BODENFEUCHTE  true // hat dein Pflanzensensor einen Bodenfeuchtemesser?
 #define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
 #define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
-#define MODUL_WEBHOOK       false // willst du das ifttt.com-Modul verwenden?
-#define MODUL_ANALOG3       true // hat dein Pflanzensensor einen dritten Analogsensor?
-#define MODUL_ANALOG4       true // hat dein Pflanzensensor einen vierten Analogsensor?
-#define MODUL_ANALOG5       true // hat dein Pflanzensensor einen fünften Analogsensor?
-#define MODUL_ANALOG6       true // hat dein Pflanzensensor einen sechsten Analogsensor?
-#define MODUL_ANALOG7       true // hat dein Pflanzensensor einen siebten Analogsensor?
-#define MODUL_ANALOG8       true // hat dein Pflanzensensor einen achten Analogsensor?
+#define MODUL_WEBHOOK       true // willst du das ifttt.com-Modul verwenden?
+#define MODUL_ANALOG3       false // hat dein Pflanzensensor einen dritten Analogsensor?
+#define MODUL_ANALOG4       false // hat dein Pflanzensensor einen vierten Analogsensor?
+#define MODUL_ANALOG5       false // hat dein Pflanzensensor einen fünften Analogsensor?
+#define MODUL_ANALOG6       false // hat dein Pflanzensensor einen sechsten Analogsensor?
+#define MODUL_ANALOG7       false // hat dein Pflanzensensor einen siebten Analogsensor?
+#define MODUL_ANALOG8       false // hat dein Pflanzensensor einen achten Analogsensor?
 
 // Hier werden die Passwörter nachgeladen
 #include "passwoerter.h"
@@ -86,12 +86,13 @@ String helligkeitName = "Helligkeit"; // Name des Sensors
   int helligkeitGelbOben = 80; // oberer Wert des gelben Bereichs
 #endif
 #if MODUL_LEDAMPEL // falls eine LED Ampel verbaut ist:
-  int ampelModus = 1; // 0: Helligkeits- und Bodenfeuchtesensor abwechselnd, 1: Helligkeitssensor, 2: Bodenfeuchtesensor
+  int ampelModus = 2; // 0: Helligkeits- und Bodenfeuchtesensor abwechselnd, 1: Helligkeitssensor, 2: Bodenfeuchtesensor
   unsigned long intervallAmpel = 5000; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15273
 #endif
 #if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
   // URL und seceret in der passwoerter.h
   bool webhookSchalter = true;
+  int webhookFrequenz = 5; // Die Benachrichtigungsfrequenz des Webhooks in Minuten
 #endif
 #include <LittleFS.h> // für das Speichern auf dem Flash des ESP; muss vor Wifi geladen werden
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist

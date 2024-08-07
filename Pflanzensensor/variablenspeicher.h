@@ -99,6 +99,8 @@ void VariablenSpeichern() {
   #if MODUL_WEBHOOK
     variablen.putString("webhookPfad", webhookPfad);
     variablen.putString("webhookDomain", webhookDomain);
+    variablen.putInt("webhookFrequenz", webhookFrequenz);
+    variablen.putBool("webhookSchalter", webhookSchalter);
   #endif
   #if MODUL_WIFI
     variablen.putString("adminPw", wifiAdminPasswort);
@@ -204,6 +206,8 @@ void VariablenLaden() {
   #if MODUL_WEBHOOK
     webhookPfad = variablen.getString("webhookPfad", webhookPfad).c_str();
     webhookDomain = variablen.getString("webhookDomain", webhookDomain).c_str();
+    webhookSchalter = variablen.getBool("webhookSchalter", webhookSchalter);
+    webhookFrequenz = variablen.getInt("webhookFrequenz", webhookFrequenz);
   #endif
   #if MODUL_WIFI
     wifiSsid1 = variablen.getString("wifiSsid1", wifiSsid1).c_str();

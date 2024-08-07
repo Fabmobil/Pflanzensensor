@@ -121,7 +121,29 @@ void WebseiteAdminAusgeben() {
     formatierterCode += "\"></p>\n";
     formatierterCode += "</div>\n";
   #endif
-
+  #if MODUL_WEBHOOK
+    formatierterCode += "<h2>Webhook Modul</h2>\n";
+    formatierterCode += "<div class=\"weiss\">\n";
+    formatierterCode += "<p>Webhook aktiv? ";
+    formatierterCode += "<input type=\"checkbox\" id=\"webhookSchalter\" ";
+    if (webhookSchalter) {
+      formatierterCode += "checked";
+    }
+    formatierterCode += "\"></p>\n";
+    formatierterCode += "<p>Benachrichtigungsfequenz in Minuten: ";
+    formatierterCode += "<input type=\"text\" size=\"4\" name=\"webhookFrequenz\" placeholder=\"";
+    formatierterCode += webhookFrequenz;
+    formatierterCode += "\"></p>\n";
+    formatierterCode += "<p>Domain des Webhooks: ";
+    formatierterCode += "<input type=\"text\" size=\"20\" name=\"webhookDomain\" placeholder=\"";
+    formatierterCode += webhookDomain;
+    formatierterCode += "\"></p>\n";
+    formatierterCode += "<p>Schlüssel/Pfad des Webhooks: ";
+    formatierterCode += "<input type=\"text\" size=\"20\" name=\"webhookPfad\" placeholder=\"";
+    formatierterCode += webhookPfad;
+    formatierterCode += "\"></p>\n";
+    formatierterCode += "</div>\n";
+  #endif
   #if MODUL_HELLIGKEIT
     formatierterCode += "<h2>Helligkeitssensor</h2>\n";
     formatierterCode += "<div class=\"weiss\">\n";

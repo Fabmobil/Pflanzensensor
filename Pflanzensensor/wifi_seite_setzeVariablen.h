@@ -50,6 +50,18 @@ void WebseiteSetzeVariablen() {
         lufttemperaturGelbOben = Webserver.arg("lufttemperaturGelbOben").toInt(); // neuen Wert übernehmen
       }
     #endif
+    #if MODUL_WEBHOOK
+      webhookSchalter = Webserver.arg("webhookSchalter").toInt(); // neuen Wert übernehmen
+      if ( Webserver.arg("webhookFrequenz") != "" ) { // wenn ein neuer Wert für lufttemperaturGruenOben übergeben wurde
+        webhookFrequenz = Webserver.arg("webhookFrequenz").toInt(); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("webhookDomain") != "" ) { // wenn ein neuer Wert für lufttemperaturGruenOben übergeben wurde
+        webhookFrequenz = Webserver.arg("webhookDomain").toInt(); // neuen Wert übernehmen
+      }
+      if ( Webserver.arg("webhookPfad") != "" ) { // wenn ein neuer Wert für lufttemperaturGruenOben übergeben wurde
+        webhookFrequenz = Webserver.arg("webhookPfad").toInt(); // neuen Wert übernehmen
+      }
+    #endif
     #if MODUL_HELLIGKEIT
       if ( Webserver.arg("helligkeitName") != "" ) { // wenn ein neuer Wert für helligkeitName übergeben wurde
         helligkeitName = Webserver.arg("helligkeitName"); // neuen Wert übernehmen
