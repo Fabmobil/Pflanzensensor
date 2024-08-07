@@ -351,10 +351,12 @@ void loop() {
   // Webhook für Alarm:
   #if MODUL_WEBHOOK // wenn das Webhook-Modul aktiv ist
     if (webhookSchalter) {
-      Serial.println("Webhook ausgelöst!");
-      WebhookNachricht(bodenfeuchteMesswertProzent, luftfeuchteMesswert, lufttemperaturMesswert);
+      if (millisAktuell - millisVorherWebhook >= webhookFrequenz) {
+        Serial.println("Webhook ausgelöst!");
+        WebhookNachricht(bodenfeuchteMesswertProzent, luftfeuchteMesswert, lufttemperaturMesswert);
+        millisVorherWebhook = millisAktuell; // neuen Wert übernehmen
+      }
     }
-    webhookSchalter = false;
   #endif
 
   #if MODUL_DEBUG // Debuginformation

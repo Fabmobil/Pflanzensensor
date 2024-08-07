@@ -92,7 +92,7 @@ String helligkeitName = "Helligkeit"; // Name des Sensors
 #if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
   // URL und seceret in der passwoerter.h
   bool webhookSchalter = true;
-  int webhookFrequenz = 5; // Die Benachrichtigungsfrequenz des Webhooks in Minuten
+  unsigned long webhookFrequenz = 300000; // Die Benachrichtigungsfrequenz des Webhooks in Minuten. Vorschlag: 300000 = 5min
 #endif
 #include <LittleFS.h> // für das Speichern auf dem Flash des ESP; muss vor Wifi geladen werden
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
@@ -168,6 +168,7 @@ unsigned long millisVorherAnalog = 0; // Variable für die Messung des Intervall
 unsigned long millisVorherDht = 0; // Variable für die Messung des Intervalls der Luftfeuchte- und -temperaturmessung
 unsigned long millisVorherLedampel = 0; // Variable für die Messung des Intervalls des Umschaltens der LED Ampel
 unsigned long millisVorherDisplay = 0; // Variable für die Messung des Intervalls der Anzeige des Displays
+unsigned long millisVorherWebhook = 0; // Variable für die Messung des Intervalls des Webhooks
 int module; // Variable für die Anzahl der Module
 int displayseiten; // Variable für die Anzahl der Analogsensoren
 String ip = "keine WLAN Verbindung."; // Initialisierung der IP Adresse mit Fehlermeldung

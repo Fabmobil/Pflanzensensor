@@ -130,7 +130,7 @@ void WebseiteAdminAusgeben() {
       formatierterCode += "checked";
     }
     formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>Benachrichtigungsfequenz in Minuten: ";
+    formatierterCode += "<p>Benachrichtigungsfequenz in Millisekunden: ";
     formatierterCode += "<input type=\"text\" size=\"4\" name=\"webhookFrequenz\" placeholder=\"";
     formatierterCode += webhookFrequenz;
     formatierterCode += "\"></p>\n";
