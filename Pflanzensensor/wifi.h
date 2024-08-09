@@ -9,7 +9,8 @@ ESP8266WiFiMulti wifiMulti;
 #include <ESP8266mDNS.h> // für Namensauflösung
 
 ESP8266WebServer Webserver(80); // Webserver auf Port 80
-
+#include "wifi_footer.h" // Kopf der HTML-Seite
+#include "wifi_header.h"// Fuß der HTML-Seite
 #include "wifi_daten.h" // Bilder die auf der Seite verwendet werden
 #include "wifi_seite_admin.h" // für die Administrationsseite
 #include "wifi_seite_debug.h" // für die Debugseite
@@ -40,7 +41,7 @@ String WifiSetup(String hostname){
       Serial.println(WiFi.localIP());
       ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
       #if MODUL_DISPLAY
-        DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ ip, "Hostname: ", " " + hostname + ".local" );
+        DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ ip, "Hostname: ", "  " + hostname + ".local" );
         delay(5000); // genug Zeit um die IP Adresse zu lesen
       #endif
     } else {

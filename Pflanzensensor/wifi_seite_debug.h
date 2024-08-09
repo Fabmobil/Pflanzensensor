@@ -29,8 +29,6 @@ String GeneriereAnalogsensorDebugString(const int sensorNummer, const String& se
  * Gibt die Debugseite des Webservers aus.
  */
 void WebseiteDebugAusgeben() {
-  #include "wifi_header.h"
-  #include "wifi_footer.h"
   String formatierterCode = htmlHeader;
   formatierterCode += "<h2>Debug-Informationen</h2>\n";
   formatierterCode += "<div class=\"weiss\">\n";

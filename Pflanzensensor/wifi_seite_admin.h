@@ -43,8 +43,6 @@ void WebseiteAdminAusgeben() {
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von WebsiteAdminAusgeben()"));
   #endif
-  #include "wifi_header_admin.h"
-  #include "wifi_footer.h"
   String formatierterCode = htmlHeader;
   formatierterCode += "<div class=\"weiss\"><p>Auf dieser Seite können die Variablen verändert werden.</p>\n";
   formatierterCode += "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p>\n</div>\n";

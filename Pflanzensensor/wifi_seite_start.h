@@ -29,8 +29,6 @@ void WebseiteStartAusgeben() {
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von WebsiteStartAusgeben()"));
   #endif
-  #include "wifi_header.h" // Kopf der HTML-Seite
-  #include "wifi_footer.h" // Fuß der HTML-Seite
   String formatierterCode = htmlHeader;
   formatierterCode += "<div class=\"weiss\">";
   formatierterCode += "<p>Diese Seite zeigt die Sensordaten deines Pflanzensensors an. Sie aktualisiert sich automatisch aller 10 Sekunden.</p>";

@@ -18,8 +18,6 @@ void ArgumenteAusgeben() {
  * Übernimmt die Änderungen, welche auf der Administrationsseite gemacht wurden.
  */
 void WebseiteSetzeVariablen() {
-  #include "wifi_header.h" // Kopf der HTML-Seite
-  #include "wifi_footer.h" // Fuß der HTML-Seite
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von WebseiteSetzeVariablen()"));
     ArgumenteAusgeben();

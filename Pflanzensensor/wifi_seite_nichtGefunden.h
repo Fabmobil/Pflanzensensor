@@ -11,8 +11,6 @@
  * Gibt die 404-Seite des Webservers aus.
  */
 void WebseiteNichtGefundenAusgeben() {
-  #include "wifi_header.h"
-  #include "wifi_footer.h"
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von WebseiteNichtGefundenAusgeben()"));
   #endif
