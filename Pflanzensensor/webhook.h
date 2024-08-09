@@ -15,60 +15,112 @@
  * lufttemperatur: Lufttemperatur in °C
  */
 #include <WiFiClientSecure.h>
-#include <ESP8266HTTPClient.h>
+//#include <ESP8266HTTPClient.h>
+#include <time.h>
 #include "webhook_zertifikat.h"
 
-X509List cert(makeComRootZertifikat);
+// Make.com API-Informationen
+const char* host = "hook.eu2.make.com";
+const int httpsPort = 443;
 
-
-
-void WebhookNachricht(int bodenfeuchte, int luftfeuchte, int lufttemperatur) {
-  #if MODUL_DEBUG
-    Serial.println(F("# Beginn von WebhookNachricht()"));
-    Serial.print(F("# Bodenfeuchte: ")); Serial.print(bodenfeuchte);
-    Serial.print(F(", Luftfeuchte: ")); Serial.print(luftfeuchte);
-    Serial.print(F(", Lufttemperatur: ")); Serial.println(lufttemperatur);
-  #endif
-
-  // Stellt die https-Verbindung zum maker.com - Webhook Server her:
-  WiFiClientSecure client;
-  Serial.println("Verbinde zum Webhook-Server " + webhookDomain);
-  Serial.printf("Mit dem Zertifikat: %s\n", makeComRootZertifikat);
-  client.setTrustAnchors(&cert);
-  if (!client.connect(webhookDomain, 443)) {
-      Serial.println("Verbindung fehlgeschlagen!");
-      return;
+void WebhookSetup(){
+  // Wir brauchen einen aktuellen Timestamp für https-Zertifikate
+  configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+  Serial.print("Warte auf die Synchronisation von Uhrzeit und Datum: ");
+  time_t now = time(nullptr);
+  while (now < 8 * 3600 * 2) {
+    delay(500);
+    Serial.print(".");
+    now = time(nullptr);
   }
-  Serial.println("Verbindung erfolgreich!");
+  Serial.println("");
+  struct tm timeinfo;
+  gmtime_r(&now, &timeinfo);
+  Serial.print("Die Zeit und das Datum ist: ");
+  Serial.print(asctime(&timeinfo));
+  delay(1000);
+  // HTTPS-Verbindung herstellen
+  WiFiClientSecure client;
+  X509List certList;
+  certList.append(zertifikat);
+  client.setTrustAnchors(&certList);
+  Serial.print("Verbinde mit ");
+  Serial.println(host);
+  Serial.printf("Freier Heap: %d bytes\n", ESP.getFreeHeap());
+  if (!client.connect(host, httpsPort)) {
+    Serial.println("Verbindung fehlgeschlagen");
+    Serial.print("Letzter Fehlercode: ");
+    Serial.println(client.getLastSSLError());
+    return;
+  }
 
-  // JSON Daten zusammenbauen:
-  String jsonString = "";
-  jsonString += "{\"bodenfeuchte:\":\"";
-  jsonString += bodenfeuchte;
- // jsonString += "\",\"luftfeuchte\":\"";
- // jsonString += luftfeuchte;
- // jsonString += "\",\"lufttemperatur\":\"";
- // jsonString += lufttemperatur;
-  jsonString += "\"}";
-  int jsonLength = jsonString.length();
-  String lenString = String(jsonLength);
+  // HTTP-Anfrage senden
+  String url = webhookPfad;
+  Serial.print("Anfrage URL: ");
+  Serial.println(url);
 
-  // POST-request zusammenbauen:
-  String postString = "";
-  postString += "POST ";
-  postString += webhookPfad;
-  postString += " HTTP/1.1\r\n";
-  postString += "Host: ";
-  postString += webhookDomain;
-  postString += "\r\n";
-  postString += "Content-Type: application/json\r\n";
-  postString += "Content-Length: ";
-  postString += lenString + "\r\n";
-  postString += "\r\n";
-  postString += jsonString; // combine post request and JSON
+  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+              "Host: " + host + "\r\n" +
+              "User-Agent: ESP8266\r\n" +
+              "Connection: close\r\n\r\n");
 
-  client.print(postString);
-  delay(500);
-  client.stop();
-  Serial.println(postString);
+  Serial.println("Anfrage gesendet");
+  while (client.connected()) {
+    String line = client.readStringUntil('\n');
+    if (line == "\r") {
+      Serial.println("Headers empfangen");
+      break;
+    }
+  }
+  String response = client.readString();
+  Serial.println("Antwort war:");
+  Serial.println("==========");
+  Serial.println(response);
+  Serial.println("==========");
+  Serial.println("Schließe Verbindung");
+}
+
+void WebhookNachricht(int bodenfeuchte, int luftfeuchte, int lufttemperatur){
+  // // Stellt die https-Verbindung zum maker.com - Webhook Server her:
+  // String zertifikat = zertifikatLaden();
+  // if (zertifikat.length() == 0) {
+  //   Serial.println(F("Zertifikat konnte nicht geladen werden"));
+  //   return;
+  // }
+  // WiFiClientSecure client;
+  // X509List certList;
+  // certList.append(zertifikat.c_str());
+  // client.setTrustAnchors(&certList);
+
+  // Serial.println(F("Verbinde zum Webhook-Server ") + webhookDomain);
+
+  // if (!client.connect(webhookDomain, 443)) {
+  //   Serial.println("Verbindung fehlgeschlagen");
+  //   return;
+  // }
+
+  // // HTTP-Anfrage senden
+  // String url = "/"; // Ersetzen Sie dies durch den spezifischen Pfad Ihres Webhooks
+  // Serial.print("Anfrage URL: ");
+  // Serial.println(url);
+
+  // client.print(String("GET ") + url + " HTTP/1.1\r\n" +
+  //              "Host: " + webhookDomain + "\r\n" +
+  //              "User-Agent: ESP8266\r\n" +
+  //              "Connection: close\r\n\r\n");
+
+  // Serial.println("Anfrage gesendet");
+  // while (client.connected()) {
+  //   String line = client.readStringUntil('\n');
+  //   if (line == "\r") {
+  //     Serial.println("Headers empfangen");
+  //     break;
+  //   }
+  // }
+  // String response = client.readString();
+  // Serial.println("Antwort war:");
+  // Serial.println("==========");
+  // Serial.println(response);
+  // Serial.println("==========");
+  // Serial.println("Schließe Verbindung");
 }
