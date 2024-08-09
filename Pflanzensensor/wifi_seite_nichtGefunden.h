@@ -1,11 +1,10 @@
 /**
- * @file  wifi_seite_nichtGefunden.h
+ * @file wifi_seite_nichtGefunden.h
  * @brief Funktionen für die Ausgabe der 404-Seite
  *
  * Diese Datei enthält die Funktionen für die Ausgabe der 404-Seite.
  * Die 404-Seite wird angezeigt, wenn eine Seite nicht gefunden wurde.
  */
-
 
 /* Funktion: WebseiteNichtGefundenAusgeben()
  * Gibt die 404-Seite des Webservers aus.
@@ -14,11 +13,22 @@ void WebseiteNichtGefundenAusgeben() {
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von WebseiteNichtGefundenAusgeben()"));
   #endif
-  String formatierterCode = htmlHeader;
-  formatierterCode += "<h2>404 - Seite nicht gefunden</h2>";
-  formatierterCode += "<p>Die angeforderte Seite konnte nicht gefunden werden.</p>";
-  formatierterCode += "<p>Bitte überprüfe die URL und versuche es erneut.</p>";
-  formatierterCode += "<p><a href=\"/\">Zurück zur Startseite</a></p>";
-  formatierterCode += htmlFooter;
-  Webserver.send(404, "text/html", formatierterCode);
+
+  Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  Webserver.send(404, F("text/html"), "");
+
+  Webserver.sendContent_P(htmlHeader);
+
+  Webserver.sendContent(F(
+    "<h2>404 - Seite nicht gefunden</h2>"
+    "<p>Die angeforderte Seite konnte nicht gefunden werden.</p>"
+    "<p>Bitte überprüfe die URL und versuche es erneut.</p>"
+    "<p><a href=\"/\">Zurück zur Startseite</a></p>"
+  ));
+
+  Webserver.sendContent_P(htmlFooter);
+
+  #if MODUL_DEBUG
+    Serial.println(F("# Ende von WebseiteNichtGefundenAusgeben()"));
+  #endif
 }

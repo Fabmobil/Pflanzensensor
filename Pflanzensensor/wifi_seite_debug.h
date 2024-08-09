@@ -1,264 +1,227 @@
-/* Funktion: String GeneriereAnalogsensorDebugString(int sensorNummer, const String& sensorName, const int messwert, const int messwertProzent, const int minimum, const int maximum)
- * Generiert einen String für einen Analogsensor
- * Parameter:
- * int sensorNummer: Nummer des Sensors
- * String sensorName: Name des Sensors
- * int messwert: Messwert des Sensors
- * int messwertProzent: Messwert des Sensors in Prozent
- * int minimum: Minimalwert des Sensors
- * int maximum: Maximalwert des Sensors
- * Rückgabewert: formatierter String
- */
-String GeneriereAnalogsensorDebugString(const int sensorNummer, const String& sensorName, const int messwert,
-    const int messwertProzent, const int minimum, const int maximum) {
-  String analogsensorDebugString;
-  analogsensorDebugString += "<h3>Analogsensor " + String(sensorNummer) + " Modul</h3>\n";
-  analogsensorDebugString += "<div class=\"weiss\">\n";
-  analogsensorDebugString += "<ul>\n";
-  analogsensorDebugString += "<li>Sensorname: " + String(sensorName) + "</li>\n";
-  analogsensorDebugString += "<li>Messwert Prozent: " + String(messwertProzent) + "</li>\n";
-  analogsensorDebugString += "<li>Messwert: " + String(messwert) + "</li>\n";
-  analogsensorDebugString += "<li>Minimalwert: " + String(minimum) + "</li>\n";
-  analogsensorDebugString += "<li>Maximalwert: " + String(maximum) + "</li>\n</ul>\n";
-  analogsensorDebugString += "</div>\n";
-  return analogsensorDebugString;
+void sendeDebugInfo(const __FlashStringHelper* titel, const String& inhalt) {
+  Webserver.sendContent(F("<h3>"));
+  Webserver.sendContent(titel);
+  Webserver.sendContent(F("</h3>\n<div class=\"weiss\">\n<ul>\n"));
+  Webserver.sendContent(inhalt);
+  Webserver.sendContent(F("</ul>\n</div>\n"));
 }
 
+void sendeDebugInfo(const char* titel, const String& inhalt) {
+  sendeDebugInfo(FPSTR(titel), inhalt);
+}
 
-/* Funktion: WebseiteDebugAusgeben()
- * Gibt die Debugseite des Webservers aus.
- */
+void sendeAnalogsensorDebugInfo(int sensorNummer, const String& sensorName, int messwert, int messwertProzent, int minimum, int maximum) {
+  String analogInfo;
+  analogInfo += F("<li>Sensorname: ");
+  analogInfo += sensorName;
+  analogInfo += F("</li>\n<li>Messwert Prozent: ");
+  analogInfo += String(messwertProzent);
+  analogInfo += F("</li>\n<li>Messwert: ");
+  analogInfo += String(messwert);
+  analogInfo += F("</li>\n<li>Minimalwert: ");
+  analogInfo += String(minimum);
+  analogInfo += F("</li>\n<li>Maximalwert: ");
+  analogInfo += String(maximum);
+  analogInfo += F("</li>\n");
+
+  char titelBuffer[30];
+  snprintf_P(titelBuffer, sizeof(titelBuffer), PSTR("Analogsensor %d Modul"), sensorNummer);
+  sendeDebugInfo(titelBuffer, analogInfo);
+}
+
 void WebseiteDebugAusgeben() {
-  String formatierterCode = htmlHeader;
-  formatierterCode += "<h2>Debug-Informationen</h2>\n";
-  formatierterCode += "<div class=\"weiss\">\n";
-  formatierterCode += "<ul>\n";
-  formatierterCode += "<li>Anzahl Module: ";
-  formatierterCode += module;
-  formatierterCode += "</li>\n";
-  formatierterCode += "</ul>\n";
-  formatierterCode += "</div>\n";
+  Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  Webserver.send(200, F("text/html"), "");
+
+  Webserver.sendContent_P(htmlHeader);
+
+  Webserver.sendContent(F("<h2>Debug-Informationen</h2>\n"));
+  String allgemeineInfo;
+  allgemeineInfo += F("<li>Anzahl Module: ");
+  allgemeineInfo += String(module);
+  allgemeineInfo += F("</li>\n");
+  sendeDebugInfo(F("Allgemeine Informationen"), allgemeineInfo);
 
   #if MODUL_DHT
-    formatierterCode += "<h3>DHT Modul</h3>\n";
-    formatierterCode += "<div class=\"weiss\">\n";
-    formatierterCode += "<ul>\n";
-    formatierterCode += "<li>Lufttemperatur: ";
-    formatierterCode += lufttemperaturMesswert;
-    formatierterCode += "</li>\n";
-    formatierterCode += "<li>Luftfeuchte: ";
-    formatierterCode += luftfeuchteMesswert;
-    formatierterCode += "</li>\n";
-    formatierterCode += "<li>DHT Pin: ";
-    formatierterCode += dhtPin;
-    formatierterCode += "</li>\n";
-    formatierterCode += "<li>DHT Sensortyp: ";
-    formatierterCode += dhtSensortyp;
-    formatierterCode += "</li>\n";
-    formatierterCode += "</ul>\n";
-    formatierterCode += "</div>\n";
+    String dhtInfo;
+    dhtInfo += F("<li>Lufttemperatur: ");
+    dhtInfo += String(lufttemperaturMesswert);
+    dhtInfo += F("</li>\n<li>Luftfeuchte: ");
+    dhtInfo += String(luftfeuchteMesswert);
+    dhtInfo += F("</li>\n<li>DHT Pin: ");
+    dhtInfo += String(dhtPin);
+    dhtInfo += F("</li>\n<li>DHT Sensortyp: ");
+    dhtInfo += String(dhtSensortyp);
+    dhtInfo += F("</li>\n");
+    sendeDebugInfo(F("DHT Modul"), dhtInfo);
   #endif
 
   #if MODUL_DISPLAY
-    formatierterCode += "<h3>Display Modul</h3>\n";
-    formatierterCode += "<div class=\"weiss\">\n";
-    formatierterCode += "<ul>\n";
-    formatierterCode += "<li>Aktives Displaybild: ";
-    formatierterCode += status;
-    formatierterCode += "</li>\n";
-    formatierterCode += "<li>Breite in Pixel: ";
-    formatierterCode += displayBreite;
-    formatierterCode += "</li>\n";
-    formatierterCode += "<li>Hoehe in Pixel: ";
-    formatierterCode += displayHoehe;
-    formatierterCode += "</li>\n";
-    formatierterCode += "<li>Adresse: ";
-    formatierterCode += displayAdresse;
-    formatierterCode += "</li>\n";
-    formatierterCode += "</ul>\n";
-    formatierterCode += "</div>\n";
+    String displayInfo;
+    displayInfo += F("<li>Aktives Displaybild: ");
+    displayInfo += String(status);
+    displayInfo += F("</li>\n<li>Breite in Pixel: ");
+    displayInfo += String(displayBreite);
+    displayInfo += F("</li>\n<li>Hoehe in Pixel: ");
+    displayInfo += String(displayHoehe);
+    displayInfo += F("</li>\n<li>Adresse: ");
+    displayInfo += String(displayAdresse);
+    displayInfo += F("</li>\n");
+    sendeDebugInfo(F("Display Modul"), displayInfo);
   #endif
 
   #if MODUL_BODENFEUCHTE
-    formatierterCode += "<h3>Bodenfeuchte Modul</h3>\n";
-    formatierterCode += "<div class=\"weiss\">\n";
-    formatierterCode += "<ul>\n";
-    formatierterCode += "<li>Messwert Prozent: ";
-    formatierterCode += bodenfeuchteMesswertProzent;
-    formatierterCode += "</li>\n";
-    formatierterCode += "<li>Messwert absolut: ";
-    formatierterCode += bodenfeuchteMesswert;
-    formatierterCode += "</li>\n";
-    formatierterCode += "</ul>\n";
-    formatierterCode += "</div>\n";
- #endif
+    String bodenfeuchteInfo;
+    bodenfeuchteInfo += F("<li>Messwert Prozent: ");
+    bodenfeuchteInfo += String(bodenfeuchteMesswertProzent);
+    bodenfeuchteInfo += F("</li>\n<li>Messwert absolut: ");
+    bodenfeuchteInfo += String(bodenfeuchteMesswert);
+    bodenfeuchteInfo += F("</li>\n");
+    sendeDebugInfo(F("Bodenfeuchte Modul"), bodenfeuchteInfo);
+  #endif
 
   #if MODUL_LEDAMPEL
-    formatierterCode += "<h3>LEDAmpel Modul</h3>\n";
-    formatierterCode += "<div class=\"weiss\">\n";
-    formatierterCode += "<ul>\n";
-    formatierterCode += "<li>Modus: ";
-    formatierterCode += ampelModus;
-    formatierterCode += "</li>\n";
-    formatierterCode += "<li>ampelUmschalten: ";
-    formatierterCode += ampelUmschalten;
-    formatierterCode += "</li>\n";
-    formatierterCode += "<li>Pin gruene LED: ";
-    formatierterCode += ampelPinGruen;
-    formatierterCode += "</li>\n";
-    formatierterCode += "<li>Pin gelbe LED: ";
-    formatierterCode += ampelPinGelb;
-    formatierterCode += "</li>\n";
-    formatierterCode += "<li>Pin rote LED: ";
-    formatierterCode += ampelPinRot;
-    formatierterCode += "</li>\n";
-    formatierterCode += "</ul>\n";
-    formatierterCode += "</div>\n";
+    String ledAmpelInfo;
+    ledAmpelInfo += F("<li>Modus: ");
+    ledAmpelInfo += String(ampelModus);
+    ledAmpelInfo += F("</li>\n<li>ampelUmschalten: ");
+    ledAmpelInfo += String(ampelUmschalten);
+    ledAmpelInfo += F("</li>\n<li>Pin gruene LED: ");
+    ledAmpelInfo += String(ampelPinGruen);
+    ledAmpelInfo += F("</li>\n<li>Pin gelbe LED: ");
+    ledAmpelInfo += String(ampelPinGelb);
+    ledAmpelInfo += F("</li>\n<li>Pin rote LED: ");
+    ledAmpelInfo += String(ampelPinRot);
+    ledAmpelInfo += F("</li>\n");
+    sendeDebugInfo(F("LEDAmpel Modul"), ledAmpelInfo);
   #endif
 
   #if MODUL_HELLIGKEIT
-    formatierterCode += "<h3>Helligkeit Modul</h3>\n";
-    formatierterCode += "<div class=\"weiss\">\n";
-    formatierterCode += "<ul>\n";
-    formatierterCode += "<li>Messwert Prozent: ";
-    formatierterCode += helligkeitMesswertProzent;
-    formatierterCode += "</li>\n";
-    formatierterCode += "<li>Messwert absolut: ";
-    formatierterCode += helligkeitMesswert;
-    formatierterCode += "</li>\n";
-    formatierterCode += "</ul>\n";
-    formatierterCode += "</div>\n";
+    String helligkeitInfo;
+    helligkeitInfo += F("<li>Messwert Prozent: ");
+    helligkeitInfo += String(helligkeitMesswertProzent);
+    helligkeitInfo += F("</li>\n<li>Messwert absolut: ");
+    helligkeitInfo += String(helligkeitMesswert);
+    helligkeitInfo += F("</li>\n");
+    sendeDebugInfo(F("Helligkeit Modul"), helligkeitInfo);
   #endif
 
   #if MODUL_WIFI
-    formatierterCode += "<h3>Wifi Modul</h3>\n";
-    formatierterCode += "<div class=\"weiss\">\n";
-    formatierterCode += "<ul>\n";
-    formatierterCode += "<li>Hostname: ";
-    formatierterCode += wifiHostname;
-    formatierterCode += ".local</li>\n";
-    if ( wifiAp == false ) { // falls der ESP in einem anderen WLAN ist:
-      formatierterCode += "<li>SSID 1: ";
-      formatierterCode += wifiSsid1;
-      formatierterCode += "</li>\n";
-      formatierterCode += "<li>Passwort 1: ";
-      formatierterCode += wifiPassword1;
-      formatierterCode += "</li>\n";
-      formatierterCode += "<li>SSID 2: ";
-      formatierterCode += wifiSsid2;
-      formatierterCode += "</li>\n";
-      formatierterCode += "<li>Passwort 2: ";
-      formatierterCode += wifiPassword2;
-      formatierterCode += "</li>\n";
-      formatierterCode += "<li>SSID 3: ";
-      formatierterCode += wifiSsid3;
-      formatierterCode += "</li>\n";
-      formatierterCode += "<li>Passwort 3: ";
-      formatierterCode += wifiPassword3;
-      formatierterCode += "</li>\n";
-    } else { // falls der ESP sein eigenes WLAN aufmacht:
-      formatierterCode += "<li>Name des WLANs: ";
-      formatierterCode += wifiApSsid;
-      formatierterCode += "</li>\n";
-      formatierterCode += "<li>Passwort: ";
-      if ( wifiApPasswortAktiviert ) {
-        formatierterCode += wifiApPasswort;
-      } else {
-        formatierterCode += "WLAN ohne Passwortschutz!";
-      }
-      formatierterCode += "</li>\n";
+    String wifiInfo;
+    wifiInfo += F("<li>Hostname: ");
+    wifiInfo += wifiHostname;
+    wifiInfo += F(".local</li>\n");
+    if (!wifiAp) {
+      wifiInfo += F("<li>SSID 1: ");
+      wifiInfo += wifiSsid1;
+      wifiInfo += F("</li>\n<li>Passwort 1: ");
+      wifiInfo += wifiPassword1;
+      wifiInfo += F("</li>\n<li>SSID 2: ");
+      wifiInfo += wifiSsid2;
+      wifiInfo += F("</li>\n<li>Passwort 2: ");
+      wifiInfo += wifiPassword2;
+      wifiInfo += F("</li>\n<li>SSID 3: ");
+      wifiInfo += wifiSsid3;
+      wifiInfo += F("</li>\n<li>Passwort 3: ");
+      wifiInfo += wifiPassword3;
+      wifiInfo += F("</li>\n");
+    } else {
+      wifiInfo += F("<li>Name des WLANs: ");
+      wifiInfo += wifiApSsid;
+      wifiInfo += F("</li>\n<li>Passwort: ");
+      wifiInfo += wifiApPasswortAktiviert ? wifiApPasswort : F("WLAN ohne Passwortschutz!");
+      wifiInfo += F("</li>\n");
     }
-    formatierterCode += "</ul>\n";
-    formatierterCode += "</div>\n";
+    sendeDebugInfo(F("Wifi Modul"), wifiInfo);
   #endif
+
   #if MODUL_WEBHOOK
-    formatierterCode += "<h3>Webhook Modul</h3>\n";
-    formatierterCode += "<div class=\"weiss\">\n";
-    formatierterCode += "<ul>\n";
-    formatierterCode += "<li>Webhook URL: ";
-    formatierterCode += webhookPfad;
-    formatierterCode += "</li>\n";
-    formatierterCode += "</ul>\n";
-    formatierterCode += "</div>\n";
- #endif
+    String webhookInfo;
+    webhookInfo += F("<li>Webhook URL: ");
+    webhookInfo += webhookPfad;
+    webhookInfo += F("</li>\n");
+    sendeDebugInfo(F("Webhook Modul"), webhookInfo);
+  #endif
 
   #if MODUL_ANALOG3
-    formatierterCode += GeneriereAnalogsensorDebugString(3, analog3Name, analog3Messwert, analog3MesswertProzent, analog3Minimum, analog3Maximum);
+    sendeAnalogsensorDebugInfo(3, analog3Name, analog3Messwert, analog3MesswertProzent, analog3Minimum, analog3Maximum);
   #endif
   #if MODUL_ANALOG4
-    formatierterCode += GeneriereAnalogsensorDebugString(4, analog4Name, analog4Messwert, analog4MesswertProzent, analog4Minimum, analog4Maximum);
+    sendeAnalogsensorDebugInfo(4, analog4Name, analog4Messwert, analog4MesswertProzent, analog4Minimum, analog4Maximum);
   #endif
   #if MODUL_ANALOG5
-    formatierterCode += GeneriereAnalogsensorDebugString(5, analog5Name, analog5Messwert, analog5MesswertProzent, analog5Minimum, analog5Maximum);
+    sendeAnalogsensorDebugInfo(5, analog5Name, analog5Messwert, analog5MesswertProzent, analog5Minimum, analog5Maximum);
   #endif
   #if MODUL_ANALOG6
-    formatierterCode += GeneriereAnalogsensorDebugString(6, analog6Name, analog6Messwert, analog6MesswertProzent, analog6Minimum, analog6Maximum);
+    sendeAnalogsensorDebugInfo(6, analog6Name, analog6Messwert, analog6MesswertProzent, analog6Minimum, analog6Maximum);
   #endif
   #if MODUL_ANALOG7
-    formatierterCode += GeneriereAnalogsensorDebugString(7, analog7Name, analog7Messwert, analog7MesswertProzent, analog7Minimum, analog7Maximum);
+    sendeAnalogsensorDebugInfo(7, analog7Name, analog7Messwert, analog7MesswertProzent, analog7Minimum, analog7Maximum);
   #endif
   #if MODUL_ANALOG8
-    formatierterCode += GeneriereAnalogsensorDebugString(8, analog8Name, analog8Messwert, analog8MesswertProzent, analog8Minimum, analog8Maximum);
+    sendeAnalogsensorDebugInfo(8, analog8Name, analog8Messwert, analog8MesswertProzent, analog8Minimum, analog8Maximum);
   #endif
-  formatierterCode += "<h2>Deaktivierte Module</h2>\n";
-  formatierterCode += "<div class=\"weiss\">\n";
-  formatierterCode += "<ul>\n";
+
+  Webserver.sendContent(F("<h2>Deaktivierte Module</h2>\n<div class=\"weiss\">\n<ul>\n"));
   #if !MODUL_DHT
-    formatierterCode += "<li>DHT Modul</li>\n";
+    Webserver.sendContent(F("<li>DHT Modul</li>\n"));
   #endif
   #if !MODUL_DISPLAY
-    formatierterCode += "<li>Display Modul</li>\n";
+    Webserver.sendContent(F("<li>Display Modul</li>\n"));
   #endif
   #if !MODUL_BODENFEUCHTE
-    formatierterCode += "<li>Bodenfeuchte Modul</li>\n";
+    Webserver.sendContent(F("<li>Bodenfeuchte Modul</li>\n"));
   #endif
   #if !MODUL_LEDAMPEL
-    formatierterCode += "<li>LED Ampel Modul</li>\n";
+    Webserver.sendContent(F("<li>LED Ampel Modul</li>\n"));
   #endif
   #if !MODUL_HELLIGKEIT
-    formatierterCode += "<li>Helligkeit Modul</li>\n";
+    Webserver.sendContent(F("<li>Helligkeit Modul</li>\n"));
   #endif
   #if !MODUL_WIFI
-    formatierterCode += "<li>Wifi Modul</li>\n";
+    Webserver.sendContent(F("<li>Wifi Modul</li>\n"));
   #endif
   #if !MODUL_WEBHOOK
-    formatierterCode += "<li>IFTTT Modul</li>\n";
+    Webserver.sendContent(F("<li>IFTTT Modul</li>\n"));
   #endif
   #if !MODUL_ANALOG3
-    formatierterCode += "<li>Analogsensor 3 Modul</li>\n";
+    Webserver.sendContent(F("<li>Analogsensor 3 Modul</li>\n"));
   #endif
   #if !MODUL_ANALOG4
-    formatierterCode += "<li>Analogsensor 4 Modul</li>\n";
+    Webserver.sendContent(F("<li>Analogsensor 4 Modul</li>\n"));
   #endif
   #if !MODUL_ANALOG5
-    formatierterCode += "<li>Analogsensor 5 Modul</li>\n";
+    Webserver.sendContent(F("<li>Analogsensor 5 Modul</li>\n"));
   #endif
   #if !MODUL_ANALOG6
-    formatierterCode += "<li>Analogsensor 6 Modul</li>\n";
+    Webserver.sendContent(F("<li>Analogsensor 6 Modul</li>\n"));
   #endif
   #if !MODUL_ANALOG7
-    formatierterCode += "<li>Analogsensor 7 Modul</li>\n";
+    Webserver.sendContent(F("<li>Analogsensor 7 Modul</li>\n"));
   #endif
   #if !MODUL_ANALOG8
-    formatierterCode += "<li>Analogsensor 8 Modul</li>\n";
+    Webserver.sendContent(F("<li>Analogsensor 8 Modul</li>\n"));
   #endif
-  formatierterCode += "</ul>\n";
-  formatierterCode += "</div>\n";
-  formatierterCode += "<h2>Links</h2>\n";
-  formatierterCode += "<div class=\"weiss\">\n";
-  formatierterCode += "<ul>\n";
-  formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>\n";
-  formatierterCode += "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n";
-  #if MODUL_DEBUG
-  formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n";
-  #endif
-  formatierterCode += "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">";
-  formatierterCode += "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>\n";
-  formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">";
-  formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>\n";
-  formatierterCode += "</ul>\n";
-  formatierterCode += "</div>\n";
+  Webserver.sendContent(F("</ul>\n</div>\n"));
 
-  formatierterCode += htmlFooter;
-  Webserver.send(200, "text/html", formatierterCode);
+  Webserver.sendContent(F(
+    "<h2>Links</h2>\n"
+    "<div class=\"weiss\">\n"
+    "<ul>\n"
+    "<li><a href=\"/\">zur Startseite</a></li>\n"
+    "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n"));
+
+  #if MODUL_DEBUG
+    Webserver.sendContent(F("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
+  #endif
+
+  Webserver.sendContent(F(
+    "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">"
+    "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>\n"
+    "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">"
+    "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>\n"
+    "</ul>\n"
+    "</div>\n"));
+
+  Webserver.sendContent_P(htmlFooter);
 }

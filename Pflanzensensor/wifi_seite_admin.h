@@ -1,237 +1,146 @@
-/* Funktion: String GeneriereAnalogsensorAdminString(int sensorNummer, const String& sensorName, const int minimum, const int maximum)
- * Generiert einen String für einen Analogsensor
- * Parameter:
- * int sensorNummer: Nummer des Sensors
- * String sensorName: Name des Sensors
- * int minimum: Minimalwert des Sensors
- * int maximum: Maximalwert des Sensors
- * Rückgabewert: formatierter String
- */
-String GeneriereAnalogsensorAdminString(
-int sensorNummer,
-const String& sensorName,
-const int minimum,
-const int maximum,
-const int gruenUnten,
-const int gruenOben,
-const int gelbUnten,
-const int gelbOben) {
-  String analogsensorAdminString;
-  analogsensorAdminString += "<h2>Analogsensor " + String(sensorNummer) + "</h2>\n";
-  analogsensorAdminString += "<div class=\"weiss\">\n<p>Sensorname: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"20\" name=\"analog" + String(sensorNummer) + "Name\" placeholder=\"" + String(sensorName) + "\"></p>\n";
-  analogsensorAdminString += "<p>Minimalwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "Minimum\" placeholder=\"" + String(minimum) + "\"></p>\n";
-  analogsensorAdminString += "<p>Maximalwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "Maximum\" placeholder=\"" + String(maximum) + "\"></p>\n";
-  analogsensorAdminString += "<p>unterer grüner Schwellwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "GruenUnten\" placeholder=\"" + String(gruenUnten) + "\"></p>\n";
-  analogsensorAdminString += "<p>oberer grüner Schwellwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "GruenOben\" placeholder=\"" + String(gruenOben) + "\"></p>\n";
-  analogsensorAdminString += "<p>unterer gelber Schwellwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "GelbUnten\" placeholder=\"" + String(gelbUnten) + "\"></p>\n";
-  analogsensorAdminString += "<p>oberer gelber Schwellwert: ";
-  analogsensorAdminString += "<input type=\"text\" size=\"4\" name=\"analog" + String(sensorNummer) + "GelbOben\" placeholder=\"" + String(gelbOben) + "\"></p>\n</div>\n";
-  return analogsensorAdminString;
+void sendeEinstellung(const __FlashStringHelper* bezeichnung, const String& name, const String& wert) {
+  Webserver.sendContent(F("<p>"));
+  Webserver.sendContent(bezeichnung);
+  Webserver.sendContent(F(": <input type=\"text\" size=\"20\" name=\""));
+  Webserver.sendContent(name);
+  Webserver.sendContent(F("\" placeholder=\""));
+  Webserver.sendContent(wert);
+  Webserver.sendContent(F("\"></p>\n"));
 }
 
-/*
- * Funktion: Void WebseiteAdminAusgeben()
- * Gibt die Administrationsseite des Webservers aus.
- */
+void sendeSchwellwerte(const __FlashStringHelper* prefix, int gruenUnten, int gruenOben, int gelbUnten, int gelbOben) {
+  sendeEinstellung(F("unterer grüner Schwellwert"), String(prefix) + F("GruenUnten"), String(gruenUnten));
+  sendeEinstellung(F("oberer grüner Schwellwert"), String(prefix) + F("GruenOben"), String(gruenOben));
+  sendeEinstellung(F("unterer gelber Schwellwert"), String(prefix) + F("GelbUnten"), String(gelbUnten));
+  sendeEinstellung(F("oberer gelber Schwellwert"), String(prefix) + F("GelbOben"), String(gelbOben));
+}
+
+void sendeAnalogsensorEinstellungen(const __FlashStringHelper* titel, const __FlashStringHelper* prefix, const String& sensorName, int minimum, int maximum,
+                                    int gruenUnten, int gruenOben, int gelbUnten, int gelbOben) {
+  Webserver.sendContent(F("<h2>"));
+  Webserver.sendContent(titel);
+  Webserver.sendContent(F("</h2>\n<div class=\"weiss\">\n"));
+
+  sendeEinstellung(F("Sensorname"), String(prefix) + F("Name"), sensorName);
+  sendeEinstellung(F("Minimalwert"), String(prefix) + F("Minimum"), String(minimum));
+  sendeEinstellung(F("Maximalwert"), String(prefix) + F("Maximum"), String(maximum));
+
+  sendeSchwellwerte(prefix, gruenUnten, gruenOben, gelbUnten, gelbOben);
+
+  Webserver.sendContent(F("</div>\n"));
+}
+
+
+void sendeLinks() {
+  Webserver.sendContent_P(PSTR(
+    "<h2>Links</h2>\n"
+    "<div class=\"weiss\">\n"
+    "<ul>\n"
+    "<li><a href=\"/\">zur Startseite</a></li>\n"));
+
+  #if MODUL_DEBUG
+    Webserver.sendContent_P(PSTR("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
+  #endif
+
+  Webserver.sendContent_P(PSTR(
+    "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">"
+    "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>\n"
+    "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">"
+    "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>\n"
+    "</ul>\n"
+    "</div>\n"));
+}
+
+
 void WebseiteAdminAusgeben() {
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von WebsiteAdminAusgeben()"));
   #endif
-  String formatierterCode = htmlHeader;
-  formatierterCode += "<div class=\"weiss\"><p>Auf dieser Seite können die Variablen verändert werden.</p>\n";
-  formatierterCode += "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p>\n</div>\n";
-  formatierterCode += "<form action=\"/setzeVariablen\" method=\"POST\">\n";
+
+  Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  Webserver.send(200, F("text/html"), "");
+
+  Webserver.sendContent_P(htmlHeader);
+
+  Webserver.sendContent_P(PSTR(
+    "<div class=\"weiss\"><p>Auf dieser Seite können die Variablen verändert werden.</p>\n"
+    "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p>\n</div>\n"
+    "<form action=\"/setzeVariablen\" method=\"POST\">\n"));
+
   #if MODUL_BODENFEUCHTE
-    formatierterCode += "<h2>Bodenfeuchte</h2>\n";
-    formatierterCode += "<div class=\"weiss\">\n<p>Sensorname: ";
-    formatierterCode += "<input type=\"text\" size=\"20\" name=\"bodenfeuchteName\" placeholder=\"";
-    formatierterCode += bodenfeuchteName;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>Minimalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteMinimum\" placeholder=\"";
-    formatierterCode += bodenfeuchteMinimum;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>Maximalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteMaximum\" placeholder=\"";
-    formatierterCode += bodenfeuchteMaximum;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>unterer grüner Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteGruenUnten\" placeholder=\"";
-    formatierterCode += bodenfeuchteGruenUnten;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>oberer grüner Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteGruenOben\" placeholder=\"";
-    formatierterCode += bodenfeuchteGruenOben;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>unterer gelber Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteGelbUnten\" placeholder=\"";
-    formatierterCode += bodenfeuchteGelbUnten;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>oberer gelber Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"bodenfeuchteGelbOben\" placeholder=\"";
-    formatierterCode += bodenfeuchteGelbOben;
-    formatierterCode += "\"></p>\n</div>\n";
+    sendeAnalogsensorEinstellungen(F("Bodenfeuchte"), F("bodenfeuchte"), bodenfeuchteName, bodenfeuchteMinimum, bodenfeuchteMaximum,
+                             bodenfeuchteGruenUnten, bodenfeuchteGruenOben, bodenfeuchteGelbUnten, bodenfeuchteGelbOben);
   #endif
+
   #if MODUL_DHT
-    formatierterCode += "<h2>DHT Modul</h2>\n";
-    formatierterCode += "<h3>Lufttemperatur</h3>\n";
-    formatierterCode += "<div class=\"weiss\">\n";
-    formatierterCode += "<p>unterer grüner Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"lufttemperaturGruenUnten\" placeholder=\"";
-    formatierterCode += lufttemperaturGruenUnten;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>oberer grüner Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"lufttemperaturGruenOben\" placeholder=\"";
-    formatierterCode += lufttemperaturGruenOben;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>unterer gelber Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"lufttemperaturGelbUnten\" placeholder=\"";
-    formatierterCode += lufttemperaturGelbUnten;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>oberer gelber Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"lufttemperaturGelbOben\" placeholder=\"";
-    formatierterCode += lufttemperaturGelbOben;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "</div>\n";
-    formatierterCode += "<h3>Luftfeuchte</h3>\n";
-    formatierterCode += "<div class=\"weiss\">\n";
-    formatierterCode += "<p>unterer grüner Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"luftfeuchteGruenUnten\" placeholder=\"";
-    formatierterCode += luftfeuchteGruenUnten;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>oberer grüner Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"luftfeuchteGruenOben\" placeholder=\"";
-    formatierterCode += luftfeuchteGruenOben;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>unterer gelber Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"luftfeuchteGelbUnten\" placeholder=\"";
-    formatierterCode += luftfeuchteGelbUnten;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>oberer gelber Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"luftfeuchteGelbOben\" placeholder=\"";
-    formatierterCode += luftfeuchteGelbOben;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "</div>\n";
+    Webserver.sendContent_P(PSTR("<h2>DHT Modul</h2>\n<h3>Lufttemperatur</h3>\n<div class=\"weiss\">\n"));
+    sendeSchwellwerte(F("lufttemperatur"), lufttemperaturGruenUnten, lufttemperaturGruenOben, lufttemperaturGelbUnten, lufttemperaturGelbOben);
+    Webserver.sendContent(F("</div>\n"));
+    Webserver.sendContent_P(PSTR("<h3>Luftfeuchte</h3>\n<div class=\"weiss\">\n"));
+    sendeSchwellwerte(F("luftfeuchte"), luftfeuchteGruenUnten, luftfeuchteGruenOben, luftfeuchteGelbUnten, luftfeuchteGelbOben);
+    Webserver.sendContent(F("</div>\n"));
   #endif
+
   #if MODUL_WEBHOOK
-    formatierterCode += "<h2>Webhook Modul</h2>\n";
-    formatierterCode += "<div class=\"weiss\">\n";
-    formatierterCode += "<p>Webhook aktiv? ";
-    formatierterCode += "<input type=\"checkbox\" id=\"webhookSchalter\" ";
-    if (webhookSchalter) {
-      formatierterCode += "checked";
-    }
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>Benachrichtigungsfequenz in Millisekunden: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"webhookFrequenz\" placeholder=\"";
-    formatierterCode += webhookFrequenz;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>Domain des Webhooks: ";
-    formatierterCode += "<input type=\"text\" size=\"20\" name=\"webhookDomain\" placeholder=\"";
-    formatierterCode += webhookDomain;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>Schlüssel/Pfad des Webhooks: ";
-    formatierterCode += "<input type=\"text\" size=\"20\" name=\"webhookPfad\" placeholder=\"";
-    formatierterCode += webhookPfad;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "</div>\n";
+    Webserver.sendContent_P(PSTR("<h2>Webhook Modul</h2>\n<div class=\"weiss\">\n"));
+    Webserver.sendContent(F("<p>Webhook aktiv? <input type=\"checkbox\" id=\"webhookSchalter\" "));
+    if (webhookSchalter) Webserver.sendContent(F("checked"));
+    Webserver.sendContent(F("></p>\n"));
+    sendeEinstellung(F("Benachrichtigungsfequenz in Minuten"), F("webhookFrequenz"), String(webhookFrequenz));
+    sendeEinstellung(F("Domain des Webhooks"), F("webhookDomain"), webhookDomain);
+    sendeEinstellung(F("Schlüssel/Pfad des Webhooks"), F("webhookPfad"), webhookPfad);
+    Webserver.sendContent(F("</div>\n"));
   #endif
+
   #if MODUL_HELLIGKEIT
-    formatierterCode += "<h2>Helligkeitssensor</h2>\n";
-    formatierterCode += "<div class=\"weiss\">\n";
-    formatierterCode += "<p>Sensorname: ";
-    formatierterCode += "<input type=\"text\" size=\"20\" name=\"helligkeitName\" placeholder=\"";
-    formatierterCode += helligkeitName;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>Minimalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitMinimum\" placeholder=\"";
-    formatierterCode += helligkeitMinimum;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>Maximalwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitMaximum\" placeholder=\"";
-    formatierterCode += helligkeitMaximum;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>unterer grüner Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitGruenUnten\" placeholder=\"";
-    formatierterCode += helligkeitGruenUnten;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>oberer grüner Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitGruenOben\" placeholder=\"";
-    formatierterCode += helligkeitGruenOben;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>unterer gelber Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitGelbUnten\" placeholder=\"";
-    formatierterCode += helligkeitGelbUnten;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "<p>oberer gelber Schwellwert: ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"helligkeitGelbOben\" placeholder=\"";
-    formatierterCode += helligkeitGelbOben;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "</div>\n";
+    sendeAnalogsensorEinstellungen(F("Helligkeitssensor"), F("helligkeit"), helligkeitName, helligkeitMinimum, helligkeitMaximum,
+                             helligkeitGruenUnten, helligkeitGruenOben, helligkeitGelbUnten, helligkeitGelbOben);
   #endif
+
   #if MODUL_LEDAMPEL
-    formatierterCode += "<h2>LED Ampel</h2>\n";
-    formatierterCode += "<h3>Anzeigemodus</h3>\n";
-    formatierterCode += "<div class=\"weiss\">\n";
-    formatierterCode += "<p>Modus: (0: Helligkeit und Bodenfeuchte; 1: Helligkeit; 2: Bodenfeuchte): ";
-    formatierterCode += "<input type=\"text\" size=\"4\" name=\"ampelModus\" placeholder=\"";
-    formatierterCode += ampelModus;
-    formatierterCode += "\"></p>\n";
-    formatierterCode += "</div>\n";
+    Webserver.sendContent_P(PSTR("<h2>LED Ampel</h2>\n<h3>Anzeigemodus</h3>\n<div class=\"weiss\">\n"));
+    sendeEinstellung(F("Modus: (0: Helligkeit und Bodenfeuchte; 1: Helligkeit; 2: Bodenfeuchte)"), F("ampelModus"), String(ampelModus));
+    Webserver.sendContent(F("</div>\n"));
   #endif
+
+  // Analogsensoren
   #if MODUL_ANALOG3
-    formatierterCode += GeneriereAnalogsensorAdminString(3, analog3Name, analog3Minimum, analog3Maximum, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben);
+    sendeAnalogsensorEinstellungen(F("Analogsensor 3"), F("analog3"), analog3Name, analog3Minimum, analog3Maximum, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben);
   #endif
   #if MODUL_ANALOG4
-    formatierterCode += GeneriereAnalogsensorAdminString(4, analog4Name, analog4Minimum, analog4Maximum, analog4GruenUnten, analog4GruenOben, analog4GelbUnten, analog4GelbOben);
+    sendeAnalogsensorEinstellungen(F("Analogsensor 4"), F("analog4"), analog4Name, analog4Minimum, analog4Maximum, analog4GruenUnten, analog4GruenOben, analog4GelbUnten, analog4GelbOben);
   #endif
   #if MODUL_ANALOG5
-    formatierterCode += GeneriereAnalogsensorAdminString(5, analog5Name, analog5Minimum, analog5Maximum, analog5GruenUnten, analog5GruenOben, analog5GelbUnten, analog5GelbOben);
+    sendeAnalogsensorEinstellungen(F("Analogsensor 5"), F("analog5"), analog5Name, analog5Minimum, analog5Maximum, analog5GruenUnten, analog5GruenOben, analog5GelbUnten, analog5GelbOben);
   #endif
   #if MODUL_ANALOG6
-    formatierterCode += GeneriereAnalogsensorAdminString(6, analog6Name, analog6Minimum, analog6Maximum, analog6GruenUnten, analog6GruenOben, analog6GelbUnten, analog6GelbOben);
+    sendeAnalogsensorEinstellungen(F("Analogsensor 6"), F("analog6"), analog6Name, analog6Minimum, analog6Maximum, analog6GruenUnten, analog6GruenOben, analog6GelbUnten, analog6GelbOben);
   #endif
   #if MODUL_ANALOG7
-    formatierterCode += GeneriereAnalogsensorAdminString(7, analog7Name, analog7Minimum, analog7Maximum, analog7GruenUnten, analog7GruenOben, analog7GelbUnten, analog7GelbOben);
+    sendeAnalogsensorEinstellungen(F("Analogsensor 7"), F("analog7"), analog7Name, analog7Minimum, analog7Maximum, analog7GruenUnten, analog7GruenOben, analog7GelbUnten, analog7GelbOben);
   #endif
   #if MODUL_ANALOG8
-    formatierterCode += GeneriereAnalogsensorAdminString(8, analog8Name, analog8Minimum, analog8Maximum, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben);
+    sendeAnalogsensorEinstellungen(F("Analogsensor 8"), F("analog8"), analog8Name, analog8Minimum, analog8Maximum, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben);
   #endif
 
-  formatierterCode += "<h2>Einstellungen löschen?</h2>\n";
-  formatierterCode += "<div class=\"rot\">\n<p>";
-  formatierterCode += "GEFAHR: Wenn du hier \"Ja!\" eingibst, werden alle Einstellungen gelöscht und die Werte, ";
-  formatierterCode += "die beim Flashen eingetragen wurden, werden wieder gesetzt. Der Pflanzensensor startet neu.";
-  formatierterCode += "</p>\n<p><input type=\"text\" size=\"4\" name=\"loeschen\" placeholder=\"nein\"></p>\n</div>\n";
-  formatierterCode += "<h2>Passwort</h2>\n";
-  formatierterCode += "<div class=\"weiss\">";
-  formatierterCode += "<p><input type=\"password\" name=\"Passwort\" placeholder=\"Passwort\"><br>";
-  formatierterCode += "<input type=\"submit\" value=\"Absenden\"></p></form>";
-  formatierterCode += "</div>\n";
+  Webserver.sendContent_P(PSTR(
+    "<h2>Einstellungen löschen?</h2>\n"
+    "<div class=\"rot\">\n<p>"
+    "GEFAHR: Wenn du hier \"Ja!\" eingibst, werden alle Einstellungen gelöscht und die Werte, "
+    "die beim Flashen eingetragen wurden, werden wieder gesetzt. Der Pflanzensensor startet neu."
+    "</p>\n<p><input type=\"text\" size=\"4\" name=\"loeschen\" placeholder=\"nein\"></p>\n</div>\n"
+    "<h2>Passwort</h2>\n"
+    "<div class=\"weiss\">"
+    "<p><input type=\"password\" name=\"Passwort\" placeholder=\"Passwort\"><br>"
+    "<input type=\"submit\" value=\"Absenden\"></p></form>"
+    "</div>\n"));
 
-  formatierterCode += "<h2>Links</h2>\n";
-  formatierterCode += "<div class=\"weiss\">\n";
-  formatierterCode += "<ul>\n";
-  formatierterCode += "<li><a href=\"/\">zur Startseite</a></li>\n";
-  #if MODUL_DEBUG
-  formatierterCode += "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n";
-  #endif
-  formatierterCode += "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">";
-  formatierterCode += "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>\n";
-  formatierterCode += "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">";
-  formatierterCode += "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>\n";
-  formatierterCode += "</ul>\n";
-  formatierterCode += "</div>\n";
+  sendeLinks();
 
-  formatierterCode += htmlFooter;
-  Webserver.send(200, "text/html", formatierterCode);
+  Webserver.sendContent_P(htmlFooter);
+
   #if MODUL_DEBUG
     Serial.println(F("# Ende von WebsiteAdminAusgeben()"));
   #endif
 }
+
