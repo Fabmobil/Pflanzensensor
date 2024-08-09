@@ -40,7 +40,7 @@ String WifiSetup(String hostname){
       Serial.println(WiFi.localIP());
       ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
       #if MODUL_DISPLAY
-        DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ ip, "Hostname: ", "  " + hostname + ".local" );
+        DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ ip, "Hostname: ", " " + hostname + ".local" );
         delay(5000); // genug Zeit um die IP Adresse zu lesen
       #endif
     } else {
