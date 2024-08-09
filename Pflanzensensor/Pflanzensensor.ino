@@ -40,7 +40,7 @@ void setup() {
   #ifdef WITH_GDB // fürs debugging
     gdbstub_init();
   #endif
-  delay(1000);
+  delay(100);
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
     #if MODUL_DEBUG
       Serial.println(F("# Beginn von DisplaySetup()"));
@@ -135,20 +135,11 @@ void setup() {
     digitalWrite(multiplexerPinC, HIGH); // eingebaute LED ausschalten
   #endif
   #if MODUL_WEBHOOK
-    // Set time via NTP, as required for x.509 validation
-    configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
-    Serial.print("Warte auf die Synchronisation von Uhrzeit und Datum: ");
-    time_t now = time(nullptr);
-    while (now < 8 * 3600 * 2) {
-      delay(500);
-      Serial.print(".");
-      now = time(nullptr);
-    }
-    Serial.println("");
-    struct tm timeinfo;
-    gmtime_r(&now, &timeinfo);
-    Serial.print("Die Zeit und das Datum ist: ");
-    Serial.print(asctime(&timeinfo));
+    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+      DisplayDreiWoerter("Start..", " Webhook-", "  modul");
+    #endif
+    Serial.println(F("Start von Webhook-Modul ... "));
+    WebhookSetup();
   #endif
   if (VariablenDa()) {
       #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
@@ -174,10 +165,13 @@ void setup() {
     WebseiteDatenFlashAuflisten(root, 0);
   #endif
   neustarts++;
+  variablen.putInt("neustarts", neustarts);
   variablen.end();
+  Serial.print("Neustarts: ");
+  Serial.println(neustarts);
 
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-    DisplayDreiWoerter("Start..", " abge-", "  schlossen");
+    DisplayDreiWoerter("Start..", " abge-", " schlossen");
   #endif
   Serial.println(F("Start abgeschlossen!"));
 }
@@ -351,7 +345,7 @@ void loop() {
   // Webhook für Alarm:
   #if MODUL_WEBHOOK // wenn das Webhook-Modul aktiv ist
     if (webhookSchalter) {
-      if (millisAktuell - millisVorherWebhook >= webhookFrequenz) {
+      if (millisAktuell - millisVorherWebhook >= webhookFrequenz*1000*10) {
         Serial.println("Webhook ausgelöst!");
         WebhookNachricht(bodenfeuchteMesswertProzent, luftfeuchteMesswert, lufttemperaturMesswert);
         millisVorherWebhook = millisAktuell; // neuen Wert übernehmen
