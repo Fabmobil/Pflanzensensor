@@ -1,4 +1,4 @@
-String htmlFooter = (R"====(
+const char htmlFooter[] PROGMEM = (R"====(
  &nbsp;
 </div>
 </div>

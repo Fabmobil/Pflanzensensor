@@ -1,4 +1,4 @@
-String htmlHeader = (R"====(
+const char htmlHeader[] PROGMEM = (R"====(
 <!DOCTYPE html>
 <html lang="de">
 <head>
