@@ -39,7 +39,7 @@
 /**
  * Pinbelegungen und Variablen
  */
-#define baudrateSeriell 9600 // Baudrate der seriellen Verbindung
+#define baudrateSeriell 115200 // Baudrate der seriellen Verbindung
 unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensoren in Millisekunden. Vorschlag: 5000
 String bodenfeuchteName = "Bodenfeuchte"; // Name des Sensors
 #if MODUL_BODENFEUCHTE // wenn der Bodenfeuchtesensor aktiv ist:
@@ -92,7 +92,7 @@ String helligkeitName = "Helligkeit"; // Name des Sensors
 #if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
   // URL und seceret in der passwoerter.h
   bool webhookSchalter = true;
-  unsigned long webhookFrequenz = 300000; // Die Benachrichtigungsfrequenz des Webhooks in Minuten. Vorschlag: 300000 = 5min
+  unsigned long webhookFrequenz = 1; // Die Benachrichtigungsfrequenz des Webhooks in Stunden. Vorschlag: 12
 #endif
 #include <LittleFS.h> // für das Speichern auf dem Flash des ESP; muss vor Wifi geladen werden
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
@@ -258,8 +258,8 @@ String analog8Farbe = "rot";
 #endif
 
 #include "analogsensor.h" // Funktionen für die Analogsensoren
-#include "mutex.h" // Mutexmodul einbinden
-mutex_t mutex;
+//#include "mutex.h" // Mutexmodul einbinden
+//mutex_t mutex;
 
 // Fürs debugging:
 #ifdef WITH_GDB
