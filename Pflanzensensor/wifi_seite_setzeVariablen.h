@@ -3,6 +3,7 @@ void ArgumenteAusgeben();
 void WebseiteSetzeVariablen();
 void updateVariables();
 void updateAnalogSensor(int sensorNumber);
+void updateBoolValue(const String& argName, bool& value);
 void updateIntValue(const String& argName, int& value);
 void updateStringValue(const String& argName, String& value);
 void sendLinks();
@@ -87,10 +88,7 @@ void updateVariables() {
   #endif
 
   #if MODUL_WEBHOOK
-    webhookSchalter = Webserver.arg("webhookSchalter") == "on";
-    if (Webserver.arg("webhookFrequenz") != "") {
-      webhookFrequenz = Webserver.arg("webhookFrequenz").toInt();
-    }
+    updateBoolValue("webhookSchalter", webhookSchalter);
     updateStringValue("webhookDomain", webhookDomain);
     updateStringValue("webhookPfad", webhookPfad);
   #endif
@@ -217,6 +215,14 @@ void updateIntValue(const String& argName, int& value) {
 void updateStringValue(const String& argName, String& value) {
   if (Webserver.arg(argName) != "") {
     value = Webserver.arg(argName);
+  }
+}
+
+void updateBoolValue(const String& argName, bool& value) {
+  if (Webserver.arg(argName)) {
+    value = true;
+  } else {
+    value = false;
   }
 }
 
