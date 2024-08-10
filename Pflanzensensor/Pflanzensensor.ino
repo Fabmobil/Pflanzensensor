@@ -343,10 +343,21 @@ void loop() {
   // Webhook für Alarm:
   #if MODUL_WEBHOOK // wenn das Webhook-Modul aktiv ist
     if (webhookSchalter) {
-      if (millisAktuell - millisVorherWebhook >= webhookFrequenz*1000*10) {
-        Serial.println("Webhook ausgelöst!");
-        WebhookNachricht(bodenfeuchteMesswertProzent, luftfeuchteMesswert, lufttemperaturMesswert);
+      // Alarme nur aller x Stunden senden:
+      if (millisAktuell - millisVorherWebhook >= webhookFrequenz*1000*60) {
+        // Falls die Bodenfeuchte im roten Bereich ist:
+        if (bodenfeuchteMesswertProzent > bodenfeuchteGelbOben || bodenfeuchteMesswertProzent < bodenfeuchteGelbUnten) {
+          webhookStatus = "Alarm";
+          Serial.println("Webhook Alarm ausgelöst!");
+          WebhookNachricht(webhookStatus, bodenfeuchteMesswertProzent, luftfeuchteMesswert, lufttemperaturMesswert);
+        }
         millisVorherWebhook = millisAktuell; // neuen Wert übernehmen
+      }
+      // Falls die Bodenfeuchte wieder im gelben oder grünen Bereich ist und vorher ein Alarm ausgelöst war
+      if ((bodenfeuchteMesswertProzent > bodenfeuchteGelbUnten && bodenfeuchteMesswertProzent < bodenfeuchteGelbOben) && webhookStatus == "Alarm") {
+        webhookStatus = "OK";
+        Serial.println("Webhook Alarm beendet.");
+        WebhookNachricht(webhookStatus, bodenfeuchteMesswertProzent, luftfeuchteMesswert, lufttemperaturMesswert);
       }
     }
   #endif

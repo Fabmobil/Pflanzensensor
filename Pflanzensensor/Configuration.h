@@ -90,8 +90,9 @@ String helligkeitName = "Helligkeit"; // Name des Sensors
   unsigned long intervallAmpel = 5000; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15273
 #endif
 #if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
-  // URL und seceret in der passwoerter.h
+  // URL und Passwort für make.com in der passwoerter.h
   bool webhookSchalter = true;
+  String webhookStatus = "init";
   unsigned long webhookFrequenz = 1; // Die Benachrichtigungsfrequenz des Webhooks in Stunden. Vorschlag: 12
 #endif
 #include <LittleFS.h> // für das Speichern auf dem Flash des ESP; muss vor Wifi geladen werden
