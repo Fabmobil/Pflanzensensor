@@ -42,9 +42,7 @@ void setup() {
   #endif
   delay(100);
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-    #if MODUL_DEBUG
-      Serial.println(F("# Beginn von DisplaySetup()"));
-    #endif
+
     DisplaySetup(); // Display initialisieren
   #endif
   CreateMutex(&mutex);
