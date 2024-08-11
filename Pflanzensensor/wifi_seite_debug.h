@@ -1,187 +1,246 @@
-void sendeDebugInfo(const __FlashStringHelper* titel, const String& inhalt) {
-  Webserver.sendContent(F("<h3>"));
-  Webserver.sendContent(titel);
-  Webserver.sendContent(F("</h3>\n<div class=\"weiss\">\n<ul>\n"));
-  Webserver.sendContent(inhalt);
-  Webserver.sendContent(F("</ul>\n</div>\n"));
-}
-
-void sendeDebugInfo(const char* titel, const String& inhalt) {
-  sendeDebugInfo(FPSTR(titel), inhalt);
-}
-
-void sendeAnalogsensorDebugInfo(int sensorNummer, const String& sensorName, int messwert, int messwertProzent, int minimum, int maximum, bool alarm) {
-  String analogInfo;
-  analogInfo += F("<li>Sensorname: ");
-  analogInfo += sensorName;
-  analogInfo += F("<li> Webhook Alarm aktiviert?: ");
-  analogInfo += String(alarm);
-  analogInfo += F("</li>\n<li>Messwert Prozent: ");
-  analogInfo += String(messwertProzent);
-  analogInfo += F("</li>\n<li>Messwert: ");
-  analogInfo += String(messwert);
-  analogInfo += F("</li>\n<li>Minimalwert: ");
-  analogInfo += String(minimum);
-  analogInfo += F("</li>\n<li>Maximalwert: ");
-  analogInfo += String(maximum);
-  analogInfo += F("</li>\n");
-
-  char titelBuffer[30];
-  snprintf_P(titelBuffer, sizeof(titelBuffer), PSTR("Analogsensor %d Modul"), sensorNummer);
-  sendeDebugInfo(titelBuffer, analogInfo);
-}
-
 void WebseiteDebugAusgeben() {
+  Serial.println(wifiPassword1);
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
 
   Webserver.sendContent_P(htmlHeader);
 
   Webserver.sendContent(F("<h2>Debug-Informationen</h2>\n"));
-  String allgemeineInfo;
-  allgemeineInfo += F("<li>Anzahl Module: ");
-  allgemeineInfo += String(module);
-  allgemeineInfo += F("<li>Anzahl Neustarts: ");
-  allgemeineInfo += String(neustarts);
-  allgemeineInfo += F("<li>Freier HEAP: ");
-  allgemeineInfo += String(ESP.getFreeHeap());
-  allgemeineInfo += F(" Bytes</li>\n");
-  sendeDebugInfo(F("Allgemeine Informationen"), allgemeineInfo);
+
+  // Allgemeine Informationen
+  Webserver.sendContent(F("<h3>Allgemeine Informationen</h3>\n<div class=\"weiss\">\n<ul>\n"));
+  Webserver.sendContent(F("<li>Anzahl Module: "));
+  Webserver.sendContent(String(module));
+  Webserver.sendContent(F("</li>\n<li>Anzahl Neustarts: "));
+  Webserver.sendContent(String(neustarts));
+  Webserver.sendContent(F("</li>\n<li>Freier HEAP: "));
+  Webserver.sendContent(String(ESP.getFreeHeap()));
+  Webserver.sendContent(F(" Bytes</li>\n"));
+  Webserver.sendContent(F("</ul>\n</div>\n"));
 
   #if MODUL_DHT
-    String dhtInfo;
-    dhtInfo += F("<li>Lufttemperatur Webhook Alarm aktiviert?: ");
-    dhtInfo += String(lufttemperaturWebhook);
-    dhtInfo += F("<li>Lufttemperatur: ");
-    dhtInfo += String(lufttemperaturMesswert);
-    dhtInfo += F("<li>Luftfeuchte Webhook Alarm aktiviert?: ");
-    dhtInfo += String(luftfeuchteWebhook);
-    dhtInfo += F("</li>\n<li>Luftfeuchte: ");
-    dhtInfo += String(luftfeuchteMesswert);
-    dhtInfo += F("</li>\n<li>DHT Pin: ");
-    dhtInfo += String(dhtPin);
-    dhtInfo += F("</li>\n<li>DHT Sensortyp: ");
-    dhtInfo += String(dhtSensortyp);
-    dhtInfo += F("</li>\n");
-    sendeDebugInfo(F("DHT Modul"), dhtInfo);
+    Webserver.sendContent(F("<h3>DHT Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<li>Lufttemperatur Webhook Alarm aktiviert?: "));
+    Webserver.sendContent(String(lufttemperaturWebhook));
+    Webserver.sendContent(F("</li>\n<li>Lufttemperatur: "));
+    Webserver.sendContent(String(lufttemperaturMesswert));
+    Webserver.sendContent(F("</li>\n<li>Luftfeuchte Webhook Alarm aktiviert?: "));
+    Webserver.sendContent(String(luftfeuchteWebhook));
+    Webserver.sendContent(F("</li>\n<li>Luftfeuchte: "));
+    Webserver.sendContent(String(luftfeuchteMesswert));
+    Webserver.sendContent(F("</li>\n<li>DHT Pin: "));
+    Webserver.sendContent(String(dhtPin));
+    Webserver.sendContent(F("</li>\n<li>DHT Sensortyp: "));
+    Webserver.sendContent(String(dhtSensortyp));
+    Webserver.sendContent(F("</li>\n"));
+    Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
 
   #if MODUL_DISPLAY
-    String displayInfo;
-    displayInfo += F("<li>Display angeschalten?: ");
-    displayInfo += String(displayAn);
-    displayInfo += F("<li>Aktives Displaybild: ");
-    displayInfo += String(status);
-    displayInfo += F("</li>\n<li>Breite in Pixel: ");
-    displayInfo += String(displayBreite);
-    displayInfo += F("</li>\n<li>Hoehe in Pixel: ");
-    displayInfo += String(displayHoehe);
-    displayInfo += F("</li>\n<li>Adresse: ");
-    displayInfo += String(displayAdresse);
-    displayInfo += F("</li>\n");
-    sendeDebugInfo(F("Display Modul"), displayInfo);
+    Webserver.sendContent(F("<h3>Display Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<li>Display angeschalten?: "));
+    Webserver.sendContent(String(displayAn));
+    Webserver.sendContent(F("</li>\n<li>Aktives Displaybild: "));
+    Webserver.sendContent(String(status));
+    Webserver.sendContent(F("</li>\n<li>Breite in Pixel: "));
+    Webserver.sendContent(String(displayBreite));
+    Webserver.sendContent(F("</li>\n<li>Hoehe in Pixel: "));
+    Webserver.sendContent(String(displayHoehe));
+    Webserver.sendContent(F("</li>\n<li>Adresse: "));
+    Webserver.sendContent(String(displayAdresse));
+    Webserver.sendContent(F("</li>\n"));
+    Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
 
   #if MODUL_BODENFEUCHTE
-    String bodenfeuchteInfo;
-    bodenfeuchteInfo += F("<li>Bodenfeuchtesensor Webhook Alarm aktiviert?: ");
-    bodenfeuchteInfo += String(bodenfeuchteWebhook);
-    bodenfeuchteInfo += F("<li>Messwert Prozent: ");
-    bodenfeuchteInfo += String(bodenfeuchteMesswertProzent);
-    bodenfeuchteInfo += F("</li>\n<li>Messwert absolut: ");
-    bodenfeuchteInfo += String(bodenfeuchteMesswert);
-    bodenfeuchteInfo += F("</li>\n");
-    sendeDebugInfo(F("Bodenfeuchte Modul"), bodenfeuchteInfo);
+    Webserver.sendContent(F("<h3>Bodenfeuchte Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<li>Bodenfeuchtesensor Webhook Alarm aktiviert?: "));
+    Webserver.sendContent(String(bodenfeuchteWebhook));
+    Webserver.sendContent(F("</li>\n<li>Messwert Prozent: "));
+    Webserver.sendContent(String(bodenfeuchteMesswertProzent));
+    Webserver.sendContent(F("</li>\n<li>Messwert absolut: "));
+    Webserver.sendContent(String(bodenfeuchteMesswert));
+    Webserver.sendContent(F("</li>\n"));
+    Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
 
   #if MODUL_LEDAMPEL
-    String ledAmpelInfo;
-    displayInfo += F("<li>LED Ampel angeschalten?: ");
-    displayInfo += String(ampelAn);
-    ledAmpelInfo += F("<li>Modus: ");
-    ledAmpelInfo += String(ampelModus);
-    ledAmpelInfo += F("</li>\n<li>ampelUmschalten: ");
-    ledAmpelInfo += String(ampelUmschalten);
-    ledAmpelInfo += F("</li>\n<li>Pin gruene LED: ");
-    ledAmpelInfo += String(ampelPinGruen);
-    ledAmpelInfo += F("</li>\n<li>Pin gelbe LED: ");
-    ledAmpelInfo += String(ampelPinGelb);
-    ledAmpelInfo += F("</li>\n<li>Pin rote LED: ");
-    ledAmpelInfo += String(ampelPinRot);
-    ledAmpelInfo += F("</li>\n");
-    sendeDebugInfo(F("LEDAmpel Modul"), ledAmpelInfo);
+    Webserver.sendContent(F("<h3>LEDAmpel Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<li>LED Ampel angeschalten?: "));
+    Webserver.sendContent(String(ampelAn));
+    Webserver.sendContent(F("</li>\n<li>Modus: "));
+    Webserver.sendContent(String(ampelModus));
+    Webserver.sendContent(F("</li>\n<li>ampelUmschalten: "));
+    Webserver.sendContent(String(ampelUmschalten));
+    Webserver.sendContent(F("</li>\n<li>Pin gruene LED: "));
+    Webserver.sendContent(String(ampelPinGruen));
+    Webserver.sendContent(F("</li>\n<li>Pin gelbe LED: "));
+    Webserver.sendContent(String(ampelPinGelb));
+    Webserver.sendContent(F("</li>\n<li>Pin rote LED: "));
+    Webserver.sendContent(String(ampelPinRot));
+    Webserver.sendContent(F("</li>\n"));
+    Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
 
   #if MODUL_HELLIGKEIT
-    String helligkeitInfo;
-    helligkeitInfo += F("<li>Helligkeitssensor Webhook Alarm aktiviert?: ");
-    helligkeitInfo += String(helligkeitWebhook);
-    helligkeitInfo += F("<li>Messwert Prozent: ");
-    helligkeitInfo += String(helligkeitMesswertProzent);
-    helligkeitInfo += F("</li>\n<li>Messwert absolut: ");
-    helligkeitInfo += String(helligkeitMesswert);
-    helligkeitInfo += F("</li>\n");
-    sendeDebugInfo(F("Helligkeit Modul"), helligkeitInfo);
+    Webserver.sendContent(F("<h3>Helligkeit Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<li>Helligkeitssensor Webhook Alarm aktiviert?: "));
+    Webserver.sendContent(String(helligkeitWebhook));
+    Webserver.sendContent(F("</li>\n<li>Messwert Prozent: "));
+    Webserver.sendContent(String(helligkeitMesswertProzent));
+    Webserver.sendContent(F("</li>\n<li>Messwert absolut: "));
+    Webserver.sendContent(String(helligkeitMesswert));
+    Webserver.sendContent(F("</li>\n"));
+    Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
 
   #if MODUL_WIFI
-    String wifiInfo;
-    wifiInfo += F("<li>Hostname: ");
-    wifiInfo += wifiHostname;
-    wifiInfo += F(".local</li>\n");
+    Webserver.sendContent(F("<h3>Wifi Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<li>Hostname: "));
+    Webserver.sendContent(wifiHostname);
+    Webserver.sendContent(F(".local</li>\n"));
     if (!wifiAp) {
-      wifiInfo += F("<li>SSID 1: ");
-      wifiInfo += wifiSsid1;
-      wifiInfo += F("</li>\n<li>Passwort 1: ");
-      wifiInfo += wifiPassword1;
-      wifiInfo += F("</li>\n<li>SSID 2: ");
-      wifiInfo += wifiSsid2;
-      wifiInfo += F("</li>\n<li>Passwort 2: ");
-      wifiInfo += wifiPassword2;
-      wifiInfo += F("</li>\n<li>SSID 3: ");
-      wifiInfo += wifiSsid3;
-      wifiInfo += F("</li>\n<li>Passwort 3: ");
-      wifiInfo += wifiPassword3;
-      wifiInfo += F("</li>\n");
+      Webserver.sendContent(F("<li>SSID 1: "));
+      Webserver.sendContent(wifiSsid1);
+      Webserver.sendContent(F("</li>\n<li>Passwort 1: "));
+      Webserver.sendContent(wifiPassword1);
+      Webserver.sendContent(F("</li>\n<li>SSID 2: "));
+      Webserver.sendContent(wifiSsid2);
+      Webserver.sendContent(F("</li>\n<li>Passwort 2: "));
+      Webserver.sendContent(wifiPassword2);
+      Webserver.sendContent(F("</li>\n<li>SSID 3: "));
+      Webserver.sendContent(wifiSsid3);
+      Webserver.sendContent(F("</li>\n<li>Passwort 3: "));
+      Webserver.sendContent(wifiPassword3);
+      Webserver.sendContent(F("</li>\n"));
     } else {
-      wifiInfo += F("<li>Name des WLANs: ");
-      wifiInfo += String(wifiApSsid);
-      wifiInfo += F("</li>\n<li>Passwort: ");
-      wifiInfo += wifiApPasswortAktiviert ? String(wifiApPasswort) : F("WLAN ohne Passwortschutz!");
-      wifiInfo += F("</li>\n");
+      Webserver.sendContent(F("<li>Name des WLANs: "));
+      Webserver.sendContent(String(wifiApSsid));
+      Webserver.sendContent(F("</li>\n<li>Passwort: "));
+      Webserver.sendContent(wifiApPasswortAktiviert ? String(wifiApPasswort) : F("WLAN ohne Passwortschutz!"));
+      Webserver.sendContent(F("</li>\n"));
     }
-    sendeDebugInfo(F("Wifi Modul"), wifiInfo);
+    Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
 
   #if MODUL_WEBHOOK
-    String webhookInfo;
-    webhookInfo += F("<li>Webhook Alarm angeschalten?: ");
-    webhookInfo += String(webhookAn);
-    webhookInfo += F("<li>Webhook Domain: ");
-    webhookInfo += webhookDomain;
-    webhookInfo += F("<li>Webhook URL: ");
-    webhookInfo += webhookPfad;
-    webhookInfo += F("</li>\n");
-    sendeDebugInfo(F("Webhook Modul"), webhookInfo);
+    Webserver.sendContent(F("<h3>Webhook Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<li>Webhook Alarm angeschalten?: "));
+    Webserver.sendContent(String(webhookAn));
+    Webserver.sendContent(F("</li>\n<li>Webhook Domain: "));
+    Webserver.sendContent(webhookDomain);
+    Webserver.sendContent(F("</li>\n<li>Webhook URL: "));
+    Webserver.sendContent(webhookPfad);
+    Webserver.sendContent(F("</li>\n"));
+    Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
 
   #if MODUL_ANALOG3
-    sendeAnalogsensorDebugInfo(3, analog3Name, analog3Messwert, analog3MesswertProzent, analog3Minimum, analog3Maximum, analog3Webhook);
+    Webserver.sendContent(F("<h3>Analogsensor 3 Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<li>Sensorname: "));
+    Webserver.sendContent(analog3Name);
+    Webserver.sendContent(F("</li>\n<li>Webhook Alarm aktiviert?: "));
+    Webserver.sendContent(String(analog3Webhook));
+    Webserver.sendContent(F("</li>\n<li>Messwert Prozent: "));
+    Webserver.sendContent(String(analog3MesswertProzent));
+    Webserver.sendContent(F("</li>\n<li>Messwert: "));
+    Webserver.sendContent(String(analog3Messwert));
+    Webserver.sendContent(F("</li>\n<li>Minimalwert: "));
+    Webserver.sendContent(String(analog3Minimum));
+    Webserver.sendContent(F("</li>\n<li>Maximalwert: "));
+    Webserver.sendContent(String(analog3Maximum));
+    Webserver.sendContent(F("</li>\n"));
+    Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
+
   #if MODUL_ANALOG4
-    sendeAnalogsensorDebugInfo(4, analog4Name, analog4Messwert, analog4MesswertProzent, analog4Minimum, analog4Maximum, analog3Webhook);
+    Webserver.sendContent(F("<h3>Analogsensor 4 Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<li>Sensorname: "));
+    Webserver.sendContent(analog4Name);
+    Webserver.sendContent(F("</li>\n<li>Webhook Alarm aktiviert?: "));
+    Webserver.sendContent(String(analog4Webhook));
+    Webserver.sendContent(F("</li>\n<li>Messwert Prozent: "));
+    Webserver.sendContent(String(analog4MesswertProzent));
+    Webserver.sendContent(F("</li>\n<li>Messwert: "));
+    Webserver.sendContent(String(analog4Messwert));
+    Webserver.sendContent(F("</li>\n<li>Minimalwert: "));
+    Webserver.sendContent(String(analog4Minimum));
+    Webserver.sendContent(F("</li>\n<li>Maximalwert: "));
+    Webserver.sendContent(String(analog4Maximum));
+    Webserver.sendContent(F("</li>\n"));
+    Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
+
   #if MODUL_ANALOG5
-    sendeAnalogsensorDebugInfo(5, analog5Name, analog5Messwert, analog5MesswertProzent, analog5Minimum, analog5Maximum, analog3Webhook);
+    Webserver.sendContent(F("<h3>Analogsensor 5 Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<li>Sensorname: "));
+    Webserver.sendContent(analog5Name);
+    Webserver.sendContent(F("</li>\n<li>Webhook Alarm aktiviert?: "));
+    Webserver.sendContent(String(analog5Webhook));
+    Webserver.sendContent(F("</li>\n<li>Messwert Prozent: "));
+    Webserver.sendContent(String(analog5MesswertProzent));
+    Webserver.sendContent(F("</li>\n<li>Messwert: "));
+    Webserver.sendContent(String(analog5Messwert));
+    Webserver.sendContent(F("</li>\n<li>Minimalwert: "));
+    Webserver.sendContent(String(analog5Minimum));
+    Webserver.sendContent(F("</li>\n<li>Maximalwert: "));
+    Webserver.sendContent(String(analog5Maximum));
+    Webserver.sendContent(F("</li>\n"));
+    Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
+
   #if MODUL_ANALOG6
-    sendeAnalogsensorDebugInfo(6, analog6Name, analog6Messwert, analog6MesswertProzent, analog6Minimum, analog6Maximum, analog3Webhook;
+    Webserver.sendContent(F("<h3>Analogsensor 6 Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<li>Sensorname: "));
+    Webserver.sendContent(analog6Name);
+    Webserver.sendContent(F("</li>\n<li>Webhook Alarm aktiviert?: "));
+    Webserver.sendContent(String(analog6Webhook));
+    Webserver.sendContent(F("</li>\n<li>Messwert Prozent: "));
+    Webserver.sendContent(String(analog6MesswertProzent));
+    Webserver.sendContent(F("</li>\n<li>Messwert: "));
+    Webserver.sendContent(String(analog6Messwert));
+    Webserver.sendContent(F("</li>\n<li>Minimalwert: "));
+    Webserver.sendContent(String(analog6Minimum));
+    Webserver.sendContent(F("</li>\n<li>Maximalwert: "));
+    Webserver.sendContent(String(analog6Maximum));
+    Webserver.sendContent(F("</li>\n"));
+    Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
+
   #if MODUL_ANALOG7
-    sendeAnalogsensorDebugInfo(7, analog7Name, analog7Messwert, analog7MesswertProzent, analog7Minimum, analog7Maximum, analog3Webhook);
+    Webserver.sendContent(F("<h3>Analogsensor 7 Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<li>Sensorname: "));
+    Webserver.sendContent(analog7Name);
+    Webserver.sendContent(F("</li>\n<li>Webhook Alarm aktiviert?: "));
+    Webserver.sendContent(String(analog7Webhook));
+    Webserver.sendContent(F("</li>\n<li>Messwert Prozent: "));
+    Webserver.sendContent(String(analog7MesswertProzent));
+    Webserver.sendContent(F("</li>\n<li>Messwert: "));
+    Webserver.sendContent(String(analog7Messwert));
+    Webserver.sendContent(F("</li>\n<li>Minimalwert: "));
+    Webserver.sendContent(String(analog7Minimum));
+    Webserver.sendContent(F("</li>\n<li>Maximalwert: "));
+    Webserver.sendContent(String(analog7Maximum));
+    Webserver.sendContent(F("</li>\n"));
+    Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
+
   #if MODUL_ANALOG8
-    sendeAnalogsensorDebugInfo(8, analog8Name, analog8Messwert, analog8MesswertProzent, analog8Minimum, analog8Maximum, analog3Webhook);
+    Webserver.sendContent(F("<h3>Analogsensor 8 Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<li>Sensorname: "));
+    Webserver.sendContent(analog8Name);
+    Webserver.sendContent(F("</li>\n<li>Webhook Alarm aktiviert?: "));
+    Webserver.sendContent(String(analog8Webhook));
+    Webserver.sendContent(F("</li>\n<li>Messwert Prozent: "));
+    Webserver.sendContent(String(analog8MesswertProzent));
+    Webserver.sendContent(F("</li>\n<li>Messwert: "));
+    Webserver.sendContent(String(analog8Messwert));
+    Webserver.sendContent(F("</li>\n<li>Minimalwert: "));
+    Webserver.sendContent(String(analog8Minimum));
+    Webserver.sendContent(F("</li>\n<li>Maximalwert: "));
+    Webserver.sendContent(String(analog8Maximum));
+    Webserver.sendContent(F("</li>\n"));
+    Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
 
   Webserver.sendContent(F("<h2>Deaktivierte Module</h2>\n<div class=\"weiss\">\n<ul>\n"));
@@ -247,3 +306,4 @@ void WebseiteDebugAusgeben() {
 
   Webserver.sendContent_P(htmlFooter);
 }
+

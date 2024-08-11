@@ -225,18 +225,18 @@ void VariablenLaden() {
     intervallAmpel = variablen.getInt("intAmpel", intervallAmpel);
   #endif
   #if MODUL_WEBHOOK
-    webhookPfad = variablen.getString("webhookPfad", webhookPfad).c_str();
-    webhookDomain = variablen.getString("webhookDomain", webhookDomain).c_str();
+    webhookPfad = variablen.getString("webhookPfad", webhookPfad);
+    webhookDomain = variablen.getString("webhookDomain", webhookDomain);
     webhookAn = variablen.getBool("webhookAn", webhookAn);
     webhookFrequenz = variablen.getInt("webhookFrequenz", webhookFrequenz);
   #endif
   #if MODUL_WIFI
-    wifiSsid1 = variablen.getString("wifiSsid1", wifiSsid1).c_str();
-    wifiPassword1 = variablen.getString("wifiPw1", wifiPassword1).c_str();
-    wifiSsid2 = variablen.getString("wifiSsid2", wifiSsid2).c_str();
-    wifiPassword2 = variablen.getString("wifiPw2", wifiPassword2).c_str();
-    wifiSsid3 = variablen.getString("wifiSsid3", wifiSsid3).c_str();
-    wifiPassword3 = variablen.getString("wifiPw3", wifiPassword3).c_str();
+    wifiSsid1 = variablen.getString("wifiSsid1", wifiSsid1);
+    wifiPassword1 = variablen.getString("wifiPw1", wifiPassword1);
+    wifiSsid2 = variablen.getString("wifiSsid2", wifiSsid2);
+    wifiPassword2 = variablen.getString("wifiPw2", wifiPassword2);
+    wifiSsid3 = variablen.getString("wifiSsid3", wifiSsid3);
+    wifiPassword3 = variablen.getString("wifiPw3", wifiPassword3);
   #endif
   variablen.end();
 }
