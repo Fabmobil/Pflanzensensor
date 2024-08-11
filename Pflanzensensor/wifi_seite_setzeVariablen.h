@@ -219,7 +219,7 @@ void updateStringValue(const String& argName, String& value) {
 }
 
 void updateBoolValue(const String& argName, bool& value) {
-  if (Webserver.arg(argName)) {
+  if (Webserver.arg(argName) == "1") {
     value = true;
   } else {
     value = false;
