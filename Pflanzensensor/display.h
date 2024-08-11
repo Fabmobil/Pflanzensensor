@@ -312,6 +312,12 @@ void DisplaySechsZeilen(String zeile1, String zeile2, String zeile3, String zeil
   display.display();
   delay(3000); // mindestens 1s Zeit zum lesen
 }
+
+void DisplayAus() {
+  display.clearDisplay();
+  display.display();
+}
+
 /*
  * Funktion: DisplaySetup()
  * Initialisiert das Display

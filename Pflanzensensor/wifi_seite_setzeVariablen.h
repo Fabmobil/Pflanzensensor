@@ -70,10 +70,12 @@ void WebseiteSetzeVariablen() {
 void updateVariables() {
   #if MODUL_LEDAMPEL
     updateIntValue("ampelModus", ampelModus);
+    updateBoolValue("ampelAn", ampelAn);
   #endif
 
   #if MODUL_DISPLAY
     updateIntValue("status", status);
+    updateBoolValue("displayAn", displayAn);
   #endif
 
   #if MODUL_DHT
@@ -89,7 +91,7 @@ void updateVariables() {
   #endif
 
   #if MODUL_WEBHOOK
-    updateBoolValue("webhookSchalter", webhookSchalter);
+    updateBoolValue("webhookAn", webhookAn);
     updateStringValue("webhookDomain", webhookDomain);
     updateStringValue("webhookPfad", webhookPfad);
   #endif

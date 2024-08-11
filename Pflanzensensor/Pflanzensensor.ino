@@ -154,7 +154,7 @@ void setup() {
   }
 
   variablen.begin("pflanzensensor", false); // Variablen initialisieren
-  int neustarts = variablen.getInt("neustarts", 1); // default to 1
+  neustarts = variablen.getInt("neustarts"); // Anzahl der Neustarts auslesen
   #if MODUL_DEBUG
     Serial.print(F("# Reboot count: )"));
     Serial.println(neustarts);
@@ -294,28 +294,36 @@ void loop() {
 
   // LED Ampel umschalten:
   #if MODUL_LEDAMPEL // Wenn das LED Ampel Modul aktiv ist:
-    if (millisAktuell - millisVorherLedampel >= intervallAmpel) { // wenn das Intervall erreicht ist
-      #if MODUL_DEBUG // Debuginformation
-        Serial.println(F("### intervallLedAmpel erreicht."));
-      #endif
-      millisVorherLedampel = millisAktuell; // neuen Wert übernehmen
-      LedampelUmschalten(helligkeitMesswertProzent, bodenfeuchteMesswertProzent); // Ampel umschalten
+    if (ampelAn) {
+      if (millisAktuell - millisVorherLedampel >= intervallAmpel) { // wenn das Intervall erreicht ist
+        #if MODUL_DEBUG // Debuginformation
+          Serial.println(F("### intervallLedAmpel erreicht."));
+        #endif
+        millisVorherLedampel = millisAktuell; // neuen Wert übernehmen
+        LedampelUmschalten(helligkeitMesswertProzent, bodenfeuchteMesswertProzent); // Ampel umschalten
+      }
+    } else {
+      LedampelAus();
     }
   #endif
 
   // Messwerte auf dem Display anzeigen:
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist
-    if (millisAktuell - millisVorherDisplay >= intervallDisplay) {
-      status += 1; // status gibt an, welche Anzeige auf dem Display aktiv ist
-      if ( status == displayseiten) { // wenn wir das letzte Displaybild erreicht haben
-        status = 0; // danach geht es von neuem los
+    if (displayAn) {
+      if (millisAktuell - millisVorherDisplay >= intervallDisplay) {
+        status += 1; // status gibt an, welche Anzeige auf dem Display aktiv ist
+        if ( status == displayseiten) { // wenn wir das letzte Displaybild erreicht haben
+          status = 0; // danach geht es von neuem los
+        }
+        #if MODUL_DEBUG
+          Serial.print(F("### intervallDisplay erreicht. status: ")); Serial.println(status);
+        #endif
+        millisVorherDisplay = millisAktuell; // neuen Wert übernehmen
+        // Diese Funktion kümmert sich um die Displayanzeige:
+        DisplayAnzeigen();
       }
-      #if MODUL_DEBUG
-        Serial.print(F("### intervallDisplay erreicht. status: ")); Serial.println(status);
-      #endif
-      millisVorherDisplay = millisAktuell; // neuen Wert übernehmen
-      // Diese Funktion kümmert sich um die Displayanzeige:
-      DisplayAnzeigen();
+    } else {
+      DisplayAus();
     }
   #endif
 
@@ -342,7 +350,7 @@ void loop() {
 
   // Webhook für Alarm:
   #if MODUL_WEBHOOK // wenn das Webhook-Modul aktiv ist
-    if (webhookSchalter) {
+    if (webhookAn) {
       // Alarme nur aller x Stunden senden:
       if (millisAktuell - millisVorherWebhook >= webhookFrequenz*1000*60) {
         #if MODUL_BODENFEUCHTE

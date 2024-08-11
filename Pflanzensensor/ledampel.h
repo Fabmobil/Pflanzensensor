@@ -79,6 +79,12 @@ void LedampelAnzeigen(String farbe, int dauer) {
   }
 }
 
+void LedampelAus() {
+  digitalWrite(ampelPinGruen, LOW);
+  digitalWrite(ampelPinGelb, LOW);
+  digitalWrite(ampelPinRot, LOW);
+}
+
 void LedampelUmschalten(int helligkeitMesswertProzent, int bodenfeuchteMesswertProzent) {
   /*
   * Falls es auch das Bodenfeuchte Modul gibt, blinkt die LED Ampel kurz 5x gelb damit

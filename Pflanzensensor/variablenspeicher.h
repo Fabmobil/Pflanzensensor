@@ -18,6 +18,7 @@ void VariablenSpeichern() {
   // Save the variables to flash
   #if MODUL_DISPLAY
     variablen.putInt("intDisplay", intervallDisplay);
+    variablen.putBool("displayAn", displayAn);
   #endif
   variablen.putInt("intBodenf", intervallAnalog);
   #if MODUL_BODENFEUCHTE
@@ -100,6 +101,7 @@ void VariablenSpeichern() {
     variablen.putInt("hellGeOben", helligkeitGelbOben);
   #endif
   #if MODUL_LEDAMPEL
+    variablen.putBool("ampelAn", ampelAn);
     variablen.putInt("ampelModus", ampelModus);
     variablen.putInt("intAmpel", intervallAmpel);
   #endif
@@ -107,7 +109,7 @@ void VariablenSpeichern() {
     variablen.putString("webhookPfad", webhookPfad);
     variablen.putString("webhookDomain", webhookDomain);
     variablen.putInt("webhookFrequenz", webhookFrequenz);
-    variablen.putBool("webhookSchalter", webhookSchalter);
+    variablen.putBool("webhookAn", webhookAn);
   #endif
   #if MODUL_WIFI
     variablen.putString("adminPw", wifiAdminPasswort);
@@ -136,6 +138,7 @@ void VariablenLaden() {
   // Load the variables from flash
   #if MODUL_DISPLAY
     intervallDisplay = variablen.getInt("intDisplay", intervallDisplay);
+    displayAn = variablen.getInt("displayAn", displayAn);
   #endif
   intervallAnalog = variablen.getInt("intAnalog", intervallAnalog);
   #if MODUL_BODENFEUCHTE
@@ -217,13 +220,14 @@ void VariablenLaden() {
     helligkeitGelbOben = variablen.getInt("hellGeOben", helligkeitGelbOben);
   #endif
   #if MODUL_LEDAMPEL
+    ampelAn = variablen.getInt("ampelAn", ampelAn);
     ampelModus = variablen.getInt("ampelModus", ampelModus);
     intervallAmpel = variablen.getInt("intAmpel", intervallAmpel);
   #endif
   #if MODUL_WEBHOOK
     webhookPfad = variablen.getString("webhookPfad", webhookPfad).c_str();
     webhookDomain = variablen.getString("webhookDomain", webhookDomain).c_str();
-    webhookSchalter = variablen.getBool("webhookSchalter", webhookSchalter);
+    webhookAn = variablen.getBool("webhookAn", webhookAn);
     webhookFrequenz = variablen.getInt("webhookFrequenz", webhookFrequenz);
   #endif
   #if MODUL_WIFI

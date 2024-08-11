@@ -11,7 +11,7 @@
  * Module
  * "true" aktiviert sie, "false" deaktiviert sie
  */
-#define MODUL_DEBUG         false  // Debugausgaben (de)aktivieren
+#define MODUL_DEBUG         true  // Debugausgaben (de)aktivieren
 #define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
 #define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
@@ -95,7 +95,7 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
 #endif
 #if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
   // URL und Passwort für make.com in der passwoerter.h
-  bool webhookSchalter = false;
+  bool webhookAn = false;
   String webhookStatus = "init";
   unsigned long webhookFrequenz = 1; // Die Benachrichtigungsfrequenz des Webhooks in Stunden. Vorschlag: 12
 #endif
@@ -175,6 +175,7 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
  * definiert.
  */
 #define pflanzensensorVersion "0.5" // Versionsnummer
+int neustarts = 1;
 unsigned long millisVorherAnalog = 0; // Variable für die Messung des Intervalls der Analogsensormessung
 unsigned long millisVorherDht = 0; // Variable für die Messung des Intervalls der Luftfeuchte- und -temperaturmessung
 unsigned long millisVorherLedampel = 0; // Variable für die Messung des Intervalls des Umschaltens der LED Ampel
@@ -227,6 +228,7 @@ String analog8Farbe = "rot";
 
 #if MODUL_LEDAMPEL
   bool ampelUmschalten = true; // Schaltet zwischen Bodenfeuchte- und Helligkeitsanzeige um
+  bool ampelAn = true; // Ampel an- oder ausgeschalten?
   #define ampelPinRot 13 // "D7"; Pin der roten LED
   #define ampelPinGelb 12 // "D6"; Pin der roten LED
   #define ampelPinGruen 14 // "D5"; Pin der gruenen LED
@@ -255,6 +257,7 @@ String analog8Farbe = "rot";
   #define displayHoehe 64 // Hoehe des OLED-Displays in Pixeln
   #define displayReset -1 // Display wird mit Arduino Reset Pin zurückgesetzt, wir haben keinen Restknopf..
   #define displayAdresse 0x3C // I2C Adresse des Displays
+  bool displayAn = true; // Display an- oder ausgeschalten?
   #include "display.h" // Displaymodul einbinden
 #endif
 

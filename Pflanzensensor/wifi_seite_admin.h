@@ -78,6 +78,28 @@ void WebseiteAdminAusgeben() {
     "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p>\n</div>\n"
     "<form action=\"/setzeVariablen\" method=\"POST\">\n"));
 
+  #if MODUL_WEBHOOK
+    Webserver.sendContent_P(PSTR("<h2>Webhook Modul</h2>\n<div class=\"weiss\">\n"));
+    sendeCheckbox(F("Webhook aktiv?"), F("webhookAn"), webhookAn);
+    sendeEinstellung(F("Benachrichtigungsfequenz in Stunden"), F("webhookFrequenz"), String(webhookFrequenz));
+    sendeEinstellung(F("Domain des Webhooks"), F("webhookDomain"), webhookDomain);
+    sendeEinstellung(F("Schlüssel/Pfad des Webhooks"), F("webhookPfad"), webhookPfad);
+    Webserver.sendContent(F("</div>\n"));
+  #endif
+
+  #if MODUL_LEDAMPEL
+    Webserver.sendContent_P(PSTR("<h2>LED Ampel</h2>\n<h3>Anzeigemodus</h3>\n<div class=\"weiss\">\n"));
+    sendeCheckbox(F("LED Ampel angeschalten?"), F("ampelAn"), ampelAn);
+    sendeEinstellung(F("Modus: (0: Helligkeit und Bodenfeuchte; 1: Helligkeit; 2: Bodenfeuchte)"), F("ampelModus"), String(ampelModus));
+    Webserver.sendContent(F("</div>\n"));
+  #endif
+
+  #if MODUL_DISPLAY
+    Webserver.sendContent_P(PSTR("<h2>Display</h2><div class=\"weiss\">\n"));
+    sendeCheckbox(F("Display angeschalten?"), F("displayAn"), displayAn);
+    Webserver.sendContent(F("</div>\n"));
+  #endif
+
   #if MODUL_BODENFEUCHTE
     sendeAnalogsensorEinstellungen(F("Bodenfeuchte"), F("bodenfeuchte"), bodenfeuchteName, bodenfeuchteMinimum, bodenfeuchteMaximum,
                              bodenfeuchteGruenUnten, bodenfeuchteGruenOben, bodenfeuchteGelbUnten, bodenfeuchteGelbOben, bodenfeuchteWebhook);
@@ -94,24 +116,10 @@ void WebseiteAdminAusgeben() {
     Webserver.sendContent(F("</div>\n"));
   #endif
 
-  #if MODUL_WEBHOOK
-    Webserver.sendContent_P(PSTR("<h2>Webhook Modul</h2>\n<div class=\"weiss\">\n"));
-    sendeCheckbox(F("Webhook aktiv?"), F("webhookSchalter"), webhookSchalter);
-    sendeEinstellung(F("Benachrichtigungsfequenz in Stunden"), F("webhookFrequenz"), String(webhookFrequenz));
-    sendeEinstellung(F("Domain des Webhooks"), F("webhookDomain"), webhookDomain);
-    sendeEinstellung(F("Schlüssel/Pfad des Webhooks"), F("webhookPfad"), webhookPfad);
-    Webserver.sendContent(F("</div>\n"));
-  #endif
 
   #if MODUL_HELLIGKEIT
     sendeAnalogsensorEinstellungen(F("Helligkeitssensor"), F("helligkeit"), helligkeitName, helligkeitMinimum, helligkeitMaximum,
                              helligkeitGruenUnten, helligkeitGruenOben, helligkeitGelbUnten, helligkeitGelbOben, helligkeitWebhook);
-  #endif
-
-  #if MODUL_LEDAMPEL
-    Webserver.sendContent_P(PSTR("<h2>LED Ampel</h2>\n<h3>Anzeigemodus</h3>\n<div class=\"weiss\">\n"));
-    sendeEinstellung(F("Modus: (0: Helligkeit und Bodenfeuchte; 1: Helligkeit; 2: Bodenfeuchte)"), F("ampelModus"), String(ampelModus));
-    Webserver.sendContent(F("</div>\n"));
   #endif
 
   // Analogsensoren

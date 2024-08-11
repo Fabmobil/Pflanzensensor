@@ -31,9 +31,9 @@ String WifiSetup(String hostname){
   if ( !wifiAp ) { // falls kein eigener Accesspoint aufgemacht werden soll wird sich mit dem definierten WLAN verbunden
     WiFi.mode(WIFI_STA);; // WLAN im Clientmodus starten
     // Wifi-Verbindungen konfigurieren
-    wifiMulti.addAP(wifiSsid1, wifiPassword1); // WLAN Verbindung konfigurieren
-    wifiMulti.addAP(wifiSsid2, wifiPassword2);
-    wifiMulti.addAP(wifiSsid3, wifiPassword3);
+    wifiMulti.addAP(wifiSsid1.c_str(), wifiPassword1.c_str()); // WLAN Verbindung konfigurieren
+    wifiMulti.addAP(wifiSsid2.c_str(), wifiPassword2.c_str());
+    wifiMulti.addAP(wifiSsid3.c_str(), wifiPassword3.c_str());
     if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
       Serial.print(" .. WLAN verbunden: ");
       Serial.print(WiFi.SSID());

@@ -32,15 +32,15 @@ void WebhookSetup() {
     Serial.print(".");
     now = time(nullptr);
   }
-  Serial.println("");
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
-  Serial.print("Die Zeit und das Datum ist: ");
+  Serial.print(F("Die Zeit und das Datum ist: "));
   Serial.println(asctime(&timeinfo));
 
   // Zertifikate initialisieren
   certList.append(zertifikat);
   client.setTrustAnchors(&certList);
+  Serial.println(F("Schicke Initialisierungsnachricht an Webhook-Dienst."));
   WebhookNachricht("init", F("null"), 0 , F("null")); // Initalisierungsnachricht schicken
   // Testverbindung
   #if MODUL_DEBUG
