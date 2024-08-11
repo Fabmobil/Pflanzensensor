@@ -77,6 +77,7 @@ void updateVariables() {
   #endif
 
   #if MODUL_DHT
+    updateBoolValue("lufttemperaturWebhook", lufttemperaturWebhook);
     updateIntValue("lufttemperaturGruenUnten", lufttemperaturGruenUnten);
     updateIntValue("lufttemperaturGruenOben", lufttemperaturGruenOben);
     updateIntValue("lufttemperaturGelbUnten", lufttemperaturGelbUnten);
@@ -95,6 +96,7 @@ void updateVariables() {
 
   #if MODUL_HELLIGKEIT
     updateStringValue("helligkeitName", helligkeitName);
+    updateBoolValue("helligkeitWebhook", helligkeitWebhook);
     updateIntValue("helligkeitMinimum", helligkeitMinimum);
     updateIntValue("helligkeitMaximum", helligkeitMaximum);
     updateIntValue("helligkeitGruenUnten", helligkeitGruenUnten);
@@ -105,6 +107,7 @@ void updateVariables() {
 
   #if MODUL_BODENFEUCHTE
     updateStringValue("bodenfeuchteName", bodenfeuchteName);
+    updateBoolValue("bodenfeuchteWebhook", bodenfeuchteWebhook);
     updateIntValue("bodenfeuchteMinimum", bodenfeuchteMinimum);
     updateIntValue("bodenfeuchteMaximum", bodenfeuchteMaximum);
     updateIntValue("bodenfeuchteGruenUnten", bodenfeuchteGruenUnten);
@@ -140,6 +143,7 @@ void updateAnalogSensor(int sensorNumber) {
     #if MODUL_ANALOG3
       case 3:
         updateStringValue(prefix + "Name", analog3Name);
+        updateBoolValue(prefix + "Webhook", analog3Webhook);
         updateIntValue(prefix + "Minimum", analog3Minimum);
         updateIntValue(prefix + "Maximum", analog3Maximum);
         updateIntValue(prefix + "GruenUnten", analog3GruenUnten);
@@ -151,6 +155,7 @@ void updateAnalogSensor(int sensorNumber) {
     #if MODUL_ANALOG4
       case 4:
         updateStringValue(prefix + "Name", analog4Name);
+        updateBoolValue(prefix + "Webhook", analog4Webhook);
         updateIntValue(prefix + "Minimum", analog4Minimum);
         updateIntValue(prefix + "Maximum", analog4Maximum);
         updateIntValue(prefix + "GruenUnten", analog4GruenUnten);
@@ -162,6 +167,7 @@ void updateAnalogSensor(int sensorNumber) {
     #if MODUL_ANALOG5
       case 5:
         updateStringValue(prefix + "Name", analog5Name);
+        updateBoolValue(prefix + "Webhook", analog5Webhook);
         updateIntValue(prefix + "Minimum", analog5Minimum);
         updateIntValue(prefix + "Maximum", analog5Maximum);
         updateIntValue(prefix + "GruenUnten", analog5GruenUnten);
@@ -173,6 +179,7 @@ void updateAnalogSensor(int sensorNumber) {
     #if MODUL_ANALOG6
       case 6:
         updateStringValue(prefix + "Name", analog6Name);
+        updateBoolValue(prefix + "Webhook", analog6Webhook);
         updateIntValue(prefix + "Minimum", analog6Minimum);
         updateIntValue(prefix + "Maximum", analog6Maximum);
         updateIntValue(prefix + "GruenUnten", analog6GruenUnten);
@@ -184,6 +191,7 @@ void updateAnalogSensor(int sensorNumber) {
     #if MODUL_ANALOG7
       case 7:
         updateStringValue(prefix + "Name", analog7Name);
+        updateBoolValue(prefix + "Webhook", analog7Webhook);
         updateIntValue(prefix + "Minimum", analog7Minimum);
         updateIntValue(prefix + "Maximum", analog7Maximum);
         updateIntValue(prefix + "GruenUnten", analog7GruenUnten);
@@ -195,6 +203,7 @@ void updateAnalogSensor(int sensorNumber) {
     #if MODUL_ANALOG8
       case 8:
         updateStringValue(prefix + "Name", analog8Name);
+        updateBoolValue(prefix + "Webhook", analog8Webhook);
         updateIntValue(prefix + "Minimum", analog8Minimum);
         updateIntValue(prefix + "Maximum", analog8Maximum);
         updateIntValue(prefix + "GruenUnten", analog8GruenUnten);
@@ -219,7 +228,7 @@ void updateStringValue(const String& argName, String& value) {
 }
 
 void updateBoolValue(const String& argName, bool& value) {
-  if (Webserver.arg(argName) == "1") {
+  if (Webserver.hasArg(argName)) {
     value = true;
   } else {
     value = false;

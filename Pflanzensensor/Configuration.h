@@ -41,13 +41,14 @@
  */
 #define baudrateSeriell 115200 // Baudrate der seriellen Verbindung
 unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensoren in Millisekunden. Vorschlag: 5000
-String bodenfeuchteName = "Bodenfeuchte"; // Name des Sensors
 #if MODUL_BODENFEUCHTE // wenn der Bodenfeuchtesensor aktiv ist:
   /*
    * Wenn der Bodenfeuchtesensor aktiv ist werden hier die initialen Grenzwerte
    * für den Sensor festgelegt. Diese können später auch im Admin-Webinterface
    * verändert werden.
    */
+  String bodenfeuchteName = "Bodenfeuchte"; // Name des Sensors
+  bool bodenfeuchteWebhook = true; // soll der Sensor für Alarme überwacht werden?
   int bodenfeuchteMinimum = 900; // Der Rohmesswert des Sensors, wenn er ganz trocken ist
   int bodenfeuchteMaximum = 380; // Der Rohmesswert des Sensors, wenn er in Wasser ist
   int bodenfeuchteGruenUnten = 40; // unter Wert des grünen Bereichs
@@ -62,22 +63,25 @@ String bodenfeuchteName = "Bodenfeuchte"; // Name des Sensors
   #define dhtPin 0 // "D3", Pin des DHT Sensors
   #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
   unsigned long intervallDht = 5000; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
+  bool lufttemperaturWebhook = false; // soll der Sensor für Alarme überwacht werden?
   int lufttemperaturGruenUnten = 19; // unter Wert des grünen Bereichs
   int lufttemperaturGruenOben = 22; // oberer Wert des grünen Bereichs
   int lufttemperaturGelbUnten = 17; // unterer Wert des gelben Bereichs
   int lufttemperaturGelbOben = 24; // oberer Wert des gelben Bereichs
+  bool luftfeuchteWebhook = false; // soll der Sensor für Alarme überwacht werden?
   int luftfeuchteGruenUnten = 40; // unter Wert des grünen Bereichs
   int luftfeuchteGruenOben = 60; // oberer Wert des grünen Bereichs
   int luftfeuchteGelbUnten = 20; // unterer Wert des gelben Bereichs
   int luftfeuchteGelbOben = 80; // oberer Wert des gelben Bereichs
 #endif
-String helligkeitName = "Helligkeit"; // Name des Sensors
 #if MODUL_HELLIGKEIT
   /*
    * Wenn der Helligkeitsensor aktiv ist werden hier die initialen Grenzwerte
    * für den Sensor festgelegt. Diese können später auch im Admin-Webinterface
    * verändert werden.
    */
+  String helligkeitName = "Helligkeit"; // Name des Sensors
+  bool helligkeitWebhook = false; // soll der Sensor für Alarme überwacht werden?
   int helligkeitMinimum = 8; // Der Rohmesswert des Sensors wenn es ganz dunkel ist
   int helligkeitMaximum = 1024; // Der Rohmesswert des Sensors, wenn es ganz hell ist
   int helligkeitGruenUnten = 40; // unter Wert des grünen Bereichs
@@ -91,7 +95,7 @@ String helligkeitName = "Helligkeit"; // Name des Sensors
 #endif
 #if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
   // URL und Passwort für make.com in der passwoerter.h
-  bool webhookSchalter = true;
+  bool webhookSchalter = false;
   String webhookStatus = "init";
   unsigned long webhookFrequenz = 1; // Die Benachrichtigungsfrequenz des Webhooks in Stunden. Vorschlag: 12
 #endif
@@ -104,8 +108,9 @@ String helligkeitName = "Helligkeit"; // Name des Sensors
   bool wifiApPasswortAktiviert = false; // soll das selbst aufgemachte WLAN ein Passwort haben?
   // WiFi Logindaten sind in der passwoerter.h gespeichert!
 #endif
-String analog3Name = "Analog 3"; // Name des Sensors
 #if MODUL_ANALOG3 // wenn ein dritter Analogsensor verwendet wird
+  String analog3Name = "Analog 3"; // Name des Sensors
+  bool analog3Webhook = false; // soll der Sensor für Alarme überwacht werden?
   int analog3Minimum = 900; // Minimalwert des Sensors
   int analog3Maximum = 380; // Maximalwert des Sensors
   int analog3GruenUnten = 40;
@@ -113,8 +118,9 @@ String analog3Name = "Analog 3"; // Name des Sensors
   int analog3GelbUnten = 20;
   int analog3GelbOben = 80;
 #endif
-String analog4Name = "Analog 4"; // Name des Sensors
 #if MODUL_ANALOG4 // wenn ein vierter Analogsensor verwendet wird
+  String analog4Name = "Analog 4"; // Name des Sensors
+  bool analog4Webhook = false; // soll der Sensor für Alarme überwacht werden?
   int analog4Minimum = 900; // Minimalwert des Sensors
   int analog4Maximum = 380; // Maximalwert des Sensors
   int analog4GruenUnten = 40;
@@ -122,8 +128,9 @@ String analog4Name = "Analog 4"; // Name des Sensors
   int analog4GelbUnten = 20;
   int analog4GelbOben = 80;
 #endif
-String analog5Name = "Analog 5"; // Name des Sensors
 #if MODUL_ANALOG5 // wenn ein fünfter Analogsensor verwendet wird
+  String analog5Name = "Analog 5"; // Name des Sensors
+  bool analog5Webhook = false; // soll der Sensor für Alarme überwacht werden?
   int analog5Minimum = 900; // Minimalwert des Sensors
   int analog5Maximum = 380; // Maximalwert des Sensors
   int analog5GruenUnten = 40;
@@ -132,7 +139,8 @@ String analog5Name = "Analog 5"; // Name des Sensors
   int analog5GelbOben = 80;
 #endif
 #if MODUL_ANALOG6 // wenn ein sechster Analogsensor verwendet wird
-  String analog6Name = "Analog 6"; // Name des Sensors
+  String analog6Name = "Analog 5"; // Name des Sensors
+  bool analog6Webhook = false; // soll der Sensor für Alarme überwacht werden?
   int analog6Minimum = 900; // Minimalwert des Sensors
   int analog6Maximum = 380; // Maximalwert des Sensors
   int analog6GruenUnten = 40;
@@ -140,8 +148,9 @@ String analog5Name = "Analog 5"; // Name des Sensors
   int analog6GelbUnten = 20;
   int analog6GelbOben = 80;
 #endif
-String analog7Name = "Analog 7"; // Name des Sensors
 #if MODUL_ANALOG7 // wenn ein siebter Analogsensor verwendet wird
+  String analog7Name = "Analog 7"; // Name des Sensors
+  bool analog7Webhook = false; // soll der Sensor für Alarme überwacht werden?
   int analog7Minimum = 900; // Minimalwert des Sensors
   int analog7Maximum = 380; // Maximalwert des Sensors
   int analog7GruenUnten = 40;
@@ -149,8 +158,9 @@ String analog7Name = "Analog 7"; // Name des Sensors
   int analog7GelbUnten = 20;
   int analog7GelbOben = 80;
 #endif
-String analog8Name = "Analog 8"; // Name des Sensors
 #if MODUL_ANALOG8 // wenn ein achter Analogsensor verwendet wird
+  String analog8Name = "Analog 8"; // Name des Sensors
+  bool analog8Webhook = false; // soll der Sensor für Alarme überwacht werden?
   int analog8Minimum = 900; // Minimalwert des Sensors
   int analog8Maximum = 380; // Maximalwert des Sensors
   int analog8GruenUnten = 40;

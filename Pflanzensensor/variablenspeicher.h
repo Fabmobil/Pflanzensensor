@@ -10,9 +10,6 @@ bool VariablenDa() {
 }
 
 void VariablenSpeichern() {
-  #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-    DisplayDreiWoerter("Start..", " Variablen", "  speichern");
-  #endif
   variablen.begin("pflanzensensor", false);
 
   // Save the variablen to flash
@@ -24,6 +21,7 @@ void VariablenSpeichern() {
   #endif
   variablen.putInt("intBodenf", intervallAnalog);
   #if MODUL_BODENFEUCHTE
+    variablen.putBool("bodenfWeb", bodenfeuchteWebhook);
     variablen.putString("bodenfName", bodenfeuchteName);
     variablen.putInt("bodenfGrUnten", bodenfeuchteGruenUnten);
     variablen.putInt("bodenfGrOben", bodenfeuchteGruenOben);
@@ -31,6 +29,7 @@ void VariablenSpeichern() {
     variablen.putInt("bodenfGeOben", bodenfeuchteGelbOben);
   #endif
   #if MODUL_ANALOG3
+    variablen.putBool("analog3Web", analog3Webhook);
     variablen.putString("analog3Name", analog3Name);
     variablen.putInt("analog3GrUnten", analog3GruenUnten);
     variablen.putInt("analog3GrOben", analog3GruenOben);
@@ -38,6 +37,7 @@ void VariablenSpeichern() {
     variablen.putInt("analog3GeOben", analog3GelbOben);
   #endif
   #if MODUL_ANALOG4
+    variablen.putBool("analog4Web", analog4Webhook);
     variablen.putString("analog4Name", analog4Name);
     variablen.putInt("analog4GrUnten", analog4GruenUnten);
     variablen.putInt("analog4GrOben", analog4GruenOben);
@@ -45,6 +45,7 @@ void VariablenSpeichern() {
     variablen.putInt("analog4GeOben", analog4GelbOben);
   #endif
   #if MODUL_ANALOG5
+    variablen.putBool("analog5Web", analog5Webhook);
     variablen.putString("analog5Name", analog5Name);
     variablen.putInt("analog5GrUnten", analog5GruenUnten);
     variablen.putInt("analog5GrOben", analog5GruenOben);
@@ -52,6 +53,7 @@ void VariablenSpeichern() {
     variablen.putInt("analog5GeOben", analog5GelbOben);
   #endif
   #if MODUL_ANALOG6
+    variablen.putBool("analog6Web", analog6Webhook);
     variablen.putString("analog6Name", analog6Name);
     variablen.putInt("analog6GrUnten", analog6GruenUnten);
     variablen.putInt("analog6GrOben", analog6GruenOben);
@@ -59,6 +61,7 @@ void VariablenSpeichern() {
     variablen.putInt("analog6GeOben", analog6GelbOben);
   #endif
   #if MODUL_ANALOG7
+    variablen.putBool("analog7Web", analog7Webhook);
     variablen.putString("analog7Name", analog7Name);
     variablen.putInt("analog7GrUnten", analog7GruenUnten);
     variablen.putInt("analog7GrOben", analog7GruenOben);
@@ -66,6 +69,7 @@ void VariablenSpeichern() {
     variablen.putInt("analog7GeOben", analog7GelbOben);
   #endif
   #if MODUL_ANALOG8
+    variablen.putBool("analog8Web", analog8Webhook);
     variablen.putString("analog8Name", analog8Name);
     variablen.putInt("analog8GrUnten", analog8GruenUnten);
     variablen.putInt("analog8GrOben", analog8GruenOben);
@@ -74,10 +78,12 @@ void VariablenSpeichern() {
   #endif
   #if MODUL_DHT
     variablen.putInt("intDht", intervallDht);
+    variablen.putBool("luftTWeb", lufttemperaturWebhook);
     variablen.putInt("luftTGrUnten", lufttemperaturGruenUnten);
     variablen.putInt("luftTGrOben", lufttemperaturGruenOben);
     variablen.putInt("luffTGeUnten", lufttemperaturGelbUnten);
     variablen.putInt("luftTGeOben", lufttemperaturGelbOben);
+    variablen.putBool("luftFWeb", luftfeuchteWebhook);
     variablen.putInt("luftFGrUnten", luftfeuchteGruenUnten);
     variablen.putInt("luftFGrOben", luftfeuchteGruenOben);
     variablen.putInt("luftFGeUnten", luftfeuchteGelbUnten);
@@ -85,6 +91,7 @@ void VariablenSpeichern() {
   #endif
   #if MODUL_HELLIGKEIT
     variablen.putString("hellName", helligkeitName);
+    variablen.putBool("hellWeb", helligkeitWebhook);
     variablen.putInt("hellMin", helligkeitMinimum);
     variablen.putInt("hellMax", helligkeitMaximum);
     variablen.putInt("hellGrUnten", helligkeitGruenUnten);
@@ -132,6 +139,7 @@ void VariablenLaden() {
   #endif
   intervallAnalog = variablen.getInt("intAnalog", intervallAnalog);
   #if MODUL_BODENFEUCHTE
+    bodenfeuchteWebhook = variablen.getInt("bodenfWeb", bodenfeuchteWebhook);
     bodenfeuchteGruenUnten = variablen.getInt("bodenfGrUnten", bodenfeuchteGruenUnten);
     bodenfeuchteGruenOben = variablen.getInt("bodenfGrOben", bodenfeuchteGruenOben);
     bodenfeuchteGelbUnten = variablen.getInt("bodenfGeUnten", bodenfeuchteGelbUnten);
@@ -139,6 +147,7 @@ void VariablenLaden() {
   #endif
   #if MODUL_ANALOG3
     analog3Name = variablen.getString("analog3Name", analog3Name);
+    analog3Webhook = variablen.getInt("analog3Web", analog3Webhook);
     analog3GruenUnten = variablen.getInt("analog3GrUnten", analog3GruenUnten);
     analog3GruenOben = variablen.getInt("analog3GrOben", analog3GruenOben);
     analog3GelbUnten = variablen.getInt("analog3GeUnten", analog3GelbUnten);
@@ -146,6 +155,7 @@ void VariablenLaden() {
   #endif
   #if MODUL_ANALOG4
     analog4Name = variablen.getString("analog4Name", analog4Name);
+    analog4Webhook = variablen.getInt("analog4Web", analog4Webhook);
     analog4GruenUnten = variablen.getInt("analog4GrUnten", analog4GruenUnten);
     analog4GruenOben = variablen.getInt("analog4GrOben", analog4GruenOben);
     analog4GelbUnten = variablen.getInt("analog4GeUnten", analog4GelbUnten);
@@ -153,6 +163,7 @@ void VariablenLaden() {
   #endif
   #if MODUL_ANALOG5
     analog5Name = variablen.getString("analog5Name", analog5Name);
+    analog5Webhook = variablen.getInt("analog5Web", analog5Webhook);
     analog5GruenUnten = variablen.getInt("analog5GrUnten", analog5GruenUnten);
     analog5GruenOben = variablen.getInt("analog5GrOben", analog5GruenOben);
     analog5GelbUnten = variablen.getInt("analog5GeUnten", analog5GelbUnten);
@@ -160,6 +171,7 @@ void VariablenLaden() {
   #endif
   #if MODUL_ANALOG6
     analog6Name = variablen.getString("analog6Name", analog6Name);
+    analog6Webhook = variablen.getInt("analog6Web", analog6Webhook);
     analog6GruenUnten = variablen.getInt("analog6GrUnten", analog6GruenUnten);
     analog6GruenOben = variablen.getInt("analog6GrOben", analog6GruenOben);
     analog6GelbUnten = variablen.getInt("analog6GeUnten", analog6GelbUnten);
@@ -167,6 +179,7 @@ void VariablenLaden() {
   #endif
   #if MODUL_ANALOG7
     analog7Name = variablen.getString("analog7Name", analog7Name);
+    analog7Webhook = variablen.getInt("analog7Web", analog7Webhook);
     analog7GruenUnten = variablen.getInt("analog7GrUnten", analog7GruenUnten);
     analog7GruenOben = variablen.getInt("analog7GrOben", analog7GruenOben);
     analog7GelbUnten = variablen.getInt("analog7GeUnten", analog7GelbUnten);
@@ -174,6 +187,7 @@ void VariablenLaden() {
   #endif
   #if MODUL_ANALOG8
     analog8Name = variablen.getString("analog8Name", analog8Name);
+    analog8Webhook = variablen.getInt("analog8Web", analog8Webhook);
     analog8GruenUnten = variablen.getInt("analog8GrUnten", analog8GruenUnten);
     analog8GruenOben = variablen.getInt("analog8GrOben", analog8GruenOben);
     analog8GelbUnten = variablen.getInt("analog8GeUnten", analog8GelbUnten);
@@ -181,17 +195,20 @@ void VariablenLaden() {
   #endif
   #if MODUL_DHT
     intervallDht = variablen.getInt("intDht", intervallDht);
+    lufttemperaturWebhook = variablen.getInt("luftTWeb", lufttemperaturWebhook);
     lufttemperaturGruenUnten = variablen.getInt("luftTGrUnten", lufttemperaturGruenUnten);
     lufttemperaturGruenOben = variablen.getInt("luftTGrOben", lufttemperaturGruenOben);
     lufttemperaturGelbUnten = variablen.getInt("luffTGeUnten", lufttemperaturGelbUnten);
     lufttemperaturGelbOben = variablen.getInt("luftTGeOben", lufttemperaturGelbOben);
     luftfeuchteGruenUnten = variablen.getInt("luftFGrUnten", luftfeuchteGruenUnten);
+    luftfeuchteWebhook = variablen.getInt("luftFWeb", luftfeuchteWebhook);
     luftfeuchteGruenOben = variablen.getInt("luftFGrOben", luftfeuchteGruenOben);
     luftfeuchteGelbUnten = variablen.getInt("luftFGeUnten", luftfeuchteGelbUnten);
     luftfeuchteGelbOben = variablen.getInt("luftFGeOben", luftfeuchteGelbOben);
   #endif
   #if MODUL_HELLIGKEIT
     helligkeitName = variablen.getString("hellName", helligkeitName);
+    helligkeitWebhook = variablen.getInt("hellWeb", helligkeitWebhook);
     helligkeitMinimum = variablen.getInt("hellMin", helligkeitMinimum);
     helligkeitMaximum = variablen.getInt("hellMax", helligkeitMaximum);
     helligkeitGruenUnten = variablen.getInt("hellGrUnten", helligkeitGruenUnten);

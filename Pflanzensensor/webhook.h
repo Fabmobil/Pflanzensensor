@@ -11,7 +11,7 @@ WiFiClientSecure client;
 // Funktionsdeklarationen
 void WebhookSetup();
 void verbindungTest();
-void WebhookNachricht(String status, int bodenfeuchte, int luftfeuchte, int lufttemperatur);
+void WebhookNachricht(String status, String sensorname, int sensorwert, String einheit);
 
 
 /*
@@ -41,7 +41,7 @@ void WebhookSetup() {
   // Zertifikate initialisieren
   certList.append(zertifikat);
   client.setTrustAnchors(&certList);
-  WebhookNachricht("init", 0, 0 ,0); // Initalisierungsnachricht schicken
+  WebhookNachricht("init", F("null"), 0 , F("null")); // Initalisierungsnachricht schicken
   // Testverbindung
   #if MODUL_DEBUG
     verbindungTest();
@@ -95,23 +95,20 @@ void verbindungTest() {
  * Funktion: WebhookNachricht(String status, int bodenfeuchte, int luftfeuchte, int lufttemperatur)
  * Sendet Nachrichten über einen www.ifttt.com Webhook
  */
-void WebhookNachricht(String status, String sensorname, int messwert) {
+void WebhookNachricht(String status, String sensorname, int sensorwert, String einheit) {
   #if MODUL_DEBUG
     Serial.print(F("# Beginn von Webhooknachricht("));
-    Serial.print(status); Serial.print(F(", ")); Serial.print(bodenfeuchte);
-    Serial.print(F(", ")); Serial.print(luftfeuchte);
-    Serial.print(F(", ")); Serial.print(lufttemperatur);
+    Serial.print(status); Serial.print(F(", ")); Serial.print(sensorname);
+    Serial.print(F(", ")); Serial.print(sensorwert);
     Serial.println(F(")"));
   #endif
-
-  Serial.println(F("Webhook Nachricht!"));
 
   // JSON-Objekt erstellen
   JsonDocument doc;
   doc["status"] = status;
-  doc["bodenfeuchte"] = bodenfeuchte;
-  doc["luftfeuchte"] = luftfeuchte;
-  doc["lufttemperatur"] = lufttemperatur;
+  doc["sensorname"] = sensorname;
+  doc["sensorwert"] = sensorwert;
+  doc["einheit"] = einheit;
 
   // JSON in String umwandeln
   String jsonString;
@@ -128,29 +125,17 @@ void WebhookNachricht(String status, String sensorname, int messwert) {
   // Verbindung herstellen und Request senden
   if (client.connect(webhookDomain, httpsPort)) {
     client.print(postRequest);
-
-    Serial.println(F("Folgender Request wurde an den Webserver übertragen:"));
-    Serial.print(postRequest);
-
     // Warten auf Antwort
     while (client.connected()) {
       String line = client.readStringUntil('\n');
       if (line == "\r") {
-        Serial.println(F("Headers empfangen"));
         break;
       }
     }
-    String response = client.readString();
-    Serial.println(F("Antwort war:"));
-    Serial.println("==========");
-    Serial.println(response);
-    Serial.println("==========");
   } else {
     Serial.println(F("Verbindung fehlgeschlagen"));
     Serial.print(F("Letzter Fehlercode: "));
     Serial.println(client.getLastSSLError());
   }
-
   client.stop();
-  Serial.println(F("Verbindung geschlossen"));
 }

@@ -140,18 +140,18 @@ void setup() {
     WebhookSetup();
   #endif
   if (VariablenDa()) {
-      #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-        DisplayDreiWoerter("Start..", " Variablen", "  laden");
-      #endif
-      // Load the preferences from flash
-      VariablenLaden();
-    } else {
-      #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-        DisplayDreiWoerter("Start..", " Variablen", "  speichern");
-      #endif
-      // Save the preferences to flash
-      VariablenSpeichern();
-    }
+    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+      DisplayDreiWoerter("Start..", " Variablen", "  laden");
+    #endif
+    // Load the preferences from flash
+    VariablenLaden();
+  } else {
+    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+      DisplayDreiWoerter("Start..", " Variablen", "  speichern");
+    #endif
+    // Save the preferences to flash
+    VariablenSpeichern();
+  }
 
   variablen.begin("pflanzensensor", false); // Variablen initialisieren
   int neustarts = variablen.getInt("neustarts", 1); // default to 1
@@ -345,28 +345,97 @@ void loop() {
     if (webhookSchalter) {
       // Alarme nur aller x Stunden senden:
       if (millisAktuell - millisVorherWebhook >= webhookFrequenz*1000*60) {
-        // Falls die Bodenfeuchte im roten Bereich ist:
-        if (bodenfeuchteMesswertProzent > bodenfeuchteGelbOben || bodenfeuchteMesswertProzent < bodenfeuchteGelbUnten) {
-          webhookStatus = "Alarm";
-          Serial.println("Webhook Alarm ausgelöst!");
-          WebhookNachricht(webhookStatus, bodenfeuchteMesswertProzent, luftfeuchteMesswert, lufttemperaturMesswert);
-        }
+        #if MODUL_BODENFEUCHTE
+          CheckSensorAlarm(bodenfeuchteWebhook, bodenfeuchteMesswertProzent, bodenfeuchteGelbOben, bodenfeuchteGelbUnten, bodenfeuchteName, "%");
+        #endif
+        #if MODUL_HELLIGKEIT
+          CheckSensorAlarm(helligkeitWebhook, helligkeitMesswertProzent, helligkeitGelbOben, helligkeitGelbUnten, helligkeitName, "%");
+        #endif
+        #if MODUL_LUFTFEUCHTE
+          CheckSensorAlarm(luftfeuchteWebhook, luftfeuchteMesswertProzent, luftfeuchteGelbOben, luftfeuchteGelbUnten, "Luftfeuchte", "%");
+        #endif
+        #if MODUL_LUFTTEMPERATUR
+          CheckSensorAlarm(lufttemperaturWebhook, lufttemperaturMesswertGrad, lufttemperaturGelbOben, lufttemperaturGelbUnten, "Lufttemperatur", "°C");
+        #endif
+        #if MODUL_ANALOG3
+          CheckSensorAlarm(analog3Webhook, analog3MesswertProzent, analog3GelbOben, analog3GelbUnten, analog3Name, "%");
+        #endif
+        #if MODUL_ANALOG4
+          CheckSensorAlarm(analog4Webhook, analog4MesswertProzent, analog4GelbOben, analog4GelbUnten, analog4Name, "%");
+        #endif
+        #if MODUL_ANALOG5
+          CheckSensorAlarm(analog5Webhook, analog5MesswertProzent, analog5GelbOben, analog5GelbUnten, analog5Name, "%");
+        #endif
+        #if MODUL_ANALOG6
+          CheckSensorAlarm(analog6Webhook, analog6MesswertProzent, analog6GelbOben, analog6GelbUnten, analog6Name, "%");
+        #endif
+        #if MODUL_ANALOG7
+          CheckSensorAlarm(analog7Webhook, analog7MesswertProzent, analog7GelbOben, analog7GelbUnten, analog7Name, "%");
+        #endif
+        #if MODUL_ANALOG8
+          CheckSensorAlarm(analog8Webhook, analog8MesswertProzent, analog8GelbOben, analog8GelbUnten, analog8Name, "%");
+        #endif
         millisVorherWebhook = millisAktuell; // neuen Wert übernehmen
       }
-      // Falls die Bodenfeuchte wieder im gelben oder grünen Bereich ist und vorher ein Alarm ausgelöst war
-      if ((bodenfeuchteMesswertProzent > bodenfeuchteGelbUnten && bodenfeuchteMesswertProzent < bodenfeuchteGelbOben) && webhookStatus == "Alarm") {
-        webhookStatus = "OK";
-        Serial.println("Webhook Alarm beendet.");
-        WebhookNachricht(webhookStatus, bodenfeuchteMesswertProzent, luftfeuchteMesswert, lufttemperaturMesswert);
-      }
+      #if MODUL_BODENFEUCHTE
+        // Falls die Bodenfeuchte wieder im gelben oder grünen Bereich ist und vorher ein Alarm ausgelöst war
+        if ((bodenfeuchteMesswertProzent > bodenfeuchteGelbUnten && bodenfeuchteMesswertProzent < bodenfeuchteGelbOben) && webhookStatus == "Alarm") {
+          webhookStatus = "OK";
+          Serial.println("Webhook Alarm beendet.");
+          WebhookNachricht(webhookStatus, bodenfeuchteName, bodenfeuchteMesswertProzent, "%");
+        }
+      #endif
     }
   #endif
 
-  #if MODUL_DEBUG // Debuginformation
-    Serial.print(F("# millisAktuell: ")); Serial.println(millisAktuell);
-    Serial.println(F("############ Ende von loop() ##############"));
-    Serial.println(F(""));
+  #if MODUL_BODENFEUCHTE
+    checkSensorOK(bodenfeuchteMesswertProzent, bodenfeuchteGelbOben, bodenfeuchteGelbUnten, bodenfeuchteName, "%");
   #endif
+  #if MODUL_HELLIGKEIT
+    checkSensorOK(helligkeitMesswertProzent, helligkeitGelbOben, helligkeitGelbUnten, helligkeitName, "%");
+  #endif
+  #if MODUL_LUFTFEUCHTE
+    checkSensorOK(luftfeuchteMesswertProzent, luftfeuchteGelbOben, luftfeuchteGelbUnten, luftfeuchteName, "%");
+  #endif
+  #if MODUL_LUFTTEMPERATUR
+    checkSensorOK(lufttemperaturMesswertGrad, lufttemperaturGelbOben, lufttemperaturGelbUnten, lufttemperaturName, "°C");
+  #endif
+  #if MODUL_ANALOG3
+    checkSensorOK(analog3MesswertProzent, analog3GelbOben, analog3GelbUnten, analog3Name, "%");
+  #endif
+  #if MODUL_ANALOG4
+    checkSensorOK(analog4MesswertProzent, analog4GelbOben, analog4GelbUnten, analog4Name, "%");
+  #endif
+  #if MODUL_ANALOG5
+    checkSensorOK(analog5MesswertProzent, analog5GelbOben, analog5GelbUnten, analog5Name, "%");
+  #endif
+  #if MODUL_ANALOG6
+    checkSensorOK(analog6MesswertProzent, analog6GelbOben, analog6GelbUnten, analog6Name, "%");
+  #endif
+  #if MODUL_ANALOG7
+    checkSensorOK(analog7MesswertProzent, analog7GelbOben, analog7GelbUnten, analog7Name, "%");
+  #endif
+  #if MODUL_ANALOG8
+    checkSensorOK(analog8MesswertProzent, analog8GelbOben, analog8GelbUnten, analog8Name, "%");
+  #endif
+}
+
+void CheckSensorAlarm(bool alarmAktiv, int messwert, int oberesLimit, int unteresLimit, String sensorName, const char* einheit) {
+  if (alarmAktiv && (messwert > oberesLimit || messwert < unteresLimit)) {
+    webhookStatus = "Alarm";
+    Serial.print(sensorName);
+    Serial.println(F(" hat einen Webhook Alarm ausgelöst!"));
+    WebhookNachricht(webhookStatus, sensorName, messwert, einheit);
+  }
+}
+
+// Funktion zur Überprüfung und Beendigung von Sensoralarmen
+void checkSensorOK(float messwert, float oberesLimit, float unteresLimit, String sensorName, const char* einheit) {
+  if (messwert > unteresLimit && messwert < oberesLimit && webhookStatus == "Alarm") {
+    webhookStatus = "OK";
+    Serial.println("Webhook Alarm beendet.");
+    WebhookNachricht(webhookStatus, sensorName, messwert, einheit);
+  }
 }
 
 /* Funktion: ModuleZaehlen()
