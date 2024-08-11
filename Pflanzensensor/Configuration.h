@@ -174,7 +174,7 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
  * hier muss eigentlich nichts verändert werden sondern die notewendigen globalen Variablen werden hier
  * definiert.
  */
-#define pflanzensensorVersion "0.5" // Versionsnummer
+#define pflanzensensorVersion "0.6" // Versionsnummer
 unsigned long millisVorherAnalog = 0; // Variable für die Messung des Intervalls der Analogsensormessung
 unsigned long millisVorherDht = 0; // Variable für die Messung des Intervalls der Luftfeuchte- und -temperaturmessung
 unsigned long millisVorherLedampel = 0; // Variable für die Messung des Intervalls des Umschaltens der LED Ampel
