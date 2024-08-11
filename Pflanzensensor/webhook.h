@@ -25,7 +25,7 @@ void WebhookSetup() {
 
   // Zeit synchronisieren
   configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
-  Serial.print("Warte auf die Synchronisation von Uhrzeit und Datum: ");
+  Serial.println("Warte auf die Synchronisation von Uhrzeit und Datum: ");
   time_t now = time(nullptr);
   while (now < 8 * 3600 * 2) {
     delay(500);

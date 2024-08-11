@@ -11,11 +11,7 @@ bool VariablenDa() {
 
 void VariablenSpeichern() {
   variablen.begin("pflanzensensor", false);
-
-  // Save the variablen to flash
   variablen.putBool("variablenDa", true);
-
-  // Save the variables to flash
   #if MODUL_DISPLAY
     variablen.putInt("intDisplay", intervallDisplay);
     variablen.putBool("displayAn", displayAn);
@@ -242,9 +238,7 @@ void VariablenLaden() {
 }
 
 void VariablenLoeschen() {
-  if (VariablenDa() == true) {
-    variablen.begin("pflanzensensor", false);
-    variablen.clear();
-    variablen.end();;
-  };
+  variablen.begin("pflanzensensor", false);
+  variablen.clear();
+  variablen.end();
 }
