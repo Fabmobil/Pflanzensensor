@@ -86,7 +86,7 @@ void WebseiteAdminAusgeben() {
     Webserver.sendContent(F("<p>Webhook aktiv? <input type=\"checkbox\" id=\"webhookSchalter\" "));
     if (webhookSchalter) Webserver.sendContent(F("checked"));
     Webserver.sendContent(F("></p>\n"));
-    sendeEinstellung(F("Benachrichtigungsfequenz in Minuten"), F("webhookFrequenz"), String(webhookFrequenz));
+    sendeEinstellung(F("Benachrichtigungsfequenz in Stunden"), F("webhookFrequenz"), String(webhookFrequenz));
     sendeEinstellung(F("Domain des Webhooks"), F("webhookDomain"), webhookDomain);
     sendeEinstellung(F("Schlüssel/Pfad des Webhooks"), F("webhookPfad"), webhookPfad);
     Webserver.sendContent(F("</div>\n"));
