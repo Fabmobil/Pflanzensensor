@@ -97,7 +97,8 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
   // URL und Passwort für make.com in der passwoerter.h
   bool webhookAn = false;
   String webhookStatus = "init";
-  unsigned long webhookFrequenz = 1; // Die Benachrichtigungsfrequenz des Webhooks in Stunden. Vorschlag: 12
+  int webhookFrequenz = 1; // Die Benachrichtigungsfrequenz des Webhooks in Stunden. Vorschlag: 12
+  int webhookPingFrequenz = 1; // Keep Alive Ping Frequenz in Stunden. Vorschlag: 24
 #endif
 #include <LittleFS.h> // für das Speichern auf dem Flash des ESP; muss vor Wifi geladen werden
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
@@ -181,6 +182,7 @@ unsigned long millisVorherDht = 0; // Variable für die Messung des Intervalls d
 unsigned long millisVorherLedampel = 0; // Variable für die Messung des Intervalls des Umschaltens der LED Ampel
 unsigned long millisVorherDisplay = 0; // Variable für die Messung des Intervalls der Anzeige des Displays
 unsigned long millisVorherWebhook = 0; // Variable für die Messung des Intervalls des Webhooks
+unsigned long millisVorherWebhookPing = 0; // Variable für die Messung des Intervalls des Keep Alive Pings des Webhooks
 int module; // Variable für die Anzahl der Module
 int displayseiten; // Variable für die Anzahl der Analogsensoren
 String ip = "keine WLAN Verbindung."; // Initialisierung der IP Adresse mit Fehlermeldung

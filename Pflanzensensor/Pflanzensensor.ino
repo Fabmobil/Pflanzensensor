@@ -160,7 +160,7 @@ void setup() {
     Serial.println(neustarts);
     Serial.println("# Inhalte des Flashspeichers:");
     File root = LittleFS.open("/", "r");
-    WebseiteDatenFlashAuflisten(root, 0);
+    VariablenAuflisten(root, 0);
   #endif
   neustarts++;
   variablen.putInt("neustarts", neustarts);
@@ -352,7 +352,7 @@ void loop() {
   #if MODUL_WEBHOOK // wenn das Webhook-Modul aktiv ist
     if (webhookAn) {
       // Alarme nur aller x Stunden senden:
-      if (millisAktuell - millisVorherWebhook >= webhookFrequenz*1000*60) {
+      if (millisAktuell - millisVorherWebhook >= (unsigned long)(webhookFrequenz) * 1000UL * 60UL * 60UL) {
         #if MODUL_BODENFEUCHTE
           CheckSensorAlarm(bodenfeuchteWebhook, bodenfeuchteMesswertProzent, bodenfeuchteGelbOben, bodenfeuchteGelbUnten, bodenfeuchteName, "%");
         #endif
@@ -385,46 +385,42 @@ void loop() {
         #endif
         millisVorherWebhook = millisAktuell; // neuen Wert übernehmen
       }
+      if (millisAktuell - millisVorherWebhookPing >= (unsigned long)(webhookPingFrequenz) * 1000UL * 60UL * 60UL) {
+        webhookStatus = "ping";
+        WebhookNachricht(webhookStatus, "Pingfrequenz", webhookPingFrequenz, "h");
+        millisVorherWebhookPing = millisAktuell; // neuen Wert übernehmen
+      }
       #if MODUL_BODENFEUCHTE
-        // Falls die Bodenfeuchte wieder im gelben oder grünen Bereich ist und vorher ein Alarm ausgelöst war
-        if ((bodenfeuchteMesswertProzent > bodenfeuchteGelbUnten && bodenfeuchteMesswertProzent < bodenfeuchteGelbOben) && webhookStatus == "Alarm") {
-          webhookStatus = "OK";
-          Serial.println("Webhook Alarm beendet.");
-          WebhookNachricht(webhookStatus, bodenfeuchteName, bodenfeuchteMesswertProzent, "%");
-        }
+        checkSensorOK(bodenfeuchteMesswertProzent, bodenfeuchteGelbOben, bodenfeuchteGelbUnten, bodenfeuchteName, "%");
+      #endif
+      #if MODUL_HELLIGKEIT
+        checkSensorOK(helligkeitMesswertProzent, helligkeitGelbOben, helligkeitGelbUnten, helligkeitName, "%");
+      #endif
+      #if MODUL_LUFTFEUCHTE
+        checkSensorOK(luftfeuchteMesswertProzent, luftfeuchteGelbOben, luftfeuchteGelbUnten, luftfeuchteName, "%");
+      #endif
+      #if MODUL_LUFTTEMPERATUR
+        checkSensorOK(lufttemperaturMesswertGrad, lufttemperaturGelbOben, lufttemperaturGelbUnten, lufttemperaturName, "°C");
+      #endif
+      #if MODUL_ANALOG3
+        checkSensorOK(analog3MesswertProzent, analog3GelbOben, analog3GelbUnten, analog3Name, "%");
+      #endif
+      #if MODUL_ANALOG4
+        checkSensorOK(analog4MesswertProzent, analog4GelbOben, analog4GelbUnten, analog4Name, "%");
+      #endif
+      #if MODUL_ANALOG5
+        checkSensorOK(analog5MesswertProzent, analog5GelbOben, analog5GelbUnten, analog5Name, "%");
+      #endif
+      #if MODUL_ANALOG6
+        checkSensorOK(analog6MesswertProzent, analog6GelbOben, analog6GelbUnten, analog6Name, "%");
+      #endif
+      #if MODUL_ANALOG7
+        checkSensorOK(analog7MesswertProzent, analog7GelbOben, analog7GelbUnten, analog7Name, "%");
+      #endif
+      #if MODUL_ANALOG8
+        checkSensorOK(analog8MesswertProzent, analog8GelbOben, analog8GelbUnten, analog8Name, "%");
       #endif
     }
-  #endif
-
-  #if MODUL_BODENFEUCHTE
-    checkSensorOK(bodenfeuchteMesswertProzent, bodenfeuchteGelbOben, bodenfeuchteGelbUnten, bodenfeuchteName, "%");
-  #endif
-  #if MODUL_HELLIGKEIT
-    checkSensorOK(helligkeitMesswertProzent, helligkeitGelbOben, helligkeitGelbUnten, helligkeitName, "%");
-  #endif
-  #if MODUL_LUFTFEUCHTE
-    checkSensorOK(luftfeuchteMesswertProzent, luftfeuchteGelbOben, luftfeuchteGelbUnten, luftfeuchteName, "%");
-  #endif
-  #if MODUL_LUFTTEMPERATUR
-    checkSensorOK(lufttemperaturMesswertGrad, lufttemperaturGelbOben, lufttemperaturGelbUnten, lufttemperaturName, "°C");
-  #endif
-  #if MODUL_ANALOG3
-    checkSensorOK(analog3MesswertProzent, analog3GelbOben, analog3GelbUnten, analog3Name, "%");
-  #endif
-  #if MODUL_ANALOG4
-    checkSensorOK(analog4MesswertProzent, analog4GelbOben, analog4GelbUnten, analog4Name, "%");
-  #endif
-  #if MODUL_ANALOG5
-    checkSensorOK(analog5MesswertProzent, analog5GelbOben, analog5GelbUnten, analog5Name, "%");
-  #endif
-  #if MODUL_ANALOG6
-    checkSensorOK(analog6MesswertProzent, analog6GelbOben, analog6GelbUnten, analog6Name, "%");
-  #endif
-  #if MODUL_ANALOG7
-    checkSensorOK(analog7MesswertProzent, analog7GelbOben, analog7GelbUnten, analog7Name, "%");
-  #endif
-  #if MODUL_ANALOG8
-    checkSensorOK(analog8MesswertProzent, analog8GelbOben, analog8GelbUnten, analog8Name, "%");
   #endif
 }
 

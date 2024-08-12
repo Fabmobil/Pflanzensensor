@@ -1,3 +1,13 @@
+/**
+ * Webhook Modul
+ * Diese Datei enthält den Code für das make.com Webhook Modul
+ * www.make.com ist ein Webservice der es ermöglicht, dass der Pflanzensensor dir Emails oder Telegramnachrichten schickt.
+ *
+ * curl test:  curl -X POST https://hook.eu2.make.com/URL -H "Content-Type: application/json" -d '{"bodenfeuchte":"20","luftfeuchte":"32","lufttemperatur":"30"}'
+ */
+
+
+
 #include <WiFiClientSecure.h>
 #include <time.h>
 #include <ArduinoJson.h>
@@ -12,7 +22,6 @@ WiFiClientSecure client;
 void WebhookSetup();
 void verbindungTest();
 void WebhookNachricht(String status, String sensorname, int sensorwert, String einheit);
-
 
 /*
  * Funktion: WebhookSetup()
