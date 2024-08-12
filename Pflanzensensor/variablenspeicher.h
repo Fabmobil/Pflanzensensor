@@ -226,7 +226,7 @@ void VariablenLaden() {
     webhookDomain = variablen.getString("webhookDomain", webhookDomain);
     webhookAn = variablen.getBool("webhookAn", webhookAn);
     webhookFrequenz = variablen.getInt("webhookFrequenz", webhookFrequenz);
-    webhookPingFrequenz = variablen.getInt("webhooPingFrequenz", webhookPingFrequenz);
+    webhookPingFrequenz = variablen.getInt("webhookPingFrequenz", webhookPingFrequenz);
   #endif
   #if MODUL_WIFI
     wifiSsid1 = variablen.getString("wifiSsid1", wifiSsid1);
