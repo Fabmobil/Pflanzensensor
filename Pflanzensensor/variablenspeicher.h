@@ -105,6 +105,7 @@ void VariablenSpeichern() {
     variablen.putString("webhookPfad", webhookPfad);
     variablen.putString("webhookDomain", webhookDomain);
     variablen.putInt("webhookFrequenz", webhookFrequenz);
+    variablen.putInt("webhookPingFrequenz", webhookPingFrequenz);
     variablen.putBool("webhookAn", webhookAn);
   #endif
   #if MODUL_WIFI
@@ -225,6 +226,7 @@ void VariablenLaden() {
     webhookDomain = variablen.getString("webhookDomain", webhookDomain);
     webhookAn = variablen.getBool("webhookAn", webhookAn);
     webhookFrequenz = variablen.getInt("webhookFrequenz", webhookFrequenz);
+    webhookPingFrequenz = variablen.getInt("webhooPingFrequenz", webhookPingFrequenz);
   #endif
   #if MODUL_WIFI
     wifiSsid1 = variablen.getString("wifiSsid1", wifiSsid1);
@@ -241,4 +243,28 @@ void VariablenLoeschen() {
   variablen.begin("pflanzensensor", false);
   variablen.clear();
   variablen.end();
+}
+
+
+void VariablenAuflisten(File dir, int numTabs) {
+  while (true) {
+    File entry =  dir.openNextFile();
+    if (! entry) {
+      // no more files
+      break;
+    }
+    for (uint8_t i=0; i<numTabs; i++) {
+      Serial.print('\t');
+    }
+    Serial.print(entry.name());
+    if (entry.isDirectory()) {
+      Serial.println("/");
+      VariablenAuflisten(entry, numTabs+1);
+    } else {
+    // files have sizes, directories do not
+    Serial.print("\t\t");
+    Serial.println(entry.size(), DEC);
+    }
+    entry.close();
+  }
 }
