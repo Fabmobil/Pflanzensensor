@@ -11,12 +11,14 @@ ESP8266WiFiMulti wifiMulti;
 ESP8266WebServer Webserver(80); // Webserver auf Port 80
 #include "wifi_footer.h" // Kopf der HTML-Seite
 #include "wifi_header.h"// Fuß der HTML-Seite
-#include "wifi_daten.h" // Bilder die auf der Seite verwendet werden
 #include "wifi_seite_admin.h" // für die Administrationsseite
 #include "wifi_seite_debug.h" // für die Debugseite
 #include "wifi_seite_nichtGefunden.h" // für die Seite, die angezeigt wird, wenn die angefragte Seite nicht gefunden wurde
 #include "wifi_seite_start.h" // für die Startseite
 #include "wifi_seite_setzeVariablen.h" // für das Setzen der Variablen
+
+void WebseiteBild(const char* pfad, const char* mimeType);
+void WebseiteCss();
 
 /*
  * Funktion: WifiSetup()
@@ -92,12 +94,47 @@ String WifiSetup(String hostname){
   Webserver.on("/admin.html", HTTP_GET, WebseiteAdminAusgeben);
   Webserver.on("/debug.html", HTTP_GET, WebseiteDebugAusgeben);
   Webserver.on("/setzeVariablen", HTTP_POST, WebseiteSetzeVariablen);
-  Webserver.on("/Bilder/logoFabmobil.png", HTTP_GET, WebseiteBildLogoFabmobil);
-  Webserver.on("/Bilder/logoGithub.png", HTTP_GET, WebseiteBildLogoGithub);
-  Webserver.on("/Bilder/hintergrund.png", HTTP_GET, WebseiteBildHintergrund);
+  Webserver.on("/Bilder/logoFabmobil.png", HTTP_GET, []() {
+      WebseiteBild("/Bilder/logoFabmobil.png", "image/png");
+  });
+  Webserver.on("/Bilder/logoGithub.png", HTTP_GET, []() {
+      WebseiteBild("/Bilder/logoGithub.png", "image/png");
+  });
   Webserver.on("/style.css", HTTP_GET, WebseiteCss);
 
   Webserver.onNotFound(WebseiteNichtGefundenAusgeben);
   Webserver.begin(); // Webserver starten
   return ip; // IP Adresse zurückgeben
+}
+
+/*
+ * Hier sind die Bilder gespeichert, welche auf der Webseite des Sensors eingeblendet werden. Sie sind base64 codiert,
+ * was z.B. über diese Webseite hier gemacht werden kann: https://www.base64-image.de/
+ */
+
+void WebseiteBild(const char* pfad, const char* mimeType) {
+    File bild = LittleFS.open(pfad, "r");
+    if (!bild) {
+        Serial.print("Fehler: ");
+        Serial.print(pfad);
+        Serial.println(" konnte nicht geöffnet werden!");
+        Webserver.send(404, "text/plain", "Bild nicht gefunden");
+        return;
+    }
+    Webserver.streamFile(bild, mimeType);
+    bild.close();
+}
+
+void WebseiteCss() {
+    if (!LittleFS.exists("/style.css")) {
+        Serial.println("Fehler: /style.css existiert nicht!");
+        return;
+    }
+    File css = LittleFS.open("/style.css", "r");
+    if (!css) {
+        Serial.println("Fehler: /style.css kann nicht geöffnet werden!");
+        return;
+    }
+    Webserver.streamFile(css, "text/css");
+    css.close();
 }

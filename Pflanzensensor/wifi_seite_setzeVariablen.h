@@ -1,12 +1,11 @@
 // Funktionsdeklarationen
 void ArgumenteAusgeben();
 void WebseiteSetzeVariablen();
-void updateVariables();
-void updateAnalogSensor(int sensorNumber);
-void updateBoolValue(const String& argName, bool& value);
-void updateIntValue(const String& argName, int& value);
-void updateStringValue(const String& argName, String& value);
-void sendLinks();
+void AktualisiereVariablen();
+void AktualisiereAnalogsensor(int sensorNumber);
+void AktualisiereBoolean(const String& argName, bool& wert);
+void AktualisiereInteger(const String& argName, int& wert);
+void AktualisiereString(const String& argName, String& wert);
 
 /* Funktion: ArgumenteAusgeben()
  * Gibt alle Argumente aus, die übergeben wurden.
@@ -37,10 +36,10 @@ void WebseiteSetzeVariablen() {
   Webserver.sendContent_P(htmlHeader);
 
   if (Webserver.arg("Passwort") == wifiAdminPasswort) {
-    updateVariables();
-    Webserver.sendContent(F("<h2>Erfolgreich!</h2>\n"));
+    AktualisiereVariablen();
+    Webserver.sendContent(F("<h3>Erfolgreich!</h3>\n"));
   } else {
-    Webserver.sendContent(F("<h2>Falsches Passwort!</h2>\n"));
+    Webserver.sendContent(F("<h3>Falsches Passwort!</h3>\n"));
   }
 
   if (Webserver.arg("loeschen") == "Ja!") {
@@ -53,208 +52,208 @@ void WebseiteSetzeVariablen() {
       "<p><a href=\"/\">Warte ein paar Sekunden, dann kannst du hier zur Startseite zurück.</a></p>\n"
       "</div>\n"
     ));
-  } else {
-    sendLinks();
-  }
-
-  Webserver.sendContent_P(htmlFooter);
-
-  if (Webserver.arg("loeschen") == "Ja!") {
+    Webserver.sendContent_P(htmlFooter);
+    Webserver.client().flush();
     VariablenLoeschen();
+    delay(5);
     ESP.restart();
   } else {
+    Webserver.sendContent(F(
+      "<div class=\"weiss\">\n"
+      "<ul>\n"
+      "<li><a href=\"/\">zur Startseite</a></li>\n"
+      "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n"
+    ));
+    #if MODUL_DEBUG
+      Webserver.sendContent(F("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
+    #endif
+    Webserver.sendContent(F(
+      "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">"
+      "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>\n"
+      "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">"
+      "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>\n"
+      "</ul>\n"
+      "</div>\n"
+    ));
+    Webserver.sendContent_P(htmlFooter);
+    Webserver.client().flush();
     VariablenSpeichern();
+    Serial.println("# Inhalte des Flashspeichers:");
+    File root = LittleFS.open("/", "r");
+    VariablenAuflisten(root, 0);
   }
 }
 
-void updateVariables() {
+void AktualisiereVariablen() {
   #if MODUL_LEDAMPEL
-    updateIntValue("ampelModus", ampelModus);
-    updateBoolValue("ampelAn", ampelAn);
+    AktualisiereInteger("ampelModus", ampelModus);
+    AktualisiereBoolean("ampelAn", ampelAn);
   #endif
 
   #if MODUL_DISPLAY
-    updateIntValue("status", status);
-    updateBoolValue("displayAn", displayAn);
+    AktualisiereInteger("status", status);
+    AktualisiereBoolean("displayAn", displayAn);
   #endif
 
   #if MODUL_DHT
-    updateBoolValue("lufttemperaturWebhook", lufttemperaturWebhook);
-    updateIntValue("lufttemperaturGruenUnten", lufttemperaturGruenUnten);
-    updateIntValue("lufttemperaturGruenOben", lufttemperaturGruenOben);
-    updateIntValue("lufttemperaturGelbUnten", lufttemperaturGelbUnten);
-    updateIntValue("lufttemperaturGelbOben", lufttemperaturGelbOben);
-    updateIntValue("luftfeuchteGruenUnten", luftfeuchteGruenUnten);
-    updateIntValue("luftfeuchteGruenOben", luftfeuchteGruenOben);
-    updateIntValue("luftfeuchteGelbUnten", luftfeuchteGelbUnten);
-    updateIntValue("luftfeuchteGelbOben", luftfeuchteGelbOben);
+    AktualisiereBoolean("lufttemperaturWebhook", lufttemperaturWebhook);
+    AktualisiereInteger("lufttemperaturGruenUnten", lufttemperaturGruenUnten);
+    AktualisiereInteger("lufttemperaturGruenOben", lufttemperaturGruenOben);
+    AktualisiereInteger("lufttemperaturGelbUnten", lufttemperaturGelbUnten);
+    AktualisiereInteger("lufttemperaturGelbOben", lufttemperaturGelbOben);
+    AktualisiereInteger("luftfeuchteGruenUnten", luftfeuchteGruenUnten);
+    AktualisiereInteger("luftfeuchteGruenOben", luftfeuchteGruenOben);
+    AktualisiereInteger("luftfeuchteGelbUnten", luftfeuchteGelbUnten);
+    AktualisiereInteger("luftfeuchteGelbOben", luftfeuchteGelbOben);
   #endif
 
   #if MODUL_WEBHOOK
-    updateBoolValue("webhookAn", webhookAn);
-    updateStringValue("webhookDomain", webhookDomain);
-    updateStringValue("webhookPfad", webhookPfad);
+    AktualisiereBoolean("webhookAn", webhookAn);
+    AktualisiereString("webhookDomain", webhookDomain);
+    AktualisiereString("webhookPfad", webhookPfad);
+    AktualisiereInteger("webhookFrequenz", webhookFrequenz);
+    AktualisiereInteger("webhookPingFrequenz", webhookPingFrequenz);
+    Serial.println("webhookPfad: " + webhookPfad);
   #endif
 
   #if MODUL_HELLIGKEIT
-    updateStringValue("helligkeitName", helligkeitName);
-    updateBoolValue("helligkeitWebhook", helligkeitWebhook);
-    updateIntValue("helligkeitMinimum", helligkeitMinimum);
-    updateIntValue("helligkeitMaximum", helligkeitMaximum);
-    updateIntValue("helligkeitGruenUnten", helligkeitGruenUnten);
-    updateIntValue("helligkeitGruenOben", helligkeitGruenOben);
-    updateIntValue("helligkeitGelbUnten", helligkeitGelbUnten);
-    updateIntValue("helligkeitGelbOben", helligkeitGelbOben);
+    AktualisiereString("helligkeitName", helligkeitName);
+    AktualisiereBoolean("helligkeitWebhook", helligkeitWebhook);
+    AktualisiereInteger("helligkeitMinimum", helligkeitMinimum);
+    AktualisiereInteger("helligkeitMaximum", helligkeitMaximum);
+    AktualisiereInteger("helligkeitGruenUnten", helligkeitGruenUnten);
+    AktualisiereInteger("helligkeitGruenOben", helligkeitGruenOben);
+    AktualisiereInteger("helligkeitGelbUnten", helligkeitGelbUnten);
+    AktualisiereInteger("helligkeitGelbOben", helligkeitGelbOben);
   #endif
 
   #if MODUL_BODENFEUCHTE
-    updateStringValue("bodenfeuchteName", bodenfeuchteName);
-    updateBoolValue("bodenfeuchteWebhook", bodenfeuchteWebhook);
-    updateIntValue("bodenfeuchteMinimum", bodenfeuchteMinimum);
-    updateIntValue("bodenfeuchteMaximum", bodenfeuchteMaximum);
-    updateIntValue("bodenfeuchteGruenUnten", bodenfeuchteGruenUnten);
-    updateIntValue("bodenfeuchteGruenOben", bodenfeuchteGruenOben);
-    updateIntValue("bodenfeuchteGelbUnten", bodenfeuchteGelbUnten);
-    updateIntValue("bodenfeuchteGelbOben", bodenfeuchteGelbOben);
+    AktualisiereString("bodenfeuchteName", bodenfeuchteName);
+    AktualisiereBoolean("bodenfeuchteWebhook", bodenfeuchteWebhook);
+    AktualisiereInteger("bodenfeuchteMinimum", bodenfeuchteMinimum);
+    AktualisiereInteger("bodenfeuchteMaximum", bodenfeuchteMaximum);
+    AktualisiereInteger("bodenfeuchteGruenUnten", bodenfeuchteGruenUnten);
+    AktualisiereInteger("bodenfeuchteGruenOben", bodenfeuchteGruenOben);
+    AktualisiereInteger("bodenfeuchteGelbUnten", bodenfeuchteGelbUnten);
+    AktualisiereInteger("bodenfeuchteGelbOben", bodenfeuchteGelbOben);
+    Serial.println("BodenfeuchteGelbOben: " + bodenfeuchteGelbOben);
   #endif
 
   #if MODUL_ANALOG3
-    updateAnalogSensor(3);
+    AktualisiereAnalogsensor(3);
   #endif
   #if MODUL_ANALOG4
-    updateAnalogSensor(4);
+    AktualisiereAnalogsensor(4);
   #endif
   #if MODUL_ANALOG5
-    updateAnalogSensor(5);
+    AktualisiereAnalogsensor(5);
   #endif
   #if MODUL_ANALOG6
-    updateAnalogSensor(6);
+    AktualisiereAnalogsensor(6);
   #endif
   #if MODUL_ANALOG7
-    updateAnalogSensor(7);
+    AktualisiereAnalogsensor(7);
   #endif
   #if MODUL_ANALOG8
-    updateAnalogSensor(8);
+    AktualisiereAnalogsensor(8);
   #endif
 }
 
-void updateAnalogSensor(int sensorNumber) {
+void AktualisiereAnalogsensor(int sensorNumber) {
   String prefix = "analog" + String(sensorNumber);
 
   switch(sensorNumber) {
     #if MODUL_ANALOG3
       case 3:
-        updateStringValue(prefix + "Name", analog3Name);
-        updateBoolValue(prefix + "Webhook", analog3Webhook);
-        updateIntValue(prefix + "Minimum", analog3Minimum);
-        updateIntValue(prefix + "Maximum", analog3Maximum);
-        updateIntValue(prefix + "GruenUnten", analog3GruenUnten);
-        updateIntValue(prefix + "GruenOben", analog3GruenOben);
-        updateIntValue(prefix + "GelbUnten", analog3GelbUnten);
-        updateIntValue(prefix + "GelbOben", analog3GelbOben);
+        AktualisiereString(prefix + "Name", analog3Name);
+        AktualisiereBoolean(prefix + "Webhook", analog3Webhook);
+        AktualisiereInteger(prefix + "Minimum", analog3Minimum);
+        AktualisiereInteger(prefix + "Maximum", analog3Maximum);
+        AktualisiereInteger(prefix + "GruenUnten", analog3GruenUnten);
+        AktualisiereInteger(prefix + "GruenOben", analog3GruenOben);
+        AktualisiereInteger(prefix + "GelbUnten", analog3GelbUnten);
+        AktualisiereInteger(prefix + "GelbOben", analog3GelbOben);
         break;
     #endif
     #if MODUL_ANALOG4
       case 4:
-        updateStringValue(prefix + "Name", analog4Name);
-        updateBoolValue(prefix + "Webhook", analog4Webhook);
-        updateIntValue(prefix + "Minimum", analog4Minimum);
-        updateIntValue(prefix + "Maximum", analog4Maximum);
-        updateIntValue(prefix + "GruenUnten", analog4GruenUnten);
-        updateIntValue(prefix + "GruenOben", analog4GruenOben);
-        updateIntValue(prefix + "GelbUnten", analog4GelbUnten);
-        updateIntValue(prefix + "GelbOben", analog4GelbOben);
+        AktualisiereString(prefix + "Name", analog4Name);
+        AktualisiereBoolean(prefix + "Webhook", analog4Webhook);
+        AktualisiereInteger(prefix + "Minimum", analog4Minimum);
+        AktualisiereInteger(prefix + "Maximum", analog4Maximum);
+        AktualisiereInteger(prefix + "GruenUnten", analog4GruenUnten);
+        AktualisiereInteger(prefix + "GruenOben", analog4GruenOben);
+        AktualisiereInteger(prefix + "GelbUnten", analog4GelbUnten);
+        AktualisiereInteger(prefix + "GelbOben", analog4GelbOben);
         break;
     #endif
     #if MODUL_ANALOG5
       case 5:
-        updateStringValue(prefix + "Name", analog5Name);
-        updateBoolValue(prefix + "Webhook", analog5Webhook);
-        updateIntValue(prefix + "Minimum", analog5Minimum);
-        updateIntValue(prefix + "Maximum", analog5Maximum);
-        updateIntValue(prefix + "GruenUnten", analog5GruenUnten);
-        updateIntValue(prefix + "GruenOben", analog5GruenOben);
-        updateIntValue(prefix + "GelbUnten", analog5GelbUnten);
-        updateIntValue(prefix + "GelbOben", analog5GelbOben);
+        AktualisiereString(prefix + "Name", analog5Name);
+        AktualisiereBoolean(prefix + "Webhook", analog5Webhook);
+        AktualisiereInteger(prefix + "Minimum", analog5Minimum);
+        AktualisiereInteger(prefix + "Maximum", analog5Maximum);
+        AktualisiereInteger(prefix + "GruenUnten", analog5GruenUnten);
+        AktualisiereInteger(prefix + "GruenOben", analog5GruenOben);
+        AktualisiereInteger(prefix + "GelbUnten", analog5GelbUnten);
+        AktualisiereInteger(prefix + "GelbOben", analog5GelbOben);
         break;
     #endif
     #if MODUL_ANALOG6
       case 6:
-        updateStringValue(prefix + "Name", analog6Name);
-        updateBoolValue(prefix + "Webhook", analog6Webhook);
-        updateIntValue(prefix + "Minimum", analog6Minimum);
-        updateIntValue(prefix + "Maximum", analog6Maximum);
-        updateIntValue(prefix + "GruenUnten", analog6GruenUnten);
-        updateIntValue(prefix + "GruenOben", analog6GruenOben);
-        updateIntValue(prefix + "GelbUnten", analog6GelbUnten);
-        updateIntValue(prefix + "GelbOben", analog6GelbOben);
+        AktualisiereString(prefix + "Name", analog6Name);
+        AktualisiereBoolean(prefix + "Webhook", analog6Webhook);
+        AktualisiereInteger(prefix + "Minimum", analog6Minimum);
+        AktualisiereInteger(prefix + "Maximum", analog6Maximum);
+        AktualisiereInteger(prefix + "GruenUnten", analog6GruenUnten);
+        AktualisiereInteger(prefix + "GruenOben", analog6GruenOben);
+        AktualisiereInteger(prefix + "GelbUnten", analog6GelbUnten);
+        AktualisiereInteger(prefix + "GelbOben", analog6GelbOben);
         break;
     #endif
     #if MODUL_ANALOG7
       case 7:
-        updateStringValue(prefix + "Name", analog7Name);
-        updateBoolValue(prefix + "Webhook", analog7Webhook);
-        updateIntValue(prefix + "Minimum", analog7Minimum);
-        updateIntValue(prefix + "Maximum", analog7Maximum);
-        updateIntValue(prefix + "GruenUnten", analog7GruenUnten);
-        updateIntValue(prefix + "GruenOben", analog7GruenOben);
-        updateIntValue(prefix + "GelbUnten", analog7GelbUnten);
-        updateIntValue(prefix + "GelbOben", analog7GelbOben);
+        AktualisiereString(prefix + "Name", analog7Name);
+        AktualisiereBoolean(prefix + "Webhook", analog7Webhook);
+        AktualisiereInteger(prefix + "Minimum", analog7Minimum);
+        AktualisiereInteger(prefix + "Maximum", analog7Maximum);
+        AktualisiereInteger(prefix + "GruenUnten", analog7GruenUnten);
+        AktualisiereInteger(prefix + "GruenOben", analog7GruenOben);
+        AktualisiereInteger(prefix + "GelbUnten", analog7GelbUnten);
+        AktualisiereInteger(prefix + "GelbOben", analog7GelbOben);
         break;
     #endif
     #if MODUL_ANALOG8
       case 8:
-        updateStringValue(prefix + "Name", analog8Name);
-        updateBoolValue(prefix + "Webhook", analog8Webhook);
-        updateIntValue(prefix + "Minimum", analog8Minimum);
-        updateIntValue(prefix + "Maximum", analog8Maximum);
-        updateIntValue(prefix + "GruenUnten", analog8GruenUnten);
-        updateIntValue(prefix + "GruenOben", analog8GruenOben);
-        updateIntValue(prefix + "GelbUnten", analog8GelbUnten);
-        updateIntValue(prefix + "GelbOben", analog8GelbOben);
+        AktualisiereString(prefix + "Name", analog8Name);
+        AktualisiereBoolean(prefix + "Webhook", analog8Webhook);
+        AktualisiereInteger(prefix + "Minimum", analog8Minimum);
+        AktualisiereInteger(prefix + "Maximum", analog8Maximum);
+        AktualisiereInteger(prefix + "GruenUnten", analog8GruenUnten);
+        AktualisiereInteger(prefix + "GruenOben", analog8GruenOben);
+        AktualisiereInteger(prefix + "GelbUnten", analog8GelbUnten);
+        AktualisiereInteger(prefix + "GelbOben", analog8GelbOben);
         break;
     #endif
   }
 }
 
-void updateIntValue(const String& argName, int& value) {
+void AktualisiereInteger(const String& argName, int& wert) {
   if (Webserver.arg(argName) != "") {
-    value = Webserver.arg(argName).toInt();
+    wert = Webserver.arg(argName).toInt();
   }
 }
 
-void updateStringValue(const String& argName, String& value) {
+void AktualisiereString(const String& argName, String& wert) {
   if (Webserver.arg(argName) != "") {
-    value = Webserver.arg(argName);
+    wert = Webserver.arg(argName);
   }
 }
 
-void updateBoolValue(const String& argName, bool& value) {
+void AktualisiereBoolean(const String& argName, bool& wert) {
   if (Webserver.hasArg(argName)) {
-    value = true;
+    wert = true;
   } else {
-    value = false;
+    wert = false;
   }
-}
-
-void sendLinks() {
-  Webserver.sendContent(F(
-    "<div class=\"weiss\">\n"
-    "<ul>\n"
-    "<li><a href=\"/\">zur Startseite</a></li>\n"
-    "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n"
-  ));
-
-  #if MODUL_DEBUG
-    Webserver.sendContent(F("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
-  #endif
-
-  Webserver.sendContent(F(
-    "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">"
-    "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>\n"
-    "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">"
-    "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>\n"
-    "</ul>\n"
-    "</div>\n"
-  ));
 }

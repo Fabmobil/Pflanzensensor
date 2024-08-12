@@ -127,7 +127,11 @@ void WebseiteDebugAusgeben() {
     Webserver.sendContent(F("<h3>Webhook Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
     Webserver.sendContent(F("<li>Webhook Alarm angeschalten?: "));
     Webserver.sendContent(String(webhookAn));
-    Webserver.sendContent(F("</li>\n<li>Webhook Domain: "));
+    Webserver.sendContent(F("</li>\n<li>Webhook Alarmierungsfrequenz: "));
+    Webserver.sendContent(String(webhookFrequenz));
+    Webserver.sendContent(F(" Stunden</li>\n<li>Webhook Pingfrequenz: "));
+    Webserver.sendContent(String(webhookPingFrequenz));
+    Webserver.sendContent(F(" Stunden</li>\n<li>Webhook Domain: "));
     Webserver.sendContent(webhookDomain);
     Webserver.sendContent(F("</li>\n<li>Webhook URL: "));
     Webserver.sendContent(webhookPfad);
@@ -305,5 +309,6 @@ void WebseiteDebugAusgeben() {
     "</div>\n"));
 
   Webserver.sendContent_P(htmlFooter);
+  Webserver.client().flush();
 }
 

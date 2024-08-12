@@ -27,6 +27,7 @@ void WebseiteNichtGefundenAusgeben() {
   ));
 
   Webserver.sendContent_P(htmlFooter);
+  Webserver.client().flush();
 
   #if MODUL_DEBUG
     Serial.println(F("# Ende von WebseiteNichtGefundenAusgeben()"));

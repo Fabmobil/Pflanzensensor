@@ -9,7 +9,6 @@ void sendeEinstellung(const __FlashStringHelper* bezeichnung, const String& name
 }
 
 void sendeCheckbox(const __FlashStringHelper* bezeichnung, const String& name, const bool& status) {
-  Serial.println("Variable: " + name + ", Wert: " + status);
   Webserver.sendContent(F("<p>"));
   Webserver.sendContent(bezeichnung);
   Webserver.sendContent(F(" <input type=\"checkbox\" name=\""));
@@ -81,7 +80,8 @@ void WebseiteAdminAusgeben() {
   #if MODUL_WEBHOOK
     Webserver.sendContent_P(PSTR("<h2>Webhook Modul</h2>\n<div class=\"weiss\">\n"));
     sendeCheckbox(F("Webhook aktiv?"), F("webhookAn"), webhookAn);
-    sendeEinstellung(F("Benachrichtigungsfequenz in Stunden"), F("webhookFrequenz"), String(webhookFrequenz));
+    sendeEinstellung(F("Alarm-Benachrichtigungsfequenz in Stunden"), F("webhookFrequenz"), String(webhookFrequenz));
+    sendeEinstellung(F("Ping-Benachrichtigungsfequenz in Stunden"), F("webhookPingFrequenz"), String(webhookPingFrequenz));
     sendeEinstellung(F("Domain des Webhooks"), F("webhookDomain"), webhookDomain);
     sendeEinstellung(F("Schlüssel/Pfad des Webhooks"), F("webhookPfad"), webhookPfad);
     Webserver.sendContent(F("</div>\n"));
@@ -157,6 +157,7 @@ void WebseiteAdminAusgeben() {
   sendeLinks();
 
   Webserver.sendContent_P(htmlFooter);
+  Webserver.client().flush();
 
   #if MODUL_DEBUG
     Serial.println(F("# Ende von WebsiteAdminAusgeben()"));
