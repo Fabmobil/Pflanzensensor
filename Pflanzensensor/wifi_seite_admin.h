@@ -29,7 +29,7 @@ void sendeAnalogsensorEinstellungen(const __FlashStringHelper* titel, const __Fl
                                     int gruenUnten, int gruenOben, int gelbUnten, int gelbOben, bool alarm) {
   Webserver.sendContent(F("<h2>"));
   Webserver.sendContent(titel);
-  Webserver.sendContent(F("</h2>\n<div class=\"weiss\">\n"));
+  Webserver.sendContent(F("</h2>\n<div class=\"tuerkis\">\n"));
   sendeCheckbox(F("Alarm aktiv?"), String(prefix) + F("Webhook"), alarm);
   sendeEinstellung(F("Sensorname"), String(prefix) + F("Name"), sensorName);
   sendeEinstellung(F("Minimalwert"), String(prefix) + F("Minimum"), String(minimum));
@@ -44,7 +44,7 @@ void sendeAnalogsensorEinstellungen(const __FlashStringHelper* titel, const __Fl
 void sendeLinks() {
   Webserver.sendContent_P(PSTR(
     "<h2>Links</h2>\n"
-    "<div class=\"weiss\">\n"
+    "<div class=\"tuerkis\">\n"
     "<ul>\n"
     "<li><a href=\"/\">zur Startseite</a></li>\n"));
 
@@ -73,12 +73,12 @@ void WebseiteAdminAusgeben() {
   Webserver.sendContent_P(htmlHeader);
 
   Webserver.sendContent_P(PSTR(
-    "<div class=\"weiss\"><p>Auf dieser Seite können die Variablen verändert werden.</p>\n"
+    "<div class=\"tuerkis\"><p>Auf dieser Seite können die Variablen verändert werden.</p>\n"
     "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p>\n</div>\n"
     "<form action=\"/setzeVariablen\" method=\"POST\">\n"));
 
   #if MODUL_WEBHOOK
-    Webserver.sendContent_P(PSTR("<h2>Webhook Modul</h2>\n<div class=\"weiss\">\n"));
+    Webserver.sendContent_P(PSTR("<h2>Webhook Modul</h2>\n<div class=\"tuerkis\">\n"));
     sendeCheckbox(F("Webhook aktiv?"), F("webhookAn"), webhookAn);
     sendeEinstellung(F("Alarm-Benachrichtigungsfequenz in Stunden"), F("webhookFrequenz"), String(webhookFrequenz));
     sendeEinstellung(F("Ping-Benachrichtigungsfequenz in Stunden"), F("webhookPingFrequenz"), String(webhookPingFrequenz));
@@ -88,14 +88,14 @@ void WebseiteAdminAusgeben() {
   #endif
 
   #if MODUL_LEDAMPEL
-    Webserver.sendContent_P(PSTR("<h2>LED Ampel</h2>\n<h3>Anzeigemodus</h3>\n<div class=\"weiss\">\n"));
+    Webserver.sendContent_P(PSTR("<h2>LED Ampel</h2>\n<h3>Anzeigemodus</h3>\n<div class=\"tuerkis\">\n"));
     sendeCheckbox(F("LED Ampel angeschalten?"), F("ampelAn"), ampelAn);
     sendeEinstellung(F("Modus: (0: Helligkeit und Bodenfeuchte; 1: Helligkeit; 2: Bodenfeuchte)"), F("ampelModus"), String(ampelModus));
     Webserver.sendContent(F("</div>\n"));
   #endif
 
   #if MODUL_DISPLAY
-    Webserver.sendContent_P(PSTR("<h2>Display</h2><div class=\"weiss\">\n"));
+    Webserver.sendContent_P(PSTR("<h2>Display</h2><div class=\"tuerkis\">\n"));
     sendeCheckbox(F("Display angeschalten?"), F("displayAn"), displayAn);
     Webserver.sendContent(F("</div>\n"));
   #endif
@@ -106,11 +106,11 @@ void WebseiteAdminAusgeben() {
   #endif
 
   #if MODUL_DHT
-    Webserver.sendContent_P(PSTR("<h2>DHT Modul</h2>\n<h3>Lufttemperatur</h3>\n<div class=\"weiss\">\n"));
+    Webserver.sendContent_P(PSTR("<h2>DHT Modul</h2>\n<h3>Lufttemperatur</h3>\n<div class=\"tuerkis\">\n"));
     sendeCheckbox(F("Alarm aktiv?"), F("lufttemperaturWebhook"), lufttemperaturWebhook);
     sendeSchwellwerte(F("lufttemperatur"), lufttemperaturGruenUnten, lufttemperaturGruenOben, lufttemperaturGelbUnten, lufttemperaturGelbOben);
     Webserver.sendContent(F("</div>\n"));
-    Webserver.sendContent_P(PSTR("<h3>Luftfeuchte</h3>\n<div class=\"weiss\">\n"));
+    Webserver.sendContent_P(PSTR("<h3>Luftfeuchte</h3>\n<div class=\"tuerkis\">\n"));
     sendeCheckbox(F("Alarm aktiv?"), F("luftfeuchteWebhook"), luftfeuchteWebhook);
     sendeSchwellwerte(F("luftfeuchte"), luftfeuchteGruenUnten, luftfeuchteGruenOben, luftfeuchteGelbUnten, luftfeuchteGelbOben);
     Webserver.sendContent(F("</div>\n"));
@@ -149,7 +149,7 @@ void WebseiteAdminAusgeben() {
     "die beim Flashen eingetragen wurden, werden wieder gesetzt. Der Pflanzensensor startet neu."
     "</p>\n<p><input type=\"text\" size=\"4\" name=\"loeschen\" placeholder=\"nein\"></p>\n</div>\n"
     "<h2>Passwort</h2>\n"
-    "<div class=\"weiss\">"
+    "<div class=\"tuerkis\">"
     "<p><input type=\"password\" name=\"Passwort\" placeholder=\"Passwort\"><br>"
     "<input type=\"submit\" value=\"Absenden\"></p></form>"
     "</div>\n"));

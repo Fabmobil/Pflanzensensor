@@ -48,7 +48,7 @@ void WebseiteSetzeVariablen() {
       "<p>Alle Variablen wurden gelöscht.</p>\n"
       "<p>Der Pflanzensensor wird neu gestartet.</p>\n"
       "</div>\n"
-      "<div class=\"weiss\">\n"
+      "<div class=\"tuerkis\">\n"
       "<p><a href=\"/\">Warte ein paar Sekunden, dann kannst du hier zur Startseite zurück.</a></p>\n"
       "</div>\n"
     ));
@@ -59,7 +59,7 @@ void WebseiteSetzeVariablen() {
     ESP.restart();
   } else {
     Webserver.sendContent(F(
-      "<div class=\"weiss\">\n"
+      "<div class=\"tuerkis\">\n"
       "<ul>\n"
       "<li><a href=\"/\">zur Startseite</a></li>\n"
       "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n"

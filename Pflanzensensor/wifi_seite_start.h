@@ -37,7 +37,7 @@ void WebseiteStartAusgeben() {
   Webserver.sendContent_P(htmlHeader);
 
   Webserver.sendContent_P(PSTR(
-    "<div class=\"weiss\">"
+    "<div class=\"tuerkis\">"
     "<p>Diese Seite zeigt die Sensordaten deines Pflanzensensors an. Sie aktualisiert sich automatisch jede Minute.</p>"
     "</div>\n"));
 
@@ -80,7 +80,7 @@ void WebseiteStartAusgeben() {
 
   Webserver.sendContent_P(PSTR(
     "<h2>Links</h2>\n"
-    "<div class=\"weiss\">\n"
+    "<div class=\"tuerkis\">\n"
     "<ul>\n"
     "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n"));
 

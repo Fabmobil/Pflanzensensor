@@ -8,7 +8,7 @@ void WebseiteDebugAusgeben() {
   Webserver.sendContent(F("<h2>Debug-Informationen</h2>\n"));
 
   // Allgemeine Informationen
-  Webserver.sendContent(F("<h3>Allgemeine Informationen</h3>\n<div class=\"weiss\">\n<ul>\n"));
+  Webserver.sendContent(F("<h3>Allgemeine Informationen</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
   Webserver.sendContent(F("<li>Anzahl Module: "));
   Webserver.sendContent(String(module));
   Webserver.sendContent(F("</li>\n<li>Anzahl Neustarts: "));
@@ -19,7 +19,7 @@ void WebseiteDebugAusgeben() {
   Webserver.sendContent(F("</ul>\n</div>\n"));
 
   #if MODUL_DHT
-    Webserver.sendContent(F("<h3>DHT Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<h3>DHT Modul</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
     Webserver.sendContent(F("<li>Lufttemperatur Webhook Alarm aktiviert?: "));
     Webserver.sendContent(String(lufttemperaturWebhook));
     Webserver.sendContent(F("</li>\n<li>Lufttemperatur: "));
@@ -37,7 +37,7 @@ void WebseiteDebugAusgeben() {
   #endif
 
   #if MODUL_DISPLAY
-    Webserver.sendContent(F("<h3>Display Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<h3>Display Modul</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
     Webserver.sendContent(F("<li>Display angeschalten?: "));
     Webserver.sendContent(String(displayAn));
     Webserver.sendContent(F("</li>\n<li>Aktives Displaybild: "));
@@ -53,7 +53,7 @@ void WebseiteDebugAusgeben() {
   #endif
 
   #if MODUL_BODENFEUCHTE
-    Webserver.sendContent(F("<h3>Bodenfeuchte Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<h3>Bodenfeuchte Modul</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
     Webserver.sendContent(F("<li>Bodenfeuchtesensor Webhook Alarm aktiviert?: "));
     Webserver.sendContent(String(bodenfeuchteWebhook));
     Webserver.sendContent(F("</li>\n<li>Messwert Prozent: "));
@@ -65,7 +65,7 @@ void WebseiteDebugAusgeben() {
   #endif
 
   #if MODUL_LEDAMPEL
-    Webserver.sendContent(F("<h3>LEDAmpel Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<h3>LEDAmpel Modul</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
     Webserver.sendContent(F("<li>LED Ampel angeschalten?: "));
     Webserver.sendContent(String(ampelAn));
     Webserver.sendContent(F("</li>\n<li>Modus: "));
@@ -83,7 +83,7 @@ void WebseiteDebugAusgeben() {
   #endif
 
   #if MODUL_HELLIGKEIT
-    Webserver.sendContent(F("<h3>Helligkeit Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<h3>Helligkeit Modul</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
     Webserver.sendContent(F("<li>Helligkeitssensor Webhook Alarm aktiviert?: "));
     Webserver.sendContent(String(helligkeitWebhook));
     Webserver.sendContent(F("</li>\n<li>Messwert Prozent: "));
@@ -95,7 +95,7 @@ void WebseiteDebugAusgeben() {
   #endif
 
   #if MODUL_WIFI
-    Webserver.sendContent(F("<h3>Wifi Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<h3>Wifi Modul</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
     Webserver.sendContent(F("<li>Hostname: "));
     Webserver.sendContent(wifiHostname);
     Webserver.sendContent(F(".local</li>\n"));
@@ -124,7 +124,7 @@ void WebseiteDebugAusgeben() {
   #endif
 
   #if MODUL_WEBHOOK
-    Webserver.sendContent(F("<h3>Webhook Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<h3>Webhook Modul</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
     Webserver.sendContent(F("<li>Webhook Alarm angeschalten?: "));
     Webserver.sendContent(String(webhookAn));
     Webserver.sendContent(F("</li>\n<li>Webhook Alarmierungsfrequenz: "));
@@ -140,7 +140,7 @@ void WebseiteDebugAusgeben() {
   #endif
 
   #if MODUL_ANALOG3
-    Webserver.sendContent(F("<h3>Analogsensor 3 Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<h3>Analogsensor 3 Modul</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
     Webserver.sendContent(F("<li>Sensorname: "));
     Webserver.sendContent(analog3Name);
     Webserver.sendContent(F("</li>\n<li>Webhook Alarm aktiviert?: "));
@@ -158,7 +158,7 @@ void WebseiteDebugAusgeben() {
   #endif
 
   #if MODUL_ANALOG4
-    Webserver.sendContent(F("<h3>Analogsensor 4 Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<h3>Analogsensor 4 Modul</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
     Webserver.sendContent(F("<li>Sensorname: "));
     Webserver.sendContent(analog4Name);
     Webserver.sendContent(F("</li>\n<li>Webhook Alarm aktiviert?: "));
@@ -176,7 +176,7 @@ void WebseiteDebugAusgeben() {
   #endif
 
   #if MODUL_ANALOG5
-    Webserver.sendContent(F("<h3>Analogsensor 5 Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<h3>Analogsensor 5 Modul</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
     Webserver.sendContent(F("<li>Sensorname: "));
     Webserver.sendContent(analog5Name);
     Webserver.sendContent(F("</li>\n<li>Webhook Alarm aktiviert?: "));
@@ -194,7 +194,7 @@ void WebseiteDebugAusgeben() {
   #endif
 
   #if MODUL_ANALOG6
-    Webserver.sendContent(F("<h3>Analogsensor 6 Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<h3>Analogsensor 6 Modul</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
     Webserver.sendContent(F("<li>Sensorname: "));
     Webserver.sendContent(analog6Name);
     Webserver.sendContent(F("</li>\n<li>Webhook Alarm aktiviert?: "));
@@ -212,7 +212,7 @@ void WebseiteDebugAusgeben() {
   #endif
 
   #if MODUL_ANALOG7
-    Webserver.sendContent(F("<h3>Analogsensor 7 Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<h3>Analogsensor 7 Modul</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
     Webserver.sendContent(F("<li>Sensorname: "));
     Webserver.sendContent(analog7Name);
     Webserver.sendContent(F("</li>\n<li>Webhook Alarm aktiviert?: "));
@@ -230,7 +230,7 @@ void WebseiteDebugAusgeben() {
   #endif
 
   #if MODUL_ANALOG8
-    Webserver.sendContent(F("<h3>Analogsensor 8 Modul</h3>\n<div class=\"weiss\">\n<ul>\n"));
+    Webserver.sendContent(F("<h3>Analogsensor 8 Modul</h3>\n<div class=\"tuerkis\">\n<ul>\n"));
     Webserver.sendContent(F("<li>Sensorname: "));
     Webserver.sendContent(analog8Name);
     Webserver.sendContent(F("</li>\n<li>Webhook Alarm aktiviert?: "));
@@ -247,7 +247,7 @@ void WebseiteDebugAusgeben() {
     Webserver.sendContent(F("</ul>\n</div>\n"));
   #endif
 
-  Webserver.sendContent(F("<h2>Deaktivierte Module</h2>\n<div class=\"weiss\">\n<ul>\n"));
+  Webserver.sendContent(F("<h2>Deaktivierte Module</h2>\n<div class=\"tuerkis\">\n<ul>\n"));
   #if !MODUL_DHT
     Webserver.sendContent(F("<li>DHT Modul</li>\n"));
   #endif
@@ -291,7 +291,7 @@ void WebseiteDebugAusgeben() {
 
   Webserver.sendContent(F(
     "<h2>Links</h2>\n"
-    "<div class=\"weiss\">\n"
+    "<div class=\"tuerkis\">\n"
     "<ul>\n"
     "<li><a href=\"/\">zur Startseite</a></li>\n"
     "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n"));
