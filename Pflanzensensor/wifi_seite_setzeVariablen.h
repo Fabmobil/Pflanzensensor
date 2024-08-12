@@ -78,9 +78,6 @@ void WebseiteSetzeVariablen() {
     Webserver.sendContent_P(htmlFooter);
     Webserver.client().flush();
     VariablenSpeichern();
-    Serial.println("# Inhalte des Flashspeichers:");
-    File root = LittleFS.open("/", "r");
-    VariablenAuflisten(root, 0);
   }
 }
 
@@ -113,7 +110,6 @@ void AktualisiereVariablen() {
     AktualisiereString("webhookPfad", webhookPfad);
     AktualisiereInteger("webhookFrequenz", webhookFrequenz);
     AktualisiereInteger("webhookPingFrequenz", webhookPingFrequenz);
-    Serial.println("webhookPfad: " + webhookPfad);
   #endif
 
   #if MODUL_HELLIGKEIT
@@ -136,7 +132,6 @@ void AktualisiereVariablen() {
     AktualisiereInteger("bodenfeuchteGruenOben", bodenfeuchteGruenOben);
     AktualisiereInteger("bodenfeuchteGelbUnten", bodenfeuchteGelbUnten);
     AktualisiereInteger("bodenfeuchteGelbOben", bodenfeuchteGelbOben);
-    Serial.println("BodenfeuchteGelbOben: " + bodenfeuchteGelbOben);
   #endif
 
   #if MODUL_ANALOG3
