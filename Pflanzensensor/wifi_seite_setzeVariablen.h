@@ -98,6 +98,7 @@ void AktualisiereVariablen() {
     AktualisiereInteger("lufttemperaturGruenOben", lufttemperaturGruenOben);
     AktualisiereInteger("lufttemperaturGelbUnten", lufttemperaturGelbUnten);
     AktualisiereInteger("lufttemperaturGelbOben", lufttemperaturGelbOben);
+    AktualisiereBoolean("luftfeuchteWebhook", luftfeuchteWebhook);
     AktualisiereInteger("luftfeuchteGruenUnten", luftfeuchteGruenUnten);
     AktualisiereInteger("luftfeuchteGruenOben", luftfeuchteGruenOben);
     AktualisiereInteger("luftfeuchteGelbUnten", luftfeuchteGelbUnten);
