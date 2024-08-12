@@ -97,8 +97,8 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
   // URL und Passwort für make.com in der passwoerter.h
   bool webhookAn = false;
   String webhookStatus = "init";
-  int webhookFrequenz = 1; // Die Benachrichtigungsfrequenz des Webhooks in Stunden. Vorschlag: 12
-  int webhookPingFrequenz = 1; // Keep Alive Ping Frequenz in Stunden. Vorschlag: 24
+  int webhookFrequenz = 12; // Die Benachrichtigungsfrequenz der Webalarme in Stunden. Vorschlag: 12
+  int webhookPingFrequenz = 24; // Keep Alive Ping Frequenz in Stunden. Vorschlag: 24
 #endif
 #include <LittleFS.h> // für das Speichern auf dem Flash des ESP; muss vor Wifi geladen werden
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
