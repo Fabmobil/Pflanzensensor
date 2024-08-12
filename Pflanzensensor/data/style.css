@@ -79,6 +79,17 @@ figcaption {
   100% {background-color: darkred;}
 }
 
+html, body {
+height: 100%;
+margin: 0;
+padding: 0;
+}
+
+body {
+position: relative; /* Ermöglicht absolute Positionierung des Kindes */
+min-height: 100vh; /* Stellt sicher, dass der Body mindestens die volle Viewport-Höhe hat */
+}
+
 #container {
 border-right: 2em solid #1b6268;
 border-radius: 0 30px 0 0;
@@ -86,14 +97,29 @@ border-left: 0;
 border-bottom: 0;
 border-top: 0;
 background-color: transparent;
-position: fixed; /* Ändert die Position zu fixed */
-bottom: 0; /* Setzt das Element an den unteren Rand */
-right: 30px; /* Setzt das Element an den rechten Rand */
+position: absolute; /* Absolute Positionierung relativ zum Body */
+right: 30px; /* Am rechten Rand ausrichten */
+bottom: 0; /* Am unteren Rand ausrichten */
+top: 0; /* Vom oberen Rand bis zum unteren Rand ausdehnen */
 width: 95%;
-max-width: 80%;
-height: 90%; /* Definiert eine feste Höhe, anpassen nach Bedarf */
-margin: 0; /* Entfernt den rechten Margin */
-box-shadow: 0px 20px 10px -10px black;
+max-width: 800px;
+overflow-y: auto; /* Vertikales Scrollen ermöglichen */
+box-sizing: border-box;
+}
+
+/* Für sehr breite Viewports */
+@media (min-width: 1600px) {
+#container {
+  right: calc((100% - 1600px) / 2); /* Zentriert den Container horizontal bei sehr breiten Bildschirmen */
+}
+}
+
+/* Für kleinere Bildschirme */
+@media (max-width: 840px) {
+#container {
+  width: 100%;
+  max-width: none;
+}
 }
 
 .tuerkis {
