@@ -12,8 +12,8 @@
             "mapper": {},
             "metadata": {
                 "designer": {
-                    "x": -688,
-                    "y": 61
+                    "x": 0,
+                    "y": 450
                 },
                 "restore": {
                     "parameters": {
@@ -40,22 +40,322 @@
                 ],
                 "interface": [
                     {
+                        "name": "gruen",
+                        "spec": {
+                            "spec": [
+                                {
+                                    "name": "name",
+                                    "type": "text"
+                                },
+                                {
+                                    "name": "wert",
+                                    "type": "number"
+                                },
+                                {
+                                    "name": "einheit",
+                                    "type": "text"
+                                }
+                            ],
+                            "type": "collection"
+                        },
+                        "type": "array"
+                    },
+                    {
+                        "name": "gelb",
+                        "spec": {
+                            "spec": [
+                                {
+                                    "name": "name",
+                                    "type": "text"
+                                },
+                                {
+                                    "name": "wert",
+                                    "type": "number"
+                                },
+                                {
+                                    "name": "einheit",
+                                    "type": "text"
+                                }
+                            ],
+                            "type": "collection"
+                        },
+                        "type": "array"
+                    },
+                    {
+                        "name": "rot",
+                        "spec": {
+                            "spec": [
+                                {
+                                    "name": "name",
+                                    "type": "text"
+                                },
+                                {
+                                    "name": "wert",
+                                    "type": "number"
+                                },
+                                {
+                                    "name": "einheit",
+                                    "type": "text"
+                                }
+                            ],
+                            "type": "collection"
+                        },
+                        "type": "array"
+                    },
+                    {
                         "name": "status",
-                        "type": "text"
-                    },
-                    {
-                        "name": "sensorname",
-                        "type": "text"
-                    },
-                    {
-                        "name": "sensorwert",
-                        "type": "number"
-                    },
-                    {
-                        "name": "einheit",
                         "type": "text"
                     }
                 ]
+            }
+        },
+        {
+            "id": 26,
+            "module": "builtin:BasicFeeder",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "array": "{{1.gruen}}"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 300,
+                    "y": 450
+                },
+                "restore": {
+                    "expect": {
+                        "array": {
+                            "mode": "edit"
+                        }
+                    }
+                },
+                "expect": [
+                    {
+                        "mode": "edit",
+                        "name": "array",
+                        "spec": [],
+                        "type": "array",
+                        "label": "Array"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 25,
+            "module": "util:TextAggregator",
+            "version": 1,
+            "parameters": {
+                "feeder": 26,
+                "rowSeparator": "\n"
+            },
+            "mapper": {
+                "value": "🟩 {{26.name}} ({{26.wert}}{{26.einheit}})"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 607,
+                    "y": 446
+                },
+                "restore": {
+                    "extra": {
+                        "feeder": {
+                            "label": "Iterator [26]"
+                        }
+                    },
+                    "parameters": {
+                        "rowSeparator": {
+                            "label": "New row"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "rowSeparator",
+                        "type": "select",
+                        "label": "Row separator",
+                        "validate": {
+                            "enum": [
+                                "\n",
+                                "\t",
+                                "other"
+                            ]
+                        }
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "value",
+                        "type": "text",
+                        "label": "Text"
+                    }
+                ],
+                "advanced": true
+            }
+        },
+        {
+            "id": 35,
+            "module": "builtin:BasicFeeder",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "array": "{{1.gelb}}"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 900,
+                    "y": 450
+                },
+                "restore": {
+                    "expect": {
+                        "array": {
+                            "mode": "edit"
+                        }
+                    }
+                },
+                "expect": [
+                    {
+                        "mode": "edit",
+                        "name": "array",
+                        "spec": [],
+                        "type": "array",
+                        "label": "Array"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 36,
+            "module": "util:TextAggregator",
+            "version": 1,
+            "parameters": {
+                "feeder": 35,
+                "rowSeparator": "\n"
+            },
+            "mapper": {
+                "value": "🟨 {{35.name}} ({{35.wert}}{{35.einheit}})"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 1200,
+                    "y": 450
+                },
+                "restore": {
+                    "extra": {
+                        "feeder": {
+                            "label": "Iterator [35]"
+                        }
+                    },
+                    "parameters": {
+                        "rowSeparator": {
+                            "label": "New row"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "rowSeparator",
+                        "type": "select",
+                        "label": "Row separator",
+                        "validate": {
+                            "enum": [
+                                "\n",
+                                "\t",
+                                "other"
+                            ]
+                        }
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "value",
+                        "type": "text",
+                        "label": "Text"
+                    }
+                ],
+                "advanced": true
+            }
+        },
+        {
+            "id": 37,
+            "module": "builtin:BasicFeeder",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "array": "{{1.rot}}"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 1500,
+                    "y": 450
+                },
+                "restore": {
+                    "expect": {
+                        "array": {
+                            "mode": "edit"
+                        }
+                    }
+                },
+                "expect": [
+                    {
+                        "mode": "edit",
+                        "name": "array",
+                        "spec": [],
+                        "type": "array",
+                        "label": "Array"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 38,
+            "module": "util:TextAggregator",
+            "version": 1,
+            "parameters": {
+                "feeder": 37,
+                "rowSeparator": "\n"
+            },
+            "mapper": {
+                "value": "🟥 {{37.name}} ({{37.wert}}{{37.einheit}})"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 1800,
+                    "y": 450
+                },
+                "restore": {
+                    "extra": {
+                        "feeder": {
+                            "label": "Iterator [37]"
+                        }
+                    },
+                    "parameters": {
+                        "rowSeparator": {
+                            "label": "New row"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "rowSeparator",
+                        "type": "select",
+                        "label": "Row separator",
+                        "validate": {
+                            "enum": [
+                                "\n",
+                                "\t",
+                                "other"
+                            ]
+                        }
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "value",
+                        "type": "text",
+                        "label": "Text"
+                    }
+                ],
+                "advanced": true
             }
         },
         {
@@ -65,8 +365,8 @@
             "mapper": null,
             "metadata": {
                 "designer": {
-                    "x": -336,
-                    "y": 71
+                    "x": 2100,
+                    "y": 450
                 }
             },
             "routes": [
@@ -92,138 +392,7 @@
                                 ]
                             },
                             "mapper": {
-                                "chatId": "1225727603",
                                 "text": "🤖 Pflanzensensor Angeschalten! 🤖\n\nDein Pflanzensensor wurde angeschalten, ist jetzt online und wird dir Nachrichten schicken.",
-                                "messageThreadId": "",
-                                "parseMode": "Markdown",
-                                "replyToMessageId": "",
-                                "replyMarkupAssembleType": "reply_markup_enter",
-                                "replyMarkup": ""
-                            },
-                            "metadata": {
-                                "designer": {
-                                    "x": 38,
-                                    "y": -173
-                                },
-                                "restore": {
-                                    "parameters": {
-                                        "__IMTCONN__": {
-                                            "label": "FabmobilPflanzensensorBot",
-                                            "data": {
-                                                "scoped": "true",
-                                                "connection": "telegram"
-                                            }
-                                        }
-                                    },
-                                    "expect": {
-                                        "parseMode": {
-                                            "label": "Markdown"
-                                        },
-                                        "disableNotification": {
-                                            "mode": "chose"
-                                        },
-                                        "replyMarkupAssembleType": {
-                                            "label": "Enter the Reply Markup"
-                                        }
-                                    }
-                                },
-                                "parameters": [
-                                    {
-                                        "name": "__IMTCONN__",
-                                        "type": "account:telegram",
-                                        "label": "Connection",
-                                        "required": true
-                                    }
-                                ],
-                                "expect": [
-                                    {
-                                        "name": "chatId",
-                                        "type": "text",
-                                        "label": "Chat ID",
-                                        "required": true
-                                    },
-                                    {
-                                        "name": "text",
-                                        "type": "text",
-                                        "label": "Text",
-                                        "required": true
-                                    },
-                                    {
-                                        "name": "messageThreadId",
-                                        "type": "number",
-                                        "label": "Message Thread ID"
-                                    },
-                                    {
-                                        "name": "parseMode",
-                                        "type": "select",
-                                        "label": "Parse Mode",
-                                        "validate": {
-                                            "enum": [
-                                                "Markdown",
-                                                "HTML"
-                                            ]
-                                        }
-                                    },
-                                    {
-                                        "name": "disableNotification",
-                                        "type": "boolean",
-                                        "label": "Disable Notifications"
-                                    },
-                                    {
-                                        "name": "disableWebPagePreview",
-                                        "type": "boolean",
-                                        "label": "Disable Link Previews"
-                                    },
-                                    {
-                                        "name": "replyToMessageId",
-                                        "type": "number",
-                                        "label": "Original Message ID"
-                                    },
-                                    {
-                                        "name": "replyMarkupAssembleType",
-                                        "type": "select",
-                                        "label": "Enter/Assemble the Reply Markup Field",
-                                        "validate": {
-                                            "enum": [
-                                                "reply_markup_enter",
-                                                "reply_markup_assemble"
-                                            ]
-                                        }
-                                    },
-                                    {
-                                        "name": "replyMarkup",
-                                        "type": "text",
-                                        "label": "Reply Markup"
-                                    }
-                                ],
-                                "advanced": true
-                            }
-                        }
-                    ]
-                },
-                {
-                    "flow": [
-                        {
-                            "id": 8,
-                            "module": "telegram:SendReplyMessage",
-                            "version": 1,
-                            "parameters": {
-                                "__IMTCONN__": 2447117
-                            },
-                            "filter": {
-                                "name": "OK",
-                                "conditions": [
-                                    [
-                                        {
-                                            "a": "{{1.status}}",
-                                            "b": "OK",
-                                            "o": "text:equal"
-                                        }
-                                    ]
-                                ]
-                            },
-                            "mapper": {
-                                "text": "✅ Pflanzensensor Alarm beendet ✅\n\nDeine 🪴 sagt, dass alles in Ordnung ist. Danke, dass du dich kümmerst❣️\n\nDer Sensor \"{{1.sensorname}}\" hat jetzt folgenden Messwert: {{1.sensorwert}}{{1.einheit}}.",
                                 "chatId": "1225727603",
                                 "parseMode": "Markdown",
                                 "replyMarkup": "",
@@ -233,8 +402,8 @@
                             },
                             "metadata": {
                                 "designer": {
-                                    "x": -9,
-                                    "y": 369
+                                    "x": 2400,
+                                    "y": 0
                                 },
                                 "restore": {
                                     "expect": {
@@ -335,26 +504,26 @@
                 {
                     "flow": [
                         {
-                            "id": 2,
+                            "id": 8,
                             "module": "telegram:SendReplyMessage",
                             "version": 1,
                             "parameters": {
                                 "__IMTCONN__": 2447117
                             },
                             "filter": {
-                                "name": "Alarm",
+                                "name": "OK",
                                 "conditions": [
                                     [
                                         {
                                             "a": "{{1.status}}",
-                                            "b": "Alarm",
+                                            "b": "OK",
                                             "o": "text:equal"
                                         }
                                     ]
                                 ]
                             },
                             "mapper": {
-                                "text": "🚨 Pflanzensensor Alarm! 🚨\n\nDeiner 🪴 geht es nicht gut und sie benötigt etwas ❤️.\n\nDer Sensor \"{{1.sensorname}}\" hat ausgelöst. Sein Messwert ist {{1.sensorwert}}{{1.einheit}}.",
+                                "text": "✅ Pflanzensensor Alarm beendet ✅\n\nDeine 🪴 sagt, dass alle Sensorwerte, die du mit einem Alarm belegt hast, sich nicht mehr im roten Bereich befinden. Toll❣️\n\nHier ist sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{38.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{36.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{25.text}}",
                                 "chatId": "1225727603",
                                 "parseMode": "Markdown",
                                 "replyMarkup": "",
@@ -364,8 +533,8 @@
                             },
                             "metadata": {
                                 "designer": {
-                                    "x": 99,
-                                    "y": 109
+                                    "x": 2400,
+                                    "y": 300
                                 },
                                 "restore": {
                                     "expect": {
@@ -478,36 +647,27 @@
                                     [
                                         {
                                             "a": "{{1.status}}",
-                                            "o": "text:equal",
-                                            "b": "ping"
+                                            "b": "ping",
+                                            "o": "text:equal"
                                         }
                                     ]
                                 ]
                             },
                             "mapper": {
+                                "text": "🤖 Pflanzensensor Online! 🤖\n\nDein Pflanzensensor hat sich gemeldet und ist noch online. 👍 \nEr wird sich in {{1.sensorwert}} Stunden wieder melden. Wenn das nicht geschieht, solltest du mal nachschauen! 🔍\n\nHier ist sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{38.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{36.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{25.text}}",
                                 "chatId": "1225727603",
-                                "text": "🤖 Pflanzensensor Online! 🤖\n\nDein Pflanzensensor hat sich gemeldet und ist noch online. 👍 \nEr wird sich in {{1.sensorwert}} Stunden wieder melden. Wenn das nicht geschieht, solltest du mal nachschauen! 🔍",
-                                "messageThreadId": "",
                                 "parseMode": "Markdown",
+                                "replyMarkup": "",
+                                "messageThreadId": "",
                                 "replyToMessageId": "",
-                                "replyMarkupAssembleType": "reply_markup_enter",
-                                "replyMarkup": ""
+                                "replyMarkupAssembleType": "reply_markup_enter"
                             },
                             "metadata": {
                                 "designer": {
-                                    "x": -239,
-                                    "y": -383
+                                    "x": 2400,
+                                    "y": 600
                                 },
                                 "restore": {
-                                    "parameters": {
-                                        "__IMTCONN__": {
-                                            "label": "FabmobilPflanzensensorBot",
-                                            "data": {
-                                                "scoped": "true",
-                                                "connection": "telegram"
-                                            }
-                                        }
-                                    },
                                     "expect": {
                                         "parseMode": {
                                             "label": "Markdown"
@@ -517,6 +677,15 @@
                                         },
                                         "replyMarkupAssembleType": {
                                             "label": "Enter the Reply Markup"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "telegram"
+                                            },
+                                            "label": "FabmobilPflanzensensorBot"
                                         }
                                     }
                                 },
@@ -590,6 +759,136 @@
                                     }
                                 ],
                                 "advanced": true
+                            }
+                        }
+                    ]
+                },
+                {
+                    "flow": [
+                        {
+                            "id": 22,
+                            "module": "telegram:SendReplyMessage",
+                            "version": 1,
+                            "parameters": {
+                                "__IMTCONN__": 2447117
+                            },
+                            "filter": {
+                                "name": "Alarm",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{1.status}}",
+                                            "b": "Alarm",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "text": "🚨🚨 *Pflanzensensor Alarm!* 🚨🚨\n\nDeiner 🪴 geht es nicht gut und sie benötigt etwas ❤️. \n\nHier ist sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{38.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{36.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{25.text}}\n",
+                                "chatId": "1225727603",
+                                "parseMode": "Markdown",
+                                "replyMarkup": "",
+                                "messageThreadId": "",
+                                "replyToMessageId": "",
+                                "replyMarkupAssembleType": "reply_markup_enter"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 2400,
+                                    "y": 900
+                                },
+                                "restore": {
+                                    "expect": {
+                                        "parseMode": {
+                                            "label": "Markdown"
+                                        },
+                                        "disableNotification": {
+                                            "mode": "chose"
+                                        },
+                                        "replyMarkupAssembleType": {
+                                            "label": "Enter the Reply Markup"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "telegram"
+                                            },
+                                            "label": "FabmobilPflanzensensorBot"
+                                        }
+                                    }
+                                },
+                                "parameters": [
+                                    {
+                                        "name": "__IMTCONN__",
+                                        "type": "account:telegram",
+                                        "label": "Connection",
+                                        "required": true
+                                    }
+                                ],
+                                "expect": [
+                                    {
+                                        "name": "chatId",
+                                        "type": "text",
+                                        "label": "Chat ID",
+                                        "required": true
+                                    },
+                                    {
+                                        "name": "text",
+                                        "type": "text",
+                                        "label": "Text",
+                                        "required": true
+                                    },
+                                    {
+                                        "name": "messageThreadId",
+                                        "type": "number",
+                                        "label": "Message Thread ID"
+                                    },
+                                    {
+                                        "name": "parseMode",
+                                        "type": "select",
+                                        "label": "Parse Mode",
+                                        "validate": {
+                                            "enum": [
+                                                "Markdown",
+                                                "HTML"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "disableNotification",
+                                        "type": "boolean",
+                                        "label": "Disable Notifications"
+                                    },
+                                    {
+                                        "name": "disableWebPagePreview",
+                                        "type": "boolean",
+                                        "label": "Disable Link Previews"
+                                    },
+                                    {
+                                        "name": "replyToMessageId",
+                                        "type": "number",
+                                        "label": "Original Message ID"
+                                    },
+                                    {
+                                        "name": "replyMarkupAssembleType",
+                                        "type": "select",
+                                        "label": "Enter/Assemble the Reply Markup Field",
+                                        "validate": {
+                                            "enum": [
+                                                "reply_markup_enter",
+                                                "reply_markup_assemble"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "replyMarkup",
+                                        "type": "text",
+                                        "label": "Reply Markup"
+                                    }
+                                ]
                             }
                         }
                     ]

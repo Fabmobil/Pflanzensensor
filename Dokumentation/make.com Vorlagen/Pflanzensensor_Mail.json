@@ -12,8 +12,8 @@
             "mapper": {},
             "metadata": {
                 "designer": {
-                    "x": -300,
-                    "y": 0
+                    "x": 0,
+                    "y": 450
                 },
                 "restore": {
                     "parameters": {
@@ -41,14 +41,263 @@
             }
         },
         {
+            "id": 15,
+            "module": "builtin:BasicFeeder",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "array": "{{1.gruen}}"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 300,
+                    "y": 450
+                },
+                "restore": {
+                    "expect": {
+                        "array": {
+                            "mode": "edit"
+                        }
+                    }
+                },
+                "expect": [
+                    {
+                        "name": "array",
+                        "type": "array",
+                        "label": "Array",
+                        "mode": "edit",
+                        "spec": []
+                    }
+                ]
+            }
+        },
+        {
+            "id": 16,
+            "module": "util:TextAggregator",
+            "version": 1,
+            "parameters": {
+                "rowSeparator": "\n",
+                "feeder": 15
+            },
+            "mapper": {
+                "value": "🟩 {{15.name}} ({{15.wert}}{{15.einheit}})"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 600,
+                    "y": 450
+                },
+                "restore": {
+                    "parameters": {
+                        "rowSeparator": {
+                            "label": "New row"
+                        }
+                    },
+                    "extra": {
+                        "feeder": {
+                            "label": "Iterator [15]"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "rowSeparator",
+                        "type": "select",
+                        "label": "Row separator",
+                        "validate": {
+                            "enum": [
+                                "\n",
+                                "\t",
+                                "other"
+                            ]
+                        }
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "value",
+                        "type": "text",
+                        "label": "Text"
+                    }
+                ],
+                "advanced": true
+            }
+        },
+        {
+            "id": 17,
+            "module": "builtin:BasicFeeder",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "array": "{{1.gelb}}"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 900,
+                    "y": 450
+                },
+                "restore": {
+                    "expect": {
+                        "array": {
+                            "mode": "edit"
+                        }
+                    }
+                },
+                "expect": [
+                    {
+                        "name": "array",
+                        "type": "array",
+                        "label": "Array",
+                        "mode": "edit",
+                        "spec": []
+                    }
+                ]
+            }
+        },
+        {
+            "id": 18,
+            "module": "util:TextAggregator",
+            "version": 1,
+            "parameters": {
+                "rowSeparator": "\n",
+                "feeder": 17
+            },
+            "mapper": {
+                "value": "🟨 {{17.name}} ({{17.wert}}{{17.einheit}})"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 1200,
+                    "y": 450
+                },
+                "restore": {
+                    "parameters": {
+                        "rowSeparator": {
+                            "label": "New row"
+                        }
+                    },
+                    "extra": {
+                        "feeder": {
+                            "label": "Iterator [17]"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "rowSeparator",
+                        "type": "select",
+                        "label": "Row separator",
+                        "validate": {
+                            "enum": [
+                                "\n",
+                                "\t",
+                                "other"
+                            ]
+                        }
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "value",
+                        "type": "text",
+                        "label": "Text"
+                    }
+                ],
+                "advanced": true
+            }
+        },
+        {
+            "id": 19,
+            "module": "builtin:BasicFeeder",
+            "version": 1,
+            "parameters": {},
+            "mapper": {
+                "array": "{{1.rot}}"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 1500,
+                    "y": 450
+                },
+                "restore": {
+                    "expect": {
+                        "array": {
+                            "mode": "edit"
+                        }
+                    }
+                },
+                "expect": [
+                    {
+                        "name": "array",
+                        "type": "array",
+                        "label": "Array",
+                        "mode": "edit",
+                        "spec": []
+                    }
+                ]
+            }
+        },
+        {
+            "id": 20,
+            "module": "util:TextAggregator",
+            "version": 1,
+            "parameters": {
+                "rowSeparator": "\n",
+                "feeder": 19
+            },
+            "mapper": {
+                "value": "🟥 {{19.name}} ({{19.wert}}{{19.einheit}})"
+            },
+            "metadata": {
+                "designer": {
+                    "x": 1800,
+                    "y": 450
+                },
+                "restore": {
+                    "parameters": {
+                        "rowSeparator": {
+                            "label": "New row"
+                        }
+                    },
+                    "extra": {
+                        "feeder": {
+                            "label": "Iterator [19]"
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "rowSeparator",
+                        "type": "select",
+                        "label": "Row separator",
+                        "validate": {
+                            "enum": [
+                                "\n",
+                                "\t",
+                                "other"
+                            ]
+                        }
+                    }
+                ],
+                "expect": [
+                    {
+                        "name": "value",
+                        "type": "text",
+                        "label": "Text"
+                    }
+                ],
+                "advanced": true
+            }
+        },
+        {
             "id": 4,
             "module": "builtin:BasicRouter",
             "version": 1,
             "mapper": null,
             "metadata": {
                 "designer": {
-                    "x": 0,
-                    "y": 0
+                    "x": 2100,
+                    "y": 450
                 }
             },
             "routes": [
@@ -75,266 +324,10 @@
                                 ]
                             },
                             "mapper": {
-                                "cc": [],
                                 "to": [
-                                    "deine@email.com"
+                                    "tommy@fabmobil.org"
                                 ],
-                                "bcc": [],
-                                "from": "",
-                                "text": "Deiner 🪴 geht es nicht gut und sie benötigt etwas ❤️.\n\nDer Sensor \"{{1.sensorname}}\" hat ausgelöst. Sein Messwert ist {{1.sensorwert}}{{1.einheit}}.",
-                                "sender": "",
-                                "headers": [],
-                                "replyTo": "",
-                                "subject": "🚨 Pflanzensensor Alarm! 🚨",
-                                "priority": "normal",
-                                "inReplyTo": "",
-                                "references": [],
-                                "attachments": [],
-                                "contentType": "text"
-                            },
-                            "metadata": {
-                                "designer": {
-                                    "x": 341,
-                                    "y": 322
-                                },
-                                "restore": {
-                                    "expect": {
-                                        "cc": {
-                                            "mode": "chose"
-                                        },
-                                        "to": {
-                                            "mode": "chose",
-                                            "items": [
-                                                null
-                                            ]
-                                        },
-                                        "bcc": {
-                                            "mode": "chose"
-                                        },
-                                        "priority": {
-                                            "label": "Normal"
-                                        },
-                                        "references": {
-                                            "mode": "chose"
-                                        },
-                                        "attachments": {
-                                            "mode": "chose"
-                                        },
-                                        "contentType": {
-                                            "label": "Plaintext"
-                                        }
-                                    },
-                                    "parameters": {
-                                        "account": {
-                                            "data": {
-                                                "scoped": "true",
-                                                "connection": "smtp"
-                                            },
-                                            "label": "My Others (SMTP) connection (SMTP pflanzensensor@fabmobil.org)"
-                                        },
-                                        "saveAfterSent": {
-                                            "label": "No"
-                                        }
-                                    }
-                                },
-                                "parameters": [
-                                    {
-                                        "name": "account",
-                                        "type": "account:smtp,google-restricted,microsoft-smtp-imap",
-                                        "label": "Connection",
-                                        "required": true
-                                    },
-                                    {
-                                        "name": "saveAfterSent",
-                                        "type": "select",
-                                        "label": "Save message after sending",
-                                        "required": true,
-                                        "validate": {
-                                            "enum": [
-                                                true,
-                                                false
-                                            ]
-                                        }
-                                    },
-                                    {
-                                        "type": "hidden"
-                                    }
-                                ],
-                                "expect": [
-                                    {
-                                        "name": "to",
-                                        "spec": {
-                                            "name": "value",
-                                            "type": "email",
-                                            "label": "Email address",
-                                            "required": true
-                                        },
-                                        "type": "array",
-                                        "label": "To",
-                                        "required": true
-                                    },
-                                    {
-                                        "name": "subject",
-                                        "type": "text",
-                                        "label": "Subject"
-                                    },
-                                    {
-                                        "name": "contentType",
-                                        "type": "select",
-                                        "label": "Content Type",
-                                        "required": true,
-                                        "validate": {
-                                            "enum": [
-                                                "html",
-                                                "text"
-                                            ]
-                                        }
-                                    },
-                                    {
-                                        "name": "attachments",
-                                        "spec": [
-                                            {
-                                                "name": "fileName",
-                                                "type": "filename",
-                                                "label": "File name",
-                                                "required": true,
-                                                "semantic": "file:name"
-                                            },
-                                            {
-                                                "name": "data",
-                                                "type": "buffer",
-                                                "label": "Data",
-                                                "required": true,
-                                                "semantic": "file:data"
-                                            },
-                                            {
-                                                "name": "cid",
-                                                "type": "text",
-                                                "label": "Content-ID"
-                                            }
-                                        ],
-                                        "type": "array",
-                                        "label": "Attachments"
-                                    },
-                                    {
-                                        "name": "cc",
-                                        "spec": {
-                                            "name": "value",
-                                            "type": "email",
-                                            "label": "Email address"
-                                        },
-                                        "type": "array",
-                                        "label": "Copy recipient"
-                                    },
-                                    {
-                                        "name": "bcc",
-                                        "spec": {
-                                            "name": "value",
-                                            "type": "email",
-                                            "label": "Email address"
-                                        },
-                                        "type": "array",
-                                        "label": "Blind copy recipient"
-                                    },
-                                    {
-                                        "name": "from",
-                                        "type": "text",
-                                        "label": "From"
-                                    },
-                                    {
-                                        "name": "sender",
-                                        "type": "text",
-                                        "label": "Sender"
-                                    },
-                                    {
-                                        "name": "replyTo",
-                                        "type": "text",
-                                        "label": "Reply-To"
-                                    },
-                                    {
-                                        "name": "inReplyTo",
-                                        "type": "text",
-                                        "label": "In-Reply-To"
-                                    },
-                                    {
-                                        "name": "references",
-                                        "spec": {
-                                            "name": "value",
-                                            "type": "text",
-                                            "label": "Reference",
-                                            "required": true
-                                        },
-                                        "type": "array",
-                                        "label": "References"
-                                    },
-                                    {
-                                        "name": "priority",
-                                        "type": "select",
-                                        "label": "Priority",
-                                        "validate": {
-                                            "enum": [
-                                                "high",
-                                                "normal",
-                                                "low"
-                                            ]
-                                        }
-                                    },
-                                    {
-                                        "name": "headers",
-                                        "spec": [
-                                            {
-                                                "name": "key",
-                                                "type": "text",
-                                                "label": "Key",
-                                                "required": true
-                                            },
-                                            {
-                                                "name": "value",
-                                                "type": "text",
-                                                "label": "Value",
-                                                "required": true
-                                            }
-                                        ],
-                                        "type": "array",
-                                        "label": "Headers"
-                                    },
-                                    {
-                                        "name": "text",
-                                        "type": "text",
-                                        "label": "Content"
-                                    }
-                                ]
-                            }
-                        }
-                    ]
-                },
-                {
-                    "flow": [
-                        {
-                            "id": 11,
-                            "module": "email:ActionSendEmail",
-                            "version": 7,
-                            "parameters": {
-                                "account": 2492789,
-                                "saveAfterSent": false
-                            },
-                            "filter": {
-                                "name": "Initialisierung",
-                                "conditions": [
-                                    [
-                                        {
-                                            "a": "{{1.status}}",
-                                            "b": "init",
-                                            "o": "text:equal"
-                                        }
-                                    ]
-                                ]
-                            },
-                            "mapper": {
-                                "to": [
-                                    "deine@email.com"
-                                ],
-                                "subject": "🤖 Pflanzensensor Angeschalten! 🤖",
+                                "subject": "🚨🚨 Pflanzensensor Alarm! 🚨🚨",
                                 "contentType": "text",
                                 "attachments": [],
                                 "cc": [],
@@ -346,12 +339,12 @@
                                 "references": [],
                                 "priority": "normal",
                                 "headers": [],
-                                "text": "Dein Pflanzensensor wurde angeschalten, ist jetzt online und wird dir Nachrichten schicken."
+                                "text": "Deiner 🪴 geht es nicht gut und sie benötigt etwas ❤️.\n\nHier sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{20.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{18.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{16.text}}"
                             },
                             "metadata": {
                                 "designer": {
-                                    "x": 429,
-                                    "y": -199
+                                    "x": 2400,
+                                    "y": 0
                                 },
                                 "restore": {
                                     "parameters": {
@@ -567,7 +560,7 @@
                 {
                     "flow": [
                         {
-                            "id": 12,
+                            "id": 11,
                             "module": "email:ActionSendEmail",
                             "version": 7,
                             "parameters": {
@@ -575,12 +568,12 @@
                                 "saveAfterSent": false
                             },
                             "filter": {
-                                "name": "OK",
+                                "name": "Initialisierung",
                                 "conditions": [
                                     [
                                         {
                                             "a": "{{1.status}}",
-                                            "b": "OK",
+                                            "b": "init",
                                             "o": "text:equal"
                                         }
                                     ]
@@ -589,15 +582,15 @@
                             "mapper": {
                                 "cc": [],
                                 "to": [
-                                    "deine@email.com"
+                                    "tommy@fabmobil.org"
                                 ],
                                 "bcc": [],
                                 "from": "",
-                                "text": "Deine 🪴 sagt, dass alles in Ordnung ist. Danke, dass du dich kümmerst❣️\nDer Sensor \"{{1.sensorname}}\" hat jetzt folgenden Messwert: {{1.sensorwert}}{{1.einheit}}.",
+                                "text": "Dein Pflanzensensor wurde angeschalten, ist jetzt online und wird dir Nachrichten schicken.",
                                 "sender": "",
                                 "headers": [],
                                 "replyTo": "",
-                                "subject": "✅ Pflanzensensor Alarm beendet ✅",
+                                "subject": "🤖 Pflanzensensor Angeschalten! 🤖",
                                 "priority": "normal",
                                 "inReplyTo": "",
                                 "references": [],
@@ -606,8 +599,8 @@
                             },
                             "metadata": {
                                 "designer": {
-                                    "x": 375,
-                                    "y": 59
+                                    "x": 2400,
+                                    "y": 300
                                 },
                                 "restore": {
                                     "expect": {
@@ -823,6 +816,262 @@
                 {
                     "flow": [
                         {
+                            "id": 12,
+                            "module": "email:ActionSendEmail",
+                            "version": 7,
+                            "parameters": {
+                                "account": 2492789,
+                                "saveAfterSent": false
+                            },
+                            "filter": {
+                                "name": "OK",
+                                "conditions": [
+                                    [
+                                        {
+                                            "a": "{{1.status}}",
+                                            "b": "OK",
+                                            "o": "text:equal"
+                                        }
+                                    ]
+                                ]
+                            },
+                            "mapper": {
+                                "to": [
+                                    "tommy@fabmobil.org"
+                                ],
+                                "subject": "✅ Pflanzensensor Alarm beendet ✅",
+                                "contentType": "text",
+                                "attachments": [],
+                                "cc": [],
+                                "bcc": [],
+                                "from": "",
+                                "sender": "",
+                                "replyTo": "",
+                                "inReplyTo": "",
+                                "references": [],
+                                "priority": "normal",
+                                "headers": [],
+                                "text": "Deine 🪴 sagt, dass alle Sensorwerte, die du mit einem Alarm belegt hast, sich nicht mehr im roten Bereich befinden. Toll❣️\n\nHier ist sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{20.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{18.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{16.text}}"
+                            },
+                            "metadata": {
+                                "designer": {
+                                    "x": 2400,
+                                    "y": 600
+                                },
+                                "restore": {
+                                    "parameters": {
+                                        "account": {
+                                            "label": "My Others (SMTP) connection (SMTP pflanzensensor@fabmobil.org)",
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "smtp"
+                                            }
+                                        },
+                                        "saveAfterSent": {
+                                            "label": "No"
+                                        }
+                                    },
+                                    "expect": {
+                                        "to": {
+                                            "mode": "chose",
+                                            "items": [
+                                                null
+                                            ]
+                                        },
+                                        "contentType": {
+                                            "label": "Plaintext"
+                                        },
+                                        "attachments": {
+                                            "mode": "chose"
+                                        },
+                                        "cc": {
+                                            "mode": "chose"
+                                        },
+                                        "bcc": {
+                                            "mode": "chose"
+                                        },
+                                        "references": {
+                                            "mode": "chose"
+                                        },
+                                        "priority": {
+                                            "label": "Normal"
+                                        }
+                                    }
+                                },
+                                "parameters": [
+                                    {
+                                        "name": "account",
+                                        "type": "account:smtp,google-restricted,microsoft-smtp-imap",
+                                        "label": "Connection",
+                                        "required": true
+                                    },
+                                    {
+                                        "name": "saveAfterSent",
+                                        "type": "select",
+                                        "label": "Save message after sending",
+                                        "required": true,
+                                        "validate": {
+                                            "enum": [
+                                                true,
+                                                false
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "type": "hidden"
+                                    }
+                                ],
+                                "expect": [
+                                    {
+                                        "name": "to",
+                                        "type": "array",
+                                        "label": "To",
+                                        "required": true,
+                                        "spec": {
+                                            "name": "value",
+                                            "type": "email",
+                                            "label": "Email address",
+                                            "required": true
+                                        }
+                                    },
+                                    {
+                                        "name": "subject",
+                                        "type": "text",
+                                        "label": "Subject"
+                                    },
+                                    {
+                                        "name": "contentType",
+                                        "type": "select",
+                                        "label": "Content Type",
+                                        "required": true,
+                                        "validate": {
+                                            "enum": [
+                                                "html",
+                                                "text"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "attachments",
+                                        "type": "array",
+                                        "label": "Attachments",
+                                        "spec": [
+                                            {
+                                                "name": "fileName",
+                                                "label": "File name",
+                                                "type": "filename",
+                                                "required": true,
+                                                "semantic": "file:name"
+                                            },
+                                            {
+                                                "name": "data",
+                                                "label": "Data",
+                                                "type": "buffer",
+                                                "required": true,
+                                                "semantic": "file:data"
+                                            },
+                                            {
+                                                "name": "cid",
+                                                "label": "Content-ID",
+                                                "type": "text"
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "name": "cc",
+                                        "type": "array",
+                                        "label": "Copy recipient",
+                                        "spec": {
+                                            "name": "value",
+                                            "type": "email",
+                                            "label": "Email address"
+                                        }
+                                    },
+                                    {
+                                        "name": "bcc",
+                                        "type": "array",
+                                        "label": "Blind copy recipient",
+                                        "spec": {
+                                            "name": "value",
+                                            "type": "email",
+                                            "label": "Email address"
+                                        }
+                                    },
+                                    {
+                                        "name": "from",
+                                        "type": "text",
+                                        "label": "From"
+                                    },
+                                    {
+                                        "name": "sender",
+                                        "type": "text",
+                                        "label": "Sender"
+                                    },
+                                    {
+                                        "name": "replyTo",
+                                        "type": "text",
+                                        "label": "Reply-To"
+                                    },
+                                    {
+                                        "name": "inReplyTo",
+                                        "type": "text",
+                                        "label": "In-Reply-To"
+                                    },
+                                    {
+                                        "name": "references",
+                                        "type": "array",
+                                        "label": "References",
+                                        "spec": {
+                                            "type": "text",
+                                            "label": "Reference",
+                                            "required": true,
+                                            "name": "value"
+                                        }
+                                    },
+                                    {
+                                        "name": "priority",
+                                        "type": "select",
+                                        "label": "Priority",
+                                        "validate": {
+                                            "enum": [
+                                                "high",
+                                                "normal",
+                                                "low"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "name": "headers",
+                                        "type": "array",
+                                        "label": "Headers",
+                                        "spec": [
+                                            {
+                                                "name": "key",
+                                                "label": "Key",
+                                                "type": "text",
+                                                "required": true
+                                            },
+                                            {
+                                                "name": "value",
+                                                "label": "Value",
+                                                "type": "text",
+                                                "required": true
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "name": "text",
+                                        "type": "text",
+                                        "label": "Content"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "flow": [
+                        {
                             "id": 14,
                             "module": "email:ActionSendEmail",
                             "version": 7,
@@ -844,7 +1093,7 @@
                             },
                             "mapper": {
                                 "to": [
-                                    "deine@email.com"
+                                    "tommy@fabmobil.org"
                                 ],
                                 "subject": "🤖 Pflanzensensor Online! 🤖",
                                 "contentType": "text",
@@ -858,12 +1107,12 @@
                                 "references": [],
                                 "priority": "normal",
                                 "headers": [],
-                                "text": "Dein Pflanzensensor hat sich gemeldet und ist noch online. 👍 \n\nEr wird sich in {{1.sensorwert}} Stunden wieder melden. Wenn das nicht geschieht, solltest du mal nachschauen! 🔍"
+                                "text": "Dein Pflanzensensor hat sich gemeldet und ist noch online. 👍 \n\nEr wird sich in {{1.sensorwert}} Stunden wieder melden. Wenn das nicht geschieht, solltest du mal nachschauen! 🔍\n\nHier sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{20.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{18.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{16.text}}"
                             },
                             "metadata": {
                                 "designer": {
-                                    "x": 205,
-                                    "y": -402
+                                    "x": 2400,
+                                    "y": 900
                                 },
                                 "restore": {
                                     "parameters": {
