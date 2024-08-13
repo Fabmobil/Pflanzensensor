@@ -70,8 +70,6 @@ void WebseiteDebugAusgeben() {
     Webserver.sendContent(String(ampelAn));
     Webserver.sendContent(F("</li>\n<li>Modus: "));
     Webserver.sendContent(String(ampelModus));
-    Webserver.sendContent(F("</li>\n<li>ampelUmschalten: "));
-    Webserver.sendContent(String(ampelUmschalten));
     Webserver.sendContent(F("</li>\n<li>Pin gruene LED: "));
     Webserver.sendContent(String(ampelPinGruen));
     Webserver.sendContent(F("</li>\n<li>Pin gelbe LED: "));

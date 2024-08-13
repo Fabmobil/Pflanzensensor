@@ -90,7 +90,7 @@ void WebseiteAdminAusgeben() {
   #if MODUL_LEDAMPEL
     Webserver.sendContent_P(PSTR("<h2>LED Ampel</h2>\n<h3>Anzeigemodus</h3>\n<div class=\"tuerkis\">\n"));
     sendeCheckbox(F("LED Ampel angeschalten?"), F("ampelAn"), ampelAn);
-    sendeEinstellung(F("Modus: (0: Helligkeit und Bodenfeuchte; 1: Helligkeit; 2: Bodenfeuchte)"), F("ampelModus"), String(ampelModus));
+    sendeEinstellung(F("Modus: (0: Anzeige der Bodenfeuchte; 1: Anzeige aller Sensoren hintereinander analog zu dem, was auf dem Display steht)"), F("ampelModus"), String(ampelModus));
     Webserver.sendContent(F("</div>\n"));
   #endif
 

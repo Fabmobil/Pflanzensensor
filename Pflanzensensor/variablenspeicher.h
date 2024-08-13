@@ -99,7 +99,6 @@ void VariablenSpeichern() {
   #if MODUL_LEDAMPEL
     variablen.putBool("ampelAn", ampelAn);
     variablen.putInt("ampelModus", ampelModus);
-    variablen.putInt("intAmpel", intervallAmpel);
   #endif
   #if MODUL_WEBHOOK
     variablen.putString("webhookPfad", webhookPfad);
@@ -217,9 +216,8 @@ void VariablenLaden() {
     helligkeitGelbOben = variablen.getInt("hellGeOben", helligkeitGelbOben);
   #endif
   #if MODUL_LEDAMPEL
-    ampelAn = variablen.getInt("ampelAn", ampelAn);
+    ampelAn = variablen.getBool("ampelAn", ampelAn);
     ampelModus = variablen.getInt("ampelModus", ampelModus);
-    intervallAmpel = variablen.getInt("intAmpel", intervallAmpel);
   #endif
   #if MODUL_WEBHOOK
     webhookPfad = variablen.getString("webhookPfad", webhookPfad);

@@ -3,9 +3,6 @@
  * Diese Datei enthält den Code für das LED-Ampel-Modul
  */
 
-
-void LedampelBodenfeuchte(int bodenfeuchteMesswertProzent);
-void LedampelHelligkeit(int helligkeitMesswertProzent);
 /**
  * Funktion: LedampelBlinken(String farbe, int anzahl, int dauer)
  * Lässt die LED Ampel in einer Farbe blinken
@@ -83,32 +80,4 @@ void LedampelAus() {
   digitalWrite(ampelPinGruen, LOW);
   digitalWrite(ampelPinGelb, LOW);
   digitalWrite(ampelPinRot, LOW);
-}
-
-void LedampelUmschalten(int helligkeitMesswertProzent, int bodenfeuchteMesswertProzent) {
-  /*
-  * Falls es auch das Bodenfeuchte Modul gibt, blinkt die LED Ampel kurz 5x gelb damit
-  * klar ist, dass jetzt die Lichtstärke angezeigt wird..
-  */
-  switch (ampelModus) { // je nach Modus wird die LED Ampel anders angesteuert
-
-    case 0: // im Modus 0 (Helligkeits- und Bodensensor):
-      ampelUmschalten = !ampelUmschalten; // wird hier invertiert. true: Helligkeitsanzeige, false: Bodenfeuchteanzeige
-      if ( ampelUmschalten ) { // Wenn ampelUmschalten true ist:
-        // LED Ampel blinkt 5x gelb um zu signalisieren, dass jetzt der Bodenfeuchtewert angezeigt wird
-        if ( MODUL_BODENFEUCHTE ) { LedampelBlinken("gelb", 2, 500); } // Ampel blinkt nur, falls es auch ein Bodenfeuchtemodul gibt
-        LedampelAnzeigen(bodenfeuchteFarbe, -1);
-      } else { // Wenn ampelUmschalten false ist:
-        if ( MODUL_HELLIGKEIT ) { LedampelBlinken("gruen", 2, 500); } // Ampel blinkt nur, falls es auch ein Helligkeitsmodul gibt
-        LedampelAnzeigen(helligkeitFarbe, -1);
-      }
-      break; // Ende von Modus 0
-    case 1: // Helligkeitsmodus
-      LedampelAnzeigen(helligkeitFarbe, -1);
-     // LedampelHelligkeit(helligkeitMesswertProzent); // Funktion LedampelHelligkeit() wird aufgerufen
-      break; // Ende von Modus 1
-    case 2: // Bodenfeuchtemodus
-      LedampelAnzeigen(bodenfeuchteFarbe, -1);
-      break; // Ende von bodenfeuchteFarbe 2
-  }
 }

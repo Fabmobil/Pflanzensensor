@@ -155,6 +155,9 @@ void DisplayAnzeigen() {
       if (bodenfeuchteMesswertProzent != -1) {
         std::pair<String, String> namen = NamenTeilen(bodenfeuchteName);
         MesswertAnzeigen(namen.first, namen.second, bodenfeuchteMesswertProzent, "%");
+        #if MODUL_LEDAMPEL
+          if (ampelAn && ampelModus == 1) { LedampelAnzeigen(bodenfeuchteFarbe, -1); }
+        #endif
       } else {
         display.clearDisplay();
         display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
@@ -165,6 +168,9 @@ void DisplayAnzeigen() {
       if (helligkeitMesswertProzent != -1) {
         std::pair<String, String> namen = NamenTeilen(helligkeitName);
         MesswertAnzeigen(namen.first, namen.second, helligkeitMesswertProzent, "%");
+        #if MODUL_LEDAMPEL
+          if (ampelAn && ampelModus == 1) { LedampelAnzeigen(helligkeitFarbe, -1); }
+        #endif
       } else {
         display.clearDisplay();
         display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
@@ -174,6 +180,9 @@ void DisplayAnzeigen() {
     case 4:
       if (lufttemperaturMesswert != -1) {
         MesswertAnzeigen("Luft-", "temperatur", lufttemperaturMesswert, "\xf8 C");
+        #if MODUL_LEDAMPEL
+          if (ampelAn && ampelModus == 1) { LedampelAnzeigen(lufttemperaturFarbe, -1); }
+        #endif
       } else {
         display.clearDisplay();
         display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
@@ -183,6 +192,9 @@ void DisplayAnzeigen() {
     case 5:
       if (luftfeuchteMesswert != -1) {
         MesswertAnzeigen("Luft-", "feuchte", luftfeuchteMesswert, "%");
+        #if MODUL_LEDAMPEL
+          if (ampelAn && ampelModus == 1) { LedampelAnzeigen(luftfeuchteFarbe, -1); }
+        #endif
       } else {
         display.clearDisplay();
         display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
@@ -194,6 +206,9 @@ void DisplayAnzeigen() {
         if (analog3MesswertProzent != -1) {
           std::pair<String, String> namen = NamenTeilen(analog3Name);
           MesswertAnzeigen(namen.first, namen.second, analog3MesswertProzent, "%");
+          #if MODUL_LEDAMPEL
+            if (ampelAn && ampelModus == 1) { LedampelAnzeigen(analog3Farbe, -1); }
+          #endif
         } else {
           display.clearDisplay();
           display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
@@ -206,6 +221,9 @@ void DisplayAnzeigen() {
         if (analog4MesswertProzent != -1) {
           std::pair<String, String> namen = NamenTeilen(analog4Name);
           MesswertAnzeigen(namen.first, namen.second, analog4MesswertProzent, "%");
+          #if MODUL_LEDAMPEL
+            if (ampelAn && ampelModus == 1) { LedampelAnzeigen(analog4Farbe, -1); }
+          #endif
         } else {
           display.clearDisplay();
           display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
@@ -218,6 +236,9 @@ void DisplayAnzeigen() {
         if (analog5MesswertProzent != -1) {
           std::pair<String, String> namen = NamenTeilen(analog5Name);
           MesswertAnzeigen(namen.first, namen.second, analog5MesswertProzent, "%");
+          #if MODUL_LEDAMPEL
+            if (ampelAn && ampelModus == 1) { LedampelAnzeigen(analog5Farbe, -1); }
+          #endif
         } else {
           display.clearDisplay();
           display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
@@ -230,6 +251,9 @@ void DisplayAnzeigen() {
         if (analog6MesswertProzent != -1) {
           std::pair<String, String> namen = NamenTeilen(analog6Name);
           MesswertAnzeigen(namen.first, namen.second, analog6MesswertProzent, "%");
+          #if MODUL_LEDAMPEL
+            if (ampelAn && ampelModus == 1) { LedampelAnzeigen(analog6Farbe, -1); }
+          #endif
         } else {
           display.clearDisplay();
           display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
@@ -242,6 +266,9 @@ void DisplayAnzeigen() {
         if (analog7MesswertProzent != -1) {
           std::pair<String, String> namen = NamenTeilen(analog7Name);
           MesswertAnzeigen(namen.first, namen.second, analog7MesswertProzent, "%");
+          #if MODUL_LEDAMPEL
+            if (ampelAn && ampelModus == 1) { LedampelAnzeigen(analog7Farbe, -1); }
+          #endif
         } else {
           display.clearDisplay();
           display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
@@ -254,6 +281,9 @@ void DisplayAnzeigen() {
         if (analog8MesswertProzent != -1) {
           std::pair<String, String> namen = NamenTeilen(analog8Name);
           MesswertAnzeigen(namen.first, namen.second, analog8MesswertProzent, "%");
+          #if MODUL_LEDAMPEL
+            if (ampelAn && ampelModus == 1) { LedampelAnzeigen(analog8Farbe, -1); }
+          #endif
         } else {
           display.clearDisplay();
           display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);

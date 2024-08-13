@@ -19,8 +19,8 @@
 #define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
 #define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
 #define MODUL_WEBHOOK       true // willst du das ifttt.com-Modul verwenden?
-#define MODUL_ANALOG3       true // hat dein Pflanzensensor einen dritten Analogsensor?
-#define MODUL_ANALOG4       true // hat dein Pflanzensensor einen vierten Analogsensor?
+#define MODUL_ANALOG3       false // hat dein Pflanzensensor einen dritten Analogsensor?
+#define MODUL_ANALOG4       false // hat dein Pflanzensensor einen vierten Analogsensor?
 #define MODUL_ANALOG5       false // hat dein Pflanzensensor einen fünften Analogsensor?
 #define MODUL_ANALOG6       false // hat dein Pflanzensensor einen sechsten Analogsensor?
 #define MODUL_ANALOG7       false // hat dein Pflanzensensor einen siebten Analogsensor?
@@ -90,8 +90,8 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
   int helligkeitGelbOben = 80; // oberer Wert des gelben Bereichs
 #endif
 #if MODUL_LEDAMPEL // falls eine LED Ampel verbaut ist:
-  int ampelModus = 2; // 0: Helligkeits- und Bodenfeuchtesensor abwechselnd, 1: Helligkeitssensor, 2: Bodenfeuchtesensor
-  unsigned long intervallAmpel = 5000; // Intervall des Umschaltens der LED Ampel in Millisekunden. Vorschlag: 15273
+  int ampelModus = 1; // 0: Bodenfeuchtesensor, 1: alle Sensoren analog zur Displayanzeige
+  bool ampelAn = true; // Ampel an- oder ausgeschalten?
 #endif
 #if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
   // URL und Passwort für make.com in der passwoerter.h
@@ -230,8 +230,6 @@ String analog8Farbe = "rot";
 #endif
 
 #if MODUL_LEDAMPEL
-  bool ampelUmschalten = true; // Schaltet zwischen Bodenfeuchte- und Helligkeitsanzeige um
-  bool ampelAn = true; // Ampel an- oder ausgeschalten?
   #define ampelPinRot 13 // "D7"; Pin der roten LED
   #define ampelPinGelb 12 // "D6"; Pin der roten LED
   #define ampelPinGruen 14 // "D5"; Pin der gruenen LED

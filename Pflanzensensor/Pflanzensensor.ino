@@ -292,17 +292,11 @@ void loop() {
     }
   #endif
 
-  // LED Ampel umschalten:
+  // LED Ampel Modus 0: Anzeige der Bodenfeuchte
   #if MODUL_LEDAMPEL // Wenn das LED Ampel Modul aktiv ist:
-    if (ampelAn) {
-      if (millisAktuell - millisVorherLedampel >= intervallAmpel) { // wenn das Intervall erreicht ist
-        #if MODUL_DEBUG // Debuginformation
-          Serial.println(F("### intervallLedAmpel erreicht."));
-        #endif
-        millisVorherLedampel = millisAktuell; // neuen Wert übernehmen
-        LedampelUmschalten(helligkeitMesswertProzent, bodenfeuchteMesswertProzent); // Ampel umschalten
-      }
-    } else {
+    if (ampelAn && ampelModus == 0) {
+      LedampelAnzeigen(bodenfeuchteFarbe, -1);
+    } else if (!ampelAn) {
       LedampelAus();
     }
   #endif
