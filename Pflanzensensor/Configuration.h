@@ -19,8 +19,8 @@
 #define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
 #define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
 #define MODUL_WEBHOOK       true // willst du das ifttt.com-Modul verwenden?
-#define MODUL_ANALOG3       false // hat dein Pflanzensensor einen dritten Analogsensor?
-#define MODUL_ANALOG4       false // hat dein Pflanzensensor einen vierten Analogsensor?
+#define MODUL_ANALOG3       true // hat dein Pflanzensensor einen dritten Analogsensor?
+#define MODUL_ANALOG4       true // hat dein Pflanzensensor einen vierten Analogsensor?
 #define MODUL_ANALOG5       false // hat dein Pflanzensensor einen fünften Analogsensor?
 #define MODUL_ANALOG6       false // hat dein Pflanzensensor einen sechsten Analogsensor?
 #define MODUL_ANALOG7       false // hat dein Pflanzensensor einen siebten Analogsensor?
@@ -177,6 +177,7 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
  */
 #define pflanzensensorVersion "0.6" // Versionsnummer
 int neustarts = 1;
+unsigned long millisAktuell = 0;
 unsigned long millisVorherAnalog = 0; // Variable für die Messung des Intervalls der Analogsensormessung
 unsigned long millisVorherDht = 0; // Variable für die Messung des Intervalls der Luftfeuchte- und -temperaturmessung
 unsigned long millisVorherLedampel = 0; // Variable für die Messung des Intervalls des Umschaltens der LED Ampel

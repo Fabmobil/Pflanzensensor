@@ -6,13 +6,13 @@
  * curl test:  curl -X POST https://hook.eu2.make.com/URL -H "Content-Type: application/json" -d '{"bodenfeuchte":"20","luftfeuchte":"32","lufttemperatur":"30"}'
  */
 
-
-
 #include <WiFiClientSecure.h>
 #include <time.h>
 #include <ArduinoJson.h>
 #include "webhook_zertifikat.h"
 
+bool vorherAlarm = false;
+String letzterWebhookStatus = "OK";
 const int httpsPort = 443;
 // Globale Variablen für Zertifikate
 X509List certList;
@@ -20,13 +20,15 @@ WiFiClientSecure client;
 
 // Funktionsdeklarationen
 void WebhookSetup();
-void verbindungTest();
-void WebhookNachricht(String status, String sensorname, int sensorwert, String einheit);
+void WebhookSendeInit();
+void WebhookErfasseSensordaten(const char* statusWert);
+void WebhookSendeDaten(const String& jsonString);
+bool WebhookAktualisiereAlarmStatus();
 
 /*
- * Funktion: WebhookSetup()
- * Initialisiert das Webhook-Modul
- */
+* Funktion: WebhookSetup()
+* Initialisiert das Webhook-Modul
+*/
 void WebhookSetup() {
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von WebhookSetup()"));
@@ -50,94 +52,110 @@ void WebhookSetup() {
   certList.append(zertifikat);
   client.setTrustAnchors(&certList);
   Serial.println(F("Schicke Initialisierungsnachricht an Webhook-Dienst."));
-  WebhookNachricht("init", F("null"), 0 , F("null")); // Initalisierungsnachricht schicken
-  // Testverbindung
-  #if MODUL_DEBUG
-    verbindungTest();
-  #endif
+  WebhookSendeInit(); // Initalisierungsnachricht schicken
 }
 
 /*
- * Funktion: verbindungTest()
- * Testet die Verbindung zum Server
- */
-void verbindungTest() {
-  Serial.println(F("# Testverbindung zum make.com Server:"));
-  Serial.print("# Verbinde mit ");
-  Serial.println(webhookDomain);
-  Serial.printf("# Freier Heap: %d bytes\n", ESP.getFreeHeap());
-
-  if (!client.connect(webhookDomain, httpsPort)) {
-    Serial.println("# Verbindung fehlgeschlagen");
-    Serial.print("# Letzter Fehlercode: ");
-    Serial.println(client.getLastSSLError());
-    return;
-  }
-
-  // HTTP-Anfrage senden
-  String url = webhookPfad;
-  Serial.print("# Anfrage URL: ");
-  Serial.println(url);
-
-  client.print(String("GET ") + url + " HTTP/1.1\r\n" +
-              "Host: " + webhookDomain + "\r\n" +
-              "User-Agent: ESP8266\r\n" +
-              "Connection: close\r\n\r\n");
-
-  Serial.println("# Anfrage gesendet");
-  while (client.connected()) {
-    String line = client.readStringUntil('\n');
-    if (line == "\r") {
-      Serial.println("# Headers empfangen");
-      break;
-    }
-  }
-  String response = client.readString();
-  Serial.println("# Antwort war:");
-  Serial.println("==========");
-  Serial.println(response);
-  Serial.println("==========");
-  Serial.println("# Schließe Verbindung");
-}
-
-/*
- * Funktion: WebhookNachricht(String status, int bodenfeuchte, int luftfeuchte, int lufttemperatur)
- * Sendet Nachrichten über einen www.ifttt.com Webhook
- */
-void WebhookNachricht(String status, String sensorname, int sensorwert, String einheit) {
+* Funktion: WebhookSendeInit(String status, int bodenfeuchte, int luftfeuchte, int lufttemperatur)
+* Sendet Nachrichten über einen www.ifttt.com Webhook
+*/
+void WebhookSendeInit() {
   #if MODUL_DEBUG
-    Serial.print(F("# Beginn von Webhooknachricht("));
-    Serial.print(status); Serial.print(F(", ")); Serial.print(sensorname);
-    Serial.print(F(", ")); Serial.print(sensorwert);
-    Serial.println(F(")"));
+    Serial.print(F("# Beginn von WebhookSendeInit()"));
   #endif
 
   // JSON-Objekt erstellen
   JsonDocument doc;
-  doc["status"] = status;
-  doc["sensorname"] = sensorname;
-  doc["sensorwert"] = sensorwert;
-  doc["einheit"] = einheit;
+  doc["status"] = "init";
 
   // JSON in String umwandeln
   String jsonString;
   serializeJson(doc, jsonString);
+  WebhookSendeDaten(jsonString);
+}
 
-  // POST-Request erstellen
-  String postRequest = String("POST ") + webhookPfad + " HTTP/1.1\r\n" +
+// Angepasste WebhookErfasseSensordaten Funktion
+void WebhookErfasseSensordaten(const char* statusWert) {
+  JsonDocument dok;
+  JsonArray gruenArray = dok["gruen"].to<JsonArray>();
+  JsonArray gelbArray = dok["gelb"].to<JsonArray>();
+  JsonArray rotArray = dok["rot"].to<JsonArray>();
+  bool hatAktivenAlarm = false;
+
+  // Funktion zum Hinzufügen von Sensorinformationen zur entsprechenden Kategorie
+  auto fuegeHinzuSensorInfo = [&](int wert, const String& name, const char* einheit, const String& status, bool alarmAktiv) {
+    JsonArray& zielArray = (status == "gruen") ? gruenArray : (status == "gelb" ? gelbArray : rotArray);
+    JsonObject sensorObj = zielArray.add<JsonObject>();
+    sensorObj["name"] = name;
+    sensorObj["wert"] = wert;
+    sensorObj["einheit"] = einheit;
+    if (status == "rot" && alarmAktiv) {
+      hatAktivenAlarm = true;
+    }
+  };
+
+  // Füge Sensorinformationen hinzu
+  #if MODUL_BODENFEUCHTE
+    fuegeHinzuSensorInfo(bodenfeuchteMesswertProzent, bodenfeuchteName, "%", bodenfeuchteFarbe, bodenfeuchteWebhook);
+  #endif
+  #if MODUL_HELLIGKEIT
+    fuegeHinzuSensorInfo(helligkeitMesswertProzent, helligkeitName, "%", helligkeitFarbe, helligkeitWebhook);
+  #endif
+  #if MODUL_DHT
+    fuegeHinzuSensorInfo(luftfeuchteMesswert, "Luftfeuchte", "%", luftfeuchteFarbe, luftfeuchteWebhook);
+    fuegeHinzuSensorInfo(lufttemperaturMesswert, "Lufttemperatur", "°C", lufttemperaturFarbe, lufttemperaturWebhook);
+  #endif
+  #if MODUL_ANALOG3
+    fuegeHinzuSensorInfo(analog3MesswertProzent, analog3Name, "%", analog3Farbe, analog3Webhook);
+  #endif
+  #if MODUL_ANALOG4
+    fuegeHinzuSensorInfo(analog4MesswertProzent, analog4Name, "%", analog4Farbe, analog4Webhook);
+  #endif
+  #if MODUL_ANALOG5
+    fuegeHinzuSensorInfo(analog5MesswertProzent, analog5Name, "%", analog5Farbe, analog5Webhook);
+  #endif
+  #if MODUL_ANALOG6
+    fuegeHinzuSensorInfo(analog6MesswertProzent, analog6Name, "%", analog6Farbe, analog6Webhook);
+  #endif
+  #if MODUL_ANALOG7
+    fuegeHinzuSensorInfo(analog7MesswertProzent, analog7Name, "%", analog7Farbe, analog7Webhook);
+  #endif
+  #if MODUL_ANALOG8
+    fuegeHinzuSensorInfo(analog8MesswertProzent, analog8Name, "%", analog8Farbe, analog8Webhook);
+  #endif
+
+  // Setze webhookStatus
+  if (strcmp(statusWert, "ping") == 0) {
+    webhookStatus = "ping";
+  } else {
+    webhookStatus = hatAktivenAlarm ? "Alarm" : "OK";
+  }
+  dok["status"] = webhookStatus;
+
+  // Sende die gesammelten Daten
+  String jsonString;
+  serializeJson(dok, jsonString);
+  WebhookSendeDaten(jsonString);
+}
+
+void WebhookSendeDaten(const String& jsonString) {
+  Serial.print(F("Sende folgendes JSON an Webhook: "));
+  Serial.println(jsonString);
+  // POST-Anfrage erstellen
+  String postAnfrage = String("POST ") + webhookPfad + " HTTP/1.1\r\n" +
                        "Host: " + webhookDomain + "\r\n" +
                        "Content-Type: application/json\r\n" +
                        "Content-Length: " + jsonString.length() + "\r\n" +
                        "\r\n" +
                        jsonString;
 
-  // Verbindung herstellen und Request senden
+  // Verbindung herstellen und Anfrage senden
   if (client.connect(webhookDomain, httpsPort)) {
-    client.print(postRequest);
+    client.print(postAnfrage);
     // Warten auf Antwort
     while (client.connected()) {
-      String line = client.readStringUntil('\n');
-      if (line == "\r") {
+      String zeile = client.readStringUntil('\n');
+      if (zeile == "\r") {
         break;
       }
     }
@@ -147,4 +165,38 @@ void WebhookNachricht(String status, String sensorname, int sensorwert, String e
     Serial.println(client.getLastSSLError());
   }
   client.stop();
+}
+
+bool WebhookAktualisiereAlarmStatus() {
+  bool aktuellerAlarm = false;
+
+  #if MODUL_BODENFEUCHTE
+    aktuellerAlarm |= (bodenfeuchteFarbe == "rot" && bodenfeuchteWebhook);
+  #endif
+  #if MODUL_HELLIGKEIT
+    aktuellerAlarm |= (helligkeitFarbe == "rot" && helligkeitWebhook);
+  #endif
+  #if MODUL_DHT
+    aktuellerAlarm |= ((luftfeuchteFarbe == "rot" && luftfeuchteWebhook) || (lufttemperaturFarbe == "rot" && lufttemperaturWebhook));
+  #endif
+  #if MODUL_ANALOG3
+    aktuellerAlarm |= (analog3Farbe == "rot" && analog3Webhook);
+  #endif
+  #if MODUL_ANALOG4
+    aktuellerAlarm |= (analog4Farbe == "rot" && analog4Webhook);
+  #endif
+  #if MODUL_ANALOG5
+    aktuellerAlarm |= (analog5Farbe == "rot" && analog5Webhook);
+  #endif
+  #if MODUL_ANALOG6
+    aktuellerAlarm |= (analog6Farbe == "rot" && analog6Webhook);
+  #endif
+  #if MODUL_ANALOG7
+    aktuellerAlarm |= (analog7Farbe == "rot" && analog7Webhook);
+  #endif
+  #if MODUL_ANALOG8
+    aktuellerAlarm |= (analog8Farbe == "rot" && analog8Webhook);
+  #endif
+
+  return aktuellerAlarm;
 }

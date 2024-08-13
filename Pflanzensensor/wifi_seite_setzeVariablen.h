@@ -29,7 +29,7 @@ void WebseiteSetzeVariablen() {
     Serial.println(F("# Beginn von WebseiteSetzeVariablen()"));
     ArgumenteAusgeben();
   #endif
-
+  millisVorherWebhook = millisAktuell; // Webhook löst sonst sofort aus und gemeinsam mit dem Variablen setzen führt dazu, dass der ESP abstürzt.
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
 
