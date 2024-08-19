@@ -392,13 +392,13 @@
                                 ]
                             },
                             "mapper": {
-                                "text": "🤖 Pflanzensensor Angeschalten! 🤖\n\nDein Pflanzensensor wurde angeschalten, ist jetzt online und wird dir Nachrichten schicken.",
                                 "chatId": "1225727603",
-                                "parseMode": "Markdown",
-                                "replyMarkup": "",
+                                "text": "🦾 Pflanzensensor Angeschalten! 🦾\n\nDein Pflanzensensor wurde gerade zum {{1.gruen[].wert}}. Mal angeschalten, ist jetzt online und wird:\n\n🤖 aller {{1.gelb[].wert}} {{1.gelb[].einheit}} ein Lebenszeichen von sich geben damit du weißt, dass er noch Online ist,\n\n🚨 sich bei einem aktiven Alarm aller {{1.rot[].wert}} {{1.rot[].einheit}} bei dir melden damit du weißt, dass deine Pflanze Hilfe benötigt bzw.\n\n✅ dir nach spätestens {{1.rot[].wert}} {{1.rot[].einheit}} Bescheid geben, wenn die Alarmwerte wieder im grünen Bereich sind.",
                                 "messageThreadId": "",
+                                "parseMode": "Markdown",
                                 "replyToMessageId": "",
-                                "replyMarkupAssembleType": "reply_markup_enter"
+                                "replyMarkupAssembleType": "reply_markup_enter",
+                                "replyMarkup": ""
                             },
                             "metadata": {
                                 "designer": {
@@ -406,6 +406,15 @@
                                     "y": 0
                                 },
                                 "restore": {
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "label": "FabmobilPflanzensensorBot",
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "telegram"
+                                            }
+                                        }
+                                    },
                                     "expect": {
                                         "parseMode": {
                                             "label": "Markdown"
@@ -415,15 +424,6 @@
                                         },
                                         "replyMarkupAssembleType": {
                                             "label": "Enter the Reply Markup"
-                                        }
-                                    },
-                                    "parameters": {
-                                        "__IMTCONN__": {
-                                            "data": {
-                                                "scoped": "true",
-                                                "connection": "telegram"
-                                            },
-                                            "label": "FabmobilPflanzensensorBot"
                                         }
                                     }
                                 },
