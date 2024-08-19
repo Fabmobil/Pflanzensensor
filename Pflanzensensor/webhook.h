@@ -66,23 +66,14 @@ void WebhookSendeInit() {
 
   // JSON-Objekt erstellen
   JsonDocument doc;
-  doc["status"] = "init";
   JsonArray gruenArray = doc["gruen"].to<JsonArray>();
   JsonObject gruenObj = gruenArray.add<JsonObject>();
   gruenObj["name"] = "Neustarts";
   gruenObj["wert"] = neustarts;
   gruenObj["einheit"] = "";
-  JsonArray gelbArray = doc["gelb"].to<JsonArray>();
-  JsonObject gelbObj = gelbArray.add<JsonObject>();
-  gelbObj["name"] = "Pingfrequenz";
-  gelbObj["wert"] = webhookPingFrequenz;
-  gelbObj["einheit"] = "Stunden";
-  JsonArray rotArray = doc["rot"].to<JsonArray>();
-  JsonObject rotObj = rotArray.add<JsonObject>();
-  rotObj["name"] = "Alarmfrequenz";
-  rotObj["wert"] = webhookFrequenz;
-  rotObj["einheit"] = "Stunden";
-
+  doc["status"] = "init";
+  doc["alarmfrequenz"] = webhookFrequenz;
+  doc["pingfrequenz"] = webhookPingFrequenz;
   // JSON in String umwandeln
   String jsonString;
   serializeJson(doc, jsonString);
@@ -146,6 +137,8 @@ void WebhookErfasseSensordaten(const char* statusWert) {
     webhookStatus = hatAktivenAlarm ? "Alarm" : "OK";
   }
   dok["status"] = webhookStatus;
+  dok["alarmfrequenz"] = webhookFrequenz;
+  dok["pingfrequenz"] = webhookPingFrequenz;
 
   // Sende die gesammelten Daten
   String jsonString;
