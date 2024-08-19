@@ -67,6 +67,21 @@ void WebhookSendeInit() {
   // JSON-Objekt erstellen
   JsonDocument doc;
   doc["status"] = "init";
+  JsonArray gruenArray = doc["gruen"].to<JsonArray>();
+  JsonObject gruenObj = gruenArray.add<JsonObject>();
+  gruenObj["name"] = "Neustarts";
+  gruenObj["wert"] = neustarts;
+  gruenObj["einheit"] = "";
+  JsonArray gelbArray = doc["gelb"].to<JsonArray>();
+  JsonObject gelbObj = gelbArray.add<JsonObject>();
+  gelbObj["name"] = "Pingfrequenz";
+  gelbObj["wert"] = webhookPingFrequenz;
+  gelbObj["einheit"] = "Stunden";
+  JsonArray rotArray = doc["rot"].to<JsonArray>();
+  JsonObject rotObj = rotArray.add<JsonObject>();
+  rotObj["name"] = "Alarmfrequenz";
+  rotObj["wert"] = webhookFrequenz;
+  rotObj["einheit"] = "Stunden";
 
   // JSON in String umwandeln
   String jsonString;

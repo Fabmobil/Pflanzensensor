@@ -59,6 +59,11 @@ void setup() {
    * wird, dass funktioniert aber nicht mit Variablen.
    */
   Serial.println(" Fabmobil Pflanzensensor, v" + String(pflanzensensorVersion));
+  neustarts++;
+  variablen.putInt("neustarts", neustarts);
+  variablen.end();
+  Serial.print("Neustarts: ");
+  Serial.println(neustarts);
   module = ModuleZaehlen(); // wie viele Module sind aktiv?
   displayseiten = AnalogsensorenZaehlen() + 6;  // Wir haben 6 Displayseiten plus je eine pro Analogmodul
 
@@ -162,11 +167,6 @@ void setup() {
     File root = LittleFS.open("/", "r");
     VariablenAuflisten(root, 0);
   #endif
-  neustarts++;
-  variablen.putInt("neustarts", neustarts);
-  variablen.end();
-  Serial.print("Neustarts: ");
-  Serial.println(neustarts);
 
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
     DisplayDreiWoerter("Start..", " abge-", " schlossen");
