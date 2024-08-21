@@ -9,7 +9,7 @@
   },
   "GeneralSpecs": {
     "ProjectId": {
-      "Name": "20240606_Pflanzensensor",
+      "Name": "Pflanzensensor",
       "GUID": "32303234-3036-4303-965f-50666c616e7a",
       "Revision": "rev?"
     },
@@ -32,52 +32,52 @@
   ],
   "FilesAttributes": [
     {
-      "Path": "20240606_Pflanzensensor-F_Cu.gbr",
+      "Path": "Pflanzensensor-F_Cu.gbr",
       "FileFunction": "Copper,L1,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "20240606_Pflanzensensor-B_Cu.gbr",
+      "Path": "Pflanzensensor-B_Cu.gbr",
       "FileFunction": "Copper,L2,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "20240606_Pflanzensensor-F_Paste.gbr",
+      "Path": "Pflanzensensor-F_Paste.gbr",
       "FileFunction": "SolderPaste,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "20240606_Pflanzensensor-B_Paste.gbr",
+      "Path": "Pflanzensensor-B_Paste.gbr",
       "FileFunction": "SolderPaste,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "20240606_Pflanzensensor-F_Silkscreen.gbr",
+      "Path": "Pflanzensensor-F_Silkscreen.gbr",
       "FileFunction": "Legend,Top",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "20240606_Pflanzensensor-B_Silkscreen.gbr",
+      "Path": "Pflanzensensor-B_Silkscreen.gbr",
       "FileFunction": "Legend,Bot",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "20240606_Pflanzensensor-F_Mask.gbr",
+      "Path": "Pflanzensensor-F_Mask.gbr",
       "FileFunction": "SolderMask,Top",
       "FilePolarity": "Negative"
     },
     {
-      "Path": "20240606_Pflanzensensor-B_Mask.gbr",
+      "Path": "Pflanzensensor-B_Mask.gbr",
       "FileFunction": "SolderMask,Bot",
       "FilePolarity": "Negative"
     },
     {
-      "Path": "20240606_Pflanzensensor-Edge_Cuts.gbr",
+      "Path": "Pflanzensensor-Edge_Cuts.gbr",
       "FileFunction": "Profile",
       "FilePolarity": "Positive"
     },
     {
-      "Path": "20240606_Pflanzensensor-F_Fab.gbr",
+      "Path": "Pflanzensensor-F_Fab.gbr",
       "FileFunction": "AssemblyDrawing,Top",
       "FilePolarity": "Positive"
     }
