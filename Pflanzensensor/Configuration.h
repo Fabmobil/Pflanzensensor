@@ -96,7 +96,6 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
 #if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
   // URL und Passwort für make.com in der passwoerter.h
   bool webhookAn = false;
-  String webhookStatus = "init";
   int webhookFrequenz = 12; // Die Benachrichtigungsfrequenz der Webalarme in Stunden. Vorschlag: 12
   int webhookPingFrequenz = 24; // Keep Alive Ping Frequenz in Stunden. Vorschlag: 24
 #endif

@@ -342,32 +342,30 @@ void loop() {
   #endif
 
   // Webhook für Alarm:
-  #if MODUL_WEBHOOK
-    if (webhookAn) {
+ #if MODUL_WEBHOOK
+  if (webhookAn) {
       unsigned long aktuelleZeit = millis();
       bool aktuellerAlarmStatus = WebhookAktualisiereAlarmStatus();
+      String neuerStatus = aktuellerAlarmStatus ? "Alarm" : "OK";
 
-      // Reguläre Datenübertragung (inkl. Alarm und OK)
-      if (aktuelleZeit - millisVorherWebhook >= (unsigned long)(webhookFrequenz) * 1000UL * 60UL * 60UL) {
-        String neuerStatus = aktuellerAlarmStatus ? "Alarm" : "OK";
+      // Überprüfe, ob es Zeit für eine reguläre Übertragung ist (Alarm oder OK)
+      bool sendeAlarm = (aktuelleZeit - millisVorherWebhook >= (unsigned long)(webhookFrequenz) * 1000UL * 60UL * 60UL);
 
-        // Sende nur, wenn sich der Status geändert hat oder die Zeit abgelaufen ist
-        if (neuerStatus != letzterWebhookStatus || aktuelleZeit - millisVorherWebhook >= (unsigned long)(webhookFrequenz) * 1000UL * 60UL * 60UL) {
-          WebhookErfasseSensordaten("normal");
+      // Überprüfe, ob es Zeit für einen Ping ist
+      bool sendePing = (aktuelleZeit - millisVorherWebhookPing >= (unsigned long)(webhookPingFrequenz) * 1000UL * 60UL * 60UL);
+
+      if (sendePing) {
+          WebhookErfasseSensordaten("ping");
+          millisVorherWebhookPing = aktuelleZeit;
           letzterWebhookStatus = neuerStatus;
-        }
-
-        millisVorherWebhook = aktuelleZeit;
-      }
-
-      // Ping-Datenübertragung
-      if (aktuelleZeit - millisVorherWebhookPing >= (unsigned long)(webhookPingFrequenz) * 1000UL * 60UL * 60UL) {
-        WebhookErfasseSensordaten("ping");
-        millisVorherWebhookPing = aktuelleZeit;
+      } else if (sendeAlarm && (neuerStatus == "Alarm" || (neuerStatus == "OK" && letzterWebhookStatus == "Alarm"))) {
+          WebhookErfasseSensordaten("normal");
+          millisVorherWebhook = aktuelleZeit;
+          letzterWebhookStatus = neuerStatus;
       }
 
       vorherAlarm = aktuellerAlarmStatus;
-    }
+  }
   #endif
 
 }

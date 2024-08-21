@@ -13,6 +13,7 @@
 
 bool vorherAlarm = false;
 String letzterWebhookStatus = "OK";
+String webhookStatus = "init";
 const int httpsPort = 443;
 // Globale Variablen für Zertifikate
 X509List certList;
