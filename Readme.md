@@ -2,7 +2,7 @@
 
 Dies ist das Repository mit dem Quellcode und allen Informationen zum Fabmobil Pflanzensensor. Informationen und Erklärungen sind im [Wiki](https://github.com/Fabmobil/Pflanzensensor/wiki) zu finden.
 
-Der Quellcode befindet sich im [Pflanzensensor](https://github.com/Fabmobil/Pflanzensensor/tree/main/Pflanzensensor)-Verzeichnis. Das [Dokumentation](https://github.com/Fabmobil/Pflanzensensor/tree/main/Dokumentation)-Verzeichnis enthält Datenblätter, Schaltpläne und Pinouts der verwendeten Bauteile sowie 3D Modelle für Zubehörteile, die 3D gedruckt werden können.
+Der Quellcode befindet sich im [Pflanzensensor](https://github.com/Fabmobil/Pflanzensensor/tree/main/Pflanzensensor)-Verzeichnis. Das [Dokumentation](https://github.com/Fabmobil/Pflanzensensor/tree/main/Dokumentation)-Verzeichnis enthält Datenblätter, Schaltpläne und Pinouts der verwendeten Bauteile sowie 3D Modelle für Zubehörteile, die gedruckt werden können.
 
 ![283522542-90fa5a0d-8c51-478d-a620-1cea98ed86b6](https://github.com/Fabmobil/Pflanzensensor/assets/107469401/adbd33a9-eb7b-44fd-9d92-594e67fd44fb)
 ![283649957-93855a2a-f814-471e-9c01-cfe89b46ba98](https://github.com/Fabmobil/Pflanzensensor/assets/107469401/05440161-c441-4ec1-a03e-e6aa8557d0d3)
