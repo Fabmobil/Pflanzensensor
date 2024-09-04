@@ -26,12 +26,13 @@ void sendeSchwellwerte(const __FlashStringHelper* prefix, int gruenUnten, int gr
 }
 
 void sendeAnalogsensorEinstellungen(const __FlashStringHelper* titel, const __FlashStringHelper* prefix, const String& sensorName, int minimum, int maximum,
-                                    int gruenUnten, int gruenOben, int gelbUnten, int gelbOben, bool alarm) {
+                                    int gruenUnten, int gruenOben, int gelbUnten, int gelbOben, bool alarm, int messwert) {
   Webserver.sendContent(F("<h2>"));
   Webserver.sendContent(titel);
   Webserver.sendContent(F("</h2>\n<div class=\"tuerkis\">\n"));
   sendeCheckbox(F("Alarm aktiv?"), String(prefix) + F("Webhook"), alarm);
   sendeEinstellung(F("Sensorname"), String(prefix) + F("Name"), sensorName);
+  sendeEinstellung(F("aktueller absoluter Messwert"), String(prefix) + F("Minimum"), String(messwert));
   sendeEinstellung(F("Minimalwert"), String(prefix) + F("Minimum"), String(minimum));
   sendeEinstellung(F("Maximalwert"), String(prefix) + F("Maximum"), String(maximum));
 
@@ -80,15 +81,15 @@ void WebseiteAdminAusgeben() {
   #if MODUL_WEBHOOK
     Webserver.sendContent_P(PSTR("<h2>Webhook Modul</h2>\n<div class=\"tuerkis\">\n"));
     sendeCheckbox(F("Webhook aktiv?"), F("webhookAn"), webhookAn);
-    sendeEinstellung(F("Alarm-Benachrichtigungsfequenz in Stunden"), F("webhookFrequenz"), String(webhookFrequenz));
-    sendeEinstellung(F("Ping-Benachrichtigungsfequenz in Stunden"), F("webhookPingFrequenz"), String(webhookPingFrequenz));
+    sendeEinstellung(F("Alarm-Benachrichtigungsfrequenz in Stunden"), F("webhookFrequenz"), String(webhookFrequenz));
+    sendeEinstellung(F("Ping-Benachrichtigungsfrequenz in Stunden"), F("webhookPingFrequenz"), String(webhookPingFrequenz));
     sendeEinstellung(F("Domain des Webhooks"), F("webhookDomain"), webhookDomain);
     sendeEinstellung(F("Schlüssel/Pfad des Webhooks"), F("webhookPfad"), webhookPfad);
     Webserver.sendContent(F("</div>\n"));
   #endif
 
   #if MODUL_LEDAMPEL
-    Webserver.sendContent_P(PSTR("<h2>LED Ampel</h2>\n<h3>Anzeigemodus</h3>\n<div class=\"tuerkis\">\n"));
+    Webserver.sendContent_P(PSTR("<h2>LED Ampel</h2>\n<div class=\"tuerkis\">\n"));
     sendeCheckbox(F("LED Ampel angeschalten?"), F("ampelAn"), ampelAn);
     sendeEinstellung(F("Modus: (0: Anzeige der Bodenfeuchte; 1: Anzeige aller Sensoren hintereinander analog zu dem, was auf dem Display steht)"), F("ampelModus"), String(ampelModus));
     Webserver.sendContent(F("</div>\n"));
@@ -102,7 +103,7 @@ void WebseiteAdminAusgeben() {
 
   #if MODUL_BODENFEUCHTE
     sendeAnalogsensorEinstellungen(F("Bodenfeuchte"), F("bodenfeuchte"), bodenfeuchteName, bodenfeuchteMinimum, bodenfeuchteMaximum,
-                             bodenfeuchteGruenUnten, bodenfeuchteGruenOben, bodenfeuchteGelbUnten, bodenfeuchteGelbOben, bodenfeuchteWebhook);
+                             bodenfeuchteGruenUnten, bodenfeuchteGruenOben, bodenfeuchteGelbUnten, bodenfeuchteGelbOben, bodenfeuchteWebhook, bodenfeuchteMesswert);
   #endif
 
   #if MODUL_DHT
@@ -119,27 +120,27 @@ void WebseiteAdminAusgeben() {
 
   #if MODUL_HELLIGKEIT
     sendeAnalogsensorEinstellungen(F("Helligkeitssensor"), F("helligkeit"), helligkeitName, helligkeitMinimum, helligkeitMaximum,
-                             helligkeitGruenUnten, helligkeitGruenOben, helligkeitGelbUnten, helligkeitGelbOben, helligkeitWebhook);
+                             helligkeitGruenUnten, helligkeitGruenOben, helligkeitGelbUnten, helligkeitGelbOben, helligkeitWebhook, helligkeitMesswert);
   #endif
 
   // Analogsensoren
   #if MODUL_ANALOG3
-    sendeAnalogsensorEinstellungen(F("Analogsensor 3"), F("analog3"), analog3Name, analog3Minimum, analog3Maximum, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben, analog3Webhook);
+    sendeAnalogsensorEinstellungen(F("Analogsensor 3"), F("analog3"), analog3Name, analog3Minimum, analog3Maximum, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben, analog3Webhook, analog3Messwert);
   #endif
   #if MODUL_ANALOG4
-    sendeAnalogsensorEinstellungen(F("Analogsensor 4"), F("analog4"), analog4Name, analog4Minimum, analog4Maximum, analog4GruenUnten, analog4GruenOben, analog4GelbUnten, analog4GelbOben, analog4Webhook);
+    sendeAnalogsensorEinstellungen(F("Analogsensor 4"), F("analog4"), analog4Name, analog4Minimum, analog4Maximum, analog4GruenUnten, analog4GruenOben, analog4GelbUnten, analog4GelbOben, analog4Webhook, analog4Messwert);
   #endif
   #if MODUL_ANALOG5
-    sendeAnalogsensorEinstellungen(F("Analogsensor 5"), F("analog5"), analog5Name, analog5Minimum, analog5Maximum, analog5GruenUnten, analog5GruenOben, analog5GelbUnten, analog5GelbOben, analog5Webhook);
+    sendeAnalogsensorEinstellungen(F("Analogsensor 5"), F("analog5"), analog5Name, analog5Minimum, analog5Maximum, analog5GruenUnten, analog5GruenOben, analog5GelbUnten, analog5GelbOben, analog5Webhook, analog4Messwert);
   #endif
   #if MODUL_ANALOG6
-    sendeAnalogsensorEinstellungen(F("Analogsensor 6"), F("analog6"), analog6Name, analog6Minimum, analog6Maximum, analog6GruenUnten, analog6GruenOben, analog6GelbUnten, analog6GelbOben, analog6Webhook);
+    sendeAnalogsensorEinstellungen(F("Analogsensor 6"), F("analog6"), analog6Name, analog6Minimum, analog6Maximum, analog6GruenUnten, analog6GruenOben, analog6GelbUnten, analog6GelbOben, analog6Webhook, analog4Messwert);
   #endif
   #if MODUL_ANALOG7
-    sendeAnalogsensorEinstellungen(F("Analogsensor 7"), F("analog7"), analog7Name, analog7Minimum, analog7Maximum, analog7GruenUnten, analog7GruenOben, analog7GelbUnten, analog7GelbOben, analog7Webhook);
+    sendeAnalogsensorEinstellungen(F("Analogsensor 7"), F("analog7"), analog7Name, analog7Minimum, analog7Maximum, analog7GruenUnten, analog7GruenOben, analog7GelbUnten, analog7GelbOben, analog7Webhook, analog4Messwert);
   #endif
   #if MODUL_ANALOG8
-    sendeAnalogsensorEinstellungen(F("Analogsensor 8"), F("analog8"), analog8Name, analog8Minimum, analog8Maximum, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben, analog8Webhook);
+    sendeAnalogsensorEinstellungen(F("Analogsensor 8"), F("analog8"), analog8Name, analog8Minimum, analog8Maximum, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben, analog8Webhook, analog4Messwert);
   #endif
 
   Webserver.sendContent_P(PSTR(
