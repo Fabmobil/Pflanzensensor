@@ -324,22 +324,22 @@
                                 ]
                             },
                             "mapper": {
-                                "to": [
-                                    "tommy@fabmobil.org"
-                                ],
-                                "subject": "🚨🚨 Pflanzensensor Alarm! 🚨🚨",
-                                "contentType": "text",
-                                "attachments": [],
                                 "cc": [],
+                                "to": [
+                                    "deine@mailadresse.de"
+                                ],
                                 "bcc": [],
                                 "from": "",
+                                "text": "Deiner 🪴 geht es nicht gut und sie benötigt etwas ❤️.\n\nHier sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{20.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{18.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{16.text}}\n\nSo lange mindestens ein Alarm aktiv ist wird diese Nachricht aller {{1.alarmfrequenz}} Stunden wiederholt.",
                                 "sender": "",
+                                "headers": [],
                                 "replyTo": "",
+                                "subject": "🚨🚨 Pflanzensensor Alarm! 🚨🚨",
+                                "priority": "normal",
                                 "inReplyTo": "",
                                 "references": [],
-                                "priority": "normal",
-                                "headers": [],
-                                "text": "Deiner 🪴 geht es nicht gut und sie benötigt etwas ❤️.\n\nHier sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{20.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{18.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{16.text}}\n\nSo lange mindestens ein Alarm aktiv ist wird diese Nachricht aller {{1.alarmfrequenz}} Stunden wiederholt."
+                                "attachments": [],
+                                "contentType": "text"
                             },
                             "metadata": {
                                 "designer": {
@@ -347,42 +347,42 @@
                                     "y": 0
                                 },
                                 "restore": {
-                                    "parameters": {
-                                        "account": {
-                                            "label": "My Others (SMTP) connection (SMTP pflanzensensor@fabmobil.org)",
-                                            "data": {
-                                                "scoped": "true",
-                                                "connection": "smtp"
-                                            }
-                                        },
-                                        "saveAfterSent": {
-                                            "label": "No"
-                                        }
-                                    },
                                     "expect": {
+                                        "cc": {
+                                            "mode": "chose"
+                                        },
                                         "to": {
                                             "mode": "chose",
                                             "items": [
                                                 null
                                             ]
                                         },
-                                        "contentType": {
-                                            "label": "Plaintext"
-                                        },
-                                        "attachments": {
-                                            "mode": "chose"
-                                        },
-                                        "cc": {
-                                            "mode": "chose"
-                                        },
                                         "bcc": {
-                                            "mode": "chose"
-                                        },
-                                        "references": {
                                             "mode": "chose"
                                         },
                                         "priority": {
                                             "label": "Normal"
+                                        },
+                                        "references": {
+                                            "mode": "chose"
+                                        },
+                                        "attachments": {
+                                            "mode": "chose"
+                                        },
+                                        "contentType": {
+                                            "label": "Plaintext"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "account": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "smtp"
+                                            },
+                                            "label": "My Others (SMTP) connection (SMTP pflanzensensor@fabmobil.org)"
+                                        },
+                                        "saveAfterSent": {
+                                            "label": "No"
                                         }
                                     }
                                 },
@@ -412,15 +412,15 @@
                                 "expect": [
                                     {
                                         "name": "to",
-                                        "type": "array",
-                                        "label": "To",
-                                        "required": true,
                                         "spec": {
                                             "name": "value",
                                             "type": "email",
                                             "label": "Email address",
                                             "required": true
-                                        }
+                                        },
+                                        "type": "array",
+                                        "label": "To",
+                                        "required": true
                                     },
                                     {
                                         "name": "subject",
@@ -441,49 +441,49 @@
                                     },
                                     {
                                         "name": "attachments",
-                                        "type": "array",
-                                        "label": "Attachments",
                                         "spec": [
                                             {
                                                 "name": "fileName",
-                                                "label": "File name",
                                                 "type": "filename",
+                                                "label": "File name",
                                                 "required": true,
                                                 "semantic": "file:name"
                                             },
                                             {
                                                 "name": "data",
-                                                "label": "Data",
                                                 "type": "buffer",
+                                                "label": "Data",
                                                 "required": true,
                                                 "semantic": "file:data"
                                             },
                                             {
                                                 "name": "cid",
-                                                "label": "Content-ID",
-                                                "type": "text"
+                                                "type": "text",
+                                                "label": "Content-ID"
                                             }
-                                        ]
+                                        ],
+                                        "type": "array",
+                                        "label": "Attachments"
                                     },
                                     {
                                         "name": "cc",
-                                        "type": "array",
-                                        "label": "Copy recipient",
                                         "spec": {
                                             "name": "value",
                                             "type": "email",
                                             "label": "Email address"
-                                        }
+                                        },
+                                        "type": "array",
+                                        "label": "Copy recipient"
                                     },
                                     {
                                         "name": "bcc",
-                                        "type": "array",
-                                        "label": "Blind copy recipient",
                                         "spec": {
                                             "name": "value",
                                             "type": "email",
                                             "label": "Email address"
-                                        }
+                                        },
+                                        "type": "array",
+                                        "label": "Blind copy recipient"
                                     },
                                     {
                                         "name": "from",
@@ -507,14 +507,14 @@
                                     },
                                     {
                                         "name": "references",
-                                        "type": "array",
-                                        "label": "References",
                                         "spec": {
+                                            "name": "value",
                                             "type": "text",
                                             "label": "Reference",
-                                            "required": true,
-                                            "name": "value"
-                                        }
+                                            "required": true
+                                        },
+                                        "type": "array",
+                                        "label": "References"
                                     },
                                     {
                                         "name": "priority",
@@ -530,22 +530,22 @@
                                     },
                                     {
                                         "name": "headers",
-                                        "type": "array",
-                                        "label": "Headers",
                                         "spec": [
                                             {
                                                 "name": "key",
-                                                "label": "Key",
                                                 "type": "text",
+                                                "label": "Key",
                                                 "required": true
                                             },
                                             {
                                                 "name": "value",
-                                                "label": "Value",
                                                 "type": "text",
+                                                "label": "Value",
                                                 "required": true
                                             }
-                                        ]
+                                        ],
+                                        "type": "array",
+                                        "label": "Headers"
                                     },
                                     {
                                         "name": "text",
@@ -580,22 +580,22 @@
                                 ]
                             },
                             "mapper": {
-                                "to": [
-                                    "tommy@fabmobil.org"
-                                ],
-                                "subject": "🦾 Pflanzensensor Angeschalten! 🦾",
-                                "contentType": "text",
-                                "attachments": [],
                                 "cc": [],
+                                "to": [
+                                    "deine@mailadresse.de"
+                                ],
                                 "bcc": [],
                                 "from": "",
+                                "text": "Dein Pflanzensensor wurde gerade zum {{1.gruen[].wert}}. Mal angeschalten, ist jetzt online und wird:\n\n🤖 aller {{1.pingfrequenz}} Stunden ein Lebenszeichen von sich geben damit du weißt, dass er noch Online ist,\n\n🚨 sich bei einem aktiven Alarm aller {{1.alarmfrequenz}} Stunden bei dir melden damit du weißt, dass deine Pflanze Hilfe benötigt bzw.\n\n✅ dir nach spätestens {{1.alarmfrequenz}} Stunden Bescheid geben, wenn die Alarmwerte wieder im grünen Bereich sind.",
                                 "sender": "",
+                                "headers": [],
                                 "replyTo": "",
+                                "subject": "🦾 Pflanzensensor Angeschalten! 🦾",
+                                "priority": "normal",
                                 "inReplyTo": "",
                                 "references": [],
-                                "priority": "normal",
-                                "headers": [],
-                                "text": "Dein Pflanzensensor wurde gerade zum {{1.gruen[].wert}}. Mal angeschalten, ist jetzt online und wird:\n\n🤖 aller {{1.pingfrequenz}} Stunden ein Lebenszeichen von sich geben damit du weißt, dass er noch Online ist,\n\n🚨 sich bei einem aktiven Alarm aller {{1.alarmfrequenz}} Stunden bei dir melden damit du weißt, dass deine Pflanze Hilfe benötigt bzw.\n\n✅ dir nach spätestens {{1.alarmfrequenz}} Stunden Bescheid geben, wenn die Alarmwerte wieder im grünen Bereich sind."
+                                "attachments": [],
+                                "contentType": "text"
                             },
                             "metadata": {
                                 "designer": {
@@ -603,42 +603,42 @@
                                     "y": 300
                                 },
                                 "restore": {
-                                    "parameters": {
-                                        "account": {
-                                            "label": "My Others (SMTP) connection (SMTP pflanzensensor@fabmobil.org)",
-                                            "data": {
-                                                "scoped": "true",
-                                                "connection": "smtp"
-                                            }
-                                        },
-                                        "saveAfterSent": {
-                                            "label": "No"
-                                        }
-                                    },
                                     "expect": {
+                                        "cc": {
+                                            "mode": "chose"
+                                        },
                                         "to": {
                                             "mode": "chose",
                                             "items": [
                                                 null
                                             ]
                                         },
-                                        "contentType": {
-                                            "label": "Plaintext"
-                                        },
-                                        "attachments": {
-                                            "mode": "chose"
-                                        },
-                                        "cc": {
-                                            "mode": "chose"
-                                        },
                                         "bcc": {
-                                            "mode": "chose"
-                                        },
-                                        "references": {
                                             "mode": "chose"
                                         },
                                         "priority": {
                                             "label": "Normal"
+                                        },
+                                        "references": {
+                                            "mode": "chose"
+                                        },
+                                        "attachments": {
+                                            "mode": "chose"
+                                        },
+                                        "contentType": {
+                                            "label": "Plaintext"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "account": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "smtp"
+                                            },
+                                            "label": "My Others (SMTP) connection (SMTP pflanzensensor@fabmobil.org)"
+                                        },
+                                        "saveAfterSent": {
+                                            "label": "No"
                                         }
                                     }
                                 },
@@ -668,15 +668,15 @@
                                 "expect": [
                                     {
                                         "name": "to",
-                                        "type": "array",
-                                        "label": "To",
-                                        "required": true,
                                         "spec": {
                                             "name": "value",
                                             "type": "email",
                                             "label": "Email address",
                                             "required": true
-                                        }
+                                        },
+                                        "type": "array",
+                                        "label": "To",
+                                        "required": true
                                     },
                                     {
                                         "name": "subject",
@@ -697,49 +697,49 @@
                                     },
                                     {
                                         "name": "attachments",
-                                        "type": "array",
-                                        "label": "Attachments",
                                         "spec": [
                                             {
                                                 "name": "fileName",
-                                                "label": "File name",
                                                 "type": "filename",
+                                                "label": "File name",
                                                 "required": true,
                                                 "semantic": "file:name"
                                             },
                                             {
                                                 "name": "data",
-                                                "label": "Data",
                                                 "type": "buffer",
+                                                "label": "Data",
                                                 "required": true,
                                                 "semantic": "file:data"
                                             },
                                             {
                                                 "name": "cid",
-                                                "label": "Content-ID",
-                                                "type": "text"
+                                                "type": "text",
+                                                "label": "Content-ID"
                                             }
-                                        ]
+                                        ],
+                                        "type": "array",
+                                        "label": "Attachments"
                                     },
                                     {
                                         "name": "cc",
-                                        "type": "array",
-                                        "label": "Copy recipient",
                                         "spec": {
                                             "name": "value",
                                             "type": "email",
                                             "label": "Email address"
-                                        }
+                                        },
+                                        "type": "array",
+                                        "label": "Copy recipient"
                                     },
                                     {
                                         "name": "bcc",
-                                        "type": "array",
-                                        "label": "Blind copy recipient",
                                         "spec": {
                                             "name": "value",
                                             "type": "email",
                                             "label": "Email address"
-                                        }
+                                        },
+                                        "type": "array",
+                                        "label": "Blind copy recipient"
                                     },
                                     {
                                         "name": "from",
@@ -763,14 +763,14 @@
                                     },
                                     {
                                         "name": "references",
-                                        "type": "array",
-                                        "label": "References",
                                         "spec": {
+                                            "name": "value",
                                             "type": "text",
                                             "label": "Reference",
-                                            "required": true,
-                                            "name": "value"
-                                        }
+                                            "required": true
+                                        },
+                                        "type": "array",
+                                        "label": "References"
                                     },
                                     {
                                         "name": "priority",
@@ -786,22 +786,22 @@
                                     },
                                     {
                                         "name": "headers",
-                                        "type": "array",
-                                        "label": "Headers",
                                         "spec": [
                                             {
                                                 "name": "key",
-                                                "label": "Key",
                                                 "type": "text",
+                                                "label": "Key",
                                                 "required": true
                                             },
                                             {
                                                 "name": "value",
-                                                "label": "Value",
                                                 "type": "text",
+                                                "label": "Value",
                                                 "required": true
                                             }
-                                        ]
+                                        ],
+                                        "type": "array",
+                                        "label": "Headers"
                                     },
                                     {
                                         "name": "text",
@@ -838,7 +838,7 @@
                             "mapper": {
                                 "cc": [],
                                 "to": [
-                                    "tommy@fabmobil.org"
+                                    "deine@mailadresse.de"
                                 ],
                                 "bcc": [],
                                 "from": "",
@@ -1092,22 +1092,22 @@
                                 ]
                             },
                             "mapper": {
-                                "to": [
-                                    "tommy@fabmobil.org"
-                                ],
-                                "subject": "🤖 Pflanzensensor Online! 🤖",
-                                "contentType": "text",
-                                "attachments": [],
                                 "cc": [],
+                                "to": [
+                                    "deine@mailadresse.de"
+                                ],
                                 "bcc": [],
                                 "from": "",
+                                "text": "Dein Pflanzensensor hat sich gemeldet und ist noch online. 👍 \n\nDein Pflanzensensor hat sich gemeldet und ist noch online. 👍\n\nEr wird sich in {{1.pingfrequenz}} Stunden wieder melden. Wenn das nicht geschieht, solltest du mal nachschauen! 🔍\n\nHier sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{20.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{18.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{16.text}}",
                                 "sender": "",
+                                "headers": [],
                                 "replyTo": "",
+                                "subject": "🤖 Pflanzensensor Online! 🤖",
+                                "priority": "normal",
                                 "inReplyTo": "",
                                 "references": [],
-                                "priority": "normal",
-                                "headers": [],
-                                "text": "Dein Pflanzensensor hat sich gemeldet und ist noch online. 👍 \n\nDein Pflanzensensor hat sich gemeldet und ist noch online. 👍\n\nEr wird sich in {{1.pingfrequenz}} Stunden wieder melden. Wenn das nicht geschieht, solltest du mal nachschauen! 🔍\n\nHier sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{20.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{18.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{16.text}}"
+                                "attachments": [],
+                                "contentType": "text"
                             },
                             "metadata": {
                                 "designer": {
@@ -1115,42 +1115,42 @@
                                     "y": 900
                                 },
                                 "restore": {
-                                    "parameters": {
-                                        "account": {
-                                            "label": "My Others (SMTP) connection (SMTP pflanzensensor@fabmobil.org)",
-                                            "data": {
-                                                "scoped": "true",
-                                                "connection": "smtp"
-                                            }
-                                        },
-                                        "saveAfterSent": {
-                                            "label": "No"
-                                        }
-                                    },
                                     "expect": {
+                                        "cc": {
+                                            "mode": "chose"
+                                        },
                                         "to": {
                                             "mode": "chose",
                                             "items": [
                                                 null
                                             ]
                                         },
-                                        "contentType": {
-                                            "label": "Plaintext"
-                                        },
-                                        "attachments": {
-                                            "mode": "chose"
-                                        },
-                                        "cc": {
-                                            "mode": "chose"
-                                        },
                                         "bcc": {
-                                            "mode": "chose"
-                                        },
-                                        "references": {
                                             "mode": "chose"
                                         },
                                         "priority": {
                                             "label": "Normal"
+                                        },
+                                        "references": {
+                                            "mode": "chose"
+                                        },
+                                        "attachments": {
+                                            "mode": "chose"
+                                        },
+                                        "contentType": {
+                                            "label": "Plaintext"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "account": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "smtp"
+                                            },
+                                            "label": "My Others (SMTP) connection (SMTP pflanzensensor@fabmobil.org)"
+                                        },
+                                        "saveAfterSent": {
+                                            "label": "No"
                                         }
                                     }
                                 },
@@ -1180,15 +1180,15 @@
                                 "expect": [
                                     {
                                         "name": "to",
-                                        "type": "array",
-                                        "label": "To",
-                                        "required": true,
                                         "spec": {
                                             "name": "value",
                                             "type": "email",
                                             "label": "Email address",
                                             "required": true
-                                        }
+                                        },
+                                        "type": "array",
+                                        "label": "To",
+                                        "required": true
                                     },
                                     {
                                         "name": "subject",
@@ -1209,49 +1209,49 @@
                                     },
                                     {
                                         "name": "attachments",
-                                        "type": "array",
-                                        "label": "Attachments",
                                         "spec": [
                                             {
                                                 "name": "fileName",
-                                                "label": "File name",
                                                 "type": "filename",
+                                                "label": "File name",
                                                 "required": true,
                                                 "semantic": "file:name"
                                             },
                                             {
                                                 "name": "data",
-                                                "label": "Data",
                                                 "type": "buffer",
+                                                "label": "Data",
                                                 "required": true,
                                                 "semantic": "file:data"
                                             },
                                             {
                                                 "name": "cid",
-                                                "label": "Content-ID",
-                                                "type": "text"
+                                                "type": "text",
+                                                "label": "Content-ID"
                                             }
-                                        ]
+                                        ],
+                                        "type": "array",
+                                        "label": "Attachments"
                                     },
                                     {
                                         "name": "cc",
-                                        "type": "array",
-                                        "label": "Copy recipient",
                                         "spec": {
                                             "name": "value",
                                             "type": "email",
                                             "label": "Email address"
-                                        }
+                                        },
+                                        "type": "array",
+                                        "label": "Copy recipient"
                                     },
                                     {
                                         "name": "bcc",
-                                        "type": "array",
-                                        "label": "Blind copy recipient",
                                         "spec": {
                                             "name": "value",
                                             "type": "email",
                                             "label": "Email address"
-                                        }
+                                        },
+                                        "type": "array",
+                                        "label": "Blind copy recipient"
                                     },
                                     {
                                         "name": "from",
@@ -1275,14 +1275,14 @@
                                     },
                                     {
                                         "name": "references",
-                                        "type": "array",
-                                        "label": "References",
                                         "spec": {
+                                            "name": "value",
                                             "type": "text",
                                             "label": "Reference",
-                                            "required": true,
-                                            "name": "value"
-                                        }
+                                            "required": true
+                                        },
+                                        "type": "array",
+                                        "label": "References"
                                     },
                                     {
                                         "name": "priority",
@@ -1298,22 +1298,22 @@
                                     },
                                     {
                                         "name": "headers",
-                                        "type": "array",
-                                        "label": "Headers",
                                         "spec": [
                                             {
                                                 "name": "key",
-                                                "label": "Key",
                                                 "type": "text",
+                                                "label": "Key",
                                                 "required": true
                                             },
                                             {
                                                 "name": "value",
-                                                "label": "Value",
                                                 "type": "text",
+                                                "label": "Value",
                                                 "required": true
                                             }
-                                        ]
+                                        ],
+                                        "type": "array",
+                                        "label": "Headers"
                                     },
                                     {
                                         "name": "text",

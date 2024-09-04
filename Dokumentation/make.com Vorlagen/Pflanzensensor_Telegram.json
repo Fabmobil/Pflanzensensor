@@ -18,10 +18,10 @@
                 "restore": {
                     "parameters": {
                         "hook": {
-                            "label": "Pflanzensensor",
                             "data": {
                                 "editable": "true"
-                            }
+                            },
+                            "label": "Pflanzensensor"
                         }
                     }
                 },
@@ -41,9 +41,7 @@
                 "interface": [
                     {
                         "name": "gruen",
-                        "type": "array",
                         "spec": {
-                            "type": "collection",
                             "spec": [
                                 {
                                     "name": "name",
@@ -57,14 +55,14 @@
                                     "name": "einheit",
                                     "type": "text"
                                 }
-                            ]
-                        }
+                            ],
+                            "type": "collection"
+                        },
+                        "type": "array"
                     },
                     {
                         "name": "gelb",
-                        "type": "array",
                         "spec": {
-                            "type": "collection",
                             "spec": [
                                 {
                                     "name": "name",
@@ -78,14 +76,14 @@
                                     "name": "einheit",
                                     "type": "text"
                                 }
-                            ]
-                        }
+                            ],
+                            "type": "collection"
+                        },
+                        "type": "array"
                     },
                     {
                         "name": "rot",
-                        "type": "array",
                         "spec": {
-                            "type": "collection",
                             "spec": [
                                 {
                                     "name": "name",
@@ -99,8 +97,10 @@
                                     "name": "einheit",
                                     "type": "text"
                                 }
-                            ]
-                        }
+                            ],
+                            "type": "collection"
+                        },
+                        "type": "array"
                     },
                     {
                         "name": "status",
@@ -400,13 +400,13 @@
                                 ]
                             },
                             "mapper": {
-                                "chatId": "1225727603",
                                 "text": "🦾 Pflanzensensor Angeschalten! 🦾\n\nDein Pflanzensensor wurde gerade zum {{1.gruen[].wert}}. Mal angeschalten, ist jetzt online und wird:\n\n🤖 aller {{1.pingfrequenz}} Stunden ein Lebenszeichen von sich geben damit du weißt, dass er noch Online ist,\n\n🚨 sich bei einem aktiven Alarm aller {{1.alarmfrequenz}} Stunden bei dir melden damit du weißt, dass deine Pflanze Hilfe benötigt bzw.\n\n✅ dir nach spätestens {{1.alarmfrequenz}} Stunden Bescheid geben, wenn die Alarmwerte wieder im grünen Bereich sind.",
-                                "messageThreadId": "",
+                                "chatId": "1234567890",
                                 "parseMode": "Markdown",
+                                "replyMarkup": "",
+                                "messageThreadId": "",
                                 "replyToMessageId": "",
-                                "replyMarkupAssembleType": "reply_markup_enter",
-                                "replyMarkup": ""
+                                "replyMarkupAssembleType": "reply_markup_enter"
                             },
                             "metadata": {
                                 "designer": {
@@ -414,15 +414,6 @@
                                     "y": 0
                                 },
                                 "restore": {
-                                    "parameters": {
-                                        "__IMTCONN__": {
-                                            "label": "FabmobilPflanzensensorBot",
-                                            "data": {
-                                                "scoped": "true",
-                                                "connection": "telegram"
-                                            }
-                                        }
-                                    },
                                     "expect": {
                                         "parseMode": {
                                             "label": "Markdown"
@@ -432,6 +423,15 @@
                                         },
                                         "replyMarkupAssembleType": {
                                             "label": "Enter the Reply Markup"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "telegram"
+                                            },
+                                            "label": "FabmobilPflanzensensorBot"
                                         }
                                     }
                                 },
@@ -532,7 +532,7 @@
                             },
                             "mapper": {
                                 "text": "✅ Pflanzensensor Alarm beendet ✅\n\nDeine 🪴 sagt, dass alle Sensorwerte, die du mit einem Alarm belegt hast, sich nicht mehr im roten Bereich befinden. Toll❣️\n\nHier ist sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{38.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{36.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{25.text}}",
-                                "chatId": "1225727603",
+                                "chatId": "1234567890",
                                 "parseMode": "Markdown",
                                 "replyMarkup": "",
                                 "messageThreadId": "",
@@ -662,13 +662,13 @@
                                 ]
                             },
                             "mapper": {
-                                "chatId": "1225727603",
                                 "text": "🤖 Pflanzensensor Online! 🤖\n\nDein Pflanzensensor hat sich gemeldet und ist noch online. 👍 \nEr wird sich in {{1.pingfrequenz}} Stunden wieder melden. Wenn das nicht geschieht, solltest du mal nachschauen! 🔍\n\nHier ist sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{38.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{36.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{25.text}}",
-                                "messageThreadId": "",
+                                "chatId": "1234567890",
                                 "parseMode": "Markdown",
+                                "replyMarkup": "",
+                                "messageThreadId": "",
                                 "replyToMessageId": "",
-                                "replyMarkupAssembleType": "reply_markup_enter",
-                                "replyMarkup": ""
+                                "replyMarkupAssembleType": "reply_markup_enter"
                             },
                             "metadata": {
                                 "designer": {
@@ -676,15 +676,6 @@
                                     "y": 600
                                 },
                                 "restore": {
-                                    "parameters": {
-                                        "__IMTCONN__": {
-                                            "label": "FabmobilPflanzensensorBot",
-                                            "data": {
-                                                "scoped": "true",
-                                                "connection": "telegram"
-                                            }
-                                        }
-                                    },
                                     "expect": {
                                         "parseMode": {
                                             "label": "Markdown"
@@ -694,6 +685,15 @@
                                         },
                                         "replyMarkupAssembleType": {
                                             "label": "Enter the Reply Markup"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "telegram"
+                                            },
+                                            "label": "FabmobilPflanzensensorBot"
                                         }
                                     }
                                 },
@@ -793,13 +793,13 @@
                                 ]
                             },
                             "mapper": {
-                                "chatId": "1225727603",
                                 "text": "🚨🚨 *Pflanzensensor Alarm!* 🚨🚨\n\nDeiner 🪴 geht es nicht gut und sie benötigt etwas ❤️. \n\nHier ist sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{38.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{36.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{25.text}}\n\nSo lange mindestens ein Alarm aktiv ist wird diese Nachricht aller {{1.alarmfrequenz}} Stunden wiederholt.\n",
-                                "messageThreadId": "",
+                                "chatId": "1234567890",
                                 "parseMode": "Markdown",
+                                "replyMarkup": "",
+                                "messageThreadId": "",
                                 "replyToMessageId": "",
-                                "replyMarkupAssembleType": "reply_markup_enter",
-                                "replyMarkup": ""
+                                "replyMarkupAssembleType": "reply_markup_enter"
                             },
                             "metadata": {
                                 "designer": {
@@ -807,15 +807,6 @@
                                     "y": 900
                                 },
                                 "restore": {
-                                    "parameters": {
-                                        "__IMTCONN__": {
-                                            "label": "FabmobilPflanzensensorBot",
-                                            "data": {
-                                                "scoped": "true",
-                                                "connection": "telegram"
-                                            }
-                                        }
-                                    },
                                     "expect": {
                                         "parseMode": {
                                             "label": "Markdown"
@@ -825,6 +816,15 @@
                                         },
                                         "replyMarkupAssembleType": {
                                             "label": "Enter the Reply Markup"
+                                        }
+                                    },
+                                    "parameters": {
+                                        "__IMTCONN__": {
+                                            "data": {
+                                                "scoped": "true",
+                                                "connection": "telegram"
+                                            },
+                                            "label": "FabmobilPflanzensensorBot"
                                         }
                                     }
                                 },
