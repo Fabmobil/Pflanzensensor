@@ -174,7 +174,7 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
  * hier muss eigentlich nichts verändert werden sondern die notewendigen globalen Variablen werden hier
  * definiert.
  */
-#define pflanzensensorVersion "0.7" // Versionsnummer
+#define pflanzensensorVersion "1.0" // Versionsnummer
 int neustarts = 1;
 unsigned long millisAktuell = 0;
 unsigned long millisVorherAnalog = 0; // Variable für die Messung des Intervalls der Analogsensormessung
