@@ -12,8 +12,9 @@
 #endif
 
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
+  bool wifiApPasswortAktiviert = false; // soll das selbst aufgemachte WLAN ein Passwort haben?
   String wifiApPasswort = "geheim"; // Das Passwort für das selbst aufgemacht WLAN
-
+  String wifiAdminPasswort = "admin"; // Passwort für das Admininterface
   // Es können mehrere WLANs angegeben werden, mit denen sich der ESP verbinden soll. Ggfs. in allen Dateien
   // nach "wifiSsid1" suchen und die Zeilen kopieren und mehr hinzufügen:
   String wifiSsid1 = "WLAN1"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
