@@ -6,7 +6,7 @@
  * Dies ist der Code für den Fabmobil Pflanzensensor. Er ist aufgeteilt in verschiedene Dateien:
  * - Pflanzensensor.ino ist die zentrale Datei, welche die setup() und loop()-Funktion enthält,
  *   die für den Betrieb des Sensors notwendig ist.
- * - Configuration.h enthält Konfigurationsdefinitionen und ermöglicht es, Module an- oder aus-
+ * - einstellungen.h enthält Konfigurationsdefinitionen und ermöglicht es, Module an- oder aus-
  *   zuschalten, die Pins der Sensoren zu definieren und verschiedene Variablen zu setzen
  * - modul_bodenfeuchte.h ist die Datei mit den Funktionen für den Bodenfeuchtesensor
  * - dht.h ist die Datei mit den Funktionen für den Lufttemperatur und -feuchtesensor
@@ -22,7 +22,7 @@
  * Die verwendeten Bauteile sind in der Readme.md aufgeführt.
  */
 
-#include "Configuration.h" // Alle Einstellungen werden dort vorgenommen!
+#include "einstellungen.h" // Alle Einstellungen werden dort vorgenommen!
 
 /*
  * Funktion: setup()
@@ -34,7 +34,7 @@ void setup() {
   /* Die #if ... #endif-Anweisungen werden vom Preprozessor aufgegriffen,
    * welcher den Code fürs kompilieren vorbereitet. Es wird abgefragt,
    * ob das jeweilige Modul aktiviert ist oder nicht. Dies geschieht in
-   * der Configuration.h-Datei. Ist das Modul deaktiviert, wird der Code
+   * der einstellungen.h-Datei. Ist das Modul deaktiviert, wird der Code
    * zwischen dem #if und #endif ignoriert und landet nicht auf dem Chip.
    */
   #ifdef WITH_GDB // fürs debugging
