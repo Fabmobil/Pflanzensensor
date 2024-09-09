@@ -40,7 +40,9 @@ void WebseiteStartAusgeben() {
     "<div class=\"tuerkis\">"
     "<p>Diese Seite zeigt die Sensordaten deines Pflanzensensors an. Sie aktualisiert sich automatisch jede Minute.</p>"
     "</div>\n"));
-
+  #if !MODUL_WEBHOOK
+    bool webhookAn = false; // ansonsten ist die Variable nicht definiert und das Programm kompiliert nicht
+  #endif
   #if MODUL_HELLIGKEIT
     sendeSensorDaten(F("Helligkeit"), helligkeitFarbe, helligkeitMesswertProzent, F("%"), helligkeitWebhook, webhookAn);
   #endif
