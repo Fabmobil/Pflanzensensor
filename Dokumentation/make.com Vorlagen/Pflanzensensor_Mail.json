@@ -1098,7 +1098,7 @@
                                 ],
                                 "bcc": [],
                                 "from": "",
-                                "text": "Dein Pflanzensensor hat sich gemeldet und ist noch online. 👍 \n\nDein Pflanzensensor hat sich gemeldet und ist noch online. 👍\n\nEr wird sich in {{1.pingfrequenz}} Stunden wieder melden. Wenn das nicht geschieht, solltest du mal nachschauen! 🔍\n\nHier sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{20.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{18.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{16.text}}",
+                                "text": "Dein Pflanzensensor hat sich gemeldet und ist noch online. 👍 \n\nEr wird sich in {{1.pingfrequenz}} Stunden wieder melden. Wenn das nicht geschieht, solltest du mal nachschauen! 🔍\n\nHier sind die Werte deiner Sensoren:\n\n🟥🟥 *Roter Bereich:*\n{{20.text}}\n\n🟨🟨 *Gelber Bereich:*\n{{18.text}}\n\n🟩🟩 *Grüner Bereich:*\n{{16.text}}",
                                 "sender": "",
                                 "headers": [],
                                 "replyTo": "",
