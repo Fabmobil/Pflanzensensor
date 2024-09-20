@@ -50,7 +50,7 @@ float DhtMessenLufttemperatur() { // Lufttemperatur messen
   float lufttemperatur = -1; // Variable für die Lufttemperatur
   dht.temperature().getEvent(&event); // Messung der Lufttemperatur
   if (isnan(event.temperature)) { // überprüfen ob die Messung erfolgreich war
-    Serial.print(F("Temperaturmessung nicht erfolgreich! :-("));
+    Serial.println(F("Temperaturmessung nicht erfolgreich! :-("));
   }
   else {
     Serial.print(F("Lufttemperatur: "));
