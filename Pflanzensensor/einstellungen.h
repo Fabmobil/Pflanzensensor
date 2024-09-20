@@ -248,6 +248,9 @@ String analog8Farbe = "rot";
   #include "multiplexer.h" // Multiplexermodul einbinden
 #endif
 
+#if MODUL_WIFI
+  String aktuelleSSID = "";
+#endif
 
 #if MODUL_DISPLAY
   int status = 0; // diese Variable schaltet durch die unterschiedlichen Anzeigen des Displays.
@@ -267,6 +270,8 @@ String analog8Farbe = "rot";
   bool wlanNeustartGeplant = false;
   #include "wifi.h" // Wifimodul einbinden
 #endif
+
+
 
 #if MODUL_WEBHOOK
   #include "webhook.h" // Webhook Modul einbinden

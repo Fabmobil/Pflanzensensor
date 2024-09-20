@@ -21,6 +21,33 @@ Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // I
 #include "display_bilder.h" // Bilder fürs Display
 
 
+/*
+ * Funktion: DisplayIPAdresse()
+ * Zeigt die aktuelle IP-Adresse auf dem Display an
+ */
+void DisplayIPAdresse() {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setCursor(0, 0);
+  display.println(F("IP-Adresse:"));
+  display.setTextSize(2);
+  display.setCursor(0, 10);
+  display.println(ip);
+  display.setTextSize(1);
+  display.setCursor(0, 30);
+  if (wifiAp) {
+    display.println(F("AP-Modus"));
+    display.setCursor(0, 40);
+    display.println(F("SSID: ") + String(wifiApSsid));
+  } else {
+    display.println(F("WLAN-Modus"));
+    display.setCursor(0, 40);
+    display.println(F("SSID: ") + aktuelleSSID);
+  }
+  display.display();
+}
+
+
 /* Funktion: NamenTeilen(String name)
  * Teilt einen Namen, falls er länger als 10 Zeichen ist, in zwei Teile
  * String name: Name, der geteilt werden soll
@@ -201,8 +228,11 @@ void DisplayAnzeigen() {
         display.display();
       }
       break;
+    case 6:
+      DisplayIPAdresse();
+      break;
     #if MODUL_ANALOG3
-      case 6:
+      case 7:
         if (analog3MesswertProzent != -1) {
           std::pair<String, String> namen = NamenTeilen(analog3Name);
           MesswertAnzeigen(namen.first, namen.second, analog3MesswertProzent, "%");
@@ -217,7 +247,7 @@ void DisplayAnzeigen() {
         break;
     #endif
     #if MODUL_ANALOG4
-      case 7:
+      case 8:
         if (analog4MesswertProzent != -1) {
           std::pair<String, String> namen = NamenTeilen(analog4Name);
           MesswertAnzeigen(namen.first, namen.second, analog4MesswertProzent, "%");
@@ -232,7 +262,7 @@ void DisplayAnzeigen() {
         break;
     #endif
     #if MODUL_ANALOG5
-      case 8:
+      case 9:
         if (analog5MesswertProzent != -1) {
           std::pair<String, String> namen = NamenTeilen(analog5Name);
           MesswertAnzeigen(namen.first, namen.second, analog5MesswertProzent, "%");
@@ -247,7 +277,7 @@ void DisplayAnzeigen() {
         break;
     #endif
     #if MODUL_ANALOG6
-      case 9:
+      case 10:
         if (analog6MesswertProzent != -1) {
           std::pair<String, String> namen = NamenTeilen(analog6Name);
           MesswertAnzeigen(namen.first, namen.second, analog6MesswertProzent, "%");
@@ -262,7 +292,7 @@ void DisplayAnzeigen() {
         break;
     #endif
     #if MODUL_ANALOG7
-      case 10:
+      case 11:
         if (analog7MesswertProzent != -1) {
           std::pair<String, String> namen = NamenTeilen(analog7Name);
           MesswertAnzeigen(namen.first, namen.second, analog7MesswertProzent, "%");
@@ -277,7 +307,7 @@ void DisplayAnzeigen() {
         break;
     #endif
     #if MODUL_ANALOG8
-      case 11:
+      case 12:
         if (analog8MesswertProzent != -1) {
           std::pair<String, String> namen = NamenTeilen(analog8Name);
           MesswertAnzeigen(namen.first, namen.second, analog8MesswertProzent, "%");

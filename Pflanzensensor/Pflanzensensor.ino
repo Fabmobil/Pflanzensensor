@@ -42,7 +42,6 @@ void setup() {
   #endif
   delay(100);
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-
     DisplaySetup(); // Display initialisieren
   #endif
   CreateMutex(&mutex);
@@ -60,7 +59,7 @@ void setup() {
    */
   Serial.println(" Fabmobil Pflanzensensor, v" + String(pflanzensensorVersion));
   module = ModuleZaehlen(); // wie viele Module sind aktiv?
-  displayseiten = AnalogsensorenZaehlen() + 6;  // Wir haben 6 Displayseiten plus je eine pro Analogmodul
+  displayseiten = AnalogsensorenZaehlen() + 7;  // Wir haben 6 Displayseiten plus je eine pro Analogmodul
 
   #if MODUL_DEBUG // Debuginformationen
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
@@ -342,6 +341,7 @@ void loop() {
       if (!wifiAp) {
         if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
           ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
+          aktuelleSSID = WiFi.SSID(); // SSID in Variable schreiben
           wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers bei erfolgreicher Verbindung
         } else {
           wifiVerbindungsVersuche++; // Erhöhen des Zählers bei fehlgeschlagener Verbindung
@@ -352,6 +352,7 @@ void loop() {
             #endif
             wifiAp = true;
             String ip = WifiSetup(wifiHostname);
+            aktuelleSSID = wifiApSsid; // AP SSID in Variable schreiben
             wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers
           } else {
             Serial.print("WLAN-Verbindungsversuch fehlgeschlagen. Versuch ");
