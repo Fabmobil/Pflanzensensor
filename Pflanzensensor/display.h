@@ -1,15 +1,15 @@
 /**
- * Display Modul
- * Diese Datei enthält den Code für das Display-Modul.
- * Sonderzeichen müssen über einen Code eingegeben werden damit sie
- * richtig angezeigt werden:
- * \x84 -> ä; \x94 -> ö; \x81 -> ü; \x8e -> Ä; \x99 -> Ö;
- * \x9a -> Ü; \xe1 -> ß; \xe0 -> alpha; \xe4 -> Summenzeichen;
- * \xe3 -> Pi; \xea -> Ohm; \xed -> Durchschnitt; \xee -> PI;
- * \x10 -> Pfeil links; \x11 -> Pfeil rechts; \x12 -> Pfeil
- * oben und unten; \x7b -> {; \x7c -> |; \x7d -> };
- * \xf8 -> °
+ * @file display.h
+ * @brief Display Modul für den Pflanzensensor
+ * @author Tommy
+ * @date 2023-09-20
+ *
+ * Dieses Modul enthält Funktionen zur Steuerung und Anzeige von Informationen
+ * auf dem OLED-Display des Pflanzensensors.
  */
+
+#ifndef DISPLAY_H
+#define DISPLAY_H
 
 #include <SPI.h> // SPI Library
 #include <Wire.h> // Wire Library
@@ -21,9 +21,11 @@ Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // I
 #include "display_bilder.h" // Bilder fürs Display
 
 
-/*
- * Funktion: DisplayIPAdresse()
- * Zeigt die aktuelle IP-Adresse auf dem Display an
+/**
+ * @brief Zeigt die aktuelle IP-Adresse auf dem Display an
+ *
+ * Diese Funktion löscht das Display und zeigt dann die aktuelle IP-Adresse,
+ * den WLAN-Modus (AP oder Client) und die SSID an.
  */
 void DisplayIPAdresse() {
   display.clearDisplay();
@@ -47,10 +49,11 @@ void DisplayIPAdresse() {
 }
 
 
-/* Funktion: NamenTeilen(String name)
- * Teilt einen Namen, falls er länger als 10 Zeichen ist, in zwei Teile
- * String name: Name, der geteilt werden soll
- * Rückgabe: std::pair<String, String> mit den beiden Teilen
+/**
+ * @brief Teilt einen Namen in zwei Teile, falls er länger als 10 Zeichen ist
+ *
+ * @param name Der zu teilende Name
+ * @return std::pair<String, String> Ein Paar mit den beiden Teilen des Namens
  */
 std::pair<String, String> NamenTeilen(String name) {
   int laenge = name.length();
@@ -65,12 +68,13 @@ std::pair<String, String> NamenTeilen(String name) {
   }
 }
 
-/* Funktion: MesswertAnzeigen(String name1, String name2, float messwert, String einheit)
- * Zeigt einen Messwert auf dem Display an
- * String name1: Erster Teil des Namens
- * String name2: Zweiter Teil des Namens
- * float messwert: Messwert
- * String einheit: Einheit des Messwertes
+/**
+ * @brief Zeigt einen Messwert auf dem Display an
+ *
+ * @param name1 Erster Teil des Sensornamens
+ * @param name2 Zweiter Teil des Sensornamens (optional)
+ * @param messwert Der anzuzeigende Messwert
+ * @param einheit Die Einheit des Messwerts
  */
 void MesswertAnzeigen(String name1, String name2, int messwert, String einheit){
   display.clearDisplay(); // Display löschen
@@ -85,11 +89,11 @@ void MesswertAnzeigen(String name1, String name2, int messwert, String einheit){
   display.display();      // Display aktualisieren
 }
 
-/*
- * Funktion: DisplayIntro()
- * Spielt den Bootscreen auf dem Display ab und zeigt die IP Adresse an
- * String ip: IP Adresse des Chips
- * String hostname: Name des Gerätes -- im Browser dann errichbar unter hostname.local
+/**
+ * @brief Spielt den Bootscreen auf dem Display ab und zeigt die IP-Adresse an
+ *
+ * @param ip Die anzuzeigende IP-Adresse
+ * @param hostname Der Hostname des Geräts
  */
 void DisplayIntro(String ip, String hostname) {
   #if MODUL_DEBUG
@@ -146,13 +150,10 @@ void DisplayIntro(String ip, String hostname) {
 }
 
 /**
- * Funktion: DisplayAnzeigen(int bodenfeuchte, int helligkeit, int luftfeuchte, int lufttemperatur)
- * Stellt die Messwerte auf dem Display dar.
- * Wenn ein Messwert "-1" ist, wird die Anzeige übersprungen.
- * bodenfeuchte: Bodenfeuchte in %
- * helligkeit: Helligkeit in %
- * luftfeuchte: Luftfeuchte in %
- * lufttemperatur: Lufttemperatur in °C
+ * @brief Zeigt die aktuellen Messwerte auf dem Display an
+ *
+ * Diese Funktion aktualisiert das Display mit den aktuellen Messwerten
+ * aller aktivierten Sensoren.
  */
 void DisplayAnzeigen() {
   #if MODUL_DEBUG
@@ -332,12 +333,12 @@ void DisplayAnzeigen() {
   }
 }
 
-/*
- * Funktion: DisplayDreiWoerter(String wort1, String wort2, String wort3)
- * Zeigt 3 Wörter auf dem Display an
- * String wort1: Erstes Wort
- * String wort2: Zweites Wort
- * String wort3: Drittes Wort
+/**
+ * @brief Zeigt drei Wörter auf dem Display an
+ *
+ * @param wort1 Erstes Wort
+ * @param wort2 Zweites Wort
+ * @param wort3 Drittes Wort
  */
 void DisplayDreiWoerter(String wort1, String wort2, String wort3) {
   display.setTextSize(2);
@@ -352,15 +353,15 @@ void DisplayDreiWoerter(String wort1, String wort2, String wort3) {
   delay(1000); // mindestens 1s Zeit zum lesen
 }
 
-/*
- * Funktion: DisplaySechsZeilen(String zeile1, String zeile2, String zeile3, String zeile4, String zeile5, String zeile6)
- * Zeigt 6 Zeilen auf dem Display an
- * String zeile1: Erste Zeile
- * String zeile2: Zweite Zeile
- * String zeile3: Dritte Zeile
- * String zeile4: Vierte Zeile
- * String zeile5: Fünfte Zeile
- * String zeile6: Sechste Zeile
+/**
+ * @brief Zeigt sechs Zeilen Text auf dem Display an
+ *
+ * @param zeile1 Erste Zeile
+ * @param zeile2 Zweite Zeile
+ * @param zeile3 Dritte Zeile
+ * @param zeile4 Vierte Zeile
+ * @param zeile5 Fünfte Zeile
+ * @param zeile6 Sechste Zeile
  */
 void DisplaySechsZeilen(String zeile1, String zeile2, String zeile3, String zeile4, String zeile5, String zeile6) {
   display.setTextSize(1);
@@ -386,9 +387,10 @@ void DisplayAus() {
   display.display();
 }
 
-/*
- * Funktion: DisplaySetup()
- * Initialisiert das Display
+/**
+ * @brief Initialisiert das Display
+ *
+ * Diese Funktion richtet das Display ein und zeigt den Intro-Bildschirm an.
  */
 void DisplaySetup() {
   #if MODUL_DEBUG
@@ -406,3 +408,5 @@ void DisplaySetup() {
   // DisplayIntro(ip, wifiHostname); // Intro auf Display abspielen
   DisplayDreiWoerter("Start..", " bitte", " warten!");
 }
+
+#endif // DISPLAY_H

@@ -1,3 +1,16 @@
+/**
+ * @file webhook_zertifikat.h
+ * @brief SSL-Zertifikat für Webhook-Verbindungen
+ * @author Tommy
+ * @date 2023-09-20
+ *
+ * Diese Datei enthält das SSL-Zertifikat, das für sichere
+ * Verbindungen zum Webhook-Dienst verwendet wird.
+ */
+
+#ifndef WEBHOOK_ZERTIFIKAT_H
+#define WEBHOOK_ZERTIFIKAT_H
+
 const char zertifikat[] PROGMEM = (R"====(
 -----BEGIN CERTIFICATE-----
 MIIFYDCCBEigAwIBAgIQQAF3ITfU6UK47naqPGQKtzANBgkqhkiG9w0BAQsFADA/
@@ -31,3 +44,6 @@ he8Y4IWS6wY7bCkjCWDcRQJMEhg76fsO3txE+FiYruq9RUWhiF1myv4Q6W+CyBFC
 Dfvp7OOGAN6dEOM4+qR9sdjoSYKEBpsr6GtPAQw4dy753ec5
 -----END CERTIFICATE-----
 )====");
+
+
+#endif // WEBHOOK_ZERTIFIKAT_H

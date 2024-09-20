@@ -1,3 +1,23 @@
+/**
+ * @file wifi_seite_admin.h
+ * @brief Administrationsseite des Pflanzensensors
+ * @author Tommy
+ * @date 2023-09-20
+ *
+ * Diese Datei enthält Funktionen zur Generierung und Verarbeitung
+ * der Administrationsseite des Pflanzensensors.
+ */
+
+#ifndef WIFI_SEITE_ADMIN_H
+#define WIFI_SEITE_ADMIN_H
+
+/**
+ * @brief Sendet eine Einstellungsoption an den Webserver
+ *
+ * @param bezeichnung Die Bezeichnung der Einstellung
+ * @param name Der Name des Eingabefeldes
+ * @param wert Der aktuelle Wert der Einstellung
+ */
 void sendeEinstellung(const __FlashStringHelper* bezeichnung, const String& name, const String& wert) {
   Webserver.sendContent(F("<p>"));
   Webserver.sendContent(bezeichnung);
@@ -8,6 +28,13 @@ void sendeEinstellung(const __FlashStringHelper* bezeichnung, const String& name
   Webserver.sendContent(F("\"></p>\n"));
 }
 
+/**
+ * @brief Sendet eine Checkbox-Option an den Webserver
+ *
+ * @param bezeichnung Die Bezeichnung der Checkbox
+ * @param name Der Name der Checkbox
+ * @param status Der aktuelle Status der Checkbox (true/false)
+ */
 void sendeCheckbox(const __FlashStringHelper* bezeichnung, const String& name, const bool& status) {
   Webserver.sendContent(F("<p>"));
   Webserver.sendContent(bezeichnung);
@@ -18,6 +45,15 @@ void sendeCheckbox(const __FlashStringHelper* bezeichnung, const String& name, c
   Webserver.sendContent(F("></p>\n"));
 }
 
+/**
+ * @brief Sendet Schwellwert-Einstellungen an den Webserver
+ *
+ * @param prefix Das Präfix für die Eingabefeld-Namen
+ * @param gruenUnten Unterer grüner Schwellwert
+ * @param gruenOben Oberer grüner Schwellwert
+ * @param gelbUnten Unterer gelber Schwellwert
+ * @param gelbOben Oberer gelber Schwellwert
+ */
 void sendeSchwellwerte(const __FlashStringHelper* prefix, int gruenUnten, int gruenOben, int gelbUnten, int gelbOben) {
   sendeEinstellung(F("unterer gelber Schwellwert"), String(prefix) + F("GelbUnten"), String(gelbUnten));
   sendeEinstellung(F("unterer grüner Schwellwert"), String(prefix) + F("GruenUnten"), String(gruenUnten));
@@ -25,6 +61,21 @@ void sendeSchwellwerte(const __FlashStringHelper* prefix, int gruenUnten, int gr
   sendeEinstellung(F("oberer gelber Schwellwert"), String(prefix) + F("GelbOben"), String(gelbOben));
 }
 
+/**
+ * @brief Sendet die Einstellungen für einen Analogsensor an den Webserver
+ *
+ * @param titel Der Titel des Sensorabschnitts
+ * @param prefix Das Präfix für die Eingabefeld-Namen
+ * @param sensorName Der Name des Sensors
+ * @param minimum Der Minimalwert des Sensors
+ * @param maximum Der Maximalwert des Sensors
+ * @param gruenUnten Unterer grüner Schwellwert
+ * @param gruenOben Oberer grüner Schwellwert
+ * @param gelbUnten Unterer gelber Schwellwert
+ * @param gelbOben Oberer gelber Schwellwert
+ * @param alarm Status des Alarms für diesen Sensor
+ * @param messwert Aktueller Messwert des Sensors
+ */
 void sendeAnalogsensorEinstellungen(const __FlashStringHelper* titel, const __FlashStringHelper* prefix, const String& sensorName, int minimum, int maximum,
                                     int gruenUnten, int gruenOben, int gelbUnten, int gelbOben, bool alarm, int messwert) {
   Webserver.sendContent(F("<h2>"));
@@ -41,7 +92,9 @@ void sendeAnalogsensorEinstellungen(const __FlashStringHelper* titel, const __Fl
   Webserver.sendContent(F("</div>\n"));
 }
 
-
+/**
+ * @brief Sendet Links an den Webserver
+ */
 void sendeLinks() {
   Webserver.sendContent_P(PSTR(
     "<h2>Links</h2>\n"
@@ -62,7 +115,9 @@ void sendeLinks() {
     "</div>\n"));
 }
 
-
+/**
+ * @brief Generiert und sendet die Administrationsseite
+ */
 void WebseiteAdminAusgeben() {
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von WebsiteAdminAusgeben()"));
@@ -228,4 +283,6 @@ void WebseiteAdminAusgeben() {
       Serial.println(F("# Ende von WebsiteAdminAusgeben()"));
     #endif
 }
+
+#endif // WIFI_SEITE_ADMIN_H
 

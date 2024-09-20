@@ -1,14 +1,34 @@
+/**
+ * @file variablenspeicher.h
+ * @brief Funktionen zum Speichern und Laden von Variablen
+ * @author Tommy
+ * @date 2023-09-20
+ *
+ * Dieses Modul enthält Funktionen zum Speichern und Laden von Variablen
+ * im Flash-Speicher des ESP8266.
+ */
+
+#ifndef VARIABLENSPEICHER_H
+#define VARIABLENSPEICHER_H
+
 #include <Preferences.h>
 
 Preferences variablen;
 
-// Diese Funktion überprüft, ob das bool variablenDa auf dem Flash vorhanden ist
+/**
+ * @brief Überprüft, ob Variablen im Flash-Speicher vorhanden sind
+ *
+ * @return bool true wenn Variablen vorhanden sind, sonst false
+ */
 bool VariablenDa() {
   variablen.begin("pflanzensensor", true);
   bool variablenDa = variablen.getBool("variablenDa", false);
   return variablenDa;
 }
 
+/**
+ * @brief Speichert alle Variablen im Flash-Speicher
+ */
 void VariablenSpeichern() {
   variablen.begin("pflanzensensor", false);
   variablen.putBool("variablenDa", true);
@@ -124,7 +144,9 @@ void VariablenSpeichern() {
   variablen.end();
 }
 
-// Function to load the variablen from flash
+/**
+ * @brief Lädt alle Variablen aus dem Flash-Speicher
+ */
 void VariablenLaden() {
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
     DisplayDreiWoerter("Start..", " Variablen", "  laden");
@@ -237,13 +259,22 @@ void VariablenLaden() {
   variablen.end();
 }
 
+
+/**
+ * @brief Löscht alle gespeicherten Variablen im Flash-Speicher
+ */
 void VariablenLoeschen() {
   variablen.begin("pflanzensensor", false);
   variablen.clear();
   variablen.end();
 }
 
-
+/**
+ * @brief Listet rekursiv alle Dateien und Verzeichnisse im Dateisystem auf
+ *
+ * @param dir Das zu durchsuchende Verzeichnis
+ * @param numTabs Anzahl der Tabs für die Einrückung (für rekursive Aufrufe)
+ */
 void VariablenAuflisten(File dir, int numTabs) {
   while (true) {
     File entry =  dir.openNextFile();
@@ -266,3 +297,6 @@ void VariablenAuflisten(File dir, int numTabs) {
     entry.close();
   }
 }
+
+
+#endif // VARIABLENSPEICHER_H

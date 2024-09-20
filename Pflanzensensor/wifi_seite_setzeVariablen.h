@@ -1,3 +1,17 @@
+
+/**
+ * @file wifi_seite_setzeVariablen.h
+ * @brief Variablenverarbeitung für den Pflanzensensor
+ * @author Tommy
+ * @date 2023-09-20
+ *
+ * Diese Datei enthält Funktionen zur Verarbeitung und Aktualisierung
+ * von Variablen, die über die Weboberfläche geändert werden.
+ */
+
+#ifndef WIFI_SEITE_SETZE_VARIABLEN_H
+#define WIFI_SEITE_SETZE_VARIABLEN_H
+
 // Funktionsdeklarationen
 void ArgumenteAusgeben();
 void WebseiteSetzeVariablen();
@@ -7,8 +21,10 @@ void AktualisiereBoolean(const String& argName, bool& wert);
 void AktualisiereInteger(const String& argName, int& wert);
 void AktualisiereString(const String& argName, String& wert);
 
-/* Funktion: ArgumenteAusgeben()
- * Gibt alle Argumente aus, die übergeben wurden.
+/**
+ * @brief Gibt alle empfangenen POST-Argumente in der Konsole aus
+ *
+ * Diese Funktion ist nützlich für das Debugging von Formulareingaben.
  */
 void ArgumenteAusgeben() {
   Serial.println(F("Gebe alle Argumente des POST requests aus:"));
@@ -20,9 +36,11 @@ void ArgumenteAusgeben() {
   }
 }
 
-/*
- * Funktion: Void WebseiteSetzeVariablen()
- * Übernimmt die Änderungen, welche auf der Administrationsseite gemacht wurden.
+/**
+ * @brief Verarbeitet die Änderungen, die auf der Administrationsseite vorgenommen wurden
+ *
+ * Diese Funktion überprüft das Passwort, aktualisiert die Variablen und
+ * sendet eine Bestätigungsseite an den Client.
  */
 void WebseiteSetzeVariablen() {
   #if MODUL_DEBUG
@@ -82,6 +100,9 @@ void WebseiteSetzeVariablen() {
   }
 }
 
+/**
+ * @brief Aktualisiert alle Variablen basierend auf den empfangenen POST-Daten
+ */
 void AktualisiereVariablen() {
   #if MODUL_LEDAMPEL
     AktualisiereInteger("ampelModus", ampelModus);
@@ -170,6 +191,11 @@ void AktualisiereVariablen() {
   #endif
 }
 
+/**
+ * @brief Aktualisiert die Einstellungen für einen spezifischen Analogsensor
+ *
+ * @param sensorNumber Die Nummer des zu aktualisierenden Analogsensors
+ */
 void AktualisiereAnalogsensor(int sensorNumber) {
   String prefix = "analog" + String(sensorNumber);
 
@@ -249,18 +275,36 @@ void AktualisiereAnalogsensor(int sensorNumber) {
   }
 }
 
+/**
+ * @brief Aktualisiert einen Integer-Wert basierend auf den empfangenen POST-Daten
+ *
+ * @param argName Der Name des Arguments
+ * @param wert Referenz auf die zu aktualisierende Integer-Variable
+ */
 void AktualisiereInteger(const String& argName, int& wert) {
   if (Webserver.arg(argName) != "") {
     wert = Webserver.arg(argName).toInt();
   }
 }
 
+/**
+ * @brief Aktualisiert einen String-Wert basierend auf den empfangenen POST-Daten
+ *
+ * @param argName Der Name des Arguments
+ * @param wert Referenz auf die zu aktualisierende String-Variable
+ */
 void AktualisiereString(const String& argName, String& wert) {
   if (Webserver.arg(argName) != "") {
     wert = Webserver.arg(argName);
   }
 }
 
+/**
+ * @brief Aktualisiert einen Boolean-Wert basierend auf den empfangenen POST-Daten
+ *
+ * @param argName Der Name des Arguments
+ * @param wert Referenz auf die zu aktualisierende Boolean-Variable
+ */
 void AktualisiereBoolean(const String& argName, bool& wert) {
   if (Webserver.hasArg(argName)) {
     wert = true;
@@ -268,3 +312,5 @@ void AktualisiereBoolean(const String& argName, bool& wert) {
     wert = false;
   }
 }
+
+#endif // WIFI_SEITE_SETZE_VARIABLEN_H

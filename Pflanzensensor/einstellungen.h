@@ -1,11 +1,15 @@
 /**
- * Fabmobil Pflanzensensor Konfigurationsdatei
+ * @file einstellungen.h
+ * @brief Konfigurationsdatei für den Fabmobil Pflanzensensor
+ * @author Tommy
+ * @date 2023-09-20
  *
- * hier werden die Module ausgewählt sowie die PINs und
- * Variablen festgelegt.
- *
- * Die Passwörter fürs WLAN usw. sind in der passwoerter.h zu finden.
+ * Diese Datei enthält alle Konfigurationseinstellungen für den Pflanzensensor,
+ * einschließlich Modulaktivierungen, PIN-Definitionen und Variablendeklarationen.
  */
+
+#ifndef EINSTELLUNGEN_H
+#define EINSTELLUNGEN_H
 
 /**
  * Module
@@ -285,3 +289,5 @@ mutex_t mutex;
 #ifdef WITH_GDB
 #include <GDBStub.h>
 #endif
+
+#endif // EINSTELLUNGEN_H

@@ -1,3 +1,17 @@
+
+/**
+ * @file wifi_header.h
+ * @brief HTML-Header für Webseiten des Pflanzensensors
+ * @author Tommy
+ * @date 2023-09-20
+ *
+ * Diese Datei enthält den HTML-Header, der auf allen Webseiten
+ * des Pflanzensensors verwendet wird.
+ */
+
+#ifndef WIFI_HEADER_H
+#define WIFI_HEADER_H
+
 const char htmlHeaderRefresh[] PROGMEM = (R"====(
 <!DOCTYPE html>
 <html lang="de">
@@ -255,3 +269,6 @@ const char htmlHeader[] PROGMEM = (R"====(
   <div id="container">
   <h1>Fabmobil Pflanzensensor</h1>
 )====");
+
+
+#endif // WIFI_HEADER_H

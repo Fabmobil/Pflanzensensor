@@ -1,11 +1,15 @@
-//////////////////////////////////////////////////
-// Mutex support for ESP8266.
-// Copyright 2015 Richard A Burton
-// richardaburton@gmail.com
-//////////////////////////////////////////////////
+/**
+ * @file mutex.h
+ * @brief Mutex-Unterstützung für ESP8266
+ * @author Richard A Burton
+ * @date 2015
+ *
+ * Dieses Modul bietet einfache Mutex-Funktionalität für den ESP8266,
+ * um kritische Abschnitte in Multi-Tasking-Umgebungen zu schützen.
+ */
 
-#ifndef __MUTEX_H__
-#define __MUTEX_H__
+#ifndef MUTEX_H
+#define MUTEX_H
 
 #include <c_types.h>
 
@@ -15,18 +19,22 @@ void ICACHE_FLASH_ATTR CreateMutex(mutex_t *mutex);
 bool ICACHE_FLASH_ATTR GetMutex(mutex_t *mutex);
 void ICACHE_FLASH_ATTR ReleaseMutex(mutex_t *mutex);
 
-#endif
-
-// setup a new mutex
+/**
+ * @brief Erstellt einen neuen Mutex
+ *
+ * @param mutex Zeiger auf den zu erstellenden Mutex
+ */
 void ICACHE_FLASH_ATTR CreateMutex(mutex_t *mutex) {
 	*mutex = 1;
 }
 
-// try to get a mutex
-// returns true if successful, false if mutex not free
-// as the esp8266 doesn't support the atomic S32C1I instruction
-// we have to make the code uninterruptable to produce the
-// same overall effect
+
+/**
+ * @brief Versucht, einen Mutex zu erhalten
+ *
+ * @param mutex Zeiger auf den zu erhaltenden Mutex
+ * @return bool true wenn erfolgreich, false wenn Mutex nicht frei
+ */
 bool ICACHE_FLASH_ATTR GetMutex(mutex_t *mutex) {
 
 	int iOld = 1, iNew = 0;
@@ -47,7 +55,14 @@ bool ICACHE_FLASH_ATTR GetMutex(mutex_t *mutex) {
 	return (bool)iOld;
 }
 
-// release a mutex
+/**
+ * @brief Gibt einen Mutex frei
+ *
+ * @param mutex Zeiger auf den freizugebenden Mutex
+ */
 void ICACHE_FLASH_ATTR ReleaseMutex(mutex_t *mutex) {
 	*mutex = 1;
 }
+
+
+#endif // MUTEX_H

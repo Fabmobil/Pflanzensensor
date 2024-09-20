@@ -1,10 +1,14 @@
 /**
- * Fabmobil Pflanzensensor Passwortdatei
+ * @file passwoerter.h
+ * @brief Passwort- und Sicherheitskonfiguration für den Pflanzensensor
+ * @author Tommy
+ * @date 2023-09-20
  *
- * hier werden Passwörter gespeichert. Sie befinden sich in einer Extradatei damit sie nicht mit auf
- * github.com in das öffentliche Repository abgelegt werden.
- * Dies ist die Beispieldatei. Ändere die Passwörter entsprechend und nenne sie dann in passwoerter.h um.
+ * Diese Datei enthält sensible Informationen wie Passwörter und Zugangsdaten.
  */
+
+#ifndef PASSWOERTER_H
+#define PASSWOERTER_H
 
 #if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
   String webhookDomain = "hook.eu2.make.com"; // vorderer Teil der Webhook-URL
@@ -24,3 +28,5 @@
   String wifiSsid3 = "WLAN3"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
   String wifiPassword3 = "Passwort3"; // WLAN Passwort für das fremde Wifi
 #endif
+
+#endif // PASSWOERTER_H

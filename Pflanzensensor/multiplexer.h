@@ -1,25 +1,22 @@
 /**
- * Multiplexer Modul
- * Diese Datei enthält den Code für das Multiplexer-Modul
- * Der eingesetzte ESP8266 hat nur einen analogen Eingang. Es wird deshalb ein 4051 Chip eingesetzt. Das ist ein
- * analog Multiplexer. Er hat 8 Analogeingänge, 1 Analogausgang und 3 Digitaleingänge.
- * Je nach Bitmuster auf den Digitaleingängen wird immer genau ein Analogeingang mit dem Ausgang verbunden.
- * Wir nutzen hier nur 2 der 3 Digitaleingänge, da wir nicht genügend Ausgänge auf dem ESP8266 übrig haben.
- * Der dritte Eingang ist mit Masse verbunden und damit immer 0. Damit können bis zu 4 Analogsensoren ausgelesen
- * werden. Der Code nutzt davon gerade nur 2.
+ * @file multiplexer.h
+ * @brief Multiplexer Modul für den Pflanzensensor
+ * @author Tommy
+ * @date 2023-09-20
+ *
+ * Dieses Modul enthält Funktionen zur Steuerung des analogen Multiplexers,
+ * der es ermöglicht, mehrere Analogsensoren an einem einzelnen Analogeingang zu verwenden.
  */
 
-/*
- * Funktion: MultiplexerWechseln(int a, int b)
- * Schaltet den Eingang des analog Multiplexers um:
- * a=0, b=0, c=0 -> Eingang 0, derzeit ungenutzt
- * a=1, b=0, c=0 -> Eingang 1, derzeit ungenutzt
- * a=0, b=1, c=0 -> Eingang 2, derzeit ungenutzt
- * a=1, b=1, c=0 -> Eingang 3, derzeit ungenutzt
- * a=0, b=0, c=1 -> Eingang 4, derzeit ungenutzt
- * a=1, b=0, c=1 -> Eingang 5, derzeit ungenutzt
- * a=0, b=1, c=1 -> Eingang 6, Bodenfeuchtigkeitsmesser
- * a=1, b=1, c=1 -> Eingang 7, Helligkeitssensor
+#ifndef MULTIPLEXER_H
+#define MULTIPLEXER_H
+
+/**
+ * @brief Schaltet den Eingang des analogen Multiplexers um
+ *
+ * @param a Wert für Digitaleingang A (0 oder 1)
+ * @param b Wert für Digitaleingang B (0 oder 1)
+ * @param c Wert für Digitaleingang C (0 oder 1)
  */
 void MultiplexerWechseln(int a, int b, int c) {
   #if MODUL_DEBUG
@@ -34,3 +31,5 @@ void MultiplexerWechseln(int a, int b, int c) {
   delay(100); // warten, bis der IC umgeschalten hat
 
 }
+
+#endif // MULTIPLEXER_H

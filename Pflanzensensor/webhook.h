@@ -1,10 +1,15 @@
 /**
- * Webhook Modul
- * Diese Datei enthält den Code für das make.com Webhook Modul
- * www.make.com ist ein Webservice der es ermöglicht, dass der Pflanzensensor dir Emails oder Telegramnachrichten schickt.
+ * @file webhook.h
+ * @brief Webhook-Modul für den Pflanzensensor
+ * @author Tommy
+ * @date 2023-09-20
  *
- * curl test:  curl -X POST https://hook.eu2.make.com/URL -H "Content-Type: application/json" -d '{"bodenfeuchte":"20","luftfeuchte":"32","lufttemperatur":"30"}'
+ * Dieses Modul enthält Funktionen zur Kommunikation mit einem Webhook-Dienst,
+ * um Benachrichtigungen und Daten an externe Systeme zu senden.
  */
+
+#ifndef WEBHOOK_H
+#define WEBHOOK_H
 
 #include <WiFiClientSecure.h>
 #include <time.h>
@@ -26,10 +31,12 @@ void WebhookErfasseSensordaten(const char* statusWert);
 void WebhookSendeDaten(const String& jsonString);
 bool WebhookAktualisiereAlarmStatus();
 
-/*
-* Funktion: WebhookSetup()
-* Initialisiert das Webhook-Modul
-*/
+/**
+ * @brief Initialisiert das Webhook-Modul
+ *
+ * Diese Funktion synchronisiert die Zeit, initialisiert die Zertifikate
+ * und sendet eine Initialisierungsnachricht an den Webhook-Dienst.
+ */
 void WebhookSetup() {
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von WebhookSetup()"));
@@ -56,10 +63,12 @@ void WebhookSetup() {
   WebhookSendeInit(); // Initalisierungsnachricht schicken
 }
 
-/*
-* Funktion: WebhookSendeInit(String status, int bodenfeuchte, int luftfeuchte, int lufttemperatur)
-* Sendet Nachrichten über einen www.ifttt.com Webhook
-*/
+/**
+ * @brief Sendet eine Initialisierungsnachricht über den Webhook
+ *
+ * Diese Funktion erstellt eine JSON-Nachricht mit Initialisierungsdaten
+ * und sendet sie über den konfigurierten Webhook.
+ */
 void WebhookSendeInit() {
   #if MODUL_DEBUG
     Serial.print(F("# Beginn von WebhookSendeInit()"));
@@ -81,7 +90,11 @@ void WebhookSendeInit() {
   WebhookSendeDaten(jsonString);
 }
 
-// Angepasste WebhookErfasseSensordaten Funktion
+/**
+ * @brief Erfasst die aktuellen Sensordaten und sendet sie über den Webhook
+ *
+ * @param statusWert Der aktuelle Status des Sensors ("ping", "normal", etc.)
+ */
 void WebhookErfasseSensordaten(const char* statusWert) {
   JsonDocument dok;
   JsonArray gruenArray = dok["gruen"].to<JsonArray>();
@@ -147,6 +160,11 @@ void WebhookErfasseSensordaten(const char* statusWert) {
   WebhookSendeDaten(jsonString);
 }
 
+/**
+ * @brief Sendet die gesammelten Daten über den Webhook
+ *
+ * @param jsonString Die zu sendenden Daten als JSON-String
+ */
 void WebhookSendeDaten(const String& jsonString) {
   Serial.print(F("Sende folgendes JSON an Webhook: "));
   Serial.println(jsonString);
@@ -176,6 +194,11 @@ void WebhookSendeDaten(const String& jsonString) {
   client.stop();
 }
 
+/**
+ * @brief Aktualisiert den Alarmstatus basierend auf den aktuellen Sensorwerten
+ *
+ * @return bool true wenn ein Alarm vorliegt, sonst false
+ */
 bool WebhookAktualisiereAlarmStatus() {
   bool aktuellerAlarm = false;
 
@@ -209,3 +232,5 @@ bool WebhookAktualisiereAlarmStatus() {
 
   return aktuellerAlarm;
 }
+
+#endif // WEBHOOK_H

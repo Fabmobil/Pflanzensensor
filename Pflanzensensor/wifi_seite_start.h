@@ -1,3 +1,26 @@
+/**
+ * @file wifi_seite_start.h
+ * @brief Startseite des Pflanzensensors
+ * @author Tommy
+ * @date 2023-09-20
+ *
+ * Diese Datei enthält Funktionen zur Generierung der Startseite
+ * des Pflanzensensors mit aktuellen Sensordaten.
+ */
+
+#ifndef WIFI_SEITE_START_H
+#define WIFI_SEITE_START_H
+
+/**
+ * @brief Sendet Sensordaten an den Webserver
+ *
+ * @param sensorName Name des Sensors
+ * @param sensorFarbe Farbcodierung des Sensorwerts (z.B. "rot", "gelb", "gruen")
+ * @param messwert Aktueller Messwert des Sensors
+ * @param einheit Einheit des Messwerts
+ * @param alarm Gibt an, ob ein Alarm für diesen Sensor aktiv ist
+ * @param webhook Gibt an, ob Webhook-Benachrichtigungen für diesen Sensor aktiviert sind
+ */
 void sendeSensorDaten(const __FlashStringHelper* sensorName, const String& sensorFarbe, int messwert, const __FlashStringHelper* einheit, bool alarm, bool webhook) {
   Webserver.sendContent(F("<h2>"));
   Webserver.sendContent(sensorName);
@@ -11,6 +34,17 @@ void sendeSensorDaten(const __FlashStringHelper* sensorName, const String& senso
   Webserver.sendContent(F("</p></div>\n"));
 }
 
+/**
+ * @brief Sendet Daten eines Analogsensors an den Webserver
+ *
+ * @param sensorNummer Nummer des Analogsensors
+ * @param sensorName Name des Sensors
+ * @param sensorFarbe Farbcodierung des Sensorwerts
+ * @param messwert Aktueller Messwert des Sensors
+ * @param einheit Einheit des Messwerts
+ * @param alarm Gibt an, ob ein Alarm für diesen Sensor aktiv ist
+ * @param webhook Gibt an, ob Webhook-Benachrichtigungen für diesen Sensor aktiviert sind
+ */
 void sendeAnalogsensorDaten(int sensorNummer, const String& sensorName, const String& sensorFarbe, int messwert, const __FlashStringHelper* einheit, bool alarm, bool webhook) {
   Webserver.sendContent(F("<h2>Analogsensor "));
   Webserver.sendContent(String(sensorNummer));
@@ -26,6 +60,9 @@ void sendeAnalogsensorDaten(int sensorNummer, const String& sensorName, const St
   Webserver.sendContent(F("</p></div>\n"));
 }
 
+/**
+ * @brief Generiert und sendet die Startseite mit allen aktuellen Sensordaten
+ */
 void WebseiteStartAusgeben() {
   #if MODUL_DEBUG
     Serial.println(F("# Beginn von WebsiteStartAusgeben()"));
@@ -106,3 +143,5 @@ void WebseiteStartAusgeben() {
     Serial.println(F("# Ende von WebsiteStartAusgeben()"));
   #endif
 }
+
+#endif // WIFI_SEITE_START_H

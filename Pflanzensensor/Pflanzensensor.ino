@@ -1,33 +1,31 @@
-/*
- * FABMOBIL Pflanzensensor
- * ***********************
- * Author: tommy@fabmobil.org
+/**
+ * @file Pflanzensensor.ino
+ * @brief Hauptprogramm des Fabmobil Pflanzensensors
+ * @author Tommy
+ * @date 2023-09-20
  *
- * Dies ist der Code für den Fabmobil Pflanzensensor. Er ist aufgeteilt in verschiedene Dateien:
- * - Pflanzensensor.ino ist die zentrale Datei, welche die setup() und loop()-Funktion enthält,
- *   die für den Betrieb des Sensors notwendig ist.
- * - einstellungen.h enthält Konfigurationsdefinitionen und ermöglicht es, Module an- oder aus-
- *   zuschalten, die Pins der Sensoren zu definieren und verschiedene Variablen zu setzen
- * - modul_bodenfeuchte.h ist die Datei mit den Funktionen für den Bodenfeuchtesensor
- * - dht.h ist die Datei mit den Funktionen für den Lufttemperatur und -feuchtesensor
- * - display.h ist die Datei mit den Funktionen für das Display
- * - ledampel.h ist die Datei mit den Funktionen für die LED Ampel
- * - MODUL_HELLIGKEIT.h ist die Datei mit den Funktionen für den Lichtsensor
- * - multiplexer.h ist die Datei mit den Funktionen für den Analogmultiplexer. Dieser
- *   kommt zum Einsatz wenn sowohl der Licht- als auch der Bodenfeuchtesensor eingesetzt
- *   werden, da beide Analogsignale liefern und der verwendete ESP8266 Chip nur einen
- *   Analogeingang hat.
- * - wifi.h ist die Datei mit den Funktionen für die Wifiverbindung
- *
- * Die verwendeten Bauteile sind in der Readme.md aufgeführt.
+ * Diese Datei enthält die Hauptfunktionen setup() und loop() sowie
+ * weitere zentrale Funktionen für den Betrieb des Pflanzensensors.
  */
 
 #include "einstellungen.h" // Alle Einstellungen werden dort vorgenommen!
 
-/*
- * Funktion: setup()
- * Diese Funktion wird beim booten des Mikrocontrollers einmalig ausgeführt
- * und dient dazu, alle Sensoren etc. zu initialisieren
+/**
+ * @brief Initialisierungsfunktion, die einmalig beim Start des Mikrocontrollers ausgeführt wird
+ *
+ * Diese Funktion initialisiert alle Sensoren, Module und Verbindungen des Pflanzensensors.
+ * Sie wird automatisch aufgerufen, wenn der Mikrocontroller gestartet oder zurückgesetzt wird.
+ *
+ * Folgende Aktionen werden ausgeführt:
+ * - Serielle Verbindung wird aufgebaut
+ * - Display wird initialisiert (wenn aktiviert)
+ * - Mutex wird erstellt
+ * - LED-Ampel wird initialisiert (wenn aktiviert)
+ * - Analoger Eingang wird konfiguriert
+ * - WiFi-Verbindung wird hergestellt (wenn aktiviert)
+ * - DHT-Sensor wird initialisiert (wenn aktiviert)
+ * - Variablen werden geladen oder gespeichert
+ * - Webhook wird eingerichtet (wenn aktiviert)
  */
 void setup() {
   Serial.begin(baudrateSeriell); // Serielle Verbindung aufbauen
@@ -181,9 +179,19 @@ void setup() {
   Serial.println(F("Start abgeschlossen!"));
 }
 
-/*
- * Funktion: loop()
- * Zentrale Schleifenfunktion die immer wieder neu ausgeführt wird wenn sie abgeschlossen ist.
+/**
+ * @brief Hauptschleifenfunktion, die kontinuierlich ausgeführt wird
+ *
+ * Diese Funktion bildet die Hauptschleife des Programms und wird ständig wiederholt.
+ * Sie führt regelmäßige Messungen und Aktualisierungen durch, basierend auf festgelegten Intervallen.
+ *
+ * Folgende Aktionen werden in jedem Durchlauf überprüft und bei Bedarf ausgeführt:
+ * - Messung aller Analogsensoren
+ * - Messung von Luftfeuchtigkeit und -temperatur (wenn DHT-Modul aktiviert)
+ * - Aktualisierung der LED-Ampel (wenn aktiviert)
+ * - Aktualisierung der Displayanzeige (wenn aktiviert)
+ * - Verarbeitung von WiFi- und Webserver-Anfragen (wenn aktiviert)
+ * - Senden von Webhook-Benachrichtigungen (wenn aktiviert)
  */
 void loop() {
   /*
@@ -399,9 +407,13 @@ void loop() {
 
 
 
-/* Funktion: ModuleZaehlen()
- * Funktion, um die Anzahl der aktiven Module zu zählen
- * gibt die Anzahl der Module als Integer zurück.
+/**
+ * @brief Zählt die Anzahl der aktiven Module
+ *
+ * Diese Funktion überprüft, welche Module aktiviert sind und zählt sie.
+ * Sie wird verwendet, um einen Überblick über die aktuelle Konfiguration zu erhalten.
+ *
+ * @return int Anzahl der aktiven Module
  */
 int ModuleZaehlen() {
     int aktiveModule = 0;
@@ -422,10 +434,14 @@ int ModuleZaehlen() {
     return aktiveModule; // die Anzahl der aktiven Module wird zurückgegeben
 }
 
-/* Funktion: AnalogsensorenZaehlen()
- * Funktion, um die Anzahl der aktiven Analogsensormodule zu zählen
-* gibt die Anzahl der Module als Integer zurück.
-*/
+/**
+ * @brief Zählt die Anzahl der aktiven Analogsensormodule
+ *
+ * Diese Funktion überprüft, welche Analogsensormodule aktiviert sind und zählt sie.
+ * Sie wird verwendet, um die Anzahl der Displayseiten für Analogsensoren zu bestimmen.
+ *
+ * @return int Anzahl der aktiven Analogsensormodule
+ */
 int AnalogsensorenZaehlen() {
   int analogsensoren = 0;
   if (MODUL_ANALOG3) analogsensoren++; // wenn das Analog3 Modul aktiv ist, wird die Variable um 1 erhöht
@@ -438,9 +454,18 @@ int AnalogsensorenZaehlen() {
 }
 
 
-/* Funktion: FarbeBerechnen()
- * Funktion, um die Farbe der LED Ampel zu berechnen
- * gibt die Farbe als String zurück.
+/**
+ * @brief Berechnet die Ampelfarbe basierend auf einem Messwert und definierten Schwellwerten
+ *
+ * Diese Funktion ermittelt, ob ein gegebener Messwert im grünen, gelben oder roten Bereich liegt.
+ * Sie wird verwendet, um den Zustand der LED-Ampel und die Farbcodierung auf dem Display zu bestimmen.
+ *
+ * @param messwert Der zu überprüfende Messwert
+ * @param gruenUnten Unterer Grenzwert für den grünen Bereich
+ * @param gruenOben Oberer Grenzwert für den grünen Bereich
+ * @param gelbUnten Unterer Grenzwert für den gelben Bereich
+ * @param gelbOben Oberer Grenzwert für den gelben Bereich
+ * @return String "gruen", "gelb" oder "rot", je nach Einordnung des Messwerts
  */
 String FarbeBerechnen(int messwert, int gruenUnten, int gruenOben, int gelbUnten, int gelbOben) {
   if (messwert >= gruenUnten && messwert <= gruenOben) {

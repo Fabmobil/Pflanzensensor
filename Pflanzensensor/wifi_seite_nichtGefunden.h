@@ -1,13 +1,21 @@
 /**
  * @file wifi_seite_nichtGefunden.h
- * @brief Funktionen für die Ausgabe der 404-Seite
+ * @brief 404-Fehlerseite des Pflanzensensors
+ * @author Tommy
+ * @date 2023-09-20
  *
- * Diese Datei enthält die Funktionen für die Ausgabe der 404-Seite.
- * Die 404-Seite wird angezeigt, wenn eine Seite nicht gefunden wurde.
+ * Diese Datei enthält Funktionen zur Generierung der 404-Fehlerseite
+ * des Pflanzensensors.
  */
 
-/* Funktion: WebseiteNichtGefundenAusgeben()
- * Gibt die 404-Seite des Webservers aus.
+#ifndef WIFI_SEITE_NICHT_GEFUNDEN_H
+#define WIFI_SEITE_NICHT_GEFUNDEN_H
+
+/**
+ * @brief Generiert und sendet die 404 (Nicht gefunden) Fehlerseite
+ *
+ * Diese Funktion wird aufgerufen, wenn eine angeforderte Seite nicht gefunden wurde.
+ * Sie sendet eine entsprechende Fehlermeldung an den Client.
  */
 void WebseiteNichtGefundenAusgeben() {
   #if MODUL_DEBUG
@@ -34,3 +42,5 @@ void WebseiteNichtGefundenAusgeben() {
     Serial.println(F("# Ende von WebseiteNichtGefundenAusgeben()"));
   #endif
 }
+
+#endif // WIFI_SEITE_NICHT_GEFUNDEN_H

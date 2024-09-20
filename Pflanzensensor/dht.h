@@ -1,7 +1,15 @@
-/*
- * DHT Modul
- *  Dieses Modul enthält den Code für den DHT Luftfeuchte- und Lufttemperatursensor
+/**
+ * @file dht.h
+ * @brief DHT Luftfeuchte- und Lufttemperatursensor Modul
+ * @author Tommy
+ * @date 2023-09-20
+ *
+ * Dieses Modul enthält Funktionen zum Auslesen des DHT Sensors für
+ * Luftfeuchtigkeit und Lufttemperatur.
  */
+
+#ifndef DHT_H
+#define DHT_H
 
 #include <Adafruit_Sensor.h> // Adafruit Sensor Library
 #include <DHT.h> // DHT Sensor Library
@@ -9,9 +17,13 @@
 
 DHT_Unified dht(dhtPin, dhtSensortyp); // DHT Sensor initialisieren
 
-/*
- * Funktion: DhtMessenLuftfeuchte()
- * Misst die Luftfeuchte in Prozent und gibt sie als Fließkommazahl zurück
+/**
+ * @brief Misst die Luftfeuchtigkeit mit dem DHT-Sensor
+ *
+ * Diese Funktion führt eine Messung der Luftfeuchtigkeit mit dem DHT-Sensor durch
+ * und gibt das Ergebnis als Fließkommazahl zurück.
+ *
+ * @return float Gemessene Luftfeuchtigkeit in Prozent, oder -1 bei Messfehler
  */
 float DhtMessenLuftfeuchte() { // Luftfeuchte messen
   #if MODUL_DEBUG // Debuginformation
@@ -36,9 +48,14 @@ float DhtMessenLuftfeuchte() { // Luftfeuchte messen
 }
 
 
-/*
- * Funktion: DhtMessenLufttemperatur()
- * Misst die Lufttemperatur in °C und gibt sie als Fließkommazahl zurück
+
+/**
+ * @brief Misst die Lufttemperatur mit dem DHT-Sensor
+ *
+ * Diese Funktion führt eine Messung der Lufttemperatur mit dem DHT-Sensor durch
+ * und gibt das Ergebnis als Fließkommazahl zurück.
+ *
+ * @return float Gemessene Lufttemperatur in °C, oder -1 bei Messfehler
  */
 float DhtMessenLufttemperatur() { // Lufttemperatur messen
 #if MODUL_DEBUG
@@ -60,3 +77,5 @@ float DhtMessenLufttemperatur() { // Lufttemperatur messen
   }
   return lufttemperatur; // Lufttemperatur zurückgeben
 }
+
+#endif // DHT_H

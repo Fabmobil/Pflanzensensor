@@ -1,14 +1,22 @@
 /**
- * LED-Ampel Modul
- * Diese Datei enthält den Code für das LED-Ampel-Modul
+ * @file ledampel.h
+ * @brief LED-Ampel Modul für den Pflanzensensor
+ * @author Tommy
+ * @date 2023-09-20
+ *
+ * Dieses Modul enthält Funktionen zur Steuerung der LED-Ampel,
+ * die visuelle Rückmeldungen über den Zustand der Pflanze gibt.
  */
 
+#ifndef LEDAMPEL_H
+#define LEDAMPEL_H
+
 /**
- * Funktion: LedampelBlinken(String farbe, int anzahl, int dauer)
- * Lässt die LED Ampel in einer Farbe blinken
- * farbe: String; "rot", "gruen" oder "gelb"
- * anzahl: Integer; Anzahl der Blinkvorgänge
- * dauer: Integer; Dauer eines Blinkvorganges in Millisekunden
+ * @brief Lässt die LED-Ampel in einer bestimmten Farbe blinken
+ *
+ * @param farbe String; "rot", "gruen" oder "gelb"
+ * @param anzahl Integer; Anzahl der Blinkvorgänge
+ * @param dauer Integer; Dauer eines Blinkvorgangs in Millisekunden
  */
 void LedampelBlinken(String farbe, int anzahl, int dauer) {
   #if MODUL_DEBUG
@@ -38,11 +46,12 @@ void LedampelBlinken(String farbe, int anzahl, int dauer) {
   }
 }
 
+
 /**
- * Funktion: LedampelAnzeigen(String farbe, int dauer)
- * Lässt die LED Ampel in einer Farbe leuchten
- * farbe: String; "rot", "gruen" oder "gelb"
- * dauer: Integer; Dauer der Farbanzeige in Millisekunden. Bei -1 bleibt die LED an.
+ * @brief Lässt die LED-Ampel in einer bestimmten Farbe leuchten
+ *
+ * @param farbe String; "rot", "gruen" oder "gelb"
+ * @param dauer Integer; Dauer der Farbanzeige in Millisekunden. Bei -1 bleibt die LED an.
  */
 void LedampelAnzeigen(String farbe, int dauer) {
   #if MODUL_DEBUG
@@ -76,8 +85,13 @@ void LedampelAnzeigen(String farbe, int dauer) {
   }
 }
 
+/**
+ * @brief Schaltet alle LEDs der Ampel aus
+ */
 void LedampelAus() {
   digitalWrite(ampelPinGruen, LOW);
   digitalWrite(ampelPinGelb, LOW);
   digitalWrite(ampelPinRot, LOW);
 }
+
+#endif // LEDAMPEL_H

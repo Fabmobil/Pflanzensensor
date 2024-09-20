@@ -1,3 +1,17 @@
+/**
+ * @file display_bilder.h
+ * @brief Bilddaten für das Display des Pflanzensensors
+ * @author Tommy
+ * @date 2023-09-20
+ *
+ * Diese Datei enthält die Bitmap-Daten für verschiedene Bilder,
+ * die auf dem Display des Pflanzensensors angezeigt werden können.
+ */
+
+#ifndef DISPLAY_BILDER_H
+#define DISPLAY_BILDER_H
+
+
 // Gute Seite zum anschauen und umwandeln: https://mischianti.org/ssd1306-oled-display-draw-images-splash-and-animations-2/
 
 // 'bildBlume', 128x64px
@@ -136,3 +150,5 @@ const unsigned char bildFabmobil [] PROGMEM = {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
+
+#endif // DISPLAY_BILDER_H

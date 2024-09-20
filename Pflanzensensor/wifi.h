@@ -1,7 +1,15 @@
 /**
- * Wifi Modul
- * Diese Datei enthält den Code für das Wifi-Modul und den Webserver
+ * @file wifi.h
+ * @brief WiFi-Modul und Webserver für den Pflanzensensor
+ * @author Tommy
+ * @date 2023-09-20
+ *
+ * Dieses Modul enthält Funktionen zur WiFi-Verbindung und
+ * zur Steuerung des integrierten Webservers.
  */
+
+#ifndef WIFI_H
+#define WIFI_H
 
 void WebseiteBild(const char* pfad, const char* mimeType);
 void WebseiteCss();
@@ -24,9 +32,14 @@ ESP8266WebServer Webserver(80); // Webserver auf Port 80
 
 
 
-/*
- * Funktion: WifiSetup()
- * Verbindet das WLAN
+/**
+ * @brief Initialisiert die WiFi-Verbindung
+ *
+ * Diese Funktion stellt eine WiFi-Verbindung her oder erstellt einen Access Point,
+ * je nach Konfiguration.
+ *
+ * @param hostname Der zu verwendende Hostname für das Gerät
+ * @return String Die IP-Adresse des Geräts
  */
 String WifiSetup(String hostname){
   #if MODUL_DEBUG
@@ -111,11 +124,12 @@ String WifiSetup(String hostname){
   return ip; // IP Adresse zurückgeben
 }
 
-/*
- * Hier sind die Bilder gespeichert, welche auf der Webseite des Sensors eingeblendet werden. Sie sind base64 codiert,
- * was z.B. über diese Webseite hier gemacht werden kann: https://www.base64-image.de/
+/**
+ * @brief Sendet ein Bild über den Webserver
+ *
+ * @param pfad Der Dateipfad des Bildes
+ * @param mimeType Der MIME-Typ des Bildes
  */
-
 void WebseiteBild(const char* pfad, const char* mimeType) {
     File bild = LittleFS.open(pfad, "r");
     if (!bild) {
@@ -129,6 +143,9 @@ void WebseiteBild(const char* pfad, const char* mimeType) {
     bild.close();
 }
 
+/**
+ * @brief Sendet die CSS-Datei über den Webserver
+ */
 void WebseiteCss() {
     if (!LittleFS.exists("/style.css")) {
         Serial.println("Fehler: /style.css existiert nicht!");
@@ -143,6 +160,12 @@ void WebseiteCss() {
     css.close();
 }
 
+/**
+ * @brief Startet die WLAN-Verbindung neu
+ *
+ * Diese Funktion trennt die bestehende Verbindung und versucht,
+ * eine neue Verbindung herzustellen.
+ */
 void NeustartWLANVerbindung() {
   WiFi.disconnect();  // Trennt die bestehende Verbindung
   WiFi.mode(WIFI_STA);  // Setzt den Modus auf Station (Client)
@@ -196,7 +219,16 @@ void NeustartWLANVerbindung() {
   }
 }
 
+
+/**
+ * @brief Plant einen verzögerten Neustart der WLAN-Verbindung
+ *
+ * Diese Funktion setzt einen Timer für einen zukünftigen WLAN-Neustart.
+ */
 void VerzoegerterWLANNeustart() {
   geplantesWLANNeustartZeit = millis() + 10000; // Plant den Neustart in 5 Sekunden
   wlanNeustartGeplant = true;
 }
+
+
+#endif // WIFI_H
