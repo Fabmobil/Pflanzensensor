@@ -173,7 +173,7 @@ void DisplayAnzeigen() {
       display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
       display.display();
       #if MODUL_LEDAMPEL
-        if (ampelAn && ampelModus == 1) { LedampelAnzeigen("aus", -1); }
+        if (ampelAn && ampelModus == 1) { LedampelAus(); }
       #endif
       break;
     case 1:
@@ -181,7 +181,7 @@ void DisplayAnzeigen() {
       display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
       display.display();
       #if MODUL_LEDAMPEL
-        if (ampelAn && ampelModus == 1) { LedampelAnzeigen("aus", -1); }
+        if (ampelAn && ampelModus == 1) { LedampelAus(); }
       #endif
       break;
     case 2:
@@ -237,7 +237,7 @@ void DisplayAnzeigen() {
     case 6:
       DisplayIPAdresse();
       #if MODUL_LEDAMPEL
-        if (ampelAn && ampelModus == 1) { LedampelAnzeigen("aus", -1); }
+        if (ampelAn && ampelModus == 1) { LedampelAus(); }
       #endif
       break;
     #if MODUL_ANALOG3
