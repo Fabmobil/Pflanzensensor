@@ -118,6 +118,12 @@ void DisplaySetup() {
 
 // Implementierung der einzelnen Anzeigeseiten
 
+/**
+ * @brief Zeigt das Fabmobil-Logo auf dem Display an
+ *
+ * Diese Funktion löscht zunächst das Display, zeichnet dann das Fabmobil-Logo
+ * und zeigt die Versionsnummer des Pflanzensensors an.
+ */
 void ZeigeFabmobilLogo() {
   display.clearDisplay();
   display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
@@ -128,87 +134,179 @@ void ZeigeFabmobilLogo() {
   display.display();
 }
 
+/**
+ * @brief Zeigt ein Blumenbild auf dem Display an
+ *
+ * Diese Funktion löscht das Display und zeichnet dann ein vorgegebenes Blumenbild.
+ */
 void ZeigeBlume() {
   display.clearDisplay();
   display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
   display.display();
 }
 
+/**
+ * @brief Zeigt die IP-Adresse und WLAN-Informationen auf dem Display an
+ *
+ * Diese Funktion löscht zunächst das Display und zeigt dann die WLAN-Informationen an.
+ * Je nachdem, ob der Access Point (AP) Modus oder der normale WLAN-Modus aktiv ist,
+ * werden unterschiedliche Informationen angezeigt.
+ */
 void ZeigeIPAdresse() {
-  display.clearDisplay();
-  display.setTextSize(2);
-  display.setCursor(0, 0);
-  display.println("WLAN");
-  display.setTextSize(1);
-  display.setCursor(0, 20);
-  display.println(F("IP: ") + ip);
-  display.setCursor(0, 30);
-  if (wifiAp) {
-    display.println(F("AP-Modus"));
-    display.setCursor(0, 40);
-    display.println(F("SSID: ") + String(wifiApSsid));
-  } else {
-    display.println(F("WLAN-Modus"));
-    display.setCursor(0, 40);
-    display.println(F("SSID: ") + aktuelleSSID);
-  }
-  display.display();
+    // Löscht den gesamten Displayinhalt
+    display.clearDisplay();
+
+    // Setzt die Textgröße auf 2 (größer) und positioniert den Cursor
+    display.setTextSize(2);
+    display.setCursor(0, 0);
+    display.println("WLAN"); // Überschrift
+
+    // Setzt die Textgröße zurück auf 1 (kleiner) für den restlichen Text
+    display.setTextSize(1);
+
+    // Zeigt die IP-Adresse an
+    display.setCursor(0, 20);
+    display.println(F("IP: ") + ip);
+
+    // Positioniert den Cursor für die nächste Zeile
+    display.setCursor(0, 30);
+
+    if (wifiAp) {
+        // Wenn der AP-Modus aktiv ist
+        display.println(F("AP-Modus"));
+
+        // Zeigt das Passwort an, wenn der AP-Modus aktiv ist
+        display.setCursor(0, 40);
+        if (wifiApPasswortAktiviert) {
+            display.println(F("SSID: ") + String(wifiApSsid) +F(", PW: ") + String(wifiApPasswort));
+        } else {
+            display.println(F("SSID: ") + String(wifiApSsid) +F(", PW: -keins-"));
+        }
+    } else {
+        // Wenn der normale WLAN-Modus aktiv ist
+        display.println(F("WLAN-Modus"));
+        display.setCursor(0, 40);
+        display.println(F("SSID: ") + aktuelleSSID);
+    }
+
+    // Aktualisiert das Display, um die Änderungen anzuzeigen
+    display.display();
 }
 
+/**
+ * @brief Zeigt den Bodenfeuchte-Messwert auf dem Display an
+ *
+ * Diese Funktion ruft MesswertAnzeigen() auf, um den Bodenfeuchte-Messwert
+ * anzuzeigen, falls das MODUL_BODENFEUCHTE aktiviert ist.
+ */
 void ZeigeBodenfeuchte() {
   #if MODUL_BODENFEUCHTE
     MesswertAnzeigen(bodenfeuchteName, "", bodenfeuchteMesswertProzent, "%");
   #endif
 }
 
+/**
+ * @brief Zeigt den Helligkeits-Messwert auf dem Display an
+ *
+ * Diese Funktion ruft MesswertAnzeigen() auf, um den Helligkeits-Messwert
+ * anzuzeigen, falls das MODUL_HELLIGKEIT aktiviert ist.
+ */
 void ZeigeHelligkeit() {
   #if MODUL_HELLIGKEIT
     MesswertAnzeigen(helligkeitName, "", helligkeitMesswertProzent, "%");
   #endif
 }
 
+/**
+ * @brief Zeigt den Lufttemperatur-Messwert auf dem Display an
+ *
+ * Diese Funktion ruft MesswertAnzeigen() auf, um den Lufttemperatur-Messwert
+ * anzuzeigen, falls das MODUL_DHT aktiviert ist.
+ */
 void ZeigeLufttemperatur() {
   #if MODUL_DHT
     MesswertAnzeigen("Luft-", "temperatur", lufttemperaturMesswert, "\xf8 C");
   #endif
 }
 
+/**
+ * @brief Zeigt den Luftfeuchte-Messwert auf dem Display an
+ *
+ * Diese Funktion ruft MesswertAnzeigen() auf, um den Luftfeuchte-Messwert
+ * anzuzeigen, falls das MODUL_DHT aktiviert ist.
+ */
 void ZeigeLuftfeuchte() {
   #if MODUL_DHT
     MesswertAnzeigen("Luft-", "feuchte", luftfeuchteMesswert, "%");
   #endif
 }
 
+/**
+ * @brief Zeigt den Messwert des Analogsensors 3 auf dem Display an
+ *
+ * Diese Funktion ruft MesswertAnzeigen() auf, um den Messwert des Analogsensors 3
+ * anzuzeigen, falls das MODUL_ANALOG3 aktiviert ist.
+ */
 void ZeigeAnalog3() {
   #if MODUL_ANALOG3
     MesswertAnzeigen(analog3Name, "", analog3MesswertProzent, "%");
   #endif
 }
 
+/**
+ * @brief Zeigt den Messwert des Analogsensors 4 auf dem Display an
+ *
+ * Diese Funktion ruft MesswertAnzeigen() auf, um den Messwert des Analogsensors 4
+ * anzuzeigen, falls das MODUL_ANALOG4 aktiviert ist.
+ */
 void ZeigeAnalog4() {
   #if MODUL_ANALOG4
     MesswertAnzeigen(analog4Name, "", analog4MesswertProzent, "%");
   #endif
 }
 
+/**
+ * @brief Zeigt den Messwert des Analogsensors 5 auf dem Display an
+ *
+ * Diese Funktion ruft MesswertAnzeigen() auf, um den Messwert des Analogsensors 5
+ * anzuzeigen, falls das MODUL_ANALOG5 aktiviert ist.
+ */
 void ZeigeAnalog5() {
   #if MODUL_ANALOG5
     MesswertAnzeigen(analog5Name, "", analog5MesswertProzent, "%");
   #endif
 }
 
+/**
+ * @brief Zeigt den Messwert des Analogsensors 6 auf dem Display an
+ *
+ * Diese Funktion ruft MesswertAnzeigen() auf, um den Messwert des Analogsensors 6
+ * anzuzeigen, falls das MODUL_ANALOG6 aktiviert ist.
+ */
 void ZeigeAnalog6() {
   #if MODUL_ANALOG6
     MesswertAnzeigen(analog6Name, "", analog6MesswertProzent, "%");
   #endif
 }
 
+/**
+ * @brief Zeigt den Messwert des Analogsensors 7 auf dem Display an
+ *
+ * Diese Funktion ruft MesswertAnzeigen() auf, um den Messwert des Analogsensors 7
+ * anzuzeigen, falls das MODUL_ANALOG7 aktiviert ist.
+ */
 void ZeigeAnalog7() {
   #if MODUL_ANALOG7
     MesswertAnzeigen(analog7Name, "", analog7MesswertProzent, "%");
   #endif
 }
 
+/**
+ * @brief Zeigt den Messwert des Analogsensors 8 auf dem Display an
+ *
+ * Diese Funktion ruft MesswertAnzeigen() auf, um den Messwert des Analogsensors 8
+ * anzuzeigen, falls das MODUL_ANALOG8 aktiviert ist.
+ */
 void ZeigeAnalog8() {
   #if MODUL_ANALOG8
     MesswertAnzeigen(analog8Name, "", analog8MesswertProzent, "%");
