@@ -3,6 +3,11 @@
  * Diese Datei enthält den Code für das Wifi-Modul und den Webserver
  */
 
+void WebseiteBild(const char* pfad, const char* mimeType);
+void WebseiteCss();
+void NeustartWLANVerbindung();
+void VerzoegerterWLANNeustart();
+
 #include <ESP8266WiFiMulti.h> // für WLAN
 ESP8266WiFiMulti wifiMulti;
 #include <ESP8266WebServer.h> // für Webserver
@@ -17,8 +22,7 @@ ESP8266WebServer Webserver(80); // Webserver auf Port 80
 #include "wifi_seite_start.h" // für die Startseite
 #include "wifi_seite_setzeVariablen.h" // für das Setzen der Variablen
 
-void WebseiteBild(const char* pfad, const char* mimeType);
-void WebseiteCss();
+
 
 /*
  * Funktion: WifiSetup()
@@ -137,4 +141,62 @@ void WebseiteCss() {
     }
     Webserver.streamFile(css, "text/css");
     css.close();
+}
+
+void NeustartWLANVerbindung() {
+  WiFi.disconnect();  // Trennt die bestehende Verbindung
+  WiFi.mode(WIFI_STA);  // Setzt den Modus auf Station (Client)
+
+  wifiMulti.cleanAPlist();  // Entfernt alle gespeicherten Access Points
+
+  // Fügt die konfigurierten WLANs wieder hinzu
+  wifiMulti.addAP(wifiSsid1.c_str(), wifiPassword1.c_str());
+  wifiMulti.addAP(wifiSsid2.c_str(), wifiPassword2.c_str());
+  wifiMulti.addAP(wifiSsid3.c_str(), wifiPassword3.c_str());
+
+  Serial.println(F("Versuche, WLAN-Verbindung wiederherzustellen..."));
+
+  #if MODUL_DISPLAY
+    DisplayDreiWoerter("Verbinde", "mit", "WLAN...");
+  #endif
+
+  // Versucht, eine Verbindung herzustellen
+  if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
+    ip = WiFi.localIP().toString();
+    Serial.print(F("Verbunden mit WLAN. IP: "));
+    Serial.println(ip);
+
+    #if MODUL_DISPLAY
+      DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ ip, "Hostname: ", wifiHostname + ".local");
+    #endif
+  } else {
+    Serial.println(F("Konnte keine WLAN-Verbindung herstellen."));
+
+    #if MODUL_DISPLAY
+      DisplayDreiWoerter("Keine", "WLAN", "Verbindung");
+    #endif
+
+    // Optional: Wechsel zurück in den AP-Modus, wenn keine Verbindung möglich ist
+    wifiAp = true;
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(wifiApSsid, wifiApPasswort);
+    ip = WiFi.softAPIP().toString();
+
+    Serial.print(F("AP-Modus aktiviert. IP: "));
+    Serial.println(ip);
+
+    #if MODUL_DISPLAY
+      DisplaySechsZeilen("AP-Modus", "aktiv", "SSID: " + String(wifiApSsid), "IP: " + ip, "Hostname: ", wifiHostname + ".local");
+    #endif
+  }
+
+  // DNS-Server neu starten
+  if (MDNS.begin(wifiHostname)) {
+    MDNS.addService("http", "tcp", 80);
+  }
+}
+
+void VerzoegerterWLANNeustart() {
+  geplantesWLANNeustartZeit = millis() + 10000; // Plant den Neustart in 5 Sekunden
+  wlanNeustartGeplant = true;
 }

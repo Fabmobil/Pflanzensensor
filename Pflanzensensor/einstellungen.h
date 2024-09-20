@@ -103,7 +103,7 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
 #if MODUL_WIFI // wenn das Wifimodul aktiv ist
   String wifiHostname = "pflanzensensor"; // Das Gerät ist später unter diesem Name + .local erreichbar
   bool wifiAp = false; // true: ESP macht seinen eigenen AP auf; false: ESP verbindet sich mit fremden WLAN
-  String wifiApSsid = "Fabmobil Pflanzensensor"; // SSID des WLANs, falls vom ESP selbst aufgemacht
+  String wifiApSsid = "FabmobilPflanzensensor"; // SSID des WLANs, falls vom ESP selbst aufgemacht
   // WiFi Logindaten sind in der passwoerter.h gespeichert!
 #endif
 #if MODUL_ANALOG3 // wenn ein dritter Analogsensor verwendet wird
@@ -262,6 +262,9 @@ String analog8Farbe = "rot";
 #include "variablenspeicher.h" // Funktionen für das Speichern und Laden der Variablen
 
 #if MODUL_WIFI
+  int wifiVerbindungsVersuche = 0;
+  unsigned long geplantesWLANNeustartZeit = 0;
+  bool wlanNeustartGeplant = false;
   #include "wifi.h" // Wifimodul einbinden
 #endif
 

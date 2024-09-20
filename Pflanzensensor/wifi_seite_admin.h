@@ -79,90 +79,153 @@ void WebseiteAdminAusgeben() {
     "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p>\n</div>\n"
     "<form action=\"/setzeVariablen\" method=\"POST\">\n"));
 
-  #if MODUL_WEBHOOK
-    Webserver.sendContent_P(PSTR("<h2>Webhook Modul</h2>\n<div class=\"tuerkis\">\n"));
-    sendeCheckbox(F("Webhook aktiv?"), F("webhookAn"), webhookAn);
-    sendeEinstellung(F("Alarm-Benachrichtigungsfrequenz in Stunden"), F("webhookFrequenz"), String(webhookFrequenz));
-    sendeEinstellung(F("Ping-Benachrichtigungsfrequenz in Stunden"), F("webhookPingFrequenz"), String(webhookPingFrequenz));
-    sendeEinstellung(F("Domain des Webhooks"), F("webhookDomain"), webhookDomain);
-    sendeEinstellung(F("Schlüssel/Pfad des Webhooks"), F("webhookPfad"), webhookPfad);
-    Webserver.sendContent(F("</div>\n"));
-  #endif
+    // Neuer Abschnitt für WIFI-Einstellungen
+  Webserver.sendContent(F("<h2>WIFI-Einstellungen</h2>\n<div class=\"tuerkis\">\n"));
 
-  #if MODUL_LEDAMPEL
-    Webserver.sendContent_P(PSTR("<h2>LED Ampel</h2>\n<div class=\"tuerkis\">\n"));
-    sendeCheckbox(F("LED Ampel angeschalten?"), F("ampelAn"), ampelAn);
-    sendeEinstellung(F("Modus: (0: Anzeige der Bodenfeuchte; 1: Anzeige aller Sensoren hintereinander analog zu dem, was auf dem Display steht)"), F("ampelModus"), String(ampelModus));
-    Webserver.sendContent(F("</div>\n"));
-  #endif
+  if (wifiAp) {
+    Webserver.sendContent(F("<p>Gerät befindet sich im Accesspoint-Modus. Alle WLAN-Einstellungen sind editierbar.</p>\n"));
 
-  #if MODUL_DISPLAY
-    Webserver.sendContent_P(PSTR("<h2>Display</h2><div class=\"tuerkis\">\n"));
-    sendeCheckbox(F("Display angeschalten?"), F("displayAn"), displayAn);
-    Webserver.sendContent(F("</div>\n"));
-  #endif
+    // Checkbox zum Wechsel in den normalen WLAN-Modus
+    sendeCheckbox(F("In normalen WLAN-Modus wechseln"), F("wechselZuWLAN"), false);
 
-  #if MODUL_BODENFEUCHTE
-    sendeAnalogsensorEinstellungen(F("Bodenfeuchte"), F("bodenfeuchte"), bodenfeuchteName, bodenfeuchteMinimum, bodenfeuchteMaximum,
-                             bodenfeuchteGruenUnten, bodenfeuchteGruenOben, bodenfeuchteGelbUnten, bodenfeuchteGelbOben, bodenfeuchteWebhook, bodenfeuchteMesswert);
-  #endif
+    // WLAN 1
+    Webserver.sendContent(F("<h3>WLAN 1</h3>\n"));
+    sendeEinstellung(F("SSID"), F("wifiSsid1"), wifiSsid1);
+    sendeEinstellung(F("Passwort"), F("wifiPassword1"), F("********"));
 
-  #if MODUL_DHT
-    Webserver.sendContent_P(PSTR("<h2>DHT Modul</h2>\n<h3>Lufttemperatur</h3>\n<div class=\"tuerkis\">\n"));
-    sendeCheckbox(F("Alarm aktiv?"), F("lufttemperaturWebhook"), lufttemperaturWebhook);
-    sendeSchwellwerte(F("lufttemperatur"), lufttemperaturGruenUnten, lufttemperaturGruenOben, lufttemperaturGelbUnten, lufttemperaturGelbOben);
-    Webserver.sendContent(F("</div>\n"));
-    Webserver.sendContent_P(PSTR("<h3>Luftfeuchte</h3>\n<div class=\"tuerkis\">\n"));
-    sendeCheckbox(F("Alarm aktiv?"), F("luftfeuchteWebhook"), luftfeuchteWebhook);
-    sendeSchwellwerte(F("luftfeuchte"), luftfeuchteGruenUnten, luftfeuchteGruenOben, luftfeuchteGelbUnten, luftfeuchteGelbOben);
-    Webserver.sendContent(F("</div>\n"));
-  #endif
+    // WLAN 2
+    Webserver.sendContent(F("<h3>WLAN 2</h3>\n"));
+    sendeEinstellung(F("SSID"), F("wifiSsid2"), wifiSsid2);
+    sendeEinstellung(F("Passwort"), F("wifiPassword2"), F("********"));
+
+    // WLAN 3
+    Webserver.sendContent(F("<h3>WLAN 3</h3>\n"));
+    sendeEinstellung(F("SSID"), F("wifiSsid3"), wifiSsid3);
+    sendeEinstellung(F("Passwort"), F("wifiPassword3"), F("********"));
+  } else {
+    // Aktuelle Verbindung ermitteln
+    String currentSSID = WiFi.SSID();
+
+    // WLAN 1
+    Webserver.sendContent(F("<h3>WLAN 1</h3>\n"));
+    if (currentSSID == wifiSsid1) {
+      Webserver.sendContent(F("<p>SSID: "));
+      Webserver.sendContent(wifiSsid1);
+      Webserver.sendContent(F(" (aktuelle Verbindung, nicht editierbar)</p>\n"));
+    } else {
+      sendeEinstellung(F("SSID"), F("wifiSsid1"), wifiSsid1);
+      sendeEinstellung(F("Passwort"), F("wifiPassword1"), F("********"));
+    }
+
+    // WLAN 2
+    Webserver.sendContent(F("<h3>WLAN 2</h3>\n"));
+    if (currentSSID == wifiSsid2) {
+      Webserver.sendContent(F("<p>SSID: "));
+      Webserver.sendContent(wifiSsid2);
+      Webserver.sendContent(F(" (aktuelle Verbindung, nicht editierbar)</p>\n"));
+    } else {
+      sendeEinstellung(F("SSID"), F("wifiSsid2"), wifiSsid2);
+      sendeEinstellung(F("Passwort"), F("wifiPassword2"), F("********"));
+    }
+
+    // WLAN 3
+    Webserver.sendContent(F("<h3>WLAN 3</h3>\n"));
+    if (currentSSID == wifiSsid3) {
+      Webserver.sendContent(F("<p>SSID: "));
+      Webserver.sendContent(wifiSsid3);
+      Webserver.sendContent(F(" (aktuelle Verbindung, nicht editierbar)</p>\n"));
+    } else {
+      sendeEinstellung(F("SSID"), F("wifiSsid3"), wifiSsid3);
+      sendeEinstellung(F("Passwort"), F("wifiPassword3"), F("********"));
+    }
+  }
+
+  Webserver.sendContent(F("</div>\n"));
+
+    #if MODUL_WEBHOOK
+      Webserver.sendContent_P(PSTR("<h2>Webhook Modul</h2>\n<div class=\"tuerkis\">\n"));
+      sendeCheckbox(F("Webhook aktiv?"), F("webhookAn"), webhookAn);
+      sendeEinstellung(F("Alarm-Benachrichtigungsfrequenz in Stunden"), F("webhookFrequenz"), String(webhookFrequenz));
+      sendeEinstellung(F("Ping-Benachrichtigungsfrequenz in Stunden"), F("webhookPingFrequenz"), String(webhookPingFrequenz));
+      sendeEinstellung(F("Domain des Webhooks"), F("webhookDomain"), webhookDomain);
+      sendeEinstellung(F("Schlüssel/Pfad des Webhooks"), F("webhookPfad"), webhookPfad);
+      Webserver.sendContent(F("</div>\n"));
+    #endif
+
+    #if MODUL_LEDAMPEL
+      Webserver.sendContent_P(PSTR("<h2>LED Ampel</h2>\n<div class=\"tuerkis\">\n"));
+      sendeCheckbox(F("LED Ampel angeschalten?"), F("ampelAn"), ampelAn);
+      sendeEinstellung(F("Modus: (0: Anzeige der Bodenfeuchte; 1: Anzeige aller Sensoren hintereinander analog zu dem, was auf dem Display steht)"), F("ampelModus"), String(ampelModus));
+      Webserver.sendContent(F("</div>\n"));
+    #endif
+
+    #if MODUL_DISPLAY
+      Webserver.sendContent_P(PSTR("<h2>Display</h2><div class=\"tuerkis\">\n"));
+      sendeCheckbox(F("Display angeschalten?"), F("displayAn"), displayAn);
+      Webserver.sendContent(F("</div>\n"));
+    #endif
+
+    #if MODUL_BODENFEUCHTE
+      sendeAnalogsensorEinstellungen(F("Bodenfeuchte"), F("bodenfeuchte"), bodenfeuchteName, bodenfeuchteMinimum, bodenfeuchteMaximum,
+                              bodenfeuchteGruenUnten, bodenfeuchteGruenOben, bodenfeuchteGelbUnten, bodenfeuchteGelbOben, bodenfeuchteWebhook, bodenfeuchteMesswert);
+    #endif
+
+    #if MODUL_DHT
+      Webserver.sendContent_P(PSTR("<h2>DHT Modul</h2>\n<h3>Lufttemperatur</h3>\n<div class=\"tuerkis\">\n"));
+      sendeCheckbox(F("Alarm aktiv?"), F("lufttemperaturWebhook"), lufttemperaturWebhook);
+      sendeSchwellwerte(F("lufttemperatur"), lufttemperaturGruenUnten, lufttemperaturGruenOben, lufttemperaturGelbUnten, lufttemperaturGelbOben);
+      Webserver.sendContent(F("</div>\n"));
+      Webserver.sendContent_P(PSTR("<h3>Luftfeuchte</h3>\n<div class=\"tuerkis\">\n"));
+      sendeCheckbox(F("Alarm aktiv?"), F("luftfeuchteWebhook"), luftfeuchteWebhook);
+      sendeSchwellwerte(F("luftfeuchte"), luftfeuchteGruenUnten, luftfeuchteGruenOben, luftfeuchteGelbUnten, luftfeuchteGelbOben);
+      Webserver.sendContent(F("</div>\n"));
+    #endif
 
 
-  #if MODUL_HELLIGKEIT
-    sendeAnalogsensorEinstellungen(F("Helligkeitssensor"), F("helligkeit"), helligkeitName, helligkeitMinimum, helligkeitMaximum,
-                             helligkeitGruenUnten, helligkeitGruenOben, helligkeitGelbUnten, helligkeitGelbOben, helligkeitWebhook, helligkeitMesswert);
-  #endif
+    #if MODUL_HELLIGKEIT
+      sendeAnalogsensorEinstellungen(F("Helligkeitssensor"), F("helligkeit"), helligkeitName, helligkeitMinimum, helligkeitMaximum,
+                              helligkeitGruenUnten, helligkeitGruenOben, helligkeitGelbUnten, helligkeitGelbOben, helligkeitWebhook, helligkeitMesswert);
+    #endif
 
-  // Analogsensoren
-  #if MODUL_ANALOG3
-    sendeAnalogsensorEinstellungen(F("Analogsensor 3"), F("analog3"), analog3Name, analog3Minimum, analog3Maximum, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben, analog3Webhook, analog3Messwert);
-  #endif
-  #if MODUL_ANALOG4
-    sendeAnalogsensorEinstellungen(F("Analogsensor 4"), F("analog4"), analog4Name, analog4Minimum, analog4Maximum, analog4GruenUnten, analog4GruenOben, analog4GelbUnten, analog4GelbOben, analog4Webhook, analog4Messwert);
-  #endif
-  #if MODUL_ANALOG5
-    sendeAnalogsensorEinstellungen(F("Analogsensor 5"), F("analog5"), analog5Name, analog5Minimum, analog5Maximum, analog5GruenUnten, analog5GruenOben, analog5GelbUnten, analog5GelbOben, analog5Webhook, analog4Messwert);
-  #endif
-  #if MODUL_ANALOG6
-    sendeAnalogsensorEinstellungen(F("Analogsensor 6"), F("analog6"), analog6Name, analog6Minimum, analog6Maximum, analog6GruenUnten, analog6GruenOben, analog6GelbUnten, analog6GelbOben, analog6Webhook, analog4Messwert);
-  #endif
-  #if MODUL_ANALOG7
-    sendeAnalogsensorEinstellungen(F("Analogsensor 7"), F("analog7"), analog7Name, analog7Minimum, analog7Maximum, analog7GruenUnten, analog7GruenOben, analog7GelbUnten, analog7GelbOben, analog7Webhook, analog4Messwert);
-  #endif
-  #if MODUL_ANALOG8
-    sendeAnalogsensorEinstellungen(F("Analogsensor 8"), F("analog8"), analog8Name, analog8Minimum, analog8Maximum, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben, analog8Webhook, analog4Messwert);
-  #endif
+    // Analogsensoren
+    #if MODUL_ANALOG3
+      sendeAnalogsensorEinstellungen(F("Analogsensor 3"), F("analog3"), analog3Name, analog3Minimum, analog3Maximum, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben, analog3Webhook, analog3Messwert);
+    #endif
+    #if MODUL_ANALOG4
+      sendeAnalogsensorEinstellungen(F("Analogsensor 4"), F("analog4"), analog4Name, analog4Minimum, analog4Maximum, analog4GruenUnten, analog4GruenOben, analog4GelbUnten, analog4GelbOben, analog4Webhook, analog4Messwert);
+    #endif
+    #if MODUL_ANALOG5
+      sendeAnalogsensorEinstellungen(F("Analogsensor 5"), F("analog5"), analog5Name, analog5Minimum, analog5Maximum, analog5GruenUnten, analog5GruenOben, analog5GelbUnten, analog5GelbOben, analog5Webhook, analog4Messwert);
+    #endif
+    #if MODUL_ANALOG6
+      sendeAnalogsensorEinstellungen(F("Analogsensor 6"), F("analog6"), analog6Name, analog6Minimum, analog6Maximum, analog6GruenUnten, analog6GruenOben, analog6GelbUnten, analog6GelbOben, analog6Webhook, analog4Messwert);
+    #endif
+    #if MODUL_ANALOG7
+      sendeAnalogsensorEinstellungen(F("Analogsensor 7"), F("analog7"), analog7Name, analog7Minimum, analog7Maximum, analog7GruenUnten, analog7GruenOben, analog7GelbUnten, analog7GelbOben, analog7Webhook, analog4Messwert);
+    #endif
+    #if MODUL_ANALOG8
+      sendeAnalogsensorEinstellungen(F("Analogsensor 8"), F("analog8"), analog8Name, analog8Minimum, analog8Maximum, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben, analog8Webhook, analog4Messwert);
+    #endif
 
-  Webserver.sendContent_P(PSTR(
-    "<h2>Einstellungen löschen?</h2>\n"
-    "<div class=\"rot\">\n<p>"
-    "GEFAHR: Wenn du hier \"Ja!\" eingibst, werden alle Einstellungen gelöscht und die Werte, "
-    "die beim Flashen eingetragen wurden, werden wieder gesetzt. Der Pflanzensensor startet neu."
-    "</p>\n<p><input type=\"text\" size=\"4\" name=\"loeschen\" placeholder=\"nein\"></p>\n</div>\n"
-    "<h2>Passwort</h2>\n"
-    "<div class=\"tuerkis\">"
-    "<p><input type=\"password\" name=\"Passwort\" placeholder=\"Passwort\"><br>"
-    "<input type=\"submit\" value=\"Absenden\"></p></form>"
-    "</div>\n"));
+    Webserver.sendContent_P(PSTR(
+      "<h2>Einstellungen löschen?</h2>\n"
+      "<div class=\"rot\">\n<p>"
+      "GEFAHR: Wenn du hier \"Ja!\" eingibst, werden alle Einstellungen gelöscht und die Werte, "
+      "die beim Flashen eingetragen wurden, werden wieder gesetzt. Der Pflanzensensor startet neu."
+      "</p>\n<p><input type=\"text\" size=\"4\" name=\"loeschen\" placeholder=\"nein\"></p>\n</div>\n"
+      "<h2>Passwort</h2>\n"
+      "<div class=\"tuerkis\">"
+      "<p><input type=\"password\" name=\"Passwort\" placeholder=\"Passwort\"><br>"
+      "<input type=\"submit\" value=\"Absenden\"></p></form>"
+      "</div>\n"));
 
-  sendeLinks();
+    sendeLinks();
 
-  Webserver.sendContent_P(htmlFooter);
-  Webserver.client().flush();
+    Webserver.sendContent_P(htmlFooter);
+    Webserver.client().flush();
 
-  #if MODUL_DEBUG
-    Serial.println(F("# Ende von WebsiteAdminAusgeben()"));
-  #endif
+    #if MODUL_DEBUG
+      Serial.println(F("# Ende von WebsiteAdminAusgeben()"));
+    #endif
 }
 

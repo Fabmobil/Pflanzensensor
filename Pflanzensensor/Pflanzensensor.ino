@@ -113,12 +113,21 @@ void setup() {
     #endif
     return;
   }
-  #if MODUL_WIFI // wenn das Wifi Modul aktiv ist:
-    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+  #if MODUL_WIFI
+    #if MODUL_DISPLAY
       DisplayDreiWoerter("Start..", " Wifi-", "  modul");
     #endif
     Serial.println(F("Start von Wifi-Modul ... "));
     String ip = WifiSetup(wifiHostname); // Wifi-Verbindung herstellen und IP Adresse speichern
+
+    if (ip == "keine WLAN Verbindung.") {
+      Serial.println(F("Keine WLAN-Verbindung möglich. Wechsel in den Accesspoint-Modus."));
+      #if MODUL_DISPLAY
+        DisplayDreiWoerter("Kein WLAN", "Starte", "Accesspoint");
+      #endif
+      wifiAp = true;
+      String ip = WifiSetup(wifiHostname);
+    }
   #endif
   #if MODUL_DHT // wenn das DHT Modul aktiv ist:
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
@@ -324,18 +333,33 @@ void loop() {
   // Wifi und Webserver:
   #if MODUL_WIFI // wenn das Wifi-Modul aktiv ist
     if (GetMutex(&mutex)) { // Mutex holen
+      if (wlanNeustartGeplant && millis() >= geplantesWLANNeustartZeit) {
+        wlanNeustartGeplant = false;
+        NeustartWLANVerbindung(); // Führt den tatsächlichen Neustart durch
+      }
       // WLAN Verbindung aufrecht erhalten:
       // https://github.com/esp8266/Arduino/blob/master/libraries/ESP8266WiFi/examples/WiFiMulti/WiFiMulti.ino
-        if (!wifiAp) {
-          if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
-            ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
-          } else {
-            Serial.println("Fehler: WLAN Verbindung verloren!");
+      if (!wifiAp) {
+        if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
+          ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
+          wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers bei erfolgreicher Verbindung
+        } else {
+          wifiVerbindungsVersuche++; // Erhöhen des Zählers bei fehlgeschlagener Verbindung
+          if (wifiVerbindungsVersuche >= 10) {
+            Serial.println("Fehler: WLAN Verbindung verloren! Wechsle in den Accesspoint-Modus.");
             #if MODUL_DISPLAY
               DisplayDreiWoerter("WLAN", "Verbindung", "verloren!");
             #endif
+            wifiAp = true;
+            String ip = WifiSetup(wifiHostname);
+            wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers
+          } else {
+            Serial.print("WLAN-Verbindungsversuch fehlgeschlagen. Versuch ");
+            Serial.print(wifiVerbindungsVersuche);
+            Serial.println(" von 10.");
           }
         }
+      }
       Webserver.handleClient(); // der Webserver soll in jedem loop nach Anfragen schauen!
       ReleaseMutex(&mutex); // Mutex wieder freigeben
     }
