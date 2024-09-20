@@ -57,7 +57,6 @@ void setup() {
    */
   Serial.println(" Fabmobil Pflanzensensor, v" + String(pflanzensensorVersion));
   module = ModuleZaehlen(); // wie viele Module sind aktiv?
-  displayseiten = AnalogsensorenZaehlen() + 7;  // Wir haben 6 Displayseiten plus je eine pro Analogmodul
 
   #if MODUL_DEBUG // Debuginformationen
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
@@ -317,22 +316,14 @@ void loop() {
   #endif
 
   // Messwerte auf dem Display anzeigen:
-  #if MODUL_DISPLAY // wenn das Display Modul aktiv ist
+
+  #if MODUL_DISPLAY
     if (displayAn) {
       if (millisAktuell - millisVorherDisplay >= intervallDisplay) {
-        status += 1; // status gibt an, welche Anzeige auf dem Display aktiv ist
-        if ( status == displayseiten) { // wenn wir das letzte Displaybild erreicht haben
-          status = 0; // danach geht es von neuem los
-        }
-        #if MODUL_DEBUG
-          Serial.print(F("### intervallDisplay erreicht. status: ")); Serial.println(status);
-        #endif
-        millisVorherDisplay = millisAktuell; // neuen Wert übernehmen
-        // Diese Funktion kümmert sich um die Displayanzeige:
+        millisVorherDisplay = millisAktuell;
         DisplayAnzeigen();
+        NaechsteSeite();
       }
-    } else {
-      DisplayAus();
     }
   #endif
 
@@ -433,26 +424,6 @@ int ModuleZaehlen() {
     if (MODUL_ANALOG8) aktiveModule++; // wenn das Analog8 Modul aktiv ist, wird die Variable um 1 erhöht
     return aktiveModule; // die Anzahl der aktiven Module wird zurückgegeben
 }
-
-/**
- * @brief Zählt die Anzahl der aktiven Analogsensormodule
- *
- * Diese Funktion überprüft, welche Analogsensormodule aktiviert sind und zählt sie.
- * Sie wird verwendet, um die Anzahl der Displayseiten für Analogsensoren zu bestimmen.
- *
- * @return int Anzahl der aktiven Analogsensormodule
- */
-int AnalogsensorenZaehlen() {
-  int analogsensoren = 0;
-  if (MODUL_ANALOG3) analogsensoren++; // wenn das Analog3 Modul aktiv ist, wird die Variable um 1 erhöht
-  if (MODUL_ANALOG4) analogsensoren++; // wenn das Analog4 Modul aktiv ist, wird die Variable um 1 erhöht
-  if (MODUL_ANALOG5) analogsensoren++; // wenn das Analog5 Modul aktiv ist, wird die Variable um 1 erhöht
-  if (MODUL_ANALOG6) analogsensoren++; // wenn das Analog6 Modul aktiv ist, wird die Variable um 1 erhöht
-  if (MODUL_ANALOG7) analogsensoren++; // wenn das Analog7 Modul aktiv ist, wird die Variable um 1 erhöht
-  if (MODUL_ANALOG8) analogsensoren++; // wenn das Analog8 Modul aktiv ist, wird die Variable um 1 erhöht
-  return analogsensoren; // die Anzahl der aktiven Module wird zurückgegeben
-}
-
 
 /**
  * @brief Berechnet die Ampelfarbe basierend auf einem Messwert und definierten Schwellwerten

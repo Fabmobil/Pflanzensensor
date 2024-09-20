@@ -1,7 +1,7 @@
 /**
  * @file display.h
  * @brief Display Modul für den Pflanzensensor
- * @author Tommy
+ * @author Tommy, Claude
  * @date 2023-09-20
  *
  * Dieses Modul enthält Funktionen zur Steuerung und Anzeige von Informationen
@@ -11,23 +11,130 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
-#include <SPI.h> // SPI Library
-#include <Wire.h> // Wire Library
-#include <Adafruit_GFX.h> // Adafruit GFX Library
-#include <Adafruit_SSD1306.h> // Adafruit SSD1306 Library
+#include <SPI.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
-Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // Initialisierung des Displays
+Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset);
 
-#include "display_bilder.h" // Bilder fürs Display
+#include "display_bilder.h"
 
+// Vorwärtsdeklarationen
+void ZeigeFabmobilLogo();
+void ZeigeBlume();
+void ZeigeIPAdresse();
+void ZeigeBodenfeuchte();
+void ZeigeHelligkeit();
+void ZeigeLufttemperatur();
+void ZeigeLuftfeuchte();
+void ZeigeAnalog3();
+void ZeigeAnalog4();
+void ZeigeAnalog5();
+void ZeigeAnalog6();
+void ZeigeAnalog7();
+void ZeigeAnalog8();
+void DisplayDreiWoerter(const String& wort1, const String& wort2, const String& wort3);
+void DisplaySechsZeilen(String zeile1, String zeile2, String zeile3, String zeile4, String zeile5, String zeile6);
+void MesswertAnzeigen(const String& name1, const String& name2, int messwert, const String& einheit);
+
+// Struktur für Displayseiten
+typedef struct {
+  void (*anzeigeFunktion)();
+  bool istAktiv;
+  String* farbe;  // Zeiger auf die Farbvariable
+} Displayseite;
+
+// Array von Displayseiten
+Displayseite displayseiten[] = {
+  {ZeigeFabmobilLogo, true, nullptr},
+  {ZeigeBlume, true, nullptr},
+  {ZeigeBodenfeuchte, MODUL_BODENFEUCHTE, &bodenfeuchteFarbe},
+  {ZeigeHelligkeit, MODUL_HELLIGKEIT, &helligkeitFarbe},
+  {ZeigeLufttemperatur, MODUL_DHT, &lufttemperaturFarbe},
+  {ZeigeLuftfeuchte, MODUL_DHT, &luftfeuchteFarbe},
+  {ZeigeIPAdresse, true, nullptr},
+  {ZeigeAnalog3, MODUL_ANALOG3, &analog3Farbe},
+  {ZeigeAnalog4, MODUL_ANALOG4, &analog4Farbe},
+  {ZeigeAnalog5, MODUL_ANALOG5, &analog5Farbe},
+  {ZeigeAnalog6, MODUL_ANALOG6, &analog6Farbe},
+  {ZeigeAnalog7, MODUL_ANALOG7, &analog7Farbe},
+  {ZeigeAnalog8, MODUL_ANALOG8, &analog8Farbe}
+};
+
+int aktuelleSeite = 0;
 
 /**
- * @brief Zeigt die aktuelle IP-Adresse auf dem Display an
- *
- * Diese Funktion löscht das Display und zeigt dann die aktuelle IP-Adresse,
- * den WLAN-Modus (AP oder Client), die SSID und im AP-Modus auch das Passwort an.
+ * @brief Zeigt die aktuelle Seite auf dem Display an
  */
-void DisplayIPAdresse() {
+void DisplayAnzeigen() {
+  if (!displayAn) {
+    display.clearDisplay();
+    display.display();
+    return;
+  }
+
+  // Aktuelle Seite anzeigen
+  displayseiten[aktuelleSeite].anzeigeFunktion();
+
+  // Aktualisiere die LED-Ampel, wenn aktiviert
+  #if MODUL_LEDAMPEL
+    if (ampelAn && ampelModus == 1) {
+      if (displayseiten[aktuelleSeite].farbe != nullptr) {
+        LedampelAnzeigen(*displayseiten[aktuelleSeite].farbe, -1);
+      } else {
+        LedampelAus();
+      }
+    }
+  #endif
+}
+
+/**
+ * @brief Wechselt zur nächsten aktiven Displayseite
+ */
+void NaechsteSeite() {
+  do {
+    aktuelleSeite = (aktuelleSeite + 1) % (sizeof(displayseiten) / sizeof(displayseiten[0]));
+  } while (!displayseiten[aktuelleSeite].istAktiv);
+}
+
+/**
+ * @brief Initialisiert das Display und zählt die aktiven Seiten
+ */
+void DisplaySetup() {
+  if(!display.begin(SSD1306_SWITCHCAPVCC, displayAdresse)) {
+    Serial.println(F("Fehler: Display konnte nicht geöffnet werden."));
+    return;
+  }
+
+  display.display();
+  delay(100);
+  display.setTextColor(SSD1306_WHITE);
+  display.setTextSize(2);
+  display.clearDisplay();
+
+  DisplayDreiWoerter("Start..", " bitte", " warten!");
+}
+
+// Implementierung der einzelnen Anzeigeseiten
+
+void ZeigeFabmobilLogo() {
+  display.clearDisplay();
+  display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
+  display.setCursor(0, 56);
+  display.setTextSize(1);
+  display.println(F("v") + String(pflanzensensorVersion));
+  display.setTextSize(2);
+  display.display();
+}
+
+void ZeigeBlume() {
+  display.clearDisplay();
+  display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
+  display.display();
+}
+
+void ZeigeIPAdresse() {
   display.clearDisplay();
   display.setTextSize(2);
   display.setCursor(0, 0);
@@ -40,12 +147,6 @@ void DisplayIPAdresse() {
     display.println(F("AP-Modus"));
     display.setCursor(0, 40);
     display.println(F("SSID: ") + String(wifiApSsid));
-    display.setCursor(0, 50);
-    if (wifiApPasswortAktiviert) {
-      display.println(F("PW: ") + String(wifiApPasswort));
-    } else {
-      display.println(F("PW: -keins-"));
-    }
   } else {
     display.println(F("WLAN-Modus"));
     display.setCursor(0, 40);
@@ -54,293 +155,64 @@ void DisplayIPAdresse() {
   display.display();
 }
 
-
-/**
- * @brief Teilt einen Namen in zwei Teile, falls er länger als 10 Zeichen ist
- *
- * @param name Der zu teilende Name
- * @return std::pair<String, String> Ein Paar mit den beiden Teilen des Namens
- */
-std::pair<String, String> NamenTeilen(String name) {
-  int laenge = name.length();
-  if (laenge >= 10) {
-    int mitte = laenge / 2;
-    String teil1 = name.substring(0, mitte);
-    teil1 += "-";
-    String teil2 = name.substring(mitte, laenge);
-    return std::make_pair(teil1, teil2);
-  } else {
-    return std::make_pair(name, "");
-  }
-}
-
-/**
- * @brief Zeigt einen Messwert auf dem Display an
- *
- * @param name1 Erster Teil des Sensornamens
- * @param name2 Zweiter Teil des Sensornamens (optional)
- * @param messwert Der anzuzeigende Messwert
- * @param einheit Die Einheit des Messwerts
- */
-void MesswertAnzeigen(String name1, String name2, int messwert, String einheit){
-  display.clearDisplay(); // Display löschen
-  display.setCursor(40, 0);
-  display.println(messwert);
-  display.setCursor(80, 0);
-  display.println(einheit);
-  display.setCursor(0, 20);
-  display.println(name1);
-  display.setCursor(5, 40);
-  display.println(name2);
-  display.display();      // Display aktualisieren
-}
-
-/**
- * @brief Spielt den Bootscreen auf dem Display ab und zeigt die IP-Adresse an
- *
- * @param ip Die anzuzeigende IP-Adresse
- * @param hostname Der Hostname des Geräts
- */
-void DisplayIntro(String ip, String hostname) {
-  #if MODUL_DEBUG
-    Serial.println(F("# Beginn von DisplayIntro()"));
+void ZeigeBodenfeuchte() {
+  #if MODUL_BODENFEUCHTE
+    MesswertAnzeigen(bodenfeuchteName, "", bodenfeuchteMesswertProzent, "%");
   #endif
-  display.clearDisplay(); // Display löschen
-
-  display.setTextSize(2); // Doppelt großer Text
-  display.setTextColor(SSD1306_WHITE); // Weißer Text
-  display.setCursor(0, 0); // Cursor auf 0,0 setzen
-  display.println(F("FABMOBIL")); // Text ausgeben
-  display.display();      // Display aktualisieren
-  delay(100); // 100 Millisekunden warten
-
-  // in verschiedene Richtungen scrollen:
-  display.startscrollright(0x00, 0x06);
-  delay(2000);
-  display.stopscroll();
-  display.startscrollleft(0x00, 0x06);
-  delay(2000);
-  display.stopscroll();
-  delay(500);
-  display.setCursor(10, 20);
-  display.println(F("Pflanzen-"));
-  display.display();      // Display aktualisieren
-  delay(200);
-  display.setCursor(20, 40);
-  display.println(F("sensor"));
-  display.display();      // Display aktualisieren
-  delay(500);
-  display.setTextSize(1);
-  display.setCursor(95, 54);
-  display.println(pflanzensensorVersion);
-  display.display();      // Display aktualisieren
-  delay(2000);
-
-  display.clearDisplay(); // Display löschen
-  display.setCursor(0, 0); // Cursor auf 0,0 setzen
-  display.setTextSize(2); // Doppelt großer Text
-  display.println(F("IP Adresse")); // Text ausgeben
-  display.setTextSize(1); // Normaler Text
-  display.setCursor(0, 17); // Cursor auf 0,17 setzen
-  display.println(ip); // IP Adresse ausgeben
-  display.setCursor(0, 35); // Cursor auf 0,35 setzen
-  display.setTextSize(2);   // Doppelt großer Text
-  display.println(F("Hostname")); // Text ausgeben
-  display.setTextSize(1);   // Normaler Text
-  display.setCursor(0, 52); // Cursor auf 0,52 setzen
-  display.print(hostname); // Hostname ausgeben
-  display.println(".local"); // .local anhängen
-  display.display();     // Display aktualisieren
-  delay(5000);
-
 }
 
-/**
- * @brief Zeigt die aktuellen Messwerte auf dem Display an
- *
- * Diese Funktion aktualisiert das Display mit den aktuellen Messwerten
- * aller aktivierten Sensoren.
- */
-void DisplayAnzeigen() {
-  #if MODUL_DEBUG
-    Serial.print(F("# Beginn von DisplayAnzeigen(")); Serial.print(helligkeitMesswertProzent);
-    Serial.print(F(", ")); Serial.print(luftfeuchteMesswert);
-    Serial.print(F(", ")); Serial.print(lufttemperaturMesswert);
-    Serial.print(F(", ")); Serial.print(status);
-    Serial.println(F(")"));
+void ZeigeHelligkeit() {
+  #if MODUL_HELLIGKEIT
+    MesswertAnzeigen(helligkeitName, "", helligkeitMesswertProzent, "%");
   #endif
+}
 
-  display.clearDisplay();
-  display.setTextSize(2);
+void ZeigeLufttemperatur() {
+  #if MODUL_DHT
+    MesswertAnzeigen("Luft-", "temperatur", lufttemperaturMesswert, "\xf8 C");
+  #endif
+}
 
-  switch (status) {
-    case 0:
-      display.clearDisplay();
-      display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
-      display.setCursor(0, 56);
-      display.setTextSize(1);
-      display.println(F("v") + String(pflanzensensorVersion));
-      display.setTextSize(2);
-      display.display();
-      #if MODUL_LEDAMPEL
-        if (ampelAn && ampelModus == 1) { LedampelAus(); }
-      #endif
-      break;
-    case 1:
-      display.clearDisplay();
-      display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
-      display.display();
-      #if MODUL_LEDAMPEL
-        if (ampelAn && ampelModus == 1) { LedampelAus(); }
-      #endif
-      break;
-    case 2:
-      if (bodenfeuchteMesswertProzent != -1) {
-        std::pair<String, String> namen = NamenTeilen(bodenfeuchteName);
-        MesswertAnzeigen(namen.first, namen.second, bodenfeuchteMesswertProzent, "%");
-        #if MODUL_LEDAMPEL
-          if (ampelAn && ampelModus == 1) { LedampelAnzeigen(bodenfeuchteFarbe, -1); }
-        #endif
-      } else {
-        display.clearDisplay();
-        display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
-        display.display();
-      }
-      break;
-    case 3:
-      if (helligkeitMesswertProzent != -1) {
-        std::pair<String, String> namen = NamenTeilen(helligkeitName);
-        MesswertAnzeigen(namen.first, namen.second, helligkeitMesswertProzent, "%");
-        #if MODUL_LEDAMPEL
-          if (ampelAn && ampelModus == 1) { LedampelAnzeigen(helligkeitFarbe, -1); }
-        #endif
-      } else {
-        display.clearDisplay();
-        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
-        display.display();
-      }
-      break;
-    case 4:
-      if (lufttemperaturMesswert != -1) {
-        MesswertAnzeigen("Luft-", "temperatur", lufttemperaturMesswert, "\xf8 C");
-        #if MODUL_LEDAMPEL
-          if (ampelAn && ampelModus == 1) { LedampelAnzeigen(lufttemperaturFarbe, -1); }
-        #endif
-      } else {
-        display.clearDisplay();
-        display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
-        display.display();
-      }
-      break;
-    case 5:
-      if (luftfeuchteMesswert != -1) {
-        MesswertAnzeigen("Luft-", "feuchte", luftfeuchteMesswert, "%");
-        #if MODUL_LEDAMPEL
-          if (ampelAn && ampelModus == 1) { LedampelAnzeigen(luftfeuchteFarbe, -1); }
-        #endif
-      } else {
-        display.clearDisplay();
-        display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
-        display.display();
-      }
-      break;
-    case 6:
-      DisplayIPAdresse();
-      #if MODUL_LEDAMPEL
-        if (ampelAn && ampelModus == 1) { LedampelAus(); }
-      #endif
-      break;
-    #if MODUL_ANALOG3
-      case 7:
-        if (analog3MesswertProzent != -1) {
-          std::pair<String, String> namen = NamenTeilen(analog3Name);
-          MesswertAnzeigen(namen.first, namen.second, analog3MesswertProzent, "%");
-          #if MODUL_LEDAMPEL
-            if (ampelAn && ampelModus == 1) { LedampelAnzeigen(analog3Farbe, -1); }
-          #endif
-        } else {
-          display.clearDisplay();
-          display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
-          display.display();
-        }
-        break;
-    #endif
-    #if MODUL_ANALOG4
-      case 8:
-        if (analog4MesswertProzent != -1) {
-          std::pair<String, String> namen = NamenTeilen(analog4Name);
-          MesswertAnzeigen(namen.first, namen.second, analog4MesswertProzent, "%");
-          #if MODUL_LEDAMPEL
-            if (ampelAn && ampelModus == 1) { LedampelAnzeigen(analog4Farbe, -1); }
-          #endif
-        } else {
-          display.clearDisplay();
-          display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
-          display.display();
-        }
-        break;
-    #endif
-    #if MODUL_ANALOG5
-      case 9:
-        if (analog5MesswertProzent != -1) {
-          std::pair<String, String> namen = NamenTeilen(analog5Name);
-          MesswertAnzeigen(namen.first, namen.second, analog5MesswertProzent, "%");
-          #if MODUL_LEDAMPEL
-            if (ampelAn && ampelModus == 1) { LedampelAnzeigen(analog5Farbe, -1); }
-          #endif
-        } else {
-          display.clearDisplay();
-          display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
-          display.display();
-        }
-        break;
-    #endif
-    #if MODUL_ANALOG6
-      case 10:
-        if (analog6MesswertProzent != -1) {
-          std::pair<String, String> namen = NamenTeilen(analog6Name);
-          MesswertAnzeigen(namen.first, namen.second, analog6MesswertProzent, "%");
-          #if MODUL_LEDAMPEL
-            if (ampelAn && ampelModus == 1) { LedampelAnzeigen(analog6Farbe, -1); }
-          #endif
-        } else {
-          display.clearDisplay();
-          display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
-          display.display();
-        }
-        break;
-    #endif
-    #if MODUL_ANALOG7
-      case 11:
-        if (analog7MesswertProzent != -1) {
-          std::pair<String, String> namen = NamenTeilen(analog7Name);
-          MesswertAnzeigen(namen.first, namen.second, analog7MesswertProzent, "%");
-          #if MODUL_LEDAMPEL
-            if (ampelAn && ampelModus == 1) { LedampelAnzeigen(analog7Farbe, -1); }
-          #endif
-        } else {
-          display.clearDisplay();
-          display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
-          display.display();
-        }
-        break;
-    #endif
-    #if MODUL_ANALOG8
-      case 12:
-        if (analog8MesswertProzent != -1) {
-          std::pair<String, String> namen = NamenTeilen(analog8Name);
-          MesswertAnzeigen(namen.first, namen.second, analog8MesswertProzent, "%");
-          #if MODUL_LEDAMPEL
-            if (ampelAn && ampelModus == 1) { LedampelAnzeigen(analog8Farbe, -1); }
-          #endif
-        } else {
-          display.clearDisplay();
-          display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
-          display.display();
-        }
-        break;
-    #endif
-  }
+void ZeigeLuftfeuchte() {
+  #if MODUL_DHT
+    MesswertAnzeigen("Luft-", "feuchte", luftfeuchteMesswert, "%");
+  #endif
+}
+
+void ZeigeAnalog3() {
+  #if MODUL_ANALOG3
+    MesswertAnzeigen(analog3Name, "", analog3MesswertProzent, "%");
+  #endif
+}
+
+void ZeigeAnalog4() {
+  #if MODUL_ANALOG4
+    MesswertAnzeigen(analog4Name, "", analog4MesswertProzent, "%");
+  #endif
+}
+
+void ZeigeAnalog5() {
+  #if MODUL_ANALOG5
+    MesswertAnzeigen(analog5Name, "", analog5MesswertProzent, "%");
+  #endif
+}
+
+void ZeigeAnalog6() {
+  #if MODUL_ANALOG6
+    MesswertAnzeigen(analog6Name, "", analog6MesswertProzent, "%");
+  #endif
+}
+
+void ZeigeAnalog7() {
+  #if MODUL_ANALOG7
+    MesswertAnzeigen(analog7Name, "", analog7MesswertProzent, "%");
+  #endif
+}
+
+void ZeigeAnalog8() {
+  #if MODUL_ANALOG8
+    MesswertAnzeigen(analog8Name, "", analog8MesswertProzent, "%");
+  #endif
 }
 
 /**
@@ -350,7 +222,7 @@ void DisplayAnzeigen() {
  * @param wort2 Zweites Wort
  * @param wort3 Drittes Wort
  */
-void DisplayDreiWoerter(String wort1, String wort2, String wort3) {
+void DisplayDreiWoerter(const String& wort1, const String& wort2, const String& wort3) {
   display.setTextSize(2);
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -392,31 +264,26 @@ void DisplaySechsZeilen(String zeile1, String zeile2, String zeile3, String zeil
   delay(3000); // mindestens 1s Zeit zum lesen
 }
 
-void DisplayAus() {
-  display.clearDisplay();
-  display.display();
-}
-
 /**
- * @brief Initialisiert das Display
+ * @brief Zeigt einen Messwert auf dem Display an
  *
- * Diese Funktion richtet das Display ein und zeigt den Intro-Bildschirm an.
+ * @param name1 Erster Teil des Sensornamens
+ * @param name2 Zweiter Teil des Sensornamens (optional)
+ * @param messwert Der anzuzeigende Messwert
+ * @param einheit Die Einheit des Messwerts
  */
-void DisplaySetup() {
-  #if MODUL_DEBUG
-    Serial.println(F("# Beginn von DisplaySetup()"));
-  #endif
-  // hier wird überprüft, ob die Verbindung zum Display erfolgreich war:
-  if(!display.begin(SSD1306_SWITCHCAPVCC, displayAdresse)) {
-    Serial.println(F("Fehler: Display konnte nicht geöffnet werden."));
-  }
-  display.display(); // Display anschalten und initialen Buffer zeigen
-  delay(100); // 1 Sekunde warten
-  display.setTextColor(SSD1306_WHITE);
+void MesswertAnzeigen(const String& name1, const String& name2, int messwert, const String& einheit) {
+  display.clearDisplay();
   display.setTextSize(2);
-  display.clearDisplay(); // Display löschen
-  // DisplayIntro(ip, wifiHostname); // Intro auf Display abspielen
-  DisplayDreiWoerter("Start..", " bitte", " warten!");
+  display.setCursor(40, 0);
+  display.println(messwert);
+  display.setCursor(80, 0);
+  display.println(einheit);
+  display.setCursor(0, 20);
+  display.println(name1);
+  display.setCursor(5, 40);
+  display.println(name2);
+  display.display();
 }
 
 #endif // DISPLAY_H

@@ -176,7 +176,7 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
  * hier muss eigentlich nichts verändert werden sondern die notewendigen globalen Variablen werden hier
  * definiert.
  */
-#define pflanzensensorVersion "1.1" // Versionsnummer
+#define pflanzensensorVersion "1.1.1" // Versionsnummer
 int neustarts = 1;
 unsigned long millisAktuell = 0;
 unsigned long millisVorherAnalog = 0; // Variable für die Messung des Intervalls der Analogsensormessung
@@ -186,7 +186,6 @@ unsigned long millisVorherDisplay = 0; // Variable für die Messung des Interval
 unsigned long millisVorherWebhook = 0; // Variable für die Messung des Intervalls des Webhooks
 unsigned long millisVorherWebhookPing = 0; // Variable für die Messung des Intervalls des Keep Alive Pings des Webhooks
 int module; // Variable für die Anzahl der Module
-int displayseiten; // Variable für die Anzahl der Analogsensoren
 String ip = "keine WLAN Verbindung."; // Initialisierung der IP Adresse mit Fehlermeldung
 const uint32_t wifiTimeout = 5000; // Timeout für Verbindungsversuche in ms
 int analog3Messwert = -1; // Variable für den Messwert des dritten Analogsensors
