@@ -8,8 +8,8 @@
  * Luftfeuchtigkeit und Lufttemperatur.
  */
 
-#ifndef DHT_H
-#define DHT_H
+#ifndef DHTS_H
+#define DHTS_H
 
 #include <Adafruit_Sensor.h> // Adafruit Sensor Library
 #include <DHT.h> // DHT Sensor Library
@@ -78,4 +78,4 @@ float DhtMessenLufttemperatur() { // Lufttemperatur messen
   return lufttemperatur; // Lufttemperatur zurückgeben
 }
 
-#endif // DHT_H
+#endif // DHTS_H
