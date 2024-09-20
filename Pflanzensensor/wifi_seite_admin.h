@@ -134,35 +134,44 @@ void WebseiteAdminAusgeben() {
     "<p>Die Felder zeigen in grau die derzeit gesetzten Werte an. Falls kein neuer Wert eingegeben wird, bleibt der alte Wert erhalten.</p>\n</div>\n"
     "<form action=\"/setzeVariablen\" method=\"POST\">\n"));
 
-    // Neuer Abschnitt für WIFI-Einstellungen
+  // Neuer Abschnitt für WIFI-Einstellungen
   Webserver.sendContent(F("<h2>WIFI-Einstellungen</h2>\n<div class=\"tuerkis\">\n"));
+  Webserver.sendContent(F("<p>Modus:<br>"));
+  Webserver.sendContent(F("<input type=\"radio\" name=\"wlanModus\" value=\"ap\""));
+  if (wifiAp) { Webserver.sendContent(F(" checked")); }
+  Webserver.sendContent(F("> Access Point<br>"));
+  Webserver.sendContent(F("<input type=\"radio\" name=\"wlanModus\" value=\"wlan\""));
+  if (!wifiAp) { Webserver.sendContent(F(" checked")); }
+  Webserver.sendContent(F("> WLAN Client"));
+  Webserver.sendContent(F("</p>\n"));
 
   if (wifiAp) {
     Webserver.sendContent(F("<p>Gerät befindet sich im Accesspoint-Modus. Alle WLAN-Einstellungen sind editierbar.</p>\n"));
-
-    // Checkbox zum Wechsel in den normalen WLAN-Modus
-    sendeCheckbox(F("In normalen WLAN-Modus wechseln"), F("wechselZuWLAN"), false);
-
+    Webserver.sendContent(F("</div>\n"));
     // WLAN 1
-    Webserver.sendContent(F("<h3>WLAN 1</h3>\n"));
+    Webserver.sendContent(F("<h3>WLAN 1</h3>\n<div class=\"tuerkis\">\n"));
     sendeEinstellung(F("SSID"), F("wifiSsid1"), wifiSsid1);
     sendeEinstellung(F("Passwort"), F("wifiPassword1"), F("********"));
+    Webserver.sendContent(F("</div>\n"));
 
     // WLAN 2
-    Webserver.sendContent(F("<h3>WLAN 2</h3>\n"));
+    Webserver.sendContent(F("<h3>WLAN 2</h3>\n<div class=\"tuerkis\">\n"));
     sendeEinstellung(F("SSID"), F("wifiSsid2"), wifiSsid2);
     sendeEinstellung(F("Passwort"), F("wifiPassword2"), F("********"));
+    Webserver.sendContent(F("</div>\n"));
 
     // WLAN 3
-    Webserver.sendContent(F("<h3>WLAN 3</h3>\n"));
+    Webserver.sendContent(F("<h3>WLAN 3</h3>\n<div class=\"tuerkis\">\n"));
     sendeEinstellung(F("SSID"), F("wifiSsid3"), wifiSsid3);
     sendeEinstellung(F("Passwort"), F("wifiPassword3"), F("********"));
+    Webserver.sendContent(F("</div>\n"));
   } else {
+    Webserver.sendContent(F("</div>\n"));
     // Aktuelle Verbindung ermitteln
     String currentSSID = WiFi.SSID();
 
     // WLAN 1
-    Webserver.sendContent(F("<h3>WLAN 1</h3>\n"));
+    Webserver.sendContent(F("<h3>WLAN 1</h3>\n<div class=\"tuerkis\">\n"));
     if (currentSSID == wifiSsid1) {
       Webserver.sendContent(F("<p>SSID: "));
       Webserver.sendContent(wifiSsid1);
@@ -171,9 +180,10 @@ void WebseiteAdminAusgeben() {
       sendeEinstellung(F("SSID"), F("wifiSsid1"), wifiSsid1);
       sendeEinstellung(F("Passwort"), F("wifiPassword1"), F("********"));
     }
+    Webserver.sendContent(F("</div>\n"));
 
     // WLAN 2
-    Webserver.sendContent(F("<h3>WLAN 2</h3>\n"));
+    Webserver.sendContent(F("<h3>WLAN 2</h3>\n<div class=\"tuerkis\">\n"));
     if (currentSSID == wifiSsid2) {
       Webserver.sendContent(F("<p>SSID: "));
       Webserver.sendContent(wifiSsid2);
@@ -182,9 +192,10 @@ void WebseiteAdminAusgeben() {
       sendeEinstellung(F("SSID"), F("wifiSsid2"), wifiSsid2);
       sendeEinstellung(F("Passwort"), F("wifiPassword2"), F("********"));
     }
+    Webserver.sendContent(F("</div>\n"));
 
     // WLAN 3
-    Webserver.sendContent(F("<h3>WLAN 3</h3>\n"));
+    Webserver.sendContent(F("<h3>WLAN 3</h3>\n<div class=\"tuerkis\">\n"));
     if (currentSSID == wifiSsid3) {
       Webserver.sendContent(F("<p>SSID: "));
       Webserver.sendContent(wifiSsid3);
@@ -193,9 +204,10 @@ void WebseiteAdminAusgeben() {
       sendeEinstellung(F("SSID"), F("wifiSsid3"), wifiSsid3);
       sendeEinstellung(F("Passwort"), F("wifiPassword3"), F("********"));
     }
+    Webserver.sendContent(F("</div>\n"));
   }
 
-  Webserver.sendContent(F("</div>\n"));
+
 
     #if MODUL_WEBHOOK
       Webserver.sendContent_P(PSTR("<h2>Webhook Modul</h2>\n<div class=\"tuerkis\">\n"));

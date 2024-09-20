@@ -163,54 +163,65 @@ void WebseiteCss() {
 /**
  * @brief Startet die WLAN-Verbindung neu
  *
- * Diese Funktion trennt die bestehende Verbindung und versucht,
- * eine neue Verbindung herzustellen.
+ * Diese Funktion überprüft den WLAN-Modus und stellt entweder einen Access Point her
+ * oder versucht, sich mit konfigurierten WLANs zu verbinden. Wenn keine Verbindung
+ * möglich ist, wird automatisch in den Access Point Modus gewechselt.
  */
 void NeustartWLANVerbindung() {
   WiFi.disconnect();  // Trennt die bestehende Verbindung
-  WiFi.mode(WIFI_STA);  // Setzt den Modus auf Station (Client)
-
-  wifiMulti.cleanAPlist();  // Entfernt alle gespeicherten Access Points
-
-  // Fügt die konfigurierten WLANs wieder hinzu
-  wifiMulti.addAP(wifiSsid1.c_str(), wifiPassword1.c_str());
-  wifiMulti.addAP(wifiSsid2.c_str(), wifiPassword2.c_str());
-  wifiMulti.addAP(wifiSsid3.c_str(), wifiPassword3.c_str());
-
-  Serial.println(F("Versuche, WLAN-Verbindung wiederherzustellen..."));
-
-  #if MODUL_DISPLAY
-    DisplayDreiWoerter("Verbinde", "mit", "WLAN...");
-  #endif
-
-  // Versucht, eine Verbindung herzustellen
-  if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
-    ip = WiFi.localIP().toString();
-    Serial.print(F("Verbunden mit WLAN. IP: "));
-    Serial.println(ip);
-
-    #if MODUL_DISPLAY
-      DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ ip, "Hostname: ", wifiHostname + ".local");
-    #endif
-  } else {
-    Serial.println(F("Konnte keine WLAN-Verbindung herstellen."));
-
-    #if MODUL_DISPLAY
-      DisplayDreiWoerter("Keine", "WLAN", "Verbindung");
-    #endif
-
-    // Optional: Wechsel zurück in den AP-Modus, wenn keine Verbindung möglich ist
-    wifiAp = true;
+  Serial.println("wifiAp: " + String(wifiAp));
+  if (wifiAp) {
+    // Access Point Modus
+    Serial.println(F("Starte Access Point Modus..."));
     WiFi.mode(WIFI_AP);
     WiFi.softAP(wifiApSsid, wifiApPasswort);
     ip = WiFi.softAPIP().toString();
 
-    Serial.print(F("AP-Modus aktiviert. IP: "));
+    Serial.print(F("Access Point gestartet. IP: "));
     Serial.println(ip);
 
     #if MODUL_DISPLAY
-      DisplaySechsZeilen("AP-Modus", "aktiv", "SSID: " + String(wifiApSsid), "IP: " + ip, "Hostname: ", wifiHostname + ".local");
+      DisplaySechsZeilen("AP-Modus", "aktiv", "SSID: " + String(wifiApSsid), "IP: " + ip, "Hostname:", wifiHostname + ".local");
     #endif
+  } else {
+    // Versuche, sich mit konfiguriertem WLAN zu verbinden
+    Serial.println(F("Versuche, WLAN-Verbindung herzustellen..."));
+    WiFi.mode(WIFI_STA);
+    wifiMulti.cleanAPlist();
+
+    // Fügt die konfigurierten WLANs hinzu
+    wifiMulti.addAP(wifiSsid1.c_str(), wifiPassword1.c_str());
+    wifiMulti.addAP(wifiSsid2.c_str(), wifiPassword2.c_str());
+    wifiMulti.addAP(wifiSsid3.c_str(), wifiPassword3.c_str());
+
+    #if MODUL_DISPLAY
+      DisplayDreiWoerter("Verbinde", "mit", "WLAN...");
+    #endif
+
+    // Versucht, eine Verbindung herzustellen
+    if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
+      ip = WiFi.localIP().toString();
+      Serial.print(F("Verbunden mit WLAN. IP: "));
+      Serial.println(ip);
+
+      #if MODUL_DISPLAY
+        DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ ip, "Hostname:", wifiHostname + ".local");
+      #endif
+    } else {
+      // Wenn keine Verbindung möglich ist, wechsle in den AP-Modus
+      Serial.println(F("Konnte keine WLAN-Verbindung herstellen. Wechsle in den AP-Modus."));
+      wifiAp = true;
+      WiFi.mode(WIFI_AP);
+      WiFi.softAP(wifiApSsid, wifiApPasswort);
+      ip = WiFi.softAPIP().toString();
+
+      Serial.print(F("AP-Modus aktiviert. IP: "));
+      Serial.println(ip);
+
+      #if MODUL_DISPLAY
+        DisplaySechsZeilen("AP-Modus", "aktiv", "SSID: " + String(wifiApSsid), "IP: " + ip, "Hostname:", wifiHostname + ".local");
+      #endif
+    }
   }
 
   // DNS-Server neu starten

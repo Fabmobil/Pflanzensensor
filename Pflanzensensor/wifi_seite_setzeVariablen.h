@@ -135,18 +135,22 @@ void AktualisiereVariablen() {
     AktualisiereInteger("webhookPingFrequenz", webhookPingFrequenz);
   #endif
 
-  #if MODUL_WIFI
-    bool wechselZuWLAN = (Webserver.arg("wechselZuWLAN") == "on");
+ #if MODUL_WIFI
+    String neuerWLANModus = Webserver.arg("wlanModus");
+    Serial.println("NeuerWLANModus: " + neuerWLANModus);
+    if (neuerWLANModus == "ap") {
+      wifiAp = true;
+    } else if (neuerWLANModus == "wlan") {
+      wifiAp = false;
+    }
+    AktualisiereBoolean("apAktiv", wifiAp);
     AktualisiereString("wifiSsid1", wifiSsid1);
     AktualisiereString("wifiPassword1", wifiPassword1);
     AktualisiereString("wifiSsid2", wifiSsid2);
     AktualisiereString("wifiPassword2", wifiPassword2);
     AktualisiereString("wifiSsid3", wifiSsid3);
     AktualisiereString("wifiPassword3", wifiPassword3);
-    if (wechselZuWLAN) {
-      wifiAp = false; // Setze den WLAN-Modus auf normal
-      VerzoegerterWLANNeustart(); // Plane einen verzögerten WLAN-Neustart
-    }
+    VerzoegerterWLANNeustart(); // Plane einen verzögerten WLAN-Neustart
   #endif
 
   #if MODUL_HELLIGKEIT
