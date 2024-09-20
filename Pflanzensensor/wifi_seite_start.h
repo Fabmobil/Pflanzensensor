@@ -34,6 +34,7 @@ void WebseiteStartAusgeben() {
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
 
+  Webserver.sendContent_P(htmlHeaderRefresh);
   Webserver.sendContent_P(htmlHeader);
 
   Webserver.sendContent_P(PSTR(

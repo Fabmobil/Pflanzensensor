@@ -17,6 +17,7 @@ void WebseiteNichtGefundenAusgeben() {
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(404, F("text/html"), "");
 
+  Webserver.sendContent_P(htmlHeaderNoRefresh);
   Webserver.sendContent_P(htmlHeader);
 
   Webserver.sendContent(F(

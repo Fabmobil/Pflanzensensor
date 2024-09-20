@@ -3,6 +3,7 @@ void WebseiteDebugAusgeben() {
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
 
+  Webserver.sendContent_P(htmlHeaderRefresh);
   Webserver.sendContent_P(htmlHeader);
 
   Webserver.sendContent(F("<h2>Debug-Informationen</h2>\n"));

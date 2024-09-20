@@ -1,4 +1,4 @@
-const char htmlHeader[] PROGMEM = (R"====(
+const char htmlHeaderRefresh[] PROGMEM = (R"====(
 <!DOCTYPE html>
 <html lang="de">
 <head>
@@ -6,6 +6,17 @@ const char htmlHeader[] PROGMEM = (R"====(
   <title>Fabmobil Pflanzensensor</title>
   <link rel="stylesheet" href="style.css">
 </head>
+)====");
+const char htmlHeaderNoRefresh[] PROGMEM = (R"====(
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Fabmobil Pflanzensensor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+)====");
+const char htmlHeader[] PROGMEM = (R"====(
 <body class="not-loaded">
   <div class="background">
 
