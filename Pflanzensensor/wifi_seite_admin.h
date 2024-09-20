@@ -33,8 +33,8 @@ void sendeAnalogsensorEinstellungen(const __FlashStringHelper* titel, const __Fl
   sendeCheckbox(F("Alarm aktiv?"), String(prefix) + F("Webhook"), alarm);
   sendeEinstellung(F("Sensorname"), String(prefix) + F("Name"), sensorName);
   sendeEinstellung(F("aktueller absoluter Messwert"), String(prefix) + F("Minimum"), String(messwert));
-  sendeEinstellung(F("Minimalwert"), String(prefix) + F("Minimum"), String(minimum));
-  sendeEinstellung(F("Maximalwert"), String(prefix) + F("Maximum"), String(maximum));
+  sendeEinstellung(F("Minimalwert (trocken/dunkel)"), String(prefix) + F("Minimum"), String(minimum));
+  sendeEinstellung(F("Maximalwert (feucht/hell)"), String(prefix) + F("Maximum"), String(maximum));
 
   sendeSchwellwerte(prefix, gruenUnten, gruenOben, gelbUnten, gelbOben);
 
