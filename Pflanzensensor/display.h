@@ -27,13 +27,12 @@ Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // I
  */
 void DisplayIPAdresse() {
   display.clearDisplay();
-  display.setTextSize(1);
-  display.setCursor(0, 0);
-  display.println(F("IP-Adresse:"));
   display.setTextSize(2);
-  display.setCursor(0, 10);
-  display.println(ip);
+  display.setCursor(0, 0);
+  display.println("WLAN");
   display.setTextSize(1);
+  display.setCursor(0, 20);
+  display.println(F("IP: ") + ip);
   display.setCursor(0, 30);
   if (wifiAp) {
     display.println(F("AP-Modus"));
@@ -172,11 +171,17 @@ void DisplayAnzeigen() {
       display.clearDisplay();
       display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
       display.display();
+      #if MODUL_LEDAMPEL
+        if (ampelAn && ampelModus == 1) { LedampelAnzeigen("aus", -1); }
+      #endif
       break;
     case 1:
       display.clearDisplay();
       display.drawBitmap(0, 0, bildBlume, displayBreite, displayHoehe, WHITE);
       display.display();
+      #if MODUL_LEDAMPEL
+        if (ampelAn && ampelModus == 1) { LedampelAnzeigen("aus", -1); }
+      #endif
       break;
     case 2:
       if (bodenfeuchteMesswertProzent != -1) {
@@ -230,6 +235,9 @@ void DisplayAnzeigen() {
       break;
     case 6:
       DisplayIPAdresse();
+      #if MODUL_LEDAMPEL
+        if (ampelAn && ampelModus == 1) { LedampelAnzeigen("aus", -1); }
+      #endif
       break;
     #if MODUL_ANALOG3
       case 7:
