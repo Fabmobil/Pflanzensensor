@@ -25,7 +25,7 @@ Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset); // I
  * @brief Zeigt die aktuelle IP-Adresse auf dem Display an
  *
  * Diese Funktion löscht das Display und zeigt dann die aktuelle IP-Adresse,
- * den WLAN-Modus (AP oder Client) und die SSID an.
+ * den WLAN-Modus (AP oder Client), die SSID und im AP-Modus auch das Passwort an.
  */
 void DisplayIPAdresse() {
   display.clearDisplay();
@@ -40,6 +40,12 @@ void DisplayIPAdresse() {
     display.println(F("AP-Modus"));
     display.setCursor(0, 40);
     display.println(F("SSID: ") + String(wifiApSsid));
+    display.setCursor(0, 50);
+    if (wifiApPasswortAktiviert) {
+      display.println(F("PW: ") + String(wifiApPasswort));
+    } else {
+      display.println(F("PW: -keins-"));
+    }
   } else {
     display.println(F("WLAN-Modus"));
     display.setCursor(0, 40);
@@ -171,6 +177,10 @@ void DisplayAnzeigen() {
     case 0:
       display.clearDisplay();
       display.drawBitmap(0, 0, bildFabmobil, displayBreite, displayHoehe, WHITE);
+      display.setCursor(0, 56);
+      display.setTextSize(1);
+      display.println(F("v") + String(pflanzensensorVersion));
+      display.setTextSize(2);
       display.display();
       #if MODUL_LEDAMPEL
         if (ampelAn && ampelModus == 1) { LedampelAus(); }
