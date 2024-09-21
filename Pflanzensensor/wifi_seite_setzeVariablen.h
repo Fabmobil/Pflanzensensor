@@ -148,6 +148,11 @@ void AktualisiereVariablen() {
     AktualisiereString("wifiPassword2", wifiPassword2);
     AktualisiereString("wifiSsid3", wifiSsid3);
     AktualisiereString("wifiPassword3", wifiPassword3);
+    AktualisiereString("wifiApSsid", wifiApSsid);
+    AktualisiereBoolean("wifiApPasswortAktiviert", wifiApPasswortAktiviert);
+    if (wifiApPasswortAktiviert) {
+      AktualisiereString("wifiApPasswort", wifiApPasswort);
+    }
     VerzoegerterWLANNeustart(); // Plane einen verzögerten WLAN-Neustart
   #endif
 
