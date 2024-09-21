@@ -117,6 +117,9 @@ String WifiSetup(String hostname){
   Webserver.on("/Bilder/logoGithub.png", HTTP_GET, []() {
       WebseiteBild("/Bilder/logoGithub.png", "image/png");
   });
+  Webserver.on("/favicon.ico", HTTP_GET, []() {
+      WebseiteBild("/favicon.ico", "image/x-icon");
+  });
   Webserver.on("/style.css", HTTP_GET, WebseiteCss);
 
   Webserver.onNotFound(WebseiteNichtGefundenAusgeben);
