@@ -40,64 +40,163 @@ void ArgumenteAusgeben() {
  * @brief Verarbeitet die Änderungen, die auf der Administrationsseite vorgenommen wurden
  *
  * Diese Funktion überprüft das Passwort, aktualisiert die Variablen und
- * sendet eine Bestätigungsseite an den Client.
+ * sendet eine Bestätigungsseite mit allen vorgenommenen Änderungen an den Client.
+ * Es werden nur Änderungen angezeigt, bei denen tatsächlich etwas geändert wurde,
+ * einschließlich Änderungen am WLAN-Modus und Checkboxen.
  */
 void WebseiteSetzeVariablen() {
-  #if MODUL_DEBUG
-    Serial.println(F("# Beginn von WebseiteSetzeVariablen()"));
-    ArgumenteAusgeben();
-  #endif
-  millisVorherWebhook = millisAktuell; // Webhook löst sonst sofort aus und gemeinsam mit dem Variablen setzen führt dazu, dass der ESP abstürzt.
-  Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  Webserver.send(200, F("text/html"), "");
-
-  Webserver.sendContent_P(htmlHeaderNoRefresh);
-  Webserver.sendContent_P(htmlHeader);
-
-  if (Webserver.arg("Passwort") == wifiAdminPasswort) {
-    AktualisiereVariablen();
-    Webserver.sendContent(F("<h3>Erfolgreich!</h3>\n"));
-  } else {
-    Webserver.sendContent(F("<h3>Falsches Passwort!</h3>\n"));
-  }
-
-  if (Webserver.arg("loeschen") == "Ja!") {
-    Webserver.sendContent(F(
-      "<div class=\"rot\">\n"
-      "<p>Alle Variablen wurden gelöscht.</p>\n"
-      "<p>Der Pflanzensensor wird neu gestartet.</p>\n"
-      "</div>\n"
-      "<div class=\"tuerkis\">\n"
-      "<p><a href=\"/\">Warte ein paar Sekunden, dann kannst du hier zur Startseite zurück.</a></p>\n"
-      "</div>\n"
-    ));
-    Webserver.sendContent_P(htmlFooter);
-    Webserver.client().flush();
-    VariablenLoeschen();
-    delay(5);
-    ESP.restart();
-  } else {
-    Webserver.sendContent(F(
-      "<div class=\"tuerkis\">\n"
-      "<ul>\n"
-      "<li><a href=\"/\">zur Startseite</a></li>\n"
-      "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n"
-    ));
     #if MODUL_DEBUG
-      Webserver.sendContent(F("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
+        Serial.println(F("# Beginn von WebseiteSetzeVariablen()"));
+        ArgumenteAusgeben();
     #endif
-    Webserver.sendContent(F(
-      "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">"
-      "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>\n"
-      "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">"
-      "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>\n"
-      "</ul>\n"
-      "</div>\n"
-    ));
-    Webserver.sendContent_P(htmlFooter);
-    Webserver.client().flush();
-    VariablenSpeichern();
-  }
+    millisVorherWebhook = millisAktuell; // Webhook löst sonst sofort aus und gemeinsam mit dem Variablen setzen führt dazu, dass der ESP abstürzt.
+
+    Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    Webserver.send(200, F("text/html"), "");
+
+    Webserver.sendContent_P(htmlHeaderNoRefresh);
+    Webserver.sendContent_P(htmlHeader);
+
+    if (Webserver.arg("Passwort") == wifiAdminPasswort) {
+        String aenderungen = "<ul>\n"; // Hier sammeln wir alle Änderungen
+        bool wlanModusGeaendert = false;
+
+        // Speichern der alten Checkbox-Zustände
+        bool alteCheckboxZustaende[6] = {
+            #if MODUL_BODENFEUCHTE
+                bodenfeuchteWebhook,
+            #else
+                false,
+            #endif
+            #if MODUL_HELLIGKEIT
+                helligkeitWebhook,
+            #else
+                false,
+            #endif
+            #if MODUL_DHT
+                lufttemperaturWebhook,
+                luftfeuchteWebhook,
+            #else
+                false, false,
+            #endif
+            #if MODUL_LEDAMPEL
+                ampelAn,
+            #else
+                false,
+            #endif
+            #if MODUL_DISPLAY
+                displayAn
+            #else
+                false
+            #endif
+        };
+
+        // Wir überprüfen jedes Eingabefeld und fügen Änderungen hinzu, wenn etwas geändert wurde
+        for (int i = 0; i < Webserver.args(); i++) {
+            String argName = Webserver.argName(i);
+            String argValue = Webserver.arg(i);
+
+            if (argName != "Passwort") {
+                // Spezieller Fall für den WLAN-Modus
+                if (argName == "wlanModus") {
+                    bool neuerWlanAp = (argValue == "ap");
+                    if (neuerWlanAp != wifiAp) {
+                        wlanModusGeaendert = true;
+                        String neuerModus = neuerWlanAp ? "Access Point" : "WLAN Client";
+                        aenderungen += "<li>WLAN-Modus: " + neuerModus + "</li>\n";
+                    }
+                }
+                // Bei Checkboxen vergleichen wir mit dem alten Zustand
+                else if (argName.endsWith("Webhook") || argName == "ampelAn" || argName == "displayAn") {
+                    int index = -1;
+                    if (argName == "bodenfeuchteWebhook") index = 0;
+                    else if (argName == "helligkeitWebhook") index = 1;
+                    else if (argName == "lufttemperaturWebhook") index = 2;
+                    else if (argName == "luftfeuchteWebhook") index = 3;
+                    else if (argName == "ampelAn") index = 4;
+                    else if (argName == "displayAn") index = 5;
+
+                    if (index != -1 && !alteCheckboxZustaende[index]) {
+                        aenderungen += "<li>" + argName + ": aktiviert</li>\n";
+                    }
+                }
+                // Für alle anderen Felder
+                else if (argValue != "") {
+                    aenderungen += "<li>" + argName + ": " + argValue + "</li>\n";
+                }
+            }
+        }
+
+        // Überprüfen, ob Checkboxen deaktiviert wurden
+        String checkboxNamen[] = {"bodenfeuchteWebhook", "helligkeitWebhook", "lufttemperaturWebhook", "luftfeuchteWebhook", "ampelAn", "displayAn"};
+        for (int i = 0; i < 6; i++) {
+            if (alteCheckboxZustaende[i] && !Webserver.hasArg(checkboxNamen[i])) {
+                aenderungen += "<li>" + checkboxNamen[i] + ": deaktiviert</li>\n";
+            }
+        }
+
+        aenderungen += "</ul>\n";
+
+        // Jetzt aktualisieren wir die Variablen
+        AktualisiereVariablen();
+        Webserver.sendContent(F("<h3>Erfolgreich!</h3>\n"));
+        Webserver.sendContent(F("<div class=\"gruen\">\n"));
+
+        if (aenderungen == "<ul>\n</ul>\n") {
+            Webserver.sendContent(F("<p>Es wurden keine Änderungen vorgenommen.</p>\n"));
+        } else {
+            Webserver.sendContent(F("<p>Folgende Änderungen wurden vorgenommen:</p>\n"));
+            Webserver.sendContent(aenderungen);
+        }
+
+        if (wlanModusGeaendert) {
+            Webserver.sendContent(F("<p><strong>Hinweis:</strong> Der WLAN-Modus wurde geändert. "
+                                    "Der Pflanzensensor wird in Kürze neu starten, um die Änderungen zu übernehmen.</p>\n"));
+        }
+        Webserver.sendContent(F("</div>"));
+    } else {
+        Webserver.sendContent(F("<h3>Falsches Passwort!</h3>\n<div class=\"rot\">\n"));
+        Webserver.sendContent(F("<p>Du hast nicht das richtige Passwort eingebeben!</p></div>\n"));
+    }
+
+    if (Webserver.arg("loeschen") == "Ja!") {
+        Webserver.sendContent(F(
+            "<div class=\"rot\">\n"
+            "<p>Alle Variablen wurden gelöscht.</p>\n"
+            "<p>Der Pflanzensensor wird neu gestartet.</p>\n"
+            "</div>\n"
+            "<div class=\"tuerkis\">\n"
+            "<p><a href=\"/\">Warte ein paar Sekunden, dann kannst du hier zur Startseite zurück.</a></p>\n"
+            "</div>\n"
+        ));
+        Webserver.sendContent_P(htmlFooter);
+        Webserver.client().flush();
+        VariablenLoeschen();
+        delay(5);
+        ESP.restart();
+    } else {
+        Webserver.sendContent(F("<h3>Links</h3>\n"));
+        Webserver.sendContent(F(
+            "<div class=\"tuerkis\">\n"
+            "<ul>\n"
+            "<li><a href=\"/\">zur Startseite</a></li>\n"
+            "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n"
+        ));
+        #if MODUL_DEBUG
+            Webserver.sendContent(F("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
+        #endif
+        Webserver.sendContent(F(
+            "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">"
+            "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>\n"
+            "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">"
+            "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>\n"
+            "</ul>\n"
+            "</div>\n"
+        ));
+        Webserver.sendContent_P(htmlFooter);
+        Webserver.client().flush();
+        VariablenSpeichern();
+    }
 }
 
 /**
