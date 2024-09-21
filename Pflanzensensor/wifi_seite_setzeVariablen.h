@@ -137,13 +137,11 @@ void AktualisiereVariablen() {
 
  #if MODUL_WIFI
     String neuerWLANModus = Webserver.arg("wlanModus");
-    Serial.println("NeuerWLANModus: " + neuerWLANModus);
     if (neuerWLANModus == "ap") {
       wifiAp = true;
     } else if (neuerWLANModus == "wlan") {
       wifiAp = false;
     }
-    AktualisiereBoolean("apAktiv", wifiAp);
     AktualisiereString("wifiSsid1", wifiSsid1);
     AktualisiereString("wifiPassword1", wifiPassword1);
     AktualisiereString("wifiSsid2", wifiSsid2);
