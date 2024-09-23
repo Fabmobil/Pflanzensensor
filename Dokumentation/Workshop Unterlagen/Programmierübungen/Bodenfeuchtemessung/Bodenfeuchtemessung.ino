@@ -1,6 +1,6 @@
 // als erstes definieren wir die Pins der LED, des Sensors sowie den Schwellwert für den Vergleich 
 const int SENSOR_PIN = A0; 
-const int LED_PIN = 13; 
+const int LED_PIN = D0; 
 const int SCHWELLWERT = 500; 
 
 // in der setup()-Funktion wird die serielle Schnittstelle aktiviert und der LED-Pin als Ausgang definiert 
