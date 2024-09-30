@@ -200,7 +200,7 @@ void NeustartWLANVerbindung() {
     wifiMulti.addAP(wifiSsid3.c_str(), wifiPassword3.c_str());
 
     #if MODUL_DISPLAY
-      DisplayDreiWoerter("Verbinde", "mit", "WLAN...");
+      DisplayDreiWoerter("Neustart", "WLAN", "Modul");
     #endif
 
     // Versucht, eine Verbindung herzustellen

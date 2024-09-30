@@ -59,7 +59,6 @@ void WebseiteSetzeVariablen() {
 
     if (Webserver.arg("Passwort") == wifiAdminPasswort) {
         String aenderungen = "<ul>\n"; // Hier sammeln wir alle Änderungen
-        bool wlanModusGeaendert = false;
 
         // Speichern der alten Checkbox-Zustände
         bool alteCheckboxZustaende[7] = {
@@ -106,7 +105,7 @@ void WebseiteSetzeVariablen() {
                 if (argName == "wlanModus") {
                     bool neuerWlanAp = (argValue == "ap");
                     if (neuerWlanAp != wifiAp) {
-                        wlanModusGeaendert = true;
+                        wlanAenderungVorgenommen = true;
                         String neuerModus = neuerWlanAp ? "Access Point" : "WLAN Client";
                         aenderungen += "<li>WLAN-Modus: " + neuerModus + "</li>\n";
                     }
@@ -158,11 +157,14 @@ void WebseiteSetzeVariablen() {
             Webserver.sendContent(aenderungen);
         }
 
-        if (wlanModusGeaendert) {
-            Webserver.sendContent(F("<p><strong>Hinweis:</strong> Der WLAN-Modus wurde geändert. "
-                                    "Der Pflanzensensor wird in Kürze neu starten, um die Änderungen zu übernehmen.</p>\n"));
-        }
         Webserver.sendContent(F("</div>"));
+        if (wlanAenderungVorgenommen) {
+            Webserver.sendContent(F("<h3>Achtung!</h3>\n<div class=\"rot\">\n"));
+            Webserver.sendContent(F("<p>Es wurden WLAN Daten geändert.\n"));
+            Webserver.sendContent(F("Die WLAN Verbindung des Pflanzensensors wird deshalb in Kürze neu starten, um die Änderungen zu übernehmen."));
+            Webserver.sendContent(F("Gegebenenfalls ändert sich die SSID und die IP Adresse deines Sensors. Achte auf das Display!</p>\n</div>"));
+
+        }
     } else {
         Webserver.sendContent(F("<h3>Falsches Passwort!</h3>\n<div class=\"rot\">\n"));
         Webserver.sendContent(F("<p>Du hast nicht das richtige Passwort eingebeben!</p></div>\n"));
