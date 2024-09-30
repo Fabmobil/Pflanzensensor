@@ -17,9 +17,9 @@ void ArgumenteAusgeben();
 void WebseiteSetzeVariablen();
 void AktualisiereVariablen();
 void AktualisiereAnalogsensor(int sensorNumber);
-void AktualisiereBoolean(const String& argName, bool& wert);
-void AktualisiereInteger(const String& argName, int& wert);
-void AktualisiereString(const String& argName, String& wert);
+void AktualisiereBoolean(const String& argName, bool& wert, bool istWLANEinstellung = false);
+void AktualisiereInteger(const String& argName, int& wert, bool istWLANEinstellung = false);
+void AktualisiereString(const String& argName, String& wert, bool istWLANEinstellung = false);
 
 /**
  * @brief Gibt alle empfangenen POST-Argumente in der Konsole aus
@@ -234,25 +234,29 @@ void AktualisiereVariablen() {
     AktualisiereInteger("webhookPingFrequenz", webhookPingFrequenz);
   #endif
 
- #if MODUL_WIFI
+  #if MODUL_WIFI
+    wlanAenderungVorgenommen = false;
     String neuerWLANModus = Webserver.arg("wlanModus");
-    if (neuerWLANModus == "ap") {
-      wifiAp = true;
-    } else if (neuerWLANModus == "wlan") {
-      wifiAp = false;
+    if ((neuerWLANModus == "ap" && !wifiAp) || (neuerWLANModus == "wlan" && wifiAp)) {
+      wifiAp = (neuerWLANModus == "ap");
+      wlanAenderungVorgenommen = true;
     }
-    AktualisiereString("wifiSsid1", wifiSsid1);
-    AktualisiereString("wifiPassword1", wifiPassword1);
-    AktualisiereString("wifiSsid2", wifiSsid2);
-    AktualisiereString("wifiPassword2", wifiPassword2);
-    AktualisiereString("wifiSsid3", wifiSsid3);
-    AktualisiereString("wifiPassword3", wifiPassword3);
-    AktualisiereString("wifiApSsid", wifiApSsid);
-    AktualisiereBoolean("wifiApPasswortAktiviert", wifiApPasswortAktiviert);
+
+    AktualisiereString("wifiSsid1", wifiSsid1, true);
+    AktualisiereString("wifiPassword1", wifiPassword1, true);
+    AktualisiereString("wifiSsid2", wifiSsid2, true);
+    AktualisiereString("wifiPassword2", wifiPassword2, true);
+    AktualisiereString("wifiSsid3", wifiSsid3, true);
+    AktualisiereString("wifiPassword3", wifiPassword3, true);
+    AktualisiereString("wifiApSsid", wifiApSsid, true);
+    AktualisiereBoolean("wifiApPasswortAktiviert", wifiApPasswortAktiviert, true);
     if (wifiApPasswortAktiviert) {
-      AktualisiereString("wifiApPasswort", wifiApPasswort);
+      AktualisiereString("wifiApPasswort", wifiApPasswort, true);
     }
-    VerzoegerterWLANNeustart(); // Plane einen verzögerten WLAN-Neustart
+
+    if (wlanAenderungVorgenommen) {
+      VerzoegerterWLANNeustart(); // Plane einen verzögerten WLAN-Neustart
+    }
   #endif
 
   #if MODUL_HELLIGKEIT
@@ -382,26 +386,40 @@ void AktualisiereAnalogsensor(int sensorNumber) {
 }
 
 /**
- * @brief Aktualisiert einen Integer-Wert basierend auf den empfangenen POST-Daten
- *
- * @param argName Der Name des Arguments
- * @param wert Referenz auf die zu aktualisierende Integer-Variable
- */
-void AktualisiereInteger(const String& argName, int& wert) {
-  if (Webserver.arg(argName) != "") {
-    wert = Webserver.arg(argName).toInt();
-  }
-}
-
-/**
  * @brief Aktualisiert einen String-Wert basierend auf den empfangenen POST-Daten
  *
  * @param argName Der Name des Arguments
  * @param wert Referenz auf die zu aktualisierende String-Variable
+ * @param istWLANEinstellung Gibt an, ob es sich um eine WLAN-Einstellung handelt
  */
-void AktualisiereString(const String& argName, String& wert) {
+void AktualisiereString(const String& argName, String& wert, bool istWLANEinstellung) {
   if (Webserver.arg(argName) != "") {
-    wert = Webserver.arg(argName);
+    String neuerWert = Webserver.arg(argName);
+    if (neuerWert != wert) {
+      wert = neuerWert;
+      if (istWLANEinstellung) {
+        wlanAenderungVorgenommen = true;
+      }
+    }
+  }
+}
+
+/**
+ * @brief Aktualisiert einen Integer-Wert basierend auf den empfangenen POST-Daten
+ *
+ * @param argName Der Name des Arguments
+ * @param wert Referenz auf die zu aktualisierende Integer-Variable
+ * @param istWLANEinstellung Gibt an, ob es sich um eine WLAN-Einstellung handelt
+ */
+void AktualisiereInteger(const String& argName, int& wert, bool istWLANEinstellung) {
+  if (Webserver.arg(argName) != "") {
+    int neuerWert = Webserver.arg(argName).toInt();
+    if (neuerWert != wert) {
+      wert = neuerWert;
+      if (istWLANEinstellung) {
+        wlanAenderungVorgenommen = true;
+      }
+    }
   }
 }
 
@@ -410,12 +428,15 @@ void AktualisiereString(const String& argName, String& wert) {
  *
  * @param argName Der Name des Arguments
  * @param wert Referenz auf die zu aktualisierende Boolean-Variable
+ * @param istWLANEinstellung Gibt an, ob es sich um eine WLAN-Einstellung handelt
  */
-void AktualisiereBoolean(const String& argName, bool& wert) {
-  if (Webserver.hasArg(argName)) {
-    wert = true;
-  } else {
-    wert = false;
+void AktualisiereBoolean(const String& argName, bool& wert, bool istWLANEinstellung) {
+  bool neuerWert = Webserver.hasArg(argName);
+  if (neuerWert != wert) {
+    wert = neuerWert;
+    if (istWLANEinstellung) {
+      wlanAenderungVorgenommen = true;
+    }
   }
 }
 

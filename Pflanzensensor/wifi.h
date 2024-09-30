@@ -11,6 +11,8 @@
 #ifndef WIFI_H
 #define WIFI_H
 
+bool wlanAenderungVorgenommen = false;
+
 void WebseiteBild(const char* pfad, const char* mimeType);
 void WebseiteCss();
 void NeustartWLANVerbindung();
