@@ -62,33 +62,38 @@ void WebseiteSetzeVariablen() {
         bool wlanModusGeaendert = false;
 
         // Speichern der alten Checkbox-Zustände
-        bool alteCheckboxZustaende[6] = {
-            #if MODUL_BODENFEUCHTE
-                bodenfeuchteWebhook,
-            #else
-                false,
-            #endif
-            #if MODUL_HELLIGKEIT
-                helligkeitWebhook,
-            #else
-                false,
-            #endif
-            #if MODUL_DHT
-                lufttemperaturWebhook,
-                luftfeuchteWebhook,
-            #else
-                false, false,
-            #endif
-            #if MODUL_LEDAMPEL
-                ampelAn,
-            #else
-                false,
-            #endif
-            #if MODUL_DISPLAY
-                displayAn
-            #else
-                false
-            #endif
+        bool alteCheckboxZustaende[7] = {
+          #if MODUL_BODENFEUCHTE
+              bodenfeuchteWebhook,
+          #else
+              false,
+          #endif
+          #if MODUL_HELLIGKEIT
+              helligkeitWebhook,
+          #else
+              false,
+          #endif
+          #if MODUL_DHT
+              lufttemperaturWebhook,
+              luftfeuchteWebhook,
+          #else
+              false, false,
+          #endif
+          #if MODUL_LEDAMPEL
+              ampelAn,
+          #else
+              false,
+          #endif
+          #if MODUL_DISPLAY
+              displayAn,
+          #else
+              false,
+          #endif
+          #if MODUL_WEBHOOK
+              webhookAn
+          #else
+              false
+          #endif
         };
 
         // Wir überprüfen jedes Eingabefeld und fügen Änderungen hinzu, wenn etwas geändert wurde
@@ -107,19 +112,23 @@ void WebseiteSetzeVariablen() {
                     }
                 }
                 // Bei Checkboxen vergleichen wir mit dem alten Zustand
-                else if (argName.endsWith("Webhook") || argName == "ampelAn" || argName == "displayAn") {
-                    int index = -1;
-                    if (argName == "bodenfeuchteWebhook") index = 0;
-                    else if (argName == "helligkeitWebhook") index = 1;
-                    else if (argName == "lufttemperaturWebhook") index = 2;
-                    else if (argName == "luftfeuchteWebhook") index = 3;
-                    else if (argName == "ampelAn") index = 4;
-                    else if (argName == "displayAn") index = 5;
+                else if (argName.endsWith("Webhook") || argName == "ampelAn" || argName == "displayAn" || argName == "webhookAn") {
+                  int index = -1;
+                  if (argName == "bodenfeuchteWebhook") index = 0;
+                  else if (argName == "helligkeitWebhook") index = 1;
+                  else if (argName == "lufttemperaturWebhook") index = 2;
+                  else if (argName == "luftfeuchteWebhook") index = 3;
+                  else if (argName == "ampelAn") index = 4;
+                  else if (argName == "displayAn") index = 5;
+                  else if (argName == "webhookAn") index = 6;
 
-                    if (index != -1 && !alteCheckboxZustaende[index]) {
-                        aenderungen += "<li>" + argName + ": aktiviert</li>\n";
-                    }
-                }
+                  if (index != -1) {
+                      bool neuerZustand = Webserver.hasArg(argName);
+                      if (neuerZustand != alteCheckboxZustaende[index]) {
+                          aenderungen += "<li>" + argName + ": " + (neuerZustand ? "aktiviert" : "deaktiviert") + "</li>\n";
+                      }
+                  }
+              }
                 // Für alle anderen Felder
                 else if (argValue != "") {
                     aenderungen += "<li>" + argName + ": " + argValue + "</li>\n";
