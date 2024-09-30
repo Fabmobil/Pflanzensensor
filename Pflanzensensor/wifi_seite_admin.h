@@ -81,7 +81,9 @@ void sendeAnalogsensorEinstellungen(const __FlashStringHelper* titel, const __Fl
   Webserver.sendContent(F("<h2>"));
   Webserver.sendContent(titel);
   Webserver.sendContent(F("</h2>\n<div class=\"tuerkis\">\n"));
-  sendeCheckbox(F("Alarm aktiv?"), String(prefix) + F("Webhook"), alarm);
+  #if MODUL_WEBHOOK
+    sendeCheckbox(F("Alarm aktiv?"), String(prefix) + F("Webhook"), alarm);
+  #endif
   sendeEinstellung(F("Sensorname"), String(prefix) + F("Name"), sensorName);
   sendeEinstellung(F("aktueller absoluter Messwert"), String(prefix) + F("Minimum"), String(messwert));
   sendeEinstellung(F("Minimalwert (trocken/dunkel)"), String(prefix) + F("Minimum"), String(minimum));
@@ -244,11 +246,15 @@ void WebseiteAdminAusgeben() {
 
     #if MODUL_DHT
       Webserver.sendContent_P(PSTR("<h2>DHT Modul</h2>\n<h3>Lufttemperatur</h3>\n<div class=\"tuerkis\">\n"));
-      sendeCheckbox(F("Alarm aktiv?"), F("lufttemperaturWebhook"), lufttemperaturWebhook);
+      #if MODUL_WEBHOOK
+        sendeCheckbox(F("Alarm aktiv?"), F("lufttemperaturWebhook"), lufttemperaturWebhook);
+      #endif
       sendeSchwellwerte(F("lufttemperatur"), lufttemperaturGruenUnten, lufttemperaturGruenOben, lufttemperaturGelbUnten, lufttemperaturGelbOben);
       Webserver.sendContent(F("</div>\n"));
       Webserver.sendContent_P(PSTR("<h3>Luftfeuchte</h3>\n<div class=\"tuerkis\">\n"));
-      sendeCheckbox(F("Alarm aktiv?"), F("luftfeuchteWebhook"), luftfeuchteWebhook);
+      #if MODUL_WEBHOOK
+        sendeCheckbox(F("Alarm aktiv?"), F("luftfeuchteWebhook"), luftfeuchteWebhook);
+      #endif
       sendeSchwellwerte(F("luftfeuchte"), luftfeuchteGruenUnten, luftfeuchteGruenOben, luftfeuchteGelbUnten, luftfeuchteGelbOben);
       Webserver.sendContent(F("</div>\n"));
     #endif
