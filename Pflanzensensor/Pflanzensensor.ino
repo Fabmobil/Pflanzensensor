@@ -172,6 +172,13 @@ void setup() {
     Serial.println(F("Start von Webhook-Modul ... "));
     WebhookSetup();
   #endif
+  #if MODUL_INFLUXDB
+    #if MODUL_DISPLAY
+      DisplayDreiWoerter("Start..", "InfluxDB-", " modul");
+    #endif
+    Serial.println(F("Start von InfluxDB-Modul ... "));
+    InfluxSetup();
+  #endif
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
     DisplayDreiWoerter("Start..", " abge-", " schlossen");
   #endif
@@ -327,7 +334,13 @@ void loop() {
     }
   #endif
 
-
+  // InfluxDB Daten versenden:
+  #if MODUL_INFLUXDB
+    if (millisAktuell - millisVorherInflux >= intervallInflux*1000*60) {
+      millisVorherInflux = millisAktuell;
+      InfluxSendeDaten();
+    }
+  #endif
   // Wifi und Webserver:
   #if MODUL_WIFI // wenn das Wifi-Modul aktiv ist
     if (GetMutex(&mutex)) { // Mutex holen

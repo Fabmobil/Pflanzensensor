@@ -23,6 +23,7 @@
 #define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
 #define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
 #define MODUL_WEBHOOK       false // willst du das make.com-Modul für Telegram oder Mailbenachrichtungen verwenden?
+#define MODUL_INFLUXDB      true // willst du die Sensordaten an eine InfluxDB schicken?
 #define MODUL_ANALOG3       false // hat dein Pflanzensensor einen dritten Analogsensor?
 #define MODUL_ANALOG4       false // hat dein Pflanzensensor einen vierten Analogsensor?
 #define MODUL_ANALOG5       false // hat dein Pflanzensensor einen fünften Analogsensor?
@@ -110,6 +111,11 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
   String wifiApSsid = "Fabmobil Pflanzensensor"; // SSID des WLANs, falls vom ESP selbst aufgemacht
   // WiFi Logindaten sind in der passwoerter.h gespeichert!
 #endif
+#if MODUL_INFLUXDB
+  bool influx2 = false; // InfluxDBV1 = false; InfluxDBV2 = true
+  String influxServer = "http://172.19.1.1:8086"; // InfluxDB v1 und v2 Serveradresse
+  unsigned long intervallInflux = 1; // aller wie viele Minuten soll ein Wert an die InfluxDB verschickt werden?
+#endif
 #if MODUL_ANALOG3 // wenn ein dritter Analogsensor verwendet wird
   String analog3Name = "Analog 3"; // Name des Sensors
   bool analog3Webhook = false; // soll der Sensor für Alarme überwacht werden?
@@ -185,6 +191,7 @@ unsigned long millisVorherLedampel = 0; // Variable für die Messung des Interva
 unsigned long millisVorherDisplay = 0; // Variable für die Messung des Intervalls der Anzeige des Displays
 unsigned long millisVorherWebhook = 0; // Variable für die Messung des Intervalls des Webhooks
 unsigned long millisVorherWebhookPing = 0; // Variable für die Messung des Intervalls des Keep Alive Pings des Webhooks
+unsigned long millisVorherInflux = 0;
 int module; // Variable für die Anzahl der Module
 String ip = "keine WLAN Verbindung."; // Initialisierung der IP Adresse mit Fehlermeldung
 const uint32_t wifiTimeout = 5000; // Timeout für Verbindungsversuche in ms
@@ -278,6 +285,10 @@ String analog8Farbe = "rot";
 
 #if MODUL_WEBHOOK
   #include "webhook.h" // Webhook Modul einbinden
+#endif
+
+#if MODUL_INFLUXDB
+ #include "influxdb.h" // InfluxDB Modul einbinden
 #endif
 
 #include "analogsensor.h" // Funktionen für die Analogsensoren

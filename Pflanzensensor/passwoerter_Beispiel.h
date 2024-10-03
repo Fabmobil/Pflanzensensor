@@ -29,4 +29,14 @@
   String wifiPassword3 = "Passwort3"; // WLAN Passwort für das fremde Wifi
 #endif
 
+#if MODUL_INFLUXDB
+  // InfluxDB v2 Authentifizierungstoken:
+  String influxToken = "O24__XgbcJyoctWgsEjot6lW2Eh_xX-Jrw54cJ5YLssz8EIYAEd62Xgj_ulSeBeH4w-4o5PpLGbWeE7dpM8tcg==";
+  String influxOrg = "Organisationsname";  // InfluxDB v2 Organisationsname
+  String influxBucket = "Bucket"; //InfluxDB v2 Bucketname
+  String influxDatenbank = "Datenbankname"; // InfluxDB v1 Datenbankname
+  String influxUser = "Benutzername";  // InfluxDB v1 Benutzername
+  String influxPasswort = "Passwort"; // InfluxDB v1 Passwort
+#endif
+
 #endif // PASSWOERTER_H
