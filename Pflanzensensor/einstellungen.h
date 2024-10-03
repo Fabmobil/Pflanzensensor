@@ -114,7 +114,7 @@ unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensore
 #if MODUL_INFLUXDB
   bool influx2 = false; // InfluxDBV1 = false; InfluxDBV2 = true
   String influxServer = "http://172.19.1.1:8086"; // InfluxDB v1 und v2 Serveradresse
-  unsigned long intervallInflux = 1; // aller wie viele Minuten soll ein Wert an die InfluxDB verschickt werden?
+  int intervallInflux = 1; // aller wie viele Minuten soll ein Wert an die InfluxDB verschickt werden?
 #endif
 #if MODUL_ANALOG3 // wenn ein dritter Analogsensor verwendet wird
   String analog3Name = "Analog 3"; // Name des Sensors

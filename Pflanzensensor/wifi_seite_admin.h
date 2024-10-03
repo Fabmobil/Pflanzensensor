@@ -265,6 +265,23 @@ void WebseiteAdminAusgeben() {
                               helligkeitGruenUnten, helligkeitGruenOben, helligkeitGelbUnten, helligkeitGelbOben, helligkeitWebhook, helligkeitMesswert);
     #endif
 
+    #if MODUL_INFLUXDB
+      Webserver.sendContent_P(PSTR("<h2>InfluxDB Modul</h2>\n"));
+      Webserver.sendContent_P(PSTR("<h3>Allgemeine Einstellungen</h3>\n<div class=\"tuerkis\">\n"));
+      sendeCheckbox(F("InfluxDB Version 2?"), F("influx2"), influx2);
+      sendeEinstellung(F("Server URL"), F("influxServer"), influxServer);
+      sendeEinstellung(F("Intervall in Minuten"), F("intervallInflux"), String(intervallInflux));
+      Webserver.sendContent_P(PSTR("</div>\n<h3>Einstellungen InfluxDB V1</h3>\n<div class=\"tuerkis\">\n"));
+      sendeEinstellung(F("InfluxV1: Datenbankname"), F("influxDatenbank"), influxDatenbank);
+      sendeEinstellung(F("InfluxV1: Benutzername"), F("influxBenutzer"), influxBenutzer);
+      sendeEinstellung(F("InfluxV1: Passwort"), F("influxPasswort"), influxPasswort);
+      Webserver.sendContent_P(PSTR("</div>\n<h3>Einstellungen InfluxDB V2</h3>\n<div class=\"tuerkis\">\n"));
+      sendeEinstellung(F("InfluxV2: Organisation"), F("influxOrganisation"), influxOrganisation);
+      sendeEinstellung(F("InfluxV2: Bucket"), F("influxBucket"), influxBucket);
+      sendeEinstellung(F("InfluxV2: Token"), F("influxToken"), influxToken);
+      Webserver.sendContent_P(PSTR("</div>"));
+    #endif
+
     // Analogsensoren
     #if MODUL_ANALOG3
       sendeAnalogsensorEinstellungen(F("Analogsensor 3"), F("analog3"), analog3Name, analog3Minimum, analog3Maximum, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben, analog3Webhook, analog3Messwert);

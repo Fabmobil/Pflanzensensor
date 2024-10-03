@@ -336,7 +336,7 @@ void loop() {
 
   // InfluxDB Daten versenden:
   #if MODUL_INFLUXDB
-    if (millisAktuell - millisVorherInflux >= intervallInflux*1000*60) {
+    if (millisAktuell - millisVorherInflux >= (unsigned long)intervallInflux*1000*60) {
       millisVorherInflux = millisAktuell;
       InfluxSendeDaten();
     }

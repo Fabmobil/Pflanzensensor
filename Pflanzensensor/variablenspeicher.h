@@ -45,6 +45,16 @@ void VariablenSpeichern() {
     variablen.putInt("bodenfGeUnten", bodenfeuchteGelbUnten);
     variablen.putInt("bodenfGeOben", bodenfeuchteGelbOben);
   #endif
+  #if MODUL_INFLUXDB
+    variablen.putBool("influx2", influx2);
+    variablen.putInt("intervallInflux", intervallInflux);
+    variablen.putString("influxDatenbank", influxDatenbank);
+    variablen.putString("influxBenutzer", influxBenutzer);
+    variablen.putString("influxPasswort", influxPasswort);
+    variablen.putString("influxOrganisation", influxOrganisation);
+    variablen.putString("influxBucket", influxBucket);
+    variablen.putString("influxToken", influxToken);
+  #endif
   #if MODUL_ANALOG3
     variablen.putBool("analog3Web", analog3Webhook);
     variablen.putString("analog3Name", analog3Name);
@@ -165,6 +175,16 @@ void VariablenLaden() {
     bodenfeuchteGruenOben = variablen.getInt("bodenfGrOben", bodenfeuchteGruenOben);
     bodenfeuchteGelbUnten = variablen.getInt("bodenfGeUnten", bodenfeuchteGelbUnten);
     bodenfeuchteGelbOben = variablen.getInt("bodenfGeOben", bodenfeuchteGelbOben);
+  #endif
+  #if NODUL_INFLUXDB
+    influx2 = variablen.getBool("influx2", influx2);
+    intervallInflux = variablen.getInt("intervallInflux", intervallInflux);
+    influxDatenbank = variablen.getString("influxDatenbank", influxDatenbank);
+    influxBenutzer = variablen.getString("influxBenutzer", influxBenutzer);
+    influxPasswort = variablen.getString("influxPasswort", influxPasswort);
+    influxOrganisation = variablen.getString("influxOrganisation", influxOrganisation);
+    influxBucket = variablen.getString("influxBucket", influxBucket);
+    influxToken = variablen.getString("influxToken", influxToken);
   #endif
   #if MODUL_ANALOG3
     analog3Name = variablen.getString("analog3Name", analog3Name);

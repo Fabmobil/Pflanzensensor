@@ -61,7 +61,7 @@ void WebseiteSetzeVariablen() {
         String aenderungen = "<ul>\n"; // Hier sammeln wir alle Änderungen
 
         // Speichern der alten Checkbox-Zustände
-        bool alteCheckboxZustaende[7] = {
+        bool alteCheckboxZustaende[8] = {
           #if MODUL_BODENFEUCHTE
               bodenfeuchteWebhook,
           #else
@@ -89,9 +89,14 @@ void WebseiteSetzeVariablen() {
               false,
           #endif
           #if MODUL_WEBHOOK
-              webhookAn
+              webhookAn,
           #else
-              false
+              false,
+          #endif
+          #if NODUL_INFLUXDB
+              influx2,
+          #else
+              false,
           #endif
         };
 
@@ -120,6 +125,7 @@ void WebseiteSetzeVariablen() {
                   else if (argName == "ampelAn") index = 4;
                   else if (argName == "displayAn") index = 5;
                   else if (argName == "webhookAn") index = 6;
+                  else if (argName == "influx2") index = 7;
 
                   if (index != -1) {
                       bool neuerZustand = Webserver.hasArg(argName);
@@ -136,8 +142,8 @@ void WebseiteSetzeVariablen() {
         }
 
         // Überprüfen, ob Checkboxen deaktiviert wurden
-        String checkboxNamen[] = {"bodenfeuchteWebhook", "helligkeitWebhook", "lufttemperaturWebhook", "luftfeuchteWebhook", "ampelAn", "displayAn"};
-        for (int i = 0; i < 6; i++) {
+        String checkboxNamen[] = {"bodenfeuchteWebhook", "helligkeitWebhook", "lufttemperaturWebhook", "luftfeuchteWebhook", "ampelAn", "displayAn", "influx2"};
+        for (int i = 0; i < 7; i++) {
             if (alteCheckboxZustaende[i] && !Webserver.hasArg(checkboxNamen[i])) {
                 aenderungen += "<li>" + checkboxNamen[i] + ": deaktiviert</li>\n";
             }
@@ -290,6 +296,18 @@ void AktualisiereVariablen() {
     AktualisiereInteger("bodenfeuchteGruenOben", bodenfeuchteGruenOben);
     AktualisiereInteger("bodenfeuchteGelbUnten", bodenfeuchteGelbUnten);
     AktualisiereInteger("bodenfeuchteGelbOben", bodenfeuchteGelbOben);
+  #endif
+
+  #if MODUL_INFLUXDB
+    AktualisiereBoolean("influx2", influx2);
+    AktualisiereString("influxServer", influxServer);
+    AktualisiereInteger("intervallInflux", intervallInflux);
+    AktualisiereString("influxDatenbank", influxDatenbank);
+    AktualisiereString("influxBenutzer", influxBenutzer);
+    AktualisiereString("influxPasswort", influxPasswort);
+    AktualisiereString("influxOrganisation", influxOrganisation);
+    AktualisiereString("influxBucket", influxBucket);
+    AktualisiereString("influxToken", influxToken);
   #endif
 
   #if MODUL_ANALOG3

@@ -22,11 +22,11 @@ Point sensor(wifiHostname);
 
 void InfluxSetup() {
     if (influx2) {
-        influxClient = new InfluxDBClient(influxServer, influxOrg, influxBucket, influxToken, InfluxDbCloud2CACert);
+        influxClient = new InfluxDBClient(influxServer, influxOrganisation, influxBucket, influxToken, InfluxDbCloud2CACert);
     } else {
         influxClient = new InfluxDBClient(influxServer, influxDatenbank);
         // Set InfluxDB 1 authentication params
-        influxClient->setConnectionParamsV1(influxServer, influxDatenbank, influxUser, influxPasswort);
+        influxClient->setConnectionParamsV1(influxServer, influxDatenbank, influxBenutzer, influxPasswort);
     }
     // Set tags
     sensor.addTag("device", wifiHostname);
