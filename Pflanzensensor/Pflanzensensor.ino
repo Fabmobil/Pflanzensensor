@@ -38,41 +38,29 @@ void setup() {
   #ifdef WITH_GDB // fürs debugging
     gdbstub_init();
   #endif
+  logger.setLogLevel(LogLevel::INFO); // oder ein anderes gewünschtes Log-Level
+  logger.initNTP();
   delay(100);
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
     DisplaySetup(); // Display initialisieren
   #endif
   CreateMutex(&mutex);
-  #if MODUL_DEBUG
-    Serial.println(F("#### Start von setup()"));
-  #endif
-  /* Serial.println() schreibt den Text in den Klammern als Ausgabe
-   * auf die serielle Schnittstelle. Die kann z.B. in der Arduino-IDE
-   * über Werkzeuge -> Serieller Monitor angeschaut werden so lange
-   * eine USB-Verbindung zum Chip besteht. Der Unterschied zwischen
-   * Serial.println() und Serial.print() ist, dass der erste Befehl
-   * Das F("")-Makro innerhalb von Serial.print(); sorgt dafür, dass der Text
-   * im Programmspeicher (flash) und nicht im Arbeitsspeicher (RAM) abgelegt
-   * wird, dass funktioniert aber nicht mit Variablen.
-   */
-  Serial.println(" Fabmobil Pflanzensensor, v" + String(pflanzensensorVersion));
+  logger.debug(F("#### Start von setup()"));
+
+  logger.info(" Fabmobil Pflanzensensor, v" + String(pflanzensensorVersion));
   module = ModuleZaehlen(); // wie viele Module sind aktiv?
 
-  #if MODUL_DEBUG // Debuginformationen
-    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-      DisplayDreiWoerter("Start..", " Debug-", "  modul");
-    #endif
-    Serial.println(F("Start von Debug-Modul ... "));
-    Serial.print(F("# Anzahl Module: "));
-    Serial.println(module);
-    Serial.print(F("# Anzahl Displayseiten: "));
-    Serial.println(displayseiten);
+  #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+    DisplayDreiWoerter("Start..", " Debug-", "  modul");
   #endif
+  logger.debug("Start von Debug-Modul ... ");
+  logger.debug("# Anzahl Module: "+ module);
+
   #if MODUL_LEDAMPEL // wenn das LED Ampel Modul aktiv is:
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
       DisplayDreiWoerter("Start..", " Ampel-", "  modul");
     #endif
-    Serial.println(F("Start von Ledampel-Modul ... "));
+    logger.info(F("Start von Ledampel-Modul ... "));
     pinMode(ampelPinGruen, OUTPUT); // LED 1 (grün)
     pinMode(ampelPinGelb, OUTPUT); // LED 2 (gelb)
     pinMode(ampelPinRot, OUTPUT); // LED 3 (rot)
@@ -80,12 +68,12 @@ void setup() {
     LedampelBlinken("gruen", 1, 300);
     LedampelBlinken("gelb", 1, 300);
     LedampelBlinken("rot", 1, 300);
-    #if MODUL_DEBUG // Debuginformationen
-      Serial.println(F("## Setup der Ledampel"));
-      Serial.print(F("# PIN gruene LED:                 ")); Serial.println(ampelPinGruen);
-      Serial.print(F("# PIN gelbe LED:                  ")); Serial.println(ampelPinGelb);
-      Serial.print(F("# PIN rote LED:                   ")); Serial.println(ampelPinRot);
-    #endif
+
+    logger.debug(F("## Setup der Ledampel"));
+    logger.debug("# PIN gruene LED:                 "+ ampelPinGruen);
+    logger.debug("# PIN gelbe LED:                  "+ ampelPinGelb);
+    logger.debug("# PIN rote LED:                   "+ ampelPinRot);
+
   #endif
   #if MODUL_HELLIGKEIT || MODUL_BODENFEUCHTE // "||" ist ein logisches Oder: Wenn Helligkeits- oder Bodenfeuchtemodul aktiv ist
     pinMode(pinAnalog, INPUT);  // wird der Analogpin als Eingang gesetzt
@@ -94,7 +82,7 @@ void setup() {
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
       DisplayDreiWoerter("Start..", " Multiplexer-", "  modul");
     #endif
-    Serial.println(F("Start von Multiplexer-Modul ... "));
+    logger.info(F("Start von Multiplexer-Modul ... "));
     pinMode(multiplexerPinA, OUTPUT); // Pin A des Multiplexers
     pinMode(multiplexerPinB, OUTPUT); // Pin B des Multiplexers
     pinMode(multiplexerPinC, OUTPUT); // Pin C des Multiplexers
@@ -103,7 +91,7 @@ void setup() {
     digitalWrite(16, HIGH); // wird ausgeschalten (invertiertes Verhalten!)
   #endif
   if (!LittleFS.begin()) {  // Dateisystem initialisieren, muss vor Wifi geschehen
-    Serial.println("Fehler: LittleFS konnte nicht initialisiert werden!");
+    logger.error("Fehler: LittleFS konnte nicht initialisiert werden!");
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
       DisplayDreiWoerter("Start..", " LittleFS", "  Fehler!");
     #endif
@@ -113,11 +101,11 @@ void setup() {
     #if MODUL_DISPLAY
       DisplayDreiWoerter("Start..", " Wifi-", "  modul");
     #endif
-    Serial.println(F("Start von Wifi-Modul ... "));
+    logger.info(F("Start von Wifi-Modul ... "));
     String ip = WifiSetup(wifiHostname); // Wifi-Verbindung herstellen und IP Adresse speichern
 
     if (ip == "keine WLAN Verbindung.") {
-      Serial.println(F("Keine WLAN-Verbindung möglich. Wechsel in den Accesspoint-Modus."));
+      logger.warning(F("Keine WLAN-Verbindung möglich. Wechsel in den Accesspoint-Modus."));
       #if MODUL_DISPLAY
         DisplayDreiWoerter("Kein WLAN", "Starte", "Accesspoint");
       #endif
@@ -129,7 +117,7 @@ void setup() {
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
       DisplayDreiWoerter("Start..", " DHT-", "  modul");
     #endif
-    Serial.println(F("Start von DHT-Modul ... "));
+    logger.info(F("Start von DHT-Modul ... "));
     // Initialisierung des Lufttemperatur und -feuchte Sensors:
     dht.begin(); // Sensor initialisieren
   #endif
@@ -153,29 +141,24 @@ void setup() {
 
   variablen.begin("pflanzensensor", false); // Variablen initialisieren
   neustarts = variablen.getInt("neustarts"); // Anzahl der Neustarts auslesen
-  #if MODUL_DEBUG
-    Serial.print(F("# Reboot count: )"));
-    Serial.println(neustarts);
-    Serial.println("# Inhalte des Flashspeichers:");
-    File root = LittleFS.open("/", "r");
-    VariablenAuflisten(root, 0);
-  #endif
+
+  logger.debug("# Reboot count: )" + neustarts);
+
   neustarts++;
   variablen.putInt("neustarts", neustarts);
   variablen.end();
-  Serial.print("Neustarts: ");
-  Serial.println(neustarts);
+  logger.info("Neustarts: "+ neustarts );
   #if MODUL_WEBHOOK
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
       DisplayDreiWoerter("Start..", " Webhook-", "  modul");
     #endif
-    Serial.println(F("Start von Webhook-Modul ... "));
+    logger.info(F("Start von Webhook-Modul ... "));
     WebhookSetup();
   #endif
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
     DisplayDreiWoerter("Start..", " abge-", " schlossen");
   #endif
-  Serial.println(F("Start abgeschlossen!"));
+  logger.info(F("Start abgeschlossen!"));
 }
 
 /**
@@ -201,34 +184,28 @@ void loop() {
    * ausgelesen. Dazwischen werden nur Anfragen an den Webserver abgefragt.
    */
   millisAktuell = millis(); // aktuelle Millisekunden auslesen
-  #if MODUL_DEBUG // Debuginformation
-    Serial.println(F("############ Begin von loop() #############"));
-    #if MODUL_DISPLAY
-      Serial.print(F("# status: "));
-      Serial.print(status);
-    #endif
-    Serial.print(F(", millis: "));
-    Serial.println(millisAktuell);
-    Serial.print(F("# IP Adresse: "));
-    if ( wifiAp ) { // Falls der ESP sein eigenes WLAN aufgemacht hat:
-      Serial.println(WiFi.softAPIP());
-      Serial.print(F("# Anzahl der mit dem Accesspoint verbundenen Geräte: "));
-      Serial.println(WiFi.softAPgetStationNum());
-    } else {
-      Serial.println(WiFi.localIP());
-    }
-    delay(2000); // Programmablauf verlangsamen um Debuginformationen lesen zu können
+
+  logger.debug(F("############ Begin von loop() #############"));
+  #if MODUL_DISPLAY
+    logger.debug("# status: " + String(status) + ", millis: " + String(millisAktuell));
   #endif
+  if ( wifiAp ) { // Falls der ESP sein eigenes WLAN aufgemacht hat:
+    logger.debug("# IP Adresse: " + WiFi.softAPIP().toString());
+    logger.debug("# Anzahl der mit dem Accesspoint verbundenen Geräte: " + String(WiFi.softAPgetStationNum()));
+  } else {
+    logger.debug("# IP Adresse: " + WiFi.localIP().toString());
+  }
 
   MDNS.update(); // MDNS updaten
+  logger.updateNTP(); // Update Timestamp
 
   // Alle Analogsensoren werden hintereinander gemessen
   if (millisAktuell - millisVorherAnalog >= intervallAnalog) { // wenn das Intervall erreicht ist
     if (GetMutex(&mutex)) {
       millisVorherAnalog = millisAktuell; // neuen Wert übernehmen
-      #if MODUL_DEBUG
-        Serial.println(F("### intervallAnalog erreicht."));
-      #endif
+
+      logger.debug(F("### intervallAnalog erreicht."));
+
       // Helligkeit messen:
       #if MODUL_HELLIGKEIT  // wenn das Helligkeit Modul aktiv ist
         std::tie(helligkeitMesswert, helligkeitMesswertProzent) =
@@ -295,9 +272,9 @@ void loop() {
   // Luftfeuchte und -temperatur messen:
   #if MODUL_DHT // wenn das DHT Modul aktiv ist
     if (millisAktuell - millisVorherDht >= intervallDht) { // wenn das Intervall erreicht ist
-      #if MODUL_DEBUG
-        Serial.println(F("### intervallDht erreicht."));
-      #endif
+
+      logger.debug(F("### intervallDht erreicht."));
+
       millisVorherDht = millisAktuell; // neuen Wert übernehmen
       lufttemperaturMesswert = DhtMessenLufttemperatur(); // Lufttemperatur messen
       lufttemperaturFarbe = FarbeBerechnen(lufttemperaturMesswert, lufttemperaturGruenUnten, lufttemperaturGruenOben, lufttemperaturGelbUnten, lufttemperaturGelbOben);
@@ -345,7 +322,7 @@ void loop() {
         } else {
           wifiVerbindungsVersuche++; // Erhöhen des Zählers bei fehlgeschlagener Verbindung
           if (wifiVerbindungsVersuche >= 10) {
-            Serial.println("Fehler: WLAN Verbindung verloren! Wechsle in den Accesspoint-Modus.");
+            logger.warning("Fehler: WLAN Verbindung verloren! Wechsle in den Accesspoint-Modus.");
             #if MODUL_DISPLAY
               DisplayDreiWoerter("WLAN", "Verbindung", "verloren!");
             #endif
@@ -354,9 +331,7 @@ void loop() {
             aktuelleSSID = wifiApSsid; // AP SSID in Variable schreiben
             wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers
           } else {
-            Serial.print("WLAN-Verbindungsversuch fehlgeschlagen. Versuch ");
-            Serial.print(wifiVerbindungsVersuche);
-            Serial.println(" von 10.");
+            logger.info("WLAN-Verbindungsversuch fehlgeschlagen. Versuch " + String(wifiVerbindungsVersuche) + " von 10");
           }
         }
       }
@@ -409,7 +384,6 @@ void loop() {
 int ModuleZaehlen() {
     int aktiveModule = 0;
     if (MODUL_BODENFEUCHTE) aktiveModule++; // wenn das Bodenfeuchte Modul aktiv ist, wird die Variable um 1 erhöht
-    if (MODUL_DEBUG) aktiveModule++; // wenn das Debug Modul aktiv ist, wird die Variable um 1 erhöht
     if (MODUL_DISPLAY) aktiveModule++; // wenn das Display Modul aktiv ist, wird die Variable um 1 erhöht
     if (MODUL_DHT) aktiveModule++; // wenn das DHT Modul aktiv ist, wird die Variable um 1 erhöht
     if (MODUL_HELLIGKEIT) aktiveModule++; // wenn das Helligkeit Modul aktiv ist, wird die Variable um 1 erhöht

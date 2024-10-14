@@ -19,12 +19,8 @@
  * @param c Wert für Digitaleingang C (0 oder 1)
  */
 void MultiplexerWechseln(int a, int b, int c) {
-  #if MODUL_DEBUG
-    Serial.print(F("# Beginn von MultiplexerWechseln("));
-    Serial.print(a); Serial.print(F(", "));
-    Serial.print(b); Serial.print(F(", "));
-    Serial.print(c); Serial.println(F(")"));
-  #endif
+  logger.debug("# Beginn von MultiplexerWechseln(" + String(a) + ", " + String(b) +", " + String(c) + ")");
+
   digitalWrite(multiplexerPinA, a); // Digitaleingang A setzen
   digitalWrite(multiplexerPinB, b); // Digitaleingang B setzen
   digitalWrite(multiplexerPinC, c); // Digitaleingang C setzen

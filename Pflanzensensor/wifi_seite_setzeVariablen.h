@@ -12,6 +12,8 @@
 #ifndef WIFI_SEITE_SETZE_VARIABLEN_H
 #define WIFI_SEITE_SETZE_VARIABLEN_H
 
+#include "logger.h"
+
 // Funktionsdeklarationen
 void ArgumenteAusgeben();
 void WebseiteSetzeVariablen();
@@ -27,12 +29,10 @@ void AktualisiereString(const String& argName, String& wert, bool istWLANEinstel
  * Diese Funktion ist nützlich für das Debugging von Formulareingaben.
  */
 void ArgumenteAusgeben() {
-  Serial.println(F("Gebe alle Argumente des POST requests aus:"));
+  logger.info("Gebe alle Argumente des POST requests aus:");
   int numArgs = Webserver.args();
   for (int i = 0; i < numArgs; i++) {
-    Serial.print(Webserver.argName(i));
-    Serial.print(F(": "));
-    Serial.println(Webserver.arg(i));
+    logger.info(String(Webserver.argName(i)) + ": " + String(Webserver.arg(i)));
   }
 }
 
@@ -45,10 +45,8 @@ void ArgumenteAusgeben() {
  * einschließlich Änderungen am WLAN-Modus und Checkboxen.
  */
 void WebseiteSetzeVariablen() {
-    #if MODUL_DEBUG
-        Serial.println(F("# Beginn von WebseiteSetzeVariablen()"));
-        ArgumenteAusgeben();
-    #endif
+    Serial.println(F("# Beginn von WebseiteSetzeVariablen()"));
+
     millisVorherWebhook = millisAktuell; // Webhook löst sonst sofort aus und gemeinsam mit dem Variablen setzen führt dazu, dass der ESP abstürzt.
 
     Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
@@ -193,9 +191,8 @@ void WebseiteSetzeVariablen() {
             "<li><a href=\"/\">zur Startseite</a></li>\n"
             "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n"
         ));
-        #if MODUL_DEBUG
-            Webserver.sendContent(F("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
-        #endif
+        Webserver.sendContent(F("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
+
         Webserver.sendContent(F(
             "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">"
             "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>\n"

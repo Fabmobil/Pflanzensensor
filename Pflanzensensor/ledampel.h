@@ -10,6 +10,7 @@
 
 #ifndef LEDAMPEL_H
 #define LEDAMPEL_H
+#include "logger.h"
 
 /**
  * @brief Lässt die LED-Ampel in einer bestimmten Farbe blinken
@@ -19,12 +20,9 @@
  * @param dauer Integer; Dauer eines Blinkvorgangs in Millisekunden
  */
 void LedampelBlinken(String farbe, int anzahl, int dauer) {
-  #if MODUL_DEBUG
-    Serial.println(F("# Beginn von LedampelBlinken()"));
-    Serial.print(F("# Farbe: ")); Serial.print(farbe);
-    Serial.print(F(", Anzahl: ")); Serial.print(anzahl);
-    Serial.print(F(", Dauer: ")); Serial.println(dauer);
-  #endif
+  logger.debug("# Beginn von LedampelBlinken()");
+  logger.debug("# Farbe: " + String(farbe) + ", Anzahl: "+ String(anzahl) + ", Dauer: " + String(dauer));
+
   char PIN_LED;
   digitalWrite(ampelPinRot, LOW);
   digitalWrite(ampelPinGelb, LOW);
@@ -54,11 +52,8 @@ void LedampelBlinken(String farbe, int anzahl, int dauer) {
  * @param dauer Integer; Dauer der Farbanzeige in Millisekunden. Bei -1 bleibt die LED an.
  */
 void LedampelAnzeigen(String farbe, int dauer) {
-  #if MODUL_DEBUG
-    Serial.print(F("# Beginn von LedampelAnzeigen(")); Serial.print(farbe);
-    Serial.print(F(", ")); Serial.print(dauer);
-    Serial.println(F(")"));
-  #endif
+  logger.debug("# Beginn von LedampelAnzeigen(" + String(farbe) + ", " + String(dauer) + ")");
+
   digitalWrite(ampelPinRot, LOW); // alle LEDs aus
   digitalWrite(ampelPinGelb, LOW);
   digitalWrite(ampelPinGruen, LOW);

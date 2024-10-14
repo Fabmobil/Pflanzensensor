@@ -15,7 +15,6 @@
  * Module
  * "true" aktiviert sie, "false" deaktiviert sie
  */
-#define MODUL_DEBUG         false  // Debugausgaben (de)aktivieren
 #define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
 #define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
 #define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
@@ -32,6 +31,11 @@
 
 // Hier werden die Passwörter nachgeladen
 #include "passwoerter.h"
+
+// Einstellung für die Logs:
+#define MAX_LOG_ENTRIES 100
+#define LOG_ENTRIES_TO_DISPLAY 20
+#define FILE_LOGGING_ENABLED false
 
 // Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
 #if MODUL_BODENFEUCHTE && MODUL_HELLIGKEIT
@@ -211,6 +215,8 @@ String analog6Farbe = "rot";
 String analog7Farbe = "rot";
 String analog8Farbe = "rot";
 #define pinAnalog A0 // Analogpin
+#include "logger.h" // include the logger
+
 #if MODUL_BODENFEUCHTE
   int bodenfeuchteMesswert = -1;
   int bodenfeuchteMesswertProzent = -1;

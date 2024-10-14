@@ -11,6 +11,8 @@
 #ifndef WIFI_SEITE_START_H
 #define WIFI_SEITE_START_H
 
+#include "logger.h"
+
 /**
  * @brief Sendet Sensordaten an den Webserver
  *
@@ -64,9 +66,8 @@ void sendeAnalogsensorDaten(int sensorNummer, const String& sensorName, const St
  * @brief Generiert und sendet die Startseite mit allen aktuellen Sensordaten
  */
 void WebseiteStartAusgeben() {
-  #if MODUL_DEBUG
-    Serial.println(F("# Beginn von WebsiteStartAusgeben()"));
-  #endif
+  logger.debug("# Beginn von WebsiteStartAusgeben()");
+
 
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
@@ -124,9 +125,7 @@ void WebseiteStartAusgeben() {
     "<ul>\n"
     "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n"));
 
-  #if MODUL_DEBUG
-    Webserver.sendContent_P(PSTR("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
-  #endif
+  Webserver.sendContent_P(PSTR("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
 
   Webserver.sendContent_P(PSTR(
     "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">"
@@ -139,9 +138,7 @@ void WebseiteStartAusgeben() {
   Webserver.sendContent_P(htmlFooter);
   Webserver.client().flush();
 
-  #if MODUL_DEBUG
-    Serial.println(F("# Ende von WebsiteStartAusgeben()"));
-  #endif
+  logger.debug("# Ende von WebsiteStartAusgeben()");
 }
 
 #endif // WIFI_SEITE_START_H

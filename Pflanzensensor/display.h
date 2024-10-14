@@ -19,6 +19,8 @@
 Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset);
 
 #include "display_bilder.h"
+#include "logger.h"
+
 
 // Vorwärtsdeklarationen
 void ZeigeFabmobilLogo();
@@ -103,7 +105,7 @@ void NaechsteSeite() {
  */
 void DisplaySetup() {
   if(!display.begin(SSD1306_SWITCHCAPVCC, displayAdresse)) {
-    Serial.println(F("Fehler: Display konnte nicht geöffnet werden."));
+    logger.error("Fehler: Display konnte nicht geöffnet werden.");
     return;
   }
 

@@ -15,6 +15,7 @@
 #include <time.h>
 #include <ArduinoJson.h>
 #include "webhook_zertifikat.h"
+#include "logger.h"
 
 bool vorherAlarm = false;
 String letzterWebhookStatus = "OK";
@@ -38,28 +39,25 @@ bool WebhookAktualisiereAlarmStatus();
  * und sendet eine Initialisierungsnachricht an den Webhook-Dienst.
  */
 void WebhookSetup() {
-  #if MODUL_DEBUG
-    Serial.println(F("# Beginn von WebhookSetup()"));
-  #endif
+  logger.debug("# Beginn von WebhookSetup()");
 
   // Zeit synchronisieren
   configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
-  Serial.println("Warte auf die Synchronisation von Uhrzeit und Datum: ");
+  logger.info("Warte auf die Synchronisation von Uhrzeit und Datum: ");
   time_t now = time(nullptr);
   while (now < 8 * 3600 * 2) {
     delay(500);
-    Serial.print(".");
+    logger.debug(".");
     now = time(nullptr);
   }
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
-  Serial.print(F("Die Zeit und das Datum ist: "));
-  Serial.println(asctime(&timeinfo));
+  logger.info("Die Zeit und das Datum ist: " + String(asctime(&timeinfo)));
 
   // Zertifikate initialisieren
   certList.append(zertifikat);
   client.setTrustAnchors(&certList);
-  Serial.println(F("Schicke Initialisierungsnachricht an Webhook-Dienst."));
+  logger.info("Schicke Initialisierungsnachricht an Webhook-Dienst."));
   WebhookSendeInit(); // Initalisierungsnachricht schicken
 }
 
@@ -70,9 +68,7 @@ void WebhookSetup() {
  * und sendet sie über den konfigurierten Webhook.
  */
 void WebhookSendeInit() {
-  #if MODUL_DEBUG
-    Serial.print(F("# Beginn von WebhookSendeInit()"));
-  #endif
+  logger.debug("# Beginn von WebhookSendeInit()");
 
   // JSON-Objekt erstellen
   JsonDocument doc;
@@ -166,8 +162,8 @@ void WebhookErfasseSensordaten(const char* statusWert) {
  * @param jsonString Die zu sendenden Daten als JSON-String
  */
 void WebhookSendeDaten(const String& jsonString) {
-  Serial.print(F("Sende folgendes JSON an Webhook: "));
-  Serial.println(jsonString);
+  logger.info("Sende folgendes JSON an Webhook: ");
+  logger.info(jsonString);
   // POST-Anfrage erstellen
   String postAnfrage = String("POST ") + webhookPfad + " HTTP/1.1\r\n" +
                        "Host: " + webhookDomain + "\r\n" +
@@ -187,9 +183,9 @@ void WebhookSendeDaten(const String& jsonString) {
       }
     }
   } else {
-    Serial.println(F("Verbindung fehlgeschlagen"));
-    Serial.print(F("Letzter Fehlercode: "));
-    Serial.println(client.getLastSSLError());
+    logger.error("Verbindung fehlgeschlagen");
+    logger.error("Letzter Fehlercode: ");
+    logger.error(String(client.getLastSSLError()));
   }
   client.stop();
 }
