@@ -11,6 +11,8 @@
 #ifndef ANALOGSENSOR_H
 #define ANALOGSENSOR_H
 
+#include "logger.h"
+
 /**
  * @brief Misst den Wert eines Analogsensors und berechnet den Prozentwert
  *
@@ -40,9 +42,7 @@ std::pair<int, int> AnalogsensorMessen(
     int messwert = analogRead(pinAnalog); // Messwert einlesen
     // Messwert in Prozent umrechnen:
     int messwertProzent = map(messwert, minimum, maximum, 0, 100); // Skalierung auf maximal 0 bis 100
-    Serial.print(sensorname); Serial.print(F(": ")); Serial.print(messwertProzent);
-    Serial.print(F("%       (Messwert: ")); Serial.print(messwert);
-    Serial.println(F(")"));
+    logger.info(sensorname + ": " + String(messwertProzent) + "%       (Messwert: " + String(messwert));
     return std::make_pair(messwert, messwertProzent);
 }
 

@@ -18,7 +18,6 @@
  * sendet sie als HTML-Seite an den Client.
  */
 void WebseiteDebugAusgeben() {
-  Serial.println(wifiPassword1);
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
 
@@ -314,9 +313,7 @@ void WebseiteDebugAusgeben() {
     "<li><a href=\"/\">zur Startseite</a></li>\n"
     "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n"));
 
-  #if MODUL_DEBUG
-    Webserver.sendContent(F("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
-  #endif
+  Webserver.sendContent(F("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
 
   Webserver.sendContent(F(
     "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">"

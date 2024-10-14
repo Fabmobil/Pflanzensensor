@@ -31,7 +31,7 @@ ESP8266WebServer Webserver(80); // Webserver auf Port 80
 #include "wifi_seite_nichtGefunden.h" // für die Seite, die angezeigt wird, wenn die angefragte Seite nicht gefunden wurde
 #include "wifi_seite_start.h" // für die Startseite
 #include "wifi_seite_setzeVariablen.h" // für das Setzen der Variablen
-
+#include "logger.h" // für das Logging
 
 
 /**
@@ -44,9 +44,8 @@ ESP8266WebServer Webserver(80); // Webserver auf Port 80
  * @return String Die IP-Adresse des Geräts
  */
 String WifiSetup(String hostname){
-  #if MODUL_DEBUG
-    Serial.println(F("# Beginn von WifiSetup()"));
-  #endif
+logger.debug("# Beginn von WifiSetup()");
+
 // WLAN Verbindung herstellen
   WiFi.mode(WIFI_OFF); // WLAN ausschalten
   if ( !wifiAp ) { // falls kein eigener Accesspoint aufgemacht werden soll wird sich mit dem definierten WLAN verbunden
@@ -56,23 +55,22 @@ String WifiSetup(String hostname){
     wifiMulti.addAP(wifiSsid2.c_str(), wifiPassword2.c_str());
     wifiMulti.addAP(wifiSsid3.c_str(), wifiPassword3.c_str());
     if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
-      Serial.print(" .. WLAN verbunden: ");
-      Serial.print(WiFi.SSID());
-      Serial.print(" ");
-      Serial.println(WiFi.localIP());
       ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
+      logger.info(" .. WLAN verbunden: ");
+      logger.info("SSID: " + String(WiFi.SSID()));
+      logger.info("IP: " + ip);
       #if MODUL_DISPLAY
         DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ ip, "Hostname: ", "  " + hostname + ".local" );
         delay(5000); // genug Zeit um die IP Adresse zu lesen
       #endif
     } else {
-      Serial.println(" .. Fehler: WLAN Verbindungsfehler!");
+      logger.error(" .. Fehler: WLAN Verbindungsfehler!");
       #if MODUL_DISPLAY
         DisplayDreiWoerter("WLAN", "Verbindungs-", "fehler!");
       #endif
     }
   } else { // ansonsten wird hier das WLAN erstellt
-    Serial.print("Konfiguriere soft-AP ... ");
+    logger.info("Konfiguriere soft-AP ... ");
     boolean result = false; // Variable für den Erfolg des Aufbaus des Accesspoints
     if ( wifiApPasswortAktiviert ) { // Falls ein WLAN mit Passwort erstellt werden soll
       result = WiFi.softAP(wifiApSsid, wifiApPasswort ); // WLAN mit Passwort erstellen
@@ -80,9 +78,9 @@ String WifiSetup(String hostname){
       result = WiFi.softAP(wifiApSsid); // WLAN ohne Passwort erstellen
     }
     ip = WiFi.softAPIP().toString(); // IP Adresse in Variable schreiben
-    Serial.print(F(" .. Accesspoint wurde "));
+    logger.info(" .. Accesspoint wurde ");
     if( !result ) { // falls der Accesspoint nicht erfolgreich aufgebaut wurde
-      Serial.println(F("NICHT "));
+      logger.info("     NICHT ");
       #if MODUL_DISPLAY
         DisplayDreiWoerter("Acesspoint:","Fehler beim", "Setup!");
       #endif
@@ -95,24 +93,25 @@ String WifiSetup(String hostname){
         }
       #endif
     }
-    Serial.println(F("erfolgreich aufgebaut!"));
-    Serial.print(" .. meine IP: ");
-    Serial.println(ip); // IP Adresse ausgeben
+    logger.info("       erfolgreich aufgebaut!");
+    logger.info(" .. meine IP: " + ip); // IP Adresse ausgeben
   }
 
   // DNS Namensauflösung aktivieren:
   if (MDNS.begin(hostname)) { // falls Namensauflösung erfolgreich eingerichtet wurde
-    Serial.print(" .. Gerät unter ");
-    Serial.print(hostname);
-    Serial.println(".local erreichbar.");
+    logger.info(" .. Gerät unter " + String(hostname) + ".local erreichbar.");
     MDNS.addService("http", "tcp", 80); // Webserver unter Port 80 bekannt machen
   } else { // falls Namensauflösung nicht erfolgreich eingerichtet wurde
-    Serial.println(" .. Fehler bein Einrichten der Namensauflösung.");
+    logger.error(" .. Fehler bein Einrichten der Namensauflösung.");
   }
   Webserver.on("/", HTTP_GET, WebseiteStartAusgeben);
   Webserver.on("/admin.html", HTTP_GET, WebseiteAdminAusgeben);
   Webserver.on("/debug.html", HTTP_GET, WebseiteDebugAusgeben);
   Webserver.on("/setzeVariablen", HTTP_POST, WebseiteSetzeVariablen);
+  Webserver.on("/logs", HTTP_GET, []() {
+    String logs = logger.getLogsAsHtmlTable();
+    Webserver.send(200, "text/html", logs);
+  });
   Webserver.on("/Bilder/logoFabmobil.png", HTTP_GET, []() {
       WebseiteBild("/Bilder/logoFabmobil.png", "image/png");
   });
@@ -138,9 +137,7 @@ String WifiSetup(String hostname){
 void WebseiteBild(const char* pfad, const char* mimeType) {
     File bild = LittleFS.open(pfad, "r");
     if (!bild) {
-        Serial.print("Fehler: ");
-        Serial.print(pfad);
-        Serial.println(" konnte nicht geöffnet werden!");
+        logger.error("Fehler: " + String(pfad) + " konnte nicht geöffnet werden!");
         Webserver.send(404, "text/plain", "Bild nicht gefunden");
         return;
     }
@@ -153,12 +150,12 @@ void WebseiteBild(const char* pfad, const char* mimeType) {
  */
 void WebseiteCss() {
     if (!LittleFS.exists("/style.css")) {
-        Serial.println("Fehler: /style.css existiert nicht!");
+        logger.error("Fehler: /style.css existiert nicht!");
         return;
     }
     File css = LittleFS.open("/style.css", "r");
     if (!css) {
-        Serial.println("Fehler: /style.css kann nicht geöffnet werden!");
+        logger.error("Fehler: /style.css kann nicht geöffnet werden!");
         return;
     }
     Webserver.streamFile(css, "text/css");
@@ -174,23 +171,22 @@ void WebseiteCss() {
  */
 void NeustartWLANVerbindung() {
   WiFi.disconnect();  // Trennt die bestehende Verbindung
-  Serial.println("wifiAp: " + String(wifiAp));
+  logger.info("wifiAp: " + String(wifiAp));
   if (wifiAp) {
     // Access Point Modus
-    Serial.println(F("Starte Access Point Modus..."));
+    logger.info("Starte Access Point Modus...");
     WiFi.mode(WIFI_AP);
     WiFi.softAP(wifiApSsid, wifiApPasswort);
     ip = WiFi.softAPIP().toString();
 
-    Serial.print(F("Access Point gestartet. IP: "));
-    Serial.println(ip);
+    logger.info("Access Point gestartet. IP: " + ip);
 
     #if MODUL_DISPLAY
       DisplaySechsZeilen("AP-Modus", "aktiv", "SSID: " + String(wifiApSsid), "IP: " + ip, "Hostname:", wifiHostname + ".local");
     #endif
   } else {
     // Versuche, sich mit konfiguriertem WLAN zu verbinden
-    Serial.println(F("Versuche, WLAN-Verbindung herzustellen..."));
+    logger.info("Versuche, WLAN-Verbindung herzustellen...");
     WiFi.mode(WIFI_STA);
     wifiMulti.cleanAPlist();
 
@@ -206,22 +202,20 @@ void NeustartWLANVerbindung() {
     // Versucht, eine Verbindung herzustellen
     if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
       ip = WiFi.localIP().toString();
-      Serial.print(F("Verbunden mit WLAN. IP: "));
-      Serial.println(ip);
+      logger.info("Verbunden mit WLAN. IP: " + ip);
 
       #if MODUL_DISPLAY
         DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ ip, "Hostname:", wifiHostname + ".local");
       #endif
     } else {
       // Wenn keine Verbindung möglich ist, wechsle in den AP-Modus
-      Serial.println(F("Konnte keine WLAN-Verbindung herstellen. Wechsle in den AP-Modus."));
+      logger.warning("Konnte keine WLAN-Verbindung herstellen. Wechsle in den AP-Modus.");
       wifiAp = true;
       WiFi.mode(WIFI_AP);
       WiFi.softAP(wifiApSsid, wifiApPasswort);
       ip = WiFi.softAPIP().toString();
 
-      Serial.print(F("AP-Modus aktiviert. IP: "));
-      Serial.println(ip);
+      logger.info("AP-Modus aktiviert. IP: " + ip);
 
       #if MODUL_DISPLAY
         DisplaySechsZeilen("AP-Modus", "aktiv", "SSID: " + String(wifiApSsid), "IP: " + ip, "Hostname:", wifiHostname + ".local");

@@ -11,6 +11,8 @@
 #ifndef WIFI_SEITE_ADMIN_H
 #define WIFI_SEITE_ADMIN_H
 
+#include "logger.h"
+
 /**
  * @brief Sendet eine Einstellungsoption an den Webserver
  *
@@ -104,9 +106,7 @@ void sendeLinks() {
     "<ul>\n"
     "<li><a href=\"/\">zur Startseite</a></li>\n"));
 
-  #if MODUL_DEBUG
-    Webserver.sendContent_P(PSTR("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
-  #endif
+  Webserver.sendContent_P(PSTR("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
 
   Webserver.sendContent_P(PSTR(
     "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">"
@@ -121,9 +121,7 @@ void sendeLinks() {
  * @brief Generiert und sendet die Administrationsseite
  */
 void WebseiteAdminAusgeben() {
-  #if MODUL_DEBUG
-    Serial.println(F("# Beginn von WebsiteAdminAusgeben()"));
-  #endif
+  logger.debug("# Beginn von WebsiteAdminAusgeben()");
 
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
@@ -302,9 +300,7 @@ void WebseiteAdminAusgeben() {
     Webserver.sendContent_P(htmlFooter);
     Webserver.client().flush();
 
-    #if MODUL_DEBUG
-      Serial.println(F("# Ende von WebsiteAdminAusgeben()"));
-    #endif
+    logger.debug("# Ende von WebsiteAdminAusgeben()");
 }
 
 #endif // WIFI_SEITE_ADMIN_H

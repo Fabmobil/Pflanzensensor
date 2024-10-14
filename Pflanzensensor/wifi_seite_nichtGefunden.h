@@ -11,6 +11,8 @@
 #ifndef WIFI_SEITE_NICHT_GEFUNDEN_H
 #define WIFI_SEITE_NICHT_GEFUNDEN_H
 
+#include "logger.h"
+
 /**
  * @brief Generiert und sendet die 404 (Nicht gefunden) Fehlerseite
  *
@@ -18,9 +20,7 @@
  * Sie sendet eine entsprechende Fehlermeldung an den Client.
  */
 void WebseiteNichtGefundenAusgeben() {
-  #if MODUL_DEBUG
-    Serial.println(F("# Beginn von WebseiteNichtGefundenAusgeben()"));
-  #endif
+  logger.debug("# Beginn von WebseiteNichtGefundenAusgeben()");
 
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(404, F("text/html"), "");
@@ -38,9 +38,7 @@ void WebseiteNichtGefundenAusgeben() {
   Webserver.sendContent_P(htmlFooter);
   Webserver.client().flush();
 
-  #if MODUL_DEBUG
-    Serial.println(F("# Ende von WebseiteNichtGefundenAusgeben()"));
-  #endif
+  logger.debug("# Ende von WebseiteNichtGefundenAusgeben()");
 }
 
 #endif // WIFI_SEITE_NICHT_GEFUNDEN_H
