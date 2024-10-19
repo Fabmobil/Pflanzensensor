@@ -164,7 +164,7 @@ unsigned long intervallAnalog = 5000;
 #endif
 
 // Globale Variablen
-const char* pflanzensensorVersion = "1.2.2";
+const char* pflanzensensorVersion = "1.3.0";
 int neustarts = 1;
 unsigned long millisAktuell = 0;
 unsigned long millisVorherAnalog = 0;
