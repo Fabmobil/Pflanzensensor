@@ -11,21 +11,20 @@
 #ifndef MULTIPLEXER_H
 #define MULTIPLEXER_H
 
+extern int multiplexerPinA;
+extern int multiplexerPinB;
+extern int multiplexerPinC;
+
 /**
  * @brief Schaltet den Eingang des analogen Multiplexers um
+ *
+ * Diese Funktion setzt die Digitaleingänge A, B und C des Multiplexers,
+ * um den gewünschten Analogeingang auszuwählen.
  *
  * @param a Wert für Digitaleingang A (0 oder 1)
  * @param b Wert für Digitaleingang B (0 oder 1)
  * @param c Wert für Digitaleingang C (0 oder 1)
  */
-void MultiplexerWechseln(int a, int b, int c) {
-  logger.debug("# Beginn von MultiplexerWechseln(" + String(a) + ", " + String(b) +", " + String(c) + ")");
-
-  digitalWrite(multiplexerPinA, a); // Digitaleingang A setzen
-  digitalWrite(multiplexerPinB, b); // Digitaleingang B setzen
-  digitalWrite(multiplexerPinC, c); // Digitaleingang C setzen
-  delay(100); // warten, bis der IC umgeschalten hat
-
-}
+void MultiplexerWechseln(int a, int b, int c);
 
 #endif // MULTIPLEXER_H

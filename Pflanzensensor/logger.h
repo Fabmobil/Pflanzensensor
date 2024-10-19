@@ -12,17 +12,25 @@
 #include <WiFiUdp.h>
 #include "config.h"
 
-#ifndef MAX_LOG_ENTRIES
-#define MAX_LOG_ENTRIES 100
-#endif
+extern String logLevel;
+extern int logAnzahlEintraege;
+extern int logAnzahlWebseite;
+extern bool logInDatei;
+// #ifndef logLevel
+// String logLevel = "INFO";
+// #endif
 
-#ifndef LOG_ENTRIES_TO_DISPLAY
-#define LOG_ENTRIES_TO_DISPLAY 20
-#endif
+// #ifndef logAnzahlEintraege
+// int logAnzahlEintraege = 100;
+// #endif
 
-#ifndef FILE_LOGGING_ENABLED
-#define FILE_LOGGING_ENABLED false
-#endif
+// #ifndef logAnzahlWebseite
+// int logAnzahlWebseite = 20;
+// #endif
+
+// #ifndef logInDatei
+// bool logInDatei = false;
+// #endif
 
 /**
  * @brief Enumeration for different log levels
@@ -54,7 +62,7 @@ public:
      * @param useSerial Whether to output logs to Serial
      * @param maxEntries Maximum number of log entries to keep in memory
      */
-    Logger(LogLevel logLevel = LogLevel::INFO, bool useSerial = true, size_t maxEntries = MAX_LOG_ENTRIES, bool fileLoggingEnabled = FILE_LOGGING_ENABLED);
+    Logger(LogLevel logLevel = LogLevel::INFO, bool useSerial = true, size_t maxEntries = logAnzahlEintraege, bool fileLoggingEnabled = logInDatei);
 
     /**
      * @brief Set the log level
@@ -97,7 +105,7 @@ public:
      * @param count Number of entries to retrieve for each log level
      * @return Formatted HTML table of log entries
      */
-    String getLogsAsHtmlTable(size_t count = LOG_ENTRIES_TO_DISPLAY) const;
+    String getLogsAsHtmlTable(size_t count = logAnzahlWebseite) const;
 
     /**
      * @brief Initialize NTP client for getting time from the internet

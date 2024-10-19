@@ -11,288 +11,261 @@
 #ifndef EINSTELLUNGEN_H
 #define EINSTELLUNGEN_H
 
-/**
- * Module
- * "true" aktiviert sie, "false" deaktiviert sie
- */
-#define MODUL_DISPLAY       true  // hat dein Pflanzensensor ein Display?
-#define MODUL_WIFI          true // verwendet dein Pflanzensensor das WiFi-Modul?
-#define MODUL_DHT           true // hat dein Pflanzensensor ein Luftfeuchte- und Temperaturmesser?
-#define MODUL_BODENFEUCHTE  true // hat dein Pflanzensensor einen Bodenfeuchtemesser?
-#define MODUL_LEDAMPEL      true // hat dein Pflanzensensor eine LED Ampel?
-#define MODUL_HELLIGKEIT    true // hat dein Pflanzensensor einen Lichtsensor?
-#define MODUL_WEBHOOK       false // willst du das make.com-Modul für Telegram oder Mailbenachrichtungen verwenden?
-#define MODUL_ANALOG3       false // hat dein Pflanzensensor einen dritten Analogsensor?
-#define MODUL_ANALOG4       false // hat dein Pflanzensensor einen vierten Analogsensor?
-#define MODUL_ANALOG5       false // hat dein Pflanzensensor einen fünften Analogsensor?
-#define MODUL_ANALOG6       false // hat dein Pflanzensensor einen sechsten Analogsensor?
-#define MODUL_ANALOG7       false // hat dein Pflanzensensor einen siebten Analogsensor?
-#define MODUL_ANALOG8       false // hat dein Pflanzensensor einen achten Analogsensor?
 
-// Hier werden die Passwörter nachgeladen
-#include "passwoerter.h"
+#include <Arduino.h>
+#include <ESP8266mDNS.h>
+// Modulaktivierungen
+extern const bool MODUL_DISPLAY;
+extern const bool MODUL_WIFI;
+extern const bool MODUL_DHT;
+extern const bool MODUL_BODENFEUCHTE;
+extern const bool MODUL_LEDAMPEL;
+extern const bool MODUL_HELLIGKEIT;
+extern const bool MODUL_WEBHOOK;
+extern const bool MODUL_ANALOG3;
+extern const bool MODUL_ANALOG4;
+extern const bool MODUL_ANALOG5;
+extern const bool MODUL_ANALOG6;
+extern const bool MODUL_ANALOG7;
+extern const bool MODUL_ANALOG8;
 
-// Einstellung für die Logs:
-#define MAX_LOG_ENTRIES 100
-#define LOG_ENTRIES_TO_DISPLAY 20
-#define FILE_LOGGING_ENABLED false
+// Logging-Einstellungen
+extern String logLevel;
+extern int logAnzahlEintraege;
+extern int LogAnzahlWebseite;
+extern bool logInDatei;
 
-// Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
-#if MODUL_BODENFEUCHTE && MODUL_HELLIGKEIT
-  #define MODUL_MULTIPLEXER true
-#else
-  #define MODUL_MULTIPLEXER false //sonst nicht
-#endif
+// Allgemeine Einstellungen
+extern const long baudrateSeriell;
+extern unsigned long intervallAnalog;
 
-/**
- * Pinbelegungen und Variablen
- */
-#define baudrateSeriell 115200 // Baudrate der seriellen Verbindung
-unsigned long intervallAnalog = 5000; // Intervall der Messung der Analogsensoren in Millisekunden. Vorschlag: 5000
-#if MODUL_BODENFEUCHTE // wenn der Bodenfeuchtesensor aktiv ist:
-  /*
-   * Wenn der Bodenfeuchtesensor aktiv ist werden hier die initialen Grenzwerte
-   * für den Sensor festgelegt. Diese können später auch im Admin-Webinterface
-   * verändert werden.
-   */
-  String bodenfeuchteName = "Bodenfeuchte"; // Name des Sensors
-  bool bodenfeuchteWebhook = true; // soll der Sensor für Alarme überwacht werden?
-  int bodenfeuchteMinimum = 900; // Der Rohmesswert des Sensors, wenn er ganz trocken ist
-  int bodenfeuchteMaximum = 380; // Der Rohmesswert des Sensors, wenn er in Wasser ist
-  int bodenfeuchteGruenUnten = 40; // unter Wert des grünen Bereichs
-  int bodenfeuchteGruenOben = 60; // oberer Wert des grünen Bereichs
-  int bodenfeuchteGelbUnten = 20; // unterer Wert des gelben Bereichs
-  int bodenfeuchteGelbOben = 80; // oberer Wert des gelben Bereichs
-#endif
-#if MODUL_DISPLAY
-  unsigned long intervallDisplay = 4874; // Anzeigedauer der unterschiedlichen Displayseiten in Millisekunden. Vorschlag: 4874
-#endif
-#if MODUL_DHT // falls ein Lufttemperatur- und -feuchtesensor verbaut ist:
-  #define dhtPin 0 // "D3", Pin des DHT Sensors
-  #define dhtSensortyp DHT11  // ist ein DHT11 (blau) oder ein DHT22 (weiss) Sensor verbaut?
-  unsigned long intervallDht = 5000; // Intervall der Luftfeuchte- und -temperaturmessung in Millisekunden. Vorschlag: 5000
-  bool lufttemperaturWebhook = false; // soll der Sensor für Alarme überwacht werden?
-  int lufttemperaturGruenUnten = 19; // unter Wert des grünen Bereichs
-  int lufttemperaturGruenOben = 22; // oberer Wert des grünen Bereichs
-  int lufttemperaturGelbUnten = 17; // unterer Wert des gelben Bereichs
-  int lufttemperaturGelbOben = 24; // oberer Wert des gelben Bereichs
-  bool luftfeuchteWebhook = false; // soll der Sensor für Alarme überwacht werden?
-  int luftfeuchteGruenUnten = 40; // unter Wert des grünen Bereichs
-  int luftfeuchteGruenOben = 60; // oberer Wert des grünen Bereichs
-  int luftfeuchteGelbUnten = 20; // unterer Wert des gelben Bereichs
-  int luftfeuchteGelbOben = 80; // oberer Wert des gelben Bereichs
-#endif
-#if MODUL_HELLIGKEIT
-  /*
-   * Wenn der Helligkeitsensor aktiv ist werden hier die initialen Grenzwerte
-   * für den Sensor festgelegt. Diese können später auch im Admin-Webinterface
-   * verändert werden.
-   */
-  String helligkeitName = "Helligkeit"; // Name des Sensors
-  bool helligkeitWebhook = false; // soll der Sensor für Alarme überwacht werden?
-  int helligkeitMinimum = 8; // Der Rohmesswert des Sensors wenn es ganz dunkel ist
-  int helligkeitMaximum = 1024; // Der Rohmesswert des Sensors, wenn es ganz hell ist
-  int helligkeitGruenUnten = 40; // unter Wert des grünen Bereichs
-  int helligkeitGruenOben = 60; // oberer Wert des grünen Bereichs
-  int helligkeitGelbUnten = 20; // unterer Wert des gelben Bereichs
-  int helligkeitGelbOben = 80; // oberer Wert des gelben Bereichs
-#endif
-#if MODUL_LEDAMPEL // falls eine LED Ampel verbaut ist:
-  int ampelModus = 1; // 0: Bodenfeuchtesensor, 1: alle Sensoren analog zur Displayanzeige
-  bool ampelAn = true; // Ampel an- oder ausgeschalten?
-#endif
-#if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
-  // URL und Passwort für make.com in der passwoerter.h
-  bool webhookAn = false;
-  int webhookFrequenz = 12; // Die Benachrichtigungsfrequenz der Webalarme in Stunden. Vorschlag: 12
-  int webhookPingFrequenz = 24; // Keep Alive Ping Frequenz in Stunden. Vorschlag: 24
-#endif
-#include <LittleFS.h> // für das Speichern auf dem Flash des ESP; muss vor Wifi geladen werden
-#if MODUL_WIFI // wenn das Wifimodul aktiv ist
-  String wifiHostname = "pflanzensensor"; // Das Gerät ist später unter diesem Name + .local erreichbar
-  bool wifiAp = false; // true: ESP macht seinen eigenen AP auf; false: ESP verbindet sich mit fremden WLAN
-  String wifiApSsid = "Fabmobil Pflanzensensor"; // SSID des WLANs, falls vom ESP selbst aufgemacht
-  // WiFi Logindaten sind in der passwoerter.h gespeichert!
-#endif
-#if MODUL_ANALOG3 // wenn ein dritter Analogsensor verwendet wird
-  String analog3Name = "Analog 3"; // Name des Sensors
-  bool analog3Webhook = false; // soll der Sensor für Alarme überwacht werden?
-  int analog3Minimum = 900; // Minimalwert des Sensors
-  int analog3Maximum = 380; // Maximalwert des Sensors
-  int analog3GruenUnten = 40;
-  int analog3GruenOben = 60;
-  int analog3GelbUnten = 20;
-  int analog3GelbOben = 80;
-#endif
-#if MODUL_ANALOG4 // wenn ein vierter Analogsensor verwendet wird
-  String analog4Name = "Analog 4"; // Name des Sensors
-  bool analog4Webhook = false; // soll der Sensor für Alarme überwacht werden?
-  int analog4Minimum = 900; // Minimalwert des Sensors
-  int analog4Maximum = 380; // Maximalwert des Sensors
-  int analog4GruenUnten = 40;
-  int analog4GruenOben = 60;
-  int analog4GelbUnten = 20;
-  int analog4GelbOben = 80;
-#endif
-#if MODUL_ANALOG5 // wenn ein fünfter Analogsensor verwendet wird
-  String analog5Name = "Analog 5"; // Name des Sensors
-  bool analog5Webhook = false; // soll der Sensor für Alarme überwacht werden?
-  int analog5Minimum = 900; // Minimalwert des Sensors
-  int analog5Maximum = 380; // Maximalwert des Sensors
-  int analog5GruenUnten = 40;
-  int analog5GruenOben = 60;
-  int analog5GelbUnten = 20;
-  int analog5GelbOben = 80;
-#endif
-#if MODUL_ANALOG6 // wenn ein sechster Analogsensor verwendet wird
-  String analog6Name = "Analog 5"; // Name des Sensors
-  bool analog6Webhook = false; // soll der Sensor für Alarme überwacht werden?
-  int analog6Minimum = 900; // Minimalwert des Sensors
-  int analog6Maximum = 380; // Maximalwert des Sensors
-  int analog6GruenUnten = 40;
-  int analog6GruenOben = 60;
-  int analog6GelbUnten = 20;
-  int analog6GelbOben = 80;
-#endif
-#if MODUL_ANALOG7 // wenn ein siebter Analogsensor verwendet wird
-  String analog7Name = "Analog 7"; // Name des Sensors
-  bool analog7Webhook = false; // soll der Sensor für Alarme überwacht werden?
-  int analog7Minimum = 900; // Minimalwert des Sensors
-  int analog7Maximum = 380; // Maximalwert des Sensors
-  int analog7GruenUnten = 40;
-  int analog7GruenOben = 60;
-  int analog7GelbUnten = 20;
-  int analog7GelbOben = 80;
-#endif
-#if MODUL_ANALOG8 // wenn ein achter Analogsensor verwendet wird
-  String analog8Name = "Analog 8"; // Name des Sensors
-  bool analog8Webhook = false; // soll der Sensor für Alarme überwacht werden?
-  int analog8Minimum = 900; // Minimalwert des Sensors
-  int analog8Maximum = 380; // Maximalwert des Sensors
-  int analog8GruenUnten = 40;
-  int analog8GruenOben = 60;
-  int analog8GelbUnten = 20;
-  int analog8GelbOben = 80;
-#endif
-
-/**
- * Setup der einzelnen Module
- * hier muss eigentlich nichts verändert werden sondern die notewendigen globalen Variablen werden hier
- * definiert.
- */
-#define pflanzensensorVersion "1.2.2" // Versionsnummer
-int neustarts = 1;
-unsigned long millisAktuell = 0;
-unsigned long millisVorherAnalog = 0; // Variable für die Messung des Intervalls der Analogsensormessung
-unsigned long millisVorherDht = 0; // Variable für die Messung des Intervalls der Luftfeuchte- und -temperaturmessung
-unsigned long millisVorherLedampel = 0; // Variable für die Messung des Intervalls des Umschaltens der LED Ampel
-unsigned long millisVorherDisplay = 0; // Variable für die Messung des Intervalls der Anzeige des Displays
-unsigned long millisVorherWebhook = 0; // Variable für die Messung des Intervalls des Webhooks
-unsigned long millisVorherWebhookPing = 0; // Variable für die Messung des Intervalls des Keep Alive Pings des Webhooks
-int module; // Variable für die Anzahl der Module
-String ip = "keine WLAN Verbindung."; // Initialisierung der IP Adresse mit Fehlermeldung
-const uint32_t wifiTimeout = 5000; // Timeout für Verbindungsversuche in ms
-int analog3Messwert = -1; // Variable für den Messwert des dritten Analogsensors
-int analog3MesswertProzent = -1; // Variable für den Messwert des dritten Analogsensors in Prozent
-int analog4Messwert = -1; // Variable für den Messwert des vierten Analogsensors
-int analog4MesswertProzent = -1; // Variable für den Messwert des vierten Analogsensors in Prozent
-int analog5Messwert = -1; // Variable für den Messwert des fünften Analogsensors
-int analog5MesswertProzent = -1; // Variable für den Messwert des fünften Analogsensors in Prozent
-int analog6Messwert = -1; // Variable für den Messwert des sechsten Analogsensors
-int analog6MesswertProzent = -1; // Variable für den Messwert des sechsten Analogsensors in Prozent
-int analog7Messwert = -1; // Variable für den Messwert des siebten Analogsensors
-int analog7MesswertProzent = -1; // Variable für den Messwert des siebten Analogsensors in Prozent
-int analog8Messwert = -1; // Variable für den Messwert des achter Analogsensors
-int analog8MesswertProzent = -1; // Variable für den Messwert des achter Analogsensors in Prozent
-String helligkeitFarbe = "rot";
-String bodenfeuchteFarbe = "rot";
-String luftfeuchteFarbe = "rot";
-String lufttemperaturFarbe = "rot";
-String analog3Farbe = "rot";
-String analog4Farbe = "rot";
-String analog5Farbe = "rot";
-String analog6Farbe = "rot";
-String analog7Farbe = "rot";
-String analog8Farbe = "rot";
-#define pinAnalog A0 // Analogpin
-#include "logger.h" // include the logger
-
+// Bodenfeuchte-Einstellungen
 #if MODUL_BODENFEUCHTE
-  int bodenfeuchteMesswert = -1;
-  int bodenfeuchteMesswertProzent = -1;
-#else
-  int bodenfeuchteMesswert = -1;
-  int bodenfeuchteMesswertProzent = -1;
-  #define bodenfeuchteName "Bodenfeuchte"
+extern String bodenfeuchteName;
+extern bool bodenfeuchteWebhook;
+extern int bodenfeuchteMinimum;
+extern int bodenfeuchteMaximum;
+extern int bodenfeuchteGruenUnten;
+extern int bodenfeuchteGruenOben;
+extern int bodenfeuchteGelbUnten;
+extern int bodenfeuchteGelbOben;
 #endif
 
-#if MODUL_DHT
-  float lufttemperaturMesswert = -1;
-  float luftfeuchteMesswert = -1;
-  #include "dht.h" // Luftfeuchte- und -temperaturmodul einbinden
-#else
-  #define lufttemperaturMesswert -1
-  #define luftfeuchteMesswert -1
+// Display-Einstellungen
+#if MODUL_DISPLAY
+extern unsigned long intervallDisplay;
 #endif
+
+// DHT-Einstellungen
+#if MODUL_DHT
+extern const int dhtPin;
+extern const int dhtSensortyp;
+extern unsigned long intervallDht;
+extern bool lufttemperaturWebhook;
+extern int lufttemperaturGruenUnten;
+extern int lufttemperaturGruenOben;
+extern int lufttemperaturGelbUnten;
+extern int lufttemperaturGelbOben;
+extern bool luftfeuchteWebhook;
+extern int luftfeuchteGruenUnten;
+extern int luftfeuchteGruenOben;
+extern int luftfeuchteGelbUnten;
+extern int luftfeuchteGelbOben;
+#endif
+
+// Helligkeits-Einstellungen
+#if MODUL_HELLIGKEIT
+extern String helligkeitName;
+extern bool helligkeitWebhook;
+extern int helligkeitMinimum;
+extern int helligkeitMaximum;
+extern int helligkeitGruenUnten;
+extern int helligkeitGruenOben;
+extern int helligkeitGelbUnten;
+extern int helligkeitGelbOben;
+#endif
+
+// LED-Ampel-Einstellungen
+#if MODUL_LEDAMPEL
+extern int ampelModus;
+extern bool ampelAn;
+#endif
+
+// Webhook-Einstellungen
+#if MODUL_WEBHOOK
+extern bool webhookAn;
+extern int webhookFrequenz;
+extern int webhookPingFrequenz;
+#endif
+
+// WiFi-Einstellungen
+#if MODUL_WIFI
+extern String wifiHostname;
+extern bool wifiAp;
+extern String wifiApSsid;
+#endif
+
+// Analog-Sensor-Einstellungen
+#if MODUL_ANALOG3
+extern String analog3Name;
+extern bool analog3Webhook;
+extern int analog3Minimum;
+extern int analog3Maximum;
+extern int analog3GruenUnten;
+extern int analog3GruenOben;
+extern int analog3GelbUnten;
+extern int analog3GelbOben;
+#endif
+#if MODUL_ANALOG3
+extern String analog3Name;
+extern bool analog3Webhook;
+extern int analog3Minimum;
+extern int analog3Maximum;
+extern int analog3GruenUnten;
+extern int analog3GruenOben;
+extern int analog3GelbUnten;
+extern int analog3GelbOben;
+#endif
+#if MODUL_ANALOG4
+extern String analog4Name;
+extern bool analog4Webhook;
+extern int analog4Minimum;
+extern int analog4Maximum;
+extern int analog4GruenUnten;
+extern int analog4GruenOben;
+extern int analog4GelbUnten;
+extern int analog4GelbOben;
+#endif
+#if MODUL_ANALOG3
+extern String analog5Name;
+extern bool analog5Webhook;
+extern int analog5Minimum;
+extern int analog5Maximum;
+extern int analog5GruenUnten;
+extern int analog5GruenOben;
+extern int analog5GelbUnten;
+extern int analog5GelbOben;
+#endif
+#if MODUL_ANALOG3
+extern String analog6Name;
+extern bool analog6Webhook;
+extern int analog6Minimum;
+extern int analog6Maximum;
+extern int analog6GruenUnten;
+extern int analog6GruenOben;
+extern int analog6GelbUnten;
+extern int analog6GelbOben;
+#endif
+#if MODUL_ANALOG7
+extern String analog7Name;
+extern bool analog7Webhook;
+extern int analog7Minimum;
+extern int analog7Maximum;
+extern int analog7GruenUnten;
+extern int analog7GruenOben;
+extern int analog7GelbUnten;
+extern int analog7GelbOben;
+#endif
+#if MODUL_ANALOG8
+extern String analog8Name;
+extern bool analog8Webhook;
+extern int analog8Minimum;
+extern int analog8Maximum;
+extern int analog8GruenUnten;
+extern int analog8GruenOben;
+extern int analog8GelbUnten;
+extern int analog8GelbOben;
+#endif
+
+
+// Globale Variablen
+extern const char* pflanzensensorVersion;
+extern int neustarts;
+extern unsigned long millisAktuell;
+extern unsigned long millisVorherAnalog;
+extern unsigned long millisVorherDht;
+extern unsigned long millisVorherLedampel;
+extern unsigned long millisVorherDisplay;
+extern unsigned long millisVorherWebhook;
+extern unsigned long millisVorherWebhookPing;
+extern int module;
+extern String ip;
+extern const uint32_t wifiTimeout;
+
+extern int analog3Messwert;
+extern int analog3MesswertProzent;
+extern int analog4Messwert;
+extern int analog4MesswertProzent;
+extern int analog5Messwert;
+extern int analog5MesswertProzent;
+extern int analog6Messwert;
+extern int analog6MesswertProzent;
+extern int analog7Messwert;
+extern int analog7MesswertProzent;
+extern int analog8Messwert;
+extern int analog8MesswertProzent;
+extern String helligkeitFarbe;
+extern String bodenfeuchteFarbe;
+extern String luftfeuchteFarbe;
+extern String lufttemperaturFarbe;
+extern String analog3Farbe;
+extern String analog4Farbe;
+extern String analog5Farbe;
+extern String analog6Farbe;
+extern String analog7Farbe;
+extern String analog8Farbe;
+
+// Pin-Definitionen
+#define pinAnalog A0
 
 #if MODUL_LEDAMPEL
-  #define ampelPinRot 13 // "D7"; Pin der roten LED
-  #define ampelPinGelb 12 // "D6"; Pin der roten LED
-  #define ampelPinGruen 14 // "D5"; Pin der gruenen LED
-  #include "ledampel.h" // LED Ampel Modul einbinden
-#endif
-
-#if MODUL_HELLIGKEIT
-  int helligkeitMesswert = -1;
-  int helligkeitMesswertProzent = -1;
-#else
-  #define helligkeitMesswert -1
-  #define helligkeitMesswertProzent -1
+#define ampelPinRot 13
+#define ampelPinGelb 12
+#define ampelPinGruen 14
 #endif
 
 #if MODUL_MULTIPLEXER
-  #define multiplexerPinA 15 // "D8"; Pin A des Multiplexers
-  #define multiplexerPinB 2 // "D4"; Pin B des Multiplexers
-  #define multiplexerPinC 16 // "D0"; Pin C des Multiplexers
-  #include "multiplexer.h" // Multiplexermodul einbinden
-#endif
-
-#if MODUL_WIFI
-  String aktuelleSSID = "";
+#define multiplexerPinA 15
+#define multiplexerPinB 2
+#define multiplexerPinC 16
 #endif
 
 #if MODUL_DISPLAY
-  int status = 0; // diese Variable schaltet durch die unterschiedlichen Anzeigen des Displays.
-  #define displayBreite 128 // Breite des OLED-Displays in Pixeln
-  #define displayHoehe 64 // Hoehe des OLED-Displays in Pixeln
-  #define displayReset -1 // Display wird mit Arduino Reset Pin zurückgesetzt, wir haben keinen Restknopf..
-  #define displayAdresse 0x3C // I2C Adresse des Displays
-  bool displayAn = true; // Display an- oder ausgeschalten?
-  #include "display.h" // Displaymodul einbinden
+#define displayBreite 128
+#define displayHoehe 64
+#define displayReset -1
+#define displayAdresse 0x3C
 #endif
 
-#include "variablenspeicher.h" // Funktionen für das Speichern und Laden der Variablen
+// Einbinden weiterer Header-Dateien
+#include "logger.h"
+#include "variablenspeicher.h"
+#include "analogsensor.h"
+#include "mutex.h"
+extern mutex_t mutex;
+
+#if MODUL_DHT
+#include "dht.h"
+#endif
+
+#if MODUL_LEDAMPEL
+#include "ledampel.h"
+#endif
+
+#if MODUL_MULTIPLEXER
+#include "multiplexer.h"
+#endif
+
+#if MODUL_DISPLAY
+#include "display.h"
+#endif
 
 #if MODUL_WIFI
-  int wifiVerbindungsVersuche = 0;
-  unsigned long geplantesWLANNeustartZeit = 0;
-  bool wlanNeustartGeplant = false;
-  #include "wifi.h" // Wifimodul einbinden
+#include "wifi.h"
 #endif
-
-
 
 #if MODUL_WEBHOOK
-  #include "webhook.h" // Webhook Modul einbinden
-#endif
-
-#include "analogsensor.h" // Funktionen für die Analogsensoren
-#include "mutex.h" // Mutexmodul einbinden
-mutex_t mutex;
-
-// Fürs debugging:
-#ifdef WITH_GDB
-#include <GDBStub.h>
+#include "webhook.h"
 #endif
 
 #endif // EINSTELLUNGEN_H

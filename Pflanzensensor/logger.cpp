@@ -7,7 +7,7 @@
 #include "logger.h"
 #include "config.h"
 
-Logger logger(LogLevel::DEBUG, true, MAX_LOG_ENTRIES, FILE_LOGGING_ENABLED);
+Logger logger(LogLevel::DEBUG, true, logAnzahlEintraege, logInDatei);
 
 Logger::Logger(LogLevel logLevel, bool useSerial, size_t maxEntries, bool fileLoggingEnabled)
   : m_logLevel(logLevel),
@@ -25,7 +25,7 @@ Logger::Logger(LogLevel logLevel, bool useSerial, size_t maxEntries, bool fileLo
 
   // Initialize the log entries vectors
   for (int i = 0; i < 4; ++i) {
-    m_logEntriesByLevel[i].reserve(LOG_ENTRIES_TO_DISPLAY);
+    m_logEntriesByLevel[i].reserve(logAnzahlWebseite);
   }
 }
 void Logger::setLogLevel(LogLevel level) {
@@ -118,8 +118,8 @@ void Logger::log(LogLevel level, const String& message) {
   // Add to the appropriate vector based on log level
   m_logEntriesByLevel[static_cast<int>(level)].push_back(entry);
 
-  // Keep only the latest LOG_ENTRIES_TO_DISPLAY entries for each level
-  if (m_logEntriesByLevel[static_cast<int>(level)].size() > LOG_ENTRIES_TO_DISPLAY) {
+  // Keep only the latest logAnzahlWebseite entries for each level
+  if (m_logEntriesByLevel[static_cast<int>(level)].size() > logAnzahlWebseite) {
     m_logEntriesByLevel[static_cast<int>(level)].erase(m_logEntriesByLevel[static_cast<int>(level)].begin());
   }
 

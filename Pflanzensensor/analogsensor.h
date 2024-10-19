@@ -11,7 +11,8 @@
 #ifndef ANALOGSENSOR_H
 #define ANALOGSENSOR_H
 
-#include "logger.h"
+#include <Arduino.h>
+#include <utility>
 
 /**
  * @brief Misst den Wert eines Analogsensors und berechnet den Prozentwert
@@ -33,17 +34,6 @@ std::pair<int, int> AnalogsensorMessen(
     int c,
     String sensorname,
     int minimum,
-    int maximum) {
-    // Ggfs. Multiplexer umstellen:
-    #if MODUL_MULTIPLEXER
-        MultiplexerWechseln(a, b, c); // Multiplexer auf Ausgang 0 stellen
-    #endif
-    // Helligkeit messen:
-    int messwert = analogRead(pinAnalog); // Messwert einlesen
-    // Messwert in Prozent umrechnen:
-    int messwertProzent = map(messwert, minimum, maximum, 0, 100); // Skalierung auf maximal 0 bis 100
-    logger.info(sensorname + ": " + String(messwertProzent) + "%       (Messwert: " + String(messwert));
-    return std::make_pair(messwert, messwertProzent);
-}
+    int maximum);
 
 #endif // ANALOGSENSOR_H

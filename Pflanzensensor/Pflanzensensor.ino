@@ -45,7 +45,7 @@ void setup() {
     DisplaySetup(); // Display initialisieren
   #endif
   CreateMutex(&mutex);
-  logger.debug(F("#### Start von setup()"));
+  logger.debug(F("Start von setup()"));
 
   logger.info(" Fabmobil Pflanzensensor, v" + String(pflanzensensorVersion));
   module = ModuleZaehlen(); // wie viele Module sind aktiv?
@@ -54,7 +54,7 @@ void setup() {
     DisplayDreiWoerter("Start..", " Debug-", "  modul");
   #endif
   logger.debug("Start von Debug-Modul ... ");
-  logger.debug("# Anzahl Module: "+ module);
+  logger.debug("Anzahl Module: "+ module);
 
   #if MODUL_LEDAMPEL // wenn das LED Ampel Modul aktiv is:
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
@@ -69,11 +69,7 @@ void setup() {
     LedampelBlinken("gelb", 1, 300);
     LedampelBlinken("rot", 1, 300);
 
-    logger.debug(F("## Setup der Ledampel"));
-    logger.debug("# PIN gruene LED:                 "+ ampelPinGruen);
-    logger.debug("# PIN gelbe LED:                  "+ ampelPinGelb);
-    logger.debug("# PIN rote LED:                   "+ ampelPinRot);
-
+    logger.debug(F("Setup der Ledampel"));
   #endif
   #if MODUL_HELLIGKEIT || MODUL_BODENFEUCHTE // "||" ist ein logisches Oder: Wenn Helligkeits- oder Bodenfeuchtemodul aktiv ist
     pinMode(pinAnalog, INPUT);  // wird der Analogpin als Eingang gesetzt
@@ -142,8 +138,6 @@ void setup() {
   variablen.begin("pflanzensensor", false); // Variablen initialisieren
   neustarts = variablen.getInt("neustarts"); // Anzahl der Neustarts auslesen
 
-  logger.debug("# Reboot count: )" + neustarts);
-
   neustarts++;
   variablen.putInt("neustarts", neustarts);
   variablen.end();
@@ -185,17 +179,6 @@ void loop() {
    */
   millisAktuell = millis(); // aktuelle Millisekunden auslesen
 
-  logger.debug(F("############ Begin von loop() #############"));
-  #if MODUL_DISPLAY
-    logger.debug("# status: " + String(status) + ", millis: " + String(millisAktuell));
-  #endif
-  if ( wifiAp ) { // Falls der ESP sein eigenes WLAN aufgemacht hat:
-    logger.debug("# IP Adresse: " + WiFi.softAPIP().toString());
-    logger.debug("# Anzahl der mit dem Accesspoint verbundenen Geräte: " + String(WiFi.softAPgetStationNum()));
-  } else {
-    logger.debug("# IP Adresse: " + WiFi.localIP().toString());
-  }
-
   MDNS.update(); // MDNS updaten
   logger.updateNTP(); // Update Timestamp
 
@@ -204,7 +187,7 @@ void loop() {
     if (GetMutex(&mutex)) {
       millisVorherAnalog = millisAktuell; // neuen Wert übernehmen
 
-      logger.debug(F("### intervallAnalog erreicht."));
+      logger.debug(F("intervallAnalog erreicht."));
 
       // Helligkeit messen:
       #if MODUL_HELLIGKEIT  // wenn das Helligkeit Modul aktiv ist
@@ -273,7 +256,7 @@ void loop() {
   #if MODUL_DHT // wenn das DHT Modul aktiv ist
     if (millisAktuell - millisVorherDht >= intervallDht) { // wenn das Intervall erreicht ist
 
-      logger.debug(F("### intervallDht erreicht."));
+      logger.debug(F("intervallDht erreicht."));
 
       millisVorherDht = millisAktuell; // neuen Wert übernehmen
       lufttemperaturMesswert = DhtMessenLufttemperatur(); // Lufttemperatur messen
@@ -300,6 +283,7 @@ void loop() {
         millisVorherDisplay = millisAktuell;
         DisplayAnzeigen();
         NaechsteSeite();
+        logger.info("IP Adresse: " + ip);
       }
     }
   #endif
@@ -308,7 +292,7 @@ void loop() {
   // Wifi und Webserver:
   #if MODUL_WIFI // wenn das Wifi-Modul aktiv ist
     if (GetMutex(&mutex)) { // Mutex holen
-      if (wlanNeustartGeplant && millis() >= geplantesWLANNeustartZeit) {
+      if (wlanNeustartGeplant && millis() >= geplanteWLANNeustartZeit) {
         wlanNeustartGeplant = false;
         NeustartWLANVerbindung(); // Führt den tatsächlichen Neustart durch
       }
@@ -317,7 +301,7 @@ void loop() {
       if (!wifiAp) {
         if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
           ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
-          aktuelleSSID = WiFi.SSID(); // SSID in Variable schreiben
+          aktuelleSsid = WiFi.SSID(); // SSID in Variable schreiben
           wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers bei erfolgreicher Verbindung
         } else {
           wifiVerbindungsVersuche++; // Erhöhen des Zählers bei fehlgeschlagener Verbindung
@@ -328,7 +312,7 @@ void loop() {
             #endif
             wifiAp = true;
             String ip = WifiSetup(wifiHostname);
-            aktuelleSSID = wifiApSsid; // AP SSID in Variable schreiben
+            aktuelleSsid = wifiApSsid; // AP SSID in Variable schreiben
             wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers
           } else {
             logger.info("WLAN-Verbindungsversuch fehlgeschlagen. Versuch " + String(wifiVerbindungsVersuche) + " von 10");
