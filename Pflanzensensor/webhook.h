@@ -14,6 +14,19 @@
 #include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 
+#if MODUL_DHT
+  extern float luftfeuchteMesswert;
+  extern float lufttemperaturMesswert;
+#endif
+
+#if MODUL_BODENFEUCHTE
+  extern int bodenfeuchteMesswertProzent;
+#endif
+
+#if MODUL_HELLIGKEIT
+  extern int helligkeitMesswertProzent;
+#endif
+
 extern bool vorherAlarm;
 extern String letzterWebhookStatus;
 extern String webhookStatus;
@@ -23,6 +36,7 @@ extern String webhookPfad;
 extern int webhookPingFrequenz;
 extern int webhookFrequenz;
 extern int neustarts;
+
 
 /**
  * @brief Initialisiert das Webhook-Modul

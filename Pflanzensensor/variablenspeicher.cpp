@@ -8,8 +8,14 @@
  * im Flash-Speicher des ESP8266.
  */
 
-#include "variablenspeicher.h"
 #include "einstellungen.h"
+#include "passwoerter.h"
+#include "variablenspeicher.h"
+#if MODUL_DISPLAY
+  #include "display.h"
+#endif
+Preferences variablen;
+
 /**
  * @brief Überprüft, ob Variablen im Flash-Speicher vorhanden sind
  *
@@ -134,11 +140,11 @@ void VariablenSpeichern() {
     variablen.putBool("apPwAktiv", wifiApPasswortAktiviert);
     variablen.putString("apPw", wifiApPasswort);
     variablen.putString("wifiSsid1", wifiSsid1);
-    variablen.putString("wifiPw1", wifiPassword1);
+    variablen.putString("wifiPw1", wifiPasswort1);
     variablen.putString("wifiSsid2", wifiSsid2);
-    variablen.putString("wifiPw2", wifiPassword2);
+    variablen.putString("wifiPw2", wifiPasswort2);
     variablen.putString("wifiSsid3", wifiSsid3);
-    variablen.putString("wifiPw3", wifiPassword3);
+    variablen.putString("wifiPw3", wifiPasswort3);
   #endif
   variablen.end();
 }
@@ -252,11 +258,11 @@ void VariablenLaden() {
   #endif
   #if MODUL_WIFI
     wifiSsid1 = variablen.getString("wifiSsid1", wifiSsid1);
-    wifiPassword1 = variablen.getString("wifiPw1", wifiPassword1);
+    wifiPasswort1 = variablen.getString("wifiPw1", wifiPasswort1);
     wifiSsid2 = variablen.getString("wifiSsid2", wifiSsid2);
-    wifiPassword2 = variablen.getString("wifiPw2", wifiPassword2);
+    wifiPasswort2 = variablen.getString("wifiPw2", wifiPasswort2);
     wifiSsid3 = variablen.getString("wifiSsid3", wifiSsid3);
-    wifiPassword3 = variablen.getString("wifiPw3", wifiPassword3);
+    wifiPasswort3 = variablen.getString("wifiPw3", wifiPasswort3);
     wifiApSsid = variablen.getString("apSsid", wifiApSsid);
     wifiApPasswortAktiviert = variablen.getBool("apPwAktiv", wifiApPasswortAktiviert);
     wifiApPasswort = variablen.getString("apPw", wifiApPasswort);

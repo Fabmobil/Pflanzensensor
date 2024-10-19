@@ -5,7 +5,7 @@
 
 #include <LittleFS.h>
 #include "logger.h"
-#include "config.h"
+#include "einstellungen.h"
 
 Logger logger(LogLevel::DEBUG, true, logAnzahlEintraege, logInDatei);
 
@@ -119,7 +119,7 @@ void Logger::log(LogLevel level, const String& message) {
   m_logEntriesByLevel[static_cast<int>(level)].push_back(entry);
 
   // Keep only the latest logAnzahlWebseite entries for each level
-  if (m_logEntriesByLevel[static_cast<int>(level)].size() > logAnzahlWebseite) {
+  if (m_logEntriesByLevel[static_cast<int>(level)].size() > static_cast<size_t>(logAnzahlWebseite)) {
     m_logEntriesByLevel[static_cast<int>(level)].erase(m_logEntriesByLevel[static_cast<int>(level)].begin());
   }
 

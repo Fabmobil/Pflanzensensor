@@ -13,6 +13,7 @@
 
 #include <Arduino.h>
 #include <ESP8266WebServer.h>
+#include "einstellungen.h"
 
 extern ESP8266WebServer Webserver;
 

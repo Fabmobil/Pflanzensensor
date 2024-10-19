@@ -11,25 +11,25 @@
 #ifndef DHTS_H
 #define DHTS_H
 
+#include "einstellungen.h"
 #include <Adafruit_Sensor.h> // Adafruit Sensor Bibliothek
 #include <DHT.h> // DHT Sensor Bibliothek
 #include <DHT_U.h> // DHT Unified Sensor Bibliothek
 
 extern DHT_Unified dht; // Extern-Deklaration für die globale DHT-Variable
-extern int dhtPin;
-extern int dhtSensortyp;
+
 /**
  * @brief Misst die Luftfeuchtigkeit mit dem DHT-Sensor
  *
  * @return float Gemessene Luftfeuchtigkeit in Prozent, oder -1 bei Messfehler
  */
-float messeLuftfeuchtigkeit();
+float MesseLuftfeuchtigkeit();
 
 /**
  * @brief Misst die Lufttemperatur mit dem DHT-Sensor
  *
  * @return float Gemessene Lufttemperatur in °C, oder -1 bei Messfehler
  */
-float messeLufttemperatur();
+float MesseLufttemperatur();
 
 #endif // DHTS_H

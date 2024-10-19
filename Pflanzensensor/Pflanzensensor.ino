@@ -9,6 +9,31 @@
  */
 
 #include "einstellungen.h" // Alle Einstellungen werden dort vorgenommen!
+#include "passwoerter.h" // hier liegen die Passwoerter
+
+#if MODUL_DHT
+    #include "dht.h"
+#endif
+
+#if MODUL_LEDAMPEL
+    #include "ledampel.h"
+#endif
+
+#if MODUL_MULTIPLEXER
+    #include "multiplexer.h"
+#endif
+
+#if MODUL_DISPLAY
+    #include "display.h"
+#endif
+
+#if MODUL_WIFI
+    #include "wifi.h"
+#endif
+
+#if MODUL_WEBHOOK
+    #include "webhook.h"
+#endif
 
 /**
  * @brief Initialisierungsfunktion, die einmalig beim Start des Mikrocontrollers ausgeführt wird
@@ -29,15 +54,6 @@
  */
 void setup() {
   Serial.begin(baudrateSeriell); // Serielle Verbindung aufbauen
-  /* Die #if ... #endif-Anweisungen werden vom Preprozessor aufgegriffen,
-   * welcher den Code fürs kompilieren vorbereitet. Es wird abgefragt,
-   * ob das jeweilige Modul aktiviert ist oder nicht. Dies geschieht in
-   * der einstellungen.h-Datei. Ist das Modul deaktiviert, wird der Code
-   * zwischen dem #if und #endif ignoriert und landet nicht auf dem Chip.
-   */
-  #ifdef WITH_GDB // fürs debugging
-    gdbstub_init();
-  #endif
   logger.setLogLevel(LogLevel::INFO); // oder ein anderes gewünschtes Log-Level
   logger.initNTP();
   delay(100);
@@ -53,8 +69,6 @@ void setup() {
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
     DisplayDreiWoerter("Start..", " Debug-", "  modul");
   #endif
-  logger.debug("Start von Debug-Modul ... ");
-  logger.debug("Anzahl Module: "+ module);
 
   #if MODUL_LEDAMPEL // wenn das LED Ampel Modul aktiv is:
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
@@ -99,7 +113,7 @@ void setup() {
     #endif
     logger.info(F("Start von Wifi-Modul ... "));
     String ip = WifiSetup(wifiHostname); // Wifi-Verbindung herstellen und IP Adresse speichern
-
+    logger.info("wifiPasswort2: " + wifiPasswort2);
     if (ip == "keine WLAN Verbindung.") {
       logger.warning(F("Keine WLAN-Verbindung möglich. Wechsel in den Accesspoint-Modus."));
       #if MODUL_DISPLAY
@@ -259,9 +273,9 @@ void loop() {
       logger.debug(F("intervallDht erreicht."));
 
       millisVorherDht = millisAktuell; // neuen Wert übernehmen
-      lufttemperaturMesswert = DhtMessenLufttemperatur(); // Lufttemperatur messen
+      lufttemperaturMesswert = MesseLufttemperatur(); // Lufttemperatur messen
       lufttemperaturFarbe = FarbeBerechnen(lufttemperaturMesswert, lufttemperaturGruenUnten, lufttemperaturGruenOben, lufttemperaturGelbUnten, lufttemperaturGelbOben);
-      luftfeuchteMesswert = DhtMessenLuftfeuchte(); // Luftfeuchte messen
+      luftfeuchteMesswert = MesseLuftfeuchtigkeit(); // Luftfeuchte messen
       luftfeuchteFarbe = FarbeBerechnen(luftfeuchteMesswert, luftfeuchteGruenUnten, luftfeuchteGruenOben, luftfeuchteGelbUnten, luftfeuchteGelbOben);
     }
   #endif

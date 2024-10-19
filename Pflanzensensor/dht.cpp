@@ -8,14 +8,14 @@
  * Luftfeuchtigkeit und Lufttemperatur.
  */
 
+#include "einstellungen.h" // Für dhtPin und dhtSensortyp
 #include "dht.h"
 #include "logger.h"
-#include "einstellungen.h" // Für dhtPin und dhtSensortyp
 
-DHT_Unified dht(dhtPin, dhtSensortyp, 6, 0, 0);
+DHT_Unified dht(dhtPin, dhtSensortyp);
 
-float messeLuftfeuchtigkeit() {
-  logger.debug("Beginn von messeLuftfeuchtigkeit()");
+float MesseLuftfeuchtigkeit() {
+  logger.debug("Beginn von MesseLuftfeuchtigkeit()");
 
   sensors_event_t ereignis; // Ereignis-Objekt für die Messung
   float luftfeuchtigkeit = -1; // Initialisierung der Luftfeuchtigkeitsvariable mit Fehlerwert
@@ -34,7 +34,7 @@ float messeLuftfeuchtigkeit() {
   return luftfeuchtigkeit; // Rückgabe des Messwertes oder des Fehlerwertes
 }
 
-float messeLufttemperatur() {
+float MesseLufttemperatur() {
   logger.debug("Beginn von messeLufttemperatur()");
 
   sensors_event_t ereignis; // Ereignis-Objekt für die Messung

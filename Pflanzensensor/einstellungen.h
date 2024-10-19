@@ -14,20 +14,21 @@
 
 #include <Arduino.h>
 #include <ESP8266mDNS.h>
+
 // Modulaktivierungen
-extern const bool MODUL_DISPLAY;
-extern const bool MODUL_WIFI;
-extern const bool MODUL_DHT;
-extern const bool MODUL_BODENFEUCHTE;
-extern const bool MODUL_LEDAMPEL;
-extern const bool MODUL_HELLIGKEIT;
-extern const bool MODUL_WEBHOOK;
-extern const bool MODUL_ANALOG3;
-extern const bool MODUL_ANALOG4;
-extern const bool MODUL_ANALOG5;
-extern const bool MODUL_ANALOG6;
-extern const bool MODUL_ANALOG7;
-extern const bool MODUL_ANALOG8;
+#define MODUL_DISPLAY 1
+#define MODUL_WIFI 1
+#define MODUL_DHT 1
+#define MODUL_BODENFEUCHTE 1
+#define MODUL_LEDAMPEL 1
+#define MODUL_HELLIGKEIT 1
+#define MODUL_WEBHOOK 0
+#define MODUL_ANALOG3 0
+#define MODUL_ANALOG4 0
+#define MODUL_ANALOG5 0
+#define MODUL_ANALOG6 0
+#define MODUL_ANALOG7 0
+#define MODUL_ANALOG8 0
 
 // Logging-Einstellungen
 extern String logLevel;
@@ -41,140 +42,155 @@ extern unsigned long intervallAnalog;
 
 // Bodenfeuchte-Einstellungen
 #if MODUL_BODENFEUCHTE
-extern String bodenfeuchteName;
-extern bool bodenfeuchteWebhook;
-extern int bodenfeuchteMinimum;
-extern int bodenfeuchteMaximum;
-extern int bodenfeuchteGruenUnten;
-extern int bodenfeuchteGruenOben;
-extern int bodenfeuchteGelbUnten;
-extern int bodenfeuchteGelbOben;
+    extern String bodenfeuchteName;
+    extern bool bodenfeuchteWebhook;
+    extern int bodenfeuchteMinimum;
+    extern int bodenfeuchteMaximum;
+    extern int bodenfeuchteGruenUnten;
+    extern int bodenfeuchteGruenOben;
+    extern int bodenfeuchteGelbUnten;
+    extern int bodenfeuchteGelbOben;
 #endif
 
 // Display-Einstellungen
 #if MODUL_DISPLAY
-extern unsigned long intervallDisplay;
+    extern unsigned long intervallDisplay;
+    extern const int displayBreite;
+    extern const int displayHoehe;
+    extern const int displayReset;
+    extern const int displayAdresse;
+    extern bool displayAn;
 #endif
 
 // DHT-Einstellungen
 #if MODUL_DHT
-extern const int dhtPin;
-extern const int dhtSensortyp;
-extern unsigned long intervallDht;
-extern bool lufttemperaturWebhook;
-extern int lufttemperaturGruenUnten;
-extern int lufttemperaturGruenOben;
-extern int lufttemperaturGelbUnten;
-extern int lufttemperaturGelbOben;
-extern bool luftfeuchteWebhook;
-extern int luftfeuchteGruenUnten;
-extern int luftfeuchteGruenOben;
-extern int luftfeuchteGelbUnten;
-extern int luftfeuchteGelbOben;
+    extern const int dhtPin;
+    extern const int dhtSensortyp;
+    extern unsigned long intervallDht;
+    extern bool lufttemperaturWebhook;
+    extern int lufttemperaturGruenUnten;
+    extern int lufttemperaturGruenOben;
+    extern int lufttemperaturGelbUnten;
+    extern int lufttemperaturGelbOben;
+    extern bool luftfeuchteWebhook;
+    extern int luftfeuchteGruenUnten;
+    extern int luftfeuchteGruenOben;
+    extern int luftfeuchteGelbUnten;
+    extern int luftfeuchteGelbOben;
 #endif
 
 // Helligkeits-Einstellungen
 #if MODUL_HELLIGKEIT
-extern String helligkeitName;
-extern bool helligkeitWebhook;
-extern int helligkeitMinimum;
-extern int helligkeitMaximum;
-extern int helligkeitGruenUnten;
-extern int helligkeitGruenOben;
-extern int helligkeitGelbUnten;
-extern int helligkeitGelbOben;
+    extern String helligkeitName;
+    extern bool helligkeitWebhook;
+    extern int helligkeitMinimum;
+    extern int helligkeitMaximum;
+    extern int helligkeitGruenUnten;
+    extern int helligkeitGruenOben;
+    extern int helligkeitGelbUnten;
+    extern int helligkeitGelbOben;
 #endif
 
 // LED-Ampel-Einstellungen
 #if MODUL_LEDAMPEL
-extern int ampelModus;
-extern bool ampelAn;
+    extern int ampelModus;
+    extern bool ampelAn;
 #endif
 
 // Webhook-Einstellungen
 #if MODUL_WEBHOOK
-extern bool webhookAn;
-extern int webhookFrequenz;
-extern int webhookPingFrequenz;
+    extern bool webhookAn;
+    extern int webhookFrequenz;
+    extern int webhookPingFrequenz;
 #endif
 
 // WiFi-Einstellungen
 #if MODUL_WIFI
-extern String wifiHostname;
-extern bool wifiAp;
-extern String wifiApSsid;
+    extern String wifiHostname;
+    extern bool wifiAp;
+    extern String wifiApSsid;
+    extern bool wlanNeustartGeplant;
+    extern unsigned long geplanteWLANNeustartZeit;
+    extern int wifiVerbindungsVersuche;
+    extern String aktuelleSsid;
 #endif
 
 // Analog-Sensor-Einstellungen
 #if MODUL_ANALOG3
-extern String analog3Name;
-extern bool analog3Webhook;
-extern int analog3Minimum;
-extern int analog3Maximum;
-extern int analog3GruenUnten;
-extern int analog3GruenOben;
-extern int analog3GelbUnten;
-extern int analog3GelbOben;
+    extern String analog3Name;
+    extern bool analog3Webhook;
+    extern int analog3Minimum;
+    extern int analog3Maximum;
+    extern int analog3GruenUnten;
+    extern int analog3GruenOben;
+    extern int analog3GelbUnten;
+    extern int analog3GelbOben;
 #endif
+
 #if MODUL_ANALOG3
-extern String analog3Name;
-extern bool analog3Webhook;
-extern int analog3Minimum;
-extern int analog3Maximum;
-extern int analog3GruenUnten;
-extern int analog3GruenOben;
-extern int analog3GelbUnten;
-extern int analog3GelbOben;
+    extern String analog3Name;
+    extern bool analog3Webhook;
+    extern int analog3Minimum;
+    extern int analog3Maximum;
+    extern int analog3GruenUnten;
+    extern int analog3GruenOben;
+    extern int analog3GelbUnten;
+    extern int analog3GelbOben;
 #endif
+
 #if MODUL_ANALOG4
-extern String analog4Name;
-extern bool analog4Webhook;
-extern int analog4Minimum;
-extern int analog4Maximum;
-extern int analog4GruenUnten;
-extern int analog4GruenOben;
-extern int analog4GelbUnten;
-extern int analog4GelbOben;
+    extern String analog4Name;
+    extern bool analog4Webhook;
+    extern int analog4Minimum;
+    extern int analog4Maximum;
+    extern int analog4GruenUnten;
+    extern int analog4GruenOben;
+    extern int analog4GelbUnten;
+    extern int analog4GelbOben;
 #endif
+
 #if MODUL_ANALOG3
-extern String analog5Name;
-extern bool analog5Webhook;
-extern int analog5Minimum;
-extern int analog5Maximum;
-extern int analog5GruenUnten;
-extern int analog5GruenOben;
-extern int analog5GelbUnten;
-extern int analog5GelbOben;
+    extern String analog5Name;
+    extern bool analog5Webhook;
+    extern int analog5Minimum;
+    extern int analog5Maximum;
+    extern int analog5GruenUnten;
+    extern int analog5GruenOben;
+    extern int analog5GelbUnten;
+    extern int analog5GelbOben;
 #endif
+
 #if MODUL_ANALOG3
-extern String analog6Name;
-extern bool analog6Webhook;
-extern int analog6Minimum;
-extern int analog6Maximum;
-extern int analog6GruenUnten;
-extern int analog6GruenOben;
-extern int analog6GelbUnten;
-extern int analog6GelbOben;
+    extern String analog6Name;
+    extern bool analog6Webhook;
+    extern int analog6Minimum;
+    extern int analog6Maximum;
+    extern int analog6GruenUnten;
+    extern int analog6GruenOben;
+    extern int analog6GelbUnten;
+    extern int analog6GelbOben;
 #endif
+
 #if MODUL_ANALOG7
-extern String analog7Name;
-extern bool analog7Webhook;
-extern int analog7Minimum;
-extern int analog7Maximum;
-extern int analog7GruenUnten;
-extern int analog7GruenOben;
-extern int analog7GelbUnten;
-extern int analog7GelbOben;
+    extern String analog7Name;
+    extern bool analog7Webhook;
+    extern int analog7Minimum;
+    extern int analog7Maximum;
+    extern int analog7GruenUnten;
+    extern int analog7GruenOben;
+    extern int analog7GelbUnten;
+    extern int analog7GelbOben;
 #endif
+
 #if MODUL_ANALOG8
-extern String analog8Name;
-extern bool analog8Webhook;
-extern int analog8Minimum;
-extern int analog8Maximum;
-extern int analog8GruenUnten;
-extern int analog8GruenOben;
-extern int analog8GelbUnten;
-extern int analog8GelbOben;
+    extern String analog8Name;
+    extern bool analog8Webhook;
+    extern int analog8Minimum;
+    extern int analog8Maximum;
+    extern int analog8GruenUnten;
+    extern int analog8GruenOben;
+    extern int analog8GelbUnten;
+    extern int analog8GelbOben;
 #endif
 
 
@@ -192,6 +208,12 @@ extern int module;
 extern String ip;
 extern const uint32_t wifiTimeout;
 
+extern int bodenfeuchteMesswert;
+extern int bodenfeuchteMesswertProzent;
+extern float lufttemperaturMesswert;
+extern float luftfeuchteMesswert;
+extern int helligkeitMesswert;
+extern int helligkeitMesswertProzent;
 extern int analog3Messwert;
 extern int analog3MesswertProzent;
 extern int analog4Messwert;
@@ -219,22 +241,15 @@ extern String analog8Farbe;
 #define pinAnalog A0
 
 #if MODUL_LEDAMPEL
-#define ampelPinRot 13
-#define ampelPinGelb 12
-#define ampelPinGruen 14
+    extern const int ampelPinRot;
+    extern const int ampelPinGelb;
+    extern const int ampelPinGruen;
 #endif
 
 #if MODUL_MULTIPLEXER
-#define multiplexerPinA 15
-#define multiplexerPinB 2
-#define multiplexerPinC 16
-#endif
-
-#if MODUL_DISPLAY
-#define displayBreite 128
-#define displayHoehe 64
-#define displayReset -1
-#define displayAdresse 0x3C
+    #define multiplexerPinA 15
+    #define multiplexerPinB 2
+    #define multiplexerPinC 16
 #endif
 
 // Einbinden weiterer Header-Dateien
@@ -243,29 +258,6 @@ extern String analog8Farbe;
 #include "analogsensor.h"
 #include "mutex.h"
 extern mutex_t mutex;
-
-#if MODUL_DHT
-#include "dht.h"
-#endif
-
-#if MODUL_LEDAMPEL
-#include "ledampel.h"
-#endif
-
-#if MODUL_MULTIPLEXER
-#include "multiplexer.h"
-#endif
-
-#if MODUL_DISPLAY
-#include "display.h"
-#endif
-
-#if MODUL_WIFI
-#include "wifi.h"
-#endif
-
-#if MODUL_WEBHOOK
-#include "webhook.h"
-#endif
+#include "passwoerter.h"
 
 #endif // EINSTELLUNGEN_H

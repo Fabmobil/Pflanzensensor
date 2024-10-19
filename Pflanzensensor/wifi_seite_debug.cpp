@@ -1,8 +1,28 @@
 #include "wifi_seite_debug.h"
 #include "einstellungen.h"
+#include "passwoerter.h"
 #include "wifi_header.h"
 #include "wifi_footer.h"
 #include "logger.h"
+
+#if MODUL_HELLIGKEIT
+    extern int helligkeitMesswertProzent;
+    extern int helligkeitMesswert;
+#endif
+
+#if MODUL_BODENFEUCHTE
+    extern int bodenfeuchteMesswert;
+    extern int bodenfeuchteMesswertProzent;
+#endif
+
+#if MODUL_DISPLAY
+    extern int status;
+#endif
+
+#if MODUL_DHT
+    extern float lufttemperaturMesswert;
+    extern float luftfeuchteMesswert;
+#endif
 
 void WebseiteDebugAusgeben() {
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
@@ -158,15 +178,15 @@ void WebseiteDebugAusgeben() {
       Webserver.sendContent(F("<li>SSID 1: "));
       Webserver.sendContent(wifiSsid1);
       Webserver.sendContent(F("</li>\n<li>Passwort 1: "));
-      Webserver.sendContent(wifiPassword1);
+      Webserver.sendContent(wifiPasswort1);
       Webserver.sendContent(F("</li>\n<li>SSID 2: "));
       Webserver.sendContent(wifiSsid2);
       Webserver.sendContent(F("</li>\n<li>Passwort 2: "));
-      Webserver.sendContent(wifiPassword2);
+      Webserver.sendContent(wifiPasswort2);
       Webserver.sendContent(F("</li>\n<li>SSID 3: "));
       Webserver.sendContent(wifiSsid3);
       Webserver.sendContent(F("</li>\n<li>Passwort 3: "));
-      Webserver.sendContent(wifiPassword3);
+      Webserver.sendContent(wifiPasswort3);
       Webserver.sendContent(F("</li>\n"));
     } else {
       Webserver.sendContent(F("<li>Name des WLANs: "));

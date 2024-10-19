@@ -18,15 +18,16 @@
 #include "einstellungen.h"
 #include "logger.h"
 
+
 extern ESP8266WiFiMulti wifiMulti;
 extern ESP8266WebServer Webserver;
 extern bool wifiAp;
 extern String wifiSsid1;
-extern String wifiPassword1;
+extern String wifiPasswort1;
 extern String wifiSsid2;
-extern String wifiPassword2;
+extern String wifiPasswort2;
 extern String wifiSsid3;
-extern String wifiPassword3;
+extern String wifiPasswort3;
 
 // Funktionsdeklarationen
 String WifiSetup(String hostname);

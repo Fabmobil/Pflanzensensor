@@ -10,11 +10,16 @@
 
 #include "wifi_seite_setzeVariablen.h"
 #include "einstellungen.h"
+#include "passwoerter.h"
 #include "variablenspeicher.h"
 #include "wifi.h"
 #include "wifi_footer.h"
 #include "wifi_header.h"
 #include "logger.h"
+
+#if MODUL_DISPLAY
+    extern int status;
+#endif
 
 void ArgumenteAusgeben() {
   logger.info("Gebe alle Argumente des POST requests aus:");
@@ -234,11 +239,11 @@ void AktualisiereVariablen() {
     }
 
     AktualisiereString("wifiSsid1", wifiSsid1, true);
-    AktualisiereString("wifiPassword1", wifiPassword1, true);
+    AktualisiereString("wifiPasswort1", wifiPasswort1, true);
     AktualisiereString("wifiSsid2", wifiSsid2, true);
-    AktualisiereString("wifiPassword2", wifiPassword2, true);
+    AktualisiereString("wifiPasswort2", wifiPasswort2, true);
     AktualisiereString("wifiSsid3", wifiSsid3, true);
-    AktualisiereString("wifiPassword3", wifiPassword3, true);
+    AktualisiereString("wifiPasswort3", wifiPasswort3, true);
     AktualisiereString("wifiApSsid", wifiApSsid, true);
     AktualisiereBoolean("wifiApPasswortAktiviert", wifiApPasswortAktiviert, true);
     if (wifiApPasswortAktiviert) {

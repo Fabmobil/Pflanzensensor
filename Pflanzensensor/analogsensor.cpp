@@ -5,9 +5,9 @@
  * @date 2023-09-20
  */
 
+#include "einstellungen.h"
 #include "analogsensor.h"
 #include "logger.h"
-#include "einstellungen.h"
 
 #if MODUL_MULTIPLEXER
 #include "multiplexer.h"

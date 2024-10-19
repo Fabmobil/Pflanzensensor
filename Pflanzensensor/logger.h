@@ -10,27 +10,12 @@
 #include <vector>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
-#include "config.h"
+#include "einstellungen.h"
 
 extern String logLevel;
 extern int logAnzahlEintraege;
 extern int logAnzahlWebseite;
 extern bool logInDatei;
-// #ifndef logLevel
-// String logLevel = "INFO";
-// #endif
-
-// #ifndef logAnzahlEintraege
-// int logAnzahlEintraege = 100;
-// #endif
-
-// #ifndef logAnzahlWebseite
-// int logAnzahlWebseite = 20;
-// #endif
-
-// #ifndef logInDatei
-// bool logInDatei = false;
-// #endif
 
 /**
  * @brief Enumeration for different log levels

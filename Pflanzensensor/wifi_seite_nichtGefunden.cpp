@@ -8,6 +8,8 @@
  * des Pflanzensensors.
  */
 
+#include "einstellungen.h"
+#include "passwoerter.h"
 #include "wifi_seite_nichtGefunden.h"
 #include "logger.h"
 #include "wifi.h"

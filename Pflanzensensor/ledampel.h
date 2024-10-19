@@ -13,9 +13,9 @@
 
 #include <Arduino.h>
 
-extern int ampelPinRot;
-extern int ampelPinGelb;
-extern int ampelPinGruen;
+extern const int ampelPinRot;
+extern const int ampelPinGelb;
+extern const int ampelPinGruen;
 
 /**
  * @brief Lässt die LED-Ampel in einer bestimmten Farbe blinken

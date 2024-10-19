@@ -11,8 +11,24 @@
 #include "wifi_seite_start.h"
 #include "logger.h"
 #include "einstellungen.h"
+#include "passwoerter.h"
 #include "wifi_header.h"
 #include "wifi_footer.h"
+
+#if MODUL_DHT
+  extern float luftfeuchteMesswert;
+  extern float lufttemperaturMesswert;
+#endif
+
+#if MODUL_BODENFEUCHTE
+  extern int bodenfeuchteMesswertProzent;
+#endif
+
+#if MODUL_HELLIGKEIT
+  extern int helligkeitMesswertProzent;
+#endif
+
+extern bool webhookAn;
 
 void sendeSensorDaten(const __FlashStringHelper* sensorName, const String& sensorFarbe, int messwert, const __FlashStringHelper* einheit, bool alarm, bool webhook) {
   Webserver.sendContent(F("<h2>"));
@@ -58,6 +74,7 @@ void WebseiteStartAusgeben() {
   #if !MODUL_WEBHOOK
     bool webhookAn = false; // ansonsten ist die Variable nicht definiert und das Programm kompiliert nicht
   #endif
+
   #if MODUL_HELLIGKEIT
     sendeSensorDaten(F("Helligkeit"), helligkeitFarbe, helligkeitMesswertProzent, F("%"), helligkeitWebhook, webhookAn);
   #endif

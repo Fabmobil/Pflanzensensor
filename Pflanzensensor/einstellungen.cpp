@@ -1,7 +1,7 @@
 /**
  * @file einstellungen.cpp
  * @brief Implementierung der Konfigurationseinstellungen für den Fabmobil Pflanzensensor
- * @author Tommy, Claude
+ * @author Tommy
  * @date 2023-09-20
  *
  * Diese Datei enthält die Definitionen und Initialisierungen aller Konfigurationseinstellungen
@@ -9,27 +9,11 @@
  */
 
 #include "einstellungen.h"
-#include "passwoerter.h"
-
-// Modulaktivierungen
-const bool MODUL_DISPLAY = true;
-const bool MODUL_WIFI = true;
-const bool MODUL_DHT = true;
-const bool MODUL_BODENFEUCHTE = true;
-const bool MODUL_LEDAMPEL = true;
-const bool MODUL_HELLIGKEIT = true;
-const bool MODUL_WEBHOOK = false;
-const bool MODUL_ANALOG3 = false;
-const bool MODUL_ANALOG4 = false;
-const bool MODUL_ANALOG5 = false;
-const bool MODUL_ANALOG6 = false;
-const bool MODUL_ANALOG7 = false;
-const bool MODUL_ANALOG8 = false;
 
 // Logging-Einstellungen
 String logLevel = "info";
 int logAnzahlEintraege = 100;
-int LogAnzahlWebseite = 20;
+int logAnzahlWebseite = 20;
 bool logInDatei = false;
 
 // Allgemeine Einstellungen
@@ -38,81 +22,90 @@ unsigned long intervallAnalog = 5000;
 
 // Bodenfeuchte-Einstellungen
 #if MODUL_BODENFEUCHTE
-String bodenfeuchteName = "Bodenfeuchte";
-bool bodenfeuchteWebhook = true;
-int bodenfeuchteMinimum = 900;
-int bodenfeuchteMaximum = 380;
-int bodenfeuchteGruenUnten = 40;
-int bodenfeuchteGruenOben = 60;
-int bodenfeuchteGelbUnten = 20;
-int bodenfeuchteGelbOben = 80;
+  String bodenfeuchteName = "Bodenfeuchte";
+  bool bodenfeuchteWebhook = true;
+  int bodenfeuchteMinimum = 900;
+  int bodenfeuchteMaximum = 380;
+  int bodenfeuchteGruenUnten = 40;
+  int bodenfeuchteGruenOben = 60;
+  int bodenfeuchteGelbUnten = 20;
+  int bodenfeuchteGelbOben = 80;
 #endif
 
 // Display-Einstellungen
 #if MODUL_DISPLAY
-unsigned long intervallDisplay = 4874;
+  unsigned long intervallDisplay = 4874;
+  const int displayBreite = 128;
+  const int displayHoehe = 64;
+  const int displayReset = -1;
+  const int displayAdresse = 0x3C;
 #endif
 
 // DHT-Einstellungen
 #if MODUL_DHT
-const int dhtPin = 0;
-const int dhtSensortyp = DHT11;
-unsigned long intervallDht = 5000;
-bool lufttemperaturWebhook = false;
-int lufttemperaturGruenUnten = 19;
-int lufttemperaturGruenOben = 22;
-int lufttemperaturGelbUnten = 17;
-int lufttemperaturGelbOben = 24;
-bool luftfeuchteWebhook = false;
-int luftfeuchteGruenUnten = 40;
-int luftfeuchteGruenOben = 60;
-int luftfeuchteGelbUnten = 20;
-int luftfeuchteGelbOben = 80;
+  #include <DHT.h>
+  const int dhtPin = 0;
+  const int dhtSensortyp = DHT11;
+  unsigned long intervallDht = 5000;
+  bool lufttemperaturWebhook = false;
+  int lufttemperaturGruenUnten = 19;
+  int lufttemperaturGruenOben = 22;
+  int lufttemperaturGelbUnten = 17;
+  int lufttemperaturGelbOben = 24;
+  bool luftfeuchteWebhook = false;
+  int luftfeuchteGruenUnten = 40;
+  int luftfeuchteGruenOben = 60;
+  int luftfeuchteGelbUnten = 20;
+  int luftfeuchteGelbOben = 80;
 #endif
 
 // Helligkeits-Einstellungen
 #if MODUL_HELLIGKEIT
-String helligkeitName = "Helligkeit";
-bool helligkeitWebhook = false;
-int helligkeitMinimum = 8;
-int helligkeitMaximum = 1024;
-int helligkeitGruenUnten = 40;
-int helligkeitGruenOben = 60;
-int helligkeitGelbUnten = 20;
-int helligkeitGelbOben = 80;
+  String helligkeitName = "Helligkeit";
+  bool helligkeitWebhook = false;
+  int helligkeitMinimum = 8;
+  int helligkeitMaximum = 1024;
+  int helligkeitGruenUnten = 40;
+  int helligkeitGruenOben = 60;
+  int helligkeitGelbUnten = 20;
+  int helligkeitGelbOben = 80;
 #endif
 
 // LED-Ampel-Einstellungen
 #if MODUL_LEDAMPEL
-int ampelModus = 1;
-bool ampelAn = true;
+  int ampelModus = 1;
+  bool ampelAn = true;
+  const int ampelPinRot = 13;
+  const int ampelPinGelb = 12;
+  const int ampelPinGruen = 14;
 #endif
 
 // Webhook-Einstellungen
 #if MODUL_WEBHOOK
-bool webhookAn = false;
-int webhookFrequenz = 12;
-int webhookPingFrequenz = 24;
+  bool webhookAn = false;
+  int webhookFrequenz = 12;
+  int webhookPingFrequenz = 24;
 #endif
 
 // WiFi-Einstellungen
 #if MODUL_WIFI
-String wifiHostname = "pflanzensensor";
-bool wifiAp = false;
-String wifiApSsid = "Fabmobil Pflanzensensor";
+  String wifiHostname = "pflanzensensor";
+  bool wifiAp = false;
+  String wifiApSsid = "Fabmobil Pflanzensensor";
 #endif
 
 // Analog-Sensor-Einstellungen
 #if MODUL_ANALOG3
-String analog3Name = "Analog 3";
-bool analog3Webhook = false;
-int analog3Minimum = 900;
-int analog3Maximum = 380;
-int analog3GruenUnten = 40;
-int analog3GruenOben = 60;
-int analog3GelbUnten = 20;
-int analog3GelbOben = 80;
+  String analog3Name = "Analog 3";
+  bool analog3Webhook = false;
+  int analog3Minimum = 900;
+  int analog3Maximum = 380;
+  int analog3GruenUnten = 40;
+  int analog3GruenOben = 60;
+  int analog3GelbUnten = 20;
+  int analog3GelbOben = 80;
 #endif
+
 #if MODUL_ANALOG4 // wenn ein vierter Analogsensor verwendet wird
   String analog4Name = "Analog 4"; // Name des Sensors
   bool analog4Webhook = false; // soll der Sensor für Alarme überwacht werden?
@@ -177,8 +170,6 @@ unsigned long millisVorherWebhookPing = 0;
 int module = 0;
 String ip = "keine WLAN Verbindung.";
 const uint32_t wifiTimeout = 5000;
-
-// Weitere globale Variablen
 int analog3Messwert = -1;
 int analog3MesswertProzent = -1;
 int analog4Messwert = -1;
@@ -204,33 +195,33 @@ String analog7Farbe = "rot";
 String analog8Farbe = "rot";
 
 #if MODUL_BODENFEUCHTE
-int bodenfeuchteMesswert = -1;
-int bodenfeuchteMesswertProzent = -1;
+  int bodenfeuchteMesswert = -1;
+  int bodenfeuchteMesswertProzent = -1;
 #else
-int bodenfeuchteMesswert = -1;
-int bodenfeuchteMesswertProzent = -1;
+  int bodenfeuchteMesswert = -1;
+  int bodenfeuchteMesswertProzent = -1;
 #endif
 
 #if MODUL_DHT
-float lufttemperaturMesswert = -1;
-float luftfeuchteMesswert = -1;
+  float lufttemperaturMesswert = -1;
+  float luftfeuchteMesswert = -1;
 #endif
 
 #if MODUL_HELLIGKEIT
-int helligkeitMesswert = -1;
-int helligkeitMesswertProzent = -1;
+  int helligkeitMesswert = -1;
+  int helligkeitMesswertProzent = -1;
 #endif
 
 #if MODUL_WIFI
-String aktuelleSsid = "";
-int wifiVerbindungsVersuche = 0;
-unsigned long geplanteWLANNeustartZeit = 0;
-bool wlanNeustartGeplant = false;
+  String aktuelleSsid = "";
+  int wifiVerbindungsVersuche = 0;
+  unsigned long geplanteWLANNeustartZeit = 0;
+  bool wlanNeustartGeplant = false;
 #endif
 
 #if MODUL_DISPLAY
-int status = 0;
-bool displayAn = true;
+  int status = 0;
+  bool displayAn = true;
 #endif
 
 mutex_t mutex;

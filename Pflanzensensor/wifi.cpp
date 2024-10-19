@@ -16,12 +16,15 @@
 #include "wifi_seite_nichtGefunden.h"
 #include "wifi_seite_start.h"
 #include "wifi_seite_setzeVariablen.h"
+#if MODUL_DISPLAY
+  #include "display.h"
+#endif
 
 bool wlanAenderungVorgenommen = false;
 ESP8266WiFiMulti wifiMulti;
 ESP8266WebServer Webserver(80); // Webserver auf Port 80
 extern bool wlanNeustartGeplant;
-extern int geplanteWLANNeustartZeit;
+extern unsigned long geplanteWLANNeustartZeit;
 extern String wifiApPasswort;
 extern String wifiHostname;
 extern String wifiApSsid;
@@ -44,9 +47,9 @@ logger.debug("Beginn von WifiSetup()");
   if ( !wifiAp ) { // falls kein eigener Accesspoint aufgemacht werden soll wird sich mit dem definierten WLAN verbunden
     WiFi.mode(WIFI_STA);; // WLAN im Clientmodus starten
     // Wifi-Verbindungen konfigurieren
-    wifiMulti.addAP(wifiSsid1.c_str(), wifiPassword1.c_str()); // WLAN Verbindung konfigurieren
-    wifiMulti.addAP(wifiSsid2.c_str(), wifiPassword2.c_str());
-    wifiMulti.addAP(wifiSsid3.c_str(), wifiPassword3.c_str());
+    wifiMulti.addAP(wifiSsid1.c_str(), wifiPasswort1.c_str()); // WLAN Verbindung konfigurieren
+    wifiMulti.addAP(wifiSsid2.c_str(), wifiPasswort2.c_str());
+    wifiMulti.addAP(wifiSsid3.c_str(), wifiPasswort3.c_str());
     if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
       ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
       logger.info(" .. WLAN verbunden: ");
@@ -187,9 +190,9 @@ void NeustartWLANVerbindung() {
     wifiMulti.cleanAPlist();
 
     // Fügt die konfigurierten WLANs hinzu
-    wifiMulti.addAP(wifiSsid1.c_str(), wifiPassword1.c_str());
-    wifiMulti.addAP(wifiSsid2.c_str(), wifiPassword2.c_str());
-    wifiMulti.addAP(wifiSsid3.c_str(), wifiPassword3.c_str());
+    wifiMulti.addAP(wifiSsid1.c_str(), wifiPasswort1.c_str());
+    wifiMulti.addAP(wifiSsid2.c_str(), wifiPasswort2.c_str());
+    wifiMulti.addAP(wifiSsid3.c_str(), wifiPasswort3.c_str());
 
     #if MODUL_DISPLAY
       DisplayDreiWoerter("Neustart", "WLAN", "Modul");

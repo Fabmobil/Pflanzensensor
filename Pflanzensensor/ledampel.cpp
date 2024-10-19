@@ -1,11 +1,11 @@
+#include "einstellungen.h"
 #include "ledampel.h"
 #include "logger.h"
-#include "einstellungen.h"
 
 void LedampelBlinken(String farbe, int anzahl, int dauer) {
   logger.debug("Beginn von LedampelBlinken(" + String(farbe) + ", " + String(anzahl) + ", " + String(dauer));
 
-  char PIN_LED;
+  int PIN_LED = 0;
   digitalWrite(ampelPinRot, LOW);
   digitalWrite(ampelPinGelb, LOW);
   digitalWrite(ampelPinGruen, LOW);

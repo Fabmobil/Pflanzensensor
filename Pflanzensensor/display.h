@@ -11,25 +11,28 @@
 #ifndef DISPLAY_H
 #define DISPLAY_H
 
+//#include "einstellungen.h"
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-extern Adafruit_SSD1306 display;
-extern int displayBreite;
-extern int displayHoehe;
-extern bool displayReset;
-extern bool displayAn;
-extern int displayAdresse;
-extern bool wifiAp;
-extern String aktuelleSsid;
-extern String wifiApSsid;
-extern bool wifiApPasswortAktiviert;
-extern String wifiApPasswort;
-
+#include "display.h"
 #include "display_bilder.h"
 #include "logger.h"
+//#include "einstellungen.h"
+
+extern Adafruit_SSD1306 display;
+// extern const int displayBreite;
+// extern const int displayHoehe;
+// extern const int displayReset;
+// extern bool displayAn;
+// extern const int displayAdresse;
+// extern bool wifiAp;
+// extern String aktuelleSsid;
+// extern String wifiApSsid;
+// extern bool wifiApPasswortAktiviert;
+// extern String wifiApPasswort;
 
 /**
  * @brief Zeigt das Fabmobil-Logo auf dem Display an

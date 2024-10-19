@@ -5,8 +5,11 @@
  * @date 2023-09-20
  */
 
-#include "display.h"
 #include "einstellungen.h"
+#include "passwoerter.h"
+#pragma message "Compiling display.cpp"
+
+#include "display.h"
 #include "display_bilder.h"
 #include "logger.h"
 #include "ledampel.h"
@@ -94,6 +97,7 @@ void ZeigeBlume() {
 }
 
 void ZeigeIPAdresse() {
+#if MODUL_WIFI
     // Löscht den gesamten Displayinhalt
     display.clearDisplay();
 
@@ -132,6 +136,7 @@ void ZeigeIPAdresse() {
 
     // Aktualisiert das Display, um die Änderungen anzuzeigen
     display.display();
+#endif
 }
 
 void ZeigeBodenfeuchte() {
