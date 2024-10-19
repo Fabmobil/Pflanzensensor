@@ -37,5 +37,6 @@ void NeustartWLANVerbindung();
 void VerzoegerterWLANNeustart();
 void SetzeLogLevel();
 void DownloadLog();
+void LeseMesswerte();
 
 #endif // WIFI_H

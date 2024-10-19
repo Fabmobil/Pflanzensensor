@@ -104,6 +104,7 @@ logger.debug("Beginn von WifiSetup()");
   Webserver.on("/admin.html", HTTP_GET, WebseiteAdminAusgeben);
   Webserver.on("/debug.html", HTTP_GET, WebseiteDebugAusgeben);
   Webserver.on("/setzeVariablen", HTTP_POST, WebseiteSetzeVariablen);
+  Webserver.on("/leseMesswerte", HTTP_GET, LeseMesswerte);
 
   Webserver.on("/neuesteLogs", HTTP_GET, []() {
     String logs = logger.getLogsAsHtmlTable();
@@ -263,4 +264,54 @@ void DownloadLog() {
   String logContent = logger.getLogFileContent();
   Webserver.sendHeader("Content-Disposition", "attachment; filename=system.log");
   Webserver.send(200, "text/plain", logContent);
+}
+
+void LeseMesswerte() {
+  String json = "{";
+  #if MODUL_BODENFEUCHTE
+    json += "\"bodenfeuchte\":" + String(bodenfeuchteMesswert) + ",";
+  #endif
+
+  #if MODUL_HELLIGKEIT
+    json += "\"helligkeit\":" + String(helligkeitMesswert) + ",";
+  #endif
+
+  #if MODUL_DHT
+    json += "\"lufttemperatur\":" + String(lufttemperaturMesswert) + ",";
+    json += "\"luftfeuchte\":" + String(luftfeuchteMesswert) + ",";
+  #endif
+
+  #if MODUL_ANALOG3
+    json += "\"analog3\":" + String(analog3Messwert) + ",";
+  #endif
+
+  #if MODUL_ANALOG4
+    json += "\"analog4\":" + String(analog4Messwert) + ",";
+  #endif
+
+  #if MODUL_ANALOG5
+    json += "\"analog5\":" + String(analog5Messwert) + ",";
+  #endif
+
+  #if MODUL_ANALOG6
+    json += "\"analog6\":" + String(analog6Messwert) + ",";
+  #endif
+
+  #if MODUL_ANALOG7
+    json += "\"analog7\":" + String(analog7Messwert) + ",";
+  #endif
+
+  #if MODUL_ANALOG8
+    json += "\"analog8\":" + String(analog8Messwert) + ",";
+  #endif
+
+  // Entferne das letzte Komma, falls vorhanden
+  if (json.endsWith(",")) {
+    json.remove(json.length() - 1);
+  }
+
+  json += "}";
+
+  // Sende die JSON-Antwort an den Client
+  Webserver.send(200, "application/json", json);
 }

@@ -30,6 +30,13 @@
 #define MODUL_ANALOG7 0
 #define MODUL_ANALOG8 0
 
+// Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
+#if MODUL_BODENFEUCHTE && MODUL_HELLIGKEIT
+  #define MODUL_MULTIPLEXER true
+#else
+  #define MODUL_MULTIPLEXER false //sonst nicht
+#endif
+
 // Logging-Einstellungen
 extern String logLevel;
 extern int logAnzahlEintraege;
@@ -247,9 +254,9 @@ extern String analog8Farbe;
 #endif
 
 #if MODUL_MULTIPLEXER
-    #define multiplexerPinA 15
-    #define multiplexerPinB 2
-    #define multiplexerPinC 16
+    extern const int multiplexerPinA;
+    extern const int multiplexerPinB;
+    extern const int multiplexerPinC;
 #endif
 
 // Einbinden weiterer Header-Dateien

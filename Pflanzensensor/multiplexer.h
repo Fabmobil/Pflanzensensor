@@ -10,10 +10,7 @@
 
 #ifndef MULTIPLEXER_H
 #define MULTIPLEXER_H
-
-extern int multiplexerPinA;
-extern int multiplexerPinB;
-extern int multiplexerPinC;
+#include "einstellungen.h"
 
 /**
  * @brief Schaltet den Eingang des analogen Multiplexers um

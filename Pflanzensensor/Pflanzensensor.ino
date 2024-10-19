@@ -88,7 +88,7 @@ void setup() {
   #if MODUL_HELLIGKEIT || MODUL_BODENFEUCHTE // "||" ist ein logisches Oder: Wenn Helligkeits- oder Bodenfeuchtemodul aktiv ist
     pinMode(pinAnalog, INPUT);  // wird der Analogpin als Eingang gesetzt
   #endif
-  #if MODUL_MULTIPLEXER // wenn das Multiplexer Modul aktiv ist werden die zwei Multiplexerpins als Ausgang gesetzt:
+  #if MODUL_MULTIPLEXER // wenn das Multiplexer Modul aktiv ist werden die drei Multiplexerpins als Ausgang gesetzt:
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
       DisplayDreiWoerter("Start..", " Multiplexer-", "  modul");
     #endif

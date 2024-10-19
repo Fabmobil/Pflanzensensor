@@ -94,6 +94,12 @@ unsigned long intervallAnalog = 5000;
   String wifiApSsid = "Fabmobil Pflanzensensor";
 #endif
 
+#if MODUL_MULTIPLEXER
+  const int multiplexerPinA = 15;
+  const int multiplexerPinB = 2;
+  const int multiplexerPinC = 16;
+#endif
+
 // Analog-Sensor-Einstellungen
 #if MODUL_ANALOG3
   String analog3Name = "Analog 3";
