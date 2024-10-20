@@ -57,20 +57,20 @@ void WebhookSendeInit() {
 
 void WebhookErfasseSensordaten(const char* statusWert) {
   JsonDocument dok;
-  JsonArray gruenArray = dok["gruen"].to<JsonArray>();
-  JsonArray gelbArray = dok["gelb"].to<JsonArray>();
-  JsonArray rotArray = dok["rot"].to<JsonArray>();
+  JsonArray sensorData = dok["sensorData"].to<JsonArray>();
   bool hatAktivenAlarm = false;
 
-  // Funktion zum Hinzufügen von Sensorinformationen zur entsprechenden Kategorie
-  auto fuegeHinzuSensorInfo = [&](int wert, const String& name, const char* einheit, const String& status, bool alarmAktiv) {
-    JsonArray& zielArray = (status == "gruen") ? gruenArray : (status == "gelb" ? gelbArray : rotArray);
-    JsonObject sensorObj = zielArray.add<JsonObject>();
-    sensorObj["name"] = name;
-    sensorObj["wert"] = wert;
-    sensorObj["einheit"] = einheit;
-    if (status == "rot" && alarmAktiv) {
-      hatAktivenAlarm = true;
+  // Lambda-Funktion zum Hinzufügen von Sensorinformationen
+  auto fuegeHinzuSensorInfo = [&](float wert, const String& name, const char* einheit, const String& status, bool alarmAktiv) {
+    if (alarmAktiv) {
+      JsonObject sensorObj = sensorData.add<JsonObject>();
+      sensorObj["name"] = name;
+      sensorObj["wert"] = wert;
+      sensorObj["einheit"] = einheit;
+      sensorObj["status"] = status;
+      if (status == "rot") {
+        hatAktivenAlarm = true;
+      }
     }
   };
 
@@ -104,17 +104,16 @@ void WebhookErfasseSensordaten(const char* statusWert) {
     fuegeHinzuSensorInfo(analog8MesswertProzent, analog8Name, "%", analog8Farbe, analog8Webhook);
   #endif
 
-  // Setze webhookStatus
+  // Setze den webhookStatus
   if (strcmp(statusWert, "ping") == 0) {
-    webhookStatus = "ping";
+    dok["status"] = "ping";
   } else {
-    webhookStatus = hatAktivenAlarm ? "Alarm" : "OK";
+    dok["status"] = hatAktivenAlarm ? "Alarm" : "OK";
   }
-  dok["status"] = webhookStatus;
   dok["alarmfrequenz"] = webhookFrequenz;
   dok["pingfrequenz"] = webhookPingFrequenz;
 
-  // Sende die gesammelten Daten
+  // Serialisiere und sende die gesammelten Daten
   String jsonString;
   serializeJson(dok, jsonString);
   WebhookSendeDaten(jsonString);

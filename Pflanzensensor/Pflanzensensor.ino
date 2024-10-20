@@ -419,3 +419,4 @@ String FarbeBerechnen(int messwert, int gruenUnten, int gruenOben, int gelbUnten
     return "gelb";
   }
 }
+

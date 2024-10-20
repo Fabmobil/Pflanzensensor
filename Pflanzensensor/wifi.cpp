@@ -8,6 +8,9 @@
  * zur Steuerung des integrierten Webservers.
  */
 
+#include <ArduinoJson.h>
+#include "einstellungen.h"
+#include "passwoerter.h"
 #include "wifi.h"
 #include "wifi_footer.h"
 #include "wifi_header.h"
@@ -23,12 +26,7 @@
 bool wlanAenderungVorgenommen = false;
 ESP8266WiFiMulti wifiMulti;
 ESP8266WebServer Webserver(80); // Webserver auf Port 80
-extern bool wlanNeustartGeplant;
-extern unsigned long geplanteWLANNeustartZeit;
-extern String wifiApPasswort;
-extern String wifiHostname;
-extern String wifiApSsid;
-extern bool wifiApPasswortAktiviert;
+
 
 /**
  * @brief Initialisiert die WiFi-Verbindung
@@ -100,11 +98,27 @@ logger.debug("Beginn von WifiSetup()");
   } else { // falls Namensauflösung nicht erfolgreich eingerichtet wurde
     logger.error(" .. Fehler bein Einrichten der Namensauflösung.");
   }
-  Webserver.on("/", HTTP_GET, WebseiteStartAusgeben);
-  Webserver.on("/admin.html", HTTP_GET, WebseiteAdminAusgeben);
-  Webserver.on("/debug.html", HTTP_GET, WebseiteDebugAusgeben);
-  Webserver.on("/setzeVariablen", HTTP_POST, WebseiteSetzeVariablen);
-  Webserver.on("/leseMesswerte", HTTP_GET, LeseMesswerte);
+
+  // Verwende Funktionszeiger für Webserver-Routen
+  using HandlerFunction = std::function<void(void)>;
+  const HandlerFunction handlers[] = {
+    WebseiteStartAusgeben,
+    WebseiteAdminAusgeben,
+    WebseiteDebugAusgeben,
+    WebseiteSetzeVariablen,
+    LeseMesswerte
+  };
+  const char* paths[] = {
+    "/",
+    "/admin.html",
+    "/debug.html",
+    "/setzeVariablen",
+    "/leseMesswerte"
+  };
+
+  for (int i = 0; i < 5; i++) {
+    Webserver.on(paths[i], HTTP_ANY, handlers[i]);
+  }
 
   Webserver.on("/neuesteLogs", HTTP_GET, []() {
     String logs = logger.getLogsAsHtmlTable();
@@ -267,51 +281,48 @@ void DownloadLog() {
 }
 
 void LeseMesswerte() {
-  String json = "{";
+  JsonDocument doc;  // Verwende JsonDocument statt StaticJsonDocument
+
   #if MODUL_BODENFEUCHTE
-    json += "\"bodenfeuchte\":" + String(bodenfeuchteMesswert) + ",";
+    doc["bodenfeuchte"] = bodenfeuchteMesswert;
   #endif
 
   #if MODUL_HELLIGKEIT
-    json += "\"helligkeit\":" + String(helligkeitMesswert) + ",";
+    doc["helligkeit"] = helligkeitMesswert;
   #endif
 
   #if MODUL_DHT
-    json += "\"lufttemperatur\":" + String(lufttemperaturMesswert) + ",";
-    json += "\"luftfeuchte\":" + String(luftfeuchteMesswert) + ",";
+    doc["lufttemperatur"] = lufttemperaturMesswert;
+    doc["luftfeuchte"] = luftfeuchteMesswert;
   #endif
 
   #if MODUL_ANALOG3
-    json += "\"analog3\":" + String(analog3Messwert) + ",";
+    doc["analog3"] = analog3Messwert;
   #endif
 
   #if MODUL_ANALOG4
-    json += "\"analog4\":" + String(analog4Messwert) + ",";
+    doc["analog4"] = analog4Messwert;
   #endif
 
   #if MODUL_ANALOG5
-    json += "\"analog5\":" + String(analog5Messwert) + ",";
+    doc["analog5"] = analog5Messwert;
   #endif
 
   #if MODUL_ANALOG6
-    json += "\"analog6\":" + String(analog6Messwert) + ",";
+    doc["analog6"] = analog6Messwert;
   #endif
 
   #if MODUL_ANALOG7
-    json += "\"analog7\":" + String(analog7Messwert) + ",";
+    doc["analog7"] = analog7Messwert;
   #endif
 
   #if MODUL_ANALOG8
-    json += "\"analog8\":" + String(analog8Messwert) + ",";
+    doc["analog8"] = analog8Messwert;
   #endif
 
-  // Entferne das letzte Komma, falls vorhanden
-  if (json.endsWith(",")) {
-    json.remove(json.length() - 1);
-  }
+  String json;
+  serializeJson(doc, json);
 
-  json += "}";
-
-  // Sende die JSON-Antwort an den Client
   Webserver.send(200, "application/json", json);
 }
+

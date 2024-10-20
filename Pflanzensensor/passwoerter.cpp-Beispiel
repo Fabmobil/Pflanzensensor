@@ -7,6 +7,8 @@
  * Diese Datei enthält sensible Informationen wie Passwörter und Zugangsdaten.
  */
 
+#include "passwoerter.h"
+
 String webhookDomain = "hook.eu2.make.com"; // vorderer Teil der Webhook-URL
 String webhookPfad = "/w0ynsd6suxxxxxxxxxxxxxxxxx3839dh"; // hinterer Teil der Webhook-URL
 

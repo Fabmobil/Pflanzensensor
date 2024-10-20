@@ -21,7 +21,7 @@
  * @param name Der Name des Eingabefeldes
  * @param wert Der aktuelle Wert der Einstellung
  */
-void sendeEinstellung(const __FlashStringHelper* bezeichnung, const String& name, const String& wert);
+void sendeEinstellung(const __FlashStringHelper* bezeichnung, const __FlashStringHelper* name, const String& wert);
 
 /**
  * @brief Sendet eine Checkbox-Option an den Webserver
@@ -30,7 +30,7 @@ void sendeEinstellung(const __FlashStringHelper* bezeichnung, const String& name
  * @param name Der Name der Checkbox
  * @param status Der aktuelle Status der Checkbox (true/false)
  */
-void sendeCheckbox(const __FlashStringHelper* bezeichnung, const String& name, const bool& status);
+void sendeCheckbox(const __FlashStringHelper* bezeichnung, const __FlashStringHelper* name, const bool& status);
 
 /**
  * @brief Sendet Schwellwert-Einstellungen an den Webserver
