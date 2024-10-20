@@ -13,12 +13,12 @@
 
 #include <Arduino.h>
 
-#if MODUL_WEBHOOK
+
 extern String webhookDomain;
 extern String webhookPfad;
-#endif
 
-#if MODUL_WIFI
+
+
 extern bool wifiApPasswortAktiviert;
 extern String wifiApPasswort;
 extern String wifiAdminPasswort;
@@ -28,7 +28,7 @@ extern String wifiSsid2;
 extern String wifiPasswort2;
 extern String wifiSsid3;
 extern String wifiPasswort3;
-#endif
+
 
 #if MODUL_INFLUXDB
 extern String influxToken;
