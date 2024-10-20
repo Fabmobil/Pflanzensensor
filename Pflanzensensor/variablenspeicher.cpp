@@ -8,9 +8,9 @@
  * im Flash-Speicher des ESP8266.
  */
 
+#include "variablenspeicher.h"
 #include "einstellungen.h"
 #include "passwoerter.h"
-#include "variablenspeicher.h"
 #if MODUL_DISPLAY
   #include "display.h"
 #endif

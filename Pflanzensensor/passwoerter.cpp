@@ -10,31 +10,29 @@
 
 #include "passwoerter.h"
 
-#if MODUL_WEBHOOK
-String webhookDomain = "hook.eu2.make.com";
-String webhookPfad = "/tfe8kh229kog89riw66aa1clm0wtfwx2"; // Telegram
-//String webhookPfad = "/7a3mxtmkoxi4jllf6qxbbr26y3vbwuzq"; // Mail
-#endif
+char webhookDomain[20] = "hook.eu2.make.com";
+char webhookPfad[35] = "/tfe8kh229kog89riw66aa1clm0wtfwx2"; // Telegram
+//char webhookPfad[35] = "/7a3mxtmkoxi4jllf6qxbbr26y3vbwuzq"; // Mail
 
-//#if MODUL_WIFI
+
 bool wifiApPasswortAktiviert = false; // Soll das selbst aufgemachte WLAN ein Passwort haben?
-String wifiApPasswort = "geheim"; // Das Passwort für das selbst aufgemachte WLAN
-String wifiAdminPasswort = "admin"; // Passwort für das Admininterface
+char wifiApPasswort[35] = "geheim"; // Das Passwort für das selbst aufgemachte WLAN
+char wifiAdminPasswort[12] = "admin"; // Passwort für das Admininterface
 // Es können mehrere WLANs angegeben werden, mit denen sich der ESP verbinden soll.
-String wifiSsid1 = "Fabmobil"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
-String wifiPasswort1 = "NurFuerDieCoolenKids!"; // WLAN Passwort für das fremde Wifi
-String wifiSsid2 = "Tommy"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
-String wifiPasswort2 = "freibier"; // WLAN Passwort für das fremde Wifi
-String wifiSsid3 = "Magrathea"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
-String wifiPasswort3 = "Gemeinschaftskueche"; // WLAN Passwort für das fremde Wifi
-//#endif
+char wifiSsid1[35] = "Fabmobil"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
+char wifiPasswort1[35] = "NurFuerDieCoolenKids!"; // WLAN Passwort für das fremde Wifi
+char wifiSsid2[35] = "Tommy"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
+char wifiPasswort2[35] = "freibier"; // WLAN Passwort für das fremde Wifi
+char wifiSsid3[35] = "Magrathea"; // WLAN Name / SSID wenn sich der ESP zu fremden Wifi verbinden soll
+char wifiPasswort3[35] = "Gemeinschaftskueche"; // WLAN Passwort für das fremde Wifi
+
 
 #if MODUL_INFLUXDB
 // InfluxDB v2 Authentifizierungstoken:
-String influxToken = "O24__XgbcJyoctWgsEjot6lW2Eh_xX-Jrw54cJ5YLssz8EIYAEd62Xgj_ulSeBeH4w-4o5PpLGbWeE7dpM8tcg==";
-String influxOrganisation = "<your org>";  // InfluxDB v2 Organisationsname
-String influxBucket = "<your bucket>"; //InfluxDB v2 Bucketname
-String influxDatenbank = "collectd"; // InfluxDB v1 Datenbankname
-String influxBenutzer = "collectd";  // InfluxDB v1 Benutzername
-String influxPasswort = "collectd"; // InfluxDB v1 Passwort
+char influxToken[100] = "O24__XgbcJyoctWgsEjot6lW2Eh_xX-Jrw54cJ5YLssz8EIYAEd62Xgj_ulSeBeH4w-4o5PpLGbWeE7dpM8tcg==";
+char influxOrganisation[35] = "<your org>";  // InfluxDB v2 Organisationsname
+char influxBucket[35] = "<your bucket>"; //InfluxDB v2 Bucketname
+char influxDatenbank[35] = "collectd"; // InfluxDB v1 Datenbankname
+char influxBenutzer[35] = "collectd";  // InfluxDB v1 Benutzername
+char influxPasswort[35] = "collectd"; // InfluxDB v1 Passwort
 #endif

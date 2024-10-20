@@ -1,5 +1,5 @@
 /**
- * @file passwoerter.h
+ * @file passwoerter.cpp
  * @brief Passwort- und Sicherheitskonfiguration für den Pflanzensensor
  * @author Tommy
  * @date 2023-09-20
@@ -12,7 +12,7 @@
 
 #if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
   char webhookDomain[20] = "hook.eu2.make.com"; // vorderer Teil der Webhook-URL
-  char webhookPfad[50] = "/w0ynsd6suxxxxxxxxxxxxxxxxx3839dh"; // hinterer Teil der Webhook-URL
+  char webhookPfad[35] = "/w0ynsd6suxxxxxxxxxxxxxxxxx3839dh"; // hinterer Teil der Webhook-URL
 #endif
 
 bool wifiApPasswortAktiviert = false; // soll das selbst aufgemachte WLAN ein Passwort haben?
