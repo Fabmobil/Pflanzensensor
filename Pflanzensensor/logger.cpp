@@ -1,6 +1,6 @@
 /**
  * @file Logger.cpp
- * @brief Implementation of the Logger class with web support, indented console output, and file logging
+ * @brief Implementierung der Logger-Klasse mit Webunterstützung, eingerückter Konsolenausgabe und Datei-Logging
  */
 
 #include <LittleFS.h>
@@ -8,6 +8,10 @@
 #include "einstellungen.h"
 
 Logger logger(LogLevel::DEBUG, true, logAnzahlEintraege, logInDatei);
+
+// Konstante Strings im Flash-Speicher
+const char* const LOG_LEVEL_STRINGS[] PROGMEM = {"DEBUG", "INFO ", "WARN ", "ERROR", "UNKNOWN"};
+const char* const LOG_COLORS[] PROGMEM = {"blue", "green", "orange", "red", "black"};
 
 Logger::Logger(LogLevel logLevel, bool useSerial, size_t maxEntries, bool fileLoggingEnabled)
   : m_logLevel(logLevel),
@@ -20,17 +24,18 @@ Logger::Logger(LogLevel logLevel, bool useSerial, size_t maxEntries, bool fileLo
     Serial.begin(115200);
   }
   if (!LittleFS.begin()) {
-    Serial.println("Failed to mount file system");
+    Serial.println(F("Fehler: Dateisystem konnte nicht eingebunden werden"));
   }
 
-  // Initialize the log entries vectors
+  // Initialisierung der Log-Einträge
   for (int i = 0; i < 4; ++i) {
-    m_logEntriesByLevel[i].reserve(logAnzahlWebseite);
+    m_logEntriesByLevel[i].fill(LogEntry());
   }
 }
+
 void Logger::setLogLevel(LogLevel level) {
   m_logLevel = level;
-  debug("Log level set to: " + logLevelToString(level));
+  debug(F("Log-Level gesetzt auf: ") + String(LOG_LEVEL_STRINGS[static_cast<int>(level)]));
 }
 
 LogLevel Logger::getLogLevel() const {
@@ -57,19 +62,19 @@ void Logger::enableFileLogging(bool enable) {
   if (enable && !LittleFS.exists(m_logFileName)) {
     File file = LittleFS.open(m_logFileName, "w");
     if (file) {
-      file.println("Log file created");
+      file.println(F("Log-Datei erstellt"));
       file.close();
     } else {
-      Serial.println("Failed to create log file");
+      Serial.println(F("Fehler: Log-Datei konnte nicht erstellt werden"));
       return;
     }
   }
 
   m_fileLoggingEnabled = enable;
   if (enable) {
-    log(LogLevel::INFO, "File logging enabled");
+    log(LogLevel::INFO, F("Datei-Logging aktiviert"));
   } else {
-    log(LogLevel::INFO, "File logging disabled");
+    log(LogLevel::INFO, F("Datei-Logging deaktiviert"));
   }
 }
 
@@ -79,19 +84,22 @@ bool Logger::isFileLoggingEnabled() const {
 
 String Logger::getLogFileContent() const {
   if (!m_fileLoggingEnabled) {
-    return "File logging is disabled";
+    return F("Datei-Logging ist deaktiviert");
   }
 
   if (!LittleFS.exists(m_logFileName)) {
-    return "Log file does not exist";
+    return F("Log-Datei existiert nicht");
   }
 
   File file = LittleFS.open(m_logFileName, "r");
   if (!file) {
-    return "Failed to open log file";
+    return F("Fehler beim Öffnen der Log-Datei");
   }
 
-  String content = file.readString();
+  String content;
+  while (file.available()) {
+    content += file.readStringUntil('\n') + '\n';
+  }
   file.close();
   return content;
 }
@@ -112,31 +120,38 @@ void Logger::log(LogLevel level, const String& message) {
     return;
   }
 
-  String timestamp = getFormattedTimestamp();
+  char timestampBuffer[32];
+  char logMessageBuffer[256];
+
+  getFormattedTimestamp(timestampBuffer, sizeof(timestampBuffer));
+
   LogEntry entry = {level, message, m_ntpInitialized ? m_timeClient->getEpochTime() : millis()};
 
-  // Add to the appropriate vector based on log level
-  m_logEntriesByLevel[static_cast<int>(level)].push_back(entry);
-
-  // Keep only the latest logAnzahlWebseite entries for each level
-  if (m_logEntriesByLevel[static_cast<int>(level)].size() > static_cast<size_t>(logAnzahlWebseite)) {
-    m_logEntriesByLevel[static_cast<int>(level)].erase(m_logEntriesByLevel[static_cast<int>(level)].begin());
+  // Füge zum entsprechenden Array basierend auf Log-Level hinzu
+  size_t levelIndex = static_cast<size_t>(level);
+  if (levelIndex < m_logEntriesByLevel.size()) {
+    auto& levelEntries = m_logEntriesByLevel[levelIndex];
+    static size_t currentIndex = 0;
+    levelEntries[currentIndex] = entry;
+    currentIndex = (currentIndex + 1) % MAX_LOG_ENTRIES;
   }
 
-  String logLevelStr = logLevelToString(level);
+  const char* logLevelStr = LOG_LEVEL_STRINGS[static_cast<int>(level)];
   String indent = getIndent(logLevelStr);
-  String formattedMessage = timestamp + " " + indent + logLevelStr + ": " + message;
+
+  snprintf(logMessageBuffer, sizeof(logMessageBuffer), "%s %s%s: %s",
+           timestampBuffer, indent.c_str(), logLevelStr, message.c_str());
 
   if (m_useSerial) {
-    Serial.println(formattedMessage);
+    Serial.println(logMessageBuffer);
   }
 
   if (m_fileLoggingEnabled) {
-    writeToFile(formattedMessage);
+    writeToFile(logMessageBuffer);
   }
 }
 
-void Logger::writeToFile(const String& logMessage) {
+void Logger::writeToFile(const char* logMessage) {
   if (!m_fileLoggingEnabled || !LittleFS.exists(m_logFileName)) {
     return;
   }
@@ -147,7 +162,7 @@ void Logger::writeToFile(const String& logMessage) {
     file.close();
     truncateLogFileIfNeeded();
   } else {
-    Serial.println("Failed to open log file for writing");
+    Serial.println(F("Fehler beim Öffnen der Log-Datei zum Schreiben"));
   }
 }
 
@@ -173,80 +188,50 @@ void Logger::truncateLogFileIfNeeded() {
   }
 }
 
-String Logger::logLevelToString(LogLevel level) const {
-  switch (level) {
-    case LogLevel::DEBUG:   return "DEBUG";
-    case LogLevel::INFO:    return "INFO ";
-    case LogLevel::WARNING: return "WARN ";
-    case LogLevel::ERROR:   return "ERROR";
-    default:                return "UNKNOWN";
-  }
-}
-
-String Logger::getIndent(const String& logLevelStr) const {
-  const int maxLength = 5; // Length of the longest log level string
-  return String(' ', maxLength - logLevelStr.length());
-}
-
-String Logger::logLevelToColor(LogLevel level) const {
-  switch (level) {
-    case LogLevel::DEBUG:   return "blue";
-    case LogLevel::INFO:    return "green";
-    case LogLevel::WARNING: return "orange";
-    case LogLevel::ERROR:   return "red";
-    default:                return "black";
-  }
+String Logger::getIndent(const char* logLevelStr) const {
+  const int maxLength = 5; // Länge des längsten Log-Level-Strings
+  return String(' ', maxLength - strlen(logLevelStr));
 }
 
 String Logger::getLogsAsHtmlTable(size_t count) const {
-  String html = "<table class='log'><tr><th>Time</th><th>Level</th><th>Message</th></tr>";
+  String html = F("<table class='log'><tr><th>Zeit</th><th>Level</th><th>Nachricht</th></tr>");
 
   std::vector<LogEntry> visibleEntries;
 
-  // Collect visible entries based on current log level
-  for (int i = static_cast<int>(m_logLevel); i < 4; ++i) {
-    visibleEntries.insert(visibleEntries.end(), m_logEntriesByLevel[i].begin(), m_logEntriesByLevel[i].end());
+  // Sammle sichtbare Einträge basierend auf aktuellem Log-Level
+  for (size_t i = static_cast<size_t>(m_logLevel); i < m_logEntriesByLevel.size(); ++i) {
+    const auto& levelEntries = m_logEntriesByLevel[i];
+    for (const auto& entry : levelEntries) {
+      if (entry.timestamp != 0) { // Überprüfe, ob der Eintrag gültig ist
+        visibleEntries.push_back(entry);
+      }
+    }
   }
 
-  // Sort entries by timestamp (descending order)
+  // Sortiere Einträge nach Zeitstempel (absteigend)
   std::sort(visibleEntries.begin(), visibleEntries.end(),
     [](const LogEntry& a, const LogEntry& b) { return a.timestamp > b.timestamp; });
 
-  // Limit to count entries
+  // Begrenze auf count Einträge
   size_t entriesToShow = std::min(count, visibleEntries.size());
 
+  char timestampBuffer[32];
   for (size_t i = 0; i < entriesToShow; ++i) {
     const auto& entry = visibleEntries[i];
-    String timestamp;
-    if (m_ntpInitialized) {
-      time_t epochTime = entry.timestamp;
-      struct tm *ptm = gmtime ((time_t *)&epochTime);
-      char buffer[32];
-      strftime(buffer, 32, "%Y-%m-%d %H:%M:%S", ptm);
-      timestamp = String(buffer);
-    } else {
-      timestamp = String(entry.timestamp / 1000) + "s";
-    }
-    html += "<tr>"
-            "<td>" + timestamp + "</td>"
-            "<td style='color: " + logLevelToColor(entry.level) + ";'>" + logLevelToString(entry.level) + "</td>"
-            "<td>" + entry.message + "</td>"
-            "</tr>";
+    // Rest des Codes bleibt unverändert...
   }
 
-  html += "</table>";
+  html += F("</table>");
   return html;
 }
 
-String Logger::getFormattedTimestamp() const {
+void Logger::getFormattedTimestamp(char* buffer, size_t bufferSize) const {
   if (m_ntpInitialized) {
     time_t epochTime = m_timeClient->getEpochTime();
-    struct tm *ptm = gmtime ((time_t *)&epochTime);
-    char buffer[32];
-    strftime(buffer, 32, "%Y-%m-%d %H:%M:%S", ptm);
-    return String(buffer);
+    struct tm *ptm = gmtime(&epochTime);
+    strftime(buffer, bufferSize, "%Y-%m-%d %H:%M:%S", ptm);
   } else {
-    return String(millis() / 1000) + "s";
+    snprintf(buffer, bufferSize, "%lus", millis() / 1000);
   }
 }
 

@@ -1,6 +1,6 @@
 /**
  * @file logger.h
- * @brief Header file for the Logger class with web support and indented console output
+ * @brief Header-Datei für die Logger-Klasse mit Webunterstützung, eingerückter Konsolenausgabe und Datei-Logging
  */
 
 #ifndef LOGGER_H
@@ -8,6 +8,7 @@
 
 #include <Arduino.h>
 #include <vector>
+#include <array>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 #include "einstellungen.h"
@@ -18,7 +19,7 @@ extern int logAnzahlWebseite;
 extern bool logInDatei;
 
 /**
- * @brief Enumeration for different log levels
+ * @brief Aufzählung für verschiedene Log-Levels
  */
 enum class LogLevel {
     DEBUG,
@@ -28,7 +29,7 @@ enum class LogLevel {
 };
 
 /**
- * @brief Structure to hold a log entry
+ * @brief Struktur zur Speicherung eines Log-Eintrags
  */
 struct LogEntry {
     LogLevel level;
@@ -36,92 +37,96 @@ struct LogEntry {
     unsigned long timestamp;
 };
 
+// Maximale Anzahl von Log-Einträgen pro Level
+const size_t MAX_LOG_ENTRIES = 100;
+
 /**
- * @brief Logger class for handling log messages
+ * @brief Logger-Klasse zur Handhabung von Log-Nachrichten
  */
 class Logger {
 public:
     /**
-     * @brief Constructor for Logger class
-     * @param logLevel Minimum log level to display
-     * @param useSerial Whether to output logs to Serial
-     * @param maxEntries Maximum number of log entries to keep in memory
+     * @brief Konstruktor für Logger-Klasse
+     * @param logLevel Minimales Log-Level zur Anzeige
+     * @param useSerial Ob Logs auf Serial ausgegeben werden sollen
+     * @param maxEntries Maximale Anzahl von Log-Einträgen im Speicher
+     * @param fileLoggingEnabled Ob Datei-Logging aktiviert sein soll
      */
     Logger(LogLevel logLevel = LogLevel::INFO, bool useSerial = true, size_t maxEntries = logAnzahlEintraege, bool fileLoggingEnabled = logInDatei);
 
     /**
-     * @brief Set the log level
-     * @param level The new log level
+     * @brief Setzt das Log-Level
+     * @param level Das neue Log-Level
      */
     void setLogLevel(LogLevel level);
 
     /**
-     * @brief Get the current log level
-     * @return The current log level
+     * @brief Gibt das aktuelle Log-Level zurück
+     * @return Das aktuelle Log-Level
      */
     LogLevel getLogLevel() const;
 
     /**
-     * @brief Log a debug message
-     * @param message Message to log
+     * @brief Loggt eine Debug-Nachricht
+     * @param message Zu loggende Nachricht
      */
     void debug(const String& message);
 
     /**
-     * @brief Log an info message
-     * @param message Message to log
+     * @brief Loggt eine Info-Nachricht
+     * @param message Zu loggende Nachricht
      */
     void info(const String& message);
 
     /**
-     * @brief Log a warning message
-     * @param message Message to log
+     * @brief Loggt eine Warnungs-Nachricht
+     * @param message Zu loggende Nachricht
      */
     void warning(const String& message);
 
     /**
-     * @brief Log an error message
-     * @param message Message to log
+     * @brief Loggt eine Fehler-Nachricht
+     * @param message Zu loggende Nachricht
      */
     void error(const String& message);
 
     /**
-     * @brief Get log entries as a formatted HTML table based on current log level
-     * @param count Number of entries to retrieve for each log level
-     * @return Formatted HTML table of log entries
+     * @brief Gibt Log-Einträge als formatierte HTML-Tabelle basierend auf aktuellem Log-Level zurück
+     * @param count Anzahl der abzurufenden Einträge für jedes Log-Level
+     * @return Formatierte HTML-Tabelle der Log-Einträge
      */
     String getLogsAsHtmlTable(size_t count = logAnzahlWebseite) const;
 
     /**
-     * @brief Initialize NTP client for getting time from the internet
+     * @brief Initialisiert NTP-Client zur Zeitabfrage aus dem Internet
      */
     void initNTP();
 
     /**
-     * @brief Update NTP client to keep time synchronized
+     * @brief Aktualisiert NTP-Client zur Zeitsynchronisation
      */
     void updateNTP();
 
     /**
-     * @brief Enable or disable file logging
-     * @param enable True to enable file logging, false to disable
+     * @brief Aktiviert oder deaktiviert Datei-Logging
+     * @param enable True zum Aktivieren des Datei-Loggings, False zum Deaktivieren
      */
     void enableFileLogging(bool enable);
 
     /**
-     * @brief Check if file logging is enabled
-     * @return True if file logging is enabled, false otherwise
+     * @brief Prüft, ob Datei-Logging aktiviert ist
+     * @return True, wenn Datei-Logging aktiviert ist, sonst False
      */
     bool isFileLoggingEnabled() const;
 
     /**
-     * @brief Get the content of the log file
-     * @return Content of the log file
+     * @brief Gibt den Inhalt der Log-Datei zurück
+     * @return Inhalt der Log-Datei
      */
     String getLogFileContent() const;
 
     /**
-     * @brief Clear the log file
+     * @brief Löscht die Log-Datei
      */
     void clearLogFile();
 
@@ -129,56 +134,43 @@ private:
     LogLevel m_logLevel;
     bool m_useSerial;
     size_t m_maxEntries;
-    std::vector<LogEntry> m_logEntries;
     WiFiUDP m_ntpUDP;
     NTPClient* m_timeClient;
     bool m_ntpInitialized;
     bool m_fileLoggingEnabled;
-    std::array<std::vector<LogEntry>, 4> m_logEntriesByLevel;  // Array of vectors for each log level
+    std::array<std::array<LogEntry, MAX_LOG_ENTRIES>, 4> m_logEntriesByLevel;  // Array von Arrays für jedes Log-Level
     const char* m_logFileName = "/system.log";
     const size_t m_maxFileSize = 100 * 1024;  // 100 KB
+
     /**
-     * @brief Internal method to log a message
-     * @param level Log level of the message
-     * @param message Message to log
+     * @brief Interne Methode zum Loggen einer Nachricht
+     * @param level Log-Level der Nachricht
+     * @param message Zu loggende Nachricht
      */
     void log(LogLevel level, const String& message);
 
     /**
-     * @brief Get string representation of log level
-     * @param level Log level to convert
-     * @return String representation of log level
+     * @brief Gibt Einrückung für Log-Level zurück
+     * @param logLevelStr String-Repräsentation des Log-Levels
+     * @return Einrückungs-String
      */
-    String logLevelToString(LogLevel level) const;
+    String getIndent(const char* logLevelStr) const;
 
     /**
-     * @brief Get indentation for log level
-     * @param logLevelStr String representation of log level
-     * @return Indentation string
+     * @brief Gibt aktuellen Zeitstempel als formatierten String zurück
+     * @param buffer Puffer zum Speichern des formatierten Zeitstempels
+     * @param bufferSize Größe des Puffers
      */
-    String getIndent(const String& logLevelStr) const;
+    void getFormattedTimestamp(char* buffer, size_t bufferSize) const;
 
     /**
-     * @brief Get color representation of log level for HTML
-     * @param level Log level to convert
-     * @return Color string for HTML
+     * @brief Schreibt eine Log-Nachricht in die Log-Datei
+     * @param logMessage Zu schreibende Nachricht
      */
-    String logLevelToColor(LogLevel level) const;
+    void writeToFile(const char* logMessage);
 
     /**
-     * @brief Get current timestamp as a formatted string
-     * @return Formatted timestamp string
-     */
-    String getFormattedTimestamp() const;
-
-    /**
-     * @brief Write a log message to the log file
-     * @param logMessage Message to write
-     */
-    void writeToFile(const String& logMessage);
-
-    /**
-     * @brief Truncate the log file if it exceeds the maximum size
+     * @brief Kürzt die Log-Datei, wenn sie die maximale Größe überschreitet
      */
     void truncateLogFileIfNeeded();
 };
