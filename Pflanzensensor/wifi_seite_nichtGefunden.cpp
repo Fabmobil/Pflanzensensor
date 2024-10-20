@@ -17,7 +17,7 @@
 #include "wifi_footer.h"
 
 void WebseiteNichtGefundenAusgeben() {
-  logger.debug("Beginn von WebseiteNichtGefundenAusgeben()");
+  logger.debug(F("Beginn von WebseiteNichtGefundenAusgeben()"));
 
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(404, F("text/html"), "");
@@ -35,5 +35,5 @@ void WebseiteNichtGefundenAusgeben() {
   Webserver.sendContent_P(htmlFooter);
   Webserver.client().flush();
 
-  logger.debug("Ende von WebseiteNichtGefundenAusgeben()");
+  logger.debug(F("Ende von WebseiteNichtGefundenAusgeben()"));
 }

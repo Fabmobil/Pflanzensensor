@@ -14,30 +14,42 @@ X509List certList;
 WiFiClientSecure client;
 
 void WebhookSetup() {
-  logger.debug("Beginn von WebhookSetup()");
+  logger.debug(F("Beginn von WebhookSetup()"));
 
-  // Zeit synchronisieren
-  configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
-  logger.info("Warte auf die Synchronisation von Uhrzeit und Datum: ");
-  time_t now = time(nullptr);
-  while (now < 8 * 3600 * 2) {
-    delay(500);
-    logger.debug(".");
-    now = time(nullptr);
+  // Warte auf eine stabile WLAN-Verbindung
+  int versuche = 0;
+  while (WiFi.status() != WL_CONNECTED && versuche < 10) {
+    logger.info(F("Warte auf stabile WLAN-Verbindung..."));
+    delay(1000);
+    versuche++;
   }
-  struct tm timeinfo;
-  gmtime_r(&now, &timeinfo);
-  logger.info("Die Zeit und das Datum ist: " + String(asctime(&timeinfo)));
+
+  if (WiFi.status() != WL_CONNECTED) {
+    logger.error(F("Konnte keine stabile WLAN-Verbindung herstellen. Webhook-Setup abgebrochen."));
+    return;
+  }
 
   // Zertifikate initialisieren
   certList.append(zertifikat);
   client.setTrustAnchors(&certList);
-  logger.info("Schicke Initialisierungsnachricht an Webhook-Dienst.");
-  WebhookSendeInit(); // Initalisierungsnachricht schicken
-}
 
-void WebhookSendeInit() {
-  logger.debug("Beginn von WebhookSendeInit()");
+  logger.info(F("Schicke Initialisierungsnachricht an Webhook-Dienst."));
+
+  // Wiederhole den Versuch, falls er fehlschlägt
+  for (int i = 0; i < 3; i++) {
+    if (WebhookSendeInit()) {
+      logger.info(F("Webhook erfolgreich initialisiert."));
+      return;
+    }
+    logger.warning(F("Webhook-Initialisierung fehlgeschlagen. Versuche es erneut..."));
+    delay(2000);
+  }
+
+  logger.error(F("Webhook-Initialisierung nach 3 Versuchen fehlgeschlagen."));
+}
+bool WebhookSendeInit() {
+  logger.updateNTP();
+  logger.debug(F("Beginn von WebhookSendeInit()"));
 
   // JSON-Objekt erstellen
   JsonDocument doc;
@@ -52,7 +64,8 @@ void WebhookSendeInit() {
   // JSON in String umwandeln
   String jsonString;
   serializeJson(doc, jsonString);
-  WebhookSendeDaten(jsonString);
+  bool result = WebhookSendeDaten(jsonString);
+  return result;
 }
 
 void WebhookErfasseSensordaten(const char* statusWert) {
@@ -120,9 +133,7 @@ void WebhookErfasseSensordaten(const char* statusWert) {
   WebhookSendeDaten(jsonString);
 }
 
-void WebhookSendeDaten(const String& jsonString) {
-  logger.info("Sende folgendes JSON an Webhook: ");
-  logger.info(jsonString);
+bool WebhookSendeDaten(const String& jsonString) {
   // POST-Anfrage erstellen
   String postAnfrage = String("POST ") + webhookPfad + " HTTP/1.1\r\n" +
                        "Host: " + webhookDomain + "\r\n" +
@@ -141,43 +152,45 @@ void WebhookSendeDaten(const String& jsonString) {
         break;
       }
     }
+    client.stop();
+    return true;
   } else {
-    logger.error("Verbindung fehlgeschlagen");
-    logger.error("Letzter Fehlercode: ");
+    logger.error(F("Verbindung fehlgeschlagen"));
+    logger.error(F("Letzter Fehlercode: "));
     logger.error(String(client.getLastSSLError()));
+    return false;
   }
-  client.stop();
 }
 
 bool WebhookAktualisiereAlarmStatus() {
   bool aktuellerAlarm = false;
 
   #if MODUL_BODENFEUCHTE
-    aktuellerAlarm |= (bodenfeuchteFarbe == "rot" && bodenfeuchteWebhook);
+    aktuellerAlarm |= (strcmp(bodenfeuchteFarbe, "rot") == 0 && bodenfeuchteWebhook);
   #endif
   #if MODUL_HELLIGKEIT
-    aktuellerAlarm |= (helligkeitFarbe == "rot" && helligkeitWebhook);
+    aktuellerAlarm |= (strcmp(helligkeitFarbe, "rot") == 0 && helligkeitWebhook);
   #endif
   #if MODUL_DHT
-    aktuellerAlarm |= ((luftfeuchteFarbe == "rot" && luftfeuchteWebhook) || (lufttemperaturFarbe == "rot" && lufttemperaturWebhook));
+    aktuellerAlarm |= ((strcmp(luftfeuchteFarbe, "rot") == 0 && luftfeuchteWebhook) || (strcmp(lufttemperaturFarbe, "rot") == 0 && lufttemperaturWebhook));
   #endif
   #if MODUL_ANALOG3
-    aktuellerAlarm |= (analog3Farbe == "rot" && analog3Webhook);
+    aktuellerAlarm |= (strcmp(analog3Farbe, "rot") == 0 && analog3Webhook);
   #endif
   #if MODUL_ANALOG4
-    aktuellerAlarm |= (analog4Farbe == "rot" && analog4Webhook);
+    aktuellerAlarm |= (strcmp(analog4Farbe, "rot") == 0 && analog4Webhook);
   #endif
   #if MODUL_ANALOG5
-    aktuellerAlarm |= (analog5Farbe == "rot" && analog5Webhook);
+    aktuellerAlarm |= (strcmp(analog5Farbe, "rot") == 0 && analog5Webhook);
   #endif
   #if MODUL_ANALOG6
-    aktuellerAlarm |= (analog6Farbe == "rot" && analog6Webhook);
+    aktuellerAlarm |= (strcmp(analog6Farbe, "rot") == 0 && analog6Webhook);
   #endif
   #if MODUL_ANALOG7
-    aktuellerAlarm |= (analog7Farbe == "rot" && analog7Webhook);
+    aktuellerAlarm |= (strcmp(analog7Farbe, "rot") == 0 && analog7Webhook);
   #endif
   #if MODUL_ANALOG8
-    aktuellerAlarm |= (analog8Farbe == "rot" && analog8Webhook);
+    aktuellerAlarm |= (strcmp(analog8Farbe, "rot") == 0 && analog8Webhook);
   #endif
 
   return aktuellerAlarm;

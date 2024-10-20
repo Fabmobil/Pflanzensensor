@@ -14,29 +14,29 @@
 #include <Arduino.h>
 
 #if MODUL_WEBHOOK
-extern String webhookDomain;
-extern String webhookPfad;
+extern char webhookDomain[20];
+extern char webhookPfad[35];
 #endif
 
 #if MODUL_WIFI
 extern bool wifiApPasswortAktiviert;
-extern String wifiApPasswort;
-extern String wifiAdminPasswort;
-extern String wifiSsid1;
-extern String wifiPasswort1;
-extern String wifiSsid2;
-extern String wifiPasswort2;
-extern String wifiSsid3;
-extern String wifiPasswort3;
+extern char wifiApPasswort[35];
+extern char wifiAdminPasswort[12];
+extern char wifiSsid1[35];
+extern char wifiPasswort1[35];
+extern char wifiSsid2[35];
+extern char wifiPasswort2[35];
+extern char wifiSsid3[35];
+extern char wifiPasswort3[35];
 #endif
 
 #if MODUL_INFLUXDB
-extern String influxToken;
-extern String influxOrganisation;
-extern String influxBucket;
-extern String influxDatenbank;
-extern String influxBenutzer;
-extern String influxPasswort;
+extern char influxToken[100];
+extern char influxOrganisation[35];
+extern char influxBucket[35];
+extern char influxDatenbank[35];
+extern char influxBenutzer[35];
+extern char influxPasswort[35];
 #endif
 
 #endif // PASSWOERTER_H

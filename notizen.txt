@@ -1,0 +1,8 @@
+String:
+RAM:   [=====     ]  45.9% (used 37608 bytes from 81920 bytes)
+Flash: [======    ]  58.1% (used 606435 bytes from 1044464 bytes)
+
+Char:
+RAM:   [=====     ]  46.1% (used 37728 bytes from 81920 bytes)
+Flash: [======    ]  58.1% (used 606699 bytes from 1044464 bytes)
+

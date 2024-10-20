@@ -32,7 +32,7 @@ std::pair<int, int> AnalogsensorMessen(
     int messwertProzent = map(messwert, minimum, maximum, 0, 100); // Skalierung auf maximal 0 bis 100
 
     // Logging des Messergebnisses
-    logger.info(sensorname + ": " + String(messwertProzent) + "%       (Messwert: " + String(messwert) + ")");
+    logger.info(sensorname + F(": ") + String(messwertProzent) + F("%       (Messwert: ") + String(messwert) + F(")"));
 
     return std::make_pair(messwert, messwertProzent);
 }

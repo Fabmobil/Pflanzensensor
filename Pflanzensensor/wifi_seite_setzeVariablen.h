@@ -16,7 +16,7 @@
 
 extern ESP8266WebServer Webserver;
 extern bool wlanAenderungVorgenommen;
-extern String wifiAdminPasswort;
+extern char wifiAdminPasswort[12];
 
 /**
  * @brief Gibt alle empfangenen POST-Argumente in der Konsole aus
@@ -54,7 +54,7 @@ void AktualisiereAnalogsensor(int sensorNumber);
  * @param wert Referenz auf die zu aktualisierende String-Variable
  * @param istWLANEinstellung Gibt an, ob es sich um eine WLAN-Einstellung handelt
  */
-void AktualisiereString(const String& argName, String& wert, bool istWLANEinstellung = false);
+void AktualisiereString(const char* argName, char* wert, size_t maxLength, bool istWLANEinstellung = false);
 
 /**
  * @brief Aktualisiert einen Integer-Wert basierend auf den empfangenen POST-Daten
@@ -63,7 +63,7 @@ void AktualisiereString(const String& argName, String& wert, bool istWLANEinstel
  * @param wert Referenz auf die zu aktualisierende Integer-Variable
  * @param istWLANEinstellung Gibt an, ob es sich um eine WLAN-Einstellung handelt
  */
-void AktualisiereInteger(const String& argName, int& wert, bool istWLANEinstellung = false);
+void AktualisiereInteger(const char* argName, int& wert, bool istWLANEinstellung = false);
 
 /**
  * @brief Aktualisiert einen Boolean-Wert basierend auf den empfangenen POST-Daten
@@ -72,6 +72,6 @@ void AktualisiereInteger(const String& argName, int& wert, bool istWLANEinstellu
  * @param wert Referenz auf die zu aktualisierende Boolean-Variable
  * @param istWLANEinstellung Gibt an, ob es sich um eine WLAN-Einstellung handelt
  */
-void AktualisiereBoolean(const String& argName, bool& wert, bool istWLANEinstellung = false);
+void AktualisiereBoolean(const char* argName, bool& wert, bool istWLANEinstellung = false);
 
 #endif // WIFI_SEITE_SETZE_VARIABLEN_H

@@ -11,10 +11,14 @@
 #include "einstellungen.h"
 
 // Logging-Einstellungen
-String logLevel = "info";
+char logLevel[8] = "info";
 int logAnzahlEintraege = 100;
 int logAnzahlWebseite = 20;
 bool logInDatei = false;
+
+// Timestamp
+WiFiUDP ntpUDP;
+NTPClient zeitClient(ntpUDP, "pool.ntp.org");
 
 // Allgemeine Einstellungen
 const long baudrateSeriell = 115200;
@@ -22,7 +26,7 @@ unsigned long intervallAnalog = 5000;
 
 // Bodenfeuchte-Einstellungen
 #if MODUL_BODENFEUCHTE
-  String bodenfeuchteName = "Bodenfeuchte";
+  char bodenfeuchteName[20] = "Bodenfeuchte";
   bool bodenfeuchteWebhook = true;
   int bodenfeuchteMinimum = 900;
   int bodenfeuchteMaximum = 380;
@@ -61,7 +65,7 @@ unsigned long intervallAnalog = 5000;
 
 // Helligkeits-Einstellungen
 #if MODUL_HELLIGKEIT
-  String helligkeitName = "Helligkeit";
+  char helligkeitName[20] = "Helligkeit";
   bool helligkeitWebhook = false;
   int helligkeitMinimum = 8;
   int helligkeitMaximum = 1024;
@@ -89,9 +93,9 @@ unsigned long intervallAnalog = 5000;
 
 // WiFi-Einstellungen
 #if MODUL_WIFI
-  String wifiHostname = "pflanzensensor";
+  char wifiHostname[20] = "pflanzensensor";
   bool wifiAp = false;
-  String wifiApSsid = "Fabmobil Pflanzensensor";
+  char wifiApSsid[40] = "Fabmobil Pflanzensensor";
 #endif
 
 #if MODUL_MULTIPLEXER
@@ -102,7 +106,7 @@ unsigned long intervallAnalog = 5000;
 
 // Analog-Sensor-Einstellungen
 #if MODUL_ANALOG3
-  String analog3Name = "Analog 3";
+  char analog3Name[20] = "Analog 3";
   bool analog3Webhook = false;
   int analog3Minimum = 900;
   int analog3Maximum = 380;
@@ -113,7 +117,7 @@ unsigned long intervallAnalog = 5000;
 #endif
 
 #if MODUL_ANALOG4 // wenn ein vierter Analogsensor verwendet wird
-  String analog4Name = "Analog 4"; // Name des Sensors
+  char analog4Name[20] = "Analog 4"; // Name des Sensors
   bool analog4Webhook = false; // soll der Sensor für Alarme überwacht werden?
   int analog4Minimum = 900; // Minimalwert des Sensors
   int analog4Maximum = 380; // Maximalwert des Sensors
@@ -123,7 +127,7 @@ unsigned long intervallAnalog = 5000;
   int analog4GelbOben = 80;
 #endif
 #if MODUL_ANALOG5 // wenn ein fünfter Analogsensor verwendet wird
-  String analog5Name = "Analog 5"; // Name des Sensors
+  char analog5Name[20] = "Analog 5"; // Name des Sensors
   bool analog5Webhook = false; // soll der Sensor für Alarme überwacht werden?
   int analog5Minimum = 900; // Minimalwert des Sensors
   int analog5Maximum = 380; // Maximalwert des Sensors
@@ -133,7 +137,7 @@ unsigned long intervallAnalog = 5000;
   int analog5GelbOben = 80;
 #endif
 #if MODUL_ANALOG6 // wenn ein sechster Analogsensor verwendet wird
-  String analog6Name = "Analog 5"; // Name des Sensors
+  char analog6Name[20] = "Analog 5"; // Name des Sensors
   bool analog6Webhook = false; // soll der Sensor für Alarme überwacht werden?
   int analog6Minimum = 900; // Minimalwert des Sensors
   int analog6Maximum = 380; // Maximalwert des Sensors
@@ -143,7 +147,7 @@ unsigned long intervallAnalog = 5000;
   int analog6GelbOben = 80;
 #endif
 #if MODUL_ANALOG7 // wenn ein siebter Analogsensor verwendet wird
-  String analog7Name = "Analog 7"; // Name des Sensors
+  char analog7Name[20] = "Analog 7"; // Name des Sensors
   bool analog7Webhook = false; // soll der Sensor für Alarme überwacht werden?
   int analog7Minimum = 900; // Minimalwert des Sensors
   int analog7Maximum = 380; // Maximalwert des Sensors
@@ -153,7 +157,7 @@ unsigned long intervallAnalog = 5000;
   int analog7GelbOben = 80;
 #endif
 #if MODUL_ANALOG8 // wenn ein achter Analogsensor verwendet wird
-  String analog8Name = "Analog 8"; // Name des Sensors
+  char analog8Name[20] = "Analog 8"; // Name des Sensors
   bool analog8Webhook = false; // soll der Sensor für Alarme überwacht werden?
   int analog8Minimum = 900; // Minimalwert des Sensors
   int analog8Maximum = 380; // Maximalwert des Sensors
@@ -174,7 +178,7 @@ unsigned long millisVorherDisplay = 0;
 unsigned long millisVorherWebhook = 0;
 unsigned long millisVorherWebhookPing = 0;
 int module = 0;
-String ip = "keine WLAN Verbindung.";
+char ip[23] = "keine WLAN Verbindung.";
 const uint32_t wifiTimeout = 5000;
 int analog3Messwert = -1;
 int analog3MesswertProzent = -1;
@@ -189,16 +193,16 @@ int analog7MesswertProzent = -1;
 int analog8Messwert = -1;
 int analog8MesswertProzent = -1;
 
-String helligkeitFarbe = "rot";
-String bodenfeuchteFarbe = "rot";
-String luftfeuchteFarbe = "rot";
-String lufttemperaturFarbe = "rot";
-String analog3Farbe = "rot";
-String analog4Farbe = "rot";
-String analog5Farbe = "rot";
-String analog6Farbe = "rot";
-String analog7Farbe = "rot";
-String analog8Farbe = "rot";
+char helligkeitFarbe[8] = "rot";
+char bodenfeuchteFarbe[8] = "rot";
+char luftfeuchteFarbe[8] = "rot";
+char lufttemperaturFarbe[8] = "rot";
+char analog3Farbe[8] = "rot";
+char analog4Farbe[8] = "rot";
+char analog5Farbe[8] = "rot";
+char analog6Farbe[8] = "rot";
+char analog7Farbe[8] = "rot";
+char analog8Farbe[8] = "rot";
 
 #if MODUL_BODENFEUCHTE
   int bodenfeuchteMesswert = -1;
@@ -219,7 +223,7 @@ String analog8Farbe = "rot";
 #endif
 
 #if MODUL_WIFI
-  String aktuelleSsid = "";
+  char aktuelleSsid[40] = "";
   int wifiVerbindungsVersuche = 0;
   unsigned long geplanteWLANNeustartZeit = 0;
   bool wlanNeustartGeplant = false;

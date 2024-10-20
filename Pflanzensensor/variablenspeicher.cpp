@@ -157,7 +157,9 @@ void VariablenLaden() {
     DisplayDreiWoerter("Start..", " Variablen", "  laden");
   #endif
   variablen.begin("pflanzensensor", true);
-  logLevel = variablen.getString("logLevel", logLevel);
+  String tempString = variablen.getString("logLevel", logLevel);
+  strncpy(logLevel, tempString.c_str(), sizeof(logLevel) - 1);
+  logLevel[sizeof(logLevel) - 1] = '\0';
   logAnzahlEintraege = variablen.getInt("logAnzahlEintraege", logAnzahlEintraege);
   logAnzahlWebseite = variablen.getInt("logAnzahlWebseite", logAnzahlWebseite);
   logInDatei = variablen.getBool("logInDatei", logInDatei);
@@ -175,7 +177,9 @@ void VariablenLaden() {
     bodenfeuchteGelbOben = variablen.getInt("bodenfGeOben", bodenfeuchteGelbOben);
   #endif
   #if MODUL_ANALOG3
-    analog3Name = variablen.getString("analog3Name", analog3Name);
+    tempString = variablen.getString("analog3Name", analog3Name);
+    strncpy(analog3Name, tempString.c_str(), sizeof(analog3Name) - 1);
+    analog3Name[sizeof(analog3Name) - 1] = '\0';
     analog3Webhook = variablen.getInt("analog3Web", analog3Webhook);
     analog3GruenUnten = variablen.getInt("analog3GrUnten", analog3GruenUnten);
     analog3GruenOben = variablen.getInt("analog3GrOben", analog3GruenOben);
@@ -183,7 +187,9 @@ void VariablenLaden() {
     analog3GelbOben = variablen.getInt("analog3GeOben", analog3GelbOben);
   #endif
   #if MODUL_ANALOG4
-    analog4Name = variablen.getString("analog4Name", analog4Name);
+    tempString = variablen.getString("analog4Name", analog4Name);
+    strncpy(analog4Name, tempString.c_str(), sizeof(analog4Name) - 1);
+    analog4Name[sizeof(analog4Name) - 1] = '\0';
     analog4Webhook = variablen.getInt("analog4Web", analog4Webhook);
     analog4GruenUnten = variablen.getInt("analog4GrUnten", analog4GruenUnten);
     analog4GruenOben = variablen.getInt("analog4GrOben", analog4GruenOben);
@@ -191,7 +197,9 @@ void VariablenLaden() {
     analog4GelbOben = variablen.getInt("analog4GeOben", analog4GelbOben);
   #endif
   #if MODUL_ANALOG5
-    analog5Name = variablen.getString("analog5Name", analog5Name);
+    tempString = variablen.getString("analog5Name", analog5Name);
+    strncpy(analog5Name, tempString.c_str(), sizeof(analog5Name) - 1);
+    analog5Name[sizeof(analog5Name) - 1] = '\0';
     analog5Webhook = variablen.getInt("analog5Web", analog5Webhook);
     analog5GruenUnten = variablen.getInt("analog5GrUnten", analog5GruenUnten);
     analog5GruenOben = variablen.getInt("analog5GrOben", analog5GruenOben);
@@ -199,7 +207,9 @@ void VariablenLaden() {
     analog5GelbOben = variablen.getInt("analog5GeOben", analog5GelbOben);
   #endif
   #if MODUL_ANALOG6
-    analog6Name = variablen.getString("analog6Name", analog6Name);
+    tempString = variablen.getString("analog6Name", analog6Name);
+    strncpy(analog6Name, tempString.c_str(), sizeof(analog6Name) - 1);
+    analog6Name[sizeof(analog6Name) - 1] = '\0';
     analog6Webhook = variablen.getInt("analog6Web", analog6Webhook);
     analog6GruenUnten = variablen.getInt("analog6GrUnten", analog6GruenUnten);
     analog6GruenOben = variablen.getInt("analog6GrOben", analog6GruenOben);
@@ -207,7 +217,9 @@ void VariablenLaden() {
     analog6GelbOben = variablen.getInt("analog6GeOben", analog6GelbOben);
   #endif
   #if MODUL_ANALOG7
-    analog7Name = variablen.getString("analog7Name", analog7Name);
+    tempString = variablen.getString("analog7Name", analog7Name);
+    strncpy(analog7Name, tempString.c_str(), sizeof(analog7Name) - 1);
+    analog7Name[sizeof(analog7Name) - 1] = '\0';
     analog7Webhook = variablen.getInt("analog7Web", analog7Webhook);
     analog7GruenUnten = variablen.getInt("analog7GrUnten", analog7GruenUnten);
     analog7GruenOben = variablen.getInt("analog7GrOben", analog7GruenOben);
@@ -215,7 +227,9 @@ void VariablenLaden() {
     analog7GelbOben = variablen.getInt("analog7GeOben", analog7GelbOben);
   #endif
   #if MODUL_ANALOG8
-    analog8Name = variablen.getString("analog8Name", analog8Name);
+    tempString = variablen.getString("analog8Name", analog8Name);
+    strncpy(analog8Name, tempString.c_str(), sizeof(analog8Name) - 1);
+    analog8Name[sizeof(analog8Name) - 1] = '\0';
     analog8Webhook = variablen.getInt("analog8Web", analog8Webhook);
     analog8GruenUnten = variablen.getInt("analog8GrUnten", analog8GruenUnten);
     analog8GruenOben = variablen.getInt("analog8GrOben", analog8GruenOben);
@@ -236,7 +250,9 @@ void VariablenLaden() {
     luftfeuchteGelbOben = variablen.getInt("luftFGeOben", luftfeuchteGelbOben);
   #endif
   #if MODUL_HELLIGKEIT
-    helligkeitName = variablen.getString("hellName", helligkeitName);
+    tempString = variablen.getString("hellName", helligkeitName);
+    strncpy(helligkeitName, tempString.c_str(), sizeof(helligkeitName) - 1);
+    helligkeitName[sizeof(helligkeitName) - 1] = '\0';
     helligkeitWebhook = variablen.getInt("hellWeb", helligkeitWebhook);
     helligkeitMinimum = variablen.getInt("hellMin", helligkeitMinimum);
     helligkeitMaximum = variablen.getInt("hellMax", helligkeitMaximum);
@@ -250,22 +266,42 @@ void VariablenLaden() {
     ampelModus = variablen.getInt("ampelModus", ampelModus);
   #endif
   #if MODUL_WEBHOOK
-    webhookPfad = variablen.getString("webhookPfad", webhookPfad);
-    webhookDomain = variablen.getString("webhookDomain", webhookDomain);
+    tempString = variablen.getString("webhookPfad", webhookPfad);
+    strncpy(webhookPfad, tempString.c_str(), sizeof(webhookPfad) - 1);
+    webhookPfad[sizeof(webhookPfad) - 1] = '\0';
+    tempString = variablen.getString("webhookDomain", webhookDomain);
+    strncpy(webhookDomain, tempString.c_str(), sizeof(webhookDomain) - 1);
+    webhookDomain[sizeof(webhookDomain) - 1] = '\0';
     webhookAn = variablen.getBool("webhookAn", webhookAn);
     webhookFrequenz = variablen.getInt("webhookFrequenz", webhookFrequenz);
     webhookPingFrequenz = variablen.getInt("webhookPingFrequenz", webhookPingFrequenz);
   #endif
   #if MODUL_WIFI
-    wifiSsid1 = variablen.getString("wifiSsid1", wifiSsid1);
-    wifiPasswort1 = variablen.getString("wifiPw1", wifiPasswort1);
-    wifiSsid2 = variablen.getString("wifiSsid2", wifiSsid2);
-    wifiPasswort2 = variablen.getString("wifiPw2", wifiPasswort2);
-    wifiSsid3 = variablen.getString("wifiSsid3", wifiSsid3);
-    wifiPasswort3 = variablen.getString("wifiPw3", wifiPasswort3);
-    wifiApSsid = variablen.getString("apSsid", wifiApSsid);
+    tempString = variablen.getString("wifiSsid1", wifiSsid1);
+    strncpy(wifiSsid1, tempString.c_str(), sizeof(wifiSsid1) - 1);
+    wifiSsid1[sizeof(wifiSsid1) - 1] = '\0';
+    tempString = variablen.getString("wifiPw1", wifiPasswort1);
+    strncpy(wifiPasswort1, tempString.c_str(), sizeof(wifiPasswort1) - 1);
+    wifiPasswort1[sizeof(wifiPasswort1) - 1] = '\0';
+    tempString = variablen.getString("wifiSsid2", wifiSsid2);
+    strncpy(wifiSsid2, tempString.c_str(), sizeof(wifiSsid2) - 1);
+    wifiSsid2[sizeof(wifiSsid2) - 1] = '\0';
+    tempString = variablen.getString("wifiPw2", wifiPasswort2);
+    strncpy(wifiPasswort2, tempString.c_str(), sizeof(wifiPasswort2) - 1);
+    wifiPasswort2[sizeof(wifiPasswort2) - 1] = '\0';
+    tempString = variablen.getString("wifiSsid3", wifiSsid3);
+    strncpy(wifiSsid3, tempString.c_str(), sizeof(wifiSsid3) - 1);
+    wifiSsid3[sizeof(wifiSsid3) - 1] = '\0';
+    tempString = variablen.getString("wifiPw3", wifiPasswort3);
+    strncpy(wifiPasswort3, tempString.c_str(), sizeof(wifiPasswort3) - 1);
+    wifiPasswort3[sizeof(wifiPasswort3) - 1] = '\0';
+    tempString = variablen.getString("apSsid", wifiApSsid);
+    strncpy(wifiApSsid, tempString.c_str(), sizeof(wifiApSsid) - 1);
+    wifiApSsid[sizeof(wifiApSsid) - 1] = '\0';
     wifiApPasswortAktiviert = variablen.getBool("apPwAktiv", wifiApPasswortAktiviert);
-    wifiApPasswort = variablen.getString("apPw", wifiApPasswort);
+    tempString = variablen.getString("apPw", wifiApPasswort);
+    strncpy(wifiApPasswort, tempString.c_str(), sizeof(wifiApPasswort) - 1);
+    wifiApPasswort[sizeof(wifiApPasswort) - 1] = '\0';
   #endif
   variablen.end();
 }

@@ -20,17 +20,17 @@ Adafruit_SSD1306 display(displayBreite, displayHoehe, &Wire, displayReset);
 Displayseite displayseiten[] = {
   {ZeigeFabmobilLogo, true, nullptr},
   {ZeigeBlume, true, nullptr},
-  {ZeigeBodenfeuchte, MODUL_BODENFEUCHTE, &bodenfeuchteFarbe},
-  {ZeigeHelligkeit, MODUL_HELLIGKEIT, &helligkeitFarbe},
-  {ZeigeLufttemperatur, MODUL_DHT, &lufttemperaturFarbe},
-  {ZeigeLuftfeuchte, MODUL_DHT, &luftfeuchteFarbe},
+  {ZeigeBodenfeuchte, MODUL_BODENFEUCHTE, bodenfeuchteFarbe},
+  {ZeigeHelligkeit, MODUL_HELLIGKEIT, helligkeitFarbe},
+  {ZeigeLufttemperatur, MODUL_DHT, lufttemperaturFarbe},
+  {ZeigeLuftfeuchte, MODUL_DHT, luftfeuchteFarbe},
   {ZeigeIPAdresse, true, nullptr},
-  {ZeigeAnalog3, MODUL_ANALOG3, &analog3Farbe},
-  {ZeigeAnalog4, MODUL_ANALOG4, &analog4Farbe},
-  {ZeigeAnalog5, MODUL_ANALOG5, &analog5Farbe},
-  {ZeigeAnalog6, MODUL_ANALOG6, &analog6Farbe},
-  {ZeigeAnalog7, MODUL_ANALOG7, &analog7Farbe},
-  {ZeigeAnalog8, MODUL_ANALOG8, &analog8Farbe}
+  {ZeigeAnalog3, MODUL_ANALOG3, analog3Farbe},
+  {ZeigeAnalog4, MODUL_ANALOG4, analog4Farbe},
+  {ZeigeAnalog5, MODUL_ANALOG5, analog5Farbe},
+  {ZeigeAnalog6, MODUL_ANALOG6, analog6Farbe},
+  {ZeigeAnalog7, MODUL_ANALOG7, analog7Farbe},
+  {ZeigeAnalog8, MODUL_ANALOG8, analog8Farbe}
 };
 
 int aktuelleSeite = 0;
@@ -51,7 +51,7 @@ void DisplayAnzeigen() {
   #if MODUL_LEDAMPEL
     if (ampelAn && ampelModus == 1) {
       if (displayseiten[aktuelleSeite].farbe != nullptr) {
-        LedampelAnzeigen(*displayseiten[aktuelleSeite].farbe, -1);
+        LedampelAnzeigen(displayseiten[aktuelleSeite].farbe, -1);
       } else {
         LedampelAus();
       }
@@ -67,7 +67,7 @@ void NaechsteSeite() {
 
 void DisplaySetup() {
   if(!display.begin(SSD1306_SWITCHCAPVCC, displayAdresse)) {
-    logger.error("Fehler: Display konnte nicht geöffnet werden.");
+    logger.error(F("Fehler: Display konnte nicht geöffnet werden."));
     return;
   }
 
@@ -111,7 +111,7 @@ void ZeigeIPAdresse() {
 
     // Zeigt die IP-Adresse an
     display.setCursor(0, 20);
-    display.println(F("IP: ") + ip);
+    display.println(F("IP: ") + String(ip));
 
     // Positioniert den Cursor für die nächste Zeile
     display.setCursor(0, 30);
@@ -131,7 +131,8 @@ void ZeigeIPAdresse() {
         // Wenn der normale WLAN-Modus aktiv ist
         display.println(F("WLAN-Modus"));
         display.setCursor(0, 40);
-        display.println(F("SSID: ") + aktuelleSsid);
+        display.print(F("SSID: "));
+        display.println(aktuelleSsid);
     }
 
     // Aktualisiert das Display, um die Änderungen anzuzeigen

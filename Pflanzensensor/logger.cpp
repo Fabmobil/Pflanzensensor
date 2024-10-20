@@ -113,8 +113,12 @@ void Logger::log(LogLevel level, const String& message) {
   }
 
   String timestamp = getFormattedTimestamp();
-  LogEntry entry = {level, message, m_ntpInitialized ? m_timeClient->getEpochTime() : millis()};
 
+  LogEntry entry;
+  entry.level = level;
+  strncpy(entry.message, message.c_str(), sizeof(entry.message) - 1);
+  entry.message[sizeof(entry.message) - 1] = '\0';  // Sicherstellen, dass der String nullterminiert ist
+  entry.timestamp = m_ntpInitialized ? m_timeClient->getEpochTime() : millis();
   // Add to the appropriate vector based on log level
   m_logEntriesByLevel[static_cast<int>(level)].push_back(entry);
 

@@ -31,8 +31,8 @@ extern bool vorherAlarm;
 extern String letzterWebhookStatus;
 extern String webhookStatus;
 extern const int httpsPort;
-extern String webhookDomain;
-extern String webhookPfad;
+extern char webhookDomain[20];
+extern char webhookPfad[35];
 extern int webhookPingFrequenz;
 extern int webhookFrequenz;
 extern int neustarts;
@@ -51,8 +51,10 @@ void WebhookSetup();
  *
  * Diese Funktion erstellt eine JSON-Nachricht mit Initialisierungsdaten
  * und sendet sie über den konfigurierten Webhook.
+ *
+ * @return bool true wenn erfolgreich, sonst false
  */
-void WebhookSendeInit();
+bool WebhookSendeInit();
 
 /**
  * @brief Erfasst die aktuellen Sensordaten und sendet sie über den Webhook
@@ -65,8 +67,10 @@ void WebhookErfasseSensordaten(const char* statusWert);
  * @brief Sendet die gesammelten Daten über den Webhook
  *
  * @param jsonString Die zu sendenden Daten als JSON-String
+ *
+ * @return bool true wenn erfolgreich, sonst false
  */
-void WebhookSendeDaten(const String& jsonString);
+bool WebhookSendeDaten(const String& jsonString);
 
 /**
  * @brief Aktualisiert den Alarmstatus basierend auf den aktuellen Sensorwerten

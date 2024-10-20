@@ -82,7 +82,7 @@ void sendeLinks() {
 }
 
 void WebseiteAdminAusgeben() {
-  logger.debug("Beginn von WebsiteAdminAusgeben()");
+  logger.debug(F("Beginn von WebsiteAdminAusgeben()"));
 
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
@@ -170,7 +170,7 @@ void WebseiteAdminAusgeben() {
     Webserver.sendContent(F("<h3>Access Point Einstellungen</h3>\n<div class=\"tuerkis\">\n"));
     sendeEinstellung(F("AP SSID"), F("wifiApSsid"), wifiApSsid);
     sendeCheckbox(F("AP Passwort aktivieren"), F("wifiApPasswortAktiviert"), wifiApPasswortAktiviert);
-    sendeEinstellung(F("AP Passwort"), F("wifiApPasswort"), wifiApPasswortAktiviert ? wifiApPasswort : F("********"));
+    sendeEinstellung(F("AP Passwort"), F("wifiApPasswort"), wifiApPasswortAktiviert ? String(wifiApPasswort) : F("********"));
     Webserver.sendContent(F("</div>\n"));
 
   // Log Einstellungen
@@ -287,5 +287,6 @@ setInterval(updateMeasurements, 5000); // Aktualisiere alle 5 Sekunden
   Webserver.sendContent_P(htmlFooter);
   Webserver.client().flush();
 
-  logger.debug("Ende von WebsiteAdminAusgeben()");
+  logger.debug(F("Ende von WebsiteAdminAusgeben()"));
 }
+

@@ -27,20 +27,7 @@ extern ESP8266WebServer Webserver;
  * @param alarm Gibt an, ob ein Alarm für diesen Sensor aktiv ist
  * @param webhook Gibt an, ob Webhook-Benachrichtigungen für diesen Sensor aktiviert sind
  */
-void sendeSensorDaten(const __FlashStringHelper* sensorName, const String& sensorFarbe, int messwert, const __FlashStringHelper* einheit, bool alarm, bool webhook);
-
-/**
- * @brief Sendet Daten eines Analogsensors an den Webserver
- *
- * @param sensorNummer Nummer des Analogsensors
- * @param sensorName Name des Sensors
- * @param sensorFarbe Farbcodierung des Sensorwerts
- * @param messwert Aktueller Messwert des Sensors
- * @param einheit Einheit des Messwerts
- * @param alarm Gibt an, ob ein Alarm für diesen Sensor aktiv ist
- * @param webhook Gibt an, ob Webhook-Benachrichtigungen für diesen Sensor aktiviert sind
- */
-void sendeAnalogsensorDaten(int sensorNummer, const String& sensorName, const String& sensorFarbe, int messwert, const __FlashStringHelper* einheit, bool alarm, bool webhook);
+void sendeSensorDaten(const String& sensorName, const String& sensorFarbe, int messwert, const __FlashStringHelper* einheit, bool alarm, bool webhook);
 
 /**
  * @brief Generiert und sendet die Startseite mit allen aktuellen Sensordaten

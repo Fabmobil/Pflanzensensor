@@ -63,7 +63,7 @@ void setup() {
   CreateMutex(&mutex);
   logger.debug(F("Start von setup()"));
 
-  logger.info(" Fabmobil Pflanzensensor, v" + String(pflanzensensorVersion));
+  logger.info(F(" Fabmobil Pflanzensensor, v") + String(pflanzensensorVersion));
   module = ModuleZaehlen(); // wie viele Module sind aktiv?
 
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
@@ -101,19 +101,35 @@ void setup() {
     digitalWrite(16, HIGH); // wird ausgeschalten (invertiertes Verhalten!)
   #endif
   if (!LittleFS.begin()) {  // Dateisystem initialisieren, muss vor Wifi geschehen
-    logger.error("Fehler: LittleFS konnte nicht initialisiert werden!");
+    logger.error(F("Fehler: LittleFS konnte nicht initialisiert werden!"));
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
       DisplayDreiWoerter("Start..", " LittleFS", "  Fehler!");
     #endif
     return;
   }
+  variablen.begin("pflanzensensor", false); // Variablen initialisieren
+  if (VariablenDa()) {
+    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+      DisplayDreiWoerter("Start..", " Variablen", "  laden");
+    #endif
+    // Load the preferences from flash
+    VariablenLaden();
+  } else {
+    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+      DisplayDreiWoerter("Start..", " Variablen", "  speichern");
+    #endif
+    // Save the preferences to flash
+    VariablenSpeichern();
+  }
+
   #if MODUL_WIFI
     #if MODUL_DISPLAY
       DisplayDreiWoerter("Start..", " Wifi-", "  modul");
     #endif
     logger.info(F("Start von Wifi-Modul ... "));
     String ip = WifiSetup(wifiHostname); // Wifi-Verbindung herstellen und IP Adresse speichern
-    logger.info("wifiPasswort2: " + wifiPasswort2);
+    initialisiereZeit();
+    logger.updateNTP(); // Update Timestamp
     if (ip == "keine WLAN Verbindung.") {
       logger.warning(F("Keine WLAN-Verbindung möglich. Wechsel in den Accesspoint-Modus."));
       #if MODUL_DISPLAY
@@ -135,27 +151,13 @@ void setup() {
     digitalWrite(multiplexerPinB, HIGH); // eingebaute LED ausschalten
     digitalWrite(multiplexerPinC, HIGH); // eingebaute LED ausschalten
   #endif
-  if (VariablenDa()) {
-    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-      DisplayDreiWoerter("Start..", " Variablen", "  laden");
-    #endif
-    // Load the preferences from flash
-    VariablenLaden();
-  } else {
-    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-      DisplayDreiWoerter("Start..", " Variablen", "  speichern");
-    #endif
-    // Save the preferences to flash
-    VariablenSpeichern();
-  }
 
-  variablen.begin("pflanzensensor", false); // Variablen initialisieren
   neustarts = variablen.getInt("neustarts"); // Anzahl der Neustarts auslesen
 
   neustarts++;
   variablen.putInt("neustarts", neustarts);
   variablen.end();
-  logger.info("Neustarts: "+ neustarts );
+  logger.info(F("Neustarts: ") + String(neustarts) );
   #if MODUL_WEBHOOK
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
       DisplayDreiWoerter("Start..", " Webhook-", "  modul");
@@ -207,56 +209,64 @@ void loop() {
       #if MODUL_HELLIGKEIT  // wenn das Helligkeit Modul aktiv ist
         std::tie(helligkeitMesswert, helligkeitMesswertProzent) =
           AnalogsensorMessen(1,1,1, helligkeitName, helligkeitMinimum, helligkeitMaximum);
-        helligkeitFarbe = FarbeBerechnen(helligkeitMesswertProzent, helligkeitGruenUnten, helligkeitGruenOben, helligkeitGelbUnten, helligkeitGelbOben);
+        strncpy(helligkeitFarbe, FarbeBerechnen(helligkeitMesswertProzent, helligkeitGruenUnten, helligkeitGruenOben, helligkeitGelbUnten, helligkeitGelbOben).c_str(), sizeof(helligkeitFarbe) - 1);
+helligkeitFarbe[sizeof(helligkeitFarbe) - 1] = '\0';
       #endif
 
       // Bodenfeuchte messen:
       #if MODUL_BODENFEUCHTE // wenn das Bodenfeuchte Modul aktiv is
         std::tie(bodenfeuchteMesswert, bodenfeuchteMesswertProzent) =
           AnalogsensorMessen(0,1,1, bodenfeuchteName, bodenfeuchteMinimum, bodenfeuchteMaximum);
-        bodenfeuchteFarbe = FarbeBerechnen(bodenfeuchteMesswertProzent, bodenfeuchteGruenUnten, bodenfeuchteGruenOben, bodenfeuchteGelbUnten, bodenfeuchteGelbOben);
+        strncpy(bodenfeuchteFarbe, FarbeBerechnen(bodenfeuchteMesswertProzent, bodenfeuchteGruenUnten, bodenfeuchteGruenOben, bodenfeuchteGelbUnten, bodenfeuchteGelbOben).c_str(), sizeof(bodenfeuchteFarbe) - 1);
+        bodenfeuchteFarbe[sizeof(bodenfeuchteFarbe) - 1] = '\0';
       #endif
 
       // Analogsensor3 messen:
       #if MODUL_ANALOG3 // wenn das Analog3 Modul aktiv ist
         std::tie(analog3Messwert, analog3MesswertProzent) =
           AnalogsensorMessen(1,0,1, analog3Name, analog3Minimum, analog3Maximum);
-        analog3Farbe = FarbeBerechnen(analog3MesswertProzent, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben);
+        strncpy(analog3Farbe, FarbeBerechnen(analog3MesswertProzent, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben).c_str(), sizeof(analog3Farbe) - 1);
+        analog3Farbe[sizeof(analog3Farbe) - 1] = '\0';
       #endif
 
       // Analogsensor4 messen:
       #if MODUL_ANALOG4 // wenn das Analog4 Modul aktiv ist
         std::tie(analog4Messwert, analog4MesswertProzent) =
           AnalogsensorMessen(0,0,1, analog4Name, analog4Minimum, analog4Maximum);
-        analog4Farbe = FarbeBerechnen(analog4MesswertProzent, analog4GruenUnten, analog4GruenOben, analog4GelbUnten, analog4GelbOben);
+        strncpy(analog4Farbe, FarbeBerechnen(analog4MesswertProzent, analog4GruenUnten, analog4GruenOben, analog4GelbUnten, analog4GelbOben).c_str(), sizeof(analog4Farbe) - 1);
+        analog4Farbe[sizeof(analog4Farbe) - 1] = '\0';
       #endif
 
       // Analogsensor5 messen:
       #if MODUL_ANALOG5 // wenn das Analog5 Modul aktiv ist
       std::tie(analog5Messwert, analog5MesswertProzent) =
           AnalogsensorMessen(1,1,0, analog5Name, analog5Minimum, analog5Maximum);
-        analog5Farbe = FarbeBerechnen(analog5MesswertProzent, analog5GruenUnten, analog5GruenOben, analog5GelbUnten, analog5GelbOben);
+        strncpy(analog5Farbe, FarbeBerechnen(analog5MesswertProzent, analog5GruenUnten, analog5GruenOben, analog5GelbUnten, analog5GelbOben).c_str(), sizeof(analog5Farbe) - 1);
+        analog5Farbe[sizeof(analog5Farbe) - 1] = '\0';
       #endif
 
       // Analogsensor6 messen:
       #if MODUL_ANALOG6 // wenn das Analog6 Modul aktiv ist
         std::tie(analog6Messwert, analog6MesswertProzent) =
           AnalogsensorMessen(0,1,0, analog6Name, analog6Minimum, analog6Maximum);
-        analog6Farbe = FarbeBerechnen(analog6MesswertProzent, analog6GruenUnten, analog6GruenOben, analog6GelbUnten, analog6GelbOben);
+        strncpy(analog6Farbe, FarbeBerechnen(analog6MesswertProzent, analog6GruenUnten, analog6GruenOben, analog6GelbUnten, analog6GelbOben).c_str(), sizeof(analog6Farbe) - 1);
+        analog6Farbe[sizeof(analog6Farbe) - 1] = '\0';
       #endif
 
       // Analogsensor7 messen:
       #if MODUL_ANALOG7 // wenn das Analog7 Modul aktiv ist
         std::tie(analog7Messwert, analog7MesswertProzent) =
           AnalogsensorMessen(1,0,0, analog7Name, analog7Minimum, analog7Maximum);
-        analog7Farbe = FarbeBerechnen(analog7MesswertProzent, analog7GruenUnten, analog7GruenOben, analog7GelbUnten, analog7GelbOben);
+        strncpy(analog7Farbe, FarbeBerechnen(analog7MesswertProzent, analog7GruenUnten, analog7GruenOben, analog7GelbUnten, analog7GelbOben).c_str(), sizeof(analog7Farbe) - 1);
+        analog7Farbe[sizeof(analog7Farbe) - 1] = '\0';
       #endif
 
       // Analogsensor8 messen:
       #if MODUL_ANALOG8 // wenn das Analog8 Modul aktiv ist
         std::tie(analog8Messwert, analog8MesswertProzent) =
           AnalogsensorMessen(0,0,0, analog8Name, analog8Minimum, analog8Maximum);
-        analog8Farbe = FarbeBerechnen(analog8MesswertProzent, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben);
+        strncpy(analog8Farbe, FarbeBerechnen(analog8MesswertProzent, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben).c_str(), sizeof(analog8Farbe) - 1);
+        analog8Farbe[sizeof(analog8Farbe) - 1] = '\0';
       #endif
       #if MODUL_MULTIPLEXER
         digitalWrite(multiplexerPinB, HIGH); // eingebaute LED ausschalten
@@ -274,9 +284,11 @@ void loop() {
 
       millisVorherDht = millisAktuell; // neuen Wert übernehmen
       lufttemperaturMesswert = MesseLufttemperatur(); // Lufttemperatur messen
-      lufttemperaturFarbe = FarbeBerechnen(lufttemperaturMesswert, lufttemperaturGruenUnten, lufttemperaturGruenOben, lufttemperaturGelbUnten, lufttemperaturGelbOben);
+      strncpy(lufttemperaturFarbe, FarbeBerechnen(lufttemperaturMesswert, lufttemperaturGruenUnten, lufttemperaturGruenOben, lufttemperaturGelbUnten, lufttemperaturGelbOben).c_str(), sizeof(lufttemperaturFarbe) - 1);
+      lufttemperaturFarbe[sizeof(lufttemperaturFarbe) - 1] = '\0';
       luftfeuchteMesswert = MesseLuftfeuchtigkeit(); // Luftfeuchte messen
-      luftfeuchteFarbe = FarbeBerechnen(luftfeuchteMesswert, luftfeuchteGruenUnten, luftfeuchteGruenOben, luftfeuchteGelbUnten, luftfeuchteGelbOben);
+      strncpy(luftfeuchteFarbe, FarbeBerechnen(luftfeuchteMesswert, luftfeuchteGruenUnten, luftfeuchteGruenOben, luftfeuchteGelbUnten, luftfeuchteGelbOben).c_str(), sizeof(luftfeuchteFarbe) - 1);
+      luftfeuchteFarbe[sizeof(luftfeuchteFarbe) - 1] = '\0';
     }
   #endif
 
@@ -297,7 +309,7 @@ void loop() {
         millisVorherDisplay = millisAktuell;
         DisplayAnzeigen();
         NaechsteSeite();
-        logger.info("IP Adresse: " + ip);
+        logger.info(F("IP Adresse: ") + String(ip));
       }
     }
   #endif
@@ -314,22 +326,25 @@ void loop() {
       // https://github.com/esp8266/Arduino/blob/master/libraries/ESP8266WiFi/examples/WiFiMulti/WiFiMulti.ino
       if (!wifiAp) {
         if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
-          ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
-          aktuelleSsid = WiFi.SSID(); // SSID in Variable schreiben
+          strncpy(ip, WiFi.localIP().toString().c_str(), sizeof(ip) - 1);
+          ip[sizeof(ip) - 1] = '\0';
+          strncpy(aktuelleSsid, WiFi.SSID().c_str(), sizeof(aktuelleSsid) - 1);
+          aktuelleSsid[sizeof(aktuelleSsid) - 1] = '\0';
           wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers bei erfolgreicher Verbindung
         } else {
           wifiVerbindungsVersuche++; // Erhöhen des Zählers bei fehlgeschlagener Verbindung
           if (wifiVerbindungsVersuche >= 10) {
-            logger.warning("Fehler: WLAN Verbindung verloren! Wechsle in den Accesspoint-Modus.");
+            logger.warning(F("Fehler: WLAN Verbindung verloren! Wechsle in den Accesspoint-Modus."));
             #if MODUL_DISPLAY
               DisplayDreiWoerter("WLAN", "Verbindung", "verloren!");
             #endif
             wifiAp = true;
-            String ip = WifiSetup(wifiHostname);
-            aktuelleSsid = wifiApSsid; // AP SSID in Variable schreiben
+            WifiSetup(wifiHostname);
+            strncpy(aktuelleSsid, wifiApSsid, sizeof(aktuelleSsid) - 1);
+            aktuelleSsid[sizeof(aktuelleSsid) - 1] = '\0';
             wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers
           } else {
-            logger.info("WLAN-Verbindungsversuch fehlgeschlagen. Versuch " + String(wifiVerbindungsVersuche) + " von 10");
+            logger.info(F("WLAN-Verbindungsversuch fehlgeschlagen. Versuch ") + String(wifiVerbindungsVersuche) + F(" von 10"));
           }
         }
       }
@@ -418,4 +433,24 @@ String FarbeBerechnen(int messwert, int gruenUnten, int gruenOben, int gelbUnten
   } else {
     return "gelb";
   }
+}
+
+
+/**
+ * @brief Initialisiert den NTP-Client und synchronisiert die Zeit
+ *
+ * Diese Funktion startet den NTP-Client und wartet, bis die Zeit synchronisiert ist.
+ * Sie stellt sicher, dass eine gültige Uhrzeit verfügbar ist, bevor andere zeitabhängige
+ * Funktionen ausgeführt werden.
+ */
+void initialisiereZeit() {
+  zeitClient.begin();
+  zeitClient.setTimeOffset(3600); // Setzen Sie hier Ihre Zeitzone (in Sekunden), z.B. 3600 für MEZ
+
+  logger.info(F("Warte auf Zeitsynchronisation..."));
+  while(!zeitClient.update()) {
+    zeitClient.forceUpdate();
+    delay(500);
+  }
+  logger.info(F("Zeit synchronisiert: ") + zeitClient.getFormattedTime());
 }

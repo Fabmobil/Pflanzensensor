@@ -30,7 +30,7 @@
 
 extern bool webhookAn;
 
-void sendeSensorDaten(const __FlashStringHelper* sensorName, const String& sensorFarbe, int messwert, const __FlashStringHelper* einheit, bool alarm, bool webhook) {
+void sendeSensorDaten(const String& sensorName, const String& sensorFarbe, int messwert, const __FlashStringHelper* einheit, bool alarm, bool webhook) {
   Webserver.sendContent(F("<h2>"));
   Webserver.sendContent(sensorName);
   if (alarm && webhook) {Webserver.sendContent(F(" ⏰"));}
@@ -43,23 +43,8 @@ void sendeSensorDaten(const __FlashStringHelper* sensorName, const String& senso
   Webserver.sendContent(F("</p></div>\n"));
 }
 
-void sendeAnalogsensorDaten(int sensorNummer, const String& sensorName, const String& sensorFarbe, int messwert, const __FlashStringHelper* einheit, bool alarm, bool webhook) {
-  Webserver.sendContent(F("<h2>Analogsensor "));
-  Webserver.sendContent(String(sensorNummer));
-  Webserver.sendContent(F(": "));
-  Webserver.sendContent(sensorName);
-  if (alarm && webhook) {Webserver.sendContent(F(" ⏰"));}
-  Webserver.sendContent(F("</h2>\n<div class=\""));
-  Webserver.sendContent(sensorFarbe);
-  Webserver.sendContent(F("\"><p>"));
-  Webserver.sendContent(String(messwert));
-  Webserver.sendContent(F(" "));
-  Webserver.sendContent(einheit);
-  Webserver.sendContent(F("</p></div>\n"));
-}
-
 void WebseiteStartAusgeben() {
-  logger.debug("Beginn von WebsiteStartAusgeben()");
+  logger.debug(F("Beginn von WebsiteStartAusgeben()"));
 
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
@@ -76,7 +61,7 @@ void WebseiteStartAusgeben() {
   #endif
 
   #if MODUL_HELLIGKEIT
-    sendeSensorDaten(F("Helligkeit"), helligkeitFarbe, helligkeitMesswertProzent, F("%"), helligkeitWebhook, webhookAn);
+    sendeSensorDaten(helligkeitName, helligkeitFarbe, helligkeitMesswertProzent, F("%"), helligkeitWebhook, webhookAn);
   #endif
 
   #if MODUL_BODENFEUCHTE
@@ -89,27 +74,27 @@ void WebseiteStartAusgeben() {
   #endif
 
   #if MODUL_ANALOG3
-    sendeAnalogsensorDaten(3, analog3Name, analog3Farbe, analog3MesswertProzent, F("%"), analog3Webhook, webhookAn);
+    sendeSensorDaten(analog3Name, analog3Farbe, analog3MesswertProzent, F("%"), analog3Webhook, webhookAn);
   #endif
 
   #if MODUL_ANALOG4
-    sendeAnalogsensorDaten(4, analog4Name, analog4Farbe, analog4MesswertProzent, F("%"), analog4Webhook, webhookAn);
+    sendeSensorDaten(analog4Name, analog4Farbe, analog4MesswertProzent, F("%"), analog4Webhook, webhookAn);
   #endif
 
   #if MODUL_ANALOG5
-    sendeAnalogsensorDaten(5, analog5Name, analog5Farbe, analog5MesswertProzent, F("%"), analog5Webhook, webhookAn);
+    sendeSensorDaten(analog5Name, analog5Farbe, analog5MesswertProzent, F("%"), analog5Webhook, webhookAn);
   #endif
 
   #if MODUL_ANALOG6
-    sendeAnalogsensorDaten(6, analog6Name, analog6Farbe, analog6MesswertProzent, F("%"), analog6Webhook, webhookAn);
+    sendeSensorDaten(analog6Name, analog6Farbe, analog6MesswertProzent, F("%"), analog6Webhook, webhookAn);
   #endif
 
   #if MODUL_ANALOG7
-    sendeAnalogsensorDaten(7, analog7Name, analog7Farbe, analog7MesswertProzent, F("%"), analog7Webhook, webhookAn);
+    sendeSensorDaten(analog7Name, analog7Farbe, analog7MesswertProzent, F("%"), analog7Webhook, webhookAn);
   #endif
 
   #if MODUL_ANALOG8
-    sendeAnalogsensorDaten(8, analog8Name, analog8Farbe, analog8MesswertProzent, F("%"), analog8Webhook, webhookAn);
+    sendeSensorDaten(analog8Name, analog8Farbe, analog8MesswertProzent, F("%"), analog8Webhook, webhookAn);
   #endif
 
   Webserver.sendContent_P(PSTR(
@@ -131,5 +116,5 @@ void WebseiteStartAusgeben() {
   Webserver.sendContent_P(htmlFooter);
   Webserver.client().flush();
 
-  logger.debug("Ende von WebsiteStartAusgeben()");
+  logger.debug(F("Ende von WebsiteStartAusgeben()"));
 }

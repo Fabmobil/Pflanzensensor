@@ -19,15 +19,16 @@
 #if MODUL_DISPLAY
   #include "display.h"
 #endif
+#include <time.h>
 
 bool wlanAenderungVorgenommen = false;
 ESP8266WiFiMulti wifiMulti;
 ESP8266WebServer Webserver(80); // Webserver auf Port 80
 extern bool wlanNeustartGeplant;
 extern unsigned long geplanteWLANNeustartZeit;
-extern String wifiApPasswort;
-extern String wifiHostname;
-extern String wifiApSsid;
+extern char wifiApPasswort[35];
+extern char wifiHostname[20];
+extern char wifiApSsid[40];
 extern bool wifiApPasswortAktiviert;
 
 /**
@@ -40,65 +41,81 @@ extern bool wifiApPasswortAktiviert;
  * @return String Die IP-Adresse des Geräts
  */
 String WifiSetup(String hostname){
-logger.debug("Beginn von WifiSetup()");
+logger.debug(F("Beginn von WifiSetup()"));
 
 // WLAN Verbindung herstellen
   WiFi.mode(WIFI_OFF); // WLAN ausschalten
   if ( !wifiAp ) { // falls kein eigener Accesspoint aufgemacht werden soll wird sich mit dem definierten WLAN verbunden
     WiFi.mode(WIFI_STA);; // WLAN im Clientmodus starten
     // Wifi-Verbindungen konfigurieren
-    wifiMulti.addAP(wifiSsid1.c_str(), wifiPasswort1.c_str()); // WLAN Verbindung konfigurieren
-    wifiMulti.addAP(wifiSsid2.c_str(), wifiPasswort2.c_str());
-    wifiMulti.addAP(wifiSsid3.c_str(), wifiPasswort3.c_str());
+    wifiMulti.addAP(wifiSsid1, wifiPasswort1); // WLAN Verbindung konfigurieren
+    wifiMulti.addAP(wifiSsid2, wifiPasswort2);
+    wifiMulti.addAP(wifiSsid3, wifiPasswort3);
     if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
-      ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
-      logger.info(" .. WLAN verbunden: ");
-      logger.info("SSID: " + String(WiFi.SSID()));
-      logger.info("IP: " + ip);
+      String tempString = WiFi.localIP().toString();
+      strncpy(ip, tempString.c_str(), sizeof(ip) - 1);
+      ip[sizeof(ip) - 1] = '\0';// IP Adresse in Variable schreiben
+      logger.info(F(" .. WLAN verbunden: "));
+      logger.info(F("SSID: ") + String(WiFi.SSID()));
+      logger.info(F("IP: ") + String(ip));
       #if MODUL_DISPLAY
-        DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ ip, "Hostname: ", "  " + hostname + ".local" );
+        DisplaySechsZeilen("WLAN OK", "", "SSID: " + String(WiFi.SSID()), "IP: "+ String(ip), "Hostname: ", "  " + String(hostname) + ".local" );
         delay(5000); // genug Zeit um die IP Adresse zu lesen
       #endif
+      // Zeit synchronisieren
+      configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+      logger.info(F("Warte auf die Synchronisation von Uhrzeit und Datum: "));
+      time_t now = time(nullptr);
+      while (now < 8 * 3600 * 2) {
+        delay(500);
+        logger.debug(F("."));
+        now = time(nullptr);
+      }
+      struct tm timeinfo;
+      gmtime_r(&now, &timeinfo);
+      logger.info(F("Die Zeit und das Datum ist: ") + String(asctime(&timeinfo)));
     } else {
-      logger.error(" .. Fehler: WLAN Verbindungsfehler!");
+      logger.error(F(" .. Fehler: WLAN Verbindungsfehler!"));
       #if MODUL_DISPLAY
         DisplayDreiWoerter("WLAN", "Verbindungs-", "fehler!");
       #endif
     }
   } else { // ansonsten wird hier das WLAN erstellt
-    logger.info("Konfiguriere soft-AP ... ");
+    logger.info(F("Konfiguriere soft-AP ... "));
     boolean result = false; // Variable für den Erfolg des Aufbaus des Accesspoints
     if ( wifiApPasswortAktiviert ) { // Falls ein WLAN mit Passwort erstellt werden soll
       result = WiFi.softAP(wifiApSsid, wifiApPasswort ); // WLAN mit Passwort erstellen
     } else { // ansonsten WLAN ohne Passwort
       result = WiFi.softAP(wifiApSsid); // WLAN ohne Passwort erstellen
     }
-    ip = WiFi.softAPIP().toString(); // IP Adresse in Variable schreiben
-    logger.info(" .. Accesspoint wurde ");
+    String tempString = WiFi.softAPIP().toString();
+    strncpy(ip, tempString.c_str(), sizeof(ip) - 1);
+    ip[sizeof(ip) - 1] = '\0'; // IP Adresse in Variable schreiben
+    logger.info(F(" .. Accesspoint wurde "));
     if( !result ) { // falls der Accesspoint nicht erfolgreich aufgebaut wurde
-      logger.info("     NICHT ");
+      logger.info(F("     NICHT "));
       #if MODUL_DISPLAY
         DisplayDreiWoerter("Acesspoint:","Fehler beim", "Setup!");
       #endif
     } else { // falls der Accesspoint erfolgreich aufgebaut wurde
       #if MODUL_DISPLAY
         if ( wifiApPasswortAktiviert) {
-          DisplaySechsZeilen("Accesspoint OK", "SSID: " + wifiApSsid, "PW:" + wifiApPasswort, "IP: "+ ip, "Hostname: ", hostname + ".local" );
+          DisplaySechsZeilen("Accesspoint OK", "SSID: " + String(wifiApSsid), "PW:" + String(wifiApPasswort), "IP: "+ String(ip), "Hostname: ", String(hostname) + ".local" );
         } else {
-          DisplaySechsZeilen("Accesspoint OK", "SSID: " + wifiApSsid, "PW: ohne", "IP: "+ ip, "Hostname: ", hostname + ".local" );
+          DisplaySechsZeilen("Accesspoint OK", "SSID: " + String(wifiApSsid), "PW: ohne", "IP: "+ String(ip), "Hostname: ", String(hostname)   + ".local" );
         }
       #endif
     }
-    logger.info("       erfolgreich aufgebaut!");
-    logger.info(" .. meine IP: " + ip); // IP Adresse ausgeben
+    logger.info(F("       erfolgreich aufgebaut!"));
+    logger.info(F(" .. meine IP: ") + String(ip)); // IP Adresse ausgeben
   }
 
   // DNS Namensauflösung aktivieren:
   if (MDNS.begin(hostname)) { // falls Namensauflösung erfolgreich eingerichtet wurde
-    logger.info(" .. Gerät unter " + String(hostname) + ".local erreichbar.");
+    logger.info(F(" .. Gerät unter ") + String(hostname) + F(".local erreichbar."));
     MDNS.addService("http", "tcp", 80); // Webserver unter Port 80 bekannt machen
   } else { // falls Namensauflösung nicht erfolgreich eingerichtet wurde
-    logger.error(" .. Fehler bein Einrichten der Namensauflösung.");
+    logger.error(F(" .. Fehler bein Einrichten der Namensauflösung."));
   }
   Webserver.on("/", HTTP_GET, WebseiteStartAusgeben);
   Webserver.on("/admin.html", HTTP_GET, WebseiteAdminAusgeben);
@@ -137,7 +154,7 @@ logger.debug("Beginn von WifiSetup()");
 void WebseiteBild(const char* pfad, const char* mimeType) {
     File bild = LittleFS.open(pfad, "r");
     if (!bild) {
-        logger.error("Fehler: " + String(pfad) + " konnte nicht geöffnet werden!");
+        logger.error(F("Fehler: ") + String(pfad) + F(" konnte nicht geöffnet werden!"));
         Webserver.send(404, "text/plain", "Bild nicht gefunden");
         return;
     }
@@ -150,12 +167,12 @@ void WebseiteBild(const char* pfad, const char* mimeType) {
  */
 void WebseiteCss() {
     if (!LittleFS.exists("/style.css")) {
-        logger.error("Fehler: /style.css existiert nicht!");
+        logger.error(F("Fehler: /style.css existiert nicht!"));
         return;
     }
     File css = LittleFS.open("/style.css", "r");
     if (!css) {
-        logger.error("Fehler: /style.css kann nicht geöffnet werden!");
+        logger.error(F("Fehler: /style.css kann nicht geöffnet werden!"));
         return;
     }
     Webserver.streamFile(css, "text/css");
@@ -171,29 +188,31 @@ void WebseiteCss() {
  */
 void NeustartWLANVerbindung() {
   WiFi.disconnect();  // Trennt die bestehende Verbindung
-  logger.info("wifiAp: " + String(wifiAp));
+  logger.info(F("wifiAp: ") + String(wifiAp));
   if (wifiAp) {
     // Access Point Modus
-    logger.info("Starte Access Point Modus...");
+    logger.info(F("Starte Access Point Modus..."));
     WiFi.mode(WIFI_AP);
     WiFi.softAP(wifiApSsid, wifiApPasswort);
-    ip = WiFi.softAPIP().toString();
+    String tempString = WiFi.softAPIP().toString();
+    strncpy(ip, tempString.c_str(), sizeof(ip) - 1);
+    ip[sizeof(ip) - 1] = '\0';
 
-    logger.info("Access Point gestartet. IP: " + ip);
+    logger.info(F("Access Point gestartet. IP: ") + String(ip));
 
     #if MODUL_DISPLAY
-      DisplaySechsZeilen("AP-Modus", "aktiv", "SSID: " + String(wifiApSsid), "IP: " + ip, "Hostname:", wifiHostname + ".local");
+      DisplaySechsZeilen("AP-Modus", "aktiv", "SSID: " + String(wifiApSsid), "IP: " + String(ip), "Hostname:", String(wifiHostname) + ".local");
     #endif
   } else {
     // Versuche, sich mit konfiguriertem WLAN zu verbinden
-    logger.info("Versuche, WLAN-Verbindung herzustellen...");
+    logger.info(F("Versuche, WLAN-Verbindung herzustellen..."));
     WiFi.mode(WIFI_STA);
     wifiMulti.cleanAPlist();
 
     // Fügt die konfigurierten WLANs hinzu
-    wifiMulti.addAP(wifiSsid1.c_str(), wifiPasswort1.c_str());
-    wifiMulti.addAP(wifiSsid2.c_str(), wifiPasswort2.c_str());
-    wifiMulti.addAP(wifiSsid3.c_str(), wifiPasswort3.c_str());
+    wifiMulti.addAP(wifiSsid1, wifiPasswort1);
+    wifiMulti.addAP(wifiSsid2, wifiPasswort2);
+    wifiMulti.addAP(wifiSsid3, wifiPasswort3);
 
     #if MODUL_DISPLAY
       DisplayDreiWoerter("Neustart", "WLAN", "Modul");
@@ -201,24 +220,28 @@ void NeustartWLANVerbindung() {
 
     // Versucht, eine Verbindung herzustellen
     if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
-      ip = WiFi.localIP().toString();
-      logger.info("Verbunden mit WLAN. IP: " + ip);
+      String tempString = WiFi.localIP().toString();
+      strncpy(ip, tempString.c_str(), sizeof(ip) - 1);
+      ip[sizeof(ip) - 1] = '\0';
+      logger.info(F("Verbunden mit WLAN. IP: ") + String(ip));
 
       #if MODUL_DISPLAY
-        DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ ip, "Hostname:", wifiHostname + ".local");
+        DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ String(ip), "Hostname:", String(wifiHostname) + ".local");
       #endif
     } else {
       // Wenn keine Verbindung möglich ist, wechsle in den AP-Modus
-      logger.warning("Konnte keine WLAN-Verbindung herstellen. Wechsle in den AP-Modus.");
+      logger.warning(F("Konnte keine WLAN-Verbindung herstellen. Wechsle in den AP-Modus."));
       wifiAp = true;
       WiFi.mode(WIFI_AP);
       WiFi.softAP(wifiApSsid, wifiApPasswort);
-      ip = WiFi.softAPIP().toString();
+      String tempString = WiFi.softAPIP().toString();
+      strncpy(ip, tempString.c_str(), sizeof(ip) - 1);
+      ip[sizeof(ip) - 1] = '\0';
 
-      logger.info("AP-Modus aktiviert. IP: " + ip);
+      logger.info(F("AP-Modus aktiviert. IP: ") + String(ip));
 
       #if MODUL_DISPLAY
-        DisplaySechsZeilen("AP-Modus", "aktiv", "SSID: " + String(wifiApSsid), "IP: " + ip, "Hostname:", wifiHostname + ".local");
+        DisplaySechsZeilen("AP-Modus", "aktiv", "SSID: " + String(wifiApSsid), "IP: " + String(ip), "Hostname:", String(wifiHostname) + ".local");
       #endif
     }
   }

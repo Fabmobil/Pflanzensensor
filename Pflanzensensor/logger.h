@@ -12,7 +12,7 @@
 #include <WiFiUdp.h>
 #include "einstellungen.h"
 
-extern String logLevel;
+extern char logLevel[8];
 extern int logAnzahlEintraege;
 extern int logAnzahlWebseite;
 extern bool logInDatei;
@@ -32,7 +32,7 @@ enum class LogLevel {
  */
 struct LogEntry {
     LogLevel level;
-    String message;
+    char message[128];
     unsigned long timestamp;
 };
 

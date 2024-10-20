@@ -22,7 +22,7 @@
 #endif
 
 void ArgumenteAusgeben() {
-  logger.info("Gebe alle Argumente des POST requests aus:");
+  logger.info(F("Gebe alle Argumente des POST requests aus:"));
   int numArgs = Webserver.args();
   for (int i = 0; i < numArgs; i++) {
     logger.info(String(Webserver.argName(i)) + ": " + String(Webserver.arg(i)));
@@ -195,7 +195,7 @@ void WebseiteSetzeVariablen() {
 }
 
 void AktualisiereVariablen() {
-  AktualisiereString("logLevel", logLevel);
+  AktualisiereString("logLevel", logLevel, sizeof(logLevel));
   AktualisiereInteger("logAnzahlEintraege", logAnzahlEintraege);
   AktualisiereInteger("logAnzahlWebseite", logAnzahlWebseite);
   AktualisiereBoolean("logInDatei", logInDatei);
@@ -224,30 +224,32 @@ void AktualisiereVariablen() {
 
   #if MODUL_WEBHOOK
     AktualisiereBoolean("webhookAn", webhookAn);
-    AktualisiereString("webhookDomain", webhookDomain);
-    AktualisiereString("webhookPfad", webhookPfad);
+    AktualisiereString("webhookDomain", webhookDomain, sizeof(webhookDomain));
+    AktualisiereString("webhookPfad", webhookPfad, sizeof(webhookPfad));
     AktualisiereInteger("webhookFrequenz", webhookFrequenz);
     AktualisiereInteger("webhookPingFrequenz", webhookPingFrequenz);
   #endif
 
   #if MODUL_WIFI
     wlanAenderungVorgenommen = false;
-    String neuerWLANModus = Webserver.arg("wlanModus");
-    if ((neuerWLANModus == "ap" && !wifiAp) || (neuerWLANModus == "wlan" && wifiAp)) {
-      wifiAp = (neuerWLANModus == "ap");
-      wlanAenderungVorgenommen = true;
+    if (Webserver.hasArg("wlanModus")) {
+      const char* neuerWLANModus = Webserver.arg("wlanModus").c_str();
+      if ((strcmp(neuerWLANModus, "ap") == 0 && !wifiAp) || (strcmp(neuerWLANModus, "wlan") == 0 && wifiAp)) {
+        wifiAp = (strcmp(neuerWLANModus, "ap") == 0);
+        wlanAenderungVorgenommen = true;
+      }
     }
 
-    AktualisiereString("wifiSsid1", wifiSsid1, true);
-    AktualisiereString("wifiPasswort1", wifiPasswort1, true);
-    AktualisiereString("wifiSsid2", wifiSsid2, true);
-    AktualisiereString("wifiPasswort2", wifiPasswort2, true);
-    AktualisiereString("wifiSsid3", wifiSsid3, true);
-    AktualisiereString("wifiPasswort3", wifiPasswort3, true);
-    AktualisiereString("wifiApSsid", wifiApSsid, true);
+    AktualisiereString("wifiSsid1", wifiSsid1, sizeof(wifiSsid1), true);
+    AktualisiereString("wifiPasswort1", wifiPasswort1, sizeof(wifiPasswort1), true);
+    AktualisiereString("wifiSsid2", wifiSsid2, sizeof(wifiSsid2), true);
+    AktualisiereString("wifiPasswort2", wifiPasswort2, sizeof(wifiPasswort2), true);
+    AktualisiereString("wifiSsid3", wifiSsid3, sizeof(wifiSsid3), true);
+    AktualisiereString("wifiPasswort3", wifiPasswort3, sizeof(wifiPasswort3), true);
+    AktualisiereString("wifiApSsid", wifiApSsid, sizeof(wifiApSsid), true);
     AktualisiereBoolean("wifiApPasswortAktiviert", wifiApPasswortAktiviert, true);
     if (wifiApPasswortAktiviert) {
-      AktualisiereString("wifiApPasswort", wifiApPasswort, true);
+      AktualisiereString("wifiApPasswort", wifiApPasswort, sizeof(wifiApPasswort), true);
     }
 
     if (wlanAenderungVorgenommen) {
@@ -256,7 +258,7 @@ void AktualisiereVariablen() {
   #endif
 
   #if MODUL_HELLIGKEIT
-    AktualisiereString("helligkeitName", helligkeitName);
+    AktualisiereString("helligkeitName", helligkeitName, sizeof(helligkeitName));
     AktualisiereBoolean("helligkeitWebhook", helligkeitWebhook);
     AktualisiereInteger("helligkeitMinimum", helligkeitMinimum);
     AktualisiereInteger("helligkeitMaximum", helligkeitMaximum);
@@ -267,7 +269,7 @@ void AktualisiereVariablen() {
   #endif
 
   #if MODUL_BODENFEUCHTE
-    AktualisiereString("bodenfeuchteName", bodenfeuchteName);
+    AktualisiereString("bodenfeuchteName", bodenfeuchteName, sizeof(bodenfeuchteName));
     AktualisiereBoolean("bodenfeuchteWebhook", bodenfeuchteWebhook);
     AktualisiereInteger("bodenfeuchteMinimum", bodenfeuchteMinimum);
     AktualisiereInteger("bodenfeuchteMaximum", bodenfeuchteMaximum);
@@ -277,7 +279,7 @@ void AktualisiereVariablen() {
     AktualisiereInteger("bodenfeuchteGelbOben", bodenfeuchteGelbOben);
   #endif
 
-#if MODUL_ANALOG3
+  #if MODUL_ANALOG3
     AktualisiereAnalogsensor(3);
   #endif
   #if MODUL_ANALOG4
@@ -298,89 +300,109 @@ void AktualisiereVariablen() {
 }
 
 void AktualisiereAnalogsensor(int sensorNumber) {
-  String prefix = "analog" + String(sensorNumber);
+  char prefix[16];
+  snprintf(prefix, sizeof(prefix), "analog%d", sensorNumber);
+
+  char nameBuf[32];
+  char webhookBuf[32];
+  char minimumBuf[32];
+  char maximumBuf[32];
+  char gruenUntenBuf[32];
+  char gruenObenBuf[32];
+  char gelbUntenBuf[32];
+  char gelbObenBuf[32];
+
+  snprintf(nameBuf, sizeof(nameBuf), "%sName", prefix);
+  snprintf(webhookBuf, sizeof(webhookBuf), "%sWebhook", prefix);
+  snprintf(minimumBuf, sizeof(minimumBuf), "%sMinimum", prefix);
+  snprintf(maximumBuf, sizeof(maximumBuf), "%sMaximum", prefix);
+  snprintf(gruenUntenBuf, sizeof(gruenUntenBuf), "%sGruenUnten", prefix);
+  snprintf(gruenObenBuf, sizeof(gruenObenBuf), "%sGruenOben", prefix);
+  snprintf(gelbUntenBuf, sizeof(gelbUntenBuf), "%sGelbUnten", prefix);
+  snprintf(gelbObenBuf, sizeof(gelbObenBuf), "%sGelbOben", prefix);
 
   switch(sensorNumber) {
     #if MODUL_ANALOG3
       case 3:
-        AktualisiereString(prefix + "Name", analog3Name);
-        AktualisiereBoolean(prefix + "Webhook", analog3Webhook);
-        AktualisiereInteger(prefix + "Minimum", analog3Minimum);
-        AktualisiereInteger(prefix + "Maximum", analog3Maximum);
-        AktualisiereInteger(prefix + "GruenUnten", analog3GruenUnten);
-        AktualisiereInteger(prefix + "GruenOben", analog3GruenOben);
-        AktualisiereInteger(prefix + "GelbUnten", analog3GelbUnten);
-        AktualisiereInteger(prefix + "GelbOben", analog3GelbOben);
+        AktualisiereString(nameBuf, analog3Name, sizeof(analog3Name));
+        AktualisiereBoolean(webhookBuf, analog3Webhook);
+        AktualisiereInteger(minimumBuf, analog3Minimum);
+        AktualisiereInteger(maximumBuf, analog3Maximum);
+        AktualisiereInteger(gruenUntenBuf, analog3GruenUnten);
+        AktualisiereInteger(gruenObenBuf, analog3GruenOben);
+        AktualisiereInteger(gelbUntenBuf, analog3GelbUnten);
+        AktualisiereInteger(gelbObenBuf, analog3GelbOben);
         break;
     #endif
     #if MODUL_ANALOG4
       case 4:
-        AktualisiereString(prefix + "Name", analog4Name);
-        AktualisiereBoolean(prefix + "Webhook", analog4Webhook);
-        AktualisiereInteger(prefix + "Minimum", analog4Minimum);
-        AktualisiereInteger(prefix + "Maximum", analog4Maximum);
-        AktualisiereInteger(prefix + "GruenUnten", analog4GruenUnten);
-        AktualisiereInteger(prefix + "GruenOben", analog4GruenOben);
-        AktualisiereInteger(prefix + "GelbUnten", analog4GelbUnten);
-        AktualisiereInteger(prefix + "GelbOben", analog4GelbOben);
+        AktualisiereString(nameBuf, analog4Name, sizeof(analog4Name));
+        AktualisiereBoolean(webhookBuf, analog4Webhook);
+        AktualisiereInteger(minimumBuf, analog4Minimum);
+        AktualisiereInteger(maximumBuf, analog4Maximum);
+        AktualisiereInteger(gruenUntenBuf, analog4GruenUnten);
+        AktualisiereInteger(gruenObenBuf, analog4GruenOben);
+        AktualisiereInteger(gelbUntenBuf, analog4GelbUnten);
+        AktualisiereInteger(gelbObenBuf, analog4GelbOben);
         break;
     #endif
     #if MODUL_ANALOG5
       case 5:
-        AktualisiereString(prefix + "Name", analog5Name);
-        AktualisiereBoolean(prefix + "Webhook", analog5Webhook);
-        AktualisiereInteger(prefix + "Minimum", analog5Minimum);
-        AktualisiereInteger(prefix + "Maximum", analog5Maximum);
-        AktualisiereInteger(prefix + "GruenUnten", analog5GruenUnten);
-        AktualisiereInteger(prefix + "GruenOben", analog5GruenOben);
-        AktualisiereInteger(prefix + "GelbUnten", analog5GelbUnten);
-        AktualisiereInteger(prefix + "GelbOben", analog5GelbOben);
+        AktualisiereString(nameBuf, analog5Name, sizeof(analog5Name));
+        AktualisiereBoolean(webhookBuf, analog5Webhook);
+        AktualisiereInteger(minimumBuf, analog5Minimum);
+        AktualisiereInteger(maximumBuf, analog5Maximum);
+        AktualisiereInteger(gruenUntenBuf, analog5GruenUnten);
+        AktualisiereInteger(gruenObenBuf, analog5GruenOben);
+        AktualisiereInteger(gelbUntenBuf, analog5GelbUnten);
+        AktualisiereInteger(gelbObenBuf, analog5GelbOben);
         break;
     #endif
     #if MODUL_ANALOG6
       case 6:
-        AktualisiereString(prefix + "Name", analog6Name);
-        AktualisiereBoolean(prefix + "Webhook", analog6Webhook);
-        AktualisiereInteger(prefix + "Minimum", analog6Minimum);
-        AktualisiereInteger(prefix + "Maximum", analog6Maximum);
-        AktualisiereInteger(prefix + "GruenUnten", analog6GruenUnten);
-        AktualisiereInteger(prefix + "GruenOben", analog6GruenOben);
-        AktualisiereInteger(prefix + "GelbUnten", analog6GelbUnten);
-        AktualisiereInteger(prefix + "GelbOben", analog6GelbOben);
+        AktualisiereString(nameBuf, analog6Name, sizeof(analog6Name));
+        AktualisiereBoolean(webhookBuf, analog6Webhook);
+        AktualisiereInteger(minimumBuf, analog6Minimum);
+        AktualisiereInteger(maximumBuf, analog6Maximum);
+        AktualisiereInteger(gruenUntenBuf, analog6GruenUnten);
+        AktualisiereInteger(gruenObenBuf, analog6GruenOben);
+        AktualisiereInteger(gelbUntenBuf, analog6GelbUnten);
+        AktualisiereInteger(gelbObenBuf, analog6GelbOben);
         break;
     #endif
     #if MODUL_ANALOG7
       case 7:
-        AktualisiereString(prefix + "Name", analog7Name);
-        AktualisiereBoolean(prefix + "Webhook", analog7Webhook);
-        AktualisiereInteger(prefix + "Minimum", analog7Minimum);
-        AktualisiereInteger(prefix + "Maximum", analog7Maximum);
-        AktualisiereInteger(prefix + "GruenUnten", analog7GruenUnten);
-        AktualisiereInteger(prefix + "GruenOben", analog7GruenOben);
-        AktualisiereInteger(prefix + "GelbUnten", analog7GelbUnten);
-        AktualisiereInteger(prefix + "GelbOben", analog7GelbOben);
+        AktualisiereString(nameBuf, analog7Name, sizeof(analog7Name));
+        AktualisiereBoolean(webhookBuf, analog7Webhook);
+        AktualisiereInteger(minimumBuf, analog7Minimum);
+        AktualisiereInteger(maximumBuf, analog7Maximum);
+        AktualisiereInteger(gruenUntenBuf, analog7GruenUnten);
+        AktualisiereInteger(gruenObenBuf, analog7GruenOben);
+        AktualisiereInteger(gelbUntenBuf, analog7GelbUnten);
+        AktualisiereInteger(gelbObenBuf, analog7GelbOben);
         break;
     #endif
     #if MODUL_ANALOG8
       case 8:
-        AktualisiereString(prefix + "Name", analog8Name);
-        AktualisiereBoolean(prefix + "Webhook", analog8Webhook);
-        AktualisiereInteger(prefix + "Minimum", analog8Minimum);
-        AktualisiereInteger(prefix + "Maximum", analog8Maximum);
-        AktualisiereInteger(prefix + "GruenUnten", analog8GruenUnten);
-        AktualisiereInteger(prefix + "GruenOben", analog8GruenOben);
-        AktualisiereInteger(prefix + "GelbUnten", analog8GelbUnten);
-        AktualisiereInteger(prefix + "GelbOben", analog8GelbOben);
+        AktualisiereString(nameBuf, analog8Name, sizeof(analog8Name));
+        AktualisiereBoolean(webhookBuf, analog8Webhook);
+        AktualisiereInteger(minimumBuf, analog8Minimum);
+        AktualisiereInteger(maximumBuf, analog8Maximum);
+        AktualisiereInteger(gruenUntenBuf, analog8GruenUnten);
+        AktualisiereInteger(gruenObenBuf, analog8GruenOben);
+        AktualisiereInteger(gelbUntenBuf, analog8GelbUnten);
+        AktualisiereInteger(gelbObenBuf, analog8GelbOben);
         break;
     #endif
   }
 }
 
-void AktualisiereString(const String& argName, String& wert, bool istWLANEinstellung) {
-  if (Webserver.arg(argName) != "") {
-    String neuerWert = Webserver.arg(argName);
-    if (neuerWert != wert) {
-      wert = neuerWert;
+void AktualisiereString(const char* argName, char* wert, size_t maxLength, bool istWLANEinstellung) {
+  if (Webserver.hasArg(argName)) {
+    const String& neuerWert = Webserver.arg(argName);
+    if (strncmp(neuerWert.c_str(), wert, maxLength) != 0) {
+      strncpy(wert, neuerWert.c_str(), maxLength - 1);
+      wert[maxLength - 1] = '\0';
       if (istWLANEinstellung) {
         wlanAenderungVorgenommen = true;
       }
@@ -388,7 +410,7 @@ void AktualisiereString(const String& argName, String& wert, bool istWLANEinstel
   }
 }
 
-void AktualisiereInteger(const String& argName, int& wert, bool istWLANEinstellung) {
+void AktualisiereInteger(const char* argName, int& wert, bool istWLANEinstellung) {
   if (Webserver.arg(argName) != "") {
     int neuerWert = Webserver.arg(argName).toInt();
     if (neuerWert != wert) {
@@ -400,7 +422,7 @@ void AktualisiereInteger(const String& argName, int& wert, bool istWLANEinstellu
   }
 }
 
-void AktualisiereBoolean(const String& argName, bool& wert, bool istWLANEinstellung) {
+void AktualisiereBoolean(const char* argName, bool& wert, bool istWLANEinstellung) {
   bool neuerWert = Webserver.hasArg(argName);
   if (neuerWert != wert) {
     wert = neuerWert;
@@ -409,3 +431,4 @@ void AktualisiereBoolean(const String& argName, bool& wert, bool istWLANEinstell
     }
   }
 }
+

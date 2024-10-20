@@ -131,7 +131,7 @@ void MesswertAnzeigen(const String& name1, const String& name2, int messwert, co
 typedef struct {
   void (*anzeigeFunktion)();
   bool istAktiv;
-  String* farbe;  // Zeiger auf die Farbvariable
+  const char* farbe;  // Zeiger auf die Farbvariable
 } Displayseite;
 
 extern Displayseite displayseiten[];
