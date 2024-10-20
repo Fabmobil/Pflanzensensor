@@ -7,7 +7,6 @@
 
 #include "einstellungen.h"
 #include "passwoerter.h"
-#pragma message "Compiling display.cpp"
 
 #include "display.h"
 #include "display_bilder.h"

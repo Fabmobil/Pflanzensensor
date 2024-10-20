@@ -1,5 +1,5 @@
 /**
- * @file passwoerter.h
+ * @file passwoerter.cpp
  * @brief Passwort- und Sicherheitskonfiguration für den Pflanzensensor
  * @author Tommy
  * @date 2023-09-20
@@ -7,13 +7,9 @@
  * Diese Datei enthält sensible Informationen wie Passwörter und Zugangsdaten.
  */
 
-#ifndef PASSWOERTER_H
-#define PASSWOERTER_H
+String webhookDomain = "hook.eu2.make.com"; // vorderer Teil der Webhook-URL
+String webhookPfad = "/w0ynsd6suxxxxxxxxxxxxxxxxx3839dh"; // hinterer Teil der Webhook-URL
 
-#if MODUL_WEBHOOK // wenn das Webhook Modul aktiviert ist
-  String webhookDomain = "hook.eu2.make.com"; // vorderer Teil der Webhook-URL
-  String webhookPfad = "/w0ynsd6suxxxxxxxxxxxxxxxxx3839dh"; // hinterer Teil der Webhook-URL
-#endif
 
 bool wifiApPasswortAktiviert = false; // soll das selbst aufgemachte WLAN ein Passwort haben?
 String wifiApPasswort = "geheim"; // Das Passwort für das selbst aufgemacht WLAN
@@ -36,5 +32,3 @@ String influxDatenbank = "collectd"; // InfluxDB v1 Datenbankname
 String influxBenutzer = "collectd";  // InfluxDB v1 Benutzername
 String influxPasswort = "collectd"; // InfluxDB v1 Passwort
 #endif
-
-#endif // PASSWOERTER_H
