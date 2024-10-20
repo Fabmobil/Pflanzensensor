@@ -33,6 +33,28 @@ void WebhookSetup() {
   certList.append(zertifikat);
   client.setTrustAnchors(&certList);
 
+  // Setze die aktuelle Zeit mit korrekter Zeitzone
+  configTime(3600, 3600, "pool.ntp.org", "time.nist.gov"); // MESZ: UTC+1 mit DST
+
+  logger.info(F("Warte auf Zeitsynchronisation..."));
+  time_t now = time(nullptr);
+  int timeoutCounter = 0;
+  while (now < 1609459200) { // 1. Januar 2021 00:00:00 GMT
+    delay(500);
+    now = time(nullptr);
+    timeoutCounter++;
+    if (timeoutCounter > 20) { // 10 Sekunden Timeout
+      logger.error(F("Zeitsynchronisation fehlgeschlagen. Fahre trotzdem fort."));
+      break;
+    }
+  }
+
+  if (now > 1609459200) {
+    logger.info(F("Zeit synchronisiert: ") + String(ctime(&now)));
+  }
+
+  client.setX509Time(now);
+
   logger.info(F("Schicke Initialisierungsnachricht an Webhook-Dienst."));
 
   // Wiederhole den Versuch, falls er fehlschlägt
@@ -42,10 +64,14 @@ void WebhookSetup() {
       return;
     }
     logger.warning(F("Webhook-Initialisierung fehlgeschlagen. Versuche es erneut..."));
+    char errorBuffer[100];
+    client.getLastSSLError(errorBuffer, sizeof(errorBuffer));
+    logger.debug(F("SSL-Fehlerdetails: ") + String(errorBuffer));
     delay(2000);
   }
 
   logger.error(F("Webhook-Initialisierung nach 3 Versuchen fehlgeschlagen."));
+  logger.error(F("Bitte überprüfen Sie die Webhook-Konfiguration und Netzwerkverbindung."));
 }
 bool WebhookSendeInit() {
   logger.updateNTP();
@@ -64,6 +90,7 @@ bool WebhookSendeInit() {
   // JSON in String umwandeln
   String jsonString;
   serializeJson(doc, jsonString);
+  logger.info(jsonString);
   bool result = WebhookSendeDaten(jsonString);
   return result;
 }

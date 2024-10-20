@@ -7,7 +7,8 @@ RAM:   [=====     ]  46.1% (used 37728 bytes from 81920 bytes)
 Flash: [======    ]  58.1% (used 606699 bytes from 1044464 bytes)
 
 String mit Std:
-
+RAM:   [=====     ]  45.9% (used 37612 bytes from 81920 bytes)
+Flash: [======    ]  55.1% (used 575999 bytes from 1044464 bytes)
 
 Char mit Std:
 RAM:   [====      ]  44.3% (used 36328 bytes from 81920 bytes)
