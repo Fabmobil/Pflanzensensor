@@ -124,8 +124,7 @@ void Logger::log(LogLevel level, const String& message) {
   const char* logLevelStr = reinterpret_cast<const char*>(FPSTR(LOG_LEVEL_STRINGS[static_cast<int>(level)]));
   int indent = 5 - strlen(logLevelStr);
 
-  // Verwende snprintf mit PROGMEM für logMessageBuffer
-  snprintf_P(logMessageBuffer, sizeof(logMessageBuffer), LOG_MESSAGE_TEMPLATE,
+  snprintf_P(logMessageBuffer, sizeof(logMessageBuffer), PSTR("%s %*s%s: %s"),
              timestampBuffer, indent, "", logLevelStr, message.c_str());
 
   if (m_useSerial) {
