@@ -40,16 +40,16 @@ Logger::Logger(LogLevel logLevel, bool useSerial, size_t maxEntries, bool fileLo
 
   // Initialisierung der Log-Einträge
   for (int i = 0; i < 4; ++i) {
-    m_logEntriesByLevel[i].fill(LogEntry());
+    m_logEntriesByLevel[i].fill(LogEintrag());
   }
 }
 
-void Logger::setLogLevel(LogLevel level) {
+void Logger::SetzteLogLevel(LogLevel level) {
   m_logLevel = level;
   debug(F("Log-Level gesetzt auf: ") + String(FPSTR(LOG_LEVEL_STRINGS[static_cast<int>(level)])));
 }
 
-LogLevel Logger::getLogLevel() const {
+LogLevel Logger::LeseLogLevel() const {
   return m_logLevel;
 }
 
@@ -58,7 +58,7 @@ void Logger::info(const String& message) { log(LogLevel::INFO, message); }
 void Logger::warning(const String& message) { log(LogLevel::WARNING, message); }
 void Logger::error(const String& message) { log(LogLevel::ERROR, message); }
 
-void Logger::enableFileLogging(bool enable) {
+void Logger::LoggenInDatei(bool enable) {
   if (enable && !LittleFS.exists(F("/system.log"))) {
     File file = LittleFS.open(F("/system.log"), "w");
     if (file) {
@@ -74,11 +74,11 @@ void Logger::enableFileLogging(bool enable) {
   log(LogLevel::INFO, enable ? F("Datei-Logging aktiviert") : F("Datei-Logging deaktiviert"));
 }
 
-bool Logger::isFileLoggingEnabled() const {
+bool Logger::IstLoggenInDateiAktiviert() const {
   return m_fileLoggingEnabled;
 }
 
-String Logger::getLogFileContent() const {
+String Logger::LogdateiInhaltAuslesen() const {
   if (!m_fileLoggingEnabled) return F("Datei-Logging ist deaktiviert");
   if (!LittleFS.exists(F("/system.log"))) return F("Log-Datei existiert nicht");
 
@@ -93,7 +93,7 @@ String Logger::getLogFileContent() const {
   return content;
 }
 
-void Logger::clearLogFile() {
+void Logger::LogdateiLoeschen() {
   if (!m_fileLoggingEnabled) return;
   File file = LittleFS.open(F("/system.log"), "w");
   if (file) file.close();
@@ -105,9 +105,9 @@ void Logger::log(LogLevel level, const String& message) {
   char timestampBuffer[32];
   char logMessageBuffer[256];
 
-  getFormattedTimestamp(timestampBuffer, sizeof(timestampBuffer));
+  FormatiertenTimestampAusgeben(timestampBuffer, sizeof(timestampBuffer));
 
-  LogEntry entry = {level, message, m_ntpInitialized ? m_timeClient->getEpochTime() : millis()};
+  LogEintrag entry = {level, message, m_ntpInitialized ? m_timeClient->getEpochTime() : millis()};
 
   // Füge zum entsprechenden Array basierend auf Log-Level hinzu
   size_t levelIndex = static_cast<size_t>(level);
@@ -115,7 +115,7 @@ void Logger::log(LogLevel level, const String& message) {
     auto& levelEntries = m_logEntriesByLevel[levelIndex];
     static size_t currentIndex = 0;
     levelEntries[currentIndex] = entry;
-    currentIndex = (currentIndex + 1) % MAX_LOG_ENTRIES;
+    currentIndex = (currentIndex + 1) % MAX_LOG_EINTRAEGE;
   }
 
   const char* logLevelStr = reinterpret_cast<const char*>(FPSTR(LOG_LEVEL_STRINGS[static_cast<int>(level)]));
@@ -129,24 +129,24 @@ void Logger::log(LogLevel level, const String& message) {
   }
 
   if (m_fileLoggingEnabled) {
-    writeToFile(logMessageBuffer);
+    InDateiSchreiben(logMessageBuffer);
   }
 }
 
-void Logger::writeToFile(const char* logMessage) {
+void Logger::InDateiSchreiben(const char* logMessage) {
   if (!m_fileLoggingEnabled) return;
 
   File file = LittleFS.open(F("/system.log"), "a");
   if (file) {
     file.println(logMessage);
     file.close();
-    truncateLogFileIfNeeded();
+    LogdateiEinkuerzen();
   } else {
     Serial.println(F("Fehler beim Öffnen der Log-Datei zum Schreiben"));
   }
 }
 
-void Logger::truncateLogFileIfNeeded() {
+void Logger::LogdateiEinkuerzen() {
   File file = LittleFS.open(F("/system.log"), "r");
   if (file) {
     if (file.size() > 100 * 1024) {  // 100 KB
@@ -168,10 +168,10 @@ void Logger::truncateLogFileIfNeeded() {
   }
 }
 
-String Logger::getLogsAsHtmlTable(size_t count) const {
+String Logger::LogsAlsHtmlTabelle(size_t count) const {
   String html = F("<table class='log'><tr><th>Zeit</th><th>Level</th><th>Nachricht</th></tr>");
 
-  std::array<LogEntry, MAX_LOG_ENTRIES * 4> allEntries;
+  std::array<LogEintrag, MAX_LOG_EINTRAEGE * 4> allEntries;
   size_t totalEntries = 0;
 
   for (size_t i = static_cast<size_t>(m_logLevel); i < m_logEntriesByLevel.size(); ++i) {
@@ -184,14 +184,14 @@ String Logger::getLogsAsHtmlTable(size_t count) const {
   }
 
   std::sort(allEntries.begin(), allEntries.begin() + totalEntries,
-    [](const LogEntry& a, const LogEntry& b) { return a.timestamp > b.timestamp; });
+    [](const LogEintrag& a, const LogEintrag& b) { return a.timestamp > b.timestamp; });
 
   size_t entriesToShow = std::min(count, totalEntries);
 
   char timestampBuffer[32];
   for (size_t i = 0; i < entriesToShow; ++i) {
     const auto& entry = allEntries[i];
-    getFormattedTimestamp(timestampBuffer, sizeof(timestampBuffer));
+    FormatiertenTimestampAusgeben(timestampBuffer, sizeof(timestampBuffer));
     html += F("<tr><td>");
     html += timestampBuffer;
     html += F("</td><td style='color:");
@@ -207,7 +207,7 @@ String Logger::getLogsAsHtmlTable(size_t count) const {
   return html;
 }
 
-void Logger::getFormattedTimestamp(char* buffer, size_t bufferSize) const {
+void Logger::FormatiertenTimestampAusgeben(char* buffer, size_t bufferSize) const {
   if (m_ntpInitialized) {
     time_t epochTime = m_timeClient->getEpochTime();
     struct tm *ptm = gmtime(&epochTime);
@@ -218,13 +218,13 @@ void Logger::getFormattedTimestamp(char* buffer, size_t bufferSize) const {
   }
 }
 
-void Logger::initNTP() {
+void Logger::NTPInitialisieren() {
   m_timeClient = new NTPClient(m_ntpUDP, "pool.ntp.org", 3600, 60000);
   m_timeClient->begin();
   m_ntpInitialized = true;
 }
 
-void Logger::updateNTP() {
+void Logger::NTPUpdaten() {
   if (m_ntpInitialized && m_timeClient) {
     m_timeClient->update();
   }

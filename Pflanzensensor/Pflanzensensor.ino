@@ -54,8 +54,8 @@
  */
 void setup() {
   Serial.begin(baudrateSeriell); // Serielle Verbindung aufbauen
-  logger.setLogLevel(LogLevel::INFO); // oder ein anderes gewünschtes Log-Level
-  logger.initNTP();
+  logger.SetzteLogLevel(LogLevel::INFO); // oder ein anderes gewünschtes Log-Level
+  logger.NTPInitialisieren();
   delay(100);
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
     DisplaySetup(); // Display initialisieren
@@ -189,7 +189,7 @@ void loop() {
    */
   millisAktuell = millis(); // aktuelle Millisekunden auslesen
 
-  logger.updateNTP(); // Update Timestamp
+  logger.NTPUpdaten(); // Update Timestamp
 
   // Alle Analogsensoren werden hintereinander gemessen
   if (millisAktuell - millisVorherAnalog >= intervallAnalog) { // wenn das Intervall erreicht ist

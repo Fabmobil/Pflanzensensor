@@ -75,7 +75,7 @@ String WifiSetup(String hostname) {
     Webserver.on("/setzeVariablen", HTTP_ANY, WebseiteSetzeVariablen);
     Webserver.on("/leseMesswerte", HTTP_ANY, LeseMesswerte);
     Webserver.on("/neuesteLogs", HTTP_GET, []() {
-        Webserver.send(200, "text/html", logger.getLogsAsHtmlTable());
+        Webserver.send(200, "text/html", logger.LogsAlsHtmlTabelle());
     });
     Webserver.on("/downloadLog", HTTP_GET, DownloadLog);
     Webserver.on("/SetzeLogLevel", HTTP_POST, SetzeLogLevel);
@@ -169,25 +169,25 @@ void VerzoegerterWLANNeustart() {
 
 void SetzeLogLevel() {
     String level = Webserver.arg("logLevel");
-    if (level == "DEBUG") logger.setLogLevel(LogLevel::DEBUG);
-    else if (level == "INFO") logger.setLogLevel(LogLevel::INFO);
-    else if (level == "WARNING") logger.setLogLevel(LogLevel::WARNING);
-    else if (level == "ERROR") logger.setLogLevel(LogLevel::ERROR);
-    Webserver.send(200, "text/html", logger.getLogsAsHtmlTable(logAnzahlWebseite));
+    if (level == "DEBUG") logger.SetzteLogLevel(LogLevel::DEBUG);
+    else if (level == "INFO") logger.SetzteLogLevel(LogLevel::INFO);
+    else if (level == "WARNING") logger.SetzteLogLevel(LogLevel::WARNING);
+    else if (level == "ERROR") logger.SetzteLogLevel(LogLevel::ERROR);
+    Webserver.send(200, "text/html", logger.LogsAlsHtmlTabelle(logAnzahlWebseite));
 }
 
 void DownloadLog() {
-    if (!logger.isFileLoggingEnabled()) {
+    if (!logger.IstLoggenInDateiAktiviert()) {
         Webserver.send(403, "text/plain", "File logging is disabled");
         return;
     }
-    String logContent = logger.getLogFileContent();
+    String logContent = logger.LogdateiInhaltAuslesen();
     Webserver.sendHeader("Content-Disposition", "attachment; filename=system.log");
     Webserver.send(200, "text/plain", logContent);
 }
 
 void LeseMesswerte() {
-    DynamicJsonDocument doc(1024);
+    JsonDocument doc;
 
     #if MODUL_BODENFEUCHTE
         doc["bodenfeuchte"] = bodenfeuchteMesswert;

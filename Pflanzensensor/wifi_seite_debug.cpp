@@ -80,13 +80,13 @@ void WebseiteDebugAusgeben() {
 
   char buffer[1000];
   snprintf_P(buffer, sizeof(buffer), logSection,
-             logger.getLogLevel() == LogLevel::DEBUG ? " selected" : "",
-             logger.getLogLevel() == LogLevel::INFO ? " selected" : "",
-             logger.getLogLevel() == LogLevel::WARNING ? " selected" : "",
-             logger.getLogLevel() == LogLevel::ERROR ? " selected" : "");
+             logger.LeseLogLevel() == LogLevel::DEBUG ? " selected" : "",
+             logger.LeseLogLevel() == LogLevel::INFO ? " selected" : "",
+             logger.LeseLogLevel() == LogLevel::WARNING ? " selected" : "",
+             logger.LeseLogLevel() == LogLevel::ERROR ? " selected" : "");
   Webserver.sendContent(buffer);
 
-  Webserver.sendContent(logger.getLogsAsHtmlTable(logAnzahlWebseite));
+  Webserver.sendContent(logger.LogsAlsHtmlTabelle(logAnzahlWebseite));
   Webserver.sendContent(F("</div></div>"));
 
   // JavaScript einfügen

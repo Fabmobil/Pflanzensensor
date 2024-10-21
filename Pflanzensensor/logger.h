@@ -31,14 +31,14 @@ enum class LogLevel {
 /**
  * @brief Struktur zur Speicherung eines Log-Eintrags
  */
-struct LogEntry {
+struct LogEintrag {
     LogLevel level;
     String message;
     unsigned long timestamp;
 };
 
 // Maximale Anzahl von Log-Einträgen pro Level
-const size_t MAX_LOG_ENTRIES = 100;
+const size_t MAX_LOG_EINTRAEGE = 100;
 
 /**
  * @brief Logger-Klasse zur Handhabung von Log-Nachrichten
@@ -58,13 +58,13 @@ public:
      * @brief Setzt das Log-Level
      * @param level Das neue Log-Level
      */
-    void setLogLevel(LogLevel level);
+    void SetzteLogLevel(LogLevel level);
 
     /**
      * @brief Gibt das aktuelle Log-Level zurück
      * @return Das aktuelle Log-Level
      */
-    LogLevel getLogLevel() const;
+    LogLevel LeseLogLevel() const;
 
     /**
      * @brief Loggt eine Debug-Nachricht
@@ -95,40 +95,40 @@ public:
      * @param count Anzahl der abzurufenden Einträge für jedes Log-Level
      * @return Formatierte HTML-Tabelle der Log-Einträge
      */
-    String getLogsAsHtmlTable(size_t count = logAnzahlWebseite) const;
+    String LogsAlsHtmlTabelle(size_t count = logAnzahlWebseite) const;
 
     /**
      * @brief Initialisiert NTP-Client zur Zeitabfrage aus dem Internet
      */
-    void initNTP();
+    void NTPInitialisieren();
 
     /**
      * @brief Aktualisiert NTP-Client zur Zeitsynchronisation
      */
-    void updateNTP();
+    void NTPUpdaten();
 
     /**
      * @brief Aktiviert oder deaktiviert Datei-Logging
      * @param enable True zum Aktivieren des Datei-Loggings, False zum Deaktivieren
      */
-    void enableFileLogging(bool enable);
+    void LoggenInDatei(bool enable);
 
     /**
      * @brief Prüft, ob Datei-Logging aktiviert ist
      * @return True, wenn Datei-Logging aktiviert ist, sonst False
      */
-    bool isFileLoggingEnabled() const;
+    bool IstLoggenInDateiAktiviert() const;
 
     /**
      * @brief Gibt den Inhalt der Log-Datei zurück
      * @return Inhalt der Log-Datei
      */
-    String getLogFileContent() const;
+    String LogdateiInhaltAuslesen() const;
 
     /**
      * @brief Löscht die Log-Datei
      */
-    void clearLogFile();
+    void LogdateiLoeschen();
 
 private:
     LogLevel m_logLevel;
@@ -138,7 +138,7 @@ private:
     NTPClient* m_timeClient;
     bool m_ntpInitialized;
     bool m_fileLoggingEnabled;
-    std::array<std::array<LogEntry, MAX_LOG_ENTRIES>, 4> m_logEntriesByLevel;  // Array von Arrays für jedes Log-Level
+    std::array<std::array<LogEintrag, MAX_LOG_EINTRAEGE>, 4> m_logEntriesByLevel;  // Array von Arrays für jedes Log-Level
     const char* m_logFileName = "/system.log";
     const size_t m_maxFileSize = 100 * 1024;  // 100 KB
 
@@ -154,25 +154,25 @@ private:
      * @param logLevelStr String-Repräsentation des Log-Levels
      * @return Einrückungs-String
      */
-    String getIndent(const char* logLevelStr) const;
+    String EinrueckungAuslesen(const char* logLevelStr) const;
 
     /**
      * @brief Gibt aktuellen Zeitstempel als formatierten String zurück
      * @param buffer Puffer zum Speichern des formatierten Zeitstempels
      * @param bufferSize Größe des Puffers
      */
-    void getFormattedTimestamp(char* buffer, size_t bufferSize) const;
+    void FormatiertenTimestampAusgeben(char* buffer, size_t bufferSize) const;
 
     /**
      * @brief Schreibt eine Log-Nachricht in die Log-Datei
      * @param logMessage Zu schreibende Nachricht
      */
-    void writeToFile(const char* logMessage);
+    void InDateiSchreiben(const char* logMessage);
 
     /**
      * @brief Kürzt die Log-Datei, wenn sie die maximale Größe überschreitet
      */
-    void truncateLogFileIfNeeded();
+    void LogdateiEinkuerzen();
 };
 
 extern Logger logger;
