@@ -180,7 +180,7 @@ void WebseiteDebugAusgeben() {
     strcat(buffer, wifiHostname.c_str());
     strcat_P(buffer, PSTR(".local</li>"));
     if (!wifiAp) {
-      char tempBuffer[100];
+      char tempBuffer[250];
       snprintf_P(tempBuffer, sizeof(tempBuffer), PSTR("<li>SSID 1: %s</li><li>Passwort 1: %s</li>"
                                                       "<li>SSID 2: %s</li><li>Passwort 2: %s</li>"
                                                       "<li>SSID 3: %s</li><li>Passwort 3: %s</li>"),
@@ -189,7 +189,7 @@ void WebseiteDebugAusgeben() {
                  wifiSsid3.c_str(), wifiPasswort3.c_str());
       strcat(buffer, tempBuffer);
     } else {
-      char tempBuffer[100];
+      char tempBuffer[250];
       snprintf_P(tempBuffer, sizeof(tempBuffer), PSTR("<li>Name des WLANs: %s</li>"
                                                       "<li>Passwort: %s</li>"),
                  wifiApSsid.c_str(), wifiApPasswortAktiviert ? wifiApPasswort.c_str() : "WLAN ohne Passwortschutz!");

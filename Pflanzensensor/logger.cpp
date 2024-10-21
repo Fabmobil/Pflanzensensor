@@ -37,13 +37,51 @@ Logger::Logger(LogLevel logLevel, bool useSerial, size_t maxEntries, bool fileLo
   if (m_useSerial) {
     Serial.begin(115200);
   }
-  if (!LittleFS.begin()) {
-    Serial.println(F("Fehler: Dateisystem konnte nicht eingebunden werden"));
-  }
 
-  // Initialisierung der Log-Einträge
-  for (int i = 0; i < 4; ++i) {
-    m_logEntriesByLevel[i].fill(LogEintrag());
+  // Versuche, das Dateisystem zu initialisieren
+  if (!LittleFS.begin()) {
+    error(F("Dateisystem konnte nicht initialisiert werden. Versuche zu formatieren..."));
+    if (LittleFS.format()) {
+      info(F("Dateisystem erfolgreich formatiert. Versuche erneut zu initialisieren..."));
+      if (!LittleFS.begin()) {
+        error(F("Dateisystem konnte nach Formatierung nicht initialisiert werden."));
+        m_fileLoggingEnabled = false; // Deaktiviere Datei-Logging bei Fehler
+      } else {
+        info(F("Dateisystem erfolgreich initialisiert nach Formatierung."));
+      }
+    } else {
+      error(F("Dateisystem konnte nicht formatiert werden."));
+      m_fileLoggingEnabled = false; // Deaktiviere Datei-Logging bei Fehler
+    }
+  }
+}
+
+void Logger::PruefeUndBereinigeDatei() {
+  if (!m_fileLoggingEnabled) return;
+
+  if (LittleFS.exists(F("/system.log"))) {
+    File file = LittleFS.open(F("/system.log"), "r");
+    if (!file) {
+      error(F("Kann Logdatei nicht öffnen. Versuche zu löschen..."));
+      LittleFS.remove(F("/system.log"));
+    } else {
+      // Überprüfe die Dateigröße
+      size_t fileSize = file.size();
+      file.close();
+      if (fileSize > m_maxFileSize) {
+        info(F("Logdatei zu groß. Lösche alte Einträge..."));
+        LogdateiEinkuerzen();
+      }
+    }
+  } else {
+    info(F("Logdatei existiert nicht. Erstelle neue Datei."));
+    File file = LittleFS.open(F("/system.log"), "w");
+    if (file) {
+      file.println(F("Neue Logdatei erstellt"));
+      file.close();
+    } else {
+      error(F("Konnte keine neue Logdatei erstellen"));
+    }
   }
 }
 
@@ -68,13 +106,13 @@ void Logger::LoggenInDatei(bool enable) {
       file.println(F("Log-Datei erstellt"));
       file.close();
     } else {
-      Serial.println(F("Fehler: Log-Datei konnte nicht erstellt werden"));
+      error(F("Log-Datei konnte nicht erstellt werden"));
       return;
     }
   }
 
   m_fileLoggingEnabled = enable;
-  log(LogLevel::INFO, enable ? F("Datei-Logging aktiviert") : F("Datei-Logging deaktiviert"));
+  info(enable ? F("Datei-Logging aktiviert") : F("Datei-Logging deaktiviert"));
 }
 
 bool Logger::IstLoggenInDateiAktiviert() const {
@@ -137,16 +175,31 @@ void Logger::log(LogLevel level, const String& message) {
 }
 
 void Logger::InDateiSchreiben(const char* logMessage) {
-  if (!m_fileLoggingEnabled) return;
+  if (!m_fileLoggingEnabled || !GenugSpeicherVerfuegbar()) return;
 
-  File file = LittleFS.open(F("/system.log"), "a");
-  if (file) {
-    file.println(logMessage);
-    file.close();
-    LogdateiEinkuerzen();
-  } else {
-    Serial.println(F("Fehler beim Öffnen der Log-Datei zum Schreiben"));
+  int versuche = 3;
+  while (versuche > 0) {
+    File file = LittleFS.open(F("/system.log"), "a");
+    if (file) {
+      size_t bytesGeschrieben = file.println(logMessage);
+      file.close();
+      if (bytesGeschrieben == strlen(logMessage) + 2) { // +2 für \r\n
+        LogdateiEinkuerzen();
+        return;
+      }
+    }
+    versuche--;
+    delay(10); // Kurze Pause vor erneutem Versuch
   }
+
+  error(F("Kritischer Fehler: Konnte nicht in Logdatei schreiben"));
+  m_fileLoggingEnabled = false; // Deaktiviere Datei-Logging bei anhaltendem Fehler
+}
+
+bool Logger::GenugSpeicherVerfuegbar() {
+  FSInfo fs_info;
+  LittleFS.info(fs_info);
+  return (fs_info.totalBytes - fs_info.usedBytes) > 10240; // Mindestens 10 KB frei
 }
 
 void Logger::LogdateiEinkuerzen() {
@@ -211,24 +264,85 @@ String Logger::LogsAlsHtmlTabelle(size_t count) const {
 }
 
 void Logger::FormatiertenTimestampAusgeben(char* buffer, size_t bufferSize) const {
-  if (m_ntpInitialized) {
-    time_t epochTime = m_timeClient->getEpochTime();
-    struct tm *ptm = gmtime(&epochTime);
-    strftime(buffer, bufferSize, "%Y-%m-%d %H:%M:%S", ptm);
-  } else {
-    unsigned long t = millis();
-    snprintf_P(buffer, bufferSize, PSTR("%lus"), t / 1000);
-  }
+    if (m_ntpInitialized && m_timeClient) {
+        // Hole die aktuelle Zeit vom NTP-Client
+        time_t epochTime = m_timeClient->getEpochTime();
+
+        // Konvertiere die Epochenzeit in eine struct tm
+        struct tm *ptm = gmtime(&epochTime);
+
+        // Prüfe, ob Sommerzeit gilt und passe die Zeit entsprechend an
+        int stundenVerschiebung = Logger::istSommerzeit(ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday, ptm->tm_hour) ? 2 : 1;
+
+        // Füge die Stundenverschiebung hinzu
+        epochTime += stundenVerschiebung * 3600;
+
+        // Aktualisiere die struct tm mit der angepassten Zeit
+        ptm = gmtime(&epochTime);
+
+        // Formatiere die Zeit als String im Format "YYYY-MM-DD HH:MM:SS"
+        strftime(buffer, bufferSize, "%Y-%m-%d %H:%M:%S", ptm);
+    } else {
+        // Wenn der NTP-Client nicht initialisiert ist, verwenden wir die Zeit seit Programmstart
+        unsigned long t = millis();
+        snprintf_P(buffer, bufferSize, PSTR("%lus"), t / 1000);
+    }
 }
 
 void Logger::NTPInitialisieren() {
-  m_timeClient = new NTPClient(m_ntpUDP, "pool.ntp.org", 3600, 60000);
-  m_timeClient->begin();
-  m_ntpInitialized = true;
+    m_timeClient = new NTPClient(m_ntpUDP, "pool.ntp.org", 0, 60000);
+    m_timeClient->begin();
+    m_ntpInitialized = true;
+    debug(F("NTP-Client wurde initialisiert"));
 }
 
 void Logger::NTPUpdaten() {
-  if (m_ntpInitialized && m_timeClient) {
-    m_timeClient->update();
-  }
+    if (m_ntpInitialized && m_timeClient) {
+        static unsigned long letzteErfolgreicheAktualisierung = 0;
+        static unsigned long letzterAktualisierungsversuch = 0;
+        unsigned long aktuelleZeit = millis();
+
+        if (aktuelleZeit - letzterAktualisierungsversuch >= 60000) {
+            letzterAktualisierungsversuch = aktuelleZeit;
+
+            if (m_timeClient->update()) {
+                if (aktuelleZeit - letzteErfolgreicheAktualisierung >= 600000) {
+                    debug(F("NTP-Zeit wurde erfolgreich aktualisiert"));
+                }
+                letzteErfolgreicheAktualisierung = aktuelleZeit;
+            } else {
+                if (aktuelleZeit - letzteErfolgreicheAktualisierung >= 3600000) {
+                    warning(F("NTP-Zeitaktualisierung fehlgeschlagen"));
+                }
+            }
+        }
+    } else {
+        static bool nichtInitialisiertGemeldet = false;
+        if (!nichtInitialisiertGemeldet) {
+            error(F("NTP-Client ist nicht initialisiert"));
+            nichtInitialisiertGemeldet = true;
+        }
+    }
+}
+
+bool Logger::istSommerzeit(int jahr, int monat, int tag, int stunde) {
+    // Sommerzeit gilt nicht von November bis Februar
+    if (monat < 3 || monat > 10) {
+        return false;
+    }
+    // Sommerzeit gilt immer von April bis September
+    if (monat > 3 && monat < 10) {
+        return true;
+    }
+
+    int letzterSonntag = 31 - (5 * jahr / 4 + 4) % 7;
+
+    // Prüfe März (Beginn der Sommerzeit)
+    if (monat == 3) {
+        return (tag > letzterSonntag || (tag == letzterSonntag && stunde >= 2));
+    }
+    // Prüfe Oktober (Ende der Sommerzeit)
+    else {
+        return (tag < letzterSonntag || (tag == letzterSonntag && stunde < 3));
+    }
 }

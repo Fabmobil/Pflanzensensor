@@ -63,7 +63,7 @@ void setup() {
   CreateMutex(&mutex);
   logger.debug(F("Start von setup()"));
 
-  logger.info(F(" Fabmobil Pflanzensensor, v") + String(pflanzensensorVersion));
+  logger.info(F("Fabmobil Pflanzensensor, v") + String(pflanzensensorVersion));
   module = ModuleZaehlen(); // wie viele Module sind aktiv?
 
   #if MODUL_LEDAMPEL // wenn das LED Ampel Modul aktiv is:

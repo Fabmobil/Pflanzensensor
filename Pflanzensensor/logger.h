@@ -171,6 +171,27 @@ private:
      * @brief Kürzt die Log-Datei, wenn sie die maximale Größe überschreitet
      */
     void LogdateiEinkuerzen();
+
+    /**
+     * @brief Prüft, ob zu einem bestimmten Datum und Uhrzeit Sommerzeit gilt
+     * @param jahr Jahr (vierstellig)
+     * @param monat Monat (1-12)
+     * @param tag Tag des Monats (1-31)
+     * @param stunde Stunde (0-23)
+     * @return True, wenn Sommerzeit gilt, sonst False
+     */
+    static bool istSommerzeit(int jahr, int monat, int tag, int stunde);
+
+    /**
+     * @brief Überprüft und bereinigt die Log-Datei bei Bedarf
+     */
+    void PruefeUndBereinigeDatei();
+
+    /**
+     * @brief Prüft, ob genug Speicherplatz für das Logging verfügbar ist
+     * @return true wenn genug Speicher verfügbar ist, sonst false
+     */
+    bool GenugSpeicherVerfuegbar();
 };
 
 extern Logger logger;
