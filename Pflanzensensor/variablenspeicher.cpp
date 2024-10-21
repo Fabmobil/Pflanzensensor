@@ -39,7 +39,7 @@ void VariablenSpeichern() {
     variablen.putInt("intDisplay", intervallDisplay);
     variablen.putBool("displayAn", displayAn);
   #endif
-  variablen.putInt("intBodenf", intervallAnalog);
+  variablen.putInt("intMess", intervallMessung);
   #if MODUL_BODENFEUCHTE
     variablen.putBool("bodenfWeb", bodenfeuchteWebhook);
     variablen.putString("bodenfName", bodenfeuchteName);
@@ -97,7 +97,6 @@ void VariablenSpeichern() {
     variablen.putInt("analog8GeOben", analog8GelbOben);
   #endif
   #if MODUL_DHT
-    variablen.putInt("intDht", intervallDht);
     variablen.putBool("luftTWeb", lufttemperaturWebhook);
     variablen.putInt("luftTGrUnten", lufttemperaturGruenUnten);
     variablen.putInt("luftTGrOben", lufttemperaturGruenOben);
@@ -162,7 +161,7 @@ void VariablenLaden() {
     intervallDisplay = variablen.getInt("intDisplay", intervallDisplay);
     displayAn = variablen.getInt("displayAn", displayAn);
   #endif
-  intervallAnalog = variablen.getInt("intAnalog", intervallAnalog);
+  intervallMessung = variablen.getInt("intMess", intervallMessung);
   #if MODUL_BODENFEUCHTE
     bodenfeuchteWebhook = variablen.getInt("bodenfWeb", bodenfeuchteWebhook);
     bodenfeuchteGruenUnten = variablen.getInt("bodenfGrUnten", bodenfeuchteGruenUnten);
@@ -219,7 +218,6 @@ void VariablenLaden() {
     analog8GelbOben = variablen.getInt("analog8GeOben", analog8GelbOben);
   #endif
   #if MODUL_DHT
-    intervallDht = variablen.getInt("intDht", intervallDht);
     lufttemperaturWebhook = variablen.getInt("luftTWeb", lufttemperaturWebhook);
     lufttemperaturGruenUnten = variablen.getInt("luftTGrUnten", lufttemperaturGruenUnten);
     lufttemperaturGruenOben = variablen.getInt("luftTGrOben", lufttemperaturGruenOben);

@@ -12,13 +12,11 @@
 
 // Logging-Einstellungen
 String logLevel = "info";
-int logAnzahlEintraege = 100;
-int logAnzahlWebseite = 20;
-bool logInDatei = false;
+bool logInDatei = true;
 
 // Allgemeine Einstellungen
-const long baudrateSeriell = 115200;
-unsigned long intervallAnalog = 5000;
+const long baudrateSeriell = 115200; // 115200
+unsigned long intervallMessung = 10000; // Messintervall in ms
 
 // Bodenfeuchte-Einstellungen
 #if MODUL_BODENFEUCHTE
@@ -46,7 +44,6 @@ unsigned long intervallAnalog = 5000;
   #include <DHT.h>
   const int dhtPin = 0;
   const int dhtSensortyp = DHT11;
-  unsigned long intervallDht = 5000;
   bool lufttemperaturWebhook = false;
   int lufttemperaturGruenUnten = 19;
   int lufttemperaturGruenOben = 22;

@@ -191,12 +191,12 @@ void loop() {
   logger.NTPUpdaten(); // Update Timestamp
 
   // Alle Analogsensoren werden hintereinander gemessen
-  if (millisAktuell - millisVorherAnalog >= intervallAnalog) { // wenn das Intervall erreicht ist
+  if (millisAktuell - millisVorherAnalog >= intervallMessung) { // wenn das Intervall erreicht ist
     logger.info(F("IP Adresse: ") + String(ip)); // geben wir auch die IP Adresse aus
     if (GetMutex(&mutex)) {
       millisVorherAnalog = millisAktuell; // neuen Wert übernehmen
 
-      logger.debug(F("intervallAnalog erreicht."));
+      logger.debug(F("intervallMessung erreicht."));
 
       // Helligkeit messen:
       #if MODUL_HELLIGKEIT  // wenn das Helligkeit Modul aktiv ist
@@ -263,7 +263,7 @@ void loop() {
 
   // Luftfeuchte und -temperatur messen:
   #if MODUL_DHT // wenn das DHT Modul aktiv ist
-    if (millisAktuell - millisVorherDht >= intervallDht) { // wenn das Intervall erreicht ist
+    if (millisAktuell - millisVorherDht >= intervallMessung + 1123) { // wenn das Intervall erreicht ist
 
       logger.debug(F("intervallDht erreicht."));
 

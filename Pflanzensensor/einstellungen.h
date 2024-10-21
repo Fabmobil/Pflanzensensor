@@ -38,13 +38,11 @@
 
 // Logging-Einstellungen
 extern String logLevel;
-extern int logAnzahlEintraege;
-extern int LogAnzahlWebseite;
 extern bool logInDatei;
 
 // Allgemeine Einstellungen
 extern const long baudrateSeriell;
-extern unsigned long intervallAnalog;
+extern unsigned long intervallMessung;
 
 // Bodenfeuchte-Einstellungen
 #if MODUL_BODENFEUCHTE
@@ -72,7 +70,6 @@ extern unsigned long intervallAnalog;
 #if MODUL_DHT
     extern const int dhtPin;
     extern const int dhtSensortyp;
-    extern unsigned long intervallDht;
     extern bool lufttemperaturWebhook;
     extern int lufttemperaturGruenUnten;
     extern int lufttemperaturGruenOben;
