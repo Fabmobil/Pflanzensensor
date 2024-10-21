@@ -1,3 +1,10 @@
+/**
+ * @file webhook.cpp
+ * @brief Implementierung des Webhook-Moduls für den Pflanzensensor
+ * @author Tommy
+ * @date 2023-09-20
+ */
+
 #include "einstellungen.h"
 #include "webhook.h"
 #include "webhook_zertifikat.h"
@@ -16,40 +23,37 @@ WiFiClientSecure client;
 void WebhookSetup() {
   logger.debug(F("Beginn von WebhookSetup()"));
 
-  // Zeit synchronisieren
   configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
   logger.info(F("Warte auf die Synchronisation von Uhrzeit und Datum: "));
   time_t now = time(nullptr);
   while (now < 8 * 3600 * 2) {
     delay(500);
-    logger.debug(".");
+    logger.debug(F("."));
     now = time(nullptr);
   }
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
   logger.info(F("Die Zeit und das Datum ist: ") + String(asctime(&timeinfo)));
 
-  // Zertifikate initialisieren
   certList.append(zertifikat);
   client.setTrustAnchors(&certList);
   logger.info(F("Schicke Initialisierungsnachricht an Webhook-Dienst."));
-  WebhookSendeInit(); // Initalisierungsnachricht schicken
+  WebhookSendeInit();
 }
 
 void WebhookSendeInit() {
   logger.debug(F("Beginn von WebhookSendeInit()"));
 
-  // JSON-Objekt erstellen
   JsonDocument doc;
   JsonArray gruenArray = doc["gruen"].to<JsonArray>();
   JsonObject gruenObj = gruenArray.add<JsonObject>();
-  gruenObj["name"] = "Neustarts";
+  gruenObj["name"] = F("Neustarts");
   gruenObj["wert"] = neustarts;
   gruenObj["einheit"] = "";
-  doc["status"] = "init";
+  doc["status"] = F("init");
   doc["alarmfrequenz"] = webhookFrequenz;
   doc["pingfrequenz"] = webhookPingFrequenz;
-  // JSON in String umwandeln
+
   String jsonString;
   serializeJson(doc, jsonString);
   WebhookSendeDaten(jsonString);
@@ -60,7 +64,6 @@ void WebhookErfasseSensordaten(const char* statusWert) {
   JsonArray sensorData = dok["sensorData"].to<JsonArray>();
   bool hatAktivenAlarm = false;
 
-  // Lambda-Funktion zum Hinzufügen von Sensorinformationen
   auto fuegeHinzuSensorInfo = [&](float wert, const String& name, const char* einheit, const String& status, bool alarmAktiv) {
     if (alarmAktiv) {
       JsonObject sensorObj = sensorData.add<JsonObject>();
@@ -74,7 +77,6 @@ void WebhookErfasseSensordaten(const char* statusWert) {
     }
   };
 
-  // Füge Sensorinformationen hinzu
   #if MODUL_BODENFEUCHTE
     fuegeHinzuSensorInfo(bodenfeuchteMesswertProzent, bodenfeuchteName, "%", bodenfeuchteFarbe, bodenfeuchteWebhook);
   #endif
@@ -82,8 +84,8 @@ void WebhookErfasseSensordaten(const char* statusWert) {
     fuegeHinzuSensorInfo(helligkeitMesswertProzent, helligkeitName, "%", helligkeitFarbe, helligkeitWebhook);
   #endif
   #if MODUL_DHT
-    fuegeHinzuSensorInfo(luftfeuchteMesswert, "Luftfeuchte", "%", luftfeuchteFarbe, luftfeuchteWebhook);
-    fuegeHinzuSensorInfo(lufttemperaturMesswert, "Lufttemperatur", "°C", lufttemperaturFarbe, lufttemperaturWebhook);
+    fuegeHinzuSensorInfo(luftfeuchteMesswert, F("Luftfeuchte"), "%", luftfeuchteFarbe, luftfeuchteWebhook);
+    fuegeHinzuSensorInfo(lufttemperaturMesswert, F("Lufttemperatur"), "°C", lufttemperaturFarbe, lufttemperaturWebhook);
   #endif
   #if MODUL_ANALOG3
     fuegeHinzuSensorInfo(analog3MesswertProzent, analog3Name, "%", analog3Farbe, analog3Webhook);
@@ -104,16 +106,10 @@ void WebhookErfasseSensordaten(const char* statusWert) {
     fuegeHinzuSensorInfo(analog8MesswertProzent, analog8Name, "%", analog8Farbe, analog8Webhook);
   #endif
 
-  // Setze den webhookStatus
-  if (strcmp(statusWert, "ping") == 0) {
-    dok["status"] = "ping";
-  } else {
-    dok["status"] = hatAktivenAlarm ? "Alarm" : "OK";
-  }
+  dok["status"] = strcmp(statusWert, "ping") == 0 ? F("ping") : (hatAktivenAlarm ? F("Alarm") : F("OK"));
   dok["alarmfrequenz"] = webhookFrequenz;
   dok["pingfrequenz"] = webhookPingFrequenz;
 
-  // Serialisiere und sende die gesammelten Daten
   String jsonString;
   serializeJson(dok, jsonString);
   WebhookSendeDaten(jsonString);
@@ -122,18 +118,16 @@ void WebhookErfasseSensordaten(const char* statusWert) {
 void WebhookSendeDaten(const String& jsonString) {
   logger.info(F("Sende folgendes JSON an Webhook: "));
   logger.info(jsonString);
-  // POST-Anfrage erstellen
-  String postAnfrage = String("POST ") + webhookPfad + " HTTP/1.1\r\n" +
-                       "Host: " + webhookDomain + "\r\n" +
-                       "Content-Type: application/json\r\n" +
-                       "Content-Length: " + jsonString.length() + "\r\n" +
-                       "\r\n" +
+
+  String postAnfrage = F("POST ") + webhookPfad + F(" HTTP/1.1\r\n") +
+                       F("Host: ") + webhookDomain + F("\r\n") +
+                       F("Content-Type: application/json\r\n") +
+                       F("Content-Length: ") + String(jsonString.length()) + F("\r\n") +
+                       F("\r\n") +
                        jsonString;
 
-  // Verbindung herstellen und Anfrage senden
   if (client.connect(webhookDomain, httpsPort)) {
     client.print(postAnfrage);
-    // Warten auf Antwort
     while (client.connected()) {
       String zeile = client.readStringUntil('\n');
       if (zeile == "\r") {
@@ -142,8 +136,7 @@ void WebhookSendeDaten(const String& jsonString) {
     }
   } else {
     logger.error(F("Verbindung fehlgeschlagen"));
-    logger.error(F("Letzter Fehlercode: "));
-    logger.error(String(client.getLastSSLError()));
+    logger.error(F("Letzter Fehlercode: ") + String(client.getLastSSLError()));
   }
   client.stop();
 }

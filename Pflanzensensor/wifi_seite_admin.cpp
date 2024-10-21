@@ -1,13 +1,3 @@
-/**
- * @file wifi_seite_admin.cpp
- * @brief Implementierung der Administrationsseite des Pflanzensensors
- * @author Tommy
- * @date 2023-09-20
- *
- * Diese Datei enthält die Implementierungen der Funktionen zur Generierung und Verarbeitung
- * der Administrationsseite des Pflanzensensors.
- */
-
 #include "wifi_seite_admin.h"
 #include "einstellungen.h"
 #include "logger.h"
@@ -18,27 +8,25 @@ extern ESP8266WebServer Webserver;
 extern bool wifiAp;
 
 void sendeEinstellung(const __FlashStringHelper* bezeichnung, const __FlashStringHelper* name, const String& wert) {
-  Webserver.sendContent(F("<p>"));
-  Webserver.sendContent(bezeichnung);
-  Webserver.sendContent(F(": <input type=\"text\" size=\"20\" name=\""));
-  Webserver.sendContent(name);
-  Webserver.sendContent(F("\" placeholder=\""));
-  Webserver.sendContent(wert);
-  Webserver.sendContent(F("\"></p>\n"));
+  char buffer[200];
+  snprintf_P(buffer, sizeof(buffer), PSTR("<p>%s: <input type=\"text\" size=\"20\" name=\"%s\" placeholder=\"%s\"></p>\n"),
+             reinterpret_cast<const char*>(bezeichnung),
+             reinterpret_cast<const char*>(name),
+             wert.c_str());
+  Webserver.sendContent(buffer);
 }
 
 void sendeCheckbox(const __FlashStringHelper* bezeichnung, const __FlashStringHelper* name, const bool& status) {
-  Webserver.sendContent(F("<p>"));
-  Webserver.sendContent(bezeichnung);
-  Webserver.sendContent(F(" <input type=\"checkbox\" name=\""));
-  Webserver.sendContent(name);
-  Webserver.sendContent(F("\""));
-  if (status) { Webserver.sendContent(F(" checked")); }
-  Webserver.sendContent(F("></p>\n"));
+  char buffer[200];
+  snprintf_P(buffer, sizeof(buffer), PSTR("<p>%s <input type=\"checkbox\" name=\"%s\"%s></p>\n"),
+             reinterpret_cast<const char*>(bezeichnung),
+             reinterpret_cast<const char*>(name),
+             status ? " checked" : "");
+  Webserver.sendContent(buffer);
 }
 
 void sendeSchwellwerte(const __FlashStringHelper* prefix, int gruenUnten, int gruenOben, int gelbUnten, int gelbOben) {
-  char buffer[50];
+  char buffer[100];
 
   snprintf_P(buffer, sizeof(buffer), PSTR("%sGelbUnten"), reinterpret_cast<const char *>(prefix));
   sendeEinstellung(F("unterer gelber Schwellwert"), FPSTR(buffer), String(gelbUnten));
@@ -55,31 +43,31 @@ void sendeSchwellwerte(const __FlashStringHelper* prefix, int gruenUnten, int gr
 
 void sendeAnalogsensorEinstellungen(const __FlashStringHelper* titel, const __FlashStringHelper* prefix, const String& sensorName, int minimum, int maximum,
                                     int gruenUnten, int gruenOben, int gelbUnten, int gelbOben, bool alarm, int messwert) {
-  Webserver.sendContent(F("<h2>"));
-  Webserver.sendContent(titel);
-  Webserver.sendContent(F("</h2>\n<div class=\"tuerkis\">\n"));
+  char buffer[300];
+  snprintf_P(buffer, sizeof(buffer), PSTR("<h2>%s</h2>\n<div class=\"tuerkis\">\n"), reinterpret_cast<const char *>(titel));
+  Webserver.sendContent(buffer);
 
-  char buffer[50];
+  char prefixBuffer[50];
+  strncpy_P(prefixBuffer, reinterpret_cast<const char *>(prefix), sizeof(prefixBuffer));
 
   #if MODUL_WEBHOOK
-    snprintf_P(buffer, sizeof(buffer), PSTR("%sWebhook"), reinterpret_cast<const char *>(prefix));
-    sendeCheckbox(F("Alarm aktiv?"), FPSTR(buffer), alarm);
+    char webhookBuffer[50];
+    snprintf_P(webhookBuffer, sizeof(webhookBuffer), PSTR("%sWebhook"), prefixBuffer);
+    sendeCheckbox(F("Alarm aktiv?"), FPSTR(webhookBuffer), alarm);
   #endif
 
-  snprintf_P(buffer, sizeof(buffer), PSTR("%sName"), reinterpret_cast<const char *>(prefix));
-  sendeEinstellung(F("Sensorname"), FPSTR(buffer), sensorName);
+  char nameBuffer[50];
+  snprintf_P(nameBuffer, sizeof(nameBuffer), PSTR("%sName"), prefixBuffer);
+  sendeEinstellung(F("Sensorname"), FPSTR(nameBuffer), sensorName);
 
-  Webserver.sendContent(F("<p>Aktueller absoluter Messwert: <span id=\""));
-  Webserver.sendContent(reinterpret_cast<const char *>(prefix));
-  Webserver.sendContent(F("Messwert\">"));
-  Webserver.sendContent(String(messwert));
-  Webserver.sendContent(F("</span></p>\n"));
+  snprintf_P(buffer, sizeof(buffer), PSTR("<p>Aktueller absoluter Messwert: <span id=\"%sMesswert\">%d</span></p>\n"), prefixBuffer, messwert);
+  Webserver.sendContent(buffer);
 
-  snprintf_P(buffer, sizeof(buffer), PSTR("%sMinimum"), reinterpret_cast<const char *>(prefix));
-  sendeEinstellung(F("Minimalwert (trocken/dunkel)"), FPSTR(buffer), String(minimum));
-
-  snprintf_P(buffer, sizeof(buffer), PSTR("%sMaximum"), reinterpret_cast<const char *>(prefix));
-  sendeEinstellung(F("Maximalwert (feucht/hell)"), FPSTR(buffer), String(maximum));
+  char minimumBuffer[50], maximumBuffer[50];
+  snprintf_P(minimumBuffer, sizeof(minimumBuffer), PSTR("%sMinimum"), prefixBuffer);
+  snprintf_P(maximumBuffer, sizeof(maximumBuffer), PSTR("%sMaximum"), prefixBuffer);
+  sendeEinstellung(F("Minimalwert (trocken/dunkel)"), FPSTR(minimumBuffer), String(minimum));
+  sendeEinstellung(F("Maximalwert (feucht/hell)"), FPSTR(maximumBuffer), String(maximum));
 
   sendeSchwellwerte(prefix, gruenUnten, gruenOben, gelbUnten, gelbOben);
 
@@ -117,13 +105,13 @@ void WebseiteAdminAusgeben() {
   Webserver.sendContent_P(adminPageIntro);
 
   // WIFI-Einstellungen
-  Webserver.sendContent(F("<h2>WIFI-Einstellungen</h2>\n<div class=\"tuerkis\">\n<p>Modus:<br>"));
-  Webserver.sendContent(F("<input type=\"radio\" name=\"wlanModus\" value=\"ap\""));
-  if (wifiAp) { Webserver.sendContent(F(" checked")); }
-  Webserver.sendContent(F("> Access Point<br>"));
-  Webserver.sendContent(F("<input type=\"radio\" name=\"wlanModus\" value=\"wlan\""));
-  if (!wifiAp) { Webserver.sendContent(F(" checked")); }
-  Webserver.sendContent(F("> WLAN Client</p>\n</div>\n"));
+  char buffer[500];
+  snprintf_P(buffer, sizeof(buffer), PSTR("<h2>WIFI-Einstellungen</h2>\n<div class=\"tuerkis\">\n<p>Modus:<br>"
+                                         "<input type=\"radio\" name=\"wlanModus\" value=\"ap\"%s> Access Point<br>"
+                                         "<input type=\"radio\" name=\"wlanModus\" value=\"wlan\"%s> WLAN Client</p>\n</div>\n"),
+             wifiAp ? " checked" : "",
+             !wifiAp ? " checked" : "");
+  Webserver.sendContent(buffer);
 
   Webserver.sendContent(F("<h3>WLAN Konfigurationen</h3>\n<div class=\"tuerkis\">\n"));
   if (wifiAp) {
@@ -131,15 +119,14 @@ void WebseiteAdminAusgeben() {
 
     // WLAN 1-3
     for (int i = 1; i <= 3; i++) {
-      char buffer[20];
       snprintf_P(buffer, sizeof(buffer), PSTR("<h4>WLAN %d</h4>\n<div class=\"tuerkis\">\n"), i);
       Webserver.sendContent(buffer);
 
-      snprintf_P(buffer, sizeof(buffer), PSTR("wifiSsid%d"), i);
-      sendeEinstellung(F("SSID"), FPSTR(buffer), *(&wifiSsid1 + i - 1));
-
-      snprintf_P(buffer, sizeof(buffer), PSTR("wifiPassword%d"), i);
-      sendeEinstellung(F("Passwort"), FPSTR(buffer), F("********"));
+      char ssidBuffer[20], passwordBuffer[20];
+      snprintf_P(ssidBuffer, sizeof(ssidBuffer), PSTR("wifiSsid%d"), i);
+      snprintf_P(passwordBuffer, sizeof(passwordBuffer), PSTR("wifiPassword%d"), i);
+      sendeEinstellung(F("SSID"), FPSTR(ssidBuffer), *(&wifiSsid1 + i - 1));
+      sendeEinstellung(F("Passwort"), FPSTR(passwordBuffer), F("********"));
 
       Webserver.sendContent(F("</div>\n"));
     }
@@ -149,20 +136,18 @@ void WebseiteAdminAusgeben() {
 
     // WLAN 1-3
     for (int i = 1; i <= 3; i++) {
-      char buffer[20];
       snprintf_P(buffer, sizeof(buffer), PSTR("<h4>WLAN %d</h4>\n<div class=\"tuerkis\">\n"), i);
       Webserver.sendContent(buffer);
 
       if (currentSSID == *(&wifiSsid1 + i - 1)) {
-        Webserver.sendContent(F("<p>SSID: "));
-        Webserver.sendContent(*(&wifiSsid1 + i - 1));
-        Webserver.sendContent(F(" (aktive Verbindung ist nicht editierbar)</p>\n"));
+        snprintf_P(buffer, sizeof(buffer), PSTR("<p>SSID: %s (aktive Verbindung ist nicht editierbar)</p>\n"), currentSSID.c_str());
+        Webserver.sendContent(buffer);
       } else {
-        snprintf_P(buffer, sizeof(buffer), PSTR("wifiSsid%d"), i);
-        sendeEinstellung(F("SSID"), FPSTR(buffer), *(&wifiSsid1 + i - 1));
-
-        snprintf_P(buffer, sizeof(buffer), PSTR("wifiPassword%d"), i);
-        sendeEinstellung(F("Passwort"), FPSTR(buffer), F("********"));
+        char ssidBuffer[20], passwordBuffer[20];
+        snprintf_P(ssidBuffer, sizeof(ssidBuffer), PSTR("wifiSsid%d"), i);
+        snprintf_P(passwordBuffer, sizeof(passwordBuffer), PSTR("wifiPassword%d"), i);
+        sendeEinstellung(F("SSID"), FPSTR(ssidBuffer), *(&wifiSsid1 + i - 1));
+        sendeEinstellung(F("Passwort"), FPSTR(passwordBuffer), F("********"));
       }
       Webserver.sendContent(F("</div>\n"));
     }
@@ -210,7 +195,7 @@ void WebseiteAdminAusgeben() {
                             bodenfeuchteGruenUnten, bodenfeuchteGruenOben, bodenfeuchteGelbUnten, bodenfeuchteGelbOben, bodenfeuchteWebhook, bodenfeuchteMesswert);
   #endif
 
-    #if MODUL_DHT
+  #if MODUL_DHT
     Webserver.sendContent(F("<h2>DHT Modul</h2>\n<h3>Lufttemperatur</h3>\n<div class=\"tuerkis\">\n"));
     #if MODUL_WEBHOOK
       sendeCheckbox(F("Alarm aktiv?"), F("lufttemperaturWebhook"), lufttemperaturWebhook);
@@ -224,7 +209,7 @@ void WebseiteAdminAusgeben() {
     Webserver.sendContent(F("</div>\n"));
   #endif
 
-  #if MODUL_HELLIGKEIT
+   #if MODUL_HELLIGKEIT
     sendeAnalogsensorEinstellungen(F("Helligkeitssensor"), F("helligkeit"), helligkeitName, helligkeitMinimum, helligkeitMaximum,
                             helligkeitGruenUnten, helligkeitGruenOben, helligkeitGelbUnten, helligkeitGelbOben, helligkeitWebhook, helligkeitMesswert);
   #endif

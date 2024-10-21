@@ -31,45 +31,42 @@
 extern bool webhookAn;
 
 void sendeSensorDaten(const __FlashStringHelper* sensorName, const String& sensorFarbe, int messwert, const __FlashStringHelper* einheit, bool alarm, bool webhook) {
-  Webserver.sendContent(F("<h2>"));
-  Webserver.sendContent(sensorName);
-  if (alarm && webhook) {Webserver.sendContent(F(" ⏰"));}
-  Webserver.sendContent(F("</h2>\n<div class=\""));
-  Webserver.sendContent(sensorFarbe);
-  Webserver.sendContent(F("\"><p>"));
-  Webserver.sendContent(String(messwert));
-  Webserver.sendContent(F(" "));
-  Webserver.sendContent(einheit);
-  Webserver.sendContent(F("</p></div>\n"));
+  char buffer[200];
+  snprintf_P(buffer, sizeof(buffer), PSTR("<h2>%s%s</h2>\n<div class=\"%s\"><p>%d %s</p></div>\n"),
+             reinterpret_cast<const char*>(sensorName),
+             (alarm && webhook) ? " ⏰" : "",
+             sensorFarbe.c_str(),
+             messwert,
+             reinterpret_cast<const char*>(einheit));
+  Webserver.sendContent(buffer);
 }
 
 void sendeAnalogsensorDaten(int sensorNummer, const String& sensorName, const String& sensorFarbe, int messwert, const __FlashStringHelper* einheit, bool alarm, bool webhook) {
-  Webserver.sendContent(F("<h2>Analogsensor "));
-  Webserver.sendContent(String(sensorNummer));
-  Webserver.sendContent(F(": "));
-  Webserver.sendContent(sensorName);
-  if (alarm && webhook) {Webserver.sendContent(F(" ⏰"));}
-  Webserver.sendContent(F("</h2>\n<div class=\""));
-  Webserver.sendContent(sensorFarbe);
-  Webserver.sendContent(F("\"><p>"));
-  Webserver.sendContent(String(messwert));
-  Webserver.sendContent(F(" "));
-  Webserver.sendContent(einheit);
-  Webserver.sendContent(F("</p></div>\n"));
+  char buffer[200];
+  snprintf_P(buffer, sizeof(buffer), PSTR("<h2>Analogsensor %d: %s%s</h2>\n<div class=\"%s\"><p>%d %s</p></div>\n"),
+             sensorNummer,
+             sensorName.c_str(),
+             (alarm && webhook) ? " ⏰" : "",
+             sensorFarbe.c_str(),
+             messwert,
+             reinterpret_cast<const char*>(einheit));
+  Webserver.sendContent(buffer);
 }
 
 void WebseiteStartAusgeben() {
-  logger.debug("Beginn von WebsiteStartAusgeben()");
+  logger.debug(F("Beginn von WebsiteStartAusgeben()"));
 
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
 
   sendeHtmlHeader(Webserver, false);
 
-  Webserver.sendContent_P(PSTR(
+  static const char PROGMEM introText[] =
     "<div class=\"tuerkis\">"
     "<p>Diese Seite zeigt die Sensordaten deines Pflanzensensors an. Sie aktualisiert sich automatisch jede Minute.</p>"
-    "</div>\n"));
+    "</div>\n";
+  Webserver.sendContent_P(introText);
+
   #if !MODUL_WEBHOOK
     bool webhookAn = false; // ansonsten ist die Variable nicht definiert und das Programm kompiliert nicht
   #endif
@@ -111,24 +108,22 @@ void WebseiteStartAusgeben() {
     sendeAnalogsensorDaten(8, analog8Name, analog8Farbe, analog8MesswertProzent, F("%"), analog8Webhook, webhookAn);
   #endif
 
-  Webserver.sendContent_P(PSTR(
+  static const char PROGMEM linksSection[] =
     "<h2>Links</h2>\n"
     "<div class=\"tuerkis\">\n"
     "<ul>\n"
-    "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n"));
-
-  Webserver.sendContent_P(PSTR("<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"));
-
-  Webserver.sendContent_P(PSTR(
+    "<li><a href=\"/admin.html\">zur Administrationsseite</a></li>\n"
+    "<li><a href=\"/debug.html\">zur Anzeige der Debuginformationen</a></li>\n"
     "<li><a href=\"https://www.github.com/Fabmobil/Pflanzensensor\" target=\"_blank\">"
     "<img src=\"/Bilder/logoGithub.png\">&nbspRepository mit dem Quellcode und der Dokumentation</a></li>\n"
     "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">"
     "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>\n"
     "</ul>\n"
-    "</div>\n"));
+    "</div>\n";
+  Webserver.sendContent_P(linksSection);
 
   Webserver.sendContent_P(htmlFooter);
   Webserver.client().flush();
 
-  logger.debug("Ende von WebsiteStartAusgeben()");
+  logger.debug(F("Ende von WebsiteStartAusgeben()"));
 }

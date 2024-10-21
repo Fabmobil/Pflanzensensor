@@ -46,20 +46,19 @@ updateLogTable();
 )=====";
 
 void sendeDebugAbschnitt(const __FlashStringHelper* titel, const String& inhalt) {
-  Webserver.sendContent(F("<h3>"));
-  Webserver.sendContent(titel);
-  Webserver.sendContent(F("</h3>\n<div class=\"tuerkis\">\n"));
-  Webserver.sendContent(inhalt);
-  Webserver.sendContent(F("</div>\n"));
+  char buffer[500];
+  snprintf_P(buffer, sizeof(buffer), PSTR("<h3>%s</h3>\n<div class=\"tuerkis\">\n%s</div>\n"),
+             reinterpret_cast<const char*>(titel), inhalt.c_str());
+  Webserver.sendContent(buffer);
 }
 
 String generiereAnalogSensorInfo(const String& name, bool webhook, int messwertProzent, int messwert, int minimum, int maximum) {
-  return F("<ul><li>Sensorname: ") + name +
-         F("</li><li>Webhook Alarm aktiviert?: ") + String(webhook) +
-         F("</li><li>Messwert Prozent: ") + String(messwertProzent) +
-         F("</li><li>Messwert: ") + String(messwert) +
-         F("</li><li>Minimalwert: ") + String(minimum) +
-         F("</li><li>Maximalwert: ") + String(maximum) + F("</li></ul>");
+  char buffer[500];
+  snprintf_P(buffer, sizeof(buffer), PSTR("<ul><li>Sensorname: %s</li><li>Webhook Alarm aktiviert?: %s</li>"
+                                          "<li>Messwert Prozent: %d</li><li>Messwert: %d</li>"
+                                          "<li>Minimalwert: %d</li><li>Maximalwert: %d</li></ul>"),
+             name.c_str(), webhook ? "Ja" : "Nein", messwertProzent, messwert, minimum, maximum);
+  return String(buffer);
 }
 
 void WebseiteDebugAusgeben() {
@@ -69,18 +68,24 @@ void WebseiteDebugAusgeben() {
   sendeHtmlHeader(Webserver, false);
 
   // Log-Abschnitt
-  Webserver.sendContent(F("<h2>Logs</h2><div class=\"tuerkis\">"));
-  Webserver.sendContent(F("<form action='/SetzeLogLevel' method='post'><select name='logLevel'>"));
-  Webserver.sendContent(F("<option value='DEBUG'"));
-  if (logger.getLogLevel() == LogLevel::DEBUG) Webserver.sendContent(F(" selected"));
-  Webserver.sendContent(F(">DEBUG</option><option value='INFO'"));
-  if (logger.getLogLevel() == LogLevel::INFO) Webserver.sendContent(F(" selected"));
-  Webserver.sendContent(F(">INFO</option><option value='WARNING'"));
-  if (logger.getLogLevel() == LogLevel::WARNING) Webserver.sendContent(F(" selected"));
-  Webserver.sendContent(F(">WARNING</option><option value='ERROR'"));
-  if (logger.getLogLevel() == LogLevel::ERROR) Webserver.sendContent(F(" selected"));
-  Webserver.sendContent(F(">ERROR</option></select><input type='submit' value='Setze Log Level'></form>"));
-  Webserver.sendContent(F("<div id='logTable'>"));
+  static const char PROGMEM logSection[] =
+    "<h2>Logs</h2><div class=\"tuerkis\">"
+    "<form action='/SetzeLogLevel' method='post'><select name='logLevel'>"
+    "<option value='DEBUG'%s>DEBUG</option>"
+    "<option value='INFO'%s>INFO</option>"
+    "<option value='WARNING'%s>WARNING</option>"
+    "<option value='ERROR'%s>ERROR</option>"
+    "</select><input type='submit' value='Setze Log Level'></form>"
+    "<div id='logTable'>";
+
+  char buffer[1000];
+  snprintf_P(buffer, sizeof(buffer), logSection,
+             logger.getLogLevel() == LogLevel::DEBUG ? " selected" : "",
+             logger.getLogLevel() == LogLevel::INFO ? " selected" : "",
+             logger.getLogLevel() == LogLevel::WARNING ? " selected" : "",
+             logger.getLogLevel() == LogLevel::ERROR ? " selected" : "");
+  Webserver.sendContent(buffer);
+
   Webserver.sendContent(logger.getLogsAsHtmlTable(logAnzahlWebseite));
   Webserver.sendContent(F("</div></div>"));
 
@@ -90,10 +95,11 @@ void WebseiteDebugAusgeben() {
   Webserver.sendContent(F("<h2>Debug-Informationen</h2>\n"));
 
   // Allgemeine Informationen
-  String allgemeineInfo = F("<ul><li>Anzahl Module: ") + String(module) +
-                          F("</li><li>Anzahl Neustarts: ") + String(neustarts) +
-                          F("</li><li>Freier HEAP: ") + String(ESP.getFreeHeap()) + F(" Bytes</li></ul>");
-  sendeDebugAbschnitt(F("Allgemeine Informationen"), allgemeineInfo);
+  snprintf_P(buffer, sizeof(buffer), PSTR("<ul><li>Anzahl Module: %d</li>"
+                                          "<li>Anzahl Neustarts: %d</li>"
+                                          "<li>Freier HEAP: %d Bytes</li></ul>"),
+             module, neustarts, ESP.getFreeHeap());
+  sendeDebugAbschnitt(F("Allgemeine Informationen"), buffer);
 
   // Analogsensoren
   #if MODUL_HELLIGKEIT
@@ -138,60 +144,76 @@ void WebseiteDebugAusgeben() {
 
   // Andere Module
   #if MODUL_DHT
-    String dhtInfo = F("<ul><li>Lufttemperatur Webhook Alarm aktiviert?: ") + String(lufttemperaturWebhook) +
-                     F("</li><li>Lufttemperatur: ") + String(lufttemperaturMesswert) +
-                     F("</li><li>Luftfeuchte Webhook Alarm aktiviert?: ") + String(luftfeuchteWebhook) +
-                     F("</li><li>Luftfeuchte: ") + String(luftfeuchteMesswert) +
-                     F("</li><li>DHT Pin: ") + String(dhtPin) +
-                     F("</li><li>DHT Sensortyp: ") + String(dhtSensortyp) + F("</li></ul>");
-    sendeDebugAbschnitt(F("DHT Modul"), dhtInfo);
+    snprintf_P(buffer, sizeof(buffer), PSTR("<ul><li>Lufttemperatur Webhook Alarm aktiviert?: %s</li>"
+                                            "<li>Lufttemperatur: %.2f</li>"
+                                            "<li>Luftfeuchte Webhook Alarm aktiviert?: %s</li>"
+                                            "<li>Luftfeuchte: %.2f</li>"
+                                            "<li>DHT Pin: %d</li>"
+                                            "<li>DHT Sensortyp: %d</li></ul>"),
+               lufttemperaturWebhook ? "Ja" : "Nein", lufttemperaturMesswert,
+               luftfeuchteWebhook ? "Ja" : "Nein", luftfeuchteMesswert,
+               dhtPin, dhtSensortyp);
+    sendeDebugAbschnitt(F("DHT Modul"), buffer);
   #endif
 
   #if MODUL_DISPLAY
-    String displayInfo = F("<ul><li>Display angeschalten?: ") + String(displayAn) +
-                         F("</li><li>Breite in Pixel: ") + String(displayBreite) +
-                         F("</li><li>Hoehe in Pixel: ") + String(displayHoehe) +
-                         F("</li><li>Adresse: ") + String(displayAdresse) + F("</li></ul>");
-    sendeDebugAbschnitt(F("Display Modul"), displayInfo);
+    snprintf_P(buffer, sizeof(buffer), PSTR("<ul><li>Display angeschalten?: %s</li>"
+                                            "<li>Breite in Pixel: %d</li>"
+                                            "<li>Hoehe in Pixel: %d</li>"
+                                            "<li>Adresse: %d</li></ul>"),
+               displayAn ? "Ja" : "Nein", displayBreite, displayHoehe, displayAdresse);
+    sendeDebugAbschnitt(F("Display Modul"), buffer);
   #endif
 
   #if MODUL_LEDAMPEL
-    String ledAmpelInfo = F("<ul><li>LED Ampel angeschalten?: ") + String(ampelAn) +
-                          F("</li><li>Modus: ") + String(ampelModus) +
-                          F("</li><li>Pin gruene LED: ") + String(ampelPinGruen) +
-                          F("</li><li>Pin gelbe LED: ") + String(ampelPinGelb) +
-                          F("</li><li>Pin rote LED: ") + String(ampelPinRot) + F("</li></ul>");
-    sendeDebugAbschnitt(F("LEDAmpel Modul"), ledAmpelInfo);
+    snprintf_P(buffer, sizeof(buffer), PSTR("<ul><li>LED Ampel angeschalten?: %s</li>"
+                                            "<li>Modus: %d</li>"
+                                            "<li>Pin gruene LED: %d</li>"
+                                            "<li>Pin gelbe LED: %d</li>"
+                                            "<li>Pin rote LED: %d</li></ul>"),
+               ampelAn ? "Ja" : "Nein", ampelModus, ampelPinGruen, ampelPinGelb, ampelPinRot);
+    sendeDebugAbschnitt(F("LEDAmpel Modul"), buffer);
   #endif
 
   #if MODUL_WIFI
-    String wifiInfo = F("<ul><li>Hostname: ") + wifiHostname + F(".local</li>");
+    strcpy_P(buffer, PSTR("<ul><li>Hostname: "));
+    strcat(buffer, wifiHostname.c_str());
+    strcat_P(buffer, PSTR(".local</li>"));
     if (!wifiAp) {
-      wifiInfo += F("<li>SSID 1: ") + wifiSsid1 +
-                  F("</li><li>Passwort 1: ") + wifiPasswort1 +
-                  F("</li><li>SSID 2: ") + wifiSsid2 +
-                  F("</li><li>Passwort 2: ") + wifiPasswort2 +
-                  F("</li><li>SSID 3: ") + wifiSsid3 +
-                  F("</li><li>Passwort 3: ") + wifiPasswort3 + F("</li>");
+      char tempBuffer[100];
+      snprintf_P(tempBuffer, sizeof(tempBuffer), PSTR("<li>SSID 1: %s</li><li>Passwort 1: %s</li>"
+                                                      "<li>SSID 2: %s</li><li>Passwort 2: %s</li>"
+                                                      "<li>SSID 3: %s</li><li>Passwort 3: %s</li>"),
+                 wifiSsid1.c_str(), wifiPasswort1.c_str(),
+                 wifiSsid2.c_str(), wifiPasswort2.c_str(),
+                 wifiSsid3.c_str(), wifiPasswort3.c_str());
+      strcat(buffer, tempBuffer);
     } else {
-      wifiInfo += F("<li>Name des WLANs: ") + String(wifiApSsid) +
-                  F("</li><li>Passwort: ") + (wifiApPasswortAktiviert ? String(wifiApPasswort) : F("WLAN ohne Passwortschutz!")) + F("</li>");
+      char tempBuffer[100];
+      snprintf_P(tempBuffer, sizeof(tempBuffer), PSTR("<li>Name des WLANs: %s</li>"
+                                                      "<li>Passwort: %s</li>"),
+                 wifiApSsid.c_str(), wifiApPasswortAktiviert ? wifiApPasswort.c_str() : "WLAN ohne Passwortschutz!");
+      strcat(buffer, tempBuffer);
     }
-    wifiInfo += F("</ul>");
-    sendeDebugAbschnitt(F("Wifi Modul"), wifiInfo);
+    strcat_P(buffer, PSTR("</ul>"));
+    sendeDebugAbschnitt(F("Wifi Modul"), buffer);
   #endif
 
   #if MODUL_WEBHOOK
-    String webhookInfo = F("<ul><li>Webhook Alarm angeschalten?: ") + String(webhookAn) +
-                         F("</li><li>Webhook Alarmierungsfrequenz: ") + String(webhookFrequenz) +
-                         F(" Stunden</li><li>Webhook Pingfrequenz: ") + String(webhookPingFrequenz) +
-                         F(" Stunden</li><li>Webhook Domain: ") + webhookDomain +
-                         F("</li><li>Webhook URL: ") + webhookPfad + F("</li></ul>");
-    sendeDebugAbschnitt(F("Webhook Modul"), webhookInfo);
+    snprintf_P(buffer, sizeof(buffer), PSTR("<ul><li>Webhook Alarm angeschalten?: %s</li>"
+                                            "<li>Webhook Alarmierungsfrequenz: %d Stunden</li>"
+                                            "<li>Webhook Pingfrequenz: %d Stunden</li>"
+                                            "<li>Webhook Domain: %s</li>"
+                                            "<li>Webhook URL: %s</li></ul>"),
+               webhookAn ? "Ja" : "Nein", webhookFrequenz, webhookPingFrequenz,
+               webhookDomain.c_str(), webhookPfad.c_str());
+    sendeDebugAbschnitt(F("Webhook Modul"), buffer);
   #endif
 
    // Deaktivierte Module
-  Webserver.sendContent(F("<h2>Deaktivierte Module</h2>\n<div class=\"tuerkis\">\n<ul>\n"));
+  static const char PROGMEM deactivatedModules[] = "<h2>Deaktivierte Module</h2>\n<div class=\"tuerkis\">\n<ul>\n";
+  Webserver.sendContent_P(deactivatedModules);
+
   #if !MODUL_DHT
     Webserver.sendContent(F("<li>DHT Modul</li>\n"));
   #endif
@@ -233,8 +255,8 @@ void WebseiteDebugAusgeben() {
   #endif
   Webserver.sendContent(F("</ul>\n</div>\n"));
 
-  // Links
-  Webserver.sendContent(F(
+   // Links
+  static const char PROGMEM links[] =
     "<h2>Links</h2>\n"
     "<div class=\"tuerkis\">\n"
     "<ul>\n"
@@ -246,7 +268,8 @@ void WebseiteDebugAusgeben() {
     "<li><a href=\"https://www.fabmobil.org\" target=\"_blank\">"
     "<img src=\"/Bilder/logoFabmobil.png\">&nbspHomepage</a></li>\n"
     "</ul>\n"
-    "</div>\n"));
+    "</div>\n";
+  Webserver.sendContent_P(links);
 
   Webserver.sendContent_P(htmlFooter);
   Webserver.client().flush();

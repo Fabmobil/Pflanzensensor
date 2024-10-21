@@ -24,12 +24,13 @@ void WebseiteNichtGefundenAusgeben() {
 
   sendeHtmlHeader(Webserver, false);
 
-  Webserver.sendContent(F(
+  static const char PROGMEM nichtGefundenInhalt[] =
     "<h2>404 - Seite nicht gefunden</h2>"
     "<p>Die angeforderte Seite konnte nicht gefunden werden.</p>"
     "<p>Bitte überprüfe die URL und versuche es erneut.</p>"
-    "<p><a href=\"/\">Zurück zur Startseite</a></p>"
-  ));
+    "<p><a href=\"/\">Zurück zur Startseite</a></p>";
+
+  Webserver.sendContent_P(nichtGefundenInhalt);
 
   Webserver.sendContent_P(htmlFooter);
   Webserver.client().flush();
