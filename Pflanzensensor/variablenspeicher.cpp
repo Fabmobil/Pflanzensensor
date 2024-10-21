@@ -154,7 +154,7 @@ void VariablenSpeichern() {
  */
 void VariablenLaden() {
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-    DisplayDreiWoerter("Start..", " Variablen", "  laden");
+    DisplayDreiWoerter(F("Start.."), F(" Variablen"), F("  laden"));
   #endif
   variablen.begin("pflanzensensor", true);
   logLevel = variablen.getString("logLevel", logLevel);

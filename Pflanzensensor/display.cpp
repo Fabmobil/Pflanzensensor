@@ -66,7 +66,7 @@ void NaechsteSeite() {
 
 void DisplaySetup() {
   if(!display.begin(SSD1306_SWITCHCAPVCC, displayAdresse)) {
-    logger.error("Fehler: Display konnte nicht geöffnet werden.");
+    logger.error(F("Fehler: Display konnte nicht geöffnet werden."));
     return;
   }
 
@@ -76,7 +76,7 @@ void DisplaySetup() {
   display.setTextSize(2);
   display.clearDisplay();
 
-  DisplayDreiWoerter("Start..", " bitte", " warten!");
+  DisplayDreiWoerter(F("Start.."), F(" bitte"), F(" warten!"));
 }
 
 void ZeigeFabmobilLogo() {
@@ -103,7 +103,7 @@ void ZeigeIPAdresse() {
     // Setzt die Textgröße auf 2 (größer) und positioniert den Cursor
     display.setTextSize(2);
     display.setCursor(0, 0);
-    display.println("WLAN"); // Überschrift
+    display.println(F("WLAN")); // Überschrift
 
     // Setzt die Textgröße zurück auf 1 (kleiner) für den restlichen Text
     display.setTextSize(1);
@@ -152,49 +152,49 @@ void ZeigeHelligkeit() {
 
 void ZeigeLufttemperatur() {
   #if MODUL_DHT
-    MesswertAnzeigen("Luft-", "temperatur", lufttemperaturMesswert, "\xf8 C");
+    MesswertAnzeigen(F("Luft-"), F("temperatur"), lufttemperaturMesswert,F("\xf8 C"));
   #endif
 }
 
 void ZeigeLuftfeuchte() {
   #if MODUL_DHT
-    MesswertAnzeigen("Luft-", "feuchte", luftfeuchteMesswert, "%");
+    MesswertAnzeigen(F("Luft-"), F("feuchte"), luftfeuchteMesswert, F("%"));
   #endif
 }
 
 void ZeigeAnalog3() {
   #if MODUL_ANALOG3
-    MesswertAnzeigen(analog3Name, "", analog3MesswertProzent, "%");
+    MesswertAnzeigen(analog3Name, "", analog3MesswertProzent, F("%"));
   #endif
 }
 
 void ZeigeAnalog4() {
   #if MODUL_ANALOG4
-    MesswertAnzeigen(analog4Name, "", analog4MesswertProzent, "%");
+    MesswertAnzeigen(analog4Name, "", analog4MesswertProzent, F("%"));
   #endif
 }
 
 void ZeigeAnalog5() {
   #if MODUL_ANALOG5
-    MesswertAnzeigen(analog5Name, "", analog5MesswertProzent, "%");
+    MesswertAnzeigen(analog5Name, "", analog5MesswertProzent, F("%"));
   #endif
 }
 
 void ZeigeAnalog6() {
   #if MODUL_ANALOG6
-    MesswertAnzeigen(analog6Name, "", analog6MesswertProzent, "%");
+    MesswertAnzeigen(analog6Name, "", analog6MesswertProzent, F("%"));
   #endif
 }
 
 void ZeigeAnalog7() {
   #if MODUL_ANALOG7
-    MesswertAnzeigen(analog7Name, "", analog7MesswertProzent, "%");
+    MesswertAnzeigen(analog7Name, "", analog7MesswertProzent, F("%"));
   #endif
 }
 
 void ZeigeAnalog8() {
   #if MODUL_ANALOG8
-    MesswertAnzeigen(analog8Name, "", analog8MesswertProzent, "%");
+    MesswertAnzeigen(analog8Name, "", analog8MesswertProzent, F("%"));
   #endif
 }
 

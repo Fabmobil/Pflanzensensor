@@ -4,7 +4,7 @@
 #include "logger.h" // Für die Logger-Funktionalität
 
 void MultiplexerWechseln(int a, int b, int c) {
-  logger.debug("Beginn von MultiplexerWechseln(" + String(a) + ", " + String(b) +", " + String(c) + ")");
+  logger.debug(F("Beginn von MultiplexerWechseln(") + String(a) + F(", ") + String(b) + F(", ") + String(c) + F(")"));
 
   digitalWrite(multiplexerPinA, a); // Digitaleingang A setzen
   digitalWrite(multiplexerPinB, b); // Digitaleingang B setzen

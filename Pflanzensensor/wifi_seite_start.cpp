@@ -64,8 +64,7 @@ void WebseiteStartAusgeben() {
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
 
-  Webserver.sendContent_P(htmlHeaderRefresh);
-  Webserver.sendContent_P(htmlHeader);
+  sendeHtmlHeader(Webserver, false);
 
   Webserver.sendContent_P(PSTR(
     "<div class=\"tuerkis\">"

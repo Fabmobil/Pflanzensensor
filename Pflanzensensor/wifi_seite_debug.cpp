@@ -66,8 +66,7 @@ void WebseiteDebugAusgeben() {
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
 
-  Webserver.sendContent_P(htmlHeaderRefresh);
-  Webserver.sendContent_P(htmlHeader);
+  sendeHtmlHeader(Webserver, false);
 
   // Log-Abschnitt
   Webserver.sendContent(F("<h2>Logs</h2><div class=\"tuerkis\">"));

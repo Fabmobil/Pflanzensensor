@@ -14,11 +14,11 @@ X509List certList;
 WiFiClientSecure client;
 
 void WebhookSetup() {
-  logger.debug("Beginn von WebhookSetup()");
+  logger.debug(F("Beginn von WebhookSetup()"));
 
   // Zeit synchronisieren
   configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
-  logger.info("Warte auf die Synchronisation von Uhrzeit und Datum: ");
+  logger.info(F("Warte auf die Synchronisation von Uhrzeit und Datum: "));
   time_t now = time(nullptr);
   while (now < 8 * 3600 * 2) {
     delay(500);
@@ -27,17 +27,17 @@ void WebhookSetup() {
   }
   struct tm timeinfo;
   gmtime_r(&now, &timeinfo);
-  logger.info("Die Zeit und das Datum ist: " + String(asctime(&timeinfo)));
+  logger.info(F("Die Zeit und das Datum ist: ") + String(asctime(&timeinfo)));
 
   // Zertifikate initialisieren
   certList.append(zertifikat);
   client.setTrustAnchors(&certList);
-  logger.info("Schicke Initialisierungsnachricht an Webhook-Dienst.");
+  logger.info(F("Schicke Initialisierungsnachricht an Webhook-Dienst."));
   WebhookSendeInit(); // Initalisierungsnachricht schicken
 }
 
 void WebhookSendeInit() {
-  logger.debug("Beginn von WebhookSendeInit()");
+  logger.debug(F("Beginn von WebhookSendeInit()"));
 
   // JSON-Objekt erstellen
   JsonDocument doc;
@@ -120,7 +120,7 @@ void WebhookErfasseSensordaten(const char* statusWert) {
 }
 
 void WebhookSendeDaten(const String& jsonString) {
-  logger.info("Sende folgendes JSON an Webhook: ");
+  logger.info(F("Sende folgendes JSON an Webhook: "));
   logger.info(jsonString);
   // POST-Anfrage erstellen
   String postAnfrage = String("POST ") + webhookPfad + " HTTP/1.1\r\n" +
@@ -141,8 +141,8 @@ void WebhookSendeDaten(const String& jsonString) {
       }
     }
   } else {
-    logger.error("Verbindung fehlgeschlagen");
-    logger.error("Letzter Fehlercode: ");
+    logger.error(F("Verbindung fehlgeschlagen"));
+    logger.error(F("Letzter Fehlercode: "));
     logger.error(String(client.getLastSSLError()));
   }
   client.stop();

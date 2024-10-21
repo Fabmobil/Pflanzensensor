@@ -15,7 +15,7 @@
 DHT_Unified dht(dhtPin, dhtSensortyp);
 
 float MesseLuftfeuchtigkeit() {
-  logger.debug("Beginn von MesseLuftfeuchtigkeit()");
+  logger.debug(F("Beginn von MesseLuftfeuchtigkeit()"));
 
   sensors_event_t ereignis; // Ereignis-Objekt für die Messung
   float luftfeuchtigkeit = -1; // Initialisierung der Luftfeuchtigkeitsvariable mit Fehlerwert
@@ -24,18 +24,18 @@ float MesseLuftfeuchtigkeit() {
 
   // Überprüfung, ob die Messung erfolgreich war
   if (isnan(ereignis.relative_humidity)) {
-    logger.error("Luftfeuchtigkeitsmessung fehlgeschlagen!");
+    logger.error(F("Luftfeuchtigkeitsmessung fehlgeschlagen!"));
   }
   else {
     luftfeuchtigkeit = ereignis.relative_humidity; // Speichern des gemessenen Wertes
-    logger.info("Gemessene Luftfeuchtigkeit: " + String(luftfeuchtigkeit) + "%");
+    logger.info(F("Gemessene Luftfeuchtigkeit: ") + String(luftfeuchtigkeit) + "%");
   }
 
   return luftfeuchtigkeit; // Rückgabe des Messwertes oder des Fehlerwertes
 }
 
 float MesseLufttemperatur() {
-  logger.debug("Beginn von messeLufttemperatur()");
+  logger.debug(F("Beginn von messeLufttemperatur()"));
 
   sensors_event_t ereignis; // Ereignis-Objekt für die Messung
   float lufttemperatur = -1; // Initialisierung der Lufttemperaturvariable mit Fehlerwert
@@ -44,11 +44,11 @@ float MesseLufttemperatur() {
 
   // Überprüfung, ob die Messung erfolgreich war
   if (isnan(ereignis.temperature)) {
-    logger.error("Lufttemperaturmessung fehlgeschlagen!");
+    logger.error(F("Lufttemperaturmessung fehlgeschlagen!"));
   }
   else {
     lufttemperatur = ereignis.temperature; // Speichern des gemessenen Wertes
-    logger.info("Gemessene Lufttemperatur: " + String(lufttemperatur) + "°C");
+    logger.info(F("Gemessene Lufttemperatur: ") + String(lufttemperatur) + F("°C"));
   }
 
   return lufttemperatur; // Rückgabe des Messwertes oder des Fehlerwertes

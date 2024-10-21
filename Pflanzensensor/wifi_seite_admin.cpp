@@ -108,8 +108,7 @@ void WebseiteAdminAusgeben() {
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
 
-  Webserver.sendContent_P(htmlHeaderNoRefresh);
-  Webserver.sendContent_P(htmlHeader);
+  sendeHtmlHeader(Webserver, false);
 
   static const char PROGMEM adminPageIntro[] =
     "<div class=\"tuerkis\"><p>Auf dieser Seite können die Variablen verändert werden.</p>\n"

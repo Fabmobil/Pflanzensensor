@@ -3,7 +3,7 @@
 #include "logger.h"
 
 void LedampelBlinken(String farbe, int anzahl, int dauer) {
-  logger.debug("Beginn von LedampelBlinken(" + String(farbe) + ", " + String(anzahl) + ", " + String(dauer));
+  logger.debug(F("Beginn von LedampelBlinken(") + String(farbe) + F(", ") + String(anzahl) + F(", ") + String(dauer));
 
   int PIN_LED = 0;
   digitalWrite(ampelPinRot, LOW);
@@ -27,7 +27,7 @@ void LedampelBlinken(String farbe, int anzahl, int dauer) {
 }
 
 void LedampelAnzeigen(String farbe, int dauer) {
-  logger.debug("Beginn von LedampelAnzeigen(" + String(farbe) + ", " + String(dauer) + ")");
+  logger.debug(F("Beginn von LedampelAnzeigen(") + String(farbe) + F(", ") + String(dauer) + F(")"));
 
   digitalWrite(ampelPinRot, LOW); // alle LEDs aus
   digitalWrite(ampelPinGelb, LOW);

@@ -37,8 +37,7 @@ void WebseiteSetzeVariablen() {
     Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
     Webserver.send(200, F("text/html"), F(""));
 
-    Webserver.sendContent_P(htmlHeaderNoRefresh);
-    Webserver.sendContent_P(htmlHeader);
+   sendeHtmlHeader(Webserver, false);
 
     if (Webserver.arg(F("Passwort")) == wifiAdminPasswort) {
         String aenderungen = F("<ul>\n"); // Hier sammeln wir alle Änderungen

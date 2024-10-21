@@ -63,16 +63,12 @@ void setup() {
   CreateMutex(&mutex);
   logger.debug(F("Start von setup()"));
 
-  logger.info(" Fabmobil Pflanzensensor, v" + String(pflanzensensorVersion));
+  logger.info(F(" Fabmobil Pflanzensensor, v") + String(pflanzensensorVersion));
   module = ModuleZaehlen(); // wie viele Module sind aktiv?
-
-  #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-    DisplayDreiWoerter("Start..", " Debug-", "  modul");
-  #endif
 
   #if MODUL_LEDAMPEL // wenn das LED Ampel Modul aktiv is:
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-      DisplayDreiWoerter("Start..", " Ampel-", "  modul");
+      DisplayDreiWoerter(F("Start.."), F(" Ampel-"), F("  modul"));
     #endif
     logger.info(F("Start von Ledampel-Modul ... "));
     pinMode(ampelPinGruen, OUTPUT); // LED 1 (grün)
@@ -90,7 +86,7 @@ void setup() {
   #endif
   #if MODUL_MULTIPLEXER // wenn das Multiplexer Modul aktiv ist werden die drei Multiplexerpins als Ausgang gesetzt:
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-      DisplayDreiWoerter("Start..", " Multiplexer-", "  modul");
+      DisplayDreiWoerter(F("Start.."), F(" Multiplexer-"), F("  modul"));
     #endif
     logger.info(F("Start von Multiplexer-Modul ... "));
     pinMode(multiplexerPinA, OUTPUT); // Pin A des Multiplexers
@@ -101,15 +97,15 @@ void setup() {
     digitalWrite(16, HIGH); // wird ausgeschalten (invertiertes Verhalten!)
   #endif
   if (!LittleFS.begin()) {  // Dateisystem initialisieren, muss vor Wifi geschehen
-    logger.error("Fehler: LittleFS konnte nicht initialisiert werden!");
+    logger.error(F("Fehler: LittleFS konnte nicht initialisiert werden!"));
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-      DisplayDreiWoerter("Start..", " LittleFS", "  Fehler!");
+      DisplayDreiWoerter(F("Start.."), F(" LittleFS"), F("  Fehler!"));
     #endif
     return;
   }
   #if MODUL_WIFI
     #if MODUL_DISPLAY
-      DisplayDreiWoerter("Start..", " Wifi-", "  modul");
+      DisplayDreiWoerter(F("Start.."), F(" Wifi-"), F("  modul"));
     #endif
     logger.info(F("Start von Wifi-Modul ... "));
     String ip = WifiSetup(wifiHostname); // Wifi-Verbindung herstellen und IP Adresse speichern
@@ -117,7 +113,7 @@ void setup() {
     if (ip == "keine WLAN Verbindung.") {
       logger.warning(F("Keine WLAN-Verbindung möglich. Wechsel in den Accesspoint-Modus."));
       #if MODUL_DISPLAY
-        DisplayDreiWoerter("Kein WLAN", "Starte", "Accesspoint");
+        DisplayDreiWoerter(F("Kein WLAN"), F("Starte"), F("Accesspoint"));
       #endif
       wifiAp = true;
       String ip = WifiSetup(wifiHostname);
@@ -125,7 +121,7 @@ void setup() {
   #endif
   #if MODUL_DHT // wenn das DHT Modul aktiv ist:
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-      DisplayDreiWoerter("Start..", " DHT-", "  modul");
+      DisplayDreiWoerter(F("Start.."), F(" DHT-"), F("  modul"));
     #endif
     logger.info(F("Start von DHT-Modul ... "));
     // Initialisierung des Lufttemperatur und -feuchte Sensors:
@@ -137,13 +133,13 @@ void setup() {
   #endif
   if (VariablenDa()) {
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-      DisplayDreiWoerter("Start..", " Variablen", "  laden");
+      DisplayDreiWoerter(F("Start.."), F(" Variablen"), F("  laden"));
     #endif
     // Load the preferences from flash
     VariablenLaden();
   } else {
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-      DisplayDreiWoerter("Start..", " Variablen", "  speichern");
+      DisplayDreiWoerter(F("Start.."), F(" Variablen"), F("  speichern"));
     #endif
     // Save the preferences to flash
     VariablenSpeichern();
@@ -155,16 +151,16 @@ void setup() {
   neustarts++;
   variablen.putInt("neustarts", neustarts);
   variablen.end();
-  logger.info("Neustarts: "+ neustarts );
+  logger.info(F("Neustarts: ") + String(neustarts));
   #if MODUL_WEBHOOK
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-      DisplayDreiWoerter("Start..", " Webhook-", "  modul");
+      DisplayDreiWoerter(F("Start.."), F(" Webhook-"), F("  modul"));
     #endif
     logger.info(F("Start von Webhook-Modul ... "));
     WebhookSetup();
   #endif
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-    DisplayDreiWoerter("Start..", " abge-", " schlossen");
+    DisplayDreiWoerter(F("Start.."), F(" abge-"), F(" schlossen"));
   #endif
   logger.info(F("Start abgeschlossen!"));
 }
@@ -193,7 +189,6 @@ void loop() {
    */
   millisAktuell = millis(); // aktuelle Millisekunden auslesen
 
-  MDNS.update(); // MDNS updaten
   logger.updateNTP(); // Update Timestamp
 
   // Alle Analogsensoren werden hintereinander gemessen
@@ -297,7 +292,7 @@ void loop() {
         millisVorherDisplay = millisAktuell;
         DisplayAnzeigen();
         NaechsteSeite();
-        logger.info("IP Adresse: " + ip);
+        logger.info(F("IP Adresse: ") + String(ip));
       }
     }
   #endif
@@ -320,16 +315,16 @@ void loop() {
         } else {
           wifiVerbindungsVersuche++; // Erhöhen des Zählers bei fehlgeschlagener Verbindung
           if (wifiVerbindungsVersuche >= 10) {
-            logger.warning("Fehler: WLAN Verbindung verloren! Wechsle in den Accesspoint-Modus.");
+            logger.warning(F("Fehler: WLAN Verbindung verloren! Wechsle in den Accesspoint-Modus."));
             #if MODUL_DISPLAY
-              DisplayDreiWoerter("WLAN", "Verbindung", "verloren!");
+              DisplayDreiWoerter(F("WLAN"), F("Verbindung"), F("verloren!"));
             #endif
             wifiAp = true;
             String ip = WifiSetup(wifiHostname);
             aktuelleSsid = wifiApSsid; // AP SSID in Variable schreiben
             wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers
           } else {
-            logger.info("WLAN-Verbindungsversuch fehlgeschlagen. Versuch " + String(wifiVerbindungsVersuche) + " von 10");
+            logger.info(F("WLAN-Verbindungsversuch fehlgeschlagen. Versuch ") + String(wifiVerbindungsVersuche) + F(" von 10"));
           }
         }
       }
@@ -366,10 +361,6 @@ void loop() {
   #endif
 
 }
-
-
-
-
 
 /**
  * @brief Zählt die Anzahl der aktiven Module
