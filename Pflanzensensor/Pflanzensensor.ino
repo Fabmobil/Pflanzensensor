@@ -109,7 +109,6 @@ void setup() {
     #endif
     logger.info(F("Start von Wifi-Modul ... "));
     String ip = WifiSetup(wifiHostname); // Wifi-Verbindung herstellen und IP Adresse speichern
-    logger.info("wifiPasswort2: " + wifiPasswort2);
     if (ip == "keine WLAN Verbindung.") {
       logger.warning(F("Keine WLAN-Verbindung möglich. Wechsel in den Accesspoint-Modus."));
       #if MODUL_DISPLAY
@@ -193,6 +192,7 @@ void loop() {
 
   // Alle Analogsensoren werden hintereinander gemessen
   if (millisAktuell - millisVorherAnalog >= intervallAnalog) { // wenn das Intervall erreicht ist
+    logger.info(F("IP Adresse: ") + String(ip)); // geben wir auch die IP Adresse aus
     if (GetMutex(&mutex)) {
       millisVorherAnalog = millisAktuell; // neuen Wert übernehmen
 
@@ -292,7 +292,6 @@ void loop() {
         millisVorherDisplay = millisAktuell;
         DisplayAnzeigen();
         NaechsteSeite();
-        logger.info(F("IP Adresse: ") + String(ip));
       }
     }
   #endif
@@ -336,6 +335,7 @@ void loop() {
   // Webhook für Alarm:
  #if MODUL_WEBHOOK
   if (webhookAn) {
+    if (!wifiAp) { // im Accesspointmodus haben wir keinen Internetzugang
       unsigned long aktuelleZeit = millis();
       bool aktuellerAlarmStatus = WebhookAktualisiereAlarmStatus();
       String neuerStatus = aktuellerAlarmStatus ? "Alarm" : "OK";
@@ -357,6 +357,9 @@ void loop() {
       }
 
       vorherAlarm = aktuellerAlarmStatus;
+    } else {
+      logger.warning(F("Im AP Modus gibt es kein Internet - Webhook deaktiviert!"));
+    }
   }
   #endif
 

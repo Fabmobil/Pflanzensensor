@@ -22,23 +22,26 @@ WiFiClientSecure client;
 
 void WebhookSetup() {
   logger.debug(F("Beginn von WebhookSetup()"));
+  if (!wifiAp) {
+    configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+    logger.info(F("Warte auf die Synchronisation von Uhrzeit und Datum: "));
+    time_t now = time(nullptr);
+    while (now < 8 * 3600 * 2) {
+      delay(500);
+      logger.debug(F("."));
+      now = time(nullptr);
+    }
+    struct tm timeinfo;
+    gmtime_r(&now, &timeinfo);
+    logger.info(F("Die Zeit und das Datum ist: ") + String(asctime(&timeinfo)));
 
-  configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
-  logger.info(F("Warte auf die Synchronisation von Uhrzeit und Datum: "));
-  time_t now = time(nullptr);
-  while (now < 8 * 3600 * 2) {
-    delay(500);
-    logger.debug(F("."));
-    now = time(nullptr);
+    certList.append(zertifikat);
+    client.setTrustAnchors(&certList);
+    logger.info(F("Schicke Initialisierungsnachricht an Webhook-Dienst."));
+    WebhookSendeInit();
+  } else {
+    logger.warning(F("Im AP Modus gibt es kein Internet - Webhook deaktiviert!"));
   }
-  struct tm timeinfo;
-  gmtime_r(&now, &timeinfo);
-  logger.info(F("Die Zeit und das Datum ist: ") + String(asctime(&timeinfo)));
-
-  certList.append(zertifikat);
-  client.setTrustAnchors(&certList);
-  logger.info(F("Schicke Initialisierungsnachricht an Webhook-Dienst."));
-  WebhookSendeInit();
 }
 
 void WebhookSendeInit() {
@@ -134,6 +137,7 @@ void WebhookSendeDaten(const String& jsonString) {
         break;
       }
     }
+    logger.info(F("Webhook erfolgreich gesendet."));
   } else {
     logger.error(F("Verbindung fehlgeschlagen"));
     logger.error(F("Letzter Fehlercode: ") + String(client.getLastSSLError()));
