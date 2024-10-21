@@ -24,6 +24,9 @@ const char LOG_COLOR_RED[] PROGMEM = "red";
 const char LOG_COLOR_BLACK[] PROGMEM = "black";
 const char* const LOG_COLORS[] PROGMEM = {LOG_COLOR_BLUE, LOG_COLOR_GREEN, LOG_COLOR_ORANGE, LOG_COLOR_RED, LOG_COLOR_BLACK};
 
+// Beispiel für Log-Nachrichten im Flash-Speicher
+const char LOG_MESSAGE_TEMPLATE[] PROGMEM = "%s %*s%s: %s";
+
 Logger::Logger(LogLevel logLevel, bool useSerial, size_t maxEntries, bool fileLoggingEnabled)
   : m_logLevel(logLevel),
     m_useSerial(useSerial),
@@ -121,7 +124,8 @@ void Logger::log(LogLevel level, const String& message) {
   const char* logLevelStr = reinterpret_cast<const char*>(FPSTR(LOG_LEVEL_STRINGS[static_cast<int>(level)]));
   int indent = 5 - strlen(logLevelStr);
 
-  snprintf_P(logMessageBuffer, sizeof(logMessageBuffer), PSTR("%s %*s%s: %s"),
+  // Verwende snprintf mit PROGMEM für logMessageBuffer
+  snprintf_P(logMessageBuffer, sizeof(logMessageBuffer), LOG_MESSAGE_TEMPLATE,
              timestampBuffer, indent, "", logLevelStr, message.c_str());
 
   if (m_useSerial) {

@@ -38,7 +38,7 @@ struct LogEintrag {
 };
 
 // Maximale Anzahl von Log-Einträgen pro Level
-const size_t MAX_LOG_EINTRAEGE = 100;
+const size_t MAX_LOG_EINTRAEGE = 20; // höhere Werte als 20 könen dazu führen, dass der ESP beim Versenden des Webhooks abstürzt!
 
 /**
  * @brief Logger-Klasse zur Handhabung von Log-Nachrichten
