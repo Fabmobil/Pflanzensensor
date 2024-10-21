@@ -14,8 +14,6 @@
 #include "einstellungen.h"
 
 extern String logLevel;
-extern int logAnzahlEintraege;
-extern int logAnzahlWebseite;
 extern bool logInDatei;
 
 /**
@@ -38,7 +36,7 @@ struct LogEintrag {
 };
 
 // Maximale Anzahl von Log-Einträgen pro Level
-const size_t MAX_LOG_EINTRAEGE = 20; // höhere Werte als 20 könen dazu führen, dass der ESP beim Versenden des Webhooks abstürzt!
+const size_t MAX_LOG_EINTRAEGE = 12; // höhere Werte als 12 könen dazu führen, dass der ESP beim Versenden des Webhooks abstürzt!
 
 /**
  * @brief Logger-Klasse zur Handhabung von Log-Nachrichten
@@ -52,7 +50,7 @@ public:
      * @param maxEntries Maximale Anzahl von Log-Einträgen im Speicher
      * @param fileLoggingEnabled Ob Datei-Logging aktiviert sein soll
      */
-    Logger(LogLevel logLevel = LogLevel::INFO, bool useSerial = true, size_t maxEntries = logAnzahlEintraege, bool fileLoggingEnabled = logInDatei);
+    Logger(LogLevel logLevel = LogLevel::INFO, bool useSerial = true, size_t maxEntries = MAX_LOG_EINTRAEGE, bool fileLoggingEnabled = logInDatei);
 
     /**
      * @brief Setzt das Log-Level
@@ -95,7 +93,7 @@ public:
      * @param count Anzahl der abzurufenden Einträge für jedes Log-Level
      * @return Formatierte HTML-Tabelle der Log-Einträge
      */
-    String LogsAlsHtmlTabelle(size_t count = logAnzahlWebseite) const;
+    String LogsAlsHtmlTabelle(size_t count = MAX_LOG_EINTRAEGE) const;
 
     /**
      * @brief Initialisiert NTP-Client zur Zeitabfrage aus dem Internet

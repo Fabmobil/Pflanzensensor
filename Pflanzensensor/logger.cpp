@@ -7,7 +7,7 @@
 #include "logger.h"
 #include "einstellungen.h"
 
-Logger logger(LogLevel::DEBUG, true, logAnzahlEintraege, logInDatei);
+Logger logger(LogLevel::DEBUG, true, MAX_LOG_EINTRAEGE, logInDatei);
 
 // Konstante Strings im Flash-Speicher
 const char LOG_LEVEL_DEBUG[] PROGMEM = "DEBUG";

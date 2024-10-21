@@ -34,8 +34,6 @@ void VariablenSpeichern() {
   variablen.begin("pflanzensensor", false);
   variablen.putBool("variablenDa", true);
   variablen.putString("logLevel", logLevel);
-  variablen.putInt("logAnzahlEintraege", logAnzahlEintraege);
-  variablen.putInt("logAnzahlWebseite", logAnzahlWebseite);
   variablen.putBool("logInDatei", logInDatei);
   #if MODUL_DISPLAY
     variablen.putInt("intDisplay", intervallDisplay);
@@ -158,8 +156,6 @@ void VariablenLaden() {
   #endif
   variablen.begin("pflanzensensor", true);
   logLevel = variablen.getString("logLevel", logLevel);
-  logAnzahlEintraege = variablen.getInt("logAnzahlEintraege", logAnzahlEintraege);
-  logAnzahlWebseite = variablen.getInt("logAnzahlWebseite", logAnzahlWebseite);
   logInDatei = variablen.getBool("logInDatei", logInDatei);
   // Load the variables from flash
   #if MODUL_DISPLAY

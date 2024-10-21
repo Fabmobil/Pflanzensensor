@@ -162,8 +162,6 @@ void WebseiteAdminAusgeben() {
   // Log Einstellungen
   Webserver.sendContent(F("<h2>Log Einstellungen</h2>\n<div class=\"tuerkis\">\n"));
   sendeEinstellung(F("Log Level"), F("logLevel"), logLevel);
-  sendeEinstellung(F("Anzahl Einträge im Log"), F("logAnzahlEintraege"), String(logAnzahlEintraege));
-  sendeEinstellung(F("Anzahl Einträge auf Webseite"), F("logAnzahlWebseite"), String(logAnzahlWebseite));
   sendeCheckbox(F("Log in Datei aktiviert?"), F("logInDatei"), logInDatei);
   Webserver.sendContent(F("</div>\n"));
 

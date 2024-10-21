@@ -173,7 +173,7 @@ void SetzeLogLevel() {
     else if (level == "INFO") logger.SetzteLogLevel(LogLevel::INFO);
     else if (level == "WARNING") logger.SetzteLogLevel(LogLevel::WARNING);
     else if (level == "ERROR") logger.SetzteLogLevel(LogLevel::ERROR);
-    Webserver.send(200, "text/html", logger.LogsAlsHtmlTabelle(logAnzahlWebseite));
+    Webserver.send(200, "text/html", logger.LogsAlsHtmlTabelle(MAX_LOG_EINTRAEGE));
 }
 
 void DownloadLog() {

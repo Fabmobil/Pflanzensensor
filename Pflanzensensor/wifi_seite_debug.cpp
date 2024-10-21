@@ -86,7 +86,7 @@ void WebseiteDebugAusgeben() {
              logger.LeseLogLevel() == LogLevel::ERROR ? " selected" : "");
   Webserver.sendContent(buffer);
 
-  Webserver.sendContent(logger.LogsAlsHtmlTabelle(logAnzahlWebseite));
+  Webserver.sendContent(logger.LogsAlsHtmlTabelle(MAX_LOG_EINTRAEGE));
   Webserver.sendContent(F("</div></div>"));
 
   // JavaScript einfügen

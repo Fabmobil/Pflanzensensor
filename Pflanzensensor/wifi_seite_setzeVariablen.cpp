@@ -202,8 +202,6 @@ void WebseiteSetzeVariablen() {
 }
 void AktualisiereVariablen() {
   AktualisiereString(F("logLevel"), logLevel);
-  AktualisiereInteger(F("logAnzahlEintraege"), logAnzahlEintraege);
-  AktualisiereInteger(F("logAnzahlWebseite"), logAnzahlWebseite);
   AktualisiereBoolean(F("logInDatei"), logInDatei);
   #if MODUL_LEDAMPEL
     AktualisiereInteger(F("ampelModus"), ampelModus);
