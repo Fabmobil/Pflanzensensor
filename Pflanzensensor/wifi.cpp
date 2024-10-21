@@ -38,7 +38,7 @@ ESP8266WebServer Webserver(80); // Webserver auf Port 80
  * @return String Die IP-Adresse des Geräts
  */
 String WifiSetup(String hostname){
-logger.debug("Beginn von WifiSetup()");
+logger.debug(F("Beginn von WifiSetup()"));
 
 // WLAN Verbindung herstellen
   WiFi.mode(WIFI_OFF); // WLAN ausschalten
@@ -50,21 +50,21 @@ logger.debug("Beginn von WifiSetup()");
     wifiMulti.addAP(wifiSsid3.c_str(), wifiPasswort3.c_str());
     if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
       ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
-      logger.info(" .. WLAN verbunden: ");
-      logger.info("SSID: " + String(WiFi.SSID()));
-      logger.info("IP: " + ip);
+      logger.info(F(" .. WLAN verbunden: "));
+      logger.info(F("SSID: ") + String(WiFi.SSID()));
+      logger.info(F("IP: ") + String(ip));
       #if MODUL_DISPLAY
-        DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ ip, "Hostname: ", "  " + hostname + ".local" );
+        DisplaySechsZeilen(F("WLAN OK"), F(""), F("SSID: ") + WiFi.SSID(), F("IP: ") + ip, F(" "), F(" "));
         delay(5000); // genug Zeit um die IP Adresse zu lesen
       #endif
     } else {
-      logger.error(" .. Fehler: WLAN Verbindungsfehler!");
+      logger.error(F(" .. Fehler: WLAN Verbindungsfehler!"));
       #if MODUL_DISPLAY
-        DisplayDreiWoerter("WLAN", "Verbindungs-", "fehler!");
+        DisplayDreiWoerter(F("WLAN"), F("Verbindungs-"), F("fehler!"));
       #endif
     }
   } else { // ansonsten wird hier das WLAN erstellt
-    logger.info("Konfiguriere soft-AP ... ");
+    logger.info(F("Konfiguriere soft-AP ... "));
     boolean result = false; // Variable für den Erfolg des Aufbaus des Accesspoints
     if ( wifiApPasswortAktiviert ) { // Falls ein WLAN mit Passwort erstellt werden soll
       result = WiFi.softAP(wifiApSsid, wifiApPasswort ); // WLAN mit Passwort erstellen
@@ -72,31 +72,23 @@ logger.debug("Beginn von WifiSetup()");
       result = WiFi.softAP(wifiApSsid); // WLAN ohne Passwort erstellen
     }
     ip = WiFi.softAPIP().toString(); // IP Adresse in Variable schreiben
-    logger.info(" .. Accesspoint wurde ");
+    logger.info(F(" .. Accesspoint wurde "));
     if( !result ) { // falls der Accesspoint nicht erfolgreich aufgebaut wurde
-      logger.info("     NICHT ");
+      logger.info(F("     NICHT "));
       #if MODUL_DISPLAY
-        DisplayDreiWoerter("Acesspoint:","Fehler beim", "Setup!");
+        DisplayDreiWoerter(F("Acesspoint:"),F("Fehler beim"), F("Setup!"));
       #endif
     } else { // falls der Accesspoint erfolgreich aufgebaut wurde
       #if MODUL_DISPLAY
         if ( wifiApPasswortAktiviert) {
-          DisplaySechsZeilen("Accesspoint OK", "SSID: " + wifiApSsid, "PW:" + wifiApPasswort, "IP: "+ ip, "Hostname: ", hostname + ".local" );
+          DisplaySechsZeilen(F("Accesspoint OK"), F("SSID: ") + wifiApSsid, F("PW:") + wifiApPasswort, F("IP: ") + String(ip), F(" "), F(" "));
         } else {
-          DisplaySechsZeilen("Accesspoint OK", "SSID: " + wifiApSsid, "PW: ohne", "IP: "+ ip, "Hostname: ", hostname + ".local" );
+          DisplaySechsZeilen(F("Accesspoint OK"), F("SSID: ") + wifiApSsid, F("PW: ohne"), F("IP: ") + String(ip), F(" "), F(" "));
         }
       #endif
     }
-    logger.info("       erfolgreich aufgebaut!");
-    logger.info(" .. meine IP: " + ip); // IP Adresse ausgeben
-  }
-
-  // DNS Namensauflösung aktivieren:
-  if (MDNS.begin(hostname)) { // falls Namensauflösung erfolgreich eingerichtet wurde
-    logger.info(" .. Gerät unter " + String(hostname) + ".local erreichbar.");
-    MDNS.addService("http", "tcp", 80); // Webserver unter Port 80 bekannt machen
-  } else { // falls Namensauflösung nicht erfolgreich eingerichtet wurde
-    logger.error(" .. Fehler bein Einrichten der Namensauflösung.");
+    logger.info(F("       erfolgreich aufgebaut!"));
+    logger.info(F(" .. meine IP: ") + String(ip)); // IP Adresse ausgeben
   }
 
   // Verwende Funktionszeiger für Webserver-Routen
@@ -151,8 +143,8 @@ logger.debug("Beginn von WifiSetup()");
 void WebseiteBild(const char* pfad, const char* mimeType) {
     File bild = LittleFS.open(pfad, "r");
     if (!bild) {
-        logger.error("Fehler: " + String(pfad) + " konnte nicht geöffnet werden!");
-        Webserver.send(404, "text/plain", "Bild nicht gefunden");
+        logger.error(F("Fehler: ") + String(pfad) + F(" konnte nicht geöffnet werden!"));
+        Webserver.send(404, F("text/plain"), F("Bild nicht gefunden"));
         return;
     }
     Webserver.streamFile(bild, mimeType);
@@ -164,15 +156,15 @@ void WebseiteBild(const char* pfad, const char* mimeType) {
  */
 void WebseiteCss() {
     if (!LittleFS.exists("/style.css")) {
-        logger.error("Fehler: /style.css existiert nicht!");
+        logger.error(F("Fehler: /style.css existiert nicht!"));
         return;
     }
     File css = LittleFS.open("/style.css", "r");
     if (!css) {
-        logger.error("Fehler: /style.css kann nicht geöffnet werden!");
+        logger.error(F("Fehler: /style.css kann nicht geöffnet werden!"));
         return;
     }
-    Webserver.streamFile(css, "text/css");
+    Webserver.streamFile(css, F("text/css"));
     css.close();
 }
 
@@ -185,22 +177,22 @@ void WebseiteCss() {
  */
 void NeustartWLANVerbindung() {
   WiFi.disconnect();  // Trennt die bestehende Verbindung
-  logger.info("wifiAp: " + String(wifiAp));
+  logger.info(F("wifiAp: ") + String(wifiAp));
   if (wifiAp) {
     // Access Point Modus
-    logger.info("Starte Access Point Modus...");
+    logger.info(F("Starte Access Point Modus..."));
     WiFi.mode(WIFI_AP);
     WiFi.softAP(wifiApSsid, wifiApPasswort);
     ip = WiFi.softAPIP().toString();
 
-    logger.info("Access Point gestartet. IP: " + ip);
+    logger.info(F("Access Point gestartet. IP: ") + String(ip));
 
     #if MODUL_DISPLAY
-      DisplaySechsZeilen("AP-Modus", "aktiv", "SSID: " + String(wifiApSsid), "IP: " + ip, "Hostname:", wifiHostname + ".local");
+      DisplaySechsZeilen(F("AP-Modus"), F("aktiv"), F("SSID: ") + String(wifiApSsid), F("IP: ") + ip, F(" "), wifiHostname);
     #endif
   } else {
     // Versuche, sich mit konfiguriertem WLAN zu verbinden
-    logger.info("Versuche, WLAN-Verbindung herzustellen...");
+    logger.info(F("Versuche, WLAN-Verbindung herzustellen..."));
     WiFi.mode(WIFI_STA);
     wifiMulti.cleanAPlist();
 
@@ -210,36 +202,31 @@ void NeustartWLANVerbindung() {
     wifiMulti.addAP(wifiSsid3.c_str(), wifiPasswort3.c_str());
 
     #if MODUL_DISPLAY
-      DisplayDreiWoerter("Neustart", "WLAN", "Modul");
+      DisplayDreiWoerter(F("Neustart"), F("WLAN"), F("Modul"));
     #endif
 
     // Versucht, eine Verbindung herzustellen
     if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
       ip = WiFi.localIP().toString();
-      logger.info("Verbunden mit WLAN. IP: " + ip);
+      logger.info(F("Verbunden mit WLAN. IP: ") + String(ip));
 
       #if MODUL_DISPLAY
-        DisplaySechsZeilen("WLAN OK", "", "SSID: " + WiFi.SSID(), "IP: "+ ip, "Hostname:", wifiHostname + ".local");
+        DisplaySechsZeilen(F("WLAN OK"), F(""), F("SSID: ") + WiFi.SSID(), F("IP: ") + String(ip), F(" "), F(" "));
       #endif
     } else {
       // Wenn keine Verbindung möglich ist, wechsle in den AP-Modus
-      logger.warning("Konnte keine WLAN-Verbindung herstellen. Wechsle in den AP-Modus.");
+      logger.warning(F("Konnte keine WLAN-Verbindung herstellen. Wechsle in den AP-Modus."));
       wifiAp = true;
       WiFi.mode(WIFI_AP);
       WiFi.softAP(wifiApSsid, wifiApPasswort);
       ip = WiFi.softAPIP().toString();
 
-      logger.info("AP-Modus aktiviert. IP: " + ip);
+      logger.info(F("AP-Modus aktiviert. IP: ") + String(ip));
 
       #if MODUL_DISPLAY
-        DisplaySechsZeilen("AP-Modus", "aktiv", "SSID: " + String(wifiApSsid), "IP: " + ip, "Hostname:", wifiHostname + ".local");
+        DisplaySechsZeilen(F("AP-Modus"), F("aktiv"), F("SSID: ") + String(wifiApSsid), F("IP: ") + String(ip), F(" "), F(" "));
       #endif
     }
-  }
-
-  // DNS-Server neu starten
-  if (MDNS.begin(wifiHostname)) {
-    MDNS.addService("http", "tcp", 80);
   }
 }
 

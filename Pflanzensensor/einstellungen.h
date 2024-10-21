@@ -13,7 +13,6 @@
 
 
 #include <Arduino.h>
-#include <ESP8266mDNS.h>
 
 // Modulaktivierungen
 #define MODUL_DISPLAY 1
