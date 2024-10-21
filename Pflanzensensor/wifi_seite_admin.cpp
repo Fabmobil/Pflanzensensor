@@ -139,14 +139,14 @@ void WebseiteAdminAusgeben() {
       snprintf_P(buffer, sizeof(buffer), PSTR("<h4>WLAN %d</h4>\n<div class=\"tuerkis\">\n"), i);
       Webserver.sendContent(buffer);
 
-      if (currentSSID == *(&wifiSsid1 + i - 1)) {
+      if (currentSSID == (i == 1 ? wifiSsid1 : (i == 2 ? wifiSsid2 : wifiSsid3))) {
         snprintf_P(buffer, sizeof(buffer), PSTR("<p>SSID: %s (aktive Verbindung ist nicht editierbar)</p>\n"), currentSSID.c_str());
         Webserver.sendContent(buffer);
       } else {
         char ssidBuffer[20], passwordBuffer[20];
         snprintf_P(ssidBuffer, sizeof(ssidBuffer), PSTR("wifiSsid%d"), i);
-        snprintf_P(passwordBuffer, sizeof(passwordBuffer), PSTR("wifiPassword%d"), i);
-        sendeEinstellung(F("SSID"), FPSTR(ssidBuffer), *(&wifiSsid1 + i - 1));
+        snprintf_P(passwordBuffer, sizeof(passwordBuffer), PSTR("wifiPasswort%d"), i);
+        sendeEinstellung(F("SSID"), FPSTR(ssidBuffer), (i == 1 ? wifiSsid1 : (i == 2 ? wifiSsid2 : wifiSsid3)));
         sendeEinstellung(F("Passwort"), FPSTR(passwordBuffer), F("********"));
       }
       Webserver.sendContent(F("</div>\n"));
