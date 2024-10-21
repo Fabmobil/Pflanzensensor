@@ -59,7 +59,7 @@ void WebseiteStartAusgeben() {
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
 
-  sendeHtmlHeader(Webserver, false);
+  sendeHtmlHeader(Webserver, true);
 
   static const char PROGMEM introText[] =
     "<div class=\"tuerkis\">"
