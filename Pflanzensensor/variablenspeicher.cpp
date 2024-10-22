@@ -260,6 +260,7 @@ void VariablenLaden() {
     wifiApSsid = variablen.getString("apSsid", wifiApSsid);
     wifiApPasswortAktiviert = variablen.getBool("apPwAktiv", wifiApPasswortAktiviert);
     wifiApPasswort = variablen.getString("apPw", wifiApPasswort);
+    wifiAp = variablen.getBool("apAktiv", wifiAp);
   #endif
   variablen.end();
 }
