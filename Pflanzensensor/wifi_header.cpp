@@ -5,6 +5,11 @@ const char HTML_HEAD_START[] PROGMEM = R"=====(
 <html lang="de">
 <head>
   <meta charset="utf-8">
+  <style>
+    /* Kritische Styles inline */
+    body.not-loaded { opacity: 0; }
+    body { transition: opacity 0.5s; }
+  </style>
 )=====";
 
 const char HTML_HEAD_REFRESH[] PROGMEM = R"=====(
@@ -13,7 +18,8 @@ const char HTML_HEAD_REFRESH[] PROGMEM = R"=====(
 
 const char HTML_HEAD_END[] PROGMEM = R"=====(
   <title>Fabmobil Pflanzensensor</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="style.css"></noscript>
 </head>
 )=====";
 
