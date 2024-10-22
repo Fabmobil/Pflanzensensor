@@ -112,8 +112,6 @@ extern unsigned long intervallMessung;
     extern String wifiHostname;
     extern bool wifiAp;
     extern String wifiApSsid;
-    extern bool wlanNeustartGeplant;
-    extern unsigned long geplanteWLANNeustartZeit;
     extern int wifiVerbindungsVersuche;
     extern String aktuelleSsid;
 #endif

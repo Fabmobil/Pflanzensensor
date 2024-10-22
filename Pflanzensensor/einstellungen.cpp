@@ -218,8 +218,6 @@ String analog8Farbe = "rot";
 #if MODUL_WIFI
   String aktuelleSsid = "";
   int wifiVerbindungsVersuche = 0;
-  unsigned long geplanteWLANNeustartZeit = 0;
-  bool wlanNeustartGeplant = false;
 #endif
 
 #if MODUL_DISPLAY

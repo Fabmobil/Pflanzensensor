@@ -32,8 +32,6 @@ extern String wifiPasswort3;
 String WifiSetup(String hostname);
 void WebseiteBild(const char* pfad, const char* mimeType);
 void WebseiteCss();
-void NeustartWLANVerbindung();
-void VerzoegerterWLANNeustart();
 void SetzeLogLevel();
 void DownloadLog();
 void LeseMesswerte();

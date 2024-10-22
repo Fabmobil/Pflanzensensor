@@ -33,20 +33,50 @@ String WifiSetup(String hostname) {
     WiFi.mode(WIFI_OFF);
     if (!wifiAp) {
         WiFi.mode(WIFI_STA);
+        logger.info(F("Starte WLAN im Client-Modus"));
+
+        // Konfigurierte WLANs ausgeben
+        logger.info(F("Konfigurierte WLANs:"));
+        if (!wifiSsid1.isEmpty()) {
+            logger.info(F("WLAN 1 - SSID: ") + wifiSsid1 + F(", Passwort: ") + wifiPasswort1);
+        } else {
+            logger.info(F("WLAN 1 nicht konfiguriert"));
+        }
+        if (!wifiSsid2.isEmpty()) {
+            logger.info(F("WLAN 2 - SSID: ") + wifiSsid2 + F(", Passwort: ") + wifiPasswort2);
+        } else {
+            logger.info(F("WLAN 2 nicht konfiguriert"));
+        }
+        if (!wifiSsid3.isEmpty()) {
+            logger.info(F("WLAN 3 - SSID: ") + wifiSsid3 + F(", Passwort: ") + wifiPasswort3);
+        } else {
+            logger.info(F("WLAN 3 nicht konfiguriert"));
+        }
+
+        // WLAN-Status vor Verbindungsaufbau
+        logger.info(F("Aktueller WLAN-Status: ") + String(WiFi.status()));
+        logger.info(F("WLAN-Signalstärke: ") + String(WiFi.RSSI()) + F(" dBm"));
+
         wifiMulti.addAP(wifiSsid1.c_str(), wifiPasswort1.c_str());
         wifiMulti.addAP(wifiSsid2.c_str(), wifiPasswort2.c_str());
         wifiMulti.addAP(wifiSsid3.c_str(), wifiPasswort3.c_str());
+
+        logger.info(F("Versuche Verbindung herzustellen (Timeout: ") + String(wifiTimeout) + F("ms)"));
+
         if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
             ip = WiFi.localIP().toString();
-            logger.info(F("WLAN verbunden:"));
-            logger.info(F("SSID: ") + WiFi.SSID());
-            logger.info(F("IP: ") + ip);
+            logger.info(F("WLAN erfolgreich verbunden:"));
+            logger.info(F("Verbundene SSID: ") + WiFi.SSID());
+            logger.info(F("IP-Adresse: ") + ip);
+            logger.info(F("Signalstärke: ") + String(WiFi.RSSI()) + F(" dBm"));
             #if MODUL_DISPLAY
                 DisplaySechsZeilen(F("WLAN OK"), F(""), F("SSID: ") + WiFi.SSID(), F("IP: ") + ip, F(" "), F(" "));
                 delay(5000);
             #endif
         } else {
-            logger.error(F("Fehler: WLAN Verbindungsfehler!"));
+            logger.error(F("WLAN-Verbindung fehlgeschlagen!"));
+            logger.error(F("Letzter WLAN-Status: ") + String(WiFi.status()));
+
             #if MODUL_DISPLAY
                 DisplayDreiWoerter(F("WLAN"), F("Verbindungs-"), F("fehler!"));
             #endif
@@ -118,53 +148,6 @@ void WebseiteCss() {
     }
     Webserver.streamFile(css, F("text/css"));
     css.close();
-}
-
-void NeustartWLANVerbindung() {
-    WiFi.disconnect();
-    logger.info(F("wifiAp: ") + String(wifiAp));
-    if (wifiAp) {
-        logger.info(F("Starte Access Point Modus..."));
-        WiFi.mode(WIFI_AP);
-        WiFi.softAP(wifiApSsid, wifiApPasswort);
-        ip = WiFi.softAPIP().toString();
-        logger.info(F("Access Point gestartet. IP: ") + ip);
-        #if MODUL_DISPLAY
-            DisplaySechsZeilen(F("AP-Modus"), F("aktiv"), F("SSID: ") + String(wifiApSsid), F("IP: ") + ip, F(" "), wifiHostname);
-        #endif
-    } else {
-        logger.info(F("Versuche, WLAN-Verbindung herzustellen..."));
-        WiFi.mode(WIFI_STA);
-        wifiMulti.cleanAPlist();
-        wifiMulti.addAP(wifiSsid1.c_str(), wifiPasswort1.c_str());
-        wifiMulti.addAP(wifiSsid2.c_str(), wifiPasswort2.c_str());
-        wifiMulti.addAP(wifiSsid3.c_str(), wifiPasswort3.c_str());
-        #if MODUL_DISPLAY
-            DisplayDreiWoerter(F("Neustart"), F("WLAN"), F("Modul"));
-        #endif
-        if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
-            ip = WiFi.localIP().toString();
-            logger.info(F("Verbunden mit WLAN. IP: ") + ip);
-            #if MODUL_DISPLAY
-                DisplaySechsZeilen(F("WLAN OK"), F(""), F("SSID: ") + WiFi.SSID(), F("IP: ") + ip, F(" "), F(" "));
-            #endif
-        } else {
-            logger.warning(F("Konnte keine WLAN-Verbindung herstellen. Wechsle in den AP-Modus."));
-            wifiAp = true;
-            WiFi.mode(WIFI_AP);
-            WiFi.softAP(wifiApSsid, wifiApPasswort);
-            ip = WiFi.softAPIP().toString();
-            logger.info(F("AP-Modus aktiviert. IP: ") + ip);
-            #if MODUL_DISPLAY
-                DisplaySechsZeilen(F("AP-Modus"), F("aktiv"), F("SSID: ") + String(wifiApSsid), F("IP: ") + ip, F(" "), F(" "));
-            #endif
-        }
-    }
-}
-
-void VerzoegerterWLANNeustart() {
-    geplanteWLANNeustartZeit = millis() + 10000;
-    wlanNeustartGeplant = true;
 }
 
 void SetzeLogLevel() {

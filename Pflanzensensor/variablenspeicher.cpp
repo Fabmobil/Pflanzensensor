@@ -24,6 +24,7 @@ Preferences variablen;
 bool VariablenDa() {
   variablen.begin("pflanzensensor", true);
   bool variablenDa = variablen.getBool("variablenDa", false);
+  variablen.end();
   return variablenDa;
 }
 
@@ -31,7 +32,14 @@ bool VariablenDa() {
  * @brief Speichert alle Variablen im Flash-Speicher
  */
 void VariablenSpeichern() {
+  logger.info(F("Beginne Speichern der Variablen..."));
+
+  // Zuerst altes Handle freigeben falls noch offen
+  variablen.end();
+
   variablen.begin("pflanzensensor", false);
+
+  // Markieren dass Variablen vorhanden sind
   variablen.putBool("variablenDa", true);
   variablen.putString("logLevel", logLevel);
   variablen.putBool("logInDatei", logInDatei);
@@ -144,12 +152,16 @@ void VariablenSpeichern() {
     variablen.putString("wifiPw3", wifiPasswort3);
   #endif
   variablen.end();
+  if (!VariablenDa()) {
+    logger.error(F("Fehler beim Speichern der Variablen!"));
+  }
 }
 
 /**
  * @brief Lädt alle Variablen aus dem Flash-Speicher
  */
 void VariablenLaden() {
+  logger.info(F("Beginne Laden der Variablen..."));
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
     DisplayDreiWoerter(F("Start.."), F(" Variablen"), F("  laden"));
   #endif
@@ -250,7 +262,7 @@ void VariablenLaden() {
     webhookFrequenz = variablen.getInt("webhookFrequenz", webhookFrequenz);
     webhookPingFrequenz = variablen.getInt("webhookPingFrequenz", webhookPingFrequenz);
   #endif
-  #if MODUL_WIFI
+    #if MODUL_WIFI
     wifiSsid1 = variablen.getString("wifiSsid1", wifiSsid1);
     wifiPasswort1 = variablen.getString("wifiPw1", wifiPasswort1);
     wifiSsid2 = variablen.getString("wifiSsid2", wifiSsid2);
@@ -261,7 +273,6 @@ void VariablenLaden() {
     wifiApPasswortAktiviert = variablen.getBool("apPwAktiv", wifiApPasswortAktiviert);
     wifiApPasswort = variablen.getString("apPw", wifiApPasswort);
     wifiAp = variablen.getBool("apAktiv", wifiAp);
-  #endif
   variablen.end();
 }
 

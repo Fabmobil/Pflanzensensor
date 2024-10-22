@@ -96,6 +96,7 @@ void setup() {
     pinMode(16, OUTPUT); // interne LED auf D0 / GPIO16
     digitalWrite(16, HIGH); // wird ausgeschalten (invertiertes Verhalten!)
   #endif
+
   if (!LittleFS.begin()) {  // Dateisystem initialisieren, muss vor Wifi geschehen
     logger.error(F("Fehler: LittleFS konnte nicht initialisiert werden!"));
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
@@ -103,6 +104,31 @@ void setup() {
     #endif
     return;
   }
+
+  // Preferences/Variablen Handling
+  variablen.begin("pflanzensensor", false);
+  if (VariablenDa()) {
+    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+      DisplayDreiWoerter(F("Start.."), F(" Variablen"), F("  laden"));
+    #endif
+    variablen.end();  // Handle freigeben vor dem Laden
+    VariablenLaden();
+  } else {
+    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
+      DisplayDreiWoerter(F("Start.."), F(" Variablen"), F("  speichern"));
+    #endif
+    variablen.end();  // Handle freigeben vor dem Speichern
+    VariablenSpeichern();
+  }
+
+  // Neustarts zählen
+  variablen.begin("pflanzensensor", false);
+  neustarts = variablen.getInt("neustarts", 0);
+  neustarts++;
+  variablen.putInt("neustarts", neustarts);
+  variablen.end();
+  logger.info(F("Neustarts: ") + String(neustarts));
+
   #if MODUL_WIFI
     #if MODUL_DISPLAY
       DisplayDreiWoerter(F("Start.."), F(" Wifi-"), F("  modul"));
@@ -118,6 +144,7 @@ void setup() {
       String ip = WifiSetup(wifiHostname);
     }
   #endif
+
   #if MODUL_DHT // wenn das DHT Modul aktiv ist:
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
       DisplayDreiWoerter(F("Start.."), F(" DHT-"), F("  modul"));
@@ -126,31 +153,12 @@ void setup() {
     // Initialisierung des Lufttemperatur und -feuchte Sensors:
     dht.begin(); // Sensor initialisieren
   #endif
+
   #if MODUL_MULTIPLEXER
     digitalWrite(multiplexerPinB, HIGH); // eingebaute LED ausschalten
     digitalWrite(multiplexerPinC, HIGH); // eingebaute LED ausschalten
   #endif
-  if (VariablenDa()) {
-    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-      DisplayDreiWoerter(F("Start.."), F(" Variablen"), F("  laden"));
-    #endif
-    // Load the preferences from flash
-    VariablenLaden();
-  } else {
-    #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
-      DisplayDreiWoerter(F("Start.."), F(" Variablen"), F("  speichern"));
-    #endif
-    // Save the preferences to flash
-    VariablenSpeichern();
-  }
 
-  variablen.begin("pflanzensensor", false); // Variablen initialisieren
-  neustarts = variablen.getInt("neustarts"); // Anzahl der Neustarts auslesen
-
-  neustarts++;
-  variablen.putInt("neustarts", neustarts);
-  variablen.end();
-  logger.info(F("Neustarts: ") + String(neustarts));
   #if MODUL_WEBHOOK
     #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
       DisplayDreiWoerter(F("Start.."), F(" Webhook-"), F("  modul"));
@@ -158,6 +166,7 @@ void setup() {
     logger.info(F("Start von Webhook-Modul ... "));
     WebhookSetup();
   #endif
+
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
     DisplayDreiWoerter(F("Start.."), F(" abge-"), F(" schlossen"));
   #endif
@@ -300,10 +309,6 @@ void loop() {
   // Wifi und Webserver:
   #if MODUL_WIFI // wenn das Wifi-Modul aktiv ist
     if (GetMutex(&mutex)) { // Mutex holen
-      if (wlanNeustartGeplant && millis() >= geplanteWLANNeustartZeit) {
-        wlanNeustartGeplant = false;
-        NeustartWLANVerbindung(); // Führt den tatsächlichen Neustart durch
-      }
       // WLAN Verbindung aufrecht erhalten:
       // https://github.com/esp8266/Arduino/blob/master/libraries/ESP8266WiFi/examples/WiFiMulti/WiFiMulti.ino
       if (!wifiAp) {
