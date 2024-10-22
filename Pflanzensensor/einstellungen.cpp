@@ -161,7 +161,7 @@ unsigned long intervallMessung = 10000; // Messintervall in ms
 #endif
 
 // Globale Variablen
-const char* pflanzensensorVersion = "1.3.2";
+const char* pflanzensensorVersion = "1.3.3";
 int neustarts = 1;
 unsigned long millisAktuell = 0;
 unsigned long millisVorherAnalog = 0;
