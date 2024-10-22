@@ -28,6 +28,14 @@ extern String wifiPasswort2;
 extern String wifiSsid3;
 extern String wifiPasswort3;
 
+enum class RestartState {
+    INIT,
+    SAVE_WAIT,
+    SEND_RESPONSE,
+    FINAL_SAVE,
+    RESTART
+};
+
 // Funktionsdeklarationen
 String WifiSetup(String hostname);
 void WebseiteBild(const char* pfad, const char* mimeType);
@@ -35,5 +43,6 @@ void WebseiteCss();
 void SetzeLogLevel();
 void DownloadLog();
 void LeseMesswerte();
+void HandleRestart();
 
 #endif // WIFI_H
