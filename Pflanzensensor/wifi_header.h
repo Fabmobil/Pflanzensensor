@@ -17,12 +17,13 @@
 
 // Deklarieren Sie die Header-Teile als externe PROGMEM-Strings
 extern const char PROGMEM HTML_HEAD_START[];
+extern const char PROGMEM HTML_HEAD_BLUME[];
 extern const char PROGMEM HTML_HEAD_END[];
 extern const char PROGMEM HTML_BODY_START[];
 extern const char PROGMEM HTML_HEADER_CONTENT[];
 
 // Funktion zum Senden des Headers
-void sendeHtmlHeader(ESP8266WebServer& server, bool mitRefresh = false);
+void sendeHtmlHeader(ESP8266WebServer& server, bool mitRefresh = false, bool mitBlume = true);
 
 #endif // WIFI_HEADER_H
 

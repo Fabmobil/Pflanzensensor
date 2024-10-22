@@ -21,10 +21,9 @@ const char HTML_HEAD_END[] PROGMEM = R"=====(
   <link rel="stylesheet" href="style.css" media="print" onload="this.media='all'">
   <noscript><link rel="stylesheet" href="style.css"></noscript>
 </head>
-)=====";
-
-const char HTML_BODY_HEADER[] PROGMEM = (R"====(
 <body class="not-loaded">
+)=====";
+const char HTML_HEAD_BLUME[] PROGMEM = R"=====(
   <div class="background">
 
     <div class="night"></div>
@@ -258,15 +257,21 @@ const char HTML_BODY_HEADER[] PROGMEM = (R"====(
     </div>
   </div>
 </div>
+)=====";
+
+const char HTML_BODY_HEADER[] PROGMEM = (R"====(
 <div class="foreground">
   <div id="container">
   <h1>Fabmobil Pflanzensensor</h1>
 )====");
 
-void sendeHtmlHeader(ESP8266WebServer& server, bool mitRefresh) {
+void sendeHtmlHeader(ESP8266WebServer& server, bool mitRefresh, bool mitBlume) {
     server.sendContent_P(HTML_HEAD_START);
     if (mitRefresh) {
         server.sendContent_P(HTML_HEAD_REFRESH);
+    }
+    if (mitBlume) {
+      server.sendContent_P(HTML_HEAD_BLUME);
     }
     server.sendContent_P(HTML_HEAD_END);
     server.sendContent_P(HTML_BODY_HEADER);

@@ -262,7 +262,7 @@ void VariablenLaden() {
     webhookFrequenz = variablen.getInt("webhookFrequenz", webhookFrequenz);
     webhookPingFrequenz = variablen.getInt("webhookPingFrequenz", webhookPingFrequenz);
   #endif
-    #if MODUL_WIFI
+  #if MODUL_WIFI
     wifiSsid1 = variablen.getString("wifiSsid1", wifiSsid1);
     wifiPasswort1 = variablen.getString("wifiPw1", wifiPasswort1);
     wifiSsid2 = variablen.getString("wifiSsid2", wifiSsid2);
@@ -273,6 +273,7 @@ void VariablenLaden() {
     wifiApPasswortAktiviert = variablen.getBool("apPwAktiv", wifiApPasswortAktiviert);
     wifiApPasswort = variablen.getString("apPw", wifiApPasswort);
     wifiAp = variablen.getBool("apAktiv", wifiAp);
+  #endif
   variablen.end();
 }
 

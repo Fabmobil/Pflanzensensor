@@ -17,6 +17,12 @@
 #include "wifi_header.h"
 #include "logger.h"
 
+#if MODUL_WIFI
+  extern bool restartInProgress;
+  extern RestartState restartState;
+  extern unsigned long stateChangeMillis;
+#endif
+
 #if MODUL_DISPLAY
     extern int status;
 #endif
@@ -31,55 +37,45 @@ void ArgumenteAusgeben() {
 
 void WebseiteSetzeVariablen() {
     logger.debug(F("Beginn von WebseiteSetzeVariablen()"));
-
     millisVorherWebhook = millisAktuell;
 
     if (Webserver.arg(F("Passwort")) == wifiAdminPasswort) {
         // Zuerst die Variablen aktualisieren
         AktualisiereVariablen();
 
-        // Wenn WLAN-Änderungen vorgenommen wurden, besondere Behandlung
         if (wlanAenderungVorgenommen) {
-            // Sofort speichern
-            VariablenSpeichern();
+          // Neustart-Prozess initiieren
+          restartInProgress = true;
+          restartState = RestartState::INIT;
+          stateChangeMillis = millis();
 
-            // Genügend Zeit zum Speichern geben
-            delay(1000);
+          // Sofort die Antwortseite senden
+          Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
+          Webserver.send(200, F("text/html"), "");
 
-            // HTTP Antwort senden
-            Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
-            Webserver.send(200, F("text/html"), "");
-            sendeHtmlHeader(Webserver, false);
+          // Standard Header senden
+          sendeHtmlHeader(Webserver, false, false);
 
-            static const char PROGMEM wlanAenderung[] =
-                "<h3>WLAN-Einstellungen geändert</h3>\n"
-                "<div class=\"rot\">\n"
-                "<p>Die WLAN-Einstellungen wurden gespeichert. "
-                "Der Pflanzensensor wird jetzt neu gestartet.</p>\n"
-                "<p>Bitte warte einen Moment...</p>\n"
-                "</div>\n";
-            Webserver.sendContent_P(wlanAenderung);
-            Webserver.sendContent_P(htmlFooter);
+          // Content
+          String response;
+          response = F("<h3>WLAN-Einstellungen werden geändert</h3>\n");
+          response += F("<div class=\"rot\">\n");
+          response += F("<p>Die WLAN-Einstellungen werden gespeichert.</p>\n");
+          response += F("<p>Der Pflanzensensor wird in wenigen Sekunden neu gestartet.</p>\n");
+          response += F("<p>Bitte warte einen Moment... Die Seite wird automatisch neu geladen.</p>\n");
+          response += F("</div>\n");
+          response += F("<div class=\"tuerkis\">\n");
+          response += F("<p>Die IP-Adresse deines Pflanzensensors hat sich geändert. Achte auf das Display oder die serielle Schnittstelle um deine neue IP herauszufinden und dich wieder mit dem Webinterface verbinden zu können.");
+          response += F("</div>\n");
 
-            // Sicherstellen, dass die Antwort gesendet wurde
-            Webserver.client().flush();
-            delay(1000);
-
-            // Nochmal explizit speichern um sicher zu gehen
-            VariablenSpeichern();
-
-            // Längere Verzögerung vor dem Neustart
-            delay(2000);
-
-            // Erst dann neustarten
-            ESP.restart();
-            return;
-        }
-
-        // Jetzt erst die HTTP Antwort senden
+          Webserver.sendContent(response);
+          Webserver.sendContent_P(htmlFooter);
+          return;
+      }
+        // Normale Verarbeitung für nicht-WLAN Änderungen
         Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
         Webserver.send(200, F("text/html"), "");
-        sendeHtmlHeader(Webserver, false);
+        sendeHtmlHeader(Webserver, false, false);
 
         // Änderungen sammeln für die Anzeige
         static const char PROGMEM aenderungenStart[] = "<ul>\n";
@@ -87,38 +83,38 @@ void WebseiteSetzeVariablen() {
 
         // Speichern der alten Checkbox-Zustände
         bool alteCheckboxZustaende[8] = {
-          #if MODUL_BODENFEUCHTE
-              bodenfeuchteWebhook,
-          #else
-              false,
-          #endif
-          #if MODUL_HELLIGKEIT
-              helligkeitWebhook,
-          #else
-              false,
-          #endif
-          #if MODUL_DHT
-              lufttemperaturWebhook,
-              luftfeuchteWebhook,
-          #else
-              false, false,
-          #endif
-          #if MODUL_LEDAMPEL
-              ampelAn,
-          #else
-              false,
-          #endif
-          #if MODUL_DISPLAY
-              displayAn,
-          #else
-              false,
-          #endif
-          #if MODUL_WEBHOOK
-              webhookAn,
-          #else
-              false,
-          #endif
-          logInDatei
+            #if MODUL_BODENFEUCHTE
+                bodenfeuchteWebhook,
+            #else
+                false,
+            #endif
+            #if MODUL_HELLIGKEIT
+                helligkeitWebhook,
+            #else
+                false,
+            #endif
+            #if MODUL_DHT
+                lufttemperaturWebhook,
+                luftfeuchteWebhook,
+            #else
+                false, false,
+            #endif
+            #if MODUL_LEDAMPEL
+                ampelAn,
+            #else
+                false,
+            #endif
+            #if MODUL_DISPLAY
+                displayAn,
+            #else
+                false,
+            #endif
+            #if MODUL_WEBHOOK
+                webhookAn,
+            #else
+                false,
+            #endif
+            logInDatei
         };
 
         // Wir überprüfen jedes Eingabefeld und fügen Änderungen hinzu
@@ -127,39 +123,7 @@ void WebseiteSetzeVariablen() {
             String argValue = Webserver.arg(i);
 
             if (argName != F("Passwort")) {
-                // Spezieller Fall für den WLAN-Modus
-                if (argName == F("wlanModus")) {
-                    bool neuerWlanAp = (argValue == F("ap"));
-                    if (neuerWlanAp != wifiAp) {
-                        wlanAenderungVorgenommen = true;
-                        char buffer[50];
-                        snprintf_P(buffer, sizeof(buffer), PSTR("<li>WLAN-Modus: %s</li>\n"), neuerWlanAp ? "Access Point" : "WLAN Client");
-                        aenderungen += buffer;
-                    }
-                }
-                // Bei Checkboxen vergleichen wir mit dem alten Zustand
-                else if (argName.endsWith(F("Webhook")) || argName == F("ampelAn") || argName == F("displayAn") || argName == F("webhookAn")) {
-                    int index = -1;
-                    if (argName == F("bodenfeuchteWebhook")) index = 0;
-                    else if (argName == F("helligkeitWebhook")) index = 1;
-                    else if (argName == F("lufttemperaturWebhook")) index = 2;
-                    else if (argName == F("luftfeuchteWebhook")) index = 3;
-                    else if (argName == F("ampelAn")) index = 4;
-                    else if (argName == F("displayAn")) index = 5;
-                    else if (argName == F("webhookAn")) index = 6;
-                    else if (argName == F("logLevel")) index = 7;
-
-                    if (index != -1) {
-                        bool neuerZustand = Webserver.hasArg(argName);
-                        if (neuerZustand != alteCheckboxZustaende[index]) {
-                            char buffer[100];
-                            snprintf_P(buffer, sizeof(buffer), PSTR("<li>%s: %s</li>\n"), argName.c_str(), neuerZustand ? "aktiviert" : "deaktiviert");
-                            aenderungen += buffer;
-                        }
-                    }
-                }
-                // Für alle anderen Felder
-                else if (argValue != F("")) {
+                if (argValue != F("")) {
                     char buffer[100];
                     snprintf_P(buffer, sizeof(buffer), PSTR("<li>%s: %s</li>\n"), argName.c_str(), argValue.c_str());
                     aenderungen += buffer;
@@ -168,8 +132,9 @@ void WebseiteSetzeVariablen() {
         }
 
         // Überprüfen, ob Checkboxen deaktiviert wurden
-        const char* checkboxNamen[] = {"bodenfeuchteWebhook", "helligkeitWebhook", "lufttemperaturWebhook", "luftfeuchteWebhook", "ampelAn", "displayAn"};
-        for (int i = 0; i < 6; i++) {
+        const char* checkboxNamen[] = {"bodenfeuchteWebhook", "helligkeitWebhook", "lufttemperaturWebhook",
+                                     "luftfeuchteWebhook", "ampelAn", "displayAn", "webhookAn", "logInDatei"};
+        for (int i = 0; i < 8; i++) {
             if (alteCheckboxZustaende[i] && !Webserver.hasArg(checkboxNamen[i])) {
                 char buffer[100];
                 snprintf_P(buffer, sizeof(buffer), PSTR("<li>%s: deaktiviert</li>\n"), checkboxNamen[i]);
@@ -178,6 +143,9 @@ void WebseiteSetzeVariablen() {
         }
 
         aenderungen += F("</ul>\n");
+
+        // Sofort speichern
+        VariablenSpeichern();
 
         Webserver.sendContent(F("<h3>Erfolgreich!</h3>\n"));
         Webserver.sendContent(F("<div class=\"gruen\">\n"));
@@ -212,10 +180,16 @@ void WebseiteSetzeVariablen() {
         Webserver.client().flush();
 
     } else {
+        // Falsches Passwort
+        Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
+        Webserver.send(200, F("text/html"), "");
+        sendeHtmlHeader(Webserver, false, false);
+
         static const char PROGMEM falschesPasswort[] =
             "<h3>Falsches Passwort!</h3>\n<div class=\"rot\">\n"
             "<p>Du hast nicht das richtige Passwort eingebeben!</p></div>\n";
         Webserver.sendContent_P(falschesPasswort);
+        Webserver.sendContent_P(htmlFooter);
     }
 
     if (Webserver.arg(F("loeschen")) == F("Ja!")) {

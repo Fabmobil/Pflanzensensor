@@ -198,7 +198,7 @@ void loop() {
   millisAktuell = millis(); // aktuelle Millisekunden auslesen
 
   logger.NTPUpdaten(); // Update Timestamp
-
+  HandleRestart();
   // Alle Analogsensoren werden hintereinander gemessen
   if (millisAktuell - millisVorherAnalog >= intervallMessung) { // wenn das Intervall erreicht ist
     logger.info(F("IP Adresse: ") + String(ip)); // geben wir auch die IP Adresse aus

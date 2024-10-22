@@ -65,7 +65,7 @@ void WebseiteDebugAusgeben() {
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(200, F("text/html"), "");
 
-  sendeHtmlHeader(Webserver, false);
+  sendeHtmlHeader(Webserver, false, false);
 
   // Log-Abschnitt
   static const char PROGMEM logSection[] =
