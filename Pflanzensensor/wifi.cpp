@@ -27,6 +27,10 @@ bool wlanAenderungVorgenommen = false;
 ESP8266WiFiMulti wifiMulti;
 ESP8266WebServer Webserver(80); // Webserver auf Port 80
 
+RestartState restartState = RestartState::INIT;
+unsigned long stateChangeMillis = 0;
+bool restartInProgress = false;
+
 String WifiSetup(String hostname) {
     logger.debug(F("Beginn von WifiSetup()"));
 
@@ -82,10 +86,10 @@ String WifiSetup(String hostname) {
             #endif
         }
     } else {
-        logger.info(F("Konfiguriere soft-AP ... "));
         boolean result = wifiApPasswortAktiviert ? WiFi.softAP(wifiApSsid, wifiApPasswort) : WiFi.softAP(wifiApSsid);
         ip = WiFi.softAPIP().toString();
         logger.info(result ? F("Accesspoint erfolgreich aufgebaut!") : F("Accesspoint konnte NICHT aufgebaut werden!"));
+        logger.info(F("SSID: ") + wifiApSsid );
         logger.info(F("IP: ") + ip);
         #if MODUL_DISPLAY
             if (result) {
@@ -212,4 +216,51 @@ void LeseMesswerte() {
     String json;
     serializeJson(doc, json);
     Webserver.send(200, "application/json", json);
+}
+
+void HandleRestart() {
+    if (!restartInProgress) return;
+
+    unsigned long currentMillis = millis();
+
+    switch (restartState) {
+        case RestartState::INIT:
+            if (currentMillis - stateChangeMillis >= 1000) {
+                VariablenSpeichern();
+                stateChangeMillis = currentMillis;
+                restartState = RestartState::SAVE_WAIT;
+            }
+            break;
+
+        case RestartState::SAVE_WAIT:
+            if (currentMillis - stateChangeMillis >= 1000) {
+                Webserver.handleClient(); // Noch einmal Anfragen bearbeiten
+                stateChangeMillis = currentMillis;
+                restartState = RestartState::SEND_RESPONSE;
+            }
+            break;
+
+        case RestartState::SEND_RESPONSE:
+            if (currentMillis - stateChangeMillis >= 1000) {
+                Webserver.handleClient(); // Letzte Anfragen bearbeiten
+                stateChangeMillis = currentMillis;
+                restartState = RestartState::FINAL_SAVE;
+            }
+            break;
+
+        case RestartState::FINAL_SAVE:
+            if (currentMillis - stateChangeMillis >= 1000) {
+                VariablenSpeichern(); // Finales Speichern
+                stateChangeMillis = currentMillis;
+                restartState = RestartState::RESTART;
+            }
+            break;
+
+        case RestartState::RESTART:
+            if (currentMillis - stateChangeMillis >= 1000) {
+                logger.info(F("Führe Neustart durch..."));
+                ESP.restart();
+            }
+            break;
+    }
 }

@@ -22,7 +22,7 @@ void WebseiteNichtGefundenAusgeben() {
   Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
   Webserver.send(404, F("text/html"), "");
 
-  sendeHtmlHeader(Webserver, false);
+  sendeHtmlHeader(Webserver, false, false);
 
   static const char PROGMEM nichtGefundenInhalt[] =
     "<h2>404 - Seite nicht gefunden</h2>"
