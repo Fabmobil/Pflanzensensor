@@ -250,7 +250,11 @@ void HandleRestart() {
 
         case RestartState::FINAL_SAVE:
             if (currentMillis - stateChangeMillis >= 1000) {
-                VariablenSpeichern(); // Finales Speichern
+                Webserver.close();
+                WiFi.disconnect(true);
+                delay(1000);
+                WiFi.mode(WIFI_OFF);
+                delay(1000);
                 stateChangeMillis = currentMillis;
                 restartState = RestartState::RESTART;
             }

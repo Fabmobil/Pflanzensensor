@@ -29,6 +29,7 @@
 
 #if MODUL_WIFI
     #include "wifi.h"
+    extern bool restartInProgress;
 #endif
 
 #if MODUL_WEBHOOK
@@ -197,177 +198,180 @@ void loop() {
    */
   millisAktuell = millis(); // aktuelle Millisekunden auslesen
 
-  logger.NTPUpdaten(); // Update Timestamp
   HandleRestart();
-  // Alle Analogsensoren werden hintereinander gemessen
-  if (millisAktuell - millisVorherAnalog >= intervallMessung) { // wenn das Intervall erreicht ist
-    logger.info(F("IP Adresse: ") + String(ip)); // geben wir auch die IP Adresse aus
-    if (GetMutex(&mutex)) {
-      millisVorherAnalog = millisAktuell; // neuen Wert übernehmen
+  if (!restartInProgress) {  // Nur Dinge tun wenn kein Neustart läuft, sonst stürzt der ESP ab
+    logger.NTPUpdaten(); // Update Timestamp
 
-      logger.debug(F("intervallMessung erreicht."));
+    // Alle Analogsensoren werden hintereinander gemessen
+    if (millisAktuell - millisVorherAnalog >= intervallMessung) { // wenn das Intervall erreicht ist
+      logger.info(F("IP Adresse: ") + String(ip)); // geben wir auch die IP Adresse aus
+      if (GetMutex(&mutex)) {
+        millisVorherAnalog = millisAktuell; // neuen Wert übernehmen
 
-      // Helligkeit messen:
-      #if MODUL_HELLIGKEIT  // wenn das Helligkeit Modul aktiv ist
-        std::tie(helligkeitMesswert, helligkeitMesswertProzent) =
-          AnalogsensorMessen(1,1,1, helligkeitName, helligkeitMinimum, helligkeitMaximum);
-        helligkeitFarbe = FarbeBerechnen(helligkeitMesswertProzent, helligkeitGruenUnten, helligkeitGruenOben, helligkeitGelbUnten, helligkeitGelbOben);
-      #endif
+        logger.debug(F("intervallMessung erreicht."));
 
-      // Bodenfeuchte messen:
-      #if MODUL_BODENFEUCHTE // wenn das Bodenfeuchte Modul aktiv is
-        std::tie(bodenfeuchteMesswert, bodenfeuchteMesswertProzent) =
-          AnalogsensorMessen(0,1,1, bodenfeuchteName, bodenfeuchteMinimum, bodenfeuchteMaximum);
-        bodenfeuchteFarbe = FarbeBerechnen(bodenfeuchteMesswertProzent, bodenfeuchteGruenUnten, bodenfeuchteGruenOben, bodenfeuchteGelbUnten, bodenfeuchteGelbOben);
-      #endif
+        // Helligkeit messen:
+        #if MODUL_HELLIGKEIT  // wenn das Helligkeit Modul aktiv ist
+          std::tie(helligkeitMesswert, helligkeitMesswertProzent) =
+            AnalogsensorMessen(1,1,1, helligkeitName, helligkeitMinimum, helligkeitMaximum);
+          helligkeitFarbe = FarbeBerechnen(helligkeitMesswertProzent, helligkeitGruenUnten, helligkeitGruenOben, helligkeitGelbUnten, helligkeitGelbOben);
+        #endif
 
-      // Analogsensor3 messen:
-      #if MODUL_ANALOG3 // wenn das Analog3 Modul aktiv ist
-        std::tie(analog3Messwert, analog3MesswertProzent) =
-          AnalogsensorMessen(1,0,1, analog3Name, analog3Minimum, analog3Maximum);
-        analog3Farbe = FarbeBerechnen(analog3MesswertProzent, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben);
-      #endif
+        // Bodenfeuchte messen:
+        #if MODUL_BODENFEUCHTE // wenn das Bodenfeuchte Modul aktiv is
+          std::tie(bodenfeuchteMesswert, bodenfeuchteMesswertProzent) =
+            AnalogsensorMessen(0,1,1, bodenfeuchteName, bodenfeuchteMinimum, bodenfeuchteMaximum);
+          bodenfeuchteFarbe = FarbeBerechnen(bodenfeuchteMesswertProzent, bodenfeuchteGruenUnten, bodenfeuchteGruenOben, bodenfeuchteGelbUnten, bodenfeuchteGelbOben);
+        #endif
 
-      // Analogsensor4 messen:
-      #if MODUL_ANALOG4 // wenn das Analog4 Modul aktiv ist
-        std::tie(analog4Messwert, analog4MesswertProzent) =
-          AnalogsensorMessen(0,0,1, analog4Name, analog4Minimum, analog4Maximum);
-        analog4Farbe = FarbeBerechnen(analog4MesswertProzent, analog4GruenUnten, analog4GruenOben, analog4GelbUnten, analog4GelbOben);
-      #endif
+        // Analogsensor3 messen:
+        #if MODUL_ANALOG3 // wenn das Analog3 Modul aktiv ist
+          std::tie(analog3Messwert, analog3MesswertProzent) =
+            AnalogsensorMessen(1,0,1, analog3Name, analog3Minimum, analog3Maximum);
+          analog3Farbe = FarbeBerechnen(analog3MesswertProzent, analog3GruenUnten, analog3GruenOben, analog3GelbUnten, analog3GelbOben);
+        #endif
 
-      // Analogsensor5 messen:
-      #if MODUL_ANALOG5 // wenn das Analog5 Modul aktiv ist
-      std::tie(analog5Messwert, analog5MesswertProzent) =
-          AnalogsensorMessen(1,1,0, analog5Name, analog5Minimum, analog5Maximum);
-        analog5Farbe = FarbeBerechnen(analog5MesswertProzent, analog5GruenUnten, analog5GruenOben, analog5GelbUnten, analog5GelbOben);
-      #endif
+        // Analogsensor4 messen:
+        #if MODUL_ANALOG4 // wenn das Analog4 Modul aktiv ist
+          std::tie(analog4Messwert, analog4MesswertProzent) =
+            AnalogsensorMessen(0,0,1, analog4Name, analog4Minimum, analog4Maximum);
+          analog4Farbe = FarbeBerechnen(analog4MesswertProzent, analog4GruenUnten, analog4GruenOben, analog4GelbUnten, analog4GelbOben);
+        #endif
 
-      // Analogsensor6 messen:
-      #if MODUL_ANALOG6 // wenn das Analog6 Modul aktiv ist
-        std::tie(analog6Messwert, analog6MesswertProzent) =
-          AnalogsensorMessen(0,1,0, analog6Name, analog6Minimum, analog6Maximum);
-        analog6Farbe = FarbeBerechnen(analog6MesswertProzent, analog6GruenUnten, analog6GruenOben, analog6GelbUnten, analog6GelbOben);
-      #endif
+        // Analogsensor5 messen:
+        #if MODUL_ANALOG5 // wenn das Analog5 Modul aktiv ist
+        std::tie(analog5Messwert, analog5MesswertProzent) =
+            AnalogsensorMessen(1,1,0, analog5Name, analog5Minimum, analog5Maximum);
+          analog5Farbe = FarbeBerechnen(analog5MesswertProzent, analog5GruenUnten, analog5GruenOben, analog5GelbUnten, analog5GelbOben);
+        #endif
 
-      // Analogsensor7 messen:
-      #if MODUL_ANALOG7 // wenn das Analog7 Modul aktiv ist
-        std::tie(analog7Messwert, analog7MesswertProzent) =
-          AnalogsensorMessen(1,0,0, analog7Name, analog7Minimum, analog7Maximum);
-        analog7Farbe = FarbeBerechnen(analog7MesswertProzent, analog7GruenUnten, analog7GruenOben, analog7GelbUnten, analog7GelbOben);
-      #endif
+        // Analogsensor6 messen:
+        #if MODUL_ANALOG6 // wenn das Analog6 Modul aktiv ist
+          std::tie(analog6Messwert, analog6MesswertProzent) =
+            AnalogsensorMessen(0,1,0, analog6Name, analog6Minimum, analog6Maximum);
+          analog6Farbe = FarbeBerechnen(analog6MesswertProzent, analog6GruenUnten, analog6GruenOben, analog6GelbUnten, analog6GelbOben);
+        #endif
 
-      // Analogsensor8 messen:
-      #if MODUL_ANALOG8 // wenn das Analog8 Modul aktiv ist
-        std::tie(analog8Messwert, analog8MesswertProzent) =
-          AnalogsensorMessen(0,0,0, analog8Name, analog8Minimum, analog8Maximum);
-        analog8Farbe = FarbeBerechnen(analog8MesswertProzent, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben);
-      #endif
-      #if MODUL_MULTIPLEXER
-        digitalWrite(multiplexerPinB, HIGH); // eingebaute LED ausschalten
-        digitalWrite(multiplexerPinC, HIGH); // eingebaute LED ausschalten
-      #endif
-      ReleaseMutex(&mutex);
-    }
-  }
+        // Analogsensor7 messen:
+        #if MODUL_ANALOG7 // wenn das Analog7 Modul aktiv ist
+          std::tie(analog7Messwert, analog7MesswertProzent) =
+            AnalogsensorMessen(1,0,0, analog7Name, analog7Minimum, analog7Maximum);
+          analog7Farbe = FarbeBerechnen(analog7MesswertProzent, analog7GruenUnten, analog7GruenOben, analog7GelbUnten, analog7GelbOben);
+        #endif
 
-  // Luftfeuchte und -temperatur messen:
-  #if MODUL_DHT // wenn das DHT Modul aktiv ist
-    if (millisAktuell - millisVorherDht >= intervallMessung + 1123) { // wenn das Intervall erreicht ist
-
-      logger.debug(F("intervallDht erreicht."));
-
-      millisVorherDht = millisAktuell; // neuen Wert übernehmen
-      lufttemperaturMesswert = MesseLufttemperatur(); // Lufttemperatur messen
-      lufttemperaturFarbe = FarbeBerechnen(lufttemperaturMesswert, lufttemperaturGruenUnten, lufttemperaturGruenOben, lufttemperaturGelbUnten, lufttemperaturGelbOben);
-      luftfeuchteMesswert = MesseLuftfeuchtigkeit(); // Luftfeuchte messen
-      luftfeuchteFarbe = FarbeBerechnen(luftfeuchteMesswert, luftfeuchteGruenUnten, luftfeuchteGruenOben, luftfeuchteGelbUnten, luftfeuchteGelbOben);
-    }
-  #endif
-
-  // LED Ampel Modus 0: Anzeige der Bodenfeuchte
-  #if MODUL_LEDAMPEL // Wenn das LED Ampel Modul aktiv ist:
-    if (ampelAn && ampelModus == 0) {
-      LedampelAnzeigen(bodenfeuchteFarbe, -1);
-    } else if (!ampelAn) {
-      LedampelAus();
-    }
-  #endif
-
-  // Messwerte auf dem Display anzeigen:
-
-  #if MODUL_DISPLAY
-    if (displayAn) {
-      if (millisAktuell - millisVorherDisplay >= intervallDisplay) {
-        millisVorherDisplay = millisAktuell;
-        DisplayAnzeigen();
-        NaechsteSeite();
+        // Analogsensor8 messen:
+        #if MODUL_ANALOG8 // wenn das Analog8 Modul aktiv ist
+          std::tie(analog8Messwert, analog8MesswertProzent) =
+            AnalogsensorMessen(0,0,0, analog8Name, analog8Minimum, analog8Maximum);
+          analog8Farbe = FarbeBerechnen(analog8MesswertProzent, analog8GruenUnten, analog8GruenOben, analog8GelbUnten, analog8GelbOben);
+        #endif
+        #if MODUL_MULTIPLEXER
+          digitalWrite(multiplexerPinB, HIGH); // eingebaute LED ausschalten
+          digitalWrite(multiplexerPinC, HIGH); // eingebaute LED ausschalten
+        #endif
+        ReleaseMutex(&mutex);
       }
     }
-  #endif
 
 
-  // Wifi und Webserver:
-  #if MODUL_WIFI // wenn das Wifi-Modul aktiv ist
-    if (GetMutex(&mutex)) { // Mutex holen
-      // WLAN Verbindung aufrecht erhalten:
-      // https://github.com/esp8266/Arduino/blob/master/libraries/ESP8266WiFi/examples/WiFiMulti/WiFiMulti.ino
-      if (!wifiAp) {
-        if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
-          ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
-          aktuelleSsid = WiFi.SSID(); // SSID in Variable schreiben
-          wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers bei erfolgreicher Verbindung
-        } else {
-          wifiVerbindungsVersuche++; // Erhöhen des Zählers bei fehlgeschlagener Verbindung
-          if (wifiVerbindungsVersuche >= 10) {
-            logger.warning(F("Fehler: WLAN Verbindung verloren! Wechsle in den Accesspoint-Modus."));
-            #if MODUL_DISPLAY
-              DisplayDreiWoerter(F("WLAN"), F("Verbindung"), F("verloren!"));
-            #endif
-            wifiAp = true;
-            String ip = WifiSetup(wifiHostname);
-            aktuelleSsid = wifiApSsid; // AP SSID in Variable schreiben
-            wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers
-          } else {
-            logger.info(F("WLAN-Verbindungsversuch fehlgeschlagen. Versuch ") + String(wifiVerbindungsVersuche) + F(" von 10"));
-          }
+    // Luftfeuchte und -temperatur messen:
+    #if MODUL_DHT // wenn das DHT Modul aktiv ist
+      if (millisAktuell - millisVorherDht >= intervallMessung + 1123) { // wenn das Intervall erreicht ist
+
+        logger.debug(F("intervallDht erreicht."));
+
+        millisVorherDht = millisAktuell; // neuen Wert übernehmen
+        lufttemperaturMesswert = MesseLufttemperatur(); // Lufttemperatur messen
+        lufttemperaturFarbe = FarbeBerechnen(lufttemperaturMesswert, lufttemperaturGruenUnten, lufttemperaturGruenOben, lufttemperaturGelbUnten, lufttemperaturGelbOben);
+        luftfeuchteMesswert = MesseLuftfeuchtigkeit(); // Luftfeuchte messen
+        luftfeuchteFarbe = FarbeBerechnen(luftfeuchteMesswert, luftfeuchteGruenUnten, luftfeuchteGruenOben, luftfeuchteGelbUnten, luftfeuchteGelbOben);
+      }
+    #endif
+
+    // LED Ampel Modus 0: Anzeige der Bodenfeuchte
+    #if MODUL_LEDAMPEL // Wenn das LED Ampel Modul aktiv ist:
+      if (ampelAn && ampelModus == 0) {
+        LedampelAnzeigen(bodenfeuchteFarbe, -1);
+      } else if (!ampelAn) {
+        LedampelAus();
+      }
+    #endif
+
+    // Messwerte auf dem Display anzeigen:
+
+    #if MODUL_DISPLAY
+      if (displayAn) {
+        if (millisAktuell - millisVorherDisplay >= intervallDisplay) {
+          millisVorherDisplay = millisAktuell;
+          DisplayAnzeigen();
+          NaechsteSeite();
         }
       }
-      Webserver.handleClient(); // der Webserver soll in jedem loop nach Anfragen schauen!
-      ReleaseMutex(&mutex); // Mutex wieder freigeben
-    }
-  #endif
+    #endif
 
-  // Webhook für Alarm:
- #if MODUL_WEBHOOK
-  if (webhookAn) {
-    if (!wifiAp) { // im Accesspointmodus haben wir keinen Internetzugang
-      unsigned long aktuelleZeit = millis();
-      bool aktuellerAlarmStatus = WebhookAktualisiereAlarmStatus();
-      String neuerStatus = aktuellerAlarmStatus ? "Alarm" : "OK";
 
-      // Überprüfe, ob es Zeit für eine reguläre Übertragung ist (Alarm oder OK)
-      bool sendeAlarm = (aktuelleZeit - millisVorherWebhook >= (unsigned long)(webhookFrequenz) * 1000UL * 60UL * 60UL);
-
-      // Überprüfe, ob es Zeit für einen Ping ist
-      bool sendePing = (aktuelleZeit - millisVorherWebhookPing >= (unsigned long)(webhookPingFrequenz) * 1000UL * 60UL * 60UL);
-
-      if (sendePing) {
-          WebhookErfasseSensordaten("ping");
-          millisVorherWebhookPing = aktuelleZeit;
-          letzterWebhookStatus = neuerStatus;
-      } else if (sendeAlarm && (neuerStatus == "Alarm" || (neuerStatus == "OK" && letzterWebhookStatus == "Alarm"))) {
-          WebhookErfasseSensordaten("normal");
-          millisVorherWebhook = aktuelleZeit;
-          letzterWebhookStatus = neuerStatus;
+    // Wifi und Webserver:
+    #if MODUL_WIFI // wenn das Wifi-Modul aktiv ist
+      if (GetMutex(&mutex)) { // Mutex holen
+        // WLAN Verbindung aufrecht erhalten:
+        // https://github.com/esp8266/Arduino/blob/master/libraries/ESP8266WiFi/examples/WiFiMulti/WiFiMulti.ino
+        if (!wifiAp) {
+          if (wifiMulti.run(wifiTimeout) == WL_CONNECTED) {
+            ip = WiFi.localIP().toString(); // IP Adresse in Variable schreiben
+            aktuelleSsid = WiFi.SSID(); // SSID in Variable schreiben
+            wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers bei erfolgreicher Verbindung
+          } else {
+            wifiVerbindungsVersuche++; // Erhöhen des Zählers bei fehlgeschlagener Verbindung
+            if (wifiVerbindungsVersuche >= 10) {
+              logger.warning(F("Fehler: WLAN Verbindung verloren! Wechsle in den Accesspoint-Modus."));
+              #if MODUL_DISPLAY
+                DisplayDreiWoerter(F("WLAN"), F("Verbindung"), F("verloren!"));
+              #endif
+              wifiAp = true;
+              String ip = WifiSetup(wifiHostname);
+              aktuelleSsid = wifiApSsid; // AP SSID in Variable schreiben
+              wifiVerbindungsVersuche = 0; // Zurücksetzen des Zählers
+            } else {
+              logger.info(F("WLAN-Verbindungsversuch fehlgeschlagen. Versuch ") + String(wifiVerbindungsVersuche) + F(" von 10"));
+            }
+          }
+        }
+        Webserver.handleClient(); // der Webserver soll in jedem loop nach Anfragen schauen!
+        ReleaseMutex(&mutex); // Mutex wieder freigeben
       }
+    #endif
 
-      vorherAlarm = aktuellerAlarmStatus;
-    } else {
-      logger.warning(F("Im AP Modus gibt es kein Internet - Webhook deaktiviert!"));
+    // Webhook für Alarm:
+  #if MODUL_WEBHOOK
+    if (webhookAn) {
+      if (!wifiAp) { // im Accesspointmodus haben wir keinen Internetzugang
+        unsigned long aktuelleZeit = millis();
+        bool aktuellerAlarmStatus = WebhookAktualisiereAlarmStatus();
+        String neuerStatus = aktuellerAlarmStatus ? "Alarm" : "OK";
+
+        // Überprüfe, ob es Zeit für eine reguläre Übertragung ist (Alarm oder OK)
+        bool sendeAlarm = (aktuelleZeit - millisVorherWebhook >= (unsigned long)(webhookFrequenz) * 1000UL * 60UL * 60UL);
+
+        // Überprüfe, ob es Zeit für einen Ping ist
+        bool sendePing = (aktuelleZeit - millisVorherWebhookPing >= (unsigned long)(webhookPingFrequenz) * 1000UL * 60UL * 60UL);
+
+        if (sendePing) {
+            WebhookErfasseSensordaten("ping");
+            millisVorherWebhookPing = aktuelleZeit;
+            letzterWebhookStatus = neuerStatus;
+        } else if (sendeAlarm && (neuerStatus == "Alarm" || (neuerStatus == "OK" && letzterWebhookStatus == "Alarm"))) {
+            WebhookErfasseSensordaten("normal");
+            millisVorherWebhook = aktuelleZeit;
+            letzterWebhookStatus = neuerStatus;
+        }
+
+        vorherAlarm = aktuellerAlarmStatus;
+      } else {
+        logger.warning(F("Im AP Modus gibt es kein Internet - Webhook deaktiviert!"));
+      }
     }
+    #endif
   }
-  #endif
-
 }
 
 /**
