@@ -181,12 +181,12 @@ void WebseiteDebugAusgeben() {
     strcat_P(buffer, PSTR(".local</li>"));
     if (!wifiAp) {
       char tempBuffer[250];
-      snprintf_P(tempBuffer, sizeof(tempBuffer), PSTR("<li>SSID 1: %s</li><li>Passwort 1: %s</li>"
-                                                      "<li>SSID 2: %s</li><li>Passwort 2: %s</li>"
-                                                      "<li>SSID 3: %s</li><li>Passwort 3: %s</li>"),
-                 wifiSsid1.c_str(), wifiPasswort1.c_str(),
-                 wifiSsid2.c_str(), wifiPasswort2.c_str(),
-                 wifiSsid3.c_str(), wifiPasswort3.c_str());
+      snprintf_P(tempBuffer, sizeof(tempBuffer), PSTR("<li>SSID 1: %s</li>"
+                                                      "<li>SSID 2: %s</li>"
+                                                      "<li>SSID 3: %s</li>"),
+                 wifiSsid1.c_str(),
+                 wifiSsid2.c_str(),
+                 wifiSsid3.c_str());
       strcat(buffer, tempBuffer);
     } else {
       char tempBuffer[250];
