@@ -114,44 +114,52 @@ void WebseiteAdminAusgeben() {
   Webserver.sendContent(buffer);
 
   Webserver.sendContent(F("<h3>WLAN Konfigurationen</h3>\n<div class=\"tuerkis\">\n"));
-  if (wifiAp) {
+ if (wifiAp) {
     Webserver.sendContent(F("<p>Gerät befindet sich im Accesspoint-Modus. Alle WLAN-Einstellungen sind editierbar.</p>\n</div>\n"));
 
     // WLAN 1-3
     for (int i = 1; i <= 3; i++) {
-      snprintf_P(buffer, sizeof(buffer), PSTR("<h4>WLAN %d</h4>\n<div class=\"tuerkis\">\n"), i);
-      Webserver.sendContent(buffer);
+        snprintf_P(buffer, sizeof(buffer), PSTR("<h4>WLAN %d</h4>\n<div class=\"tuerkis\">\n"), i);
+        Webserver.sendContent(buffer);
 
-      char ssidBuffer[20], passwordBuffer[20];
-      snprintf_P(ssidBuffer, sizeof(ssidBuffer), PSTR("wifiSsid%d"), i);
-      snprintf_P(passwordBuffer, sizeof(passwordBuffer), PSTR("wifiPassword%d"), i);
-      sendeEinstellung(F("SSID"), FPSTR(ssidBuffer), *(&wifiSsid1 + i - 1));
-      sendeEinstellung(F("Passwort"), FPSTR(passwordBuffer), F("********"));
+        char nameBuffer[20];
+        snprintf_P(nameBuffer, sizeof(nameBuffer), PSTR("wifiSsid%d"), i);
+        sendeEinstellung(F("SSID"), FPSTR(nameBuffer),
+            i == 1 ? wifiSsid1 : (i == 2 ? wifiSsid2 : wifiSsid3));
 
-      Webserver.sendContent(F("</div>\n"));
+        snprintf_P(nameBuffer, sizeof(nameBuffer), PSTR("wifiPasswort%d"), i);
+        sendeEinstellung(F("Passwort"), FPSTR(nameBuffer),
+            i == 1 ? wifiPasswort1 : (i == 2 ? wifiPasswort2 : wifiPasswort3));
+
+        Webserver.sendContent(F("</div>\n"));
     }
-  } else {
+} else {
     Webserver.sendContent(F("</div>\n"));
-    String currentSSID = WiFi.SSID();
 
     // WLAN 1-3
     for (int i = 1; i <= 3; i++) {
-      snprintf_P(buffer, sizeof(buffer), PSTR("<h4>WLAN %d</h4>\n<div class=\"tuerkis\">\n"), i);
-      Webserver.sendContent(buffer);
-
-      if (currentSSID == (i == 1 ? wifiSsid1 : (i == 2 ? wifiSsid2 : wifiSsid3))) {
-        snprintf_P(buffer, sizeof(buffer), PSTR("<p>SSID: %s (aktive Verbindung ist nicht editierbar)</p>\n"), currentSSID.c_str());
+        snprintf_P(buffer, sizeof(buffer), PSTR("<h4>WLAN %d</h4>\n<div class=\"tuerkis\">\n"), i);
         Webserver.sendContent(buffer);
-      } else {
-        char ssidBuffer[20], passwordBuffer[20];
-        snprintf_P(ssidBuffer, sizeof(ssidBuffer), PSTR("wifiSsid%d"), i);
-        snprintf_P(passwordBuffer, sizeof(passwordBuffer), PSTR("wifiPasswort%d"), i);
-        sendeEinstellung(F("SSID"), FPSTR(ssidBuffer), (i == 1 ? wifiSsid1 : (i == 2 ? wifiSsid2 : wifiSsid3)));
-        sendeEinstellung(F("Passwort"), FPSTR(passwordBuffer), F("********"));
-      }
-      Webserver.sendContent(F("</div>\n"));
+
+        // Wenn aktuelle Verbindung
+        if (WiFi.SSID() == (i == 1 ? wifiSsid1 : (i == 2 ? wifiSsid2 : wifiSsid3))) {
+            snprintf_P(buffer, sizeof(buffer), PSTR("<p>SSID: %s (aktive Verbindung ist nicht editierbar)</p>\n"),
+                      WiFi.SSID().c_str());
+            Webserver.sendContent(buffer);
+        } else {
+            char nameBuffer[20];
+            snprintf_P(nameBuffer, sizeof(nameBuffer), PSTR("wifiSsid%d"), i);
+            sendeEinstellung(F("SSID"), FPSTR(nameBuffer),
+                i == 1 ? wifiSsid1 : (i == 2 ? wifiSsid2 : wifiSsid3));
+
+            snprintf_P(nameBuffer, sizeof(nameBuffer), PSTR("wifiPasswort%d"), i);
+            sendeEinstellung(F("Passwort"), FPSTR(nameBuffer),
+                i == 1 ? wifiPasswort1 : (i == 2 ? wifiPasswort2 : wifiPasswort3));
+        }
+        Webserver.sendContent(F("</div>\n"));
     }
-  }
+}
+
 
   Webserver.sendContent(F("<h3>Access Point Einstellungen</h3>\n<div class=\"tuerkis\">\n"));
   sendeEinstellung(F("AP SSID"), F("wifiApSsid"), wifiApSsid);
