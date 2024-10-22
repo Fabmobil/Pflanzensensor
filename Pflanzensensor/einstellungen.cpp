@@ -14,6 +14,12 @@
 String logLevel = "info";
 bool logInDatei = true;
 
+// WiFi-Einstellungen
+#if MODUL_WIFI
+  String wifiApSsid = "Tommys Pflanzensensor";
+  String wifiHostname = "pflanzensensor";
+  bool wifiAp = false;
+#endif
 // Allgemeine Einstellungen
 const long baudrateSeriell = 115200; // 115200
 unsigned long intervallMessung = 10000; // Messintervall in ms
@@ -84,12 +90,6 @@ unsigned long intervallMessung = 10000; // Messintervall in ms
   int webhookPingFrequenz = 24;
 #endif
 
-// WiFi-Einstellungen
-#if MODUL_WIFI
-  String wifiHostname = "pflanzensensor";
-  bool wifiAp = false;
-  String wifiApSsid = "Fabmobil Pflanzensensor";
-#endif
 
 #if MODUL_MULTIPLEXER
   const int multiplexerPinA = 15;
