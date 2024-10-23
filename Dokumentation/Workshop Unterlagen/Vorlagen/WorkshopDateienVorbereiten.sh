@@ -253,7 +253,7 @@ for target in "2" "3"; do
     # Stelle sicher, dass das Zielverzeichnis existiert
     mkdir -p "../${target} Tage/Workshopdateien"
     # Wechsle ins temporäre Verzeichnis und erstelle das ZIP
-    (cd "$TEMP_ARDUINO15" && zip -r "Dokumentation/Workshop Unterlagen/${target} Tage/Workshopdateien/Arduino15.zip" .)
+    (cd "$TEMP_ARDUINO15" && pwd && zip -r "../Dokumentation/Workshop Unterlagen/${target} Tage/Workshopdateien/Arduino15.zip" .)
 done
 
 # Aufräumen
@@ -279,8 +279,8 @@ fi
 
 # Kopiere KopiereDateien.bat
 echo "- Kopiere KopiereDateien.bat..."
-cp "./KopiereDateien.bat" "../2 Tage/Workshopdateien/"
-cp "./KopiereDateien.bat" "../3 Tage/Workshopdateien/"
+cp "./KopiereDateien.ps1" "../2 Tage/Workshopdateien/"
+cp "./KopiereDateien.ps1" "../3 Tage/Workshopdateien/"
 
 # Kopiere Handouts und Spickzettel
 echo "- Kopiere Handouts und Spickzettel..."
@@ -290,9 +290,29 @@ cp "./Handout Pflanzensensorworkshop 3 Tage.pdf" "../3 Tage/"
 cp "./Spickzettel C Programmierung.pdf" "../3 Tage/"
 
 # Kopiere VSIX-Datei
+
+# Repository-Informationen
+REPO="earlephilhower/arduino-littlefs-upload"
+
+# Hole die neueste Release-Information über die GitHub API
+LATEST_RELEASE=$(curl --silent "https://api.github.com/repos/$REPO/releases/latest")
+
+# Extrahiere die URL der .vsix Datei
+VSIX_URL=$(echo "$LATEST_RELEASE" | jq -r '.assets[] | select(.name | endswith(".vsix")) | .browser_download_url')
+
+# Überprüfen, ob eine URL gefunden wurde
+if [[ -n "$VSIX_URL" ]]; then
+  echo "Neueste .vsix Datei gefunden: $VSIX_URL"
+  # Lade die .vsix Datei herunter
+  curl -L -o arduino-littlefs-upload.vsix "$VSIX_URL"
+  echo "Download abgeschlossen: arduino-littlefs-upload.vsix"
+else
+  echo "Keine .vsix Datei gefunden!"
+  exit 1
+fi
 echo "- Kopiere VSIX-Datei..."
-cp "./arduino-littlefs-upload"*.vsix "../2 Tage/Workshopdateien/"
-cp "./arduino-littlefs-upload"*.vsix "../3 Tage/Workshopdateien/"
+cp "./arduino-littlefs-upload.vsix" "../2 Tage/Workshopdateien/"
+mv "./arduino-littlefs-upload.vsix" "../3 Tage/Workshopdateien/"
 
 # Prüfe ob alle Dateien erfolgreich kopiert wurden
 echo "Prüfe die kopierten Dateien..."
