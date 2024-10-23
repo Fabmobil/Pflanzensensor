@@ -25,7 +25,7 @@ if exist "C:\Benutzer\%USERNAME%\.arduinoIDE\plugins\arduino-littlefs-upload-*.v
 )
 
 REM Kopiere die neue VSIX-Datei
-for %%F in ("Plugin\arduino-littlefs-upload-*.vsix") do (
+for %%F in ("arduino-littlefs-upload-*.vsix") do (
     copy "%%F" "C:\Benutzer\%USERNAME%\.arduinoIDE\plugins\"
     if errorlevel 1 (
         echo Fehler beim Kopieren der VSIX-Datei
