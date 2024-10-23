@@ -21,13 +21,13 @@
 #define MODUL_BODENFEUCHTE 1
 #define MODUL_LEDAMPEL 1
 #define MODUL_HELLIGKEIT 1
-#define MODUL_WEBHOOK 0
-#define MODUL_ANALOG3 0
-#define MODUL_ANALOG4 0
-#define MODUL_ANALOG5 0
-#define MODUL_ANALOG6 0
-#define MODUL_ANALOG7 0
-#define MODUL_ANALOG8 0
+#define MODUL_WEBHOOK 1
+#define MODUL_ANALOG3 1
+#define MODUL_ANALOG4 1
+#define MODUL_ANALOG5 1
+#define MODUL_ANALOG6 1
+#define MODUL_ANALOG7 1
+#define MODUL_ANALOG8 1
 
 // Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
 #if MODUL_BODENFEUCHTE && MODUL_HELLIGKEIT
@@ -202,9 +202,6 @@ extern unsigned long millisAktuell;
 extern unsigned long millisVorherAnalog;
 extern unsigned long millisVorherDht;
 extern unsigned long millisVorherLedampel;
-extern unsigned long millisVorherDisplay;
-extern unsigned long millisVorherWebhook;
-extern unsigned long millisVorherWebhookPing;
 extern int module;
 extern String ip;
 extern const uint32_t wifiTimeout;
@@ -256,9 +253,7 @@ extern String analog8Farbe;
 // Einbinden weiterer Header-Dateien
 #include "logger.h"
 #include "variablenspeicher.h"
-#include "analogsensor.h"
 #include "mutex.h"
-extern mutex_t mutex;
 #include "passwoerter.h"
 
 #endif // EINSTELLUNGEN_H

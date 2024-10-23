@@ -37,7 +37,6 @@ void ArgumenteAusgeben() {
 
 void WebseiteSetzeVariablen() {
     logger.debug(F("Beginn von WebseiteSetzeVariablen()"));
-    millisVorherWebhook = millisAktuell;
 
     if (Webserver.arg(F("Passwort")) == wifiAdminPasswort) {
         // Zuerst die Variablen aktualisieren

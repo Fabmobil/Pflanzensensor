@@ -167,9 +167,6 @@ unsigned long millisAktuell = 0;
 unsigned long millisVorherAnalog = 0;
 unsigned long millisVorherDht = 0;
 unsigned long millisVorherLedampel = 0;
-unsigned long millisVorherDisplay = 0;
-unsigned long millisVorherWebhook = 0;
-unsigned long millisVorherWebhookPing = 0;
 int module = 0;
 String ip = "keine WLAN Verbindung.";
 const uint32_t wifiTimeout = 5000;
@@ -225,4 +222,3 @@ String analog8Farbe = "rot";
   bool displayAn = true;
 #endif
 
-mutex_t mutex;
