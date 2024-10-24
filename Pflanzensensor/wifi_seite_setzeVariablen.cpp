@@ -39,106 +39,87 @@ void WebseiteSetzeVariablen() {
     logger.debug(F("Beginn von WebseiteSetzeVariablen()"));
     millisVorherWebhook = millisAktuell;
 
-    if (Webserver.arg(F("Passwort")) == wifiAdminPasswort) {
-        // Zuerst die Variablen aktualisieren
-        AktualisiereVariablen();
-
-        if (wlanAenderungVorgenommen) {
-          // Neustart-Prozess initiieren
-          restartInProgress = true;
-          restartState = RestartState::INIT;
-          stateChangeMillis = millis();
-
-          // Sofort die Antwortseite senden
-          Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
-          Webserver.send(200, F("text/html"), "");
-
-          // Standard Header senden
-          sendeHtmlHeader(Webserver, false, false);
-
-          // Content
-          String response;
-          response = F("<h3>WLAN-Einstellungen werden geändert</h3>\n");
-          response += F("<div class=\"rot\">\n");
-          response += F("<p>Die WLAN-Einstellungen werden gespeichert.</p>\n");
-          response += F("<p>Der Pflanzensensor wird in wenigen Sekunden neu gestartet.</p>\n");
-          response += F("<p>Bitte warte einen Moment... Die Seite wird automatisch neu geladen.</p>\n");
-          response += F("</div>\n");
-          response += F("<div class=\"tuerkis\">\n");
-          response += F("<p>Die IP-Adresse deines Pflanzensensors hat sich geändert. Achte auf das Display oder die serielle Schnittstelle um deine neue IP herauszufinden und dich wieder mit dem Webinterface verbinden zu können.");
-          response += F("</div>\n");
-
-          Webserver.sendContent(response);
-          Webserver.sendContent_P(htmlFooter);
-          return;
-      }
-        // Normale Verarbeitung für nicht-WLAN Änderungen
-        Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
-        Webserver.send(200, F("text/html"), "");
-        sendeHtmlHeader(Webserver, false, false);
-
-        // Änderungen sammeln für die Anzeige
+      if (Webserver.arg(F("Passwort")) == wifiAdminPasswort) {
+        // Definition des Startstrings in PROGMEM
         static const char PROGMEM aenderungenStart[] = "<ul>\n";
-        String aenderungen = FPSTR(aenderungenStart);
 
-        // Speichern der alten Checkbox-Zustände
-        bool alteCheckboxZustaende[8] = {
-            #if MODUL_BODENFEUCHTE
-                bodenfeuchteWebhook,
-            #else
-                false,
-            #endif
-            #if MODUL_HELLIGKEIT
-                helligkeitWebhook,
-            #else
-                false,
-            #endif
-            #if MODUL_DHT
-                lufttemperaturWebhook,
-                luftfeuchteWebhook,
-            #else
-                false, false,
-            #endif
-            #if MODUL_LEDAMPEL
-                ampelAn,
-            #else
-                false,
-            #endif
-            #if MODUL_DISPLAY
-                displayAn,
-            #else
-                false,
-            #endif
-            #if MODUL_WEBHOOK
-                webhookAn,
-            #else
-                false,
-            #endif
-            logInDatei
+        // Struktur für Checkbox-Status
+        struct CheckboxStatus {
+            const char* name;
+            bool* wert;
+            bool altWert;
         };
 
-        // Wir überprüfen jedes Eingabefeld und fügen Änderungen hinzu
-        for (int i = 0; i < Webserver.args(); i++) {
-            String argName = Webserver.argName(i);
-            String argValue = Webserver.arg(i);
+        // Array mit allen Checkboxen und ihren Werten
+        CheckboxStatus checkboxen[] = {
+            #if MODUL_BODENFEUCHTE
+                {"bodenfeuchteWebhook", &bodenfeuchteWebhook, bodenfeuchteWebhook},
+            #endif
+            #if MODUL_HELLIGKEIT
+                {"helligkeitWebhook", &helligkeitWebhook, helligkeitWebhook},
+            #endif
+            #if MODUL_DHT
+                {"lufttemperaturWebhook", &lufttemperaturWebhook, lufttemperaturWebhook},
+                {"luftfeuchteWebhook", &luftfeuchteWebhook, luftfeuchteWebhook},
+            #endif
+            #if MODUL_LEDAMPEL
+                {"ampelAn", &ampelAn, ampelAn},
+            #endif
+            #if MODUL_DISPLAY
+                {"displayAn", &displayAn, displayAn},
+            #endif
+            #if MODUL_WEBHOOK
+                {"webhookAn", &webhookAn, webhookAn},
+            #endif
+            {"logInDatei", &logInDatei, logInDatei},
+            {nullptr, nullptr, false} // Markiert das Ende des Arrays
+        };
 
-            if (argName != F("Passwort")) {
-                if (argValue != F("")) {
-                    char buffer[100];
-                    snprintf_P(buffer, sizeof(buffer), PSTR("<li>%s: %s</li>\n"), argName.c_str(), argValue.c_str());
-                    aenderungen += buffer;
-                }
+        // Sammeln der Änderungen starten
+        String aenderungen = FPSTR(aenderungenStart);
+
+        // Variablen aktualisieren
+        AktualisiereVariablen();
+
+        // Checkbox-Änderungen überprüfen
+        for(int i = 0; checkboxen[i].name != nullptr; i++) {
+            bool neuerWert = *checkboxen[i].wert;
+            if(neuerWert != checkboxen[i].altWert) {
+                char buffer[100];
+                snprintf_P(buffer, sizeof(buffer),
+                    PSTR("<li>%s: %s</li>\n"),
+                    checkboxen[i].name,
+                    neuerWert ? "aktiviert" : "deaktiviert"
+                );
+                aenderungen += buffer;
             }
         }
 
-        // Überprüfen, ob Checkboxen deaktiviert wurden
-        const char* checkboxNamen[] = {"bodenfeuchteWebhook", "helligkeitWebhook", "lufttemperaturWebhook",
-                                     "luftfeuchteWebhook", "ampelAn", "displayAn", "webhookAn", "logInDatei"};
-        for (int i = 0; i < 8; i++) {
-            if (alteCheckboxZustaende[i] && !Webserver.hasArg(checkboxNamen[i])) {
-                char buffer[100];
-                snprintf_P(buffer, sizeof(buffer), PSTR("<li>%s: deaktiviert</li>\n"), checkboxNamen[i]);
-                aenderungen += buffer;
+        // Textfeld-Änderungen überprüfen
+        for(int i = 0; i < Webserver.args(); i++) {
+            String argName = Webserver.argName(i);
+            String argValue = Webserver.arg(i);
+
+            // Passwort und leere Werte überspringen
+            if(argName != F("Passwort") && !argValue.isEmpty()) {
+                // Checkbox-Namen überspringen, da diese bereits behandelt wurden
+                bool istCheckbox = false;
+                for(int j = 0; checkboxen[j].name != nullptr; j++) {
+                    if(argName == checkboxen[j].name) {
+                        istCheckbox = true;
+                        break;
+                    }
+                }
+
+                if(!istCheckbox) {
+                    char buffer[100];
+                    snprintf_P(buffer, sizeof(buffer),
+                        PSTR("<li>%s: %s</li>\n"),
+                        argName.c_str(),
+                        argValue.c_str()
+                    );
+                    aenderungen += buffer;
+                }
             }
         }
 
@@ -147,6 +128,7 @@ void WebseiteSetzeVariablen() {
         // Sofort speichern
         VariablenSpeichern();
 
+        // HTML Ausgabe
         Webserver.sendContent(F("<h3>Erfolgreich!</h3>\n"));
         Webserver.sendContent(F("<div class=\"gruen\">\n"));
 
