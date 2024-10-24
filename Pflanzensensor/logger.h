@@ -12,6 +12,7 @@
 #include <NTPClient.h>
 #include <WiFiUdp.h>
 #include "einstellungen.h"
+#include "mutex.h"
 
 extern String logLevel;
 extern bool logInDatei;
@@ -139,6 +140,11 @@ private:
     std::array<std::array<LogEintrag, MAX_LOG_EINTRAEGE>, 4> m_logEntriesByLevel;  // Array von Arrays für jedes Log-Level
     const char* m_logFileName = "/system.log";
     const size_t m_maxFileSize = 100 * 1024;  // 100 KB
+    static const size_t PUFFER_GROESSE = 512;
+    char m_schreibPuffer[PUFFER_GROESSE];
+    size_t m_pufferPosition = 0;
+    unsigned long m_letzterFlush = 0;
+    mutex_t m_dateiMutex;
 
     /**
      * @brief Interne Methode zum Loggen einer Nachricht
@@ -166,6 +172,8 @@ private:
      * @param logMessage Zu schreibende Nachricht
      */
     void InDateiSchreiben(const char* logMessage);
+
+    void SchreibePufferInDatei();
 
     /**
      * @brief Kürzt die Log-Datei, wenn sie die maximale Größe überschreitet

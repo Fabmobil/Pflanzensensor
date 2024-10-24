@@ -54,6 +54,8 @@ Logger::Logger(LogLevel logLevel, bool useSerial, size_t maxEntries, bool fileLo
       m_fileLoggingEnabled = false; // Deaktiviere Datei-Logging bei Fehler
     }
   }
+  CreateMutex(&m_dateiMutex);
+  memset(m_schreibPuffer, 0, PUFFER_GROESSE);
 }
 
 void Logger::PruefeUndBereinigeDatei() {
@@ -175,25 +177,62 @@ void Logger::log(LogLevel level, const String& message) {
 }
 
 void Logger::InDateiSchreiben(const char* logMessage) {
-  if (!m_fileLoggingEnabled || !GenugSpeicherVerfuegbar()) return;
+    if (!m_fileLoggingEnabled || !GenugSpeicherVerfuegbar()) return;
 
-  int versuche = 3;
-  while (versuche > 0) {
-    File file = LittleFS.open(F("/system.log"), "a");
-    if (file) {
-      size_t bytesGeschrieben = file.println(logMessage);
-      file.close();
-      if (bytesGeschrieben == strlen(logMessage) + 2) { // +2 für \r\n
-        LogdateiEinkuerzen();
+    size_t nachrichtLaenge = strlen(logMessage);
+
+    // Mutex für den kritischen Bereich holen
+    if (!GetMutex(&m_dateiMutex)) {
+        error(F("Konnte Mutex für Dateizugriff nicht erhalten"));
         return;
-      }
     }
-    versuche--;
-    delay(10); // Kurze Pause vor erneutem Versuch
-  }
 
-  error(F("Kritischer Fehler: Konnte nicht in Logdatei schreiben"));
-  m_fileLoggingEnabled = false; // Deaktiviere Datei-Logging bei anhaltendem Fehler
+    // Prüfen ob der Puffer voll wird
+    if (m_pufferPosition + nachrichtLaenge + 2 >= PUFFER_GROESSE) {
+        SchreibePufferInDatei();
+    }
+
+    // Nachricht in Puffer kopieren
+    strncpy(m_schreibPuffer + m_pufferPosition, logMessage, PUFFER_GROESSE - m_pufferPosition);
+    m_pufferPosition += nachrichtLaenge;
+    m_schreibPuffer[m_pufferPosition++] = '\n';
+
+    // Alle 5 Sekunden oder bei vollem Puffer in Datei schreiben
+    unsigned long jetztMillis = millis();
+    if (jetztMillis - m_letzterFlush >= 5000) {
+        SchreibePufferInDatei();
+    }
+
+    ReleaseMutex(&m_dateiMutex);
+}
+
+void Logger::SchreibePufferInDatei() {
+    if (m_pufferPosition == 0) return;
+
+    File file = LittleFS.open(F("/system.log"), "a");
+    if (!file) {
+        error(F("Konnte Logdatei nicht öffnen"));
+        return;
+    }
+
+    size_t geschrieben = file.write((uint8_t*)m_schreibPuffer, m_pufferPosition);
+    file.close();
+
+    if (geschrieben != m_pufferPosition) {
+        error(F("Fehler beim Schreiben in Logdatei"));
+    }
+
+    m_pufferPosition = 0;
+    m_letzterFlush = millis();
+
+    // Prüfe Dateigröße nur nach erfolgreichem Schreiben
+    static unsigned long letzteGroessenPruefung = 0;
+    if (millis() - letzteGroessenPruefung >= 60000) { // Maximal einmal pro Minute
+        if (file.size() > m_maxFileSize) {
+            LogdateiEinkuerzen();
+        }
+        letzteGroessenPruefung = millis();
+    }
 }
 
 bool Logger::GenugSpeicherVerfuegbar() {
