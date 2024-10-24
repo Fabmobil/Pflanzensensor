@@ -34,8 +34,6 @@ Displayseite displayseiten[] = {
 
 int aktuelleSeite = 0;
 
-// Implementierung der Funktionen...
-
 void DisplayAnzeigen() {
   if (!displayAn) {
     display.clearDisplay();

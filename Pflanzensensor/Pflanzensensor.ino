@@ -300,12 +300,10 @@ void loop() {
     // Messwerte auf dem Display anzeigen:
 
     #if MODUL_DISPLAY
-      if (displayAn) {
-        if (millisAktuell - millisVorherDisplay >= intervallDisplay) {
-          millisVorherDisplay = millisAktuell;
-          DisplayAnzeigen();
-          NaechsteSeite();
-        }
+      if (millisAktuell - millisVorherDisplay >= intervallDisplay) {
+        millisVorherDisplay = millisAktuell;
+        DisplayAnzeigen();
+        NaechsteSeite();
       }
     #endif
 
