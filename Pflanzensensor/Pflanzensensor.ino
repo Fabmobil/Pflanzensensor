@@ -56,7 +56,6 @@
 void setup() {
   Serial.begin(baudrateSeriell); // Serielle Verbindung aufbauen
   logger.SetzteLogLevel(LogLevel::INFO); // oder ein anderes gewünschtes Log-Level
-  logger.NTPInitialisieren();
   delay(100);
   #if MODUL_DISPLAY // wenn das Display Modul aktiv ist:
     DisplaySetup(); // Display initialisieren
@@ -143,6 +142,9 @@ void setup() {
       #endif
       wifiAp = true;
       String ip = WifiSetup(wifiHostname);
+    }
+    if (!wifiAp) { // Nur im Client-Modus, nicht im AP-Modus
+      logger.NTPInitialisieren();
     }
   #endif
 

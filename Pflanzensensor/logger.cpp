@@ -329,10 +329,20 @@ void Logger::FormatiertenTimestampAusgeben(char* buffer, size_t bufferSize) cons
 }
 
 void Logger::NTPInitialisieren() {
+    // Zuerst Zeitzone für Mitteleuropa setzen (GMT+1 mit Sommerzeit)
+    configTime(1 * 3600, 3600, "pool.ntp.org", "time.nist.gov");
+
     m_timeClient = new NTPClient(m_ntpUDP, "pool.ntp.org", 0, 60000);
     m_timeClient->begin();
-    m_ntpInitialized = true;
-    debug(F("NTP-Client wurde initialisiert"));
+    bool erfolgreich = m_timeClient->forceUpdate(); // Erzwinge erste Synchronisation
+
+    if (erfolgreich) {
+        m_ntpInitialized = true;
+        debug(F("NTP-Client wurde initialisiert und Zeit synchronisiert"));
+    } else {
+        warning(F("NTP-Client Initialisierung fehlgeschlagen - erneuter Versuch beim nächsten Update"));
+        m_ntpInitialized = false;
+    }
 }
 
 void Logger::NTPUpdaten() {
