@@ -163,6 +163,7 @@ void WebseiteSetzeVariablen() {
 
     } else {
         // Falsches Passwort
+        logger.warning("Passwort zum Ändern der Einstellungen war falsch!");
         Webserver.setContentLength(CONTENT_LENGTH_UNKNOWN);
         Webserver.send(200, F("text/html"), "");
         sendeHtmlHeader(Webserver, false, false);
