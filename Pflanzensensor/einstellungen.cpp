@@ -16,7 +16,7 @@ bool logInDatei = true;
 
 // WiFi-Einstellungen
 #if MODUL_WIFI
-  String wifiApSsid = "Tommys Pflanzensensor";
+  String wifiApSsid = "Fabmobil Pflanzensensor";
   String wifiHostname = "pflanzensensor";
   bool wifiAp = false;
 #endif
