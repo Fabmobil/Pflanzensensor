@@ -130,7 +130,7 @@ unsigned long intervallMessung = 10000; // Messintervall in ms
   int analog5GelbOben = 80;
 #endif
 #if MODUL_ANALOG6 // wenn ein sechster Analogsensor verwendet wird
-  String analog6Name = "Analog 5"; // Name des Sensors
+  String analog6Name = "Analog 6"; // Name des Sensors
   bool analog6Webhook = false; // soll der Sensor für Alarme überwacht werden?
   int analog6Minimum = 900; // Minimalwert des Sensors
   int analog6Maximum = 380; // Maximalwert des Sensors
