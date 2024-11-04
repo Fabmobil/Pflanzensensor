@@ -22,12 +22,12 @@
 #define MODUL_LEDAMPEL 1
 #define MODUL_HELLIGKEIT 1
 #define MODUL_WEBHOOK 0
-#define MODUL_ANALOG3 0
-#define MODUL_ANALOG4 0
-#define MODUL_ANALOG5 0
-#define MODUL_ANALOG6 0
-#define MODUL_ANALOG7 0
-#define MODUL_ANALOG8 0
+#define MODUL_ANALOG3 0 // X5
+#define MODUL_ANALOG4 0 // X4
+#define MODUL_ANALOG5 0 // X3
+#define MODUL_ANALOG6 0 // X2
+#define MODUL_ANALOG7 0 // X1
+#define MODUL_ANALOG8 0 // X0
 
 // Wenn Bodenfeuchte- und Lichtsensor verwendet werden, brauchen wir auch einen Analog-Multiplexer:
 #if MODUL_BODENFEUCHTE && MODUL_HELLIGKEIT
