@@ -450,7 +450,7 @@ void AdminHandler::generateAndSendJsonDebugCard() {
     if (configFile) {
       String configContent = configFile.readString();
       configFile.close();
-      StaticJsonDocument<1024> doc;
+      StaticJsonDocument<2048> doc;
       DeserializationError error = deserializeJson(doc, configContent);
       if (!error) {
         String pretty;
@@ -484,7 +484,7 @@ void AdminHandler::generateAndSendJsonDebugCard() {
     if (sensorsFile) {
       String sensorsContent = sensorsFile.readString();
       sensorsFile.close();
-      StaticJsonDocument<1024> doc;
+      StaticJsonDocument<2048> doc;
       DeserializationError error = deserializeJson(doc, sensorsContent);
       if (!error) {
         String pretty;
