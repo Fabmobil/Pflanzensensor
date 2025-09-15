@@ -212,6 +212,144 @@ bool AdminHandler::processConfigUpdates(String& changes) {
         updated = true;
       }
     }
+#if USE_MAIL
+  } else if (section == "mail") {
+    // Mail enabled
+    bool oldMailEnabled = ConfigMgr.isMailEnabled();
+    bool newMailEnabled = _server.hasArg("mail_enabled");
+    if (oldMailEnabled != newMailEnabled) {
+      auto result = ConfigMgr.setMailEnabled(newMailEnabled);
+      if (result.isSuccess()) {
+        changes += F("<li>E-Mail-Funktionen ");
+        changes += newMailEnabled ? F("aktiviert") : F("deaktiviert");
+        changes += F("</li>");
+        updated = true;
+      }
+    }
+
+    // SMTP Host
+    if (_server.hasArg("smtp_host")) {
+      String newSmtpHost = _server.arg("smtp_host");
+      if (newSmtpHost != ConfigMgr.getSmtpHost()) {
+        auto result = ConfigMgr.setSmtpHost(newSmtpHost);
+        if (result.isSuccess()) {
+          changes += F("<li>SMTP-Server geändert</li>");
+          updated = true;
+        }
+      }
+    }
+
+    // SMTP Port
+    if (_server.hasArg("smtp_port")) {
+      uint16_t newSmtpPort = _server.arg("smtp_port").toInt();
+      if (newSmtpPort != ConfigMgr.getSmtpPort()) {
+        auto result = ConfigMgr.setSmtpPort(newSmtpPort);
+        if (result.isSuccess()) {
+          changes += F("<li>SMTP-Port geändert</li>");
+          updated = true;
+        }
+      }
+    }
+
+    // SMTP User
+    if (_server.hasArg("smtp_user")) {
+      String newSmtpUser = _server.arg("smtp_user");
+      if (newSmtpUser != ConfigMgr.getSmtpUser()) {
+        auto result = ConfigMgr.setSmtpUser(newSmtpUser);
+        if (result.isSuccess()) {
+          changes += F("<li>SMTP-Benutzername geändert</li>");
+          updated = true;
+        }
+      }
+    }
+
+    // SMTP Password
+    if (_server.hasArg("smtp_password")) {
+      String newSmtpPassword = _server.arg("smtp_password");
+      if (newSmtpPassword != ConfigMgr.getSmtpPassword()) {
+        auto result = ConfigMgr.setSmtpPassword(newSmtpPassword);
+        if (result.isSuccess()) {
+          changes += F("<li>SMTP-Passwort geändert</li>");
+          updated = true;
+        }
+      }
+    }
+
+    // SMTP Sender Name
+    if (_server.hasArg("smtp_sender_name")) {
+      String newSmtpSenderName = _server.arg("smtp_sender_name");
+      if (newSmtpSenderName != ConfigMgr.getSmtpSenderName()) {
+        auto result = ConfigMgr.setSmtpSenderName(newSmtpSenderName);
+        if (result.isSuccess()) {
+          changes += F("<li>Absender-Name geändert</li>");
+          updated = true;
+        }
+      }
+    }
+
+    // SMTP Sender Email
+    if (_server.hasArg("smtp_sender_email")) {
+      String newSmtpSenderEmail = _server.arg("smtp_sender_email");
+      if (newSmtpSenderEmail != ConfigMgr.getSmtpSenderEmail()) {
+        auto result = ConfigMgr.setSmtpSenderEmail(newSmtpSenderEmail);
+        if (result.isSuccess()) {
+          changes += F("<li>Absender-E-Mail geändert</li>");
+          updated = true;
+        }
+      }
+    }
+
+    // SMTP Recipient
+    if (_server.hasArg("smtp_recipient")) {
+      String newSmtpRecipient = _server.arg("smtp_recipient");
+      if (newSmtpRecipient != ConfigMgr.getSmtpRecipient()) {
+        auto result = ConfigMgr.setSmtpRecipient(newSmtpRecipient);
+        if (result.isSuccess()) {
+          changes += F("<li>Standard-Empfänger geändert</li>");
+          updated = true;
+        }
+      }
+    }
+
+    // SMTP STARTTLS
+    bool oldSmtpEnableStartTLS = ConfigMgr.isSmtpEnableStartTLS();
+    bool newSmtpEnableStartTLS = _server.hasArg("smtp_enable_starttls");
+    if (oldSmtpEnableStartTLS != newSmtpEnableStartTLS) {
+      auto result = ConfigMgr.setSmtpEnableStartTLS(newSmtpEnableStartTLS);
+      if (result.isSuccess()) {
+        changes += F("<li>STARTTLS-Verschlüsselung ");
+        changes += newSmtpEnableStartTLS ? F("aktiviert") : F("deaktiviert");
+        changes += F("</li>");
+        updated = true;
+      }
+    }
+
+    // SMTP Debug
+    bool oldSmtpDebug = ConfigMgr.isSmtpDebug();
+    bool newSmtpDebug = _server.hasArg("smtp_debug");
+    if (oldSmtpDebug != newSmtpDebug) {
+      auto result = ConfigMgr.setSmtpDebug(newSmtpDebug);
+      if (result.isSuccess()) {
+        changes += F("<li>SMTP-Debug ");
+        changes += newSmtpDebug ? F("aktiviert") : F("deaktiviert");
+        changes += F("</li>");
+        updated = true;
+      }
+    }
+
+    // SMTP Send Test Mail on Boot
+    bool oldSmtpSendTestMailOnBoot = ConfigMgr.isSmtpSendTestMailOnBoot();
+    bool newSmtpSendTestMailOnBoot = _server.hasArg("smtp_send_test_mail_on_boot");
+    if (oldSmtpSendTestMailOnBoot != newSmtpSendTestMailOnBoot) {
+      auto result = ConfigMgr.setSmtpSendTestMailOnBoot(newSmtpSendTestMailOnBoot);
+      if (result.isSuccess()) {
+        changes += F("<li>Test-Mail beim Start ");
+        changes += newSmtpSendTestMailOnBoot ? F("aktiviert") : F("deaktiviert");
+        changes += F("</li>");
+        updated = true;
+      }
+    }
+#endif
   }
   return updated;
 }

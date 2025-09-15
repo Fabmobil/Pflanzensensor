@@ -84,6 +84,13 @@ class AdminHandler : public BaseHandler {
    */
   void generateAndSendDebugSettingsCard();
 
+#if USE_MAIL
+  /**
+   * @brief Generate and send the Mail Settings card for the admin page.
+   */
+  void generateAndSendMailSettingsCard();
+#endif
+
   /**
    * @brief Generate and send the System Settings card for the admin page.
    */
@@ -195,6 +202,17 @@ class AdminHandler : public BaseHandler {
    *          - Provides feedback
    */
   void handleReboot();
+
+#if USE_MAIL
+  /**
+   * @brief Handle test mail sending requests
+   * @details Sends test email using current SMTP configuration:
+   *          - Validates mail settings
+   *          - Sends test email
+   *          - Provides feedback
+   */
+  void handleTestMail();
+#endif
 
   // Utility methods - implemented in admin_handler_utils.cpp
   /**

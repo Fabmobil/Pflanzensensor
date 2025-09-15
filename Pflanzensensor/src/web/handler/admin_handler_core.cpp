@@ -106,6 +106,23 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadLog-Route"));
 
+#if USE_MAIL
+  // Register test mail route
+  result = router.addRoute(HTTP_POST, "/admin/testMail", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    handleTestMail();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"),
+                 F("Registrieren der /admin/testMail-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/testMail-Route"));
+#endif
+
   // Register WiFi settings update route
   result = router.addRoute(HTTP_POST, "/admin/updateWiFi", [this]() {
     if (!validateRequest()) {
@@ -221,6 +238,9 @@ void AdminHandler::handleAdminPage() {
         sendChunk(F("</div>"));
         sendChunk(F("<div class='admin-grid'>"));
         generateAndSendDebugSettingsCard();
+#if USE_MAIL
+        generateAndSendMailSettingsCard();
+#endif
         generateAndSendWiFiSettingsCard();
         generateAndSendSystemSettingsCard();
         generateAndSendLedTrafficLightSettingsCard();

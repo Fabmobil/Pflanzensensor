@@ -393,6 +393,109 @@ void ConfigManager::syncSubsystemData() {
   m_debugConfig.loadFromConfigData(m_configData);
 }
 
+#if USE_MAIL
+// Mail/SMTP configuration setters
+ConfigManager::ConfigResult ConfigManager::setMailEnabled(bool enabled) {
+  if (m_configData.mailEnabled != enabled) {
+    m_configData.mailEnabled = enabled;
+    notifyConfigChange("mail_enabled", enabled ? "true" : "false", true);
+    return saveConfig();
+  }
+  return ConfigResult::success();
+}
+
+ConfigManager::ConfigResult ConfigManager::setSmtpHost(const String& host) {
+  if (m_configData.smtpHost != host) {
+    m_configData.smtpHost = host;
+    notifyConfigChange("smtp_host", host, false);
+    return saveConfig();
+  }
+  return ConfigResult::success();
+}
+
+ConfigManager::ConfigResult ConfigManager::setSmtpPort(uint16_t port) {
+  if (m_configData.smtpPort != port) {
+    m_configData.smtpPort = port;
+    String portStr = String(port);
+    notifyConfigChange("smtp_port", portStr, false);
+    return saveConfig();
+  }
+  return ConfigResult::success();
+}
+
+ConfigManager::ConfigResult ConfigManager::setSmtpUser(const String& user) {
+  if (m_configData.smtpUser != user) {
+    m_configData.smtpUser = user;
+    notifyConfigChange("smtp_user", user, false);
+    return saveConfig();
+  }
+  return ConfigResult::success();
+}
+
+ConfigManager::ConfigResult ConfigManager::setSmtpPassword(const String& password) {
+  if (m_configData.smtpPassword != password) {
+    m_configData.smtpPassword = password;
+    notifyConfigChange("smtp_password", "***", false);  // Mask password in logs
+    return saveConfig();
+  }
+  return ConfigResult::success();
+}
+
+ConfigManager::ConfigResult ConfigManager::setSmtpSenderName(const String& senderName) {
+  if (m_configData.smtpSenderName != senderName) {
+    m_configData.smtpSenderName = senderName;
+    notifyConfigChange("smtp_sender_name", senderName, false);
+    return saveConfig();
+  }
+  return ConfigResult::success();
+}
+
+ConfigManager::ConfigResult ConfigManager::setSmtpSenderEmail(const String& senderEmail) {
+  if (m_configData.smtpSenderEmail != senderEmail) {
+    m_configData.smtpSenderEmail = senderEmail;
+    notifyConfigChange("smtp_sender_email", senderEmail, false);
+    return saveConfig();
+  }
+  return ConfigResult::success();
+}
+
+ConfigManager::ConfigResult ConfigManager::setSmtpRecipient(const String& recipient) {
+  if (m_configData.smtpRecipient != recipient) {
+    m_configData.smtpRecipient = recipient;
+    notifyConfigChange("smtp_recipient", recipient, false);
+    return saveConfig();
+  }
+  return ConfigResult::success();
+}
+
+ConfigManager::ConfigResult ConfigManager::setSmtpEnableStartTLS(bool enabled) {
+  if (m_configData.smtpEnableStartTLS != enabled) {
+    m_configData.smtpEnableStartTLS = enabled;
+    notifyConfigChange("smtp_enable_starttls", enabled ? "true" : "false", false);
+    return saveConfig();
+  }
+  return ConfigResult::success();
+}
+
+ConfigManager::ConfigResult ConfigManager::setSmtpDebug(bool enabled) {
+  if (m_configData.smtpDebug != enabled) {
+    m_configData.smtpDebug = enabled;
+    notifyConfigChange("smtp_debug", enabled ? "true" : "false", false);
+    return saveConfig();
+  }
+  return ConfigResult::success();
+}
+
+ConfigManager::ConfigResult ConfigManager::setSmtpSendTestMailOnBoot(bool enabled) {
+  if (m_configData.smtpSendTestMailOnBoot != enabled) {
+    m_configData.smtpSendTestMailOnBoot = enabled;
+    notifyConfigChange("smtp_send_test_mail_on_boot", enabled ? "true" : "false", false);
+    return saveConfig();
+  }
+  return ConfigResult::success();
+}
+#endif // USE_MAIL
+
 ConfigManager::ConfigResult ConfigManager::setLedTrafficLightMode(
     uint8_t mode) {
   if (m_configData.ledTrafficLightMode != mode) {

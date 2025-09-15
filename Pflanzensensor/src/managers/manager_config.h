@@ -11,6 +11,7 @@
 #include <Arduino.h>
 #include <ESP8266WebServer.h>
 
+#include "../configs/config_pflanzensensor.h"
 #include "../utils/critical_section.h"
 #include "../utils/result_types.h"
 #include "../web/handler/web_ota_handler.h"
@@ -392,6 +393,175 @@ class ConfigManager {
     return saveConfig();
   }
 
+#if USE_MAIL
+  // Mail/SMTP configuration
+  /**
+   * @brief Check if mail functionality is enabled
+   * @return True if mail is enabled, false otherwise
+   */
+  inline bool isMailEnabled() const {
+    return m_configData.mailEnabled;
+  }
+
+  /**
+   * @brief Get SMTP host
+   * @return SMTP server host string
+   */
+  inline String getSmtpHost() const {
+    return m_configData.smtpHost;
+  }
+
+  /**
+   * @brief Get SMTP port
+   * @return SMTP server port number
+   */
+  inline uint16_t getSmtpPort() const {
+    return m_configData.smtpPort;
+  }
+
+  /**
+   * @brief Get SMTP username
+   * @return SMTP username/email string
+   */
+  inline String getSmtpUser() const {
+    return m_configData.smtpUser;
+  }
+
+  /**
+   * @brief Get SMTP password
+   * @return SMTP password string
+   */
+  inline String getSmtpPassword() const {
+    return m_configData.smtpPassword;
+  }
+
+  /**
+   * @brief Get SMTP sender name
+   * @return Sender display name string
+   */
+  inline String getSmtpSenderName() const {
+    return m_configData.smtpSenderName;
+  }
+
+  /**
+   * @brief Get SMTP sender email
+   * @return Sender email address string
+   */
+  inline String getSmtpSenderEmail() const {
+    return m_configData.smtpSenderEmail;
+  }
+
+  /**
+   * @brief Get SMTP recipient email
+   * @return Default recipient email string
+   */
+  inline String getSmtpRecipient() const {
+    return m_configData.smtpRecipient;
+  }
+
+  /**
+   * @brief Check if SMTP STARTTLS is enabled
+   * @return True if STARTTLS is enabled, false otherwise
+   */
+  inline bool isSmtpEnableStartTLS() const {
+    return m_configData.smtpEnableStartTLS;
+  }
+
+  /**
+   * @brief Check if SMTP debug is enabled
+   * @return True if SMTP debug is enabled, false otherwise
+   */
+  inline bool isSmtpDebug() const {
+    return m_configData.smtpDebug;
+  }
+
+  /**
+   * @brief Check if test mail on boot is enabled
+   * @return True if test mail on boot is enabled, false otherwise
+   */
+  inline bool isSmtpSendTestMailOnBoot() const {
+    return m_configData.smtpSendTestMailOnBoot;
+  }
+
+  /**
+   * @brief Set mail functionality enabled status
+   * @param enabled True to enable mail, false to disable
+   * @return ConfigResult indicating success or failure
+   */
+  ConfigResult setMailEnabled(bool enabled);
+
+  /**
+   * @brief Set SMTP host
+   * @param host SMTP server host string
+   * @return ConfigResult indicating success or failure
+   */
+  ConfigResult setSmtpHost(const String& host);
+
+  /**
+   * @brief Set SMTP port
+   * @param port SMTP server port number
+   * @return ConfigResult indicating success or failure
+   */
+  ConfigResult setSmtpPort(uint16_t port);
+
+  /**
+   * @brief Set SMTP username
+   * @param user SMTP username/email string
+   * @return ConfigResult indicating success or failure
+   */
+  ConfigResult setSmtpUser(const String& user);
+
+  /**
+   * @brief Set SMTP password
+   * @param password SMTP password string
+   * @return ConfigResult indicating success or failure
+   */
+  ConfigResult setSmtpPassword(const String& password);
+
+  /**
+   * @brief Set SMTP sender name
+   * @param senderName Sender display name string
+   * @return ConfigResult indicating success or failure
+   */
+  ConfigResult setSmtpSenderName(const String& senderName);
+
+  /**
+   * @brief Set SMTP sender email
+   * @param senderEmail Sender email address string
+   * @return ConfigResult indicating success or failure
+   */
+  ConfigResult setSmtpSenderEmail(const String& senderEmail);
+
+  /**
+   * @brief Set SMTP recipient email
+   * @param recipient Default recipient email string
+   * @return ConfigResult indicating success or failure
+   */
+  ConfigResult setSmtpRecipient(const String& recipient);
+
+  /**
+   * @brief Set SMTP STARTTLS enabled status
+   * @param enabled True to enable STARTTLS, false to disable
+   * @return ConfigResult indicating success or failure
+   */
+  ConfigResult setSmtpEnableStartTLS(bool enabled);
+
+  /**
+   * @brief Set SMTP debug enabled status
+   * @param enabled True to enable SMTP debug, false to disable
+   * @return ConfigResult indicating success or failure
+   */
+  ConfigResult setSmtpDebug(bool enabled);
+
+  /**
+   * @brief Set test mail on boot enabled status
+   * @param enabled True to enable test mail on boot, false to disable
+   * @return ConfigResult indicating success or failure
+   */
+  ConfigResult setSmtpSendTestMailOnBoot(bool enabled);
+
+#endif // USE_MAIL
+
   // LED Traffic Light configuration
   /**
    * @brief Get LED traffic light mode
@@ -463,7 +633,6 @@ class ConfigManager {
 // Global instances
 extern std::unique_ptr<WebOTAHandler> otaHandler;
 extern std::unique_ptr<ResourceManager> resourceManager;
-
 #define ConfigMgr ConfigManager::getInstance()
 
 #endif

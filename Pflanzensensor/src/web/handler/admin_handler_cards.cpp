@@ -95,6 +95,129 @@ void AdminHandler::generateAndSendDebugSettingsCard() {
   sendChunk(F("</div>"));
 }
 
+#if USE_MAIL
+void AdminHandler::generateAndSendMailSettingsCard() {
+  sendChunk(F("<div class='card'><h3>E-Mail-Einstellungen</h3>"));
+  sendChunk(
+      F("<form method='post' action='/admin/updateSettings' "
+        "class='config-form'>"));
+  sendChunk(F("<input type='hidden' name='section' value='mail'>"));
+
+  // Mail enabled
+  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+  sendChunk(
+      F("<input type='checkbox' id='mail_enabled' "
+        "name='mail_enabled' value='true'"));
+  if (ConfigMgr.isMailEnabled()) sendChunk(F(" checked"));
+  sendChunk(F("> E-Mail-Funktionen aktivieren</label></div>"));
+
+  // SMTP Host
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<label for='smtp_host'>SMTP-Server:</label>"));
+  sendChunk(
+      F("<input type='text' id='smtp_host' name='smtp_host' value='"));
+  sendChunk(ConfigMgr.getSmtpHost());
+  sendChunk(F("' placeholder='smtp.gmail.com'>"));
+  sendChunk(F("</div>"));
+
+  // SMTP Port
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<label for='smtp_port'>SMTP-Port:</label>"));
+  sendChunk(
+      F("<input type='number' id='smtp_port' name='smtp_port' value='"));
+  sendChunk(String(ConfigMgr.getSmtpPort()));
+  sendChunk(F("' placeholder='587' min='1' max='65535'>"));
+  sendChunk(F("</div>"));
+
+  // SMTP User
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<label for='smtp_user'>Benutzername/E-Mail:</label>"));
+  sendChunk(
+      F("<input type='email' id='smtp_user' name='smtp_user' value='"));
+  sendChunk(ConfigMgr.getSmtpUser());
+  sendChunk(F("' placeholder='your.email@gmail.com'>"));
+  sendChunk(F("</div>"));
+
+  // SMTP Password
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<label for='smtp_password'>Passwort/App-Passwort:</label>"));
+  sendChunk(
+      F("<input type='password' id='smtp_password' name='smtp_password' value='"));
+  sendChunk(ConfigMgr.getSmtpPassword());
+  sendChunk(F("' placeholder='App-Passwort'>"));
+  sendChunk(F("</div>"));
+
+  // SMTP Sender Name
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<label for='smtp_sender_name'>Absender-Name:</label>"));
+  sendChunk(
+      F("<input type='text' id='smtp_sender_name' name='smtp_sender_name' value='"));
+  sendChunk(ConfigMgr.getSmtpSenderName());
+  sendChunk(F("' placeholder='Pflanzensensor'>"));
+  sendChunk(F("</div>"));
+
+  // SMTP Sender Email
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<label for='smtp_sender_email'>Absender-E-Mail:</label>"));
+  sendChunk(
+      F("<input type='email' id='smtp_sender_email' name='smtp_sender_email' value='"));
+  sendChunk(ConfigMgr.getSmtpSenderEmail());
+  sendChunk(F("' placeholder='pflanzensensor@your-domain.com'>"));
+  sendChunk(F("</div>"));
+
+  // SMTP Recipient
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<label for='smtp_recipient'>Standard-Empfänger:</label>"));
+  sendChunk(
+      F("<input type='email' id='smtp_recipient' name='smtp_recipient' value='"));
+  sendChunk(ConfigMgr.getSmtpRecipient());
+  sendChunk(F("' placeholder='recipient@email.com'>"));
+  sendChunk(F("</div>"));
+
+  // SMTP STARTTLS
+  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+  sendChunk(
+      F("<input type='checkbox' id='smtp_enable_starttls' "
+        "name='smtp_enable_starttls' value='true'"));
+  if (ConfigMgr.isSmtpEnableStartTLS()) sendChunk(F(" checked"));
+  sendChunk(F("> STARTTLS-Verschlüsselung aktivieren</label></div>"));
+
+  // SMTP Debug
+  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+  sendChunk(
+      F("<input type='checkbox' id='smtp_debug' "
+        "name='smtp_debug' value='true'"));
+  if (ConfigMgr.isSmtpDebug()) sendChunk(F(" checked"));
+  sendChunk(F("> SMTP-Debug-Ausgabe aktivieren</label></div>"));
+
+  // Send Test Mail on Boot
+  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+  sendChunk(
+      F("<input type='checkbox' id='smtp_send_test_mail_on_boot' "
+        "name='smtp_send_test_mail_on_boot' value='true'"));
+  if (ConfigMgr.isSmtpSendTestMailOnBoot()) sendChunk(F(" checked"));
+  sendChunk(F("> Test-Mail beim Systemstart senden</label></div>"));
+
+  sendChunk(
+      F("<button type='submit' class='button "
+        "button-primary'>Speichern</button>"));
+  sendChunk(F("</form>"));
+
+  // Add test mail button
+  if (ConfigMgr.isMailEnabled()) {
+    sendChunk(
+        F("<form action='/admin/testMail' method='POST' "
+          "style='margin-top:8px;'>"));
+    sendChunk(
+        F("<button type='submit' class='button button-secondary'>Test-Mail "
+          "senden</button>"));
+    sendChunk(F("</form>"));
+  }
+
+  sendChunk(F("</div>"));
+}
+#endif
+
 void AdminHandler::generateAndSendSystemSettingsCard() {
   sendChunk(F("<div class='card'><h3>Systemeinstellungen</h3>"));
   sendChunk(

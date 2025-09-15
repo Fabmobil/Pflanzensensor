@@ -28,6 +28,7 @@ Goal: help AI agents make correct, memory-safe edits fast. Keep changes small, r
 - Logging: global `logger` with `F()` PROGMEM strings. Keep messages short; avoid heap churn.
 - Timing: call `yield()`/`delay(1)` in long paths; respect `MEASUREMENT_*` macros.
 - Static files: serve via `WebManager::serveStaticFile` (avoid `serveStatic` MD5 overhead on ESP8266).
+- Language: all output shall be in german (UI, logs, errors). Update messages which are still in English once you find them.
 
 ## Config and data
 - Compile-time: device name, pins, thresholds, intervals, SSIDs in `configs/config_pflanzensensor.h`. Version in `configs/config.h`.

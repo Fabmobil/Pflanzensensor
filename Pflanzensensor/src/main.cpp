@@ -51,6 +51,11 @@
 #include "web/services/websocket.h"
 #endif
 
+#if USE_MAIL
+#include "mail/mail_manager.h"
+#include "mail/mail_helper.h"
+#endif
+
 // helper methods
 #include "configs/default_json_generator.h"
 #include "utils/helper.h"
@@ -417,6 +422,32 @@ void setup() {
   logger.info(
     F("main"),
     F("Überspringe InfluxDB-Initialisierung im AP/Captive-Portal-Modus"));
+  }
+#endif
+
+#if USE_MAIL
+  if (!isCaptivePortalAPActive()) {
+    Helper::initializeComponent(F("E-Mail"), []() -> ResourceResult {
+      auto& mailManager = MailManager::getInstance();
+      auto result = mailManager.init();
+      if (!result.isSuccess()) {
+#if USE_DISPLAY
+        if (displayManager)
+          displayManager->updateLogStatus(F("Mail Fehler"), true);
+#endif
+        logger.error(F("main"), F("E-Mail-Initialisierung fehlgeschlagen: ") +
+                                    result.getMessage());
+        return result;
+      }
+      return ResourceResult::success();
+    });
+#if USE_DISPLAY
+    if (displayManager) displayManager->updateLogStatus(F("E-Mail..."), true);
+#endif
+  } else {
+    logger.info(
+      F("main"),
+      F("Überspringe E-Mail-Initialisierung im AP/Captive-Portal-Modus"));
   }
 #endif
 

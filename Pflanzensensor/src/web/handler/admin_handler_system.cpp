@@ -14,6 +14,9 @@
 #include "managers/manager_sensor.h"
 #include "utils/critical_section.h"
 #include "web/handler/admin_handler.h"
+#if USE_MAIL
+#include "mail/mail_helper.h"
+#endif
 
 void AdminHandler::handleAdminUpdate() {
   String changes;
@@ -116,3 +119,62 @@ void AdminHandler::handleReboot() {
   logger.warning(F("AdminHandler"), F("Starte ESP neu"));
   ESP.restart();
 }
+
+#if USE_MAIL
+void AdminHandler::handleTestMail() {
+  std::vector<String> css = {"admin"};
+  std::vector<String> js = {"admin"};
+
+  // Check if mail is enabled
+  if (!ConfigMgr.isMailEnabled()) {
+    renderPage(
+        F("Test-Mail"), "admin",
+        [this]() {
+          sendChunk(F("<div class='container'>"));
+          sendChunk(F("<h2>E-Mail-Funktionen sind deaktiviert</h2>"));
+          sendChunk(F("<p>Bitte aktivieren Sie die E-Mail-Funktionen in den Einstellungen.</p>"));
+          sendChunk(F("<br><a href='/admin' class='button button-primary'>"));
+          sendChunk(F("Zurück zur Administration</a>"));
+          sendChunk(F("</div>"));
+        },
+        css, js);
+    return;
+  }
+
+  // Try to send test mail
+  bool success = false;
+  String errorMessage = "";
+
+  try {
+    success = MailHelper::sendQuickTestMail().isSuccess();
+  } catch (...) {
+    errorMessage = F("Unbekannter Fehler beim Senden der Test-Mail");
+  }
+
+  // Show result
+  renderPage(
+      F("Test-Mail"), "admin",
+      [this, success, errorMessage]() {
+        sendChunk(F("<div class='container'>"));
+        if (success) {
+          sendChunk(F("<h2>Test-Mail erfolgreich gesendet</h2>"));
+          sendChunk(F("<p>Die Test-Mail wurde erfolgreich an "));
+          sendChunk(ConfigMgr.getSmtpRecipient());
+          sendChunk(F(" gesendet.</p>"));
+        } else {
+          sendChunk(F("<h2>Fehler beim Senden der Test-Mail</h2>"));
+          sendChunk(F("<p>Die Test-Mail konnte nicht gesendet werden.</p>"));
+          if (!errorMessage.isEmpty()) {
+            sendChunk(F("<p>Fehler: "));
+            sendChunk(errorMessage);
+            sendChunk(F("</p>"));
+          }
+          sendChunk(F("<p>Bitte überprüfen Sie Ihre SMTP-Einstellungen.</p>"));
+        }
+        sendChunk(F("<br><a href='/admin' class='button button-primary'>"));
+        sendChunk(F("Zurück zur Administration</a>"));
+        sendChunk(F("</div>"));
+      },
+      css, js);
+}
+#endif
