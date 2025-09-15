@@ -1,0 +1,351 @@
+:root {
+  /* Colors */
+  --primary: #4CAF50;
+  --warning: #ff9800;
+  --danger: #f44336;
+  --text: #333;
+  --text-light: #666;
+  --border: #ddd;
+  --bg-white: #fff;
+  --bg-light: #f8f9fa;
+  --admin: #ff5722;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  /* Other */
+  --radius: 4px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Reset & Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg-light);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Main Layout Containers */
+.main-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-light);
+}
+
+.content-container {
+  flex: 1;
+  background: #f5f5f5;
+  padding: var(--space-md) var(--space-md) var(--space-xl);
+}
+
+.page-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--space-xl);
+}
+
+/* --- Centered two-row navigation, blended style --- */
+.navbar {
+  background-color: #333;
+  width: 100%;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.nav-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  width: 100%;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-row-main {
+  border-bottom: 1px solid #444;
+}
+
+.nav-row-secondary {
+  /* Remove background and border-radius for blending */
+  background: none;
+  border-radius: 0;
+  font-size: 0.92em;
+  margin-bottom: 0;
+  margin-top: 0;
+  padding-left: 0;
+}
+
+.nav-row-secondary .nav-item a {
+  background: var(--admin);
+  color: white;
+  font-weight: 500;
+  border-radius: 0;
+  margin-right: 4px;
+  padding: 7px 12px;
+  font-size: 0.97em;
+  transition: background 0.2s;
+}
+.nav-row-secondary .nav-item a.active {
+  background: #bf360c;
+}
+.nav-row-secondary .nav-item a:hover {
+  background: #d84315;
+}
+
+.nav-item {
+  position: relative;
+}
+
+.nav-item a {
+  color: white;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+  transition: background 0.2s;
+}
+
+.nav-item a:hover {
+  background: var(--primary);
+}
+
+.nav-item a.active {
+  background: var(--primary);
+}
+
+.nav-admin > a {
+  color: white;
+  background: var(--admin);
+  cursor: pointer;
+  border-radius: 0;
+}
+.nav-admin > a.active {
+  background: #bf360c;
+}
+.nav-admin > a:hover {
+  background: #d84315;
+}
+
+/* Common Components */
+.card {
+  background: var(--bg-white);
+  border-radius: var(--radius);
+  padding: var(--space-md);
+  box-shadow: var(--shadow);
+  margin-bottom: var(--space-md);
+}
+
+hr {
+  border: none;
+  border-top: 2px dotted #ccc;
+  margin: 12px 0 8px 0;
+  height: 0;
+  background: none;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-sm) var(--space-md);
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.button-primary {
+  background: var(--primary);
+  color: white;
+}
+
+.button-warning {
+  background: var(--warning);
+  color: white;
+}
+
+.button-danger {
+  background: var(--danger);
+  color: white;
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: var(--space-md);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--space-xs);
+  font-weight: 500;
+}
+
+.form-control {
+  width: 100%;
+  padding: var(--space-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+}
+
+/* Footer */
+.footer {
+  background: #333;
+  color: white;
+  padding: var(--space-sm);
+  text-align: center;
+  font-size: 0.9rem;
+  margin-top: auto;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  margin-bottom: var(--space-md);
+  color: var(--text);
+}
+
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.75rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+.card > h2 {
+  text-align: center;
+  margin-bottom: 0;
+}
+
+/* Utilities */
+.text-center {
+  text-align: center;
+}
+
+.mt-1 { margin-top: var(--space-sm); }
+.mt-2 { margin-top: var(--space-md); }
+.mt-3 { margin-top: var(--space-lg); }
+.mb-1 { margin-bottom: var(--space-sm); }
+.mb-2 { margin-bottom: var(--space-md); }
+.mb-3 { margin-bottom: var(--space-lg); }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .nav-menu {
+    flex-direction: column;
+  }
+
+  .nav-admin-menu {
+    position: static;
+    flex-direction: column;
+  }
+
+  .content-container {
+    padding: var(--space-sm);
+  }
+
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+}
+
+/* Status Indicators */
+.status-indicator {
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius);
+  font-size: 0.9em;
+  font-weight: 500;
+}
+
+.status-success {
+  background: rgba(76, 175, 80, 0.1);
+  color: var(--primary);
+}
+
+.status-warning {
+  background: rgba(255, 152, 0, 0.1);
+  color: var(--warning);
+}
+
+.status-green {
+  background: rgba(76, 175, 80, 0.1);
+  color: var(--primary);
+}
+
+.status-yellow {
+  background: rgba(255, 152, 0, 0.1);
+  color: var(--warning);
+}
+
+.status-red {
+  background: rgba(255, 68, 68, 0.1);
+  color: var(--danger);
+}
+
+.status-error {
+  background: rgba(90, 8, 50, 0.1);
+  color: var(--text-light);
+}
+
+.status-unknown {
+  background: rgba(99, 99, 99, 0.1);
+  color: var(--text-light);
+}
+
+/* Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: var(--space-md);
+}
+
+th, td {
+  padding: var(--space-sm);
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+th {
+  background: var(--bg-light);
+  font-weight: 500;
+}
+
+/* Grid System */
+.grid {
+  display: grid;
+  gap: var(--space-md);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+

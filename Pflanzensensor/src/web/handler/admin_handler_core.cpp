@@ -1,0 +1,282 @@
+/**
+ * @file admin_handler_core.cpp
+ * @brief Core implementation of admin handler functionality
+ * @details Provides route registration and main page handling
+ */
+
+#include <ArduinoJson.h>
+#include <LittleFS.h>
+
+#include "configs/config.h"
+#include "logger/logger.h"
+#include "managers/manager_config.h"
+#include "managers/manager_sensor.h"
+#include "utils/critical_section.h"
+#include "utils/wifi.h"  // For getActiveWiFiSlot()
+#include "web/handler/admin_handler.h"
+
+RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
+  logger.logMemoryStats(F("AdminRegisterRoutes"));
+
+  // Register admin page route
+  auto result = router.addRoute(HTTP_GET, "/admin", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    handleAdminPage();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"), F("Registrieren der /admin-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin-Route"));
+
+  // Register admin update route
+  result = router.addRoute(HTTP_POST, "/admin/updateSettings", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    logger.debug(F("AdminHandler"), F("Handling admin update request"));
+    handleAdminUpdate();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"),
+                 F("Registrieren der /admin/updateSettings-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/updateSettings-Route"));
+
+  // Register config reset route
+  result = router.addRoute(HTTP_POST, "/admin/reset", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    handleConfigReset();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"), F("Registrieren der /admin/reset-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/reset-Route"));
+
+  // Register reboot route
+  result = router.addRoute(HTTP_POST, "/admin/reboot", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    handleReboot();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"),
+                 F("Registrieren der /admin/reboot-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/reboot-Route"));
+
+  // Register config set route
+  result = router.addRoute(HTTP_POST, "/admin/config/set", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    handleConfigSet();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"),
+                 F("Registrieren der /admin/config/set-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/config/set-Route"));
+
+  result = router.addRoute(HTTP_GET, "/admin/downloadLog", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    handleDownloadLog();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"),
+                 F("Registrieren der /admin/downloadLog-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadLog-Route"));
+
+  // Register WiFi settings update route
+  result = router.addRoute(HTTP_POST, "/admin/updateWiFi", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    handleWiFiUpdate();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"),
+                 F("Registrieren der /admin/updateWiFi-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/updateWiFi-Route"));
+
+  logger.info(F("AdminHandler"), F("Alle Admin-Routen erfolgreich registriert"));
+  logger.logMemoryStats(F("AdminRegisterRoutes"));
+  return result;
+}
+
+HandlerResult AdminHandler::handleGet(const String& uri,
+                                      const std::map<String, String>& query) {
+  // Let registerRoutes handle the actual routing
+  return HandlerResult::fail(HandlerError::INVALID_REQUEST,
+                             "Bitte registerRoutes verwenden");
+}
+
+HandlerResult AdminHandler::handlePost(const String& uri,
+                                       const std::map<String, String>& params) {
+  // Let registerRoutes handle the actual routing
+  return HandlerResult::fail(HandlerError::INVALID_REQUEST,
+                             "Bitte registerRoutes verwenden");
+}
+
+void AdminHandler::handleConfigSet() {
+  // Debug request info
+  logger.debug(F("AdminHandler"),
+               "Anfragemethode: " + String(_server.method()));
+  logger.debug(F("AdminHandler"), "Anfrage-URI: " + String(_server.uri()));
+
+  // Get Content-Type header directly
+  String contentType = _server.header("Content-Type");
+  logger.debug(F("AdminHandler"), "Content-Type: '" + contentType + "'");
+
+  // Check if we have a valid content type
+  if (contentType == "" || contentType.indexOf("application/json") == -1) {
+    String errorMsg =
+        F("{\"error\": \"Content-Type muss application/json sein\", "
+          "\"received\": \"");
+    errorMsg += contentType;
+    errorMsg += F("\"}");
+    logger.debug(F("AdminHandler"),
+                 "Ungültiger Content-Type, sende Fehler: " + errorMsg);
+    sendJsonResponse(400, errorMsg);
+    return;
+  }
+
+  // Get the request body
+  String json = _server.arg("plain");
+
+  // Parse JSON
+  StaticJsonDocument<512> doc;
+  DeserializationError error = deserializeJson(doc, json);
+
+  if (error) {
+    String errorMsg = F("{\"error\": \"Ungültiges JSON: ");
+    errorMsg += error.c_str();
+    errorMsg += F("\"}");
+    sendJsonResponse(400, errorMsg);
+    return;
+  }
+
+  // Extract key and value
+  if (!doc["key"].is<const char*>() || !doc["value"].is<const char*>()) {
+    sendJsonResponse(
+        400, F("{\"error\": \"Erforderliche Felder 'key' und 'value' fehlen\"}"));
+    return;
+  }
+
+  String key = doc["key"].as<String>();
+  String value = doc["value"].as<String>();
+
+  // Apply config value
+  if (applyConfigValue(key, value)) {
+    auto result = ConfigMgr.saveConfig();
+    if (result.isSuccess()) {
+      sendJsonResponse(
+          200,
+          F("{\"status\": \"OK\", \"message\": \"Konfiguration aktualisiert\"}"));
+    } else {
+      String errorMsg = F("{\"error\": \"Fehler beim Speichern der Konfiguration: ");
+      errorMsg += result.getMessage();
+      errorMsg += F("\"}");
+      sendJsonResponse(500, errorMsg);
+    }
+  } else {
+    sendJsonResponse(400, F("{\"error\": \"Ungültiger Konfigurationswert\"}"));
+  }
+}
+
+void AdminHandler::handleAdminPage() {
+  logger.debug(F("AdminHandler"), F("Bearbeite Admin-Seitenanfrage"));
+  _cleaned = false;
+  std::vector<String> css = {"style", "start", "admin"};
+  std::vector<String> js = {"admin"};
+  renderPage(
+      ConfigMgr.getDeviceName() + F(" Verwaltung"), "admin",
+      [this]() {
+        sendChunk(F("<div class='card'>"));
+        sendChunk(F("<h2>"));
+        sendChunk(ConfigMgr.getDeviceName());
+        sendChunk(F(" Einstellungen</h2>"));
+        sendChunk(F("</div>"));
+        sendChunk(F("<div class='admin-grid'>"));
+        generateAndSendDebugSettingsCard();
+        generateAndSendWiFiSettingsCard();
+        generateAndSendSystemSettingsCard();
+        generateAndSendLedTrafficLightSettingsCard();
+        generateAndSendSystemActionsCard();
+        generateAndSendSystemInfoCard();
+        generateAndSendJsonDebugCard();  // <-- Add the new card here
+        sendChunk(F("</div>"));
+      },
+      css, js);
+  logger.debug(F("AdminHandler"), F("Admin page sent successfully"));
+}
+
+void AdminHandler::handleDownloadLog() {
+  if (!ConfigMgr.isFileLoggingEnabled()) {
+    sendError(404, F("Datei-Logging ist auf diesem Gerät nicht aktiviert"));
+    return;
+  }
+
+  const char* LOG_FILE = "/log.txt";
+  if (!LittleFS.exists(LOG_FILE)) {
+    sendError(404, F("Keine Log-Datei gefunden"));
+    return;
+  }
+
+  File logFile = LittleFS.open(LOG_FILE, "r");
+  if (!logFile) {
+    sendError(500, F("Öffnen der Log-Datei fehlgeschlagen"));
+    return;
+  }
+
+  size_t fileSize = logFile.size();
+  if (fileSize == 0) {
+    logFile.close();
+    sendError(404, F("Log-Datei ist leer"));
+    return;
+  }
+
+  _server.sendHeader(F("Content-Type"), F("text/plain"));
+  _server.sendHeader(F("Content-Disposition"),
+                     F("attachment; filename=log.txt"));
+  _server.sendHeader(F("Connection"), F("close"));
+  _server.sendHeader(F("Content-Length"), String(fileSize));
+  _server.setContentLength(fileSize);
+  _server.send(200, F("text/plain"), "");  // Send headers
+
+  const size_t CHUNK_SIZE = 1024;
+  uint8_t buffer[CHUNK_SIZE];
+  size_t remainingBytes = fileSize;
+
+  while (remainingBytes > 0) {
+    size_t bytesToRead = min(remainingBytes, CHUNK_SIZE);
+    size_t bytesRead = logFile.read(buffer, bytesToRead);
+    if (bytesRead == 0) break;
+    _server.sendContent((char*)buffer, bytesRead);
+    remainingBytes -= bytesRead;
+    yield();
+  }
+  logFile.close();
+}

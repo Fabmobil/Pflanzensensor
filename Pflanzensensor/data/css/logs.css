@@ -1,0 +1,188 @@
+.log-entry {
+  font-family: monospace;
+  padding: 2px 5px;
+  line-height: 1.3;
+  /* Remove the white border/line */
+  border-bottom: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  /* Add a slight background hover effect */
+  transition: background-color 0.2s;
+}
+.log-entry:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.log-container {
+  height: 75vh;
+  overflow-y: auto;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 10px;
+  margin: 10px 0;
+  /* Add some nice scrollbar styling */
+  scrollbar-width: thin;
+  scrollbar-color: #666 #1e1e1e;
+}
+
+.log-controls {
+  margin: 10px 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.log-entry.debug { color: #569cd6; }
+.log-entry.info { color: #6a9955; }
+.log-entry.warning { color: #dcdcaa; }
+.log-entry.error { color: #f44747; }
+.log-entry.system { color: #808080; }
+
+.status-indicator {
+  padding: 5px;
+  margin: 5px 0;
+  border-radius: 3px;
+}
+
+.button-group {
+  margin: 10px 0;
+  display: flex;
+  gap: 10px;
+}
+
+.button-group .button { margin-right: 8px; }
+
+.connection-status {
+  margin: 10px 0;
+  padding: 5px;
+  border-radius: 3px;
+}
+
+.connection-status.connected {
+  display: block;
+  background: #6a9955;
+  color: white;
+}
+
+.connection-status.disconnected {
+  display: block;
+  background: #f44747;
+  color: white;
+}
+
+.log-controls-row {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.log-controls-card {
+  display: inline-block;
+  vertical-align: top;
+  min-width: unset;
+  max-width: unset;
+  margin-bottom: 0;
+  padding: 18px 22px;
+}
+.log-controls-label {
+  font-weight: 500;
+  margin-bottom: 8px;
+  font-size: 1.08em;
+}
+.button-debug    { background: #569cd6; color: #fff; }
+.button-info     { background: #6a9955; color: #fff; }
+.button-warning  { background: #dcdcaa; color: #333; }
+.button-error    { background: #f44747; color: #fff; }
+.ws-status {
+  margin-left: 16px;
+  font-weight: 500;
+  color: #dcdcaa; /* default: connecting */
+  transition: color 0.2s;
+}
+.ws-status.connected {
+  color: #6a9955; /* green */
+}
+.ws-status.error, .ws-status.disconnected {
+  color: #f44747; /* red */
+}
+
+.log-level-btn {
+  opacity: 0.5;
+  filter: grayscale(60%);
+  transition: opacity 0.2s, filter 0.2s, box-shadow 0.2s;
+  box-shadow: none;
+}
+.log-level-btn.active {
+  opacity: 1;
+  filter: none;
+  z-index: 1;
+}
+.log-level-btn.level-debug.active { box-shadow: 0 0 0 2px #569cd6; }
+.log-level-btn.level-info.active  { box-shadow: 0 0 0 2px #6a9955; }
+.log-level-btn.level-warning.active { box-shadow: 0 0 0 2px #dcdcaa; }
+.log-level-btn.level-error.active { box-shadow: 0 0 0 2px #f44747; }
+@keyframes pulse-debug {
+  0% { box-shadow: 0 0 0 2px #fff; }
+  50% { box-shadow: 0 0 8px 4px #569cd6; }
+  100% { box-shadow: 0 0 0 2px #569cd6; }
+}
+@keyframes pulse-info {
+  0% { box-shadow: 0 0 0 2px #fff; }
+  50% { box-shadow: 0 0 8px 4px #6a9955; }
+  100% { box-shadow: 0 0 0 2px #6a9955; }
+}
+@keyframes pulse-warning {
+  0% { box-shadow: 0 0 0 2px #fff; }
+  50% { box-shadow: 0 0 8px 4px #dcdcaa; }
+  100% { box-shadow: 0 0 0 2px #dcdcaa; }
+}
+@keyframes pulse-error {
+  0% { box-shadow: 0 0 0 2px #fff; }
+  50% { box-shadow: 0 0 8px 4px #f44747; }
+  100% { box-shadow: 0 0 0 2px #f44747; }
+}
+.log-level-btn.pulse.level-debug { animation: pulse-debug 0.3s; }
+.log-level-btn.pulse.level-info { animation: pulse-info 0.3s; }
+.log-level-btn.pulse.level-warning { animation: pulse-warning 0.3s; }
+.log-level-btn.pulse.level-error { animation: pulse-error 0.3s; }
+
+
+@media (max-width: 768px) {
+  .log-container {
+    height: calc(100vh - 400px);
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 700px) {
+  .log-controls-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .log-controls-card {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 0;
+  }
+  .button-group {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .log-level-btn {
+    min-width: 90px;
+    flex: 1 1 40%;
+    margin-bottom: 6px;
+  }
+  .log-container {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    height: 40vh;
+    font-size: 0.95em;
+  }
+}
