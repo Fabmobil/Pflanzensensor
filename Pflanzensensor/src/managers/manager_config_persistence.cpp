@@ -105,81 +105,8 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(
           : "";  // Default to empty (no measurement selected)
 
 #if USE_MAIL
-  // Mail/SMTP settings
-  config.mailEnabled = doc.containsKey("mail_enabled")
-                           ? doc["mail_enabled"]
-                           : false;
-  config.smtpHost = doc.containsKey("smtp_host")
-                        ? doc["smtp_host"].as<String>()
-#ifdef SMTP_HOST
-                        : String(SMTP_HOST);
-#else
-                        : "";
+  loadMailConfig(doc, config);
 #endif
-  config.smtpPort = doc.containsKey("smtp_port")
-                        ? doc["smtp_port"]
-#ifdef SMTP_PORT
-                        : SMTP_PORT;
-#else
-                        : 587;
-#endif
-  config.smtpUser = doc.containsKey("smtp_user")
-                        ? doc["smtp_user"].as<String>()
-#ifdef SMTP_USER
-                        : String(SMTP_USER);
-#else
-                        : "";
-#endif
-  config.smtpPassword = doc.containsKey("smtp_password")
-                            ? doc["smtp_password"].as<String>()
-#ifdef SMTP_PASSWORD
-                            : String(SMTP_PASSWORD);
-#else
-                            : "";
-#endif
-  config.smtpSenderName = doc.containsKey("smtp_sender_name")
-                              ? doc["smtp_sender_name"].as<String>()
-#ifdef SMTP_SENDER_NAME
-                              : String(SMTP_SENDER_NAME);
-#else
-                              : String(DEVICE_NAME);
-#endif
-  config.smtpSenderEmail = doc.containsKey("smtp_sender_email")
-                               ? doc["smtp_sender_email"].as<String>()
-#ifdef SMTP_SENDER_EMAIL
-                               : String(SMTP_SENDER_EMAIL);
-#else
-                               : "";
-#endif
-  config.smtpRecipient = doc.containsKey("smtp_recipient")
-                             ? doc["smtp_recipient"].as<String>()
-#ifdef SMTP_RECIPIENT
-                             : String(SMTP_RECIPIENT);
-#else
-                             : "";
-#endif
-  config.smtpEnableStartTLS = doc.containsKey("smtp_enable_starttls")
-                                  ? doc["smtp_enable_starttls"]
-#ifdef SMTP_ENABLE_STARTTLS
-                                  : SMTP_ENABLE_STARTTLS;
-#else
-                                  : true;
-#endif
-  config.smtpDebug = doc.containsKey("smtp_debug")
-                         ? doc["smtp_debug"]
-#ifdef SMTP_DEBUG
-                         : SMTP_DEBUG;
-#else
-                         : false;
-#endif
-  config.smtpSendTestMailOnBoot = doc.containsKey("smtp_send_test_mail_on_boot")
-                                      ? doc["smtp_send_test_mail_on_boot"]
-#ifdef SMTP_SEND_TEST_MAIL_ON_BOOT
-                                      : SMTP_SEND_TEST_MAIL_ON_BOOT;
-#else
-                                      : false;
-#endif
-#endif // USE_MAIL
 
   logger.logMemoryStats(F("ConfigP_load_after"));
   return PersistenceResult::success();
@@ -209,59 +136,8 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(
   config.ledTrafficLightSelectedMeasurement = "";
 
 #if USE_MAIL
-  // Mail/SMTP settings - defaults from config file or safe defaults
-  config.mailEnabled = false;  // Disabled by default for security
-#ifdef SMTP_HOST
-  config.smtpHost = String(SMTP_HOST);
-#else
-  config.smtpHost = "";
+  setMailConfigDefaults(config);
 #endif
-#ifdef SMTP_PORT
-  config.smtpPort = SMTP_PORT;
-#else
-  config.smtpPort = 587;  // Standard SMTP port
-#endif
-#ifdef SMTP_USER
-  config.smtpUser = String(SMTP_USER);
-#else
-  config.smtpUser = "";
-#endif
-#ifdef SMTP_PASSWORD
-  config.smtpPassword = String(SMTP_PASSWORD);
-#else
-  config.smtpPassword = "";
-#endif
-#ifdef SMTP_SENDER_NAME
-  config.smtpSenderName = String(SMTP_SENDER_NAME);
-#else
-  config.smtpSenderName = String(DEVICE_NAME);
-#endif
-#ifdef SMTP_SENDER_EMAIL
-  config.smtpSenderEmail = String(SMTP_SENDER_EMAIL);
-#else
-  config.smtpSenderEmail = "";
-#endif
-#ifdef SMTP_RECIPIENT
-  config.smtpRecipient = String(SMTP_RECIPIENT);
-#else
-  config.smtpRecipient = "";
-#endif
-#ifdef SMTP_ENABLE_STARTTLS
-  config.smtpEnableStartTLS = SMTP_ENABLE_STARTTLS;
-#else
-  config.smtpEnableStartTLS = true;  // Enable STARTTLS by default
-#endif
-#ifdef SMTP_DEBUG
-  config.smtpDebug = SMTP_DEBUG;
-#else
-  config.smtpDebug = false;
-#endif
-#ifdef SMTP_SEND_TEST_MAIL_ON_BOOT
-  config.smtpSendTestMailOnBoot = SMTP_SEND_TEST_MAIL_ON_BOOT;
-#else
-  config.smtpSendTestMailOnBoot = false;
-#endif
-#endif // USE_MAIL
 
   doc["admin_password"] = config.adminPassword;
   doc["md5_verification"] = config.md5Verification;
@@ -311,41 +187,32 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(
 ConfigPersistence::PersistenceResult ConfigPersistence::saveToFileMinimal(
     const ConfigData& config) {
   StaticJsonDocument<512> doc;
-  doc["admin_password"] = config.adminPassword;
-  doc["md5_verification"] = config.md5Verification;
-  doc["collectd_enabled"] = config.collectdEnabled;
-  doc["file_logging_enabled"] = config.fileLoggingEnabled;
-  doc["device_name"] = config.deviceName;
-  doc["debug_ram"] = config.debugRAM;
-  doc["debug_measurement_cycle"] = config.debugMeasurementCycle;
-  doc["debug_sensor"] = config.debugSensor;
-  doc["debug_display"] = config.debugDisplay;
-  doc["debug_websocket"] = config.debugWebSocket;
-  doc["wifi_ssid_1"] = config.wifiSSID1;
-  doc["wifi_password_1"] = config.wifiPassword1;
-  doc["wifi_ssid_2"] = config.wifiSSID2;
-  doc["wifi_password_2"] = config.wifiPassword2;
-  doc["wifi_ssid_3"] = config.wifiSSID3;
-  doc["wifi_password_3"] = config.wifiPassword3;
-  doc["led_traffic_light_mode"] = config.ledTrafficLightMode;
-  doc["led_traffic_light_selected_measurement"] =
-      config.ledTrafficLightSelectedMeasurement;
+  doc[F("admin_password")] = config.adminPassword;
+  doc[F("md5_verification")] = config.md5Verification;
+  doc[F("collectd_enabled")] = config.collectdEnabled;
+  doc[F("file_logging_enabled")] = config.fileLoggingEnabled;
+  doc[F("device_name")] = config.deviceName;
+  doc[F("debug_ram")] = config.debugRAM;
+  doc[F("debug_measurement_cycle")] = config.debugMeasurementCycle;
+  doc[F("debug_sensor")] = config.debugSensor;
+  doc[F("debug_display")] = config.debugDisplay;
+  doc[F("debug_websocket")] = config.debugWebSocket;
+  doc[F("wifi_ssid_1")] = config.wifiSSID1;
+  doc[F("wifi_password_1")] = config.wifiPassword1;
+  doc[F("wifi_ssid_2")] = config.wifiSSID2;
+  doc[F("wifi_password_2")] = config.wifiPassword2;
+  doc[F("wifi_ssid_3")] = config.wifiSSID3;
+  doc[F("wifi_password_3")] = config.wifiPassword3;
+  doc[F("led_traffic_light_mode")] = config.ledTrafficLightMode;
+  doc[F("led_traffic_light_selected_measurement")] = config.ledTrafficLightSelectedMeasurement;
+
 #if USE_MAIL
-  doc["mail_enabled"] = config.mailEnabled;
-  doc["smtp_host"] = config.smtpHost;
-  doc["smtp_port"] = config.smtpPort;
-  doc["smtp_user"] = config.smtpUser;
-  doc["smtp_password"] = config.smtpPassword;
-  doc["smtp_sender_name"] = config.smtpSenderName;
-  doc["smtp_sender_email"] = config.smtpSenderEmail;
-  doc["smtp_recipient"] = config.smtpRecipient;
-  doc["smtp_enable_starttls"] = config.smtpEnableStartTLS;
-  doc["smtp_debug"] = config.smtpDebug;
-  doc["smtp_send_test_mail_on_boot"] = config.smtpSendTestMailOnBoot;
+  saveMailConfigToJson(doc, config);
 #endif
-  // Remove unused variable 'errorMsg'
-  if (!PersistenceUtils::writeJsonFile("/config.json", doc, *(new String()))) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR);
+
+  String errorMsg;
+  if (!PersistenceUtils::writeJsonFile("/config.json", doc, errorMsg)) {
+    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
   }
   return PersistenceResult::success();
 }
@@ -370,3 +237,160 @@ void ConfigPersistence::readUpdateFlagsFromFile(bool& fs, bool& fw) {
     fw = false;
   }
 }
+
+#if USE_MAIL
+// Helper function to load mail configuration
+void ConfigPersistence::loadMailConfig(const StaticJsonDocument<512>& doc, ConfigData& config) {
+  config.mailEnabled = doc.containsKey(F("mail_enabled")) ? doc[F("mail_enabled")] : false;
+
+  config.smtpHost = doc.containsKey(F("smtp_host")) ? doc[F("smtp_host")].as<String>()
+#ifdef SMTP_HOST
+                    : F(SMTP_HOST);
+#else
+                    : F("");
+#endif
+
+  config.smtpPort = doc.containsKey(F("smtp_port")) ? doc[F("smtp_port")]
+#ifdef SMTP_PORT
+                    : SMTP_PORT;
+#else
+                    : 587;
+#endif
+
+  config.smtpUser = doc.containsKey(F("smtp_user")) ? doc[F("smtp_user")].as<String>()
+#ifdef SMTP_USER
+                    : F(SMTP_USER);
+#else
+                    : F("");
+#endif
+
+  config.smtpPassword = doc.containsKey(F("smtp_password")) ? doc[F("smtp_password")].as<String>()
+#ifdef SMTP_PASSWORD
+                        : F(SMTP_PASSWORD);
+#else
+                        : F("");
+#endif
+
+  config.smtpSenderName = doc.containsKey(F("smtp_sender_name")) ? doc[F("smtp_sender_name")].as<String>()
+#ifdef SMTP_SENDER_NAME
+                          : F(SMTP_SENDER_NAME);
+#else
+                          : F(DEVICE_NAME);
+#endif
+
+  config.smtpSenderEmail = doc.containsKey(F("smtp_sender_email")) ? doc[F("smtp_sender_email")].as<String>()
+#ifdef SMTP_SENDER_EMAIL
+                           : F(SMTP_SENDER_EMAIL);
+#else
+                           : F("");
+#endif
+
+  config.smtpRecipient = doc.containsKey(F("smtp_recipient")) ? doc[F("smtp_recipient")].as<String>()
+#ifdef SMTP_RECIPIENT
+                         : F(SMTP_RECIPIENT);
+#else
+                         : F("");
+#endif
+
+  config.smtpEnableStartTLS = doc.containsKey(F("smtp_enable_starttls")) ? doc[F("smtp_enable_starttls")]
+#ifdef SMTP_ENABLE_STARTTLS
+                              : SMTP_ENABLE_STARTTLS;
+#else
+                              : true;
+#endif
+
+  config.smtpDebug = doc.containsKey(F("smtp_debug")) ? doc[F("smtp_debug")]
+#ifdef SMTP_DEBUG
+                     : SMTP_DEBUG;
+#else
+                     : false;
+#endif
+
+  config.smtpSendTestMailOnBoot = doc.containsKey(F("smtp_send_test_mail_on_boot")) ? doc[F("smtp_send_test_mail_on_boot")]
+#ifdef SMTP_SEND_TEST_MAIL_ON_BOOT
+                                  : SMTP_SEND_TEST_MAIL_ON_BOOT;
+#else
+                                  : false;
+#endif
+}
+
+// Helper function to set mail configuration defaults
+void ConfigPersistence::setMailConfigDefaults(ConfigData& config) {
+  config.mailEnabled = false;  // Disabled by default for security
+
+#ifdef SMTP_HOST
+  config.smtpHost = F(SMTP_HOST);
+#else
+  config.smtpHost = F("");
+#endif
+
+#ifdef SMTP_PORT
+  config.smtpPort = SMTP_PORT;
+#else
+  config.smtpPort = 587;  // Standard SMTP port
+#endif
+
+#ifdef SMTP_USER
+  config.smtpUser = F(SMTP_USER);
+#else
+  config.smtpUser = F("");
+#endif
+
+#ifdef SMTP_PASSWORD
+  config.smtpPassword = F(SMTP_PASSWORD);
+#else
+  config.smtpPassword = F("");
+#endif
+
+#ifdef SMTP_SENDER_NAME
+  config.smtpSenderName = F(SMTP_SENDER_NAME);
+#else
+  config.smtpSenderName = F(DEVICE_NAME);
+#endif
+
+#ifdef SMTP_SENDER_EMAIL
+  config.smtpSenderEmail = F(SMTP_SENDER_EMAIL);
+#else
+  config.smtpSenderEmail = F("");
+#endif
+
+#ifdef SMTP_RECIPIENT
+  config.smtpRecipient = F(SMTP_RECIPIENT);
+#else
+  config.smtpRecipient = F("");
+#endif
+
+#ifdef SMTP_ENABLE_STARTTLS
+  config.smtpEnableStartTLS = SMTP_ENABLE_STARTTLS;
+#else
+  config.smtpEnableStartTLS = true;  // Enable STARTTLS by default
+#endif
+
+#ifdef SMTP_DEBUG
+  config.smtpDebug = SMTP_DEBUG;
+#else
+  config.smtpDebug = false;
+#endif
+
+#ifdef SMTP_SEND_TEST_MAIL_ON_BOOT
+  config.smtpSendTestMailOnBoot = SMTP_SEND_TEST_MAIL_ON_BOOT;
+#else
+  config.smtpSendTestMailOnBoot = false;
+#endif
+}
+
+// Helper function to save mail configuration to JSON
+void ConfigPersistence::saveMailConfigToJson(StaticJsonDocument<512>& doc, const ConfigData& config) {
+  doc[F("mail_enabled")] = config.mailEnabled;
+  doc[F("smtp_host")] = config.smtpHost;
+  doc[F("smtp_port")] = config.smtpPort;
+  doc[F("smtp_user")] = config.smtpUser;
+  doc[F("smtp_password")] = config.smtpPassword;
+  doc[F("smtp_sender_name")] = config.smtpSenderName;
+  doc[F("smtp_sender_email")] = config.smtpSenderEmail;
+  doc[F("smtp_recipient")] = config.smtpRecipient;
+  doc[F("smtp_enable_starttls")] = config.smtpEnableStartTLS;
+  doc[F("smtp_debug")] = config.smtpDebug;
+  doc[F("smtp_send_test_mail_on_boot")] = config.smtpSendTestMailOnBoot;
+}
+#endif // USE_MAIL

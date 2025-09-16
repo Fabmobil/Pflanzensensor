@@ -1,134 +1,279 @@
-/**
- * @file mail_manager.cpp
- * @brief SMTP Email Manager Implementation
- */
-
 #include "mail_manager.h"
 
 #if USE_MAIL
 
-#include <ESP8266WiFi.h>
-#include "managers/manager_config.h"
+#include "../configs/config_pflanzensensor.h"
+#include "../configs/config.h"
+#include "../managers/manager_config.h"
+#include "../managers/manager_resource.h"
+#include <ReadyMail.h>
+#include <WiFiClientSecure.h>
 
-extern Logger logger; // Global logger instance
+using namespace ReadyMailSMTP;
+extern Logger logger;
+extern ResourceManager& ResourceMgr;
 
-// Static instance
+// Static member definition
 MailManager* MailManager::s_instance = nullptr;
 
 MailManager& MailManager::getInstance() {
-  if (s_instance == nullptr) {
+  if (!s_instance) {
     s_instance = new MailManager();
   }
   return *s_instance;
 }
 
 TypedResult<ResourceError, void> MailManager::initialize() {
-  logger.info(F("MailManager"), F("Initialisiere SMTP Mail Manager"));
-
-  // Prüfe WiFi-Verbindung
-  if (WiFi.status() != WL_CONNECTED) {
-    logger.error(F("MailManager"), F("Keine WiFi-Verbindung für E-Mail verfügbar"));
-    return TypedResult<ResourceError, void>::fail(ResourceError::WIFI_ERROR,
-                               F("Keine WiFi-Verbindung"));
+  if (m_initialized) {
+    return ResourceResult::success();
   }
 
-  m_initialized = true;
-  logger.info(F("MailManager"), F("SMTP Mail Manager erfolgreich initialisiert"));
+  setState(ManagerState::INITIALIZING);
 
-  // Sende Test-Mail beim Start wenn aktiviert
+  logger.info(F("MailManager"), F("Initialisiere ReadyMail SMTP Manager"));
+
+  if (!ConfigMgr.isMailEnabled()) {
+    logger.info(F("MailManager"), F("Mail-Funktionalität ist deaktiviert"));
+    m_initialized = true;
+    setState(ManagerState::INITIALIZED);
+    return ResourceResult::success();
+  }
+
+  logger.info(F("MailManager"), F("ReadyMail SMTP Manager erfolgreich initialisiert"));
+  m_initialized = true;
+  setState(ManagerState::INITIALIZED);
+
+  // Send test email if configured
   if (ConfigMgr.isSmtpSendTestMailOnBoot()) {
-    logger.info(F("MailManager"), F("Sende Test-Mail beim Start"));
-    auto result = sendTestMail();
-    if (!result.isSuccess()) {
-      logger.warning(F("MailManager"), F("Test-Mail konnte nicht gesendet werden: ") +
-                     result.getMessage());
+    // Check available memory before test
+    uint32_t freeHeap = ESP.getFreeHeap();
+    logger.debug(F("MailManager"), F("Freier Speicher für Test-Mail: ") + String(freeHeap) + F(" Bytes"));
+
+    if (freeHeap >= 12288) { // Require 12KB for safer operation
+      logger.info(F("MailManager"), F("Sende Test-Mail beim Start"));
+      ResourceResult testResult = sendTestMail();
+      if (testResult.isError()) {
+        logger.warning(F("MailManager"), F("Test-Mail fehlgeschlagen"));
+      }
+    } else {
+      logger.warning(F("MailManager"), F("Nicht genug Speicher für Test-Mail"));
     }
   }
 
-  return TypedResult<ResourceError, void>::success();
+  return ResourceResult::success();
 }
 
 ResourceResult MailManager::sendTestMail() {
-  String subject = F(SMTP_SUBJECT);
-  String message = F("Hallo!\n\n");
-  message += F("Dies ist eine Test-E-Mail vom Pflanzensensor.\n");
-  message += F("Gerätename: ") + String(F(DEVICE_NAME)) + F("\n");
-  message += F("IP-Adresse: ") + WiFi.localIP().toString() + F("\n");
-  message += F("WiFi SSID: ") + WiFi.SSID() + F("\n");
-  message += F("Freier Speicher: ") + String(ESP.getFreeHeap()) + F(" Bytes\n");
-  message += F("Uptime: ") + String(millis() / 1000) + F(" Sekunden\n\n");
-  message += F("Viele Grüße,\n");
-  message += F("Ihr Pflanzensensor");
-
-  return sendMail(subject, message);
+  return sendMail(
+    F("Test Mail"),
+    F("Test-Mail vom Pflanzensensor.<br/><br/>"
+      "Wenn Sie diese Nachricht erhalten, funktioniert die E-Mail-Konfiguration korrekt.")
+  );
 }
 
 ResourceResult MailManager::sendMail(const String& subject, const String& message) {
   if (!m_initialized) {
-    logger.error(F("MailManager"), F("Manager nicht initialisiert"));
+    logger.error(F("MailManager"), F("MailManager nicht initialisiert"));
     return ResourceResult::fail(ResourceError::INVALID_STATE,
-                               F("Manager nicht initialisiert"));
+                               F("MailManager nicht initialisiert"));
   }
 
-  logger.info(F("MailManager"), F("Sende E-Mail: ") + subject);
-
-  // Create EMailSender instance with email credentials from ConfigManager
-  EMailSender emailSend(ConfigMgr.getSmtpUser().c_str(),
-                        ConfigMgr.getSmtpPassword().c_str(),
-                        ConfigMgr.getSmtpSenderEmail().c_str(),
-                        ConfigMgr.getSmtpSenderName().c_str());
-
-  if (!setupEmailSender(emailSend)) {
-    return ResourceResult::fail(ResourceError::CONFIG_ERROR,
-                               F("EMailSender-Konfiguration fehlgeschlagen"));
+  if (!ConfigMgr.isMailEnabled()) {
+    logger.error(F("MailManager"), F("Mail-Funktionalität ist deaktiviert"));
+    return ResourceResult::fail(ResourceError::INVALID_STATE,
+                               F("Mail-Funktionalität ist deaktiviert"));
   }
 
-  // Create email message
-  EMailSender::EMailMessage email;
-  email.subject = subject;
-  email.message = message;
+  // Check available memory before attempting to send email
+  uint32_t freeHeapBefore = ESP.getFreeHeap();
+  logger.debug(F("MailManager"), F("Freier Speicher vor E-Mail: ") + String(freeHeapBefore) + F(" Bytes"));
 
-  // Send email to default recipient
+  // Require at least 12KB free heap for SSL operations (increased from 8KB)
+  if (freeHeapBefore < 12288) {
+    logger.error(F("MailManager"), F("Nicht genug Speicher für E-Mail"));
+    return ResourceResult::fail(ResourceError::INSUFFICIENT_MEMORY,
+                               F("Nicht genügend Speicher"));
+  }
+
+  logger.info(F("MailManager"), F("Sende E-Mail"));
+
+  // Get configuration
+  String host = ConfigMgr.getSmtpHost();
+  uint16_t port = ConfigMgr.getSmtpPort();
+  String username = ConfigMgr.getSmtpUser();
+  String password = ConfigMgr.getSmtpPassword();
+  String senderName = ConfigMgr.getSmtpSenderName();
+  String senderEmail = ConfigMgr.getSmtpSenderEmail();
   String recipient = ConfigMgr.getSmtpRecipient();
-  EMailSender::Response resp = emailSend.send(recipient.c_str(), email);
+  bool useStartTLS = ConfigMgr.isSmtpEnableStartTLS();
 
-  if (resp.status) {
-    logger.info(F("MailManager"), F("E-Mail erfolgreich gesendet"));
-    return ResourceResult::success();
+  // Yield to system before memory-intensive operations
+  yield();
+
+  // Skip basic connectivity testing - ESP8266 plain connect() often fails on encrypted ports
+  // Determine connection type based on port and STARTTLS setting
+  bool useDirectSSL = (port == 465);
+  bool usePlainConnection = (port == 25);
+  bool useSTARTTLS = (port == 587 && useStartTLS);
+
+  logger.debug(F("MailManager"), F("ESP8266 SMTP-Verbindung"));
+
+  // For ESP8266 compatibility: Try multiple approaches for port 587
+  if (useSTARTTLS && port == 587) {
+    logger.debug(F("MailManager"), F("Verwende STARTTLS"));
+
+    // First attempt: WiFiClientSecure with insecure mode for STARTTLS
+    BearSSL::WiFiClientSecure ssl_client;
+    ssl_client.setInsecure(); // Skip certificate validation
+    ssl_client.setBufferSizes(512, 512); // Smaller buffers for ESP8266
+    ReadyMailSMTP::SMTPClient smtp_ssl(ssl_client);
+
+    ResourceResult result = performSMTPOperations(smtp_ssl, host, port, username, password,
+                                                 senderName, senderEmail, recipient, subject, message, true);
+
+    if (result.isError()) {
+      logger.warning(F("MailManager"), F("Port 587 fehlgeschlagen, teste Port 465"));
+
+      // Fallback: Try port 465 direct SSL
+      port = 465;
+      useDirectSSL = true;
+      useSTARTTLS = false;
+
+      BearSSL::WiFiClientSecure ssl_client_465;
+      ssl_client_465.setInsecure();
+      ssl_client_465.setBufferSizes(512, 512);
+      ReadyMailSMTP::SMTPClient smtp_465(ssl_client_465);
+
+      logger.debug(F("MailManager"), F("Versuche Port 465"));
+      return performSMTPOperations(smtp_465, host, port, username, password,
+                                  senderName, senderEmail, recipient, subject, message, true);
+    }
+
+    return result;
+  }
+
+
+  // Handle other connection types
+  if (usePlainConnection) {
+    // Use plain WiFiClient for port 25 (no encryption)
+    WiFiClient client;
+    ReadyMailSMTP::SMTPClient smtp(client);
+    logger.debug(F("MailManager"), F("Verwende plain Client"));
+
+    return performSMTPOperations(smtp, host, port, username, password,
+                                senderName, senderEmail, recipient, subject, message, false);
+  } else if (useDirectSSL) {
+    // Use direct SSL client for port 465 (smtps)
+    BearSSL::WiFiClientSecure ssl_client;
+    ssl_client.setInsecure(); // Skip certificate validation for ESP8266
+    ssl_client.setBufferSizes(512, 512); // Smaller buffers for stability
+    ReadyMailSMTP::SMTPClient smtp(ssl_client);
+    logger.debug(F("MailManager"), F("Verwende Direct SSL"));
+
+    return performSMTPOperations(smtp, host, port, username, password,
+                                senderName, senderEmail, recipient, subject, message, true);
   } else {
-    String errorMsg = F("E-Mail senden fehlgeschlagen: ") + resp.desc;
-    logger.error(F("MailManager"), errorMsg);
-    return ResourceResult::fail(ResourceError::OPERATION_FAILED, errorMsg);
+    // Fallback for unexpected configuration
+    logger.error(F("MailManager"), F("Unbekannte SMTP-Konfiguration"));
+    return ResourceResult::fail(ResourceError::CONFIG_ERROR, F("Unbekannte SMTP-Konfiguration"));
   }
 }
 
-ResourceResult MailManager::sendSensorAlarm(const String& sensorName,
-                                           float value, float threshold) {
-  String subject = F("⚠️ Sensor-Alarm: ") + sensorName;
+ResourceResult MailManager::performSMTPOperations(ReadyMailSMTP::SMTPClient& smtp,
+                                                 const String& host, uint16_t port,
+                                                 const String& username, const String& password,
+                                                 const String& senderName, const String& senderEmail,
+                                                 const String& recipient, const String& subject,
+                                                 const String& message, bool useDirectSSL) {
 
-  String message = F("SENSOR-ALARM!\n\n");
-  message += F("Sensor: ") + sensorName + F("\n");
-  message += F("Aktueller Wert: ") + String(value, 2) + F("\n");
-  message += F("Grenzwert: ") + String(threshold, 2) + F("\n");
-  message += F("Gerät: ") + ConfigMgr.getDeviceName() + F("\n");
-  message += F("Zeit: ") + String(millis() / 1000) + F(" Sekunden seit Start\n\n");
-  message += F("Bitte prüfen Sie den Sensor!\n\n");
-  message += F("Ihr Pflanzensensor");
+  // Status callback for debugging - minimal logging to save memory
+  auto statusCallback = [](ReadyMailSMTP::SMTPStatus status) {
+    extern Logger logger;
+    if (status.isComplete) {
+      if (status.errorCode < 0) {
+        logger.error(F("MailManager"), F("SMTP Error"));
+      } else {
+        logger.debug(F("MailManager"), F("SMTP OK"));
+      }
+    }
+    // Skip non-complete status logging to save memory
+  };
 
-  return sendMail(subject, message);
-}
+  logger.debug(F("MailManager"), F("Verbinde zu SMTP Server"));
+  yield(); // Give system time before heavy operations
 
-bool MailManager::setupEmailSender(EMailSender& emailSend) {
-  // Set SMTP server and port from ConfigManager
-  emailSend.setSMTPServer(ConfigMgr.getSmtpHost().c_str());
-  emailSend.setSMTPPort(ConfigMgr.getSmtpPort());
+  // For port 587, enable STARTTLS; for port 465, use direct SSL
+  bool enableSTARTTLS = (port == 587);
 
-  if (ConfigMgr.isSmtpDebug()) {
-    logger.debug(F("MailManager"), F("EMailSender konfiguriert für ") +
-                 ConfigMgr.getSmtpHost() + F(":") + String(ConfigMgr.getSmtpPort()));
+  // Connect to server
+  if (!smtp.connect(host, port, statusCallback, useDirectSSL, enableSTARTTLS)) {
+    logger.error(F("MailManager"), F("SMTP Verbindung fehlgeschlagen"));
+    return ResourceResult::fail(ResourceError::WIFI_ERROR, F("SMTP Verbindung fehlgeschlagen"));
   }
 
-  return true;
+  if (!smtp.isConnected()) {
+    logger.error(F("MailManager"), F("SMTP Server nicht verbunden"));
+    return ResourceResult::fail(ResourceError::WIFI_ERROR, F("SMTP Server nicht verbunden"));
+  }
+
+  logger.debug(F("MailManager"), F("SMTP Verbindung erfolgreich"));
+
+  // Authenticate using username/password
+  if (!smtp.authenticate(username, password, readymail_auth_password, true)) {
+    logger.error(F("MailManager"), F("SMTP Authentifizierung fehlgeschlagen"));
+    smtp.stop();
+    return ResourceResult::fail(ResourceError::VALIDATION_ERROR, F("SMTP Authentifizierung fehlgeschlagen"));
+  }
+
+  if (!smtp.isAuthenticated()) {
+    logger.error(F("MailManager"), F("SMTP nicht authentifiziert"));
+    smtp.stop();
+    return ResourceResult::fail(ResourceError::VALIDATION_ERROR, F("SMTP nicht authentifiziert"));
+  }
+
+  logger.debug(F("MailManager"), F("SMTP Authentifizierung erfolgreich"));
+
+  // Create message following ReadyMail v0.3.0+ pattern
+  ReadyMailSMTP::SMTPMessage &msg = smtp.getMessage();
+
+  // Set headers using the new API pattern
+  msg.headers.add(ReadyMailSMTP::rfc822_from, senderName + " <" + senderEmail + ">");
+  msg.headers.add(ReadyMailSMTP::rfc822_subject, subject);
+  msg.headers.add(ReadyMailSMTP::rfc822_to, recipient);
+
+  // Set message body (both text and HTML)
+  msg.text.body(message);
+  msg.html.body(message);
+
+  // Set timestamp for Date header (important for spam prevention)
+  msg.timestamp = 1700000000; // Some time in 2023 - better than no timestamp
+
+  yield();
+
+  // Send message using internal message (required for v0.3.0+)
+  if (!smtp.send(msg, "", true)) {
+    logger.error(F("MailManager"), F("E-Mail senden fehlgeschlagen"));
+    smtp.stop();
+    return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("E-Mail senden fehlgeschlagen"));
+  }
+
+  // Check final status
+  ReadyMailSMTP::SMTPStatus finalStatus = smtp.status();
+  if (finalStatus.errorCode < 0) {
+    logger.error(F("MailManager"), F("E-Mail Fehler: ") + String(finalStatus.errorCode));
+    smtp.stop();
+    return ResourceResult::fail(ResourceError::OPERATION_FAILED,
+                               F("E-Mail Fehler: ") + String(finalStatus.errorCode));
+  }
+
+  smtp.stop();
+
+  uint32_t freeHeapAfter = ESP.getFreeHeap();
+  logger.info(F("MailManager"), F("E-Mail erfolgreich gesendet"));
+  logger.debug(F("MailManager"), F("Freier Speicher nach E-Mail: ") + String(freeHeapAfter) + F(" Bytes"));
+
+  yield();
+  return ResourceResult::success();
 }
 
 #endif // USE_MAIL

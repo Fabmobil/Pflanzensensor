@@ -1,5 +1,7 @@
 #include "sensor_measurement_cycle.h"
+#if USE_DS18B20
 #include "sensors/sensor_ds18b20.h"
+#endif
 
 void SensorMeasurementCycleManager::handleInitializing() {
   if (ConfigMgr.isDebugMeasurementCycle()) {

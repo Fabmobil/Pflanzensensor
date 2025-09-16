@@ -241,9 +241,6 @@ void DisplayManager::rotateScreen() {
   size_t idx = 0;
   if (m_config.showIpScreen) idx++;
   if (m_config.showClock && currentIndex == idx) {
-    if (ConfigMgr.isDebugDisplay()) {
-      logger.debug(F("DisplayM"), F("Versuche Anzeige der Uhr"));
-    }
     if (logger.isNTPInitialized()) {
       if (ConfigMgr.isDebugDisplay()) {
         logger.debug(F("DisplayM"), F("Uhr-Anzeige wird gezeigt"));

@@ -191,6 +191,63 @@ class SensorFactory {
    */
   static void logSensorStatus(const String& phase, const Sensor* sensor);
 
+  // Memory-optimized sensor creation helper functions
+#if USE_DHT
+  static void addDHTSensors(
+      std::vector<std::unique_ptr<Sensor>>& sensors,
+      SensorManager* sensorManager,
+      std::vector<String>& errors);
+#endif
+
+#if USE_DS18B20
+  static void addDS18B20Sensors(
+      std::vector<std::unique_ptr<Sensor>>& sensors,
+      SensorManager* sensorManager,
+      std::vector<String>& errors);
+#endif
+
+#if USE_SDS011
+  static void addSDS011Sensors(
+      std::vector<std::unique_ptr<Sensor>>& sensors,
+      SensorManager* sensorManager,
+      std::vector<String>& errors);
+#endif
+
+#if USE_MHZ19
+  static void addMHZ19Sensors(
+      std::vector<std::unique_ptr<Sensor>>& sensors,
+      SensorManager* sensorManager,
+      std::vector<String>& errors);
+#endif
+
+#if USE_HX711
+  static void addHX711Sensors(
+      std::vector<std::unique_ptr<Sensor>>& sensors,
+      SensorManager* sensorManager,
+      std::vector<String>& errors);
+#endif
+
+#if USE_BMP280
+  static void addBMP280Sensors(
+      std::vector<std::unique_ptr<Sensor>>& sensors,
+      SensorManager* sensorManager,
+      std::vector<String>& errors);
+#endif
+
+#if USE_SERIAL_RECEIVER
+  static void addSerialReceiverSensors(
+      std::vector<std::unique_ptr<Sensor>>& sensors,
+      SensorManager* sensorManager,
+      std::vector<String>& errors);
+#endif
+
+#if USE_ANALOG
+  static void addAnalogSensors(
+      std::vector<std::unique_ptr<Sensor>>& sensors,
+      SensorManager* sensorManager,
+      std::vector<String>& errors);
+#endif
+
   // Prevent instantiation
   SensorFactory() = delete;  ///< Default constructor disabled
   SensorFactory(const SensorFactory&) = delete;  ///< Copy constructor disabled

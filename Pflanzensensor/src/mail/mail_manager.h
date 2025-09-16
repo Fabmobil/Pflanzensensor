@@ -11,10 +11,20 @@
 
 #if USE_MAIL
 
+// Enable SMTP support in ReadyMail (must be defined before ReadyMail.h include)
+#define ENABLE_SMTP
+
 #include "../logger/logger.h"
 #include "../managers/manager_base.h"
 #include "../utils/result_types.h"
-#include <EMailSender.h>
+
+// Forward declaration to avoid including ReadyMail.h in header
+class WiFiClientSecure;
+
+// Forward declarations for ReadyMail
+namespace ReadyMailSMTP {
+  class SMTPClient;
+}
 
 /**
  * @class MailManager
@@ -67,11 +77,26 @@ class MailManager : public Manager {
   MailManager() : Manager("MailManager") {}
 
   /**
-   * @brief Setup EMailSender configuration
-   * @param emailSend EMailSender object reference
-   * @return true wenn Setup erfolgreich
+   * @brief Helper method to perform SMTP operations
+   * @param smtp SMTP client reference
+   * @param host SMTP server hostname
+   * @param port SMTP server port
+   * @param username SMTP username
+   * @param password SMTP password
+   * @param senderName Sender display name
+   * @param senderEmail Sender email address
+   * @param recipient Recipient email address
+   * @param subject Email subject
+   * @param message Email message body
+   * @param useDirectSSL Whether to use direct SSL connection
+   * @return ResourceResult indicating success or failure
    */
-  bool setupEmailSender(EMailSender& emailSend);
+  ResourceResult performSMTPOperations(ReadyMailSMTP::SMTPClient& smtp,
+                                      const String& host, uint16_t port,
+                                      const String& username, const String& password,
+                                      const String& senderName, const String& senderEmail,
+                                      const String& recipient, const String& subject,
+                                      const String& message, bool useDirectSSL);
 
   static MailManager* s_instance; ///< Singleton instance
   bool m_initialized = false;     ///< Initialisierungsstatus

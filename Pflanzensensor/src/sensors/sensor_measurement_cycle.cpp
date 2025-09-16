@@ -1,7 +1,8 @@
 #include "sensor_measurement_cycle.h"
 
+#if USE_DS18B20
 #include "sensors/sensor_ds18b20.h"  // Add include for DS18B20 sensor
-
+#endif
 SensorMeasurementCycleManager::SensorMeasurementCycleManager(Sensor* sensor)
     : m_sensor(sensor),
       m_state(),

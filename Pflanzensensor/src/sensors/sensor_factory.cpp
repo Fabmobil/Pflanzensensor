@@ -88,88 +88,38 @@ SensorFactory::SensorResult SensorFactory::createAllSensors(
     std::vector<String> errors;
 
 #if USE_DHT
-    auto dhtResult = createDHTSensors(sensors, sensorManager);
-    if (!dhtResult.isSuccess()) {
-      errors.push_back(F("DHT: ") + dhtResult.getFullErrorMessage());
-    logger.error(
-      F("SensorFactory"),
-      F("Erstellung DHT-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
-    }
+    addDHTSensors(sensors, sensorManager, errors);
 #endif
 
 #if USE_DS18B20
-    auto ds18b20Result = createDS18B20Sensors(
-        sensors, sensorManager);  // bei 1 auto result, warum?
-    if (!ds18b20Result.isSuccess()) {
-      errors.push_back(F("DS18B20: ") + ds18b20Result.getFullErrorMessage());
-    logger.error(
-      F("SensorFactory"),
-      F("Erstellung DS18B20-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
-    }
+    addDS18B20Sensors(sensors, sensorManager, errors);
 #endif
 
 #if USE_SDS011
-    auto sds011Result = createSDS011Sensors(sensors, sensorManager);
-    if (!sds011Result.isSuccess()) {
-      errors.push_back(F("SDS011: ") + sds011Result.getFullErrorMessage());
-    logger.error(
-      F("SensorFactory"),
-      F("Erstellung SDS011-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
-    }
+    addSDS011Sensors(sensors, sensorManager, errors);
 #endif
 
 #if USE_MHZ19
-    auto mhz19Result = createMHZ19Sensors(sensors, sensorManager);
-    if (!mhz19Result.isSuccess()) {
-      errors.push_back(F("MHZ19: ") + mhz19Result.getFullErrorMessage());
-    logger.error(
-      F("SensorFactory"),
-      F("Erstellung MHZ19-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
-    }
+    addMHZ19Sensors(sensors, sensorManager, errors);
 #endif
 
 #if USE_HX711
-    auto hx711Result = createHX711Sensors(sensors, sensorManager);
-    if (!hx711Result.isSuccess()) {
-      errors.push_back(F("HX711: ") + hx711Result.getFullErrorMessage());
-    logger.error(
-      F("SensorFactory"),
-      F("Erstellung HX711-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
-    }
+    addHX711Sensors(sensors, sensorManager, errors);
 #endif
 
 #if USE_BMP280
-    auto bmp280Result = createBMP280Sensors(sensors, sensorManager);
-    if (!bmp280Result.isSuccess()) {
-      errors.push_back(F("BMP280: ") + bmp280Result.getFullErrorMessage());
-    logger.error(
-      F("SensorFactory"),
-      F("Erstellung BMP280-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
-    }
+    addBMP280Sensors(sensors, sensorManager, errors);
 #endif
 
 #if USE_SERIAL_RECEIVER
-    auto serialResult = createSerialReceiverSensors(sensors, sensorManager);
-    if (!serialResult.isSuccess()) {
-      errors.push_back(F("SerialReceiver: ") +
-                       serialResult.getFullErrorMessage());
-      logger.error(F("SensorFactory"),
-                   F("Erstellung Serial-Receiver-Sensor fehlgeschlagen, fahre "
-                     "mit anderen Sensoren fort"));
-    }
+    addSerialReceiverSensors(sensors, sensorManager, errors);
 #endif
 
 #if USE_ANALOG
-    auto analogResult = createAnalogSensors(sensors, sensorManager);
-    if (!analogResult.isSuccess()) {
-      errors.push_back(F("Analog: ") + analogResult.getFullErrorMessage());
-    logger.error(
-      F("SensorFactory"),
-      F("Erstellung Analog-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
-    }
+    addAnalogSensors(sensors, sensorManager, errors);
 #endif
 
-  logger.logMemoryStats(F("nach_sensor_erstellung"));
+    logger.logMemoryStats(F("nach_sensor_erstellung"));
 
     // If we have any sensors initialized, consider it a partial success
     if (!sensors.empty()) {
@@ -371,3 +321,116 @@ SensorFactory::SensorResult SensorFactory::createSerialReceiverSensors(
 #endif
   return SensorResult::success();
 }
+
+// Memory-optimized sensor creation helper functions
+#if USE_DHT
+void SensorFactory::addDHTSensors(
+    std::vector<std::unique_ptr<Sensor>>& sensors,
+    SensorManager* sensorManager,
+    std::vector<String>& errors) {
+  auto dhtResult = createDHTSensors(sensors, sensorManager);
+  if (!dhtResult.isSuccess()) {
+    errors.push_back(F("DHT: ") + dhtResult.getFullErrorMessage());
+    logger.error(F("SensorFactory"),
+                 F("Erstellung DHT-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
+  }
+}
+#endif
+
+#if USE_DS18B20
+void SensorFactory::addDS18B20Sensors(
+    std::vector<std::unique_ptr<Sensor>>& sensors,
+    SensorManager* sensorManager,
+    std::vector<String>& errors) {
+  auto ds18b20Result = createDS18B20Sensors(sensors, sensorManager);
+  if (!ds18b20Result.isSuccess()) {
+    errors.push_back(F("DS18B20: ") + ds18b20Result.getFullErrorMessage());
+    logger.error(F("SensorFactory"),
+                 F("Erstellung DS18B20-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
+  }
+}
+#endif
+
+#if USE_SDS011
+void SensorFactory::addSDS011Sensors(
+    std::vector<std::unique_ptr<Sensor>>& sensors,
+    SensorManager* sensorManager,
+    std::vector<String>& errors) {
+  auto sds011Result = createSDS011Sensors(sensors, sensorManager);
+  if (!sds011Result.isSuccess()) {
+    errors.push_back(F("SDS011: ") + sds011Result.getFullErrorMessage());
+    logger.error(F("SensorFactory"),
+                 F("Erstellung SDS011-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
+  }
+}
+#endif
+
+#if USE_MHZ19
+void SensorFactory::addMHZ19Sensors(
+    std::vector<std::unique_ptr<Sensor>>& sensors,
+    SensorManager* sensorManager,
+    std::vector<String>& errors) {
+  auto mhz19Result = createMHZ19Sensors(sensors, sensorManager);
+  if (!mhz19Result.isSuccess()) {
+    errors.push_back(F("MHZ19: ") + mhz19Result.getFullErrorMessage());
+    logger.error(F("SensorFactory"),
+                 F("Erstellung MHZ19-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
+  }
+}
+#endif
+
+#if USE_HX711
+void SensorFactory::addHX711Sensors(
+    std::vector<std::unique_ptr<Sensor>>& sensors,
+    SensorManager* sensorManager,
+    std::vector<String>& errors) {
+  auto hx711Result = createHX711Sensors(sensors, sensorManager);
+  if (!hx711Result.isSuccess()) {
+    errors.push_back(F("HX711: ") + hx711Result.getFullErrorMessage());
+    logger.error(F("SensorFactory"),
+                 F("Erstellung HX711-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
+  }
+}
+#endif
+
+#if USE_BMP280
+void SensorFactory::addBMP280Sensors(
+    std::vector<std::unique_ptr<Sensor>>& sensors,
+    SensorManager* sensorManager,
+    std::vector<String>& errors) {
+  auto bmp280Result = createBMP280Sensors(sensors, sensorManager);
+  if (!bmp280Result.isSuccess()) {
+    errors.push_back(F("BMP280: ") + bmp280Result.getFullErrorMessage());
+    logger.error(F("SensorFactory"),
+                 F("Erstellung BMP280-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
+  }
+}
+#endif
+
+#if USE_SERIAL_RECEIVER
+void SensorFactory::addSerialReceiverSensors(
+    std::vector<std::unique_ptr<Sensor>>& sensors,
+    SensorManager* sensorManager,
+    std::vector<String>& errors) {
+  auto serialResult = createSerialReceiverSensors(sensors, sensorManager);
+  if (!serialResult.isSuccess()) {
+    errors.push_back(F("SerialReceiver: ") + serialResult.getFullErrorMessage());
+    logger.error(F("SensorFactory"),
+                 F("Erstellung Serial-Receiver-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
+  }
+}
+#endif
+
+#if USE_ANALOG
+void SensorFactory::addAnalogSensors(
+    std::vector<std::unique_ptr<Sensor>>& sensors,
+    SensorManager* sensorManager,
+    std::vector<String>& errors) {
+  auto analogResult = createAnalogSensors(sensors, sensorManager);
+  if (!analogResult.isSuccess()) {
+    errors.push_back(F("Analog: ") + analogResult.getFullErrorMessage());
+    logger.error(F("SensorFactory"),
+                 F("Erstellung Analog-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
+  }
+}
+#endif
