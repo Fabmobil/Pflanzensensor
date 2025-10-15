@@ -31,13 +31,14 @@ img {
 
 .box .group {
   position: relative;
-  width: 80%;
+  width: clamp(90%, 95%, 800px);
   max-width: 800px;
-  font-size: calc(1vw + 0.5em);
+  font-size: clamp(0.7em, 2vw + 0.3em, 1.8em);
   display: flex;
   flex-direction: column;
   align-items: center;
   z-index: 1;
+  padding: 0 clamp(0.2em, 1vw, 0.5em);
 }
 
 .box .div {
@@ -123,7 +124,7 @@ img {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  padding: 1em;
+  padding: clamp(0.4em, 1.5vw, 1em);
   margin-top: 1em;
   box-sizing: border-box;
   filter: drop-shadow(0.5em 0.5em 0.5em rgba(0,0,0,0.6));
@@ -189,9 +190,9 @@ img {
   position: absolute;
   top: 45%;
   transform: translateY(-50%);
-  padding: 0.3em 0.5em;
+  padding: 0.2em 0.3em;
   box-sizing: border-box;
-  width: 50%;
+  width: 52%;
 }
 
 .box .sensor.left .card {
@@ -203,14 +204,14 @@ img {
 }
 
 .box .sensor .label {
-  font-size: 1rem;
+  font-size: clamp(0.5rem, 1.2vw + 0.3rem, 1rem);
   color: #f2f2f2;
   line-height: 1.2;
   margin-bottom: 0.2em;
 }
 
 .box .sensor .value {
-  font-size: 1.5rem;
+  font-size: clamp(0.7rem, 1.8vw + 0.4rem, 1.5rem);
   color: #f2f2f2;
   white-space: nowrap;
   line-height: 1.1;
@@ -219,26 +220,26 @@ img {
 }
 
 .box .sensor .status {
-  font-size: 1rem;
+  font-size: clamp(0.5rem, 1.2vw + 0.3rem, 1rem);
   margin: 0.2em 0;
   line-height: 1.2;
   text-align: center;
-  padding-top: 1em;
+  padding-top: clamp(0.3em, 1.5vw, 1em);
 }
 
-
 .box .sensor .interval {
-    font-size: 1rem;
-    color: #f2f2f2;
-    margin-top: 0.2em;
-    line-height: 1.2;
-    text-align: center;
+  font-size: clamp(0.45rem, 1vw + 0.25rem, 1rem);
+  color: #f2f2f2;
+  margin-top: 0.2em;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .box .sensor .status.green { color: #00ff00; }
 .box .sensor .status.yellow { color: #ffff00; }
 .box .sensor .status.red { color: #ff6700; }
 .box .sensor .status.error { color: #d6cece; }
+.box .sensor .status.unknown { color: #d6cece; }
 .box .sensor.left .label,
 .box .sensor.left .value {
   text-align: left;
@@ -271,7 +272,7 @@ img {
   transform: translateX(-50%);
   color: #000;
   font-weight: 500;
-  font-size: 1.2em;
+  font-size: clamp(0.7em, 1.5vw + 0.4em, 1.2em);
   white-space: nowrap;
 }
 
@@ -284,8 +285,9 @@ img {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: auto auto;
-  gap: 0.5em 2em;
+  gap: clamp(0.15em, 0.8vw, 0.5em) clamp(0.2em, 1.5vw, 1em);
   width: 100%;
+  min-width: 0;
 }
 
 .nav-box {
@@ -299,14 +301,14 @@ img {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5em;
+  gap: clamp(0.2em, 0.8vw, 0.5em);
 }
 
 .nav-item {
   color: #9b9b9b;
   text-decoration: none;
-  font-size: 1.4em;
-  line-height: 1;
+  font-size: clamp(0.65em, 2vw + 0.2em, 1.4em);
+  line-height: 1.1;
   transition: color 0.2s;
 }
 
@@ -321,15 +323,24 @@ img {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.5em;
-  font-size: 1em;
+  gap: clamp(0.2em, 0.8vw, 0.5em);
+  font-size: clamp(0.48em, 1.5vw + 0.2em, 1em);
   color: #00ff00;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .stats-labels {
   grid-column: 2;
   text-align: right;
   align-items: flex-end;
+}
+
+.stats-labels li,
+.stats-values li {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .stats-values {
@@ -344,7 +355,7 @@ img {
 }
 
 .footer-logo img {
-  height: 1.5em;
+  height: clamp(0.9em, 2vw + 0.3em, 1.5em);
   width: auto;
   image-rendering: pixelated;
 }
@@ -352,7 +363,7 @@ img {
 .footer-version, .footer-build {
   grid-row: 2;
   color: #8e8e8e;
-  font-size: 0.6em;
+  font-size: clamp(0.35em, 1vw + 0.15em, 0.6em);
   display: flex;
   align-items: center;
 }
@@ -367,19 +378,14 @@ img {
   grid-column: 3;
 }
 
+/* Minimale Anpassungen nur wo wirklich nötig */
 @media (max-width: 480px) {
-  .box .group { width: 95%; font-size: calc(2vw + 0.4em); }
-  .box .sensor .value { font-size: 1em; }
+  .box { padding: clamp(0.5em, 2vw, 2em) 0 0; }
+  .box .flower-wrap { width: 75%; }
+  .box .sensor { width: 90%; }
+  .box .sensor .card { width: 54%; padding: clamp(0.15em, 0.5vw, 0.3em) clamp(0.2em, 0.8vw, 0.5em); }
 }
 
-@media (min-width: 481px) and (max-width: 768px) {
-  .box .group { width: 85%; font-size: calc(1.5vw + 0.45em); }
-}
-
-@media (min-width: 769px) {
-  .box .group { font-size: calc(0.8vw + 0.6em); }
-}
-
-@media (min-width: 1400px) {
-  .box .group { font-size: 1.8em; }
+@media (min-width: 481px) {
+  .box .sensor { width: 80%; }
 }
