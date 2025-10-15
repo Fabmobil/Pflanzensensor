@@ -6,8 +6,10 @@
 #include "web/core/components.h"
 
 #include <algorithm>
+#include <ESP8266WiFi.h>
 
 #include "logger/logger.h"
+#include "utils/helper.h"
 
 namespace Component {
 
@@ -84,64 +86,121 @@ void sendChunk(ESP8266WebServer& server, const String& chunk) {
 }
 
 void sendNavigation(ESP8266WebServer& server, const String& activeItem) {
-  // First row: Start, Logs, Admin
-  sendChunk(server, F("<nav class='navbar'>\n"
-                      "  <ul class='nav-row nav-row-main'>\n"
-                      "    <li class='nav-item'><a href='/' class='nav-link"));
-  if (activeItem == "start") sendChunk(server, F(" active"));
-  sendChunk(server,
-            F("'>Start</a></li>\n"
-              "    <li class='nav-item'><a href='/logs' class='nav-link"));
-  if (activeItem == "logs") sendChunk(server, F(" active"));
-  sendChunk(
-      server,
-      F("'>Logs</a></li>\n"
-        "    <li class='nav-item nav-admin'><a href='/admin' class='nav-link"));
-  if (activeItem.startsWith("admin")) sendChunk(server, F(" active"));
-  sendChunk(server, F("'>Admin</a></li>\n"
-                      "  </ul>\n"));
-
-  // Second row: only if on admin page
-  if (activeItem.startsWith("admin")) {
-    sendChunk(server,
-              F("  <ul class='nav-row nav-row-secondary'>\n"
-                "    <li class='nav-item'><a href='/admin' class='nav-link"));
-    if (activeItem == "admin") sendChunk(server, F(" active"));
-    sendChunk(
-        server,
-        F("'>Einstellungen</a></li>\n"
-          "    <li class='nav-item'><a href='/admin/sensors' class='nav-link"));
-    if (activeItem == "admin/sensors") sendChunk(server, F(" active"));
-    sendChunk(server, F("'>Sensoren</a></li>\n"));
-#if USE_DISPLAY
-    sendChunk(
-        server,
-        F("    <li class='nav-item'><a href='/admin/display' class='nav-link"));
-    if (activeItem == "admin/display") sendChunk(server, F(" active"));
-    sendChunk(server, F("'>Display</a></li>\n"));
-#endif
-    sendChunk(
-        server,
-        F("    <li class='nav-item'><a href='/admin/update' class='nav-link"));
-    if (activeItem == "admin/update") sendChunk(server, F(" active"));
-    sendChunk(server, F("'>OTA Update</a></li>\n"
-                        "  </ul>\n"));
-  }
-  sendChunk(server, F("</nav>\n"));
+  // Navigation wird im Footer angezeigt (siehe sendPixelatedFooter)
+  // Diese Funktion wird nicht mehr genutzt, bleibt aber für Kompatibilität
 }
 
 void sendFooter(ESP8266WebServer& server, const String& version,
                 const String& buildDate) {
-  sendChunk(server, F("    <footer class='footer'>\n"
-                      "        <div class='footer-content'>\n"
-                      "            <p>Version: "));
+  // Footer wird mit sendPixelatedFooter erstellt
+  // Diese Funktion wird nicht mehr genutzt, bleibt aber für Kompatibilität
+}
+
+void sendPixelatedFooter(ESP8266WebServer& server, const String& version,
+                         const String& buildDate, const String& activeSection) {
+  sendChunk(server, F("<div class='footer'>"));
+  sendChunk(server, F("<div class='base'>"));
+
+  // Earth image
+  sendChunk(server, F("<img class='earth' src='/img/earth.png' alt='Earth' />"));
+
+  // Base overlay with navigation and stats
+  sendChunk(server, F("<footer class='base-overlay' aria-label='Statusleiste'>"));
+  sendChunk(server, F("<div class='footer-grid'>"));
+
+  // Navigation (Row 1, Column 1)
+  sendChunk(server, F("<nav class='nav-box' aria-label='Navigation'><ul class='nav-list'>"));
+
+  // Main navigation
+  sendChunk(server, F("<li><a href='/' class='nav-item"));
+  if (activeSection == "start" || activeSection == "/" || activeSection == "") sendChunk(server, F(" active"));
+  sendChunk(server, F("'>START</a></li>"));
+
+  sendChunk(server, F("<li><a href='/logs' class='nav-item"));
+  if (activeSection == "logs") sendChunk(server, F(" active"));
+  sendChunk(server, F("'>LOGS</a></li>"));
+
+  sendChunk(server, F("<li><a href='/admin' class='nav-item"));
+  if (activeSection.startsWith("admin")) sendChunk(server, F(" active"));
+  sendChunk(server, F("'>ADMIN</a></li>"));
+
+  sendChunk(server, F("</ul></nav>"));
+
+  // Stats Labels (Row 1, Column 2)
+  sendChunk(server, F("<ul class='stats-labels'>"));
+
+  if (activeSection.startsWith("admin")) {
+    // Admin submenu - only highlight exact match
+    sendChunk(server, F("<li><a href='/admin' class='nav-item"));
+    if (activeSection == "admin") sendChunk(server, F(" active"));  // Only /admin, not /admin/xyz
+    sendChunk(server, F("'>Einstellungen</a></li>"));
+
+    sendChunk(server, F("<li><a href='/admin/sensors' class='nav-item"));
+    if (activeSection == "admin/sensors") sendChunk(server, F(" active"));
+    sendChunk(server, F("'>Sensoren</a></li>"));
+
+#if USE_DISPLAY
+    sendChunk(server, F("<li><a href='/admin/display' class='nav-item"));
+    if (activeSection == "admin/display") sendChunk(server, F(" active"));
+    sendChunk(server, F("'>Display</a></li>"));
+#endif
+
+    sendChunk(server, F("<li><a href='/admin/update' class='nav-item"));
+    if (activeSection == "admin/update") sendChunk(server, F(" active"));
+    sendChunk(server, F("'>OTA Update</a></li>"));
+  } else {
+    // System info for non-admin pages
+    sendChunk(server, F("<li>📅 Zeit</li>"));
+    sendChunk(server, F("<li>🌐 SSID</li>"));
+    sendChunk(server, F("<li>💻 IP</li>"));
+    sendChunk(server, F("<li>📶 WIFI</li>"));
+    sendChunk(server, F("<li>⏲️ UPTIME</li>"));
+    sendChunk(server, F("<li>🔄 RESTARTS</li>"));
+  }
+  sendChunk(server, F("</ul>"));
+
+  // Stats Values (Row 1, Column 3) - only for non-admin pages
+  if (!activeSection.startsWith("admin")) {
+    sendChunk(server, F("<ul class='stats-values'>"));
+    sendChunk(server, F("<li>"));
+
+    sendChunk(server, Helper::getFormattedDate());
+    sendChunk(server, F(" "));
+    sendChunk(server, Helper::getFormattedTime());
+
+    sendChunk(server, F("</li><li>"));
+    sendChunk(server, WiFi.SSID());
+    sendChunk(server, F("</li><li>"));
+    sendChunk(server, WiFi.localIP().toString());
+    sendChunk(server, F("</li><li>"));
+    sendChunk(server, String(WiFi.RSSI()));
+    sendChunk(server, F(" dBm"));
+    sendChunk(server, F("</li><li>"));
+    sendChunk(server, Helper::getFormattedUptime());
+    sendChunk(server, F("</li><li>"));
+    sendChunk(server, String(Helper::getRebootCount()));
+    sendChunk(server, F("</li></ul>"));
+  } else {
+    sendChunk(server, F("<ul class='stats-values'></ul>"));
+  }
+
+  // Logo (Row 2, Column 1)
+  sendChunk(server, F("<div class='footer-logo'><img src='/img/fabmobil.png' alt='FABMOBIL' /></div>"));
+
+  // Version (Row 2, Column 2)
+  sendChunk(server, F("<div class='footer-version'>V "));
   sendChunk(server, version);
-  sendChunk(server, F(" ("));
-  sendChunk(server,
-            buildDate);  // Use buildDate directly since it's already formatted
-  sendChunk(server, F(")</p>\n"
-                      "        </div>\n"
-                      "    </footer>\n"));
+  sendChunk(server, F("</div>"));
+
+  // Build (Row 2, Column 3)
+  sendChunk(server, F("<div class='footer-build'>BUILD: "));
+  sendChunk(server, buildDate);
+  sendChunk(server, F("</div>"));
+
+  sendChunk(server, F("</div>"));  // Close footer-grid
+  sendChunk(server, F("</footer>"));  // Close base-overlay
+  sendChunk(server, F("</div>"));  // Close base
+  sendChunk(server, F("</div>"));  // Close footer
 }
 
 void endResponse(ESP8266WebServer& server,
@@ -190,6 +249,40 @@ void button(ESP8266WebServer& server, const String& text, const String& type,
   sendChunk(server, F(">"));
   sendChunk(server, text);
   sendChunk(server, F("</button>"));
+}
+
+void beginPixelatedPage(ESP8266WebServer& server, const String& statusClass) {
+  sendChunk(server, F("<div class='box "));
+  sendChunk(server, statusClass);
+  sendChunk(server, F("'><div class='group'>"));
+}
+
+void sendCloudTitle(ESP8266WebServer& server, const String& title) {
+  sendChunk(server, F("<div class='cloud' aria-label='"));
+  sendChunk(server, title);
+  sendChunk(server, F("'>"));
+  sendChunk(server, F("<img class='cloud-img' src='/img/cloud_big.png' alt='' />"));
+  sendChunk(server, F("<div class='cloud-label'>"));
+  sendChunk(server, title);
+  sendChunk(server, F("</div></div>"));
+}
+
+void beginContentBox(ESP8266WebServer& server, const String& section) {
+  sendChunk(server, F("<div class='admin-content-box'"));
+  if (!section.isEmpty()) {
+    sendChunk(server, F(" data-section='"));
+    sendChunk(server, section);
+    sendChunk(server, F("'"));
+  }
+  sendChunk(server, F(">"));
+}
+
+void endContentBox(ESP8266WebServer& server) {
+  sendChunk(server, F("</div>"));
+}
+
+void endPixelatedPage(ESP8266WebServer& server) {
+  sendChunk(server, F("</div></div>"));  // Close group and box
 }
 
 }  // namespace Component

@@ -124,8 +124,8 @@ void AdminHandler::handleWiFiUpdate() {
       // Handle save error
       std::vector<String> css = {"admin"};
       std::vector<String> js = {"admin"};
-      renderPage(
-          F("Fehler"), "admin",
+      renderAdminPage(
+          ConfigMgr.getDeviceName(), "admin",
           [this, &result]() {
             sendChunk(F("<div class='container'>"));
             sendChunk(
@@ -144,8 +144,8 @@ void AdminHandler::handleWiFiUpdate() {
 
   std::vector<String> css = {"admin"};
   std::vector<String> js = {"admin"};
-  renderPage(
-      F("WiFi Einstellungen aktualisiert"), "admin",
+  renderAdminPage(
+      ConfigMgr.getDeviceName(), "admin",
       [this, changed, changes]() {
         sendChunk(F("<div class='container'>"));
         if (changed) {

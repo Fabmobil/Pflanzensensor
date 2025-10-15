@@ -1,8 +1,8 @@
 /**
  * @file admin_handler_cards.cpp
  * @brief HTML card generation for admin interface
- * @details Generates various admin interface cards including debug settings,
- *          system settings, system actions, system info, and JSON debug cards
+ * @details Generates various admin interface cards including system settings,
+ *          system actions, and system info cards
  */
 
 #include <ArduinoJson.h>
@@ -13,87 +13,6 @@
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
 #include "web/handler/admin_handler.h"
-
-void AdminHandler::generateAndSendDebugSettingsCard() {
-  sendChunk(F("<div class='card'><h3>Debug-Einstellungen</h3>"));
-  sendChunk(
-      F("<form method='post' action='/admin/updateSettings' "
-        "class='config-form'>"));
-  sendChunk(F("<input type='hidden' name='section' value='debug'>"));
-  // File logging
-  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-  sendChunk(
-      F("<input type='checkbox' id='file_logging_enabled' "
-        "name='file_logging_enabled' value='true'"));
-  if (ConfigMgr.isFileLoggingEnabled()) sendChunk(F(" checked"));
-  sendChunk(F("> Logs in Datei speichern</label></div>"));
-  // Debug RAM
-  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-  sendChunk(
-      F("<input type='checkbox' id='debug_ram' name='debug_ram' value='true'"));
-  if (ConfigMgr.isDebugRAM()) sendChunk(F(" checked"));
-  sendChunk(F("> Debug RAM</label></div>"));
-  // Debug Measurement Cycle
-  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-  sendChunk(
-      F("<input type='checkbox' id='debug_measurement_cycle' "
-        "name='debug_measurement_cycle' value='true'"));
-  if (ConfigMgr.isDebugMeasurementCycle()) sendChunk(F(" checked"));
-  sendChunk(F("> Debug Measurement Cycle</label></div>"));
-  // Debug Sensor
-  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-  sendChunk(
-      F("<input type='checkbox' id='debug_sensor' name='debug_sensor' "
-        "value='true'"));
-  if (ConfigMgr.isDebugSensor()) sendChunk(F(" checked"));
-  sendChunk(F("> Debug Sensor</label></div>"));
-  // Debug Display
-  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-  sendChunk(
-      F("<input type='checkbox' id='debug_display' name='debug_display' "
-        "value='true'"));
-  if (ConfigMgr.isDebugDisplay()) sendChunk(F(" checked"));
-  sendChunk(F("> Debug Display</label></div>"));
-  // Debug WebSocket
-  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-  sendChunk(
-      F("<input type='checkbox' id='debug_websocket' name='debug_websocket' "
-        "value='true'"));
-  if (ConfigMgr.isDebugWebSocket()) sendChunk(F(" checked"));
-  sendChunk(F("> Debug WebSocket</label></div>"));
-  // Log Level Selection
-  sendChunk(F("<div class='form-group'>"));
-  sendChunk(F("<label for='log_level'>Log Level:</label>"));
-  sendChunk(F("<select id='log_level' name='log_level'>"));
-  String currentLevel = ConfigMgr.getLogLevel();
-  const char* levels[] = {"ERROR", "WARNING", "INFO", "DEBUG"};
-  for (const char* level : levels) {
-    sendChunk(F("<option value='"));
-    sendChunk(level);
-    sendChunk(F("'"));
-    if (currentLevel == level) sendChunk(F(" selected"));
-    sendChunk(F(">"));
-    sendChunk(level);
-    sendChunk(F("</option>"));
-  }
-  sendChunk(F("</select>"));
-  sendChunk(F("</div>"));
-  sendChunk(
-      F("<button type='submit' class='button "
-        "button-primary'>Speichern</button>"));
-  sendChunk(F("</form>"));
-  // Add Download Log button if file logging is enabled
-  if (ConfigMgr.isFileLoggingEnabled()) {
-    sendChunk(
-        F("<form action='/admin/downloadLog' method='GET' "
-          "style='margin-top:8px;'>"));
-    sendChunk(
-        F("<button type='submit' class='button button-primary'>Log "
-          "herunterladen</button>"));
-    sendChunk(F("</form>"));
-  }
-  sendChunk(F("</div>"));
-}
 
 #if USE_MAIL
 void AdminHandler::generateAndSendMailSettingsCard() {
@@ -235,11 +154,6 @@ void AdminHandler::generateAndSendSystemSettingsCard() {
   sendChunk(F("<input type='checkbox' name='md5_verification'"));
   if (ConfigMgr.isMD5Verification()) sendChunk(F(" checked"));
   sendChunk(F("> MD5-Überprüfung für Updates aktivieren</label></div>"));
-  // Collectd checkbox
-  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-  sendChunk(F("<input type='checkbox' name='collectd_enabled'"));
-  if (ConfigMgr.isCollectdEnabled()) sendChunk(F(" checked"));
-  sendChunk(F("> InfluxDB/Collectd Datenerfassung aktivieren</label></div>"));
   sendChunk(
       F("<button type='submit' class='button "
         "button-primary'>Speichern</button>"));
@@ -440,73 +354,4 @@ void AdminHandler::generateAndSendLedTrafficLightSettingsCard() {
 
   sendChunk(F("</div>"));
 #endif  // USE_LED_TRAFFIC_LIGHT
-}
-
-void AdminHandler::generateAndSendJsonDebugCard() {
-  // config.json card
-  sendChunk(F("<div class='card'><h3>config.json</h3>"));
-  if (LittleFS.exists("/config.json")) {
-    File configFile = LittleFS.open("/config.json", "r");
-    if (configFile) {
-      String configContent = configFile.readString();
-      configFile.close();
-      StaticJsonDocument<2048> doc;
-      DeserializationError error = deserializeJson(doc, configContent);
-      if (!error) {
-        String pretty;
-        serializeJsonPretty(doc, pretty);
-        sendChunk(F("<pre class='json-debug-pre'>"));
-        sendChunk(pretty);
-        sendChunk(F("</pre>"));
-      } else {
-              sendChunk(
-                  F("<pre class='json-debug-pre error'>Ungültiges JSON in "
-                    "config.json</pre>"));
-        sendChunk(F("<pre class='json-debug-pre'>"));
-        sendChunk(configContent);
-        sendChunk(F("</pre>"));
-      }
-      } else {
-        sendChunk(
-            F("<pre class='json-debug-pre error'>Konfigurationsdatei "
-              "config.json konnte nicht geöffnet werden</pre>"));
-    }
-  } else {
-    sendChunk(
-        F("<pre class='json-debug-pre warning'>config.json nicht gefunden</pre>"));
-  }
-  sendChunk(F("</div>"));
-
-  // sensors.json card
-  sendChunk(F("<div class='card'><h3>sensors.json</h3>"));
-  if (LittleFS.exists("/sensors.json")) {
-    File sensorsFile = LittleFS.open("/sensors.json", "r");
-    if (sensorsFile) {
-      String sensorsContent = sensorsFile.readString();
-      sensorsFile.close();
-      StaticJsonDocument<2048> doc;
-      DeserializationError error = deserializeJson(doc, sensorsContent);
-      if (!error) {
-        String pretty;
-        serializeJsonPretty(doc, pretty);
-        sendChunk(F("<pre class='json-debug-pre'>"));
-        sendChunk(pretty);
-        sendChunk(F("</pre>"));
-      } else {
-        sendChunk(
-            F("<pre class='json-debug-pre error'>Ungültiges JSON in "
-              "sensors.json</pre>"));
-        sendChunk(F("<pre class='json-debug-pre'>"));
-        sendChunk(sensorsContent);
-        sendChunk(F("</pre>"));
-      }
-    } else {
-      sendChunk(
-          F("<pre class='json-debug-pre error'>Datei sensors.json konnte nicht geöffnet werden</pre>"));
-    }
-  } else {
-    sendChunk(
-        F("<pre class='json-debug-pre warning'>sensors.json nicht gefunden</pre>"));
-  }
-  sendChunk(F("</div>"));
 }

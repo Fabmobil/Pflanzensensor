@@ -13,7 +13,6 @@ void StartpageHandler::renderWiFiSetupForm() {
     sendChunk(F("<form method='POST' action='/admin/updateWiFi'>"));
 
     // Slot selection
-    sendChunk(F("<div class='form-group'>"));
     sendChunk(F("<label for='wifi_slot'>WiFi-Slot wählen:</label>"));
     sendChunk(
         F("<select name='wifi_slot' id='wifi_slot' required "
@@ -52,7 +51,6 @@ void StartpageHandler::renderWiFiSetupForm() {
     sendChunk(F("</div>"));
 
     // WiFi network selection (scanned networks)
-    sendChunk(F("<div class='form-group'>"));
     sendChunk(F("<label for='wifi_ssid'>Verfügbare WiFi-Netzwerke:</label>"));
     sendChunk(
         F("<select name='wifi_ssid' id='wifi_ssid' required "
@@ -100,11 +98,10 @@ void StartpageHandler::renderWiFiSetupForm() {
     sendChunk(F("</div>"));
 
     // Password input
-    sendChunk(F("<div class='form-group'>"));
     sendChunk(F("<label for='wifi_password'>Passwort:</label>"));
     sendChunk(
         F("<input type='password' name='wifi_password' id='wifi_password' "
-          "required placeholder='WiFi-Passwort' class='form-control'>"));
+          "required placeholder='WiFi-Passwort'>"));
     sendChunk(F("</div>"));
 
     // Submit button

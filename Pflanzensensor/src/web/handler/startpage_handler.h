@@ -130,13 +130,6 @@ class StartpageHandler : public BaseHandler {
                          const String& unit, const char* status,
                          size_t measurementIndex, size_t sensorIndex);
 
-
-  /**
-   * @brief Generate and send footer with earth and stats
-   * @details Creates footer section with navigation and system info
-   */
-  void generateAndSendFooter();
-
  private:
   friend class WebManager;  // Allow WebManager access to private members
   WebAuth& _auth;           ///< Reference to authentication service

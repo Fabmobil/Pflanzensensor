@@ -28,16 +28,12 @@ void AdminDisplayHandler::handleDisplayConfig() {
   std::vector<String> css = {"admin"};
   std::vector<String> js = {"admin"};
 
-  renderPage(
-      String(ConfigMgr.getDeviceName()) + F(" Display Konfiguration"), "admin",
+  renderAdminPage(
+      ConfigMgr.getDeviceName(), "admin/display",
       [this]() {
         sendChunk(F("<div class='card'>"));
-        sendChunk(F("<h2>"));
-        sendChunk(ConfigMgr.getDeviceName());
-        sendChunk(F(" Displayeinstellungen</h2>"));
-        sendChunk(F("</div>"));
-
-        sendChunk(F("<form action='/admin/display' method='post'>"));
+        sendChunk(F("<h3>Display-Einstellungen</h3>"));
+        sendChunk(F("<form action='/admin/display' method='post' class='config-form'>"));
 
         // Screen duration
         sendChunk(F("<div class='form-group'>"));
@@ -63,7 +59,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
         sendChunk(F("</select></div>"));
 
         // Show IP screen
-        sendChunk(F("<div class='form-group'><label>"));
+        sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
         sendChunk(F("<input type='checkbox' name='show_ip'"));
         if (displayManager && displayManager->isIpScreenEnabled()) {
           sendChunk(F(" checked"));
@@ -71,7 +67,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
         sendChunk(F("> IP-Adresse anzeigen</label></div>"));
 
         // Show clock
-        sendChunk(F("<div class='form-group'><label>"));
+        sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
         sendChunk(F("<input type='checkbox' name='show_clock'"));
         if (displayManager && displayManager->isClockEnabled()) {
           sendChunk(F(" checked"));
@@ -79,7 +75,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
         sendChunk(F("> Datum und Uhrzeit anzeigen</label></div>"));
 
         // Show flower image
-        sendChunk(F("<div class='form-group'><label>"));
+        sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
         sendChunk(F("<input type='checkbox' name='show_flower'"));
         if (displayManager && displayManager->isFlowerImageEnabled()) {
           sendChunk(F(" checked"));
@@ -87,14 +83,17 @@ void AdminDisplayHandler::handleDisplayConfig() {
         sendChunk(F("> Blumen-Bild anzeigen</label></div>"));
 
         // Show fabmobil image
-        sendChunk(F("<div class='form-group'><label>"));
+        sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
         sendChunk(F("<input type='checkbox' name='show_fabmobil'"));
         if (displayManager && displayManager->isFabmobilImageEnabled()) {
           sendChunk(F(" checked"));
         }
         sendChunk(F("> Fabmobil-Logo anzeigen</label></div>"));
 
-        // Sensor and measurement selection
+        sendChunk(F("</div>"));  // Close first card
+
+        // Sensor and measurement selection in separate card
+        sendChunk(F("<div class='card'>"));
         sendChunk(F("<h3>Messungen anzeigen</h3>"));
         if (sensorManager) {
           for (const auto& sensor : sensorManager->getSensors()) {
@@ -104,10 +103,10 @@ void AdminDisplayHandler::handleDisplayConfig() {
 
             if (measurementData.isValid() && measurementData.activeValues > 1) {
               // Sensor has multiple measurements - show individual measurements
-              sendChunk(F("<div class='form-group'>"));
-              sendChunk(F("<strong>"));
+              sendChunk(F("<div class='card-section'>"));
+              sendChunk(F("<h4>"));
               sendChunk(sensor->getName());
-              sendChunk(F(":</strong><br>"));
+              sendChunk(F("</h4>"));
 
               for (size_t i = 0; i < measurementData.activeValues; i++) {
                 // Use user-friendly measurement name
@@ -119,7 +118,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
                   measurementName = "Messung " + String(i + 1);
                 }
 
-                sendChunk(F("<label style='margin-left: 20px;'>"));
+                sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
                 sendChunk(F("<input type='checkbox' name='measurement_"));
                 sendChunk(id);
                 sendChunk(F("_"));
@@ -132,12 +131,12 @@ void AdminDisplayHandler::handleDisplayConfig() {
                 sendChunk(measurementName);
                 sendChunk(F(" ("));
                 sendChunk(String(measurementData.units[i]));
-                sendChunk(F(")</label><br>"));
+                sendChunk(F(")</label></div>"));
               }
               sendChunk(F("</div>"));
             } else {
               // Sensor has only one measurement - show as simple checkbox
-              sendChunk(F("<div class='form-group'><label>"));
+              sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
               sendChunk(F("<input type='checkbox' name='sensor_"));
               sendChunk(id);
               sendChunk(F("'"));
@@ -154,7 +153,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
 
         sendChunk(F("<button type='submit' class='button button-primary'>"));
         sendChunk(F("Speichern</button>"));
-        sendChunk(F("</form>"));
+        sendChunk(F("</form></div>"));  // Close card and form
       },
       css, js);
 }
@@ -163,9 +162,10 @@ void AdminDisplayHandler::handleDisplayUpdate() {
   if (!validateRequest()) return;
   std::vector<String> css = {"admin"};
   std::vector<String> js = {"admin"};
-  renderPage(
-      F("Display Konfiguration"), "admin",
+  renderAdminPage(
+      ConfigMgr.getDeviceName(), "admin/display",
       [this]() {
+        sendChunk(F("<div class='card'>"));
         if (displayManager) {
           // Update screen duration
           if (_server.hasArg("screen_duration")) {
@@ -227,15 +227,16 @@ void AdminDisplayHandler::handleDisplayUpdate() {
                 F("<p>Die Display-Einstellungen wurden erfolgreich "
                   "aktualisiert.</p>"));
           }
+          sendChunk(F("<p>Einstellungen erfolgreich gespeichert!</p>"));
         } else {
-          sendChunk(F("<h2>Fehler</h2>"));
-          sendChunk(F("<p>Display Manager nicht initialisiert</p>"));
+          sendChunk(F("<p>Fehler: Display Manager nicht initialisiert</p>"));
         }
 
         // Link zurück
         sendChunk(
-            F("<br><a href='/admin/display' class='button button-primary'>"));
+            F("<a href='/admin/display' class='button button-primary'>"));
         sendChunk(F("Zurück zu Display-Einstellungen</a>"));
+        sendChunk(F("</div>"));  // Close card
       },
       css, js);
 }

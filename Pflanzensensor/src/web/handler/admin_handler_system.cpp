@@ -26,8 +26,8 @@ void AdminHandler::handleAdminUpdate() {
   std::vector<String> js = {"admin"};
 
   if (!updated) {
-    renderPage(
-        F("Konfiguration"), "admin",
+    renderAdminPage(
+        ConfigMgr.getDeviceName(), "admin",
         [this]() {
           sendChunk(F("<div class='container'>"));
           sendChunk(F("<h2>Keine Änderungen vorgenommen</h2>"));
@@ -42,8 +42,8 @@ void AdminHandler::handleAdminUpdate() {
   // Save changes
   auto result = ConfigMgr.saveConfig();
   if (!result.isSuccess()) {
-    renderPage(
-        F("Fehler"), "admin",
+    renderAdminPage(
+        ConfigMgr.getDeviceName(), "admin",
         [this, &result]() {
           sendChunk(F("<div class='container'>"));
           sendChunk(F("<h2>Fehler beim Speichern der Konfiguration</h2>"));
@@ -59,8 +59,8 @@ void AdminHandler::handleAdminUpdate() {
   }
 
   // Show success page with changes
-  renderPage(
-      F("Konfiguration aktualisiert"), "admin",
+  renderAdminPage(
+      ConfigMgr.getDeviceName(), "admin",
       [this, changes]() {  // Pass changes by value since it's a String
         sendChunk(F("<div class='container'>"));
         sendChunk(F("<h2>Einstellungen gespeichert</h2>"));
@@ -79,8 +79,8 @@ void AdminHandler::handleConfigReset() {
   auto result = ConfigMgr.resetToDefaults();
   std::vector<String> css = {"admin"};
   std::vector<String> js = {"admin"};
-  renderPage(
-      F("Konfiguration zurücksetzen"), "admin",
+  renderAdminPage(
+      ConfigMgr.getDeviceName(), "admin",
       [this, &result]() {
         sendChunk(F("<div class='container'>"));
 
@@ -105,8 +105,8 @@ void AdminHandler::handleConfigReset() {
 void AdminHandler::handleReboot() {
   std::vector<String> css = {"admin"};
   std::vector<String> js = {"admin"};
-  renderPage(
-      F("System Neustart"), "admin",
+  renderAdminPage(
+      ConfigMgr.getDeviceName(), "admin",
       [this]() {
         sendChunk(F("<div class='container'>"));
         sendChunk(F("<h2>System wird neu gestartet...</h2>"));
@@ -127,8 +127,8 @@ void AdminHandler::handleTestMail() {
 
   // Check if mail is enabled
   if (!ConfigMgr.isMailEnabled()) {
-    renderPage(
-        F("Test-Mail"), "admin",
+    renderAdminPage(
+        ConfigMgr.getDeviceName(), "admin",
         [this]() {
           sendChunk(F("<div class='container'>"));
           sendChunk(F("<h2>E-Mail-Funktionen sind deaktiviert</h2>"));
@@ -152,8 +152,8 @@ void AdminHandler::handleTestMail() {
   }
 
   // Show result
-  renderPage(
-      F("Test-Mail"), "admin",
+  renderAdminPage(
+      ConfigMgr.getDeviceName(), "admin",
       [this, success, errorMessage]() {
         sendChunk(F("<div class='container'>"));
         if (success) {

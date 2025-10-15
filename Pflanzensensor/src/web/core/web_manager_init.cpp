@@ -241,10 +241,6 @@ ResourceResult WebManager::setupServices() {
       serveStaticFile("/css/debug.css", "text/css", "max-age=86400");
     });
 
-    _server->on("/css/ota-updates.css", HTTP_GET, [this]() {
-      serveStaticFile("/css/ota-updates.css", "text/css", "max-age=86400");
-    });
-
     // JavaScript files
     _server->on("/js/sensors.js", HTTP_GET, [this]() {
       serveStaticFile("/js/sensors.js", "application/javascript",

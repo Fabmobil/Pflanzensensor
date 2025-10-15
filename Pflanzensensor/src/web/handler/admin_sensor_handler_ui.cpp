@@ -24,15 +24,9 @@ void AdminSensorHandler::handleSensorConfig() {
   }
   std::vector<String> css = {"admin"};
   std::vector<String> js = {"admin", "sensors", "admin_sensors"};
-  renderPage(
-      String(ConfigMgr.getDeviceName()) + F(" Sensor Konfiguration"), "admin",
+  renderAdminPage(
+      ConfigMgr.getDeviceName(), "admin/sensors",
       [this]() {
-        // Main title as <h1>
-        sendChunk(F("<div class='card'>"));
-        sendChunk(F("<h2>"));
-        sendChunk(ConfigMgr.getDeviceName());
-        sendChunk(F(" Sensorinstellungen</h2></div>"));
-
         // Flower Status Sensor Selection Card
         renderFlowerStatusSensorCard();
 

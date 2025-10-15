@@ -63,11 +63,7 @@ void sendChunk(ESP8266WebServer& server, const String& chunk);
  * @brief Send navigation menu
  * @param server Reference to web server
  * @param activeItem Currently active menu item
- * @details Generates the main navigation menu:
- *          - Highlights the current page
- *          - Includes all available navigation items
- *          - Applies consistent styling
- *          - Handles responsive behavior
+ * @details DEPRECATED: Navigation is now in footer. Use sendPixelatedFooter instead.
  */
 void sendNavigation(ESP8266WebServer& server, const String& activeItem);
 
@@ -76,14 +72,63 @@ void sendNavigation(ESP8266WebServer& server, const String& activeItem);
  * @param server Reference to web server
  * @param version Version string
  * @param buildDate Build date string
- * @details Generates the page footer containing:
- *          - Version information
- *          - Build date
- *          - Copyright notice
- *          - Additional system information
+ * @details DEPRECATED: Use sendPixelatedFooter instead.
  */
 void sendFooter(ESP8266WebServer& server, const String& version,
                 const String& buildDate);
+
+/**
+ * @brief Send pixelated footer with navigation and system info
+ * @param server Reference to web server
+ * @param version Version string
+ * @param buildDate Build date string
+ * @param activeSection Currently active section (start, logs, admin, admin/sensors, etc.)
+ * @details Generates the pixelated footer containing:
+ *          - Navigation links (START, LOGS, ADMIN)
+ *          - Admin submenu or system stats depending on section
+ *          - Version and build information
+ *          - Fabmobil logo
+ */
+void sendPixelatedFooter(ESP8266WebServer& server, const String& version,
+                         const String& buildDate, const String& activeSection);
+
+/**
+ * @brief Begin pixelated page layout
+ * @param server Reference to web server
+ * @param statusClass Status class for the box (status-green, status-red, etc.)
+ * @details Starts the main pixelated container with status-based background
+ */
+void beginPixelatedPage(ESP8266WebServer& server, const String& statusClass = "status-unknown");
+
+/**
+ * @brief Send cloud title section
+ * @param server Reference to web server
+ * @param title Title text to display in cloud
+ * @details Generates cloud image with centered title text
+ */
+void sendCloudTitle(ESP8266WebServer& server, const String& title);
+
+/**
+ * @brief Begin content box (dark container for cards/content)
+ * @param server Reference to web server
+ * @param section Optional section name for styling (admin, sensors, display, wifi, system, ota, logs)
+ * @details Starts the dark content container that replaces the flower
+ */
+void beginContentBox(ESP8266WebServer& server, const String& section = "");
+
+/**
+ * @brief End content box
+ * @param server Reference to web server
+ * @details Closes the content container
+ */
+void endContentBox(ESP8266WebServer& server);
+
+/**
+ * @brief End pixelated page layout
+ * @param server Reference to web server
+ * @details Closes the main pixelated container
+ */
+void endPixelatedPage(ESP8266WebServer& server);
 
 /**
  * @brief End HTML response

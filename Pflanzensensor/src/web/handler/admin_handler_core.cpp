@@ -224,29 +224,25 @@ void AdminHandler::handleConfigSet() {
 }
 
 void AdminHandler::handleAdminPage() {
-  logger.debug(F("AdminHandler"), F("Bearbeite Admin-Seitenanfrage"));
-  _cleaned = false;
-  std::vector<String> css = {"style", "start", "admin"};
+  logger.debug(F("AdminHandler"), F("handleAdminPage called"));
+  logger.logMemoryStats(F("AdminPageStart"));
+
+  std::vector<String> css = {"admin"};
   std::vector<String> js = {"admin"};
-  renderPage(
-      ConfigMgr.getDeviceName() + F(" Verwaltung"), "admin",
+  renderAdminPage(
+      ConfigMgr.getDeviceName(), "admin",
       [this]() {
-        sendChunk(F("<div class='card'>"));
-        sendChunk(F("<h2>"));
-        sendChunk(ConfigMgr.getDeviceName());
-        sendChunk(F(" Einstellungen</h2>"));
-        sendChunk(F("</div>"));
         sendChunk(F("<div class='admin-grid'>"));
-        generateAndSendDebugSettingsCard();
+        generateAndSendSystemSettingsCard();
+        generateAndSendSystemActionsCard();
+#if USE_TRAFFIC_LIGHT
+        generateAndSendLedTrafficLightSettingsCard();
+#endif
+        generateAndSendWiFiSettingsCard();
+        generateAndSendSystemInfoCard();
 #if USE_MAIL
         generateAndSendMailSettingsCard();
 #endif
-        generateAndSendWiFiSettingsCard();
-        generateAndSendSystemSettingsCard();
-        generateAndSendLedTrafficLightSettingsCard();
-        generateAndSendSystemActionsCard();
-        generateAndSendSystemInfoCard();
-        generateAndSendJsonDebugCard();  // <-- Add the new card here
         sendChunk(F("</div>"));
       },
       css, js);

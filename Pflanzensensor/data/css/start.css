@@ -41,6 +41,12 @@ img {
   padding: 0 clamp(0.2em, 1vw, 0.5em);
 }
 
+/* Breitere group für Admin-Seiten */
+.box .group:has(.admin-content-box) {
+  width: 98%;
+  max-width: 1400px;
+}
+
 .box .div {
   position: relative;
   width: 100%;
@@ -304,16 +310,10 @@ img {
   gap: clamp(0.2em, 0.8vw, 0.5em);
 }
 
+/* Footer Navigation - größere Schrift für Hauptmenü */
 .nav-item {
-  color: #9b9b9b;
-  text-decoration: none;
   font-size: clamp(0.65em, 2vw + 0.2em, 1.4em);
   line-height: 1.1;
-  transition: color 0.2s;
-}
-
-.nav-item:hover {
-  color: #d4b3ff;
 }
 
 .stats-labels, .stats-values {
@@ -324,7 +324,7 @@ img {
   display: flex;
   flex-direction: column;
   gap: clamp(0.2em, 0.8vw, 0.5em);
-  font-size: clamp(0.48em, 1.5vw + 0.2em, 1em);
+  font-size: clamp(0.4em, 1.2vw + 0.15em, 0.75em);
   color: #00ff00;
   min-width: 0;
   overflow: hidden;
@@ -334,6 +334,12 @@ img {
   grid-column: 2;
   text-align: right;
   align-items: flex-end;
+}
+
+/* Kleinere Schrift für Labels/Werte auf Startseite */
+.stats-labels .nav-item,
+.stats-values .nav-item {
+  font-size: inherit;
 }
 
 .stats-labels li,

@@ -125,13 +125,14 @@ class BaseHandler {
   bool _cleaned = false;  ///< Flag indicating if handler has been cleaned up
 
   /**
-   * @brief Render complete web page
+   * @brief Render page with standard layout (DEPRECATED)
    * @param title Page title
    * @param activeNav Active navigation item
    * @param content Content generation function
-   * @param additionalCss Additional CSS files to include
-   * @param additionalScripts Additional JavaScript files to include
-   * @details Generates complete HTML page:
+   * @param additionalCss Additional CSS files
+   * @param additionalScripts Additional JS files
+   * @details DEPRECATED: Use renderPixelatedPage instead.
+   *          Renders complete HTML page with:
    *          - Header with title
    *          - Navigation menu
    *          - Content container
@@ -156,6 +157,114 @@ class BaseHandler {
 
     Component::sendChunk(_server, F("</div></div></div>"));
     Component::sendFooter(_server, VERSION, __DATE__);
+    Component::endResponse(_server, additionalScripts);
+  }
+
+  /**
+   * @brief Render start page with pixelated design (flower graphic, sensors)
+   * @param title Page title shown in cloud
+   * @param activeSection Active navigation section
+   * @param content Lambda function that generates page content (flower, sensors)
+   * @param additionalCss Additional CSS files to include
+   * @param additionalScripts Additional JavaScript files to include
+   * @param statusClass Status class for background (status-green, status-red, etc.)
+   */
+  void renderStartPage(
+      const String& title, const String& activeSection,
+      std::function<void()> content,
+      const std::vector<String>& additionalCss = std::vector<String>(),
+      const std::vector<String>& additionalScripts = std::vector<String>(),
+      const String& statusClass = "status-unknown") {
+
+    // Ensure start.css is included
+    std::vector<String> css = {"start"};
+    css.insert(css.end(), additionalCss.begin(), additionalCss.end());
+
+    if (!Component::beginResponse(_server, title, css)) {
+      return;
+    }
+
+    Component::beginPixelatedPage(_server, statusClass);
+    Component::sendCloudTitle(_server, title);
+
+    // Content goes directly into .group (flower, sensors, etc.)
+    content();
+
+    Component::sendPixelatedFooter(_server, VERSION, __DATE__, activeSection);
+    Component::endPixelatedPage(_server);
+    Component::endResponse(_server, additionalScripts);
+  }
+
+  /**
+   * @brief Render admin/logs page with dark content box
+   * @param title Page title shown in cloud
+   * @param activeSection Active navigation section (admin, sensors, display, wifi, system, ota, logs)
+   * @param content Lambda function that generates content inside dark box
+   * @param additionalCss Additional CSS files to include
+   * @param additionalScripts Additional JavaScript files to include
+   */
+  void renderAdminPage(
+      const String& title, const String& activeSection,
+      std::function<void()> content,
+      const std::vector<String>& additionalCss = std::vector<String>(),
+      const std::vector<String>& additionalScripts = std::vector<String>()) {
+
+    // Ensure start.css and admin.css are included
+    std::vector<String> css = {"start", "admin"};
+    css.insert(css.end(), additionalCss.begin(), additionalCss.end());
+
+    if (!Component::beginResponse(_server, title, css)) {
+      return;
+    }
+
+    Component::beginPixelatedPage(_server, "status-unknown");
+    Component::sendCloudTitle(_server, title);
+
+    // Content wrapped in dark content box (90% width) with section indicator
+    Component::beginContentBox(_server, activeSection);
+    content();
+    Component::endContentBox(_server);
+
+    Component::sendPixelatedFooter(_server, VERSION, __DATE__, activeSection);
+    Component::endPixelatedPage(_server);
+    Component::endResponse(_server, additionalScripts);
+  }
+
+  /**
+   * @brief DEPRECATED: Render a complete page with pixelated design
+   * @deprecated Use renderStartPage() for start page or renderAdminPage() for admin/logs
+   */
+  void renderPixelatedPage(
+      const String& title, const String& activeSection,
+      std::function<void()> content,
+      const std::vector<String>& additionalCss = std::vector<String>(),
+      const std::vector<String>& additionalScripts = std::vector<String>(),
+      const String& statusClass = "status-unknown",
+      bool showContentBox = true) {
+
+    // Ensure start.css is included
+    std::vector<String> css = {"start"};
+    css.insert(css.end(), additionalCss.begin(), additionalCss.end());
+
+    if (!Component::beginResponse(_server, title, css)) {
+      return;
+    }
+
+    Component::beginPixelatedPage(_server, statusClass);
+
+    // Cloud title BEFORE content box
+    Component::sendCloudTitle(_server, title);
+
+    if (showContentBox) {
+      Component::beginContentBox(_server);
+      content();
+      Component::endContentBox(_server);
+    } else {
+      content();
+    }
+
+    Component::sendPixelatedFooter(_server, VERSION, __DATE__, activeSection);
+    Component::endPixelatedPage(_server);
     Component::endResponse(_server, additionalScripts);
   }
 

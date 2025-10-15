@@ -6,7 +6,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define VERSION "2.18.0"  // Software version
+#define VERSION "2.19.0"  // Software version
 
 #ifdef CONFIG_FILE
 #include CONFIG_FILE

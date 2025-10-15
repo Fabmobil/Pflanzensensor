@@ -17,8 +17,7 @@ void CSSService::initModules() {
   _modules = {CSSModule("base", "Base Styles", "/css/style.css"),
               CSSModule("start", "Start Page", "/css/start.css"),
               CSSModule("admin", "Admin Pages", "/css/admin.css"),
-              CSSModule("logs", "Log Pages", "/css/logs.css"),
-              CSSModule("ota", "Update Pages", "/css/ota-updates.css")};
+              CSSModule("logs", "Log Pages", "/css/logs.css")};
 }
 
 RouterResult CSSService::onRegisterRoutes(WebRouter& router) {

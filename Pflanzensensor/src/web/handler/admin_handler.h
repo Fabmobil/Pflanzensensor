@@ -79,10 +79,6 @@ class AdminHandler : public BaseHandler {
   void handleDownloadLog();
 
   // Card generation methods - implemented in admin_handler_cards.cpp
-  /**
-   * @brief Generate and send the Debug Settings card for the admin page.
-   */
-  void generateAndSendDebugSettingsCard();
 
 #if USE_MAIL
   /**
@@ -111,11 +107,6 @@ class AdminHandler : public BaseHandler {
    * page.
    */
   void generateAndSendLedTrafficLightSettingsCard();
-
-  /**
-   * @brief Generate and send the JSON Debug card for the admin page.
-   */
-  void generateAndSendJsonDebugCard();
 
   /**
    * @brief Generate and send the WiFi Settings card for the admin page.

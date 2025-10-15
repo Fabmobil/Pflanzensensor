@@ -90,8 +90,8 @@ void LogHandler::handleLogs() {
   std::vector<String> css = {"logs"};
   std::vector<String> js = {"logs"};
 
-  this->renderPage(
-      String(ConfigMgr.getDeviceName()) + F(" Logs"), "logs",
+  this->renderAdminPage(
+      ConfigMgr.getDeviceName(), "logs",
       [this]() {
 #if USE_WEBSOCKET
         // Add WebSocket authentication script first
@@ -99,13 +99,6 @@ void LogHandler::handleLogs() {
         sendChunk(ConfigMgr.getAdminPassword());
         sendChunk(F("';</script>"));
 #endif
-
-        // Header card
-        sendChunk(F("<div class='card'>"));
-        sendChunk(F("<h2>"));
-        sendChunk(ConfigMgr.getDeviceName());
-        sendChunk(F(" Logs</h2>"));
-        sendChunk(F("</div>"));
 
         // Controls row with two cards, each with two rows
         sendChunk(F("<div class='log-controls-row'>"));

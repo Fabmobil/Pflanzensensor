@@ -84,20 +84,14 @@ HandlerResult WebOTAHandler::handlePost(
                              "Use registerRoutes instead");
 }
 
-std::vector<String> css = {"ota-updates"};
+std::vector<String> css = {"admin"};
 std::vector<String> js = {"ota"};
 void WebOTAHandler::handleUpdatePage() {
-  renderPage(
-      String(HOSTNAME) + F(" OTA Update"), "debug",
+  renderAdminPage(
+      ConfigMgr.getDeviceName(), "admin/update",
       [this]() {
+        // System Information Card
         sendChunk(F("<div class='card'>"));
-        sendChunk(F("<h2>"));
-        sendChunk(ConfigMgr.getDeviceName());
-        sendChunk(F(" OTA Firmware / Filesystem Upgrade</h2>"));
-        sendChunk(F("</div>"));
-
-        // System info section
-        sendChunk(F("<div class='admin-section'>"));
         sendChunk(F("<h2>System Information</h2>"));
         sendChunk(F("<table class='info-table'>"));
 
@@ -106,18 +100,18 @@ void WebOTAHandler::handleUpdatePage() {
         sendChunk(VERSION);
         sendChunk(F("</td></tr>"));
 
-        sendChunk(F("<tr><td>Free Heap:</td><td>"));
+        sendChunk(F("<tr><td>Freier Heap:</td><td>"));
         sendChunk(String(ESP.getFreeHeap()));
         sendChunk(F(" bytes</td></tr>"));
 
-        sendChunk(F("<tr><td>Free Sketch Space:</td><td>"));
+        sendChunk(F("<tr><td>Freier Sketch Space:</td><td>"));
         sendChunk(String(ESP.getFreeSketchSpace()));
         sendChunk(F(" bytes</td></tr>"));
 
         sendChunk(F("</table></div>"));
 
-        // Update section
-        sendChunk(F("<div class='admin-section update-section'>"));
+        // Update section Card
+        sendChunk(F("<div class='card update-section'>"));
 
         // Warning box
         sendChunk(F("<div class='warning-box'>"));
@@ -134,7 +128,7 @@ void WebOTAHandler::handleUpdatePage() {
 
         // Upload form
         sendChunk(
-            F("<form id='update-form' method='POST' "
+            F("<form id='update-form' method='POST' class='config-form' "
               "action='/update' enctype='multipart/form-data'>"));
 
         // File input

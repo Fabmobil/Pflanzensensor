@@ -16,24 +16,21 @@ function confirmReset() {
 }
 
 /**
- * Updates the navigation to show active items and handle dropdowns
+ * Updates the navigation to show active items (for footer nav-items)
  */
 function initNavigation() {
   const path = window.location.pathname;
 
-  document.querySelectorAll('.nav-link').forEach(link => {
-    if (link.getAttribute('href') === path) {
+  // Update footer navigation links
+  document.querySelectorAll('.nav-item').forEach(link => {
+    const href = link.getAttribute('href');
+    if (href === path || (href && path.startsWith(href) && href !== '/')) {
       link.classList.add('active');
-      const parentDropdown = link.closest('.nav-item');
-      if (parentDropdown) {
-        parentDropdown.classList.add('active');
-      }
     }
   });
 }
 
-// Add to existing window.onload
+// Initialize on load
 window.addEventListener('load', () => {
   initNavigation();
-  // No table population or fetch logic needed for /admin/sensors or any admin page
 });

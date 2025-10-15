@@ -17,8 +17,8 @@ void AdminSensorHandler::handleSensorUpdate() {
   if (!validateRequest()) return;
   std::vector<String> css = {"admin"};
   std::vector<String> js = {"admin", "sensors", "admin_sensors"};
-  renderPage(
-      F("Sensor Konfiguration"), "admin",
+  renderAdminPage(
+      ConfigMgr.getDeviceName(), "admin/sensors",
       [this]() {
         sendChunk(F("<div class='container'>"));
         bool changesOccurred = false;

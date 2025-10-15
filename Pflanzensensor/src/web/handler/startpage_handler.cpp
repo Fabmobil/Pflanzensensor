@@ -65,7 +65,7 @@ void StartpageHandler::handleRoot() {
   generateAndSendSensorGrid();
 
   // Footer with earth and info
-  generateAndSendFooter();
+  Component::sendPixelatedFooter(_server, VERSION, __DATE__, "start");
 
   sendChunk(F("</div></div></div>"));
 
@@ -234,72 +234,6 @@ void StartpageHandler::generateSensorBox(const Sensor* sensor, float value,
 
   sendChunk(F("</div>"));  // Close card
   sendChunk(F("</div>"));  // Close sensor
-}
-
-void StartpageHandler::generateAndSendFooter() {
-  sendChunk(F("<div class='footer'>"));
-  sendChunk(F("<div class='base'>"));
-
-  // Earth image
-  sendChunk(F("<img class='earth' src='/img/earth.png' alt='Earth' />"));
-
-  // Base overlay with navigation and stats
-  sendChunk(F("<footer class='base-overlay' aria-label='Statusleiste'>"));
-  sendChunk(F("<div class='footer-grid'>"));
-
-  // Navigation (Row 1, Column 1)
-  sendChunk(F("<nav class='nav-box' aria-label='Navigation'><ul class='nav-list'>"));
-  sendChunk(F("<li><a href='/' class='nav-item'>START</a></li>"));
-  sendChunk(F("<li><a href='/logs' class='nav-item'>LOGS</a></li>"));
-  sendChunk(F("<li><a href='/admin' class='nav-item'>ADMIN</a></li>"));
-  sendChunk(F("</ul></nav>"));
-
-  // Stats Labels (Row 1, Column 2)
-  sendChunk(F("<ul class='stats-labels'>"));
-  sendChunk(F("<li>📅 Zeit</li>"));
-  sendChunk(F("<li>🌐 SSID</li>"));
-  sendChunk(F("<li>💻 IP</li>"));
-  sendChunk(F("<li>📶 WIFI</li>"));
-  sendChunk(F("<li>⏲️ UPTIME</li>"));
-  sendChunk(F("<li>🔄 RESTARTS</li>"));
-  sendChunk(F("</ul>"));
-
-  // Stats Values (Row 1, Column 3)
-  sendChunk(F("<ul class='stats-values'>"));
-  sendChunk(F("<li>"));
-  sendChunk(Helper::getFormattedDate());
-  sendChunk(F(" "));
-  sendChunk(Helper::getFormattedTime());
-  sendChunk(F("</li><li>"));
-  sendChunk(WiFi.SSID());
-  sendChunk(F("</li><li>"));
-  sendChunk(WiFi.localIP().toString());
-  sendChunk(F("</li><li>"));
-  sendChunk(String(WiFi.RSSI()));
-  sendChunk(F(" dBm"));
-  sendChunk(F("</li><li>"));
-  sendChunk(Helper::getFormattedUptime());
-  sendChunk(F("</li><li>"));
-  sendChunk(String(Helper::getRebootCount()));
-  sendChunk(F("</li></ul>"));
-
-  // Logo (Row 2, Column 1)
-  sendChunk(F("<div class='footer-logo'><img src='/img/fabmobil.png' alt='FABMOBIL' /></div>"));
-
-  // Version (Row 2, Column 2)
-  sendChunk(F("<div class='footer-version'>V "));
-  sendChunk(VERSION);
-  sendChunk(F("</div>"));
-
-  // Build (Row 2, Column 3)
-  sendChunk(F("<div class='footer-build'>BUILD: "));
-  sendChunk(__DATE__);
-  sendChunk(F("</div>"));
-
-  sendChunk(F("</div>"));  // Close footer-grid
-  sendChunk(F("</footer>"));  // Close base-overlay
-  sendChunk(F("</div>"));  // Close base
-  sendChunk(F("</div>"));  // Close footer
 }
 
 const char* StartpageHandler::translateStatus(const char* status) const {

@@ -308,9 +308,9 @@ bool SensorHandler::validateRequest() const {
 }
 
 void SensorHandler::createSensorListSection() const {
-  Component::sendChunk(_server, F("<section class='sensor-section'>"));
+  Component::sendChunk(_server, F("<section>"));
   Component::sendChunk(_server, F("    <h3>Sensoren</h3>"));
-  Component::sendChunk(_server, F("    <div class='sensor-grid'>"));
+  Component::sendChunk(_server, F("    <div>"));
 
   for (const auto& sensor : _sensorManager.getSensors()) {
     if (!sensor) continue;  // Safety check
@@ -332,15 +332,15 @@ void SensorHandler::createSensorListSection() const {
     Component::sendChunk(_server, F("'>\n"));
 
     // Checkbox
-    Component::sendChunk(_server, F("    <div class='form-check'>\n"));
+    Component::sendChunk(_server, F("    <div>\n"));
     Component::sendChunk(
-        _server, F("        <input type='checkbox' class='form-check-input' "
+        _server, F("        <input type='checkbox' "
                    "id='enabled' name='enabled'"));
     if (sensor->isEnabled()) {
       Component::sendChunk(_server, F(" checked"));
     }
     Component::sendChunk(_server, F(">\n"));
-    Component::sendChunk(_server, F("        <label class='form-check-label' "
+    Component::sendChunk(_server, F("        <label "
                                     "for='enabled'>Aktiviert</label>\n"));
     Component::sendChunk(_server, F("    </div>\n"));
 
@@ -349,7 +349,7 @@ void SensorHandler::createSensorListSection() const {
     Component::sendChunk(_server, F("</form>\n"));
 
     // Sensor Info
-    Component::sendChunk(_server, F("<div class='sensor-info'>\n"));
+    Component::sendChunk(_server, F("<div>\n"));
     Component::sendChunk(_server, F("    <p>Typ: "));
     Component::sendChunk(_server, sensor->getId());
     Component::sendChunk(_server, F("</p>\n"));
