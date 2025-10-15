@@ -91,29 +91,6 @@ SensorFactory::SensorResult SensorFactory::createAllSensors(
     addDHTSensors(sensors, sensorManager, errors);
 #endif
 
-#if USE_DS18B20
-    addDS18B20Sensors(sensors, sensorManager, errors);
-#endif
-
-#if USE_SDS011
-    addSDS011Sensors(sensors, sensorManager, errors);
-#endif
-
-#if USE_MHZ19
-    addMHZ19Sensors(sensors, sensorManager, errors);
-#endif
-
-#if USE_HX711
-    addHX711Sensors(sensors, sensorManager, errors);
-#endif
-
-#if USE_BMP280
-    addBMP280Sensors(sensors, sensorManager, errors);
-#endif
-
-#if USE_SERIAL_RECEIVER
-    addSerialReceiverSensors(sensors, sensorManager, errors);
-#endif
 
 #if USE_ANALOG
     addAnalogSensors(sensors, sensorManager, errors);
@@ -170,114 +147,6 @@ SensorFactory::SensorResult SensorFactory::createDHTSensors(
   return SensorResult::success();
 }
 
-SensorFactory::SensorResult SensorFactory::createBMP280Sensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager) {
-#if USE_BMP280
-  BMP280Config config;
-  auto bmp280Sensor = std::make_unique<BMP280Sensor>(config, sensorManager);
-
-  // Move into base class pointer for initialization
-  std::unique_ptr<Sensor> baseSensor(bmp280Sensor.release());
-  auto result = initializeSensor(baseSensor);
-  if (!result.isSuccess()) {
-    return result;
-  }
-
-  // Move into sensors vector
-  sensors.push_back(std::move(baseSensor));
-#endif
-  return SensorResult::success();
-}
-
-SensorFactory::SensorResult SensorFactory::createHX711Sensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager) {
-#if USE_HX711
-  HX711Config config;
-  auto hx711Sensor = std::make_unique<HX711Sensor>(config, sensorManager);
-
-  // Move into base class pointer for initialization
-  std::unique_ptr<Sensor> baseSensor(hx711Sensor.release());
-  auto result = initializeSensor(baseSensor);
-  if (!result.isSuccess()) {
-    return result;
-  }
-
-  // Move into sensors vector
-  sensors.push_back(std::move(baseSensor));
-#endif
-  return SensorResult::success();
-}
-
-SensorFactory::SensorResult SensorFactory::createDS18B20Sensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager) {
-#if USE_DS18B20
-  DS18B20Config config;
-  auto ds18b20Sensor = std::make_unique<DS18B20Sensor>(config, sensorManager);
-
-  // Move into base class pointer for initialization
-  std::unique_ptr<Sensor> baseSensor(ds18b20Sensor.release());
-  auto result = initializeSensor(baseSensor);
-  if (!result.isSuccess()) {
-    return result;
-  }
-
-  // Move into sensors vector
-  sensors.push_back(std::move(baseSensor));
-#endif
-  return SensorResult::success();
-}
-
-SensorFactory::SensorResult SensorFactory::createSDS011Sensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager) {
-#if USE_SDS011
-  SDS011Config config;
-  auto sds011Sensor = std::make_unique<SDS011Sensor>(config, sensorManager);
-
-  // Move into base class pointer for initialization
-  std::unique_ptr<Sensor> baseSensor(sds011Sensor.release());
-  auto result = initializeSensor(baseSensor);
-  if (!result.isSuccess()) {
-    return result;
-  }
-
-  // Move into sensors vector
-  sensors.push_back(std::move(baseSensor));
-#endif
-  return SensorResult::success();
-}
-
-SensorFactory::SensorResult SensorFactory::createMHZ19Sensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager) {
-#if USE_MHZ19
-  MHZ19Config config;
-  auto mhz19Sensor = std::make_unique<MHZ19Sensor>(config, sensorManager);
-
-  // Store raw pointer before moving
-  auto* rawSensor = mhz19Sensor.get();
-
-  // For MHZ19, we only do basic initialization without test measurement
-  auto initResult = mhz19Sensor->init();
-  if (!initResult.isSuccess()) {
-    logger.error(F("SensorFactory"), F("Failed to initialize MHZ19 sensor"));
-    return SensorResult::fail(SensorError::INITIALIZATION_ERROR);
-  }
-
-  // Enable the sensor - it will handle its own warmup
-  mhz19Sensor->setEnabled(true);
-  logger.debug(F("SensorFactory"),
-               F("MHZ19 initialized successfully - warmup in progress"));
-
-  // Move into sensors vector
-  sensors.push_back(std::move(mhz19Sensor));
-#endif
-  return SensorResult::success();
-}
-
 SensorFactory::SensorResult SensorFactory::createAnalogSensors(
     std::vector<std::unique_ptr<Sensor>>& sensors,
     SensorManager* sensorManager) {
@@ -287,30 +156,6 @@ SensorFactory::SensorResult SensorFactory::createAnalogSensors(
 
   // Move into base class pointer for initialization
   std::unique_ptr<Sensor> baseSensor(analogSensor.release());
-  auto result = initializeSensor(baseSensor);
-  if (!result.isSuccess()) {
-    return result;
-  }
-
-  // Move into sensors vector
-  sensors.push_back(std::move(baseSensor));
-#endif
-  return SensorResult::success();
-}
-
-SensorFactory::SensorResult SensorFactory::createSerialReceiverSensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager) {
-#if USE_SERIAL_RECEIVER
-  SerialReceiverConfig config;
-  config.id = "SERIAL_RECEIVER";
-  config.name = "Serial Receiver";
-  config.configureMeasurements();
-  auto serialSensor =
-      std::make_unique<SerialReceiverSensor>(config, sensorManager);
-
-  // Move into base class pointer for initialization
-  std::unique_ptr<Sensor> baseSensor(serialSensor.release());
   auto result = initializeSensor(baseSensor);
   if (!result.isSuccess()) {
     return result;
@@ -333,90 +178,6 @@ void SensorFactory::addDHTSensors(
     errors.push_back(F("DHT: ") + dhtResult.getFullErrorMessage());
     logger.error(F("SensorFactory"),
                  F("Erstellung DHT-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
-  }
-}
-#endif
-
-#if USE_DS18B20
-void SensorFactory::addDS18B20Sensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager,
-    std::vector<String>& errors) {
-  auto ds18b20Result = createDS18B20Sensors(sensors, sensorManager);
-  if (!ds18b20Result.isSuccess()) {
-    errors.push_back(F("DS18B20: ") + ds18b20Result.getFullErrorMessage());
-    logger.error(F("SensorFactory"),
-                 F("Erstellung DS18B20-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
-  }
-}
-#endif
-
-#if USE_SDS011
-void SensorFactory::addSDS011Sensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager,
-    std::vector<String>& errors) {
-  auto sds011Result = createSDS011Sensors(sensors, sensorManager);
-  if (!sds011Result.isSuccess()) {
-    errors.push_back(F("SDS011: ") + sds011Result.getFullErrorMessage());
-    logger.error(F("SensorFactory"),
-                 F("Erstellung SDS011-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
-  }
-}
-#endif
-
-#if USE_MHZ19
-void SensorFactory::addMHZ19Sensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager,
-    std::vector<String>& errors) {
-  auto mhz19Result = createMHZ19Sensors(sensors, sensorManager);
-  if (!mhz19Result.isSuccess()) {
-    errors.push_back(F("MHZ19: ") + mhz19Result.getFullErrorMessage());
-    logger.error(F("SensorFactory"),
-                 F("Erstellung MHZ19-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
-  }
-}
-#endif
-
-#if USE_HX711
-void SensorFactory::addHX711Sensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager,
-    std::vector<String>& errors) {
-  auto hx711Result = createHX711Sensors(sensors, sensorManager);
-  if (!hx711Result.isSuccess()) {
-    errors.push_back(F("HX711: ") + hx711Result.getFullErrorMessage());
-    logger.error(F("SensorFactory"),
-                 F("Erstellung HX711-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
-  }
-}
-#endif
-
-#if USE_BMP280
-void SensorFactory::addBMP280Sensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager,
-    std::vector<String>& errors) {
-  auto bmp280Result = createBMP280Sensors(sensors, sensorManager);
-  if (!bmp280Result.isSuccess()) {
-    errors.push_back(F("BMP280: ") + bmp280Result.getFullErrorMessage());
-    logger.error(F("SensorFactory"),
-                 F("Erstellung BMP280-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
-  }
-}
-#endif
-
-#if USE_SERIAL_RECEIVER
-void SensorFactory::addSerialReceiverSensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager,
-    std::vector<String>& errors) {
-  auto serialResult = createSerialReceiverSensors(sensors, sensorManager);
-  if (!serialResult.isSuccess()) {
-    errors.push_back(F("SerialReceiver: ") + serialResult.getFullErrorMessage());
-    logger.error(F("SensorFactory"),
-                 F("Erstellung Serial-Receiver-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
   }
 }
 #endif

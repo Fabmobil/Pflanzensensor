@@ -31,11 +31,6 @@
 #include "utils/wifi.h"
 #endif
 
-#if USE_INFLUXDB
-#include <InfluxDbClient.h>
-
-#include "influxdb/influxdb.h"
-#endif
 
 #if USE_WEBSERVER
 #include <ESP8266WebServer.h>
@@ -400,31 +395,6 @@ void setup() {
 #endif
 #endif
 
-#if USE_INFLUXDB
-  if (!isCaptivePortalAPActive()) {
-    Helper::initializeComponent(F("InfluxDB"), []() -> ResourceResult {
-      auto result = setupInfluxdb();
-      if (!result.isSuccess()) {
-#if USE_DISPLAY
-        if (displayManager)
-          displayManager->updateLogStatus(F("Influx Fehler"), true);
-#endif
-        logger.error(F("main"), F("InfluxDB-Initialisierung fehlgeschlagen: ") +
-                                    result.getMessage());
-        return result;
-      }
-      return ResourceResult::success();
-    });
-#if USE_DISPLAY
-    if (displayManager) displayManager->updateLogStatus(F("InfluxDB..."), true);
-#endif
-  } else {
-  logger.info(
-    F("main"),
-    F("Überspringe InfluxDB-Initialisierung im AP/Captive-Portal-Modus"));
-  }
-#endif
-
 #if USE_MAIL
   if (!isCaptivePortalAPActive()) {
     Helper::initializeComponent(F("E-Mail"), []() -> ResourceResult {
@@ -575,22 +545,6 @@ void loop() {
 #if USE_WIFI
     logger.updateNTP();
 #endif
-
-#if USE_INFLUXDB
-    if (!isCaptivePortalAPActive()) {
-      auto result = influxdbSendSystemInfo();
-      if (!result.isSuccess()) {
-        logger.warning(F("main"),
-                       F("Senden der System-Infos an InfluxDB fehlgeschlagen: ") +
-                           result.getMessage());
-      }
-    } else {
-      logger.debug(
-          F("main"),
-          F("Skipping InfluxDB system info send in AP/captive portal mode"));
-    }
-#endif
-
     lastMaintenanceCheck = currentMillis;
   }
 

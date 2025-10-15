@@ -130,15 +130,6 @@ class StartpageHandler : public BaseHandler {
                          const String& unit, const char* status,
                          size_t measurementIndex, size_t sensorIndex);
 
-  /**
-   * @brief Generate and send information container
-   * @details Creates system info display:
-   *          - Status overview
-   *          - System metrics
-   *          - Update info
-   *          - Error states
-   */
-  void generateAndSendInfoContainer();
 
   /**
    * @brief Generate and send footer with earth and stats

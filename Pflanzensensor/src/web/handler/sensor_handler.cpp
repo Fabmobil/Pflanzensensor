@@ -7,7 +7,6 @@
 
 #include <ArduinoJson.h>
 
-#include "influxdb/influxdb.h"  // For getRebootCount()
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "utils/helper.h"

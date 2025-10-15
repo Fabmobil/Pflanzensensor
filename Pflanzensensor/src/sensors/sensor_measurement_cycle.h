@@ -10,7 +10,6 @@
 
 #include <memory>
 
-#include "influxdb/influxdb.h"
 #include "managers/manager_config.h"
 #include "sensor_measurement_state.h"
 #include "sensors/sensor_manager_limiter.h"

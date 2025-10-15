@@ -21,24 +21,6 @@
 #if USE_DHT
 #include "sensors/sensor_dht.h"
 #endif
-#if USE_DS18B20
-#include "sensors/sensor_ds18b20.h"
-#endif
-#if USE_SDS011
-#include "sensors/sensor_sds011.h"
-#endif
-#if USE_MHZ19
-#include "sensors/sensor_mhz19.h"
-#endif
-#if USE_HX711
-#include "sensors/sensor_hx711.h"
-#endif
-#if USE_BMP280
-#include "sensors/sensor_bmp280.h"
-#endif
-#if USE_SERIAL_RECEIVER
-#include "sensors/sensor_serial_receiver.h"
-#endif
 #include "sensors/sensors.h"
 
 /**
@@ -88,17 +70,6 @@ class SensorFactory {
       SensorManager* sensorManager);
 
   /**
-   * @brief Creates and initializes DS18B20 temperature sensors
-   * @param sensors Vector to store the created DS18B20 sensors
-   * @return SensorResult indicating success or failure
-   * @details Creates DS18B20 sensors if USE_DS18B20 is defined.
-   *          Supports multiple sensors on the same bus using unique addresses.
-   */
-  static SensorResult createDS18B20Sensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager);
-
-  /**
    * @brief Creates and initializes analog sensors
    * @param sensors Vector to store the created analog sensors
    * @return SensorResult indicating success or failure
@@ -107,58 +78,6 @@ class SensorFactory {
    *          and calibration.
    */
   static SensorResult createAnalogSensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager);
-
-  /**
-   * @brief Creates and initializes MH-Z19 CO2 sensors
-   * @param sensors Vector to store the created MH-Z19 sensors
-   * @return SensorResult indicating success or failure
-   * @details Creates MH-Z19 CO2 sensors if USE_MHZ19 is defined.
-   *          Handles serial communication and auto-calibration features.
-   */
-  static SensorResult createMHZ19Sensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager);
-
-  /**
-   * @brief Creates and initializes SDS011 particulate matter sensors
-   * @param sensors Vector to store the created SDS011 sensors
-   * @return SensorResult indicating success or failure
-   * @details Creates SDS011 PM2.5/PM10 sensors if USE_SDS011 is defined.
-   *          Manages serial communication and sleep mode for the sensors.
-   */
-  static SensorResult createSDS011Sensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager);
-
-  /**
-   * @brief Creates and initializes HX711 weight sensors
-   * @param sensors Vector to store the created HX711 sensors
-   * @return SensorResult indicating success or failure
-   */
-  static SensorResult createHX711Sensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager);
-
-  /**
-   * @brief Creates and initializes BMP280 air temperature and pressure sensors
-   * @param sensors Vector to store the created HX711 sensors
-   * @return SensorResult indicating success or failure
-   */
-  static SensorResult createBMP280Sensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager);
-
-  /**
-   * @brief Creates and initializes serial receiver sensors
-   * @param sensors Vector to store the created serial receiver sensors
-   * @return SensorResult indicating success or failure
-   * @details Creates serial receiver sensors if USE_SERIAL_RECEIVER is
-   * defined. Handles serial communication and JSON parsing for external Arduino
-   * data.
-   */
-  static SensorResult createSerialReceiverSensors(
       std::vector<std::unique_ptr<Sensor>>& sensors,
       SensorManager* sensorManager);
 
@@ -194,48 +113,6 @@ class SensorFactory {
   // Memory-optimized sensor creation helper functions
 #if USE_DHT
   static void addDHTSensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager,
-      std::vector<String>& errors);
-#endif
-
-#if USE_DS18B20
-  static void addDS18B20Sensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager,
-      std::vector<String>& errors);
-#endif
-
-#if USE_SDS011
-  static void addSDS011Sensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager,
-      std::vector<String>& errors);
-#endif
-
-#if USE_MHZ19
-  static void addMHZ19Sensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager,
-      std::vector<String>& errors);
-#endif
-
-#if USE_HX711
-  static void addHX711Sensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager,
-      std::vector<String>& errors);
-#endif
-
-#if USE_BMP280
-  static void addBMP280Sensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager,
-      std::vector<String>& errors);
-#endif
-
-#if USE_SERIAL_RECEIVER
-  static void addSerialReceiverSensors(
       std::vector<std::unique_ptr<Sensor>>& sensors,
       SensorManager* sensorManager,
       std::vector<String>& errors);

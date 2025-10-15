@@ -32,7 +32,7 @@ HandlerResult StartpageHandler::handlePost(
 }
 
 void StartpageHandler::handleRoot() {
-  logger.debug(F("StartpageHandler"), F("Handling root request"));
+  logger.debug(F("StartpageHandler"), F("Startseite angefordert"));
   _cleaned = false;
   std::vector<String> css = {"start"};
   std::vector<String> js = {"sensors"};
@@ -279,6 +279,8 @@ void StartpageHandler::generateAndSendFooter() {
   sendChunk(F(" dBm"));
   sendChunk(F("</li><li>"));
   sendChunk(Helper::getFormattedUptime());
+  sendChunk(F("</li><li>"));
+  sendChunk(String(Helper::getRebootCount()));
   sendChunk(F("</li></ul>"));
 
   // Logo (Row 2, Column 1)
@@ -298,66 +300,6 @@ void StartpageHandler::generateAndSendFooter() {
   sendChunk(F("</footer>"));  // Close base-overlay
   sendChunk(F("</div>"));  // Close base
   sendChunk(F("</div>"));  // Close footer
-}
-
-void StartpageHandler::generateAndSendInfoContainer() {
-  sendChunk(F("<div class='info-container'>"));
-
-  // Add date/time info
-  sendChunk(F("<div class='info-box card'><div class='info-item'>📅 "));
-  sendChunk(Helper::getFormattedDate());
-  sendChunk(F(" "));
-  sendChunk(Helper::getFormattedTime());
-  sendChunk(F("</div></div>"));
-
-  // Add uptime info
-  sendChunk(
-      F("<div class='info-box card'><div class='info-item'>⏲️ Uptime: "));
-  sendChunk(Helper::getFormattedUptime());
-  sendChunk(F("</div></div>"));
-
-  // Add SSID info
-  sendChunk(F("<div class='info-box card'><div class='info-item'>🌐 SSID: "));
-  sendChunk(WiFi.SSID());
-  sendChunk(F("</div></div>"));
-
-  // Add IP info
-  sendChunk(F("<div class='info-box card'><div class='info-item'>💻 IP: "));
-  sendChunk(WiFi.localIP().toString());
-  sendChunk(F("</div></div>"));
-
-  // Add WiFi signal strength
-  sendChunk(
-      F("<div class='info-box card'><div class='info-item'>📶 WiFi "
-        "Signalstärke: "));
-  sendChunk(String(WiFi.RSSI()));
-  sendChunk(F(" dBm</div></div>"));
-
-  // Add free heap memory info
-  sendChunk(
-      F("<div class='info-box card'><div class='info-item' id='free-heap'>🧮 "
-        "Freier HEAP: "));
-  sendChunk(String(ESP.getFreeHeap()));
-  sendChunk(F(" bytes</div></div>"));
-
-  // Add heap fragmentation info
-  sendChunk(
-      F("<div class='info-box card'><div class='info-item' "
-        "id='heap-fragmentation'>📊 Heap Fragmentierung: "));
-  sendChunk(String(ESP.getHeapFragmentation()));
-  sendChunk(F("%</div></div>"));
-
-  // Add number of restarts info
-  sendChunk(
-      F("<div class='info-box card'><div class='info-item' id='reboot-count'>🔄 "
-        "Restarts: "));
-  sendChunk(String(Helper::getRebootCount()));
-  sendChunk(F("</div></div>"));
-
-  // Add WiFi setup form when in AP mode
-  renderWiFiSetupForm();
-
-  sendChunk(F("</div>"));
 }
 
 const char* StartpageHandler::translateStatus(const char* status) const {

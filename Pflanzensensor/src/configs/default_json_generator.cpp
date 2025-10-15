@@ -15,7 +15,6 @@ void ensureConfigFilesExist() {
     ConfigData config;
     config.adminPassword = INITIAL_ADMIN_PASSWORD;
     config.md5Verification = false;
-    config.collectdEnabled = USE_INFLUXDB;
     config.fileLoggingEnabled = FILE_LOGGING_ENABLED;
     config.debugRAM = DEBUG_RAM;
     config.debugMeasurementCycle = DEBUG_MEASUREMENT_CYCLE;

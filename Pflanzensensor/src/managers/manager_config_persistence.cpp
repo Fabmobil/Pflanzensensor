@@ -68,7 +68,6 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(
   // Load main configuration values
   config.adminPassword = doc["admin_password"] | INITIAL_ADMIN_PASSWORD;
   config.md5Verification = doc["md5_verification"] | false;
-  config.collectdEnabled = doc["collectd_enabled"] | USE_INFLUXDB;
   config.fileLoggingEnabled =
       doc["file_logging_enabled"] | FILE_LOGGING_ENABLED;
   config.deviceName = doc["device_name"] | String(DEVICE_NAME);
@@ -126,7 +125,6 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(
 
   config.adminPassword = INITIAL_ADMIN_PASSWORD;
   config.md5Verification = false;
-  config.collectdEnabled = USE_INFLUXDB;
   config.fileLoggingEnabled = FILE_LOGGING_ENABLED;
   config.deviceName = String(DEVICE_NAME);
 

@@ -31,10 +31,7 @@ class SensorCounter {
    */
   static constexpr size_t getEnabledSensorCount() {
     size_t count =
-        (USE_DHT ? 1 : 0) + (USE_SDS011 ? 1 : 0) + (USE_MHZ19 ? 1 : 0);
-#if USE_DS18B20
-    count += DS18B20_SENSOR_COUNT;
-#endif
+        (USE_DHT ? 1 : 0);
 #if USE_ANALOG
     count += ANALOG_SENSOR_COUNT;
 #endif
@@ -50,16 +47,6 @@ class SensorCounter {
    */
   static constexpr size_t getDHTMeasurementCount() { return USE_DHT ? 2 : 0; }
 
-  /**
-   * @brief Get number of measurements provided by SDS011 sensor
-   * @return Number of SDS011 measurements (2 if enabled, 0 if disabled)
-   * @details SDS011 sensors always provide 2 measurements when enabled:
-   *          - PM2.5 particulate matter
-   *          - PM10 particulate matter
-   */
-  static constexpr size_t getSDSMeasurementCount() {
-    return USE_SDS011 ? 2 : 0;
-  }
 
   /**
    * @brief Calculate total number of measurements across all sensors
@@ -72,11 +59,7 @@ class SensorCounter {
    *          - Analog: 1 measurement per sensor
    */
   static constexpr size_t getTotalMeasurementCount() {
-    size_t count = getDHTMeasurementCount() + getSDSMeasurementCount() +
-                   (USE_MHZ19 ? 1 : 0);
-#if USE_DS18B20
-    count += DS18B20_SENSOR_COUNT;
-#endif
+    size_t count = getDHTMeasurementCount();
 #if USE_ANALOG
     count += ANALOG_SENSOR_COUNT;
 #endif
