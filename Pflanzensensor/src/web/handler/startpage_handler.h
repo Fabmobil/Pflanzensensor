@@ -119,6 +119,7 @@ class StartpageHandler : public BaseHandler {
    * @param unit Measurement unit
    * @param status Sensor status
    * @param measurementIndex Index of the measurement
+   * @param sensorIndex Global index for left/right positioning
    * @details Creates individual sensor display:
    *          - Formats data
    *          - Applies styling
@@ -127,7 +128,7 @@ class StartpageHandler : public BaseHandler {
    */
   void generateSensorBox(const Sensor* sensor, float value, const String& name,
                          const String& unit, const char* status,
-                         size_t measurementIndex);
+                         size_t measurementIndex, size_t sensorIndex);
 
   /**
    * @brief Generate and send information container
@@ -138,6 +139,12 @@ class StartpageHandler : public BaseHandler {
    *          - Error states
    */
   void generateAndSendInfoContainer();
+
+  /**
+   * @brief Generate and send footer with earth and stats
+   * @details Creates footer section with navigation and system info
+   */
+  void generateAndSendFooter();
 
  private:
   friend class WebManager;  // Allow WebManager access to private members

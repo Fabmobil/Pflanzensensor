@@ -1,12 +1,155 @@
 /**
  * @file sensors.js
- * @brief JavaScript for automatic sensor value and countdown updates
+ * @brief JavaScript for automatic sensor value and countdown updates (New UI)
  */
 
 let updateFailureCount = 0;
 const MAX_UPDATE_FAILURES = 3;
 let latestSensorData = {};
 
+window.addEventListener('DOMContentLoaded', () => {
+  const cloud = document.querySelector('.cloud');
+  const box = document.querySelector('.box');
+  const earth = document.querySelector('.earth');
+
+  // Start sensor value updates
+  updateSensorValues();
+  setInterval(updateSensorValues, 2000); // Update every 2 seconds
+
+  // Update countdown timers more frequently
+  setInterval(updateCountdowns, 1000); // Update every second
+
+  // Smooth scroll animation on page load
+  if (box && earth) {
+    // Wait a brief moment for layout to settle
+    setTimeout(() => {
+      const maxScroll = box.scrollHeight - box.clientHeight;
+      // Only animate if there's content to scroll
+      if (maxScroll <= 0) {
+        console.log('No scrollable content - page fits in viewport');
+        return;
+      }
+
+      // Smooth scroll to bottom
+      const scrollToBottom = () => {
+        return new Promise((resolve) => {
+          const duration = 1500; // 1.5 seconds to scroll down
+          const start = box.scrollTop;
+          const startTime = performance.now();
+
+          function animateScroll(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // Easing function for smooth animation
+            const easeInOutCubic = progress < 0.5
+              ? 4 * progress * progress * progress
+              : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+            box.scrollTop = start + (maxScroll - start) * easeInOutCubic;
+
+            if (progress < 1) {
+              requestAnimationFrame(animateScroll);
+            } else {
+              resolve();
+            }
+          }
+
+          requestAnimationFrame(animateScroll);
+        });
+      };
+
+      // Scroll back up to show just the bottom of earth
+      const scrollBackUp = () => {
+        return new Promise((resolve) => {
+          const maxScroll = box.scrollHeight - box.clientHeight;
+
+          // Scroll back up by a percentage of viewport height (relative)
+          const scrollUpAmount = box.clientHeight * 0.25; // 25% of viewport height
+          const targetScroll = maxScroll - scrollUpAmount;
+          const duration = 800; // 0.8 seconds to scroll back up
+          const start = box.scrollTop;
+          const startTime = performance.now();
+
+          function animateScroll(currentTime) {
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+
+            // Easing function for smooth animation
+            const easeInOutCubic = progress < 0.5
+              ? 4 * progress * progress * progress
+              : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+            box.scrollTop = start + (targetScroll - start) * easeInOutCubic;
+
+            if (progress < 1) {
+              requestAnimationFrame(animateScroll);
+            } else {
+              resolve();
+            }
+          }
+
+          requestAnimationFrame(animateScroll);
+        });
+      };
+
+      // Execute scroll sequence
+      scrollToBottom().then(() => {
+        // Small pause at bottom
+        setTimeout(() => {
+          scrollBackUp();
+        }, 300);
+      });
+    }, 100);
+  }
+
+  // Animate cloud (gentle floating effect)
+  if (cloud) {
+    let start = performance.now();
+
+    function animate(t) {
+      const elapsed = (t - start) / 1000; // seconds
+
+      // Horizontal drift: slow sine wave
+      const x = Math.sin(elapsed * 0.3) * 30; // px
+
+      // Vertical bob: subtle
+      const y = Math.sin(elapsed * 0.9) * 8; // px
+
+      cloud.style.transform = `translate(${x}px, ${y}px)`;
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+  }
+
+  // Optional: Auto-assign left/right classes if not set
+  // (useful if your ESP/backend doesn't set these classes)
+  const sensors = document.querySelectorAll('.sensor');
+  sensors.forEach((sensor, index) => {
+    if (!sensor.classList.contains('left') && !sensor.classList.contains('right')) {
+      sensor.classList.add(index % 2 === 0 ? 'left' : 'right');
+    }
+  });
+
+  // Navigation links to change face image and background gradient
+  const faceImage = document.querySelector('.face');
+  const navLinks = document.querySelectorAll('.nav-item');
+
+  if (faceImage && navLinks.length > 0) {
+    navLinks.forEach(link => {
+      link.addEventListener('click', (e) => {
+        const href = link.getAttribute('href');
+        // Only prevent default for hash or empty links
+        if (href === '#' || !href) {
+          e.preventDefault();
+        }
+      });
+    });
+  }
+});
+
+// Sensor data update functions
 function updateSensorValues() {
   console.log('Updating sensor values...');
 
@@ -15,7 +158,7 @@ function updateSensorValues() {
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      updateFailureCount = 0; // Reset on success
+      updateFailureCount = 0;
       return response.json();
     })
     .then(data => {
@@ -24,408 +167,164 @@ function updateSensorValues() {
         window._serverStartTime = Date.now() - data.currentTime;
       }
 
+      // Update footer stats
+      updateFooterStats(data);
+
       // Update sensor values
       if (data.sensors) {
-        latestSensorData = data.sensors; // Store for timer updates
-        // Iterate through sensor values instead of treating data.sensors as an array
+        latestSensorData = data.sensors;
+
+        // Determine flower face status from configured sensor
+        // Default to ANALOG_1 if not specified in data
+        const flowerSensorId = data.flowerStatusSensor || 'ANALOG_1';
+        const flowerStatus = data.sensors[flowerSensorId]
+                           ? data.sensors[flowerSensorId].status
+                           : 'unknown';
+        updateFlowerFace(flowerStatus);
+
         Object.entries(data.sensors).forEach(([fieldName, sensorData]) => {
-          const sensorBox = document.querySelector(`.sensor-box[data-sensor="${fieldName}"]`);
-          if (sensorBox) {
-            const valueDisplay = sensorBox.querySelector('.value');
-            if (valueDisplay) {
-              const unit = sensorBox.dataset.unit || '';
-              valueDisplay.textContent = `${parseFloat(sensorData.value).toFixed(1)}${unit ? ' ' + unit : ''}`;
-            }
-
-            // Update min/max values if they exist
-            if (sensorData.absoluteMin !== undefined || sensorData.absoluteMax !== undefined) {
-              let minMaxContainer = sensorBox.querySelector('.min-max-container');
-              
-              // Create min/max container if it doesn't exist
-              if (!minMaxContainer) {
-                minMaxContainer = document.createElement('div');
-                minMaxContainer.className = 'min-max-container';
-                sensorBox.insertBefore(minMaxContainer, sensorBox.querySelector('.details'));
-              }
-              
-              // Clear existing min/max items
-              minMaxContainer.innerHTML = '';
-              
-              // Add min value if available and valid
-              if (sensorData.absoluteMin !== undefined && 
-                  sensorData.absoluteMin !== Infinity && 
-                  sensorData.absoluteMin !== -Infinity && 
-                  !isNaN(sensorData.absoluteMin)) {
-                const minItem = document.createElement('div');
-                minItem.className = 'min-max-item';
-                const unit = sensorBox.dataset.unit || '';
-                minItem.innerHTML = `<span class='min-max-label'>Min:</span> ${parseFloat(sensorData.absoluteMin).toFixed(1)}${unit ? ' ' + unit : ''}`;
-                minMaxContainer.appendChild(minItem);
-              }
-              
-              // Add max value if available and valid
-              if (sensorData.absoluteMax !== undefined && 
-                  sensorData.absoluteMax !== Infinity && 
-                  sensorData.absoluteMax !== -Infinity && 
-                  !isNaN(sensorData.absoluteMax)) {
-                const maxItem = document.createElement('div');
-                maxItem.className = 'min-max-item';
-                const unit = sensorBox.dataset.unit || '';
-                maxItem.innerHTML = `<span class='min-max-label'>Max:</span> ${parseFloat(sensorData.absoluteMax).toFixed(1)}${unit ? ' ' + unit : ''}`;
-                minMaxContainer.appendChild(maxItem);
-              }
-              
-              // Hide container if no valid min/max values
-              if (minMaxContainer.children.length === 0) {
-                minMaxContainer.style.display = 'none';
-              } else {
-                minMaxContainer.style.display = 'block';
-              }
-            }
-
-            // Update status and time
-            const statusIndicator = sensorBox.querySelector('.status-indicator');
-            if (statusIndicator) {
-              const status = translateStatus(sensorData.status || 'unknown');
-              let timerText = '';
-              if (sensorData.lastMeasurement && sensorData.measurementInterval) {
-                const now = Date.now();
-                const serverTime = window._serverStartTime ? (now - window._serverStartTime) : now;
-                const elapsed = Math.floor((serverTime - sensorData.lastMeasurement) / 1000);
-                const intervalSec = Math.floor(sensorData.measurementInterval / 1000);
-                timerText = `, ${elapsed}s/${intervalSec}s`;
-              } else {
-                timerText = ', Keine Messung';
-              }
-              statusIndicator.textContent = `Status: ${status}${timerText}`;
-              statusIndicator.className = `status-indicator status-${(sensorData.status || 'unknown').toLowerCase()}`;
-              // Update sensor-box class for color
-              const statusClasses = ['status-green', 'status-yellow', 'status-red', 'status-error', 'status-unknown', 'status-warmup'];
-              sensorBox.classList.remove(...statusClasses);
-              sensorBox.classList.add(`status-${(sensorData.status || 'unknown').toLowerCase()}`);
-            }
-
-            // Update last measurement time data attributes
-            const lastMeasurementElem = sensorBox.querySelector('.last-measurement');
-            if (lastMeasurementElem) {
-              lastMeasurementElem.dataset.time = sensorData.lastMeasurement || '0';
-              lastMeasurementElem.dataset.interval = sensorData.measurementInterval || '0';
-              lastMeasurementElem.dataset.serverTime = window._serverStartTime ? (Date.now() - window._serverStartTime) : Date.now();
-            }
+          const sensorElement = document.querySelector(`[data-sensor="${fieldName}"]`);
+          if (sensorElement) {
+            updateSensorCard(sensorElement, sensorData);
           }
         });
       }
-
-      // Update system information
-      updateSystemInfo(data.system);
     })
     .catch(error => {
-      console.error('Error updating sensors:', error);
+      console.error('Error fetching sensor values:', error);
       updateFailureCount++;
+
+      if (updateFailureCount >= MAX_UPDATE_FAILURES) {
+        console.error('Too many update failures, showing error state');
+        showErrorState();
+      }
     });
 }
 
-function updateSensorBox(sensorBox, sensor, currentTime) {
-  // Update value display
-  const valueDisplay = sensorBox.querySelector('.value');
-  if (valueDisplay && Array.isArray(sensor.values) && sensor.values.length > 0) {
-    const value = parseFloat(sensor.values[0]);
-    if (!isNaN(value)) {
-      const unit = sensorBox.dataset.unit || '';
-      const newValue = `${value.toFixed(1)}${unit ? ' ' + unit : ''}`;
-      const oldValue = valueDisplay.textContent;
-
-      if (oldValue !== newValue) {
-        valueDisplay.textContent = newValue;
-        flashElement(sensorBox);
-      }
+function updateFooterStats(data) {
+  // Update IP if available
+  if (data.ip) {
+    const ipElement = document.querySelector('.stats-values li:nth-child(3)');
+    if (ipElement) {
+      ipElement.textContent = data.ip;
     }
+  }
+}
+
+function updateSensorCard(sensorElement, sensorData) {
+  // Update value
+  const valueElement = sensorElement.querySelector('.value span');
+  if (valueElement && sensorData.value !== undefined) {
+    const unit = sensorData.unit || '';
+    valueElement.textContent = `${parseFloat(sensorData.value).toFixed(1)}${unit}`;
   }
 
   // Update status
-  const statusIndicator = sensorBox.querySelector('.status-indicator');
-  if (statusIndicator) {
-    updateSensorStatus(statusIndicator, sensor, sensorBox, currentTime);
-  }
-
-  // Update last measurement time
-  const lastMeasurement = sensorBox.querySelector('.last-measurement');
-  if (lastMeasurement) {
-    lastMeasurement.dataset.time = sensor.lastMeasurement || '0';
-    lastMeasurement.dataset.interval = sensor.measurementInterval || '0';
-    lastMeasurement.dataset.serverTime = currentTime || '0';
-  }
-}
-
-function updateSensorStatus(statusIndicator, sensor, sensorBox, currentTime) {
-  const status = sensor.status || 'unknown';
-  const translatedStatus = translateStatus(status);
-
-  // Calculate time since last measurement
-  const lastMeasurementSeconds = Math.floor(sensor.lastMeasurement / 1000);
-  const currentTimeSeconds = Math.floor(currentTime / 1000);
-  const secondsSinceLastMeasurement = currentTimeSeconds - lastMeasurementSeconds;
-  const intervalSeconds = Math.floor(sensor.measurementInterval / 1000);
-
-  const newStatusText = `Status: ${translatedStatus}, ${secondsSinceLastMeasurement}s/${intervalSeconds}s`;
-  const oldStatusText = statusIndicator.textContent;
-
-  if (oldStatusText !== newStatusText) {
-    statusIndicator.textContent = newStatusText;
-    flashElement(statusIndicator);
-  }
-
-  // Update status classes
-  const statusClasses = ['status-green', 'status-yellow', 'status-red', 'status-error', 'status-unknown', 'status-warmup'];
-  sensorBox.classList.remove(...statusClasses);
-  statusIndicator.classList.remove(...statusClasses);
-
-  const statusClass = `status-${status.toLowerCase()}`;
-  sensorBox.classList.add(statusClass);
-  statusIndicator.classList.add(statusClass);
-}
-
-function updateSystemInfo(systemInfo) {
-  if (!systemInfo) return;
-
-  const updateInfoBox = (id, newText) => {
-    const element = document.getElementById(id);
-    if (element && element.textContent !== newText) {
-      element.textContent = newText;
-      flashElement(element.closest('.info-box'));
+  const statusElement = sensorElement.querySelector('.status');
+  if (statusElement && sensorData.status) {
+    const statusText = translateStatus(sensorData.status);
+    const statusSpan = statusElement.querySelector('span');
+    if (statusSpan) {
+      statusSpan.textContent = `STATUS: ${statusText}`;
     }
-  };
 
-  updateInfoBox('free-heap', `🧮 Freier HEAP: ${systemInfo.freeHeap} bytes`);
-  updateInfoBox('heap-fragmentation', `📊 Heap Fragmentierung: ${systemInfo.heapFragmentation}%`);
-  updateInfoBox('reboot-count', `🔄 Restarts: ${systemInfo.rebootCount}`);
+    // Update status color class
+    statusElement.classList.remove('green', 'yellow', 'red', 'error');
+    statusElement.classList.add(sensorData.status);
+  }
+
+  // Update interval/timing
+  const intervalElement = sensorElement.querySelector('.interval span');
+  if (intervalElement && sensorData.lastMeasurement && sensorData.measurementInterval) {
+    const now = Date.now();
+    const serverTime = window._serverStartTime ? (now - window._serverStartTime) : now;
+    const elapsed = Math.floor((serverTime - sensorData.lastMeasurement) / 1000);
+    const intervalSec = Math.floor(sensorData.measurementInterval / 1000);
+    intervalElement.textContent = `(${elapsed}s/${intervalSec}s)`;
+
+    // Store timing data for countdown updates
+    sensorElement.dataset.lastMeasurement = sensorData.lastMeasurement;
+    sensorElement.dataset.measurementInterval = sensorData.measurementInterval;
+  }
 }
 
-function flashElement(element) {
-  if (!element) return;
+function updateCountdowns() {
+  const sensors = document.querySelectorAll('.sensor[data-last-measurement]');
 
-  // Remove any existing flash animation
-  element.classList.remove('flash');
+  sensors.forEach(sensor => {
+    const lastMeasurement = parseInt(sensor.dataset.lastMeasurement);
+    const measurementInterval = parseInt(sensor.dataset.measurementInterval);
 
-  // Force a reflow
-  void element.offsetWidth;
+    if (!lastMeasurement || !measurementInterval) return;
 
-  // Add flash class
-  element.classList.add('flash');
+    const now = Date.now();
+    const serverTime = window._serverStartTime ? (now - window._serverStartTime) : now;
+    const elapsed = Math.floor((serverTime - lastMeasurement) / 1000);
+    const intervalSec = Math.floor(measurementInterval / 1000);
 
-  // Remove flash class after animation completes
-  setTimeout(() => {
-    element.classList.remove('flash');
-  }, 300); // Match this to your CSS animation duration
+    const intervalElement = sensor.querySelector('.interval span');
+    if (intervalElement) {
+      intervalElement.textContent = `(${elapsed}s/${intervalSec}s)`;
+    }
+  });
 }
 
-function millis() {
-  const serverStartTime = window._serverStartTime || Date.now();
-  return Date.now() - serverStartTime;
+function updateFlowerFace(status) {
+  const box = document.querySelector('.box');
+  const faceImage = document.querySelector('.face');
+
+  if (!box || !faceImage) return;
+
+  // Remove all status classes
+  box.classList.remove('status-green', 'status-yellow', 'status-red', 'status-error', 'status-unknown');
+
+  // Add current status and update face
+  switch(status) {
+    case 'green':
+      box.classList.add('status-green');
+      faceImage.src = '/img/face-happy.gif';
+      break;
+    case 'yellow':
+      box.classList.add('status-yellow');
+      faceImage.src = '/img/face-neutral.gif';
+      break;
+    case 'red':
+      box.classList.add('status-red');
+      faceImage.src = '/img/face-sad.gif';
+      break;
+    case 'error':
+      box.classList.add('status-error');
+      faceImage.src = '/img/face-error.gif';
+      break;
+    default:
+      box.classList.add('status-unknown');
+      faceImage.src = '/img/face-neutral.gif';
+  }
+}
+
+function showErrorState() {
+  const box = document.querySelector('.box');
+  const faceImage = document.querySelector('.face');
+
+  if (box) {
+    box.classList.remove('status-green', 'status-yellow', 'status-red', 'status-unknown');
+    box.classList.add('status-error');
+  }
+
+  if (faceImage) {
+    faceImage.src = '/img/face-error.gif';
+  }
 }
 
 function translateStatus(status) {
-  if (!status) return 'Unbekannt';
-
   const translations = {
     'green': 'OK',
-    'yellow': 'Warnung',
-    'red': 'Kritisch',
-    'error': 'Fehler',
-    'warmup': 'Aufwärmen',
-    'unknown': 'Unbekannt'
+    'yellow': 'WARNUNG',
+    'red': 'KRITISCH',
+    'error': 'FEHLER',
+    'warmup': 'AUFWÄRMEN',
+    'unknown': 'UNBEKANNT'
   };
-  return translations[status.toLowerCase()] || status;
+
+  return translations[status] || status.toUpperCase();
 }
-
-function updateStatusTimers() {
-  Object.entries(latestSensorData).forEach(([fieldName, sensorData]) => {
-    const sensorBox = document.querySelector(`.sensor-box[data-sensor="${fieldName}"]`);
-    if (sensorBox) {
-      const statusIndicator = sensorBox.querySelector('.status-indicator');
-      if (statusIndicator) {
-        const status = translateStatus(sensorData.status || 'unknown');
-        let timerText = '';
-        if (sensorData.lastMeasurement && sensorData.measurementInterval) {
-          const now = Date.now();
-          const serverTime = window._serverStartTime ? (now - window._serverStartTime) : now;
-          const elapsed = Math.floor((serverTime - sensorData.lastMeasurement) / 1000);
-          const intervalSec = Math.floor(sensorData.measurementInterval / 1000);
-          timerText = `, ${elapsed}s/${intervalSec}s`;
-        } else {
-          timerText = ', Keine Messung';
-        }
-        statusIndicator.textContent = `Status: ${status}${timerText}`;
-        statusIndicator.className = `status-indicator status-${(sensorData.status || 'unknown').toLowerCase()}`;
-        // Update sensor-box class for color
-        const statusClasses = ['status-green', 'status-yellow', 'status-red', 'status-error', 'status-unknown', 'status-warmup'];
-        sensorBox.classList.remove(...statusClasses);
-        sensorBox.classList.add(`status-${(sensorData.status || 'unknown').toLowerCase()}`);
-      }
-    }
-  });
-}
-
-function showGlobalMessage(message, type = 'info') {
-  let messageElement = document.getElementById('global-feedback-message');
-  if (!messageElement) {
-    messageElement = document.createElement('div');
-    messageElement.id = 'global-feedback-message';
-    messageElement.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      min-width: 220px;
-      max-width: 400px;
-      padding: 12px 18px;
-      border-radius: 6px;
-      color: #fff;
-      font-weight: bold;
-      z-index: 2000;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-      font-size: 1.08em;
-      pointer-events: none;
-    `;
-    document.body.appendChild(messageElement);
-  }
-  messageElement.textContent = message;
-  if (type === 'success') {
-    messageElement.style.backgroundColor = '#4CAF50';
-  } else if (type === 'error') {
-    messageElement.style.backgroundColor = '#f44336';
-  } else {
-    messageElement.style.backgroundColor = '#1976d2';
-  }
-  messageElement.style.opacity = '1';
-  setTimeout(() => {
-    messageElement.style.opacity = '0';
-  }, 3000);
-}
-
-function triggerMeasurement(sensorId, button) {
-  showGlobalMessage('Messung angefordert...', 'info');
-  button && (button.disabled = true);
-  fetch('/trigger_measurement', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: `sensor_id=${encodeURIComponent(sensorId)}`
-  })
-    .then(async response => {
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Measurement failed: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-      return response.json();
-    })
-    .then(data => {
-      if (data.success) {
-        showGlobalMessage('Messung erfolgreich angefordert!', 'success');
-      } else {
-        showGlobalMessage('Fehler bei der Messung', 'error');
-        throw new Error(data.error || 'Unknown error');
-      }
-    })
-    .catch(error => {
-      showGlobalMessage('Fehler bei der Messung: ' + error.message, 'error');
-      alert('Fehler bei der Messung: ' + error.message);
-    })
-    .finally(() => {
-      button && setTimeout(() => { button.disabled = false; }, 5000);
-    });
-}
-
-// --- Setup for Both Pages ---
-function setupMeasurementTriggers() {
-  console.log('[sensors.js] Setting up measurement triggers...');
-  const buttons = document.querySelectorAll('.measure-button');
-  console.log('[sensors.js] Found', buttons.length, 'measure buttons');
-  // For standalone measure buttons (startpage and admin page)
-  buttons.forEach(button => {
-    // If button is inside a form, skip (handled below)
-    if (button.closest('form.measure-form')) return;
-    const sensorId = button.dataset.sensor;
-    button.addEventListener('click', e => {
-      e.preventDefault();
-      console.log('[sensors.js] Measure button clicked:', sensorId);
-      triggerMeasurement(sensorId, button);
-    });
-  });
-  // For forms (admin page)
-  document.querySelectorAll('form.measure-form').forEach(form => {
-    form.addEventListener('submit', e => {
-      e.preventDefault();
-      const button = form.querySelector('.measure-button');
-      const sensorIdInput = form.querySelector('input[name="sensor_id"]');
-      if (!sensorIdInput) return;
-      const sensorId = sensorIdInput.value;
-      triggerMeasurement(sensorId, button);
-    });
-  });
-}
-
-// Add this function before DOMContentLoaded or at the top-level
-function updateLastMeasurementTime(elem, sensorId) {
-  // Get data attributes
-  const lastTime = parseInt(elem.dataset.time || '0', 10);
-  const interval = parseInt(elem.dataset.interval || '0', 10);
-  const serverTime = parseInt(elem.dataset.serverTime || '0', 10);
-
-  if (lastTime > 0 && serverTime > 0) {
-    // Calculate the time when the measurement actually happened (in ms)
-    const measurementTimestamp = Date.now() - (serverTime - lastTime);
-    // Calculate elapsed seconds since last measurement
-    const elapsed = Math.floor((Date.now() - measurementTimestamp) / 1000);
-    const intervalSec = Math.floor(interval / 1000);
-    elem.textContent = `Letzte Messung: vor ${elapsed}s / Intervall: ${intervalSec}s`;
-  } else {
-    elem.textContent = 'Letzte Messung: Keine Messung';
-  }
-}
-
-// Initialize updates
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('[sensors.js] DOMContentLoaded');
-  setupMeasurementTriggers();
-
-  if (document.querySelector('.sensor-box') || document.querySelector('.info-container')) {
-    console.log('Found sensors or info container, starting updates');
-
-    // Initial update with retry
-    const tryInitialUpdate = () => {
-      updateSensorValues().catch(error => {
-        console.error('Initial update failed, retrying in 5s:', error);
-        setTimeout(tryInitialUpdate, 5000);
-      });
-    };
-    tryInitialUpdate();
-
-    // Set up regular updates
-    window._updateInterval = setInterval(updateSensorValues, 10000);
-
-    // Update measurement times every second
-    const timeUpdateInterval = setInterval(() => {
-      document.querySelectorAll('.last-measurement').forEach(elem => {
-        const sensorBox = elem.closest('.sensor-box');
-        const sensorId = sensorBox ? sensorBox.dataset.sensor : 'unknown';
-        updateLastMeasurementTime(elem, sensorId);
-      });
-    }, 1000);
-
-    // Update status timers every second
-    setInterval(updateStatusTimers, 1000);
-
-    // Cleanup intervals when page is unloaded
-    window.addEventListener('unload', () => {
-      clearInterval(window._updateInterval);
-      clearInterval(timeUpdateInterval);
-    });
-  } else {
-    console.log('No sensors or info container found');
-  }
-});
-window.setupMeasurementTriggers = setupMeasurementTriggers;
-window.triggerMeasurement = triggerMeasurement;

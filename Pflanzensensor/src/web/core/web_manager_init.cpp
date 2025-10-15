@@ -269,6 +269,43 @@ ResourceResult WebManager::setupServices() {
                       "max-age=86400");
     });
 
+    // Images
+    _server->on("/img/cloud_big.png", HTTP_GET, [this]() {
+      serveStaticFile("/img/cloud_big.png", "image/png", "max-age=86400");
+    });
+
+    _server->on("/img/flower_big.gif", HTTP_GET, [this]() {
+      serveStaticFile("/img/flower_big.gif", "image/gif", "max-age=86400");
+    });
+
+    _server->on("/img/face-happy.gif", HTTP_GET, [this]() {
+      serveStaticFile("/img/face-happy.gif", "image/gif", "max-age=86400");
+    });
+
+    _server->on("/img/face-neutral.gif", HTTP_GET, [this]() {
+      serveStaticFile("/img/face-neutral.gif", "image/gif", "max-age=86400");
+    });
+
+    _server->on("/img/face-sad.gif", HTTP_GET, [this]() {
+      serveStaticFile("/img/face-sad.gif", "image/gif", "max-age=86400");
+    });
+
+    _server->on("/img/face-error.gif", HTTP_GET, [this]() {
+      serveStaticFile("/img/face-error.gif", "image/gif", "max-age=86400");
+    });
+
+    _server->on("/img/sensor-leaf2.png", HTTP_GET, [this]() {
+      serveStaticFile("/img/sensor-leaf2.png", "image/png", "max-age=86400");
+    });
+
+    _server->on("/img/earth.png", HTTP_GET, [this]() {
+      serveStaticFile("/img/earth.png", "image/png", "max-age=86400");
+    });
+
+    _server->on("/img/fabmobil.png", HTTP_GET, [this]() {
+      serveStaticFile("/img/fabmobil.png", "image/png", "max-age=86400");
+    });
+
     // Favicon
     _server->on("/favicon.ico", HTTP_GET, [this]() {
       serveStaticFile("/favicon.ico", "image/x-icon", "max-age=86400");
@@ -296,7 +333,7 @@ void WebManager::setupMiddleware() {
     if (isCaptivePortalAPActive()) {
       // Allow WiFi setup, sensor data, start page, and static assets
       if (url == "/" || url == "/getLatestValues" || url.startsWith("/css/") ||
-          url.startsWith("/js/") || url.startsWith("/favicon")) {
+          url.startsWith("/js/") || url.startsWith("/img/") || url.startsWith("/favicon")) {
         // Allow these URLs in AP mode
         return true;
       }

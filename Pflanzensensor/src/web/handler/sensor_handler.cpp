@@ -61,6 +61,8 @@ void SensorHandler::handleGetLatestValues() {
   sendChunk(String(millis()));
   sendChunk(F(",\"deviceName\":\""));
   sendChunk(ConfigMgr.getDeviceName());
+  sendChunk(F("\",\"flowerStatusSensor\":\""));
+  sendChunk(ConfigMgr.getFlowerStatusSensor());
   sendChunk(F("\",\"ip\":\""));
   sendChunk(WiFi.localIP().toString());
   sendChunk(F("\",\"sensors\":{"));

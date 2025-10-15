@@ -518,3 +518,13 @@ ConfigManager::setLedTrafficLightSelectedMeasurement(
   }
   return ConfigResult::success();
 }
+
+ConfigManager::ConfigResult ConfigManager::setFlowerStatusSensor(
+    const String& sensorId) {
+  if (m_configData.flowerStatusSensor != sensorId) {
+    m_configData.flowerStatusSensor = sensorId;
+    notifyConfigChange("flower_status_sensor", sensorId, false);
+    return saveConfig();
+  }
+  return ConfigResult::success();
+}

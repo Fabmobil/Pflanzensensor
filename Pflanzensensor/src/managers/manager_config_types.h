@@ -88,6 +88,11 @@ struct ConfigData {
                                               ///< "sensorId_measurementIndex",
                                               ///< e.g., "analog_0")
 
+  // Flower Status settings (for startpage)
+  String flowerStatusSensor;  ///< Sensor that controls the flower face status
+                              ///< (format: "sensorId_measurementIndex",
+                              ///< default: "ANALOG_1" for Bodenfeuchte)
+
 #if USE_MAIL
   // Mail/SMTP settings
   bool mailEnabled;              ///< Enable/disable mail functionality

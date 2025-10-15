@@ -221,3 +221,39 @@ void AdminSensorHandler::handleTriggerMeasurement() {
     return;
   }
 }
+
+void AdminSensorHandler::handleFlowerStatusUpdate(
+    const std::map<String, String>& params) {
+  if (!validateRequest()) return;
+
+  logger.info(F("AdminSensorHandler"), F("handleFlowerStatusUpdate() aufgerufen"));
+
+  // Get sensor parameter from form
+  auto sensorIt = params.find("sensor");
+  if (sensorIt == params.end() || sensorIt->second.length() == 0) {
+    logger.warning(F("AdminSensorHandler"),
+                   F("Flower Status Update: Kein Sensor-Parameter erhalten"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Kein Sensor angegeben\"}"));
+    return;
+  }
+
+  String selectedSensor = sensorIt->second;
+  logger.info(F("AdminSensorHandler"),
+              F("Ausgewählter Flower Status Sensor: ") + selectedSensor);
+
+  // Update configuration
+  auto result = ConfigMgr.setFlowerStatusSensor(selectedSensor);
+
+  if (result.isSuccess()) {
+    logger.info(F("AdminSensorHandler"),
+                F("Flower Status Sensor erfolgreich gespeichert: ") + selectedSensor);
+    // Redirect back to sensor config page
+    _server.sendHeader(F("Location"), F("/admin/sensors"));
+    _server.send(303);
+  } else {
+    logger.error(F("AdminSensorHandler"),
+                 F("Fehler beim Speichern des Flower Status Sensors: ") +
+                 result.getMessage());
+    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Speichern\"}"));
+  }
+}

@@ -1,27 +1,3 @@
-:root {
-  /* Colors */
-  --primary: #4CAF50;
-  --warning: #ff9800;
-  --danger: #f44336;
-  --text: #333;
-  --text-light: #666;
-  --border: #ddd;
-  --bg-white: #fff;
-  --bg-light: #f8f9fa;
-  --admin: #ff5722;
-
-  /* Spacing */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 16px;
-  --space-lg: 24px;
-  --space-xl: 32px;
-
-  /* Other */
-  --radius: 4px;
-  --shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
 /* Reset & Base Styles */
 * {
   box-sizing: border-box;
@@ -32,8 +8,6 @@
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   line-height: 1.5;
-  color: var(--text);
-  background: var(--bg-light);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -217,7 +191,7 @@ hr {
 
 /* Footer */
 .footer {
-  background: #333;
+  background: #1a1a1a;
   color: white;
   padding: var(--space-sm);
   text-align: center;

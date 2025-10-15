@@ -32,6 +32,10 @@ void AdminSensorHandler::handleSensorConfig() {
         sendChunk(F("<h2>"));
         sendChunk(ConfigMgr.getDeviceName());
         sendChunk(F(" Sensorinstellungen</h2></div>"));
+
+        // Flower Status Sensor Selection Card
+        renderFlowerStatusSensorCard();
+
         sendChunk(F("<div class='admin-grid'>"));
         if (_sensorManager.isHealthy()) {
           const auto& sensors = _sensorManager.getSensors();
@@ -366,5 +370,60 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   sendChunk(F("</div>"));
   sendChunk(F("</div>"));  // end threshold-row
   sendChunk(F("</div>"));  // end measurement-card
+  yield();
+}
+
+void AdminSensorHandler::renderFlowerStatusSensorCard() {
+  logger.debug(F("AdminSensorHandler"), F("renderFlowerStatusSensorCard()"));
+
+  sendChunk(F("<div class='card'>"));
+  sendChunk(F("<h2>Blumen-Status Sensor</h2>"));
+  sendChunk(F("<p>Wähle den Sensor, der das Gesicht der Blume auf der Startseite steuert:</p>"));
+
+  sendChunk(F("<form id='flower-status-form'>"));
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<label for='flower-status-sensor'>Sensor:</label>"));
+  sendChunk(F("<select id='flower-status-sensor' name='sensor' class='form-control'>"));
+
+  // Get currently configured sensor
+  String currentSensor = ConfigMgr.getFlowerStatusSensor();
+
+  // Iterate through all sensors and their measurements
+  if (_sensorManager.isHealthy()) {
+    const auto& sensors = _sensorManager.getSensors();
+    for (const auto& sensor : sensors) {
+      if (!sensor) continue;
+      if (!sensor->isInitialized() || !sensor->isEnabled()) continue;
+
+      String sensorId = sensor->getId();
+      SensorConfig& config = sensor->mutableConfig();
+      size_t nRows = config.activeMeasurements < config.measurements.size()
+                         ? config.activeMeasurements
+                         : config.measurements.size();
+
+      for (size_t i = 0; i < nRows; ++i) {
+        String optionValue = sensorId + F("_") + String(i);
+        String displayName = sensorId + F(" - ") + config.measurements[i].name;
+
+        sendChunk(F("<option value='"));
+        sendChunk(optionValue);
+        sendChunk(F("'"));
+        if (optionValue == currentSensor) {
+          sendChunk(F(" selected"));
+        }
+        sendChunk(F(">"));
+        sendChunk(displayName);
+        sendChunk(F("</option>"));
+      }
+    }
+  }
+
+  sendChunk(F("</select>"));
+  sendChunk(F("</div>"));
+
+  sendChunk(F("<button type='submit' class='button button-primary'>Speichern</button>"));
+  sendChunk(F("</form>"));
+
+  sendChunk(F("</div>"));
   yield();
 }

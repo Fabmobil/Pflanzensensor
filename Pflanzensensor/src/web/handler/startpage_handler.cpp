@@ -37,26 +37,49 @@ void StartpageHandler::handleRoot() {
   std::vector<String> css = {"start"};
   std::vector<String> js = {"sensors"};
 
-  renderPage(
-      ConfigMgr.getDeviceName(), "start",
-      [this]() {
-        sendChunk(F("<div class='card'>"));
-        sendChunk(F("<h2>"));
-        sendChunk(ConfigMgr.getDeviceName());
-        sendChunk(F("</h2>"));
-        sendChunk(F("</div>"));
-        generateAndSendSensorGrid();
-        generateAndSendInfoContainer();
-      },
-      css, js);
+  // Custom rendering without navigation and footer wrapper
+  if (!Component::beginResponse(_server, ConfigMgr.getDeviceName(), css)) {
+    return;
+  }
 
-    logger.debug(F("StartpageHandler"), F("Startseite erfolgreich gesendet"));
+  // Main container with dynamic status class - this is the entire page
+  sendChunk(F("<div class='box status-unknown'>"));
+  sendChunk(F("<div class='group'><div class='div'>"));
+
+  // Cloud/Title with device name
+  sendChunk(F("<div class='cloud' aria-label='"));
+  sendChunk(ConfigMgr.getDeviceName());
+  sendChunk(F("'>"));
+  sendChunk(F("<img class='cloud-img' src='/img/cloud_big.png' alt='' />"));
+  sendChunk(F("<div class='cloud-label'>"));
+  sendChunk(ConfigMgr.getDeviceName());
+  sendChunk(F("</div></div>"));
+
+  // Flower with animated face
+  sendChunk(F("<div class='flower-wrap'>"));
+  sendChunk(F("<img class='flower' src='/img/flower_big.gif' alt='Flower' />"));
+  sendChunk(F("<img class='face' src='/img/face-neutral.gif' alt='Face' />"));
+  sendChunk(F("</div>"));
+
+  // Sensors container
+  generateAndSendSensorGrid();
+
+  // Footer with earth and info
+  generateAndSendFooter();
+
+  sendChunk(F("</div></div></div>"));
+
+  // End response with scripts
+  Component::endResponse(_server, js);
+
+  logger.debug(F("StartpageHandler"), F("Startseite erfolgreich gesendet"));
 }
 
 void StartpageHandler::generateAndSendSensorGrid() {
-  sendChunk(F("<div class='sensor-grid'>"));
+  sendChunk(F("<div class='sensors-container'>"));
 
   if (sensorManager) {
+    size_t sensorIndex = 0;
     for (const auto& sensor : sensorManager->getSensors()) {
       if (!sensor || !sensor->isEnabled()) continue;
 
@@ -116,7 +139,8 @@ void StartpageHandler::generateAndSendSensorGrid() {
         }
 
         generateSensorBox(sensor.get(), value, measurementName, unit,
-                          statusStr.c_str(), i);
+                          statusStr.c_str(), i, sensorIndex);
+        sensorIndex++;
         yield();
       }
     }
@@ -127,7 +151,7 @@ void StartpageHandler::generateAndSendSensorGrid() {
 void StartpageHandler::generateSensorBox(const Sensor* sensor, float value,
                                          const String& name, const String& unit,
                                          const char* status,
-                                         size_t measurementIndex) {
+                                         size_t measurementIndex, size_t sensorIndex) {
   // Safety check: ensure sensor exists
   if (!sensor) {
     logger.warning(F("StartpageHandler"),
@@ -139,142 +163,141 @@ void StartpageHandler::generateSensorBox(const Sensor* sensor, float value,
   String currentStatus = status ? String(status) : "unknown";
   const char* statusStr = currentStatus.c_str();
 
-  // Start sensor box with status class
-  sendChunk(F("<div class='sensor-box card status-"));
-  sendChunk(statusStr);  // This adds the status class for coloring
+  // Determine if this sensor should be on left or right
+  const char* position = (sensorIndex % 2 == 0) ? "left" : "right";
+
+  // Start sensor container
+  sendChunk(F("<div class='sensor "));
+  sendChunk(position);
   sendChunk(F("' data-sensor='"));
   sendChunk(sensor->getId());
   sendChunk(F("_"));
   sendChunk(String(measurementIndex));
-  sendChunk(F("' data-unit='"));
-  sendChunk(unit);
-  sendChunk(F("'><h3 class='sensor-title'>"));
-  sendChunk(name);
-  sendChunk(F("</h3>"));
+  sendChunk(F("'>"));
 
-  // Value container with measurement button
-  sendChunk(F("<div class='value-container'>"));
-  sendChunk(F("<div class='value'>"));
+  // Leaf image
+  sendChunk(F("<img class='leaf' src='/img/sensor-leaf2.png' alt='' />"));
 
-  // Display value if valid, otherwise show status
+  // Card with sensor data
+  sendChunk(F("<div class='card'>"));
+
+  // Label (measurement name)
+  sendChunk(F("<div class='label'><span>"));
+  String upperName = name;
+  upperName.toUpperCase();
+  sendChunk(upperName);
+  sendChunk(F("</span></div>"));
+
+  // Value
+  sendChunk(F("<div class='value'><span>"));
   if (sensor->isInitialized() && !isnan(value) && isfinite(value)) {
     char valueStr[10];
     dtostrf(value, 1, 1, valueStr);
     sendChunk(valueStr);
     if (unit.length() > 0) {
-      sendChunk(F(" "));
       sendChunk(unit);
     }
   } else {
-    // Show error or status message instead of invalid value
-    if (strcmp(statusStr, "error") == 0) {
-      sendChunk(F("Fehler"));
-    } else if (strcmp(statusStr, "unknown") == 0) {
-      sendChunk(F("Unbekannt"));
-    } else {
-      sendChunk(F("Keine Daten"));
-    }
+    sendChunk(F("--"));
   }
-  sendChunk(F("</div>"));
+  sendChunk(F("</span></div>"));
 
-  // Add measure button
-  sendChunk(
-      F("<button class='button button-primary measure-button' data-sensor='"));
-  sendChunk(sensor->getId());
-  sendChunk(F("'>Messen!</button>"));
-  sendChunk(F("</div>"));
-
-  // Add min/max values display - always try to show these from config
-  const SensorConfig& config = sensor->config();
-  if (measurementIndex < config.activeMeasurements) {
-    const MeasurementConfig& measurement =
-        config.measurements[measurementIndex];
-
-    // Only show min/max if they have valid values (not INFINITY/-INFINITY)
-    if (measurement.absoluteMin != INFINITY ||
-        measurement.absoluteMax != -INFINITY) {
-      sendChunk(F("<div class='min-max-container'>"));
-
-      // Min value
-      if (measurement.absoluteMin != INFINITY) {
-        sendChunk(F("<div class='min-max-item'>"));
-        sendChunk(F("<span class='min-max-label'>Min:</span> "));
-        char minStr[10];
-        dtostrf(measurement.absoluteMin, 1, 1, minStr);
-        sendChunk(minStr);
-        if (unit.length() > 0) {
-          sendChunk(F(" "));
-          sendChunk(unit);
-        }
-        sendChunk(F("</div>"));
-      }
-
-      // Max value
-      if (measurement.absoluteMax != -INFINITY) {
-        sendChunk(F("<div class='min-max-item'>"));
-        sendChunk(F("<span class='min-max-label'>Max:</span> "));
-        char maxStr[10];
-        dtostrf(measurement.absoluteMax, 1, 1, maxStr);
-        sendChunk(maxStr);
-        if (unit.length() > 0) {
-          sendChunk(F(" "));
-          sendChunk(unit);
-        }
-        sendChunk(F("</div>"));
-      }
-
-      sendChunk(F("</div>"));
-    }
-  }
-
-  // Add status indicator and last measurement info
-  sendChunk(F("<div class='details'>"));
-  sendChunk(F("<div class='status-indicator status-"));
+  // Status
+  sendChunk(F("<div class='status "));
   sendChunk(statusStr);
-  sendChunk(F("'>Status: "));
+  sendChunk(F("'><span>STATUS: "));
   sendChunk(translateStatus(statusStr));
+  sendChunk(F("</span></div>"));
 
-  // Add measurement time info if sensor is initialized
+  // Interval/timing
+  sendChunk(F("<div class='interval'><span>"));
   if (sensor->isInitialized()) {
     unsigned long lastMeasurement = sensor->getMeasurementStartTime();
     uint32_t interval = sensor->getMeasurementInterval();
     unsigned long currentTime = millis();
 
     if (lastMeasurement > 0) {
-      unsigned long timeSinceLastMeasurement = currentTime - lastMeasurement;
-      sendChunk(F(", "));
-      sendChunk(String(timeSinceLastMeasurement / 1000));  // Convert to seconds
+      unsigned long elapsed = (currentTime - lastMeasurement) / 1000;
+      uint32_t intervalSec = interval / 1000;
+      sendChunk(F("("));
+      sendChunk(String(elapsed));
       sendChunk(F("s/"));
-      sendChunk(String(interval / 1000));  // Convert interval to seconds
-      sendChunk(F("s"));
+      sendChunk(String(intervalSec));
+      sendChunk(F("s)"));
     } else {
-      sendChunk(F(", Keine Messung"));
+      sendChunk(F("(--/--)"));
     }
   } else {
-    sendChunk(F(", Sensor nicht initialisiert"));
+    sendChunk(F("(--/--)"));
   }
-  sendChunk(F("</div></div>"));
+  sendChunk(F("</span></div>"));
 
-  // Add last measurement time with data attributes for JS updating
-  if (sensor->isInitialized()) {
-    unsigned long lastMeasurement = sensor->getMeasurementStartTime();
-    uint32_t interval = sensor->getMeasurementInterval();
-    unsigned long currentTime = millis();
+  sendChunk(F("</div>"));  // Close card
+  sendChunk(F("</div>"));  // Close sensor
+}
 
-    sendChunk(F("<div class='last-measurement' data-time='"));
-    sendChunk(String(lastMeasurement));
-    sendChunk(F("' data-interval='"));
-    sendChunk(String(interval));
-    sendChunk(F("' data-server-time='"));
-    sendChunk(String(currentTime));
-    sendChunk(F("'></div>"));
-  } else {
-    sendChunk(
-        F("<div class='last-measurement' data-time='0' data-interval='0' "
-          "data-server-time='0'></div>"));
-  }
+void StartpageHandler::generateAndSendFooter() {
+  sendChunk(F("<div class='footer'>"));
+  sendChunk(F("<div class='base'>"));
 
+  // Earth image
+  sendChunk(F("<img class='earth' src='/img/earth.png' alt='Earth' />"));
+
+  // Base overlay with navigation and stats
+  sendChunk(F("<footer class='base-overlay' aria-label='Statusleiste'>"));
+  sendChunk(F("<div class='footer-grid'>"));
+
+  // Navigation (Row 1, Column 1)
+  sendChunk(F("<nav class='nav-box' aria-label='Navigation'><ul class='nav-list'>"));
+  sendChunk(F("<li><a href='/' class='nav-item'>START</a></li>"));
+  sendChunk(F("<li><a href='/logs' class='nav-item'>LOGS</a></li>"));
+  sendChunk(F("<li><a href='/admin' class='nav-item'>ADMIN</a></li>"));
+  sendChunk(F("</ul></nav>"));
+
+  // Stats Labels (Row 1, Column 2)
+  sendChunk(F("<ul class='stats-labels'>"));
+  sendChunk(F("<li>📅 Zeit</li>"));
+  sendChunk(F("<li>🌐 SSID</li>"));
+  sendChunk(F("<li>💻 IP</li>"));
+  sendChunk(F("<li>📶 WIFI</li>"));
+  sendChunk(F("<li>⏲️ UPTIME</li>"));
+  sendChunk(F("<li>🔄 RESTARTS</li>"));
+  sendChunk(F("</ul>"));
+
+  // Stats Values (Row 1, Column 3)
+  sendChunk(F("<ul class='stats-values'>"));
+  sendChunk(F("<li>"));
+  sendChunk(Helper::getFormattedDate());
+  sendChunk(F(" "));
+  sendChunk(Helper::getFormattedTime());
+  sendChunk(F("</li><li>"));
+  sendChunk(WiFi.SSID());
+  sendChunk(F("</li><li>"));
+  sendChunk(WiFi.localIP().toString());
+  sendChunk(F("</li><li>"));
+  sendChunk(String(WiFi.RSSI()));
+  sendChunk(F(" dBm"));
+  sendChunk(F("</li><li>"));
+  sendChunk(Helper::getFormattedUptime());
+  sendChunk(F("</li></ul>"));
+
+  // Logo (Row 2, Column 1)
+  sendChunk(F("<div class='footer-logo'><img src='/img/fabmobil.png' alt='FABMOBIL' /></div>"));
+
+  // Version (Row 2, Column 2)
+  sendChunk(F("<div class='footer-version'>V "));
+  sendChunk(VERSION);
   sendChunk(F("</div>"));
+
+  // Build (Row 2, Column 3)
+  sendChunk(F("<div class='footer-build'>BUILD: "));
+  sendChunk(__DATE__);
+  sendChunk(F("</div>"));
+
+  sendChunk(F("</div>"));  // Close footer-grid
+  sendChunk(F("</footer>"));  // Close base-overlay
+  sendChunk(F("</div>"));  // Close base
+  sendChunk(F("</div>"));  // Close footer
 }
 
 void StartpageHandler::generateAndSendInfoContainer() {

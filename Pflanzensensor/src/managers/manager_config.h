@@ -594,6 +594,24 @@ class ConfigManager {
   ConfigResult setLedTrafficLightSelectedMeasurement(
       const String& measurementId);
 
+  // Flower Status configuration (for startpage display)
+  /**
+   * @brief Get the sensor that controls the flower face status
+   * @return Sensor ID string (format: "sensorId_measurementIndex")
+   */
+  inline String getFlowerStatusSensor() const {
+    return m_configData.flowerStatusSensor.isEmpty()
+           ? String("ANALOG_1")  // Default to Bodenfeuchte
+           : m_configData.flowerStatusSensor;
+  }
+
+  /**
+   * @brief Set the sensor that controls the flower face status
+   * @param sensorId Sensor ID string (format: "sensorId_measurementIndex")
+   * @return ConfigResult indicating success or failure
+   */
+  ConfigResult setFlowerStatusSensor(const String& sensorId);
+
  private:
   ConfigManager();
   ~ConfigManager() = default;

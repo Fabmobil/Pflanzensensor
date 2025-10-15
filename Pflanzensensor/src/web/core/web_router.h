@@ -69,7 +69,7 @@ class WebRouter {
  public:
   // Configuration constants
   /// Maximum total routes based on enabled sensors
-  static constexpr size_t MAX_ROUTES = 30;
+  static constexpr size_t MAX_ROUTES = 50;
   /// Maximum number of middleware functions
   static constexpr size_t MAX_MIDDLEWARE = 8;
   /// Minimum required heap space for operation

@@ -115,6 +115,43 @@ function updateAdminSensorValues() {
 document.addEventListener('DOMContentLoaded', function() {
   console.log('[admin_sensors.js] DOMContentLoaded');
   setInterval(updateAdminSensorValues, 5000);
+
+  // Initialize Flower Status Form Handler
+  const flowerStatusForm = document.getElementById('flower-status-form');
+  if (flowerStatusForm) {
+    flowerStatusForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const formData = new FormData(flowerStatusForm);
+      const sensor = formData.get('sensor');
+
+      console.log('[admin_sensors.js] Submitting flower status sensor:', sensor);
+
+      fetch('/admin/sensors/flower_status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'sensor=' + encodeURIComponent(sensor),
+        credentials: 'include'
+      })
+      .then(response => {
+        if (response.redirected) {
+          window.location.href = response.url;
+        } else if (response.ok) {
+          window.location.reload();
+        } else {
+          return response.json().then(data => {
+            alert('Fehler beim Speichern: ' + (data.error || 'Unbekannter Fehler'));
+          });
+        }
+      })
+      .catch(error => {
+        console.error('[admin_sensors.js] Error submitting flower status:', error);
+        alert('Fehler beim Speichern: ' + error.message);
+      });
+    });
+  }
+
   // Fetch initial config and initialize everything after
   fetch('/admin/getSensorConfig', { credentials: 'include' })
     .then(response => response.json())

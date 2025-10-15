@@ -60,6 +60,7 @@ class AdminSensorHandler : public BaseHandler {
   void handleSensorConfig();
   void handleSensorUpdate();
   void handleTriggerMeasurement();
+  void handleFlowerStatusUpdate(const std::map<String, String>& params);
 
   // AJAX handlers
   void handleSingleSensorUpdate();
@@ -75,6 +76,9 @@ class AdminSensorHandler : public BaseHandler {
 
   // Add this declaration for the new UI row rendering function
   void renderSensorMeasurementRow(Sensor* sensor, size_t i, size_t nRows);
+
+  // Flower status sensor configuration
+  void renderFlowerStatusSensorCard();
 
  protected:
   WebAuth& _auth;                 ///< Reference to authentication service

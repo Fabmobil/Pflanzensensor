@@ -104,6 +104,12 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(
           ? doc["led_traffic_light_selected_measurement"].as<String>()
           : "";  // Default to empty (no measurement selected)
 
+  // Flower Status settings
+  config.flowerStatusSensor =
+      doc.containsKey("flower_status_sensor")
+          ? doc["flower_status_sensor"].as<String>()
+          : "ANALOG_1";  // Default to ANALOG_1 (Bodenfeuchte)
+
 #if USE_MAIL
   loadMailConfig(doc, config);
 #endif
@@ -134,6 +140,9 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(
   // LED Traffic Light settings - default to mode 1
   config.ledTrafficLightMode = 1;
   config.ledTrafficLightSelectedMeasurement = "";
+
+  // Flower Status settings - default to ANALOG_1 (Bodenfeuchte)
+  config.flowerStatusSensor = "ANALOG_1";
 
 #if USE_MAIL
   setMailConfigDefaults(config);
@@ -205,6 +214,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::saveToFileMinimal(
   doc[F("wifi_password_3")] = config.wifiPassword3;
   doc[F("led_traffic_light_mode")] = config.ledTrafficLightMode;
   doc[F("led_traffic_light_selected_measurement")] = config.ledTrafficLightSelectedMeasurement;
+  doc[F("flower_status_sensor")] = config.flowerStatusSensor;
 
 #if USE_MAIL
   saveMailConfigToJson(doc, config);
