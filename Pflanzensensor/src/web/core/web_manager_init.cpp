@@ -237,9 +237,7 @@ ResourceResult WebManager::setupServices() {
       serveStaticFile("/css/logs.css", "text/css", "max-age=86400");
     });
 
-    _server->on("/css/debug.css", HTTP_GET, [this]() {
-      serveStaticFile("/css/debug.css", "text/css", "max-age=86400");
-    });
+
 
     // JavaScript files
     _server->on("/js/sensors.js", HTTP_GET, [this]() {
@@ -290,8 +288,12 @@ ResourceResult WebManager::setupServices() {
       serveStaticFile("/img/face-error.gif", "image/gif", "max-age=86400");
     });
 
-    _server->on("/img/sensor-leaf2.png", HTTP_GET, [this]() {
-      serveStaticFile("/img/sensor-leaf2.png", "image/png", "max-age=86400");
+    _server->on("/img/sensor-leaf.png", HTTP_GET, [this]() {
+      serveStaticFile("/img/sensor-leaf.png", "image/png", "max-age=86400");
+    });
+
+    _server->on("/img/sensor-stem.png", HTTP_GET, [this]() {
+      serveStaticFile("/img/sensor-stem.png", "image/png", "max-age=86400");
     });
 
     _server->on("/img/earth.png", HTTP_GET, [this]() {

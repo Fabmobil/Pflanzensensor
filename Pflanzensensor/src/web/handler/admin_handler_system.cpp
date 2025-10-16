@@ -29,8 +29,9 @@ void AdminHandler::handleAdminUpdate() {
     renderAdminPage(
         ConfigMgr.getDeviceName(), "admin",
         [this]() {
-          sendChunk(F("<div class='container'>"));
+          sendChunk(F("<div class='card'>"));
           sendChunk(F("<h2>Keine Änderungen vorgenommen</h2>"));
+          sendChunk(F("<p>Es wurden keine Änderungen an den Einstellungen erkannt.</p>"));
           sendChunk(F("<br><a href='/admin' class='button button-primary'>"));
           sendChunk(F("Zurück zur Administration</a>"));
           sendChunk(F("</div>"));
@@ -45,9 +46,9 @@ void AdminHandler::handleAdminUpdate() {
     renderAdminPage(
         ConfigMgr.getDeviceName(), "admin",
         [this, &result]() {
-          sendChunk(F("<div class='container'>"));
-          sendChunk(F("<h2>Fehler beim Speichern der Konfiguration</h2>"));
-          sendChunk(F("<p>"));
+          sendChunk(F("<div class='card'>"));
+          sendChunk(F("<h2>❌ Fehler beim Speichern</h2>"));
+          sendChunk(F("<p class='error-message'>"));
           sendChunk(result.getMessage());
           sendChunk(F("</p>"));
           sendChunk(F("<br><a href='/admin' class='button button-primary'>"));
@@ -62,10 +63,10 @@ void AdminHandler::handleAdminUpdate() {
   renderAdminPage(
       ConfigMgr.getDeviceName(), "admin",
       [this, changes]() {  // Pass changes by value since it's a String
-        sendChunk(F("<div class='container'>"));
-        sendChunk(F("<h2>Einstellungen gespeichert</h2>"));
+        sendChunk(F("<div class='card'>"));
+        sendChunk(F("<h2>✓ Einstellungen gespeichert</h2>"));
         sendChunk(F("<p>Folgende Änderungen wurden vorgenommen:</p>"));
-        sendChunk(F("<ul>"));
+        sendChunk(F("<ul class='changes-list'>"));
         sendChunk(changes);
         sendChunk(F("</ul>"));
         sendChunk(F("<br><a href='/admin' class='button button-primary'>"));
@@ -82,15 +83,15 @@ void AdminHandler::handleConfigReset() {
   renderAdminPage(
       ConfigMgr.getDeviceName(), "admin",
       [this, &result]() {
-        sendChunk(F("<div class='container'>"));
+        sendChunk(F("<div class='card'>"));
 
         if (result.isSuccess()) {
-          sendChunk(F("<h2>Konfiguration zurückgesetzt</h2>"));
+          sendChunk(F("<h2>✓ Konfiguration zurückgesetzt</h2>"));
           sendChunk(
-              F("<p>Die Konfiguration wurde auf Standardwerte "
+              F("<p>Die Konfiguration wurde erfolgreich auf Standardwerte "
                 "zurückgesetzt.</p>"));
         } else {
-          sendChunk(F("<h2>Fehler</h2><p>Fehler beim Zurücksetzen: "));
+          sendChunk(F("<h2>❌ Fehler</h2><p class='error-message'>Fehler beim Zurücksetzen: "));
           sendChunk(result.getMessage());
           sendChunk(F("</p>"));
         }
@@ -108,8 +109,9 @@ void AdminHandler::handleReboot() {
   renderAdminPage(
       ConfigMgr.getDeviceName(), "admin",
       [this]() {
-        sendChunk(F("<div class='container'>"));
-        sendChunk(F("<h2>System wird neu gestartet...</h2>"));
+        sendChunk(F("<div class='card'>"));
+        sendChunk(F("<h2>🔄 System wird neu gestartet...</h2>"));
+        sendChunk(F("<p>Bitte warten Sie einen Moment, bis das Gerät wieder verfügbar ist.</p>"));
         sendChunk(F("</div>"));
       },
       css, js);
@@ -130,8 +132,8 @@ void AdminHandler::handleTestMail() {
     renderAdminPage(
         ConfigMgr.getDeviceName(), "admin",
         [this]() {
-          sendChunk(F("<div class='container'>"));
-          sendChunk(F("<h2>E-Mail-Funktionen sind deaktiviert</h2>"));
+          sendChunk(F("<div class='card'>"));
+          sendChunk(F("<h2>⚠️ E-Mail-Funktionen deaktiviert</h2>"));
           sendChunk(F("<p>Bitte aktivieren Sie die E-Mail-Funktionen in den Einstellungen.</p>"));
           sendChunk(F("<br><a href='/admin' class='button button-primary'>"));
           sendChunk(F("Zurück zur Administration</a>"));
@@ -155,17 +157,17 @@ void AdminHandler::handleTestMail() {
   renderAdminPage(
       ConfigMgr.getDeviceName(), "admin",
       [this, success, errorMessage]() {
-        sendChunk(F("<div class='container'>"));
+        sendChunk(F("<div class='card'>"));
         if (success) {
-          sendChunk(F("<h2>Test-Mail erfolgreich gesendet</h2>"));
-          sendChunk(F("<p>Die Test-Mail wurde erfolgreich an "));
+          sendChunk(F("<h2>✓ Test-Mail erfolgreich gesendet</h2>"));
+          sendChunk(F("<p>Die Test-Mail wurde erfolgreich an <strong>"));
           sendChunk(ConfigMgr.getSmtpRecipient());
-          sendChunk(F(" gesendet.</p>"));
+          sendChunk(F("</strong> gesendet.</p>"));
         } else {
-          sendChunk(F("<h2>Fehler beim Senden der Test-Mail</h2>"));
+          sendChunk(F("<h2>❌ Fehler beim Senden</h2>"));
           sendChunk(F("<p>Die Test-Mail konnte nicht gesendet werden.</p>"));
           if (!errorMessage.isEmpty()) {
-            sendChunk(F("<p>Fehler: "));
+            sendChunk(F("<p class='error-message'>Fehler: "));
             sendChunk(errorMessage);
             sendChunk(F("</p>"));
           }

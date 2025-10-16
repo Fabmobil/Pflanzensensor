@@ -87,7 +87,7 @@ void LogHandler::handleLogs() {
     return;
   }
 
-  std::vector<String> css = {"logs"};
+  std::vector<String> css = {"admin", "logs"};
   std::vector<String> js = {"logs"};
 
   this->renderAdminPage(

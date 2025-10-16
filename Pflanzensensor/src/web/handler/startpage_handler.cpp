@@ -169,14 +169,17 @@ void StartpageHandler::generateSensorBox(const Sensor* sensor, float value,
   // Start sensor container
   sendChunk(F("<div class='sensor "));
   sendChunk(position);
+  sendChunk(F(" sensor-status-"));
+  sendChunk(statusStr);
   sendChunk(F("' data-sensor='"));
   sendChunk(sensor->getId());
   sendChunk(F("_"));
   sendChunk(String(measurementIndex));
   sendChunk(F("'>"));
 
-  // Leaf image
-  sendChunk(F("<img class='leaf' src='/img/sensor-leaf2.png' alt='' />"));
+  // Stem und Leaf Bilder (separate für Animation)
+  sendChunk(F("<img class='stem' src='/img/sensor-stem.png' alt='' />"));
+  sendChunk(F("<img class='leaf' src='/img/sensor-leaf.png' alt='' />"));
 
   // Card with sensor data
   sendChunk(F("<div class='card'>"));

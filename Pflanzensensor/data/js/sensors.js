@@ -14,7 +14,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Start sensor value updates
   updateSensorValues();
-  setInterval(updateSensorValues, 2000); // Update every 2 seconds
+  setInterval(updateSensorValues, 10000); // Update every 10 seconds
 
   // Update countdown timers more frequently
   setInterval(updateCountdowns, 1000); // Update every second
@@ -182,6 +182,15 @@ function updateSensorValues() {
                            : 'unknown';
         updateFlowerFace(flowerStatus);
 
+        // Mark active sensor (determines overall flower status)
+        document.querySelectorAll('.sensor').forEach(sensor => {
+          sensor.classList.remove('active');
+        });
+        const activeSensorElement = document.querySelector(`[data-sensor="${flowerSensorId}"]`);
+        if (activeSensorElement) {
+          activeSensorElement.classList.add('active');
+        }
+
         Object.entries(data.sensors).forEach(([fieldName, sensorData]) => {
           const sensorElement = document.querySelector(`[data-sensor="${fieldName}"]`);
           if (sensorElement) {
@@ -229,8 +238,12 @@ function updateSensorCard(sensorElement, sensorData) {
     }
 
     // Update status color class
-    statusElement.classList.remove('green', 'yellow', 'red', 'error');
+    statusElement.classList.remove('green', 'yellow', 'red', 'error', 'unknown');
     statusElement.classList.add(sensorData.status);
+
+    // Update sensor status class for leaf animations
+    sensorElement.classList.remove('sensor-status-green', 'sensor-status-yellow', 'sensor-status-red', 'sensor-status-error', 'sensor-status-unknown');
+    sensorElement.classList.add(`sensor-status-${sensorData.status}`);
   }
 
   // Update interval/timing
@@ -298,7 +311,7 @@ function updateFlowerFace(status) {
       break;
     default:
       box.classList.add('status-unknown');
-      faceImage.src = '/img/face-neutral.gif';
+      faceImage.src = '/img/face-error.gif';
   }
 }
 

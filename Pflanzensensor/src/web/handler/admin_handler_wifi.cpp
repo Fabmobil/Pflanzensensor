@@ -127,10 +127,10 @@ void AdminHandler::handleWiFiUpdate() {
       renderAdminPage(
           ConfigMgr.getDeviceName(), "admin",
           [this, &result]() {
-            sendChunk(F("<div class='container'>"));
+            sendChunk(F("<div class='card'>"));
             sendChunk(
-                F("<h2>Fehler beim Speichern der WiFi-Konfiguration</h2>"));
-            sendChunk(F("<p>"));
+                F("<h2>❌ Fehler beim Speichern</h2>"));
+            sendChunk(F("<p class='error-message'>"));
             sendChunk(result.getMessage());
             sendChunk(F("</p>"));
             sendChunk(F("<br><a href='/admin' class='button button-primary'>"));
@@ -147,14 +147,16 @@ void AdminHandler::handleWiFiUpdate() {
   renderAdminPage(
       ConfigMgr.getDeviceName(), "admin",
       [this, changed, changes]() {
-        sendChunk(F("<div class='container'>"));
+        sendChunk(F("<div class='card'>"));
         if (changed) {
-          sendChunk(F("<h2>WiFi Einstellungen gespeichert</h2>"));
-          sendChunk(F("<ul>"));
+          sendChunk(F("<h2>✓ WiFi Einstellungen gespeichert</h2>"));
+          sendChunk(F("<p>Folgende Änderungen wurden vorgenommen:</p>"));
+          sendChunk(F("<ul class='changes-list'>"));
           sendChunk(changes);
           sendChunk(F("</ul>"));
         } else {
           sendChunk(F("<h2>Keine Änderungen vorgenommen</h2>"));
+          sendChunk(F("<p>Es wurden keine Änderungen an den WiFi-Einstellungen erkannt.</p>"));
         }
         sendChunk(
             F("<br><a href='/admin' class='button button-primary'>Zurück zur "

@@ -230,12 +230,10 @@ addLogEntry(level, message, color = null) {
 
 function updateLogLevelButtons(activeLevel) {
   document.querySelectorAll('.log-level-btn').forEach(btn => {
-    btn.classList.remove('active', 'pulse');
+    btn.classList.remove('active');
     const btnLevel = btn.textContent.trim().toUpperCase();
     if (btnLevel === activeLevel.toUpperCase()) {
-      btn.classList.add('active', 'pulse');
-      // Remove pulse after animation
-      setTimeout(() => btn.classList.remove('pulse'), 350);
+      btn.classList.add('active');
     }
   });
 }

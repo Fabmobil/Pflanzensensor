@@ -719,6 +719,42 @@ button.warning:hover,
   margin: 0 auto;
 }
 
+/* === Bestätigungsseiten (Success/Error/Info) === */
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+.error-message {
+  color: #ffcdd2;
+  background: rgba(239, 83, 80, 0.15);
+  padding: 0.8em;
+  border-left: 3px solid #ef5350;
+  border-radius: 4px;
+  margin: 1em 0;
+}
+
+.changes-list {
+  list-style: none;
+  padding: 0;
+  margin: 1em 0;
+}
+
+.changes-list li {
+  padding: 0.5em 0.8em;
+  margin: 0.5em 0;
+  background: rgba(139, 69, 19, 0.2);
+  border-left: 3px solid #8b4513;
+  border-radius: 4px;
+}
+
+.changes-list li::before {
+  content: '▸ ';
+  color: #d4a574;
+  font-weight: bold;
+  margin-right: 0.5em;
+}
+
 /* === Footer Override für Admin-Seiten === */
 /* Größere Schrift für Admin-Untermenü (rechte Spalte) */
 .stats-labels .nav-item {
