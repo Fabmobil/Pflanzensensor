@@ -8,6 +8,7 @@
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
+#include "managers/manager_sensor_persistence.h"
 #include "web/core/web_auth.h"
 
 // Declare external global sensor manager
@@ -26,19 +27,18 @@ AdminDisplayHandler::AdminDisplayHandler(ESP8266WebServer& server)
 void AdminDisplayHandler::handleDisplayConfig() {
   if (!validateRequest()) return;
   std::vector<String> css = {"admin"};
-  std::vector<String> js = {"admin"};
+  std::vector<String> js = {"admin", "admin_display"};
 
   renderAdminPage(
       ConfigMgr.getDeviceName(), "admin/display",
       [this]() {
         sendChunk(F("<div class='card'>"));
         sendChunk(F("<h3>Display-Einstellungen</h3>"));
-        sendChunk(F("<form action='/admin/display' method='post' class='config-form'>"));
 
         // Screen duration
         sendChunk(F("<div class='form-group'>"));
         sendChunk(F("<label>Anzeigedauer pro Bildschirm (Sekunden):</label>"));
-        sendChunk(F("<input type='number' name='screen_duration' value='"));
+        sendChunk(F("<input type='number' class='screen-duration-input' value='"));
         sendChunk(String(
             displayManager ? displayManager->getScreenDuration() / 1000 : 5));
         sendChunk(F("' min='1' max='60'>"));
@@ -47,7 +47,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
         // Clock format
         sendChunk(F("<div class='form-group'>"));
         sendChunk(F("<label>Uhrzeitformat:</label>"));
-        sendChunk(F("<select name='clock_format'>"));
+        sendChunk(F("<select class='clock-format-select'>"));
         String currentFormat =
             displayManager ? displayManager->getClockFormat() : "24h";
         sendChunk(F("<option value='24h'"));
@@ -60,7 +60,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
 
         // Show IP screen
         sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-        sendChunk(F("<input type='checkbox' name='show_ip'"));
+        sendChunk(F("<input type='checkbox' class='show-ip-checkbox'"));
         if (displayManager && displayManager->isIpScreenEnabled()) {
           sendChunk(F(" checked"));
         }
@@ -68,7 +68,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
 
         // Show clock
         sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-        sendChunk(F("<input type='checkbox' name='show_clock'"));
+        sendChunk(F("<input type='checkbox' class='show-clock-checkbox'"));
         if (displayManager && displayManager->isClockEnabled()) {
           sendChunk(F(" checked"));
         }
@@ -76,7 +76,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
 
         // Show flower image
         sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-        sendChunk(F("<input type='checkbox' name='show_flower'"));
+        sendChunk(F("<input type='checkbox' class='show-flower-checkbox'"));
         if (displayManager && displayManager->isFlowerImageEnabled()) {
           sendChunk(F(" checked"));
         }
@@ -84,7 +84,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
 
         // Show fabmobil image
         sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-        sendChunk(F("<input type='checkbox' name='show_fabmobil'"));
+        sendChunk(F("<input type='checkbox' class='show-fabmobil-checkbox'"));
         if (displayManager && displayManager->isFabmobilImageEnabled()) {
           sendChunk(F(" checked"));
         }
@@ -119,9 +119,9 @@ void AdminDisplayHandler::handleDisplayConfig() {
                 }
 
                 sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-                sendChunk(F("<input type='checkbox' name='measurement_"));
+                sendChunk(F("<input type='checkbox' class='measurement-display-checkbox' data-sensor-id='"));
                 sendChunk(id);
-                sendChunk(F("_"));
+                sendChunk(F("' data-measurement-index='"));
                 sendChunk(String(i));
                 sendChunk(F("'"));
                 if (sensor->config().measurements[i].enabled) {
@@ -137,7 +137,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
             } else {
               // Sensor has only one measurement - show as simple checkbox
               sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-              sendChunk(F("<input type='checkbox' name='sensor_"));
+              sendChunk(F("<input type='checkbox' class='sensor-display-checkbox' data-sensor-id='"));
               sendChunk(id);
               sendChunk(F("'"));
               if (sensor->isEnabled()) {
@@ -150,95 +150,155 @@ void AdminDisplayHandler::handleDisplayConfig() {
             yield();
           }
         }
-
-        sendChunk(F("<button type='submit' class='button button-primary'>"));
-        sendChunk(F("Speichern</button>"));
-        sendChunk(F("</form></div>"));  // Close card and form
+        sendChunk(F("</div>"));  // Close card
       },
       css, js);
 }
 
-void AdminDisplayHandler::handleDisplayUpdate() {
-  if (!validateRequest()) return;
-  std::vector<String> css = {"admin"};
-  std::vector<String> js = {"admin"};
-  renderAdminPage(
-      ConfigMgr.getDeviceName(), "admin/display",
-      [this]() {
-        sendChunk(F("<div class='card'>"));
-        if (displayManager) {
-          // Update screen duration
-          if (_server.hasArg("screen_duration")) {
-            displayManager->setScreenDuration(
-                _server.arg("screen_duration").toInt() * 1000);
-          }
+void AdminDisplayHandler::handleScreenDurationUpdate() {
+  if (!validateRequest()) {
+    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
+    return;
+  }
 
-          // Update clock format
-          if (_server.hasArg("clock_format")) {
-            displayManager->setClockFormat(_server.arg("clock_format"));
-          }
+  if (!_server.hasArg("duration")) {
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Fehlende Parameter\"}"));
+    return;
+  }
 
-          // Update IP screen setting
-          displayManager->setIpScreenEnabled(_server.hasArg("show_ip"));
+  int duration = _server.arg("duration").toInt();
+  if (duration < 1 || duration > 60) {
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültige Dauer (1-60 Sekunden)\"}"));
+    return;
+  }
 
-          // Update clock display setting
-          displayManager->setClockEnabled(_server.hasArg("show_clock"));
+  if (displayManager) {
+    displayManager->setScreenDuration(duration * 1000);
+    auto result = displayManager->saveConfig();
+    if (result.isSuccess()) {
+      sendJsonResponse(200, F("{\"success\":true}"));
+    } else {
+      sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Speichern\"}"));
+    }
+  } else {
+    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Display Manager nicht verfügbar\"}"));
+  }
+}
 
-          // Update flower image setting
-          displayManager->setFlowerImageEnabled(_server.hasArg("show_flower"));
+void AdminDisplayHandler::handleClockFormatUpdate() {
+  if (!validateRequest()) {
+    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
+    return;
+  }
 
-          // Update fabmobil image setting
-          displayManager->setFabmobilImageEnabled(
-              _server.hasArg("show_fabmobil"));
+  if (!_server.hasArg("format")) {
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Fehlende Parameter\"}"));
+    return;
+  }
 
-          // Process sensor and measurement selections
-          if (sensorManager) {
-            for (const auto& sensor : sensorManager->getSensors()) {
-              if (!sensor) continue;
-              String id = sensor->getId();
-              auto measurementData = sensor->getMeasurementData();
+  String format = _server.arg("format");
+  if (format != "24h" && format != "12h") {
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiges Format\"}"));
+    return;
+  }
 
-              if (measurementData.isValid() &&
-                  measurementData.activeValues > 1) {
-                // Process individual measurements
-                for (size_t i = 0; i < measurementData.activeValues; i++) {
-                  String measurementArg = "measurement_" + id + "_" + String(i);
-                  sensor->mutableConfig().measurements[i].enabled =
-                      _server.hasArg(measurementArg);
-                }
-              } else {
-                // Process single measurement sensor
-                sensor->setEnabled(_server.hasArg("sensor_" + id));
-              }
-            }
-          }
+  if (displayManager) {
+    displayManager->setClockFormat(format);
+    auto result = displayManager->saveConfig();
+    if (result.isSuccess()) {
+      sendJsonResponse(200, F("{\"success\":true}"));
+    } else {
+      sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Speichern\"}"));
+    }
+  } else {
+    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Display Manager nicht verfügbar\"}"));
+  }
+}
 
-          // Save settings
-          auto result = displayManager->saveConfig();
-          if (!result.isSuccess()) {
-            sendChunk(
-                F("<h2>Fehler</h2><p>Fehler beim Speichern der "
-                  "Display-Konfiguration: "));
-            sendChunk(result.getMessage());
-            sendChunk(F("</p>"));
-          } else {
-            sendChunk(F("<h2>Konfiguration gespeichert</h2>"));
-            sendChunk(
-                F("<p>Die Display-Einstellungen wurden erfolgreich "
-                  "aktualisiert.</p>"));
-          }
-          sendChunk(F("<p>Einstellungen erfolgreich gespeichert!</p>"));
-        } else {
-          sendChunk(F("<p>Fehler: Display Manager nicht initialisiert</p>"));
-        }
+void AdminDisplayHandler::handleDisplayToggle() {
+  if (!validateRequest()) {
+    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
+    return;
+  }
 
-        // Link zurück
-        sendChunk(
-            F("<a href='/admin/display' class='button button-primary'>"));
-        sendChunk(F("Zurück zu Display-Einstellungen</a>"));
-        sendChunk(F("</div>"));  // Close card
-      },
-      css, js);
+  if (!_server.hasArg("setting") || !_server.hasArg("enabled")) {
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Fehlende Parameter\"}"));
+    return;
+  }
+
+  String setting = _server.arg("setting");
+  bool enabled = _server.arg("enabled") == "true";
+
+  if (displayManager) {
+    if (setting == "show_ip") {
+      displayManager->setIpScreenEnabled(enabled);
+    } else if (setting == "show_clock") {
+      displayManager->setClockEnabled(enabled);
+    } else if (setting == "show_flower") {
+      displayManager->setFlowerImageEnabled(enabled);
+    } else if (setting == "show_fabmobil") {
+      displayManager->setFabmobilImageEnabled(enabled);
+    } else {
+      sendJsonResponse(400, F("{\"success\":false,\"error\":\"Unbekannte Einstellung\"}"));
+      return;
+    }
+
+    auto result = displayManager->saveConfig();
+    if (result.isSuccess()) {
+      sendJsonResponse(200, F("{\"success\":true}"));
+    } else {
+      sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Speichern\"}"));
+    }
+  } else {
+    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Display Manager nicht verfügbar\"}"));
+  }
+}
+
+void AdminDisplayHandler::handleMeasurementDisplayToggle() {
+  if (!validateRequest()) {
+    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
+    return;
+  }
+
+  if (!_server.hasArg("sensor_id") || !_server.hasArg("enabled")) {
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Fehlende Parameter\"}"));
+    return;
+  }
+
+  String sensorId = _server.arg("sensor_id");
+  bool enabled = _server.arg("enabled") == "true";
+
+  if (sensorManager) {
+    auto sensor = sensorManager->getSensor(sensorId);
+    if (!sensor) {
+      sendJsonResponse(404, F("{\"success\":false,\"error\":\"Sensor nicht gefunden\"}"));
+      return;
+    }
+
+    if (_server.hasArg("measurement_index")) {
+      // Toggle individual measurement
+      int index = _server.arg("measurement_index").toInt();
+      if (index >= 0 && index < sensor->config().measurements.size()) {
+        sensor->mutableConfig().measurements[index].enabled = enabled;
+      } else {
+        sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messungsindex\"}"));
+        return;
+      }
+    } else {
+      // Toggle entire sensor
+      sensor->setEnabled(enabled);
+    }
+
+    // Save sensor config
+    auto result = SensorPersistence::saveToFileMinimal();
+    if (result.isSuccess()) {
+      sendJsonResponse(200, F("{\"success\":true}"));
+    } else {
+      sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Speichern\"}"));
+    }
+  } else {
+    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Sensor Manager nicht verfügbar\"}"));
+  }
 }
 
 bool AdminDisplayHandler::validateRequest() const {
@@ -254,8 +314,20 @@ RouterResult AdminDisplayHandler::onRegisterRoutes(WebRouter& router) {
                                 [this]() { handleDisplayConfig(); });
   if (!result.isSuccess()) return result;
 
-  result = router.addRoute(HTTP_POST, "/admin/display",
-                           [this]() { handleDisplayUpdate(); });
+  result = router.addRoute(HTTP_POST, "/admin/display/screen_duration",
+                           [this]() { handleScreenDurationUpdate(); });
+  if (!result.isSuccess()) return result;
+
+  result = router.addRoute(HTTP_POST, "/admin/display/clock_format",
+                           [this]() { handleClockFormatUpdate(); });
+  if (!result.isSuccess()) return result;
+
+  result = router.addRoute(HTTP_POST, "/admin/display/toggle",
+                           [this]() { handleDisplayToggle(); });
+  if (!result.isSuccess()) return result;
+
+  result = router.addRoute(HTTP_POST, "/admin/display/measurement_toggle",
+                           [this]() { handleMeasurementDisplayToggle(); });
   if (!result.isSuccess()) return result;
 
   logger.info(F("AdminDisplayHandler"), F("Display config routes registered"));

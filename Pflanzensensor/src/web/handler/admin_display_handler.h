@@ -104,32 +104,33 @@ class AdminDisplayHandler : public BaseHandler {
 
   /**
    * @brief Handle display configuration page
-   * @details Serves configuration interface:
-   *          - Current settings display
-   *          - Configuration options
-   *          - Layout controls
-   *          - Update form
+   * @details Serves configuration interface with AJAX handlers
    */
   void handleDisplayConfig();
 
   /**
-   * @brief Handle display configuration update
-   * @details Processes configuration changes:
-   *          - Validates input
-   *          - Updates settings
-   *          - Applies changes
-   *          - Returns status
+   * @brief Handle screen duration update via AJAX
    */
-  void handleDisplayUpdate();
+  void handleScreenDurationUpdate();
+
+  /**
+   * @brief Handle clock format update via AJAX
+   */
+  void handleClockFormatUpdate();
+
+  /**
+   * @brief Handle display toggle settings (IP, clock, images) via AJAX
+   */
+  void handleDisplayToggle();
+
+  /**
+   * @brief Handle measurement display toggle via AJAX
+   */
+  void handleMeasurementDisplayToggle();
 
   /**
    * @brief Validate display configuration request
    * @return true if request is valid, false otherwise
-   * @details Verifies request validity:
-   *          - Checks authentication
-   *          - Validates parameters
-   *          - Ensures permissions
-   *          - Verifies display status
    */
   bool validateRequest() const;
 };

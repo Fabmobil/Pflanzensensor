@@ -23,7 +23,7 @@ void AdminSensorHandler::handleSensorConfig() {
     return;
   }
   std::vector<String> css = {"admin"};
-  std::vector<String> js = {"admin", "sensors", "admin_sensors"};
+  std::vector<String> js = {"admin", "admin_sensors"};
   renderAdminPage(
       ConfigMgr.getDeviceName(), "admin/sensors",
       [this]() {
@@ -74,23 +74,13 @@ void AdminSensorHandler::handleSensorConfig() {
             sendChunk(
                 F("' class='measurement-interval-input' data-sensor-id='"));
             sendChunk(id);
-            sendChunk(F("' style='width:60px;'> Sekunden "));
+            sendChunk(F("' style='width:60px;'> Sekunden"));
 
-            // Sensor enabled checkbox and messen button (sensor-wide)
-  sendChunk(F(" <button type='button' class='button button-secondary "
-        "reset-minmax-button' "
-        "data-sensor-id='"));
-            sendChunk(id);
-            sendChunk(F("'"));
-            if (config.enabled) sendChunk(F(" checked"));
-  sendChunk(F("' style='margin-left:8px;'>Zurücksetzen</button>"));
-            // Messen button for the whole sensor (use only id, not id + '_0')
+            // Messen button for the whole sensor
             sendChunk(
-                F("<button type='button' class='button button-primary "
-                  "measure-button' "
-                  "data-sensor='"));
+                F(" <button type='button' class='button-primary measure-button' data-sensor='"));
             sendChunk(id);
-            sendChunk(F("' style='margin-left:8px;'>"));
+            sendChunk(F("'>"));
             sendChunk(F("Messen</button>"));
             sendChunk(F("</div>"));
 
@@ -207,14 +197,11 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   }
   sendChunk(F("'> "));
   sendChunk(measurementData.units[i]);
-  sendChunk(
-      F(" <button type='button' class='button button-secondary "
-        "reset-minmax-button' "
-        "data-sensor-id='"));
+  sendChunk(F(" <button type='button' class='button-secondary reset-minmax-button warning' data-sensor-id='"));
   sendChunk(id);
   sendChunk(F("' data-measurement-index='"));
   sendChunk(String(i));
-  sendChunk(F("' style='margin-left:8px;'>Reset</button>"));
+  sendChunk(F("' style='margin-left:8px;'>Zurücksetzen</button>"));
   sendChunk(F("</div>"));
 
   // Analog min/max and raw value rows
@@ -282,9 +269,7 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
       sendChunk(F("--"));
     }
     sendChunk(
-        F("'> <button type='button' class='button button-secondary "
-          "reset-raw-minmax-button' "
-          "data-sensor-id='"));
+        F("'> <button type='button' class='button-secondary reset-raw-minmax-button warning' data-sensor-id='"));
     sendChunk(id);
   sendChunk(F("' data-measurement-index='"));
   sendChunk(String(i));
@@ -374,10 +359,9 @@ void AdminSensorHandler::renderFlowerStatusSensorCard() {
   sendChunk(F("<h2>Blumen-Status Sensor</h2>"));
   sendChunk(F("<p>Wähle den Sensor, der das Gesicht der Blume auf der Startseite steuert:</p>"));
 
-  sendChunk(F("<form id='flower-status-form'>"));
   sendChunk(F("<div class='form-group'>"));
   sendChunk(F("<label for='flower-status-sensor'>Sensor:</label>"));
-  sendChunk(F("<select id='flower-status-sensor' name='sensor' class='form-control'>"));
+  sendChunk(F("<select id='flower-status-sensor' class='form-control'>"));
 
   // Get currently configured sensor
   String currentSensor = ConfigMgr.getFlowerStatusSensor();
@@ -414,9 +398,6 @@ void AdminSensorHandler::renderFlowerStatusSensorCard() {
 
   sendChunk(F("</select>"));
   sendChunk(F("</div>"));
-
-  sendChunk(F("<button type='submit' class='button button-primary'>Speichern</button>"));
-  sendChunk(F("</form>"));
 
   sendChunk(F("</div>"));
   yield();

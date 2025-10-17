@@ -93,8 +93,8 @@
 }
 
 .admin-grid .card {
-  min-width: 48%;
-  max-width: 48%;
+  min-width: 100%;
+  max-width: 100%;
   margin-bottom: 0;
 }
 
@@ -165,7 +165,6 @@
 }
 
 .card input[type="text"],
-.card input[type="number"],
 .card input[type="password"],
 .card input[type="email"],
 .card select {
@@ -175,6 +174,17 @@
   border-radius: 4px;
   padding: 0.5em;
   width: 100%;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.card input[type="number"] {
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  color: #f2f2f2;
+  border-radius: 4px;
+  padding: 0.5em;
+  min-width: 5em;
   font-size: inherit;
   font-family: inherit;
 }
@@ -220,6 +230,17 @@ button:hover,
 input[type="submit"]:hover,
 input[type="button"]:hover,
 .button:hover {
+  background: #9333ea;
+}
+
+button.primary,
+.button-primary {
+  background: #a855f7;
+  color: white;
+}
+
+button.primary:hover,
+.button-primary:hover {
   background: #9333ea;
 }
 
@@ -309,6 +330,7 @@ button.warning:hover,
   padding: 0.4em 0.6em;
   background: #3a3a3a;
   color: #f2f2f2;
+  font-size: inherit;
 }
 
 
@@ -321,6 +343,7 @@ button.warning:hover,
   pointer-events: none;
   padding: 0.3em;
   border-radius: 4px;
+  font-size: inherit;
 }
 
 /* --- Layout Rows --- */

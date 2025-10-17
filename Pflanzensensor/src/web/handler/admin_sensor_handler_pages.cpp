@@ -247,9 +247,7 @@ void AdminSensorHandler::handleFlowerStatusUpdate(
   if (result.isSuccess()) {
     logger.info(F("AdminSensorHandler"),
                 F("Flower Status Sensor erfolgreich gespeichert: ") + selectedSensor);
-    // Redirect back to sensor config page
-    _server.sendHeader(F("Location"), F("/admin/sensors"));
-    _server.send(303);
+    sendJsonResponse(200, F("{\"success\":true}"));
   } else {
     logger.error(F("AdminSensorHandler"),
                  F("Fehler beim Speichern des Flower Status Sensors: ") +

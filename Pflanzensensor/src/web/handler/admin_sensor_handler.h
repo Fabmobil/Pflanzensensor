@@ -65,7 +65,6 @@ class AdminSensorHandler : public BaseHandler {
   // AJAX handlers
   void handleSingleSensorUpdate();
   void handleGetSensorConfigJson();
-  void handleMeasurementEnable();
   void handleMeasurementInterval();
   void handleAnalogMinMax();
   void handleAnalogInverted();

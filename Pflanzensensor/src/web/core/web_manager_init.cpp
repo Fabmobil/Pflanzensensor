@@ -263,6 +263,11 @@ ResourceResult WebManager::setupServices() {
                       "max-age=86400");
     });
 
+    _server->on("/js/admin_display.js", HTTP_GET, [this]() {
+      serveStaticFile("/js/admin_display.js", "application/javascript",
+                      "max-age=86400");
+    });
+
     // Images
     _server->on("/img/cloud_big.png", HTTP_GET, [this]() {
       serveStaticFile("/img/cloud_big.png", "image/png", "max-age=86400");

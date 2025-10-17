@@ -58,18 +58,6 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
     return result;
   }
 
-  result = router.addRoute(HTTP_POST, "/admin/measurement_enable", [this]() {
-  logger.debug(F("AdminSensorHandler"),
-         F("POST /admin/measurement_enable aufgerufen"));
-    handleMeasurementEnable();
-  });
-  if (!result.isSuccess()) {
-  logger.error(F("AdminSensorHandler"),
-         F("Registrieren von POST /admin/measurement_enable fehlgeschlagen: ") +
-           result.getMessage());
-    return result;
-  }
-
   result = router.addRoute(HTTP_POST, "/admin/measurement_interval", [this]() {
   logger.debug(F("AdminSensorHandler"),
          F("POST /admin/measurement_interval aufgerufen"));

@@ -14,7 +14,6 @@
 
 #include <memory>
 
-#include "influxdb/influxdb.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "sensors/sensors.h"

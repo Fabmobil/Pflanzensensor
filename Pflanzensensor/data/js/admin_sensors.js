@@ -11,7 +11,7 @@ const initialMeasurementValues = {};
 // Add periodic update of measured sensor values
 function updateAdminSensorValues() {
   fetch('/getLatestValues', { credentials: 'include' })
-    .then(response => response.json())
+    .then(parseJsonResponse)
     .then(data => {
       if (data.sensors) {
         Object.entries(data.sensors).forEach(([sensorKey, sensorData]) => {
@@ -116,45 +116,39 @@ document.addEventListener('DOMContentLoaded', function() {
   console.log('[admin_sensors.js] DOMContentLoaded');
   setInterval(updateAdminSensorValues, 5000);
 
-  // Initialize Flower Status Form Handler
-  const flowerStatusForm = document.getElementById('flower-status-form');
-  if (flowerStatusForm) {
-    flowerStatusForm.addEventListener('submit', function(e) {
-      e.preventDefault();
-      const formData = new FormData(flowerStatusForm);
-      const sensor = formData.get('sensor');
+  // Initialize Flower Status Sensor change handler (AJAX)
+  const flowerStatusSelect = document.getElementById('flower-status-sensor');
+  if (flowerStatusSelect) {
+    flowerStatusSelect.addEventListener('change', function() {
+      const sensor = this.value;
+      console.log('[admin_sensors.js] Flower status sensor changed to:', sensor);
 
-      console.log('[admin_sensors.js] Submitting flower status sensor:', sensor);
+      const formData = new FormData();
+      formData.append('sensor', sensor);
 
       fetch('/admin/sensors/flower_status', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: 'sensor=' + encodeURIComponent(sensor),
+        body: formData,
         credentials: 'include'
       })
-      .then(response => {
-        if (response.redirected) {
-          window.location.href = response.url;
-        } else if (response.ok) {
-          window.location.reload();
+      .then(parseJsonResponse)
+      .then(data => {
+        if (data.success) {
+          showSuccessMessage('Blumen-Status Sensor erfolgreich aktualisiert');
         } else {
-          return response.json().then(data => {
-            alert('Fehler beim Speichern: ' + (data.error || 'Unbekannter Fehler'));
-          });
+          showErrorMessage('Fehler beim Speichern: ' + (data.error || 'Unbekannter Fehler'));
         }
       })
       .catch(error => {
-        console.error('[admin_sensors.js] Error submitting flower status:', error);
-        alert('Fehler beim Speichern: ' + error.message);
+        console.error('[admin_sensors.js] Error updating flower status:', error);
+        showErrorMessage('Fehler beim Speichern: ' + error.message);
       });
     });
   }
 
   // Fetch initial config and initialize everything after
   fetch('/admin/getSensorConfig', { credentials: 'include' })
-    .then(response => response.json())
+    .then(parseJsonResponse)
     .then(data => {
       if (data.success && data.sensors) {
         storeInitialMeasurementValues(data.sensors);
@@ -166,22 +160,19 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('[admin_sensors.js] No sensors in config:', data);
       }
       // Initialize all AJAX handlers
-      initMeasurementEnableHandlers();
       initMeasurementIntervalHandlers();
       initAnalogMinMaxHandlers();
       initAnalogInvertedHandlers();
       initThresholdHandlers();
       initMeasurementNameHandlers();
       initResetMinMaxHandlers();
+      initMeasureButtonHandlers();
 
       // Extend the existing sensors.js functionality for admin page
       extendSensorsJSForAdmin();
 
-      // --- Ensure measure-button handlers are attached ---
-      if (typeof window.setupMeasurementTriggers === 'function') {
-        console.log('[admin_sensors.js] Calling setupMeasurementTriggers after DOM and sliders ready');
-        window.setupMeasurementTriggers();
-      }
+      // --- Measure button handler is now always initialized ---
+      console.log('[admin_sensors.js] All handlers initialized, including measure buttons');
     });
 });
 
@@ -279,21 +270,6 @@ function storeInitialMeasurementValues(sensors) {
         absoluteRawMin: m.absoluteRawMin !== undefined ? m.absoluteRawMin : undefined,
         absoluteRawMax: m.absoluteRawMax !== undefined ? m.absoluteRawMax : undefined
       };
-    });
-  });
-}
-
-/**
- * Initialize handlers for measurement enable/disable checkboxes
- */
-function initMeasurementEnableHandlers() {
-  document.querySelectorAll('.measurement-enable-checkbox').forEach(checkbox => {
-    checkbox.addEventListener('change', function() {
-      const sensorId = this.dataset.sensorId;
-      const measurementIndex = parseInt(this.dataset.measurementIndex);
-      const enabled = this.checked;
-
-      updateMeasurementEnable(sensorId, measurementIndex, enabled);
     });
   });
 }
@@ -499,7 +475,7 @@ function resetAbsoluteMinMax(sensorId, measurementIndex) {
     body: formData,
     credentials: 'include'
   })
-  .then(response => response.json())
+  .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
       showSuccessMessage('Absolute Min/Max Werte zurückgesetzt');
@@ -573,7 +549,7 @@ function resetAbsoluteRawMinMax(sensorId, measurementIndex) {
     body: formData,
     credentials: 'include'
   })
-  .then(response => response.json())
+  .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
       showSuccessMessage('Absolute Raw Min/Max Werte zurückgesetzt');
@@ -612,30 +588,37 @@ function initResetMinMaxHandlers() {
 }
 
 /**
- * Update measurement enable/disable state via AJAX
+ * Initialize handlers for measure buttons
  */
-function updateMeasurementEnable(sensorId, measurementIndex, enabled) {
-  const formData = new FormData();
-  formData.append('sensor_id', sensorId);
-  formData.append('measurement_index', measurementIndex.toString());
-  formData.append('enabled', enabled.toString());
+function initMeasureButtonHandlers() {
+  document.querySelectorAll('.measure-button').forEach(button => {
+    button.addEventListener('click', function() {
+      const sensorId = this.dataset.sensor;
+      console.log('[admin_sensors.js] Trigger measurement for sensor:', sensorId);
 
-  fetch('/admin/measurement_enable', {
-    method: 'POST',
-    body: formData,
-    credentials: 'include'
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      showSuccessMessage('Messung erfolgreich ' + (enabled ? 'aktiviert' : 'deaktiviert'));
-    } else {
-      showErrorMessage('Fehler beim ' + (enabled ? 'Aktivieren' : 'Deaktivieren') + ' der Messung: ' + (data.error || 'Unbekannter Fehler'));
-    }
-  })
-  .catch(error => {
-    console.error('Error updating measurement enable state:', error);
-    showErrorMessage('Netzwerkfehler beim Aktualisieren der Messung');
+      const formData = new FormData();
+      formData.append('sensor_id', sensorId);
+
+      fetch('/trigger_measurement', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      })
+      .then(parseJsonResponse)
+      .then(data => {
+        if (data.success) {
+          console.log('[admin_sensors.js] Measurement triggered successfully');
+          // Optionally show feedback
+        } else {
+          console.error('[admin_sensors.js] Failed to trigger measurement:', data.error || data.message);
+          alert('Fehler beim Auslösen der Messung: ' + (data.error || data.message || 'Unbekannter Fehler'));
+        }
+      })
+      .catch(error => {
+        console.error('[admin_sensors.js] Error triggering measurement:', error);
+        alert('Fehler beim Auslösen der Messung: ' + error.message);
+      });
+    });
   });
 }
 
@@ -652,7 +635,7 @@ function updateMeasurementInterval(sensorId, interval) {
     body: formData,
     credentials: 'include'
   })
-  .then(response => response.json())
+  .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
       showSuccessMessage('Messungsintervall erfolgreich auf ' + interval + ' Sekunden aktualisiert');
@@ -685,7 +668,7 @@ function updateAnalogMinMax(sensorId, measurementIndex, minValue, maxValue) {
   })
   .then(response => {
     console.log(`[updateAnalogMinMax] Response status: ${response.status}`);
-    return response.json();
+    return parseJsonResponse(response);
   })
   .then(data => {
     console.log(`[updateAnalogMinMax] Response data:`, data);
@@ -715,7 +698,7 @@ function updateAnalogInverted(sensorId, measurementIndex, inverted) {
     body: formData,
     credentials: 'include'
   })
-  .then(response => response.json())
+  .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
       showSuccessMessage('Invertierung erfolgreich ' + (inverted ? 'aktiviert' : 'deaktiviert'));
@@ -744,7 +727,7 @@ function updateThresholds(sensorId, measurementIndex, thresholds) {
     body: formData,
     credentials: 'include'
   })
-  .then(response => response.json())
+  .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
       showSuccessMessage('Schwellwerte erfolgreich aktualisiert');
@@ -773,7 +756,7 @@ function updateMeasurementName(sensorId, measurementIndex, name) {
     body: formData,
     credentials: 'include'
   })
-  .then(response => response.json())
+  .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
       showSuccessMessage('Messwert-Name erfolgreich aktualisiert');
@@ -1206,38 +1189,7 @@ function initializeThresholdSliders(sensorConfigData) {
   });
 }
 
-// --- AJAX Message Functions ---
-function showSuccessMessage(message) {
-  let messageElement = document.getElementById('ajax-message');
-  if (!messageElement) {
-    messageElement = document.createElement('div');
-    messageElement.id = 'ajax-message';
-    messageElement.className = 'ajax-message ajax-message-success';
-    document.body.appendChild(messageElement);
-  }
-  messageElement.textContent = message;
-  messageElement.className = 'ajax-message ajax-message-success';
-  messageElement.style.opacity = '1';
-  setTimeout(() => {
-    messageElement.style.opacity = '0';
-  }, 3000);
-}
-
-function showErrorMessage(message) {
-  let messageElement = document.getElementById('ajax-message');
-  if (!messageElement) {
-    messageElement = document.createElement('div');
-    messageElement.id = 'ajax-message';
-    messageElement.className = 'ajax-message ajax-message-error';
-    document.body.appendChild(messageElement);
-  }
-  messageElement.textContent = message;
-  messageElement.className = 'ajax-message ajax-message-error';
-  messageElement.style.opacity = '1';
-  setTimeout(() => {
-    messageElement.style.opacity = '0';
-  }, 5000);
-}
+// NOTE: showSuccessMessage / showErrorMessage are provided globally in admin.js
 
 // --- Measured value sign and blue dot update logic for all measurements ---
 function observeAllMeasuredValues(sensorId, nMeasurements, min, max) {

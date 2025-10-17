@@ -88,6 +88,11 @@ class AdminHandler : public BaseHandler {
 #endif
 
   /**
+   * @brief Generate and send the Debug Settings card for the admin page.
+   */
+  void generateAndSendDebugSettingsCard();
+
+  /**
    * @brief Generate and send the System Settings card for the admin page.
    */
   void generateAndSendSystemSettingsCard();

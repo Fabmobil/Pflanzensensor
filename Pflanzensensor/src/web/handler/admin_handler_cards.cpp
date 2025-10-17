@@ -1,8 +1,8 @@
 /**
  * @file admin_handler_cards.cpp
  * @brief HTML card generation for admin interface
- * @details Generates various admin interface cards including system settings,
- *          system actions, and system info cards
+ * @details Generates various admin interface cards including debug settings,
+ *          system settings, system actions, system info, and JSON debug cards
  */
 
 #include <ArduinoJson.h>
@@ -13,6 +13,87 @@
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
 #include "web/handler/admin_handler.h"
+
+void AdminHandler::generateAndSendDebugSettingsCard() {
+  sendChunk(F("<div class='card'><h3>Debug-Einstellungen</h3>"));
+  sendChunk(
+      F("<form method='post' action='/admin/updateSettings' "
+        "class='config-form'>"));
+  sendChunk(F("<input type='hidden' name='section' value='debug'>"));
+  // File logging
+  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+  sendChunk(
+      F("<input type='checkbox' id='file_logging_enabled' "
+        "name='file_logging_enabled' value='true'"));
+  if (ConfigMgr.isFileLoggingEnabled()) sendChunk(F(" checked"));
+  sendChunk(F("> Logs in Datei speichern</label></div>"));
+  // Debug RAM
+  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+  sendChunk(
+      F("<input type='checkbox' id='debug_ram' name='debug_ram' value='true'"));
+  if (ConfigMgr.isDebugRAM()) sendChunk(F(" checked"));
+  sendChunk(F("> Debug RAM</label></div>"));
+  // Debug Measurement Cycle
+  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+  sendChunk(
+      F("<input type='checkbox' id='debug_measurement_cycle' "
+        "name='debug_measurement_cycle' value='true'"));
+  if (ConfigMgr.isDebugMeasurementCycle()) sendChunk(F(" checked"));
+  sendChunk(F("> Debug Measurement Cycle</label></div>"));
+  // Debug Sensor
+  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+  sendChunk(
+      F("<input type='checkbox' id='debug_sensor' name='debug_sensor' "
+        "value='true'"));
+  if (ConfigMgr.isDebugSensor()) sendChunk(F(" checked"));
+  sendChunk(F("> Debug Sensor</label></div>"));
+  // Debug Display
+  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+  sendChunk(
+      F("<input type='checkbox' id='debug_display' name='debug_display' "
+        "value='true'"));
+  if (ConfigMgr.isDebugDisplay()) sendChunk(F(" checked"));
+  sendChunk(F("> Debug Display</label></div>"));
+  // Debug WebSocket
+  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+  sendChunk(
+      F("<input type='checkbox' id='debug_websocket' name='debug_websocket' "
+        "value='true'"));
+  if (ConfigMgr.isDebugWebSocket()) sendChunk(F(" checked"));
+  sendChunk(F("> Debug WebSocket</label></div>"));
+  // Log Level Selection
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<label for='log_level'>Log Level:</label>"));
+  sendChunk(F("<select id='log_level' name='log_level'>"));
+  String currentLevel = ConfigMgr.getLogLevel();
+  const char* levels[] = {"ERROR", "WARNING", "INFO", "DEBUG"};
+  for (const char* level : levels) {
+    sendChunk(F("<option value='"));
+    sendChunk(level);
+    sendChunk(F("'"));
+    if (currentLevel == level) sendChunk(F(" selected"));
+    sendChunk(F(">"));
+    sendChunk(level);
+    sendChunk(F("</option>"));
+  }
+  sendChunk(F("</select>"));
+  sendChunk(F("</div>"));
+  sendChunk(
+      F("<button type='submit' class='button "
+        "button-primary'>Speichern</button>"));
+  sendChunk(F("</form>"));
+  // Add Download Log button if file logging is enabled
+  if (ConfigMgr.isFileLoggingEnabled()) {
+    sendChunk(
+        F("<form action='/admin/downloadLog' method='GET' "
+          "style='margin-top:8px;'>"));
+    sendChunk(
+        F("<button type='submit' class='button button-primary'>Log "
+          "herunterladen</button>"));
+    sendChunk(F("</form>"));
+  }
+  sendChunk(F("</div>"));
+}
 
 #if USE_MAIL
 void AdminHandler::generateAndSendMailSettingsCard() {

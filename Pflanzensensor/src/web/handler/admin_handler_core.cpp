@@ -235,6 +235,7 @@ void AdminHandler::handleAdminPage() {
         sendChunk(F("<div class='admin-grid'>"));
         generateAndSendSystemSettingsCard();
         generateAndSendSystemActionsCard();
+        generateAndSendDebugSettingsCard();
 #if USE_LED_TRAFFIC_LIGHT
         generateAndSendLedTrafficLightSettingsCard();
 #endif
