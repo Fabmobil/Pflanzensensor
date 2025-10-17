@@ -204,6 +204,21 @@ class AdminHandler : public BaseHandler {
    */
   void handleReboot();
 
+  /**
+   * @brief Stream config.json to client for download
+   */
+  void handleDownloadConfig();
+
+  /**
+   * @brief Stream sensors.json to client for download
+   */
+  void handleDownloadSensors();
+
+  /**
+   * @brief Handle uploaded config.json (replace after validation)
+   */
+  void handleUploadConfig();
+
 #if USE_MAIL
   /**
    * @brief Handle test mail sending requests

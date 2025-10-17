@@ -242,11 +242,11 @@ void AdminHandler::generateAndSendSystemActionsCard() {
   sendChunk(
       F("<button type='submit' onclick='return confirm(\"Wirklich alle "
         "Einstellungen zurücksetzen?\")' class='button "
-        "button-warning'>Einstellungen zurücksetzen</button></form>"));
+        "button-danger'>Einstellungen zurücksetzen</button></form>"));
   sendChunk(F("<form action='/admin/reboot' method='POST' class='inline'>"));
   sendChunk(
       F("<button type='submit' onclick='return confirm(\"Gerät wirklich neu "
-        "starten?\")' class='button button-danger'>Neustart "
+        "starten?\")' class='button button-warning'>Neustart "
         "durchführen</button></form>"));
   if (ConfigMgr.isFileLoggingEnabled()) {
     sendChunk(
@@ -256,7 +256,21 @@ void AdminHandler::generateAndSendSystemActionsCard() {
           "herunterladen</button>"));
     sendChunk(F("</form>"));
   }
-  sendChunk(F("</div></div>"));
+  // Add download/upload for settings and sensors JSON
+  sendChunk(F("<form action='/admin/downloadConfig' method='GET' class='inline'>"));
+  sendChunk(F("<button type='submit' class='button'>Einstellungen herunterladen</button>"));
+  sendChunk(F("</form>"));
+  sendChunk(F("<form action='/admin/downloadSensors' method='GET' class='inline'>"));
+  sendChunk(F("<button type='submit' class='button'>Sensordaten herunterladen</button>"));
+  sendChunk(F("</form>"));
+
+  // Upload forms
+  sendChunk(F("<div class='measurement-card'>"));
+  sendChunk(F("<form id='upload-config-form' action='/admin/uploadConfig' method='POST' enctype='multipart/form-data' class='inline' style='display:inline-block;margin-left:8px;'>"));
+  sendChunk(F("<input type='file' name='file' accept='.json' required>"));
+  sendChunk(F("<button type='submit' class='button button-secondary'>Einstellungen oder Sensordaten hochladen</button>"));
+  sendChunk(F("</form>"));
+  sendChunk(F("</div></div></div>"));
 }
 
 void AdminHandler::generateAndSendSystemInfoCard() {

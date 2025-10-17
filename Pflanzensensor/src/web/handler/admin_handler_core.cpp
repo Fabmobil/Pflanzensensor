@@ -111,6 +111,76 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadLog-Route"));
 
+  // Register download/upload routes for settings and sensors
+  result = router.addRoute(HTTP_GET, "/admin/downloadConfig", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    handleDownloadConfig();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"), F("Registrieren der /admin/downloadConfig-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadConfig-Route"));
+
+  result = router.addRoute(HTTP_GET, "/admin/downloadSensors", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    handleDownloadSensors();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"), F("Registrieren der /admin/downloadSensors-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadSensors-Route"));
+
+  // Register upload endpoint (single field). The upload handler will detect
+  // whether the uploaded JSON is config or sensors and act accordingly.
+  _server.on("/admin/uploadConfig", HTTP_POST,
+             [this]() {
+               const char* resPath = "/upload_result.json";
+               String body = "{\"success\":true}";
+               if (LittleFS.exists(resPath)) {
+                 File rf = LittleFS.open(resPath, "r");
+                 if (rf) {
+                   body = rf.readString();
+                   rf.close();
+                   LittleFS.remove(resPath);
+                 }
+               }
+
+               // Distinguish AJAX/fetch uploads from normal form posts.
+               String xhr = _server.header("X-Requested-With");
+               String accept = _server.header("Accept");
+               bool wantsJson = false;
+               if (xhr == "XMLHttpRequest") wantsJson = true;
+               if (accept.indexOf("application/json") >= 0) wantsJson = true;
+               // Some multipart/form-data uploads may not include headers; the
+               // form will include an 'ajax' field when JS submits.
+               if (_server.hasArg("ajax")) wantsJson = true;
+
+               if (wantsJson) {
+                 _server.send(200, "application/json", body);
+               } else {
+                 // Redirect back to admin page with a short status flag so the
+                 // page JS can surface a notification. Use upload=ok or upload=err
+                 // depending on success field in body.
+                 bool success = false;
+                 StaticJsonDocument<256> doc;
+                 DeserializationError err = deserializeJson(doc, body);
+                 if (!err && doc.containsKey("success") && doc["success"] == true) success = true;
+                 String loc = String("/admin?upload=") + (success ? "ok" : "err");
+                 _server.sendHeader("Location", loc);
+                 _server.send(303, "text/plain", "");
+               }
+             },
+             [this]() { handleUploadConfig(); });
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/uploadConfig-Route (multipart)"));
+
 #if USE_MAIL
   // Register test mail route
   result = router.addRoute(HTTP_POST, "/admin/testMail", [this]() {

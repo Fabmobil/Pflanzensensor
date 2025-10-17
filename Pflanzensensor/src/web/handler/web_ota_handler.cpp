@@ -123,7 +123,13 @@ void WebOTAHandler::handleUpdatePage() {
             F("Du kannst dir die aktuellen Dateien <a href='https://github.com/Fabmobil/Pflanzensensor/releases' "
               "target='_blank'>hier</a> herunterladen.</li>"));
         sendChunk(
-            F("<li>Wenn du das Dateisystem ersetzt werden alle deine Einstellungen zurückgesetzt und du musst Namen, WiFi, Grenzwerte usw. neu einstellen.</li>"));
+            F("<li>Beim aktualisieren des Betriebssystems (\"firmware.bin\") bleiben deine Einstellungen erhalten. "));
+        sendChunk(
+            F("Wenn du das Dateisystem ersetzt (\"littlefs.bin\") werden alle deine Einstellungen zurückgesetzt und du musst Namen, WiFi, Grenzwerte usw. neu einstellen.</li>"));
+        sendChunk(F("<ul>"));
+        sendChunk(
+            F("<li>Auf der <a href='/admin'>Einstellungsseite</a> kannst du deine Einstellungen und Sensordaten vor dem Update sichern und nach dem Update wieder einspielen</li>"));
+        sendChunk(F("</ul>"));
         sendChunk(
             F("<li>Das Gerät wird nach erfolgreichem Update automatisch neu "
               "gestartet</li>"));

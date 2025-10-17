@@ -38,6 +38,57 @@ window.addEventListener('load', () => {
   // No table population or fetch logic needed for /admin/sensors or any admin page
 });
 
+// Intercept the single upload form for settings/sensors and show notifications
+window.addEventListener('load', () => {
+  const uploadForm = document.getElementById('upload-config-form');
+  if (!uploadForm) return;
+
+  uploadForm.addEventListener('submit', function(evt) {
+    evt.preventDefault();
+    const input = uploadForm.querySelector('input[type="file"]');
+    if (!input || !input.files || input.files.length === 0) {
+      showErrorMessage('Bitte wählen Sie eine JSON-Datei zum Hochladen aus.');
+      return;
+    }
+
+    const file = input.files[0];
+  const formData = new FormData();
+  formData.append('file', file, file.name);
+  // mark as AJAX so the server returns JSON instead of redirecting
+  formData.append('ajax', '1');
+
+    // Show a temporary message
+    showSuccessMessage('Hochladen gestartet...');
+
+    fetch(uploadForm.action, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+      }
+    })
+    .then(response => {
+      // Try to parse JSON; if not JSON, treat as text error
+      const ct = response.headers.get('content-type') || '';
+      if (ct.includes('application/json')) return response.json();
+      return response.text().then(t => { throw new Error(t || 'Ungültige Serverantwort'); });
+    })
+    .then(data => {
+      if (data.success) {
+        showSuccessMessage(data.message || 'Datei erfolgreich hochgeladen');
+      } else {
+        showErrorMessage(data.error || data.message || 'Fehler beim Hochladen');
+      }
+    })
+    .catch(err => {
+      console.error('[admin.js] Upload error:', err);
+      showErrorMessage('Fehler beim Hochladen: ' + (err.message || err));
+    });
+  });
+});
+
 // --- Global AJAX Message Functions (shared across admin pages) ---
 function showSuccessMessage(message) {
   let messageElement = document.getElementById('ajax-message');
@@ -253,4 +304,28 @@ function initConfigAutoSave() {
 // Initialize auto-save on load
 window.addEventListener('load', () => {
   initConfigAutoSave();
+  // If the admin page was loaded after a redirect from an upload, show a
+  // notification based on the query param upload=ok|err
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const u = params.get('upload');
+    if (u === 'ok') {
+      showSuccessMessage('Datei erfolgreich importiert');
+      // remove param from URL without reloading
+      if (window.history && window.history.replaceState) {
+        const url = new URL(window.location);
+        url.searchParams.delete('upload');
+        window.history.replaceState({}, document.title, url.pathname + url.search);
+      }
+    } else if (u === 'err') {
+      showErrorMessage('Fehler beim Importieren der Datei');
+      if (window.history && window.history.replaceState) {
+        const url = new URL(window.location);
+        url.searchParams.delete('upload');
+        window.history.replaceState({}, document.title, url.pathname + url.search);
+      }
+    }
+  } catch (e) {
+    // ignore URL parsing issues
+  }
 });
