@@ -48,6 +48,21 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/updateSettings-Route"));
 
+  // Register AJAX JSON update route for admin settings
+  result = router.addRoute(HTTP_POST, "/admin/updateSettings/json", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    logger.debug(F("AdminHandler"), F("Handling admin update (JSON) request"));
+    handleAdminUpdateJson();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"), F("Registrieren der /admin/updateSettings/json-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/updateSettings/json-Route"));
+
   // Register config reset route
   result = router.addRoute(HTTP_POST, "/admin/reset", [this]() {
     if (!validateRequest()) {
@@ -78,19 +93,9 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   logger.debug(F("AdminHandler"), F("Registrierte /admin/reboot-Route"));
 
   // Register config set route
-  result = router.addRoute(HTTP_POST, "/admin/config/set", [this]() {
-    if (!validateRequest()) {
-      _server.requestAuthentication();
-      return;
-    }
-    handleConfigSet();
-  });
-  if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"),
-                 F("Registrieren der /admin/config/set-Route fehlgeschlagen"));
-    return result;
-  }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/config/set-Route"));
+  // Note: /admin/config/set handled by legacy route in WebManager; admin
+  // updates are consolidated to /admin/updateSettings/json and
+  // AdminHandler::handleAdminUpdateJson().
 
   result = router.addRoute(HTTP_GET, "/admin/downloadLog", [this]() {
     if (!validateRequest()) {
@@ -157,71 +162,8 @@ HandlerResult AdminHandler::handlePost(const String& uri,
                              "Bitte registerRoutes verwenden");
 }
 
-void AdminHandler::handleConfigSet() {
-  // Debug request info
-  logger.debug(F("AdminHandler"),
-               "Anfragemethode: " + String(_server.method()));
-  logger.debug(F("AdminHandler"), "Anfrage-URI: " + String(_server.uri()));
-
-  // Get Content-Type header directly
-  String contentType = _server.header("Content-Type");
-  logger.debug(F("AdminHandler"), "Content-Type: '" + contentType + "'");
-
-  // Check if we have a valid content type
-  if (contentType == "" || contentType.indexOf("application/json") == -1) {
-    String errorMsg =
-        F("{\"error\": \"Content-Type muss application/json sein\", "
-          "\"received\": \"");
-    errorMsg += contentType;
-    errorMsg += F("\"}");
-    logger.debug(F("AdminHandler"),
-                 "Ungültiger Content-Type, sende Fehler: " + errorMsg);
-    sendJsonResponse(400, errorMsg);
-    return;
-  }
-
-  // Get the request body
-  String json = _server.arg("plain");
-
-  // Parse JSON
-  StaticJsonDocument<512> doc;
-  DeserializationError error = deserializeJson(doc, json);
-
-  if (error) {
-    String errorMsg = F("{\"error\": \"Ungültiges JSON: ");
-    errorMsg += error.c_str();
-    errorMsg += F("\"}");
-    sendJsonResponse(400, errorMsg);
-    return;
-  }
-
-  // Extract key and value
-  if (!doc["key"].is<const char*>() || !doc["value"].is<const char*>()) {
-    sendJsonResponse(
-        400, F("{\"error\": \"Erforderliche Felder 'key' und 'value' fehlen\"}"));
-    return;
-  }
-
-  String key = doc["key"].as<String>();
-  String value = doc["value"].as<String>();
-
-  // Apply config value
-  if (applyConfigValue(key, value)) {
-    auto result = ConfigMgr.saveConfig();
-    if (result.isSuccess()) {
-      sendJsonResponse(
-          200,
-          F("{\"status\": \"OK\", \"message\": \"Konfiguration aktualisiert\"}"));
-    } else {
-      String errorMsg = F("{\"error\": \"Fehler beim Speichern der Konfiguration: ");
-      errorMsg += result.getMessage();
-      errorMsg += F("\"}");
-      sendJsonResponse(500, errorMsg);
-    }
-  } else {
-    sendJsonResponse(400, F("{\"error\": \"Ungültiger Konfigurationswert\"}"));
-  }
-}
+// AdminHandler::handleConfigSet removed - admin updates are handled via
+// AdminHandler::handleAdminUpdateJson() and /admin/updateSettings/json.
 
 void AdminHandler::handleAdminPage() {
   logger.debug(F("AdminHandler"), F("handleAdminPage called"));

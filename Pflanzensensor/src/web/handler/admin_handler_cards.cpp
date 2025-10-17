@@ -78,9 +78,7 @@ void AdminHandler::generateAndSendDebugSettingsCard() {
   }
   sendChunk(F("</select>"));
   sendChunk(F("</div>"));
-  sendChunk(
-      F("<button type='submit' class='button "
-        "button-primary'>Speichern</button>"));
+  // Save handled automatically via AJAX; keep form for fallback but remove visible submit button
   sendChunk(F("</form>"));
   // Add Download Log button if file logging is enabled
   if (ConfigMgr.isFileLoggingEnabled()) {
@@ -198,9 +196,7 @@ void AdminHandler::generateAndSendMailSettingsCard() {
   if (ConfigMgr.isSmtpSendTestMailOnBoot()) sendChunk(F(" checked"));
   sendChunk(F("> Test-Mail beim Systemstart senden</label></div>"));
 
-  sendChunk(
-      F("<button type='submit' class='button "
-        "button-primary'>Speichern</button>"));
+  // Save handled automatically via AJAX; keep form for fallback but remove visible submit button
   sendChunk(F("</form>"));
 
   // Add test mail button
@@ -235,9 +231,7 @@ void AdminHandler::generateAndSendSystemSettingsCard() {
   sendChunk(F("<input type='checkbox' name='md5_verification'"));
   if (ConfigMgr.isMD5Verification()) sendChunk(F(" checked"));
   sendChunk(F("> MD5-Überprüfung für Updates aktivieren</label></div>"));
-  sendChunk(
-      F("<button type='submit' class='button "
-        "button-primary'>Speichern</button>"));
+  // Save handled automatically via AJAX; keep form for fallback but remove visible submit button
   sendChunk(F("</form></div>"));
 }
 
@@ -405,9 +399,7 @@ void AdminHandler::generateAndSendLedTrafficLightSettingsCard() {
   sendChunk(F("</select>"));
   sendChunk(F("</div>"));
 
-  sendChunk(
-      F("<button type='submit' class='button "
-        "button-primary'>Speichern</button>"));
+  // Save handled automatically via AJAX; keep form for fallback but remove visible submit button
   sendChunk(F("</form>"));
 
   // Add JavaScript to show/hide measurement selection based on mode

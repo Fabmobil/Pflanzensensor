@@ -413,7 +413,7 @@ class WebManager {
 
   // Configuration constants
   unsigned long m_updateModeTimeout =
-      180000;                               ///< Update mode timeout (3 minutes)
+      60000;                               ///< Update mode timeout (1 minute)
   unsigned long m_updateModeStartTime = 0;  ///< Update mode start timestamp
   static constexpr size_t BUFFER_SIZE = 256;  ///< Response buffer size
   static char s_responseBuffer[BUFFER_SIZE];  ///< Static response buffer

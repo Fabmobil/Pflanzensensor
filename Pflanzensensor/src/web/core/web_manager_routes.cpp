@@ -163,21 +163,9 @@ void WebManager::setupRoutes() {
     _adminHandler->handleConfigReset();
   });
 
-  // Direct route for admin config set
-  _router->addRoute(HTTP_POST, "/admin/config/set", [this]() {
-    if (!_adminHandler) {
-      logger.debug(F("WebManager"),
-                   F("Lazy loading AdminHandler for config set"));
-      _adminHandler =
-          std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
-      auto result = _adminHandler->registerRoutes(*_router);
-      if (!result.isSuccess()) {
-        logger.error(F("WebManager"),
-                     "Failed to register admin routes: " + result.getMessage());
-      }
-    }
-    _adminHandler->handleConfigSet();
-  });
+  // /admin/config/set is registered by AdminHandler::onRegisterRoutes to
+  // centralize admin-related routes. Avoid registering it here to prevent
+  // duplicate route entries.
 
   // Direct route for admin download log
   _router->addRoute(HTTP_GET, "/admin/downloadLog", [this]() {

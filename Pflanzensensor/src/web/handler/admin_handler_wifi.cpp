@@ -65,9 +65,7 @@ void AdminHandler::generateAndSendWiFiSettingsCard() {
     }
     sendChunk(F("</div>"));
   }
-  sendChunk(
-      F("<button type='submit' class='button "
-        "button-primary'>Speichern</button>"));
+  // Save handled automatically via AJAX/partial updates; keep form for fallback but remove visible submit button
   sendChunk(F("</form></div>"));
 }
 
@@ -79,37 +77,39 @@ void AdminHandler::handleWiFiUpdate() {
     if (i == activeSlot) continue;  // Skip the active slot!
     String ssidArg = "ssid" + String(i);
     String pwdArg = "pwd" + String(i);
-    String ssid = _server.hasArg(ssidArg) ? _server.arg(ssidArg) : "";
-    String pwd = _server.hasArg(pwdArg) ? _server.arg(pwdArg) : "";
+  bool hasSsid = _server.hasArg(ssidArg);
+  bool hasPwd = _server.hasArg(pwdArg);
+  String ssid = hasSsid ? _server.arg(ssidArg) : String();
+  String pwd = hasPwd ? _server.arg(pwdArg) : String();
     if (i == 1) {
-      if (ssid != ConfigMgr.getWiFiSSID1()) {
+      if (hasSsid && ssid != ConfigMgr.getWiFiSSID1()) {
         ConfigMgr.setWiFiSSID1(ssid);
         changed = true;
         changes += F("<li>SSID 1 geändert</li>");
       }
-      if (pwd != ConfigMgr.getWiFiPassword1()) {
+      if (hasPwd && pwd != ConfigMgr.getWiFiPassword1()) {
         ConfigMgr.setWiFiPassword1(pwd);
         changed = true;
         changes += F("<li>Passwort 1 geändert</li>");
       }
     } else if (i == 2) {
-      if (ssid != ConfigMgr.getWiFiSSID2()) {
+      if (hasSsid && ssid != ConfigMgr.getWiFiSSID2()) {
         ConfigMgr.setWiFiSSID2(ssid);
         changed = true;
         changes += F("<li>SSID 2 geändert</li>");
       }
-      if (pwd != ConfigMgr.getWiFiPassword2()) {
+      if (hasPwd && pwd != ConfigMgr.getWiFiPassword2()) {
         ConfigMgr.setWiFiPassword2(pwd);
         changed = true;
         changes += F("<li>Passwort 2 geändert</li>");
       }
     } else if (i == 3) {
-      if (ssid != ConfigMgr.getWiFiSSID3()) {
+      if (hasSsid && ssid != ConfigMgr.getWiFiSSID3()) {
         ConfigMgr.setWiFiSSID3(ssid);
         changed = true;
         changes += F("<li>SSID 3 geändert</li>");
       }
-      if (pwd != ConfigMgr.getWiFiPassword3()) {
+      if (hasPwd && pwd != ConfigMgr.getWiFiPassword3()) {
         ConfigMgr.setWiFiPassword3(pwd);
         changed = true;
         changes += F("<li>Passwort 3 geändert</li>");

@@ -70,7 +70,8 @@ class AdminHandler : public BaseHandler {
    *          - Returns results
    * @note Expects JSON in format: {"key": "setting_name", "value": "new_value"}
    */
-  void handleConfigSet();
+  // Deprecated: individual key updates are handled by /admin/updateSettings/json
+  // and AdminHandler::handleAdminUpdateJson().
 
   /**
    * @brief Streams the log file to the client for download if file logging is
@@ -178,6 +179,10 @@ class AdminHandler : public BaseHandler {
    *          - Logs modifications
    */
   void handleAdminUpdate();
+  /**
+   * @brief Handle admin settings update via AJAX (returns JSON)
+   */
+  void handleAdminUpdateJson();
 
   /**
    * @brief Handle configuration reset requests

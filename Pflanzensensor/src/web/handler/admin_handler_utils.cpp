@@ -50,74 +50,136 @@ bool AdminHandler::validateRequest() const {
 
 bool AdminHandler::processConfigUpdates(String& changes) {
   bool updated = false;
-  String section = _server.hasArg("section") ? _server.arg("section") : "";
+
+  // Detect JSON payloads and, if present, parse them into a JsonDocument so
+  // callers can send application/json instead of form-encoded data. For
+  // backwards compatibility, if parsing fails or the content-type is not
+  // application/json, fall back to using the usual _server.arg/_server.hasArg
+  // accessors.
+  String contentType = _server.header("Content-Type");
+  bool isJson = (contentType != "" && contentType.indexOf("application/json") != -1);
+  DynamicJsonDocument doc(4096);
+  if (isJson) {
+    String body = _server.arg("plain");
+    DeserializationError err = deserializeJson(doc, body);
+    if (err) {
+      logger.debug(F("AdminHandler"), "JSON-Parsing für Admin-Update fehlgeschlagen, fallback auf Formdaten");
+      isJson = false;
+    }
+  }
+
+  // Helper wrappers so the rest of the function can uniformly access args
+  // regardless of whether they came from a JSON body or form-encoded data.
+  auto serverHasArg = [&](const String& name) -> bool {
+    if (isJson) return doc.containsKey(name.c_str());
+    return _server.hasArg(name);
+  };
+
+  auto serverArg = [&](const String& name) -> String {
+    if (isJson) {
+      if (!doc.containsKey(name.c_str())) return String();
+      JsonVariant v = doc[name.c_str()];
+      if (v.is<const char*>()) return String(v.as<const char*>());
+      if (v.is<bool>()) return v.as<bool>() ? String("true") : String("false");
+      if (v.is<long>()) return String((long)v.as<long>());
+      if (v.is<float>()) return String((float)v.as<float>());
+      return String();
+    }
+    return _server.arg(name);
+  };
+
+  auto serverBool = [&](const String& name) -> bool {
+    if (isJson) {
+      if (!doc.containsKey(name.c_str())) return false;
+      JsonVariant v = doc[name.c_str()];
+      if (v.is<bool>()) return v.as<bool>();
+      if (v.is<const char*>()) {
+        String s = String(v.as<const char*>());
+        return (s == "1" || s.equalsIgnoreCase("true"));
+      }
+      if (v.is<long>()) return v.as<long>() != 0;
+      return false;
+    }
+    return _server.hasArg(name);
+  };
+
+  String section = serverHasArg("section") ? serverArg("section") : String();
 
   if (section == "debug") {
     // Debug RAM
     bool oldDebugRAM = ConfigMgr.isDebugRAM();
-    bool newDebugRAM = _server.hasArg("debug_ram");
-    if (oldDebugRAM != newDebugRAM) {
-      auto result = ConfigMgr.setDebugRAM(newDebugRAM);
-      if (result.isSuccess()) {
-        changes += F("<li>Debug RAM ");
-        changes += newDebugRAM ? F("aktiviert") : F("deaktiviert");
-        changes += F("</li>");
-        updated = true;
+    if (serverHasArg("debug_ram")) {
+      bool newDebugRAM = serverBool("debug_ram");
+      if (oldDebugRAM != newDebugRAM) {
+        auto result = ConfigMgr.setDebugRAM(newDebugRAM);
+        if (result.isSuccess()) {
+          changes += F("<li>Debug RAM ");
+          changes += newDebugRAM ? F("aktiviert") : F("deaktiviert");
+          changes += F("</li>");
+          updated = true;
+        }
       }
     }
     // Debug Measurement Cycle
     bool oldDebugMeasurementCycle = ConfigMgr.isDebugMeasurementCycle();
-    bool newDebugMeasurementCycle = _server.hasArg("debug_measurement_cycle");
-    if (oldDebugMeasurementCycle != newDebugMeasurementCycle) {
-      auto result =
-          ConfigMgr.setDebugMeasurementCycle(newDebugMeasurementCycle);
-      if (result.isSuccess()) {
-        changes += F("<li>Debug Messzyklus ");
-        changes += newDebugMeasurementCycle ? F("aktiviert") : F("deaktiviert");
-        changes += F("</li>");
-        updated = true;
+    if (serverHasArg("debug_measurement_cycle")) {
+      bool newDebugMeasurementCycle = serverBool("debug_measurement_cycle");
+      if (oldDebugMeasurementCycle != newDebugMeasurementCycle) {
+        auto result =
+            ConfigMgr.setDebugMeasurementCycle(newDebugMeasurementCycle);
+        if (result.isSuccess()) {
+          changes += F("<li>Debug Messzyklus ");
+          changes += newDebugMeasurementCycle ? F("aktiviert") : F("deaktiviert");
+          changes += F("</li>");
+          updated = true;
+        }
       }
     }
     // Debug Sensor
     bool oldDebugSensor = ConfigMgr.isDebugSensor();
-    bool newDebugSensor = _server.hasArg("debug_sensor");
-    if (oldDebugSensor != newDebugSensor) {
-      auto result = ConfigMgr.setDebugSensor(newDebugSensor);
-      if (result.isSuccess()) {
-        changes += F("<li>Debug Sensor ");
-        changes += newDebugSensor ? F("aktiviert") : F("deaktiviert");
-        changes += F("</li>");
-        updated = true;
+    if (serverHasArg("debug_sensor")) {
+      bool newDebugSensor = serverBool("debug_sensor");
+      if (oldDebugSensor != newDebugSensor) {
+        auto result = ConfigMgr.setDebugSensor(newDebugSensor);
+        if (result.isSuccess()) {
+          changes += F("<li>Debug Sensor ");
+          changes += newDebugSensor ? F("aktiviert") : F("deaktiviert");
+          changes += F("</li>");
+          updated = true;
+        }
       }
     }
     // Debug Display
     bool oldDebugDisplay = ConfigMgr.isDebugDisplay();
-    bool newDebugDisplay = _server.hasArg("debug_display");
-    if (oldDebugDisplay != newDebugDisplay) {
-      auto result = ConfigMgr.setDebugDisplay(newDebugDisplay);
-      if (result.isSuccess()) {
-        changes += F("<li>Debug Display ");
-        changes += newDebugDisplay ? F("aktiviert") : F("deaktiviert");
-        changes += F("</li>");
-        updated = true;
+    if (serverHasArg("debug_display")) {
+      bool newDebugDisplay = serverBool("debug_display");
+      if (oldDebugDisplay != newDebugDisplay) {
+        auto result = ConfigMgr.setDebugDisplay(newDebugDisplay);
+        if (result.isSuccess()) {
+          changes += F("<li>Debug Display ");
+          changes += newDebugDisplay ? F("aktiviert") : F("deaktiviert");
+          changes += F("</li>");
+          updated = true;
+        }
       }
     }
     // Debug WebSocket
     bool oldDebugWebSocket = ConfigMgr.isDebugWebSocket();
-    bool newDebugWebSocket = _server.hasArg("debug_websocket");
-    if (oldDebugWebSocket != newDebugWebSocket) {
-      auto result = ConfigMgr.setDebugWebSocket(newDebugWebSocket);
-      if (result.isSuccess()) {
-        changes += F("<li>Debug WebSocket ");
-        changes += newDebugWebSocket ? F("aktiviert") : F("deaktiviert");
-        changes += F("</li>");
-        updated = true;
+    if (serverHasArg("debug_websocket")) {
+      bool newDebugWebSocket = serverBool("debug_websocket");
+      if (oldDebugWebSocket != newDebugWebSocket) {
+        auto result = ConfigMgr.setDebugWebSocket(newDebugWebSocket);
+        if (result.isSuccess()) {
+          changes += F("<li>Debug WebSocket ");
+          changes += newDebugWebSocket ? F("aktiviert") : F("deaktiviert");
+          changes += F("</li>");
+          updated = true;
+        }
       }
     }
     // Log Level
     String oldLogLevel = ConfigMgr.getLogLevel();
-    String newLogLevel =
-        _server.hasArg("log_level") ? _server.arg("log_level") : oldLogLevel;
+    String newLogLevel = serverHasArg("log_level") ? serverArg("log_level") : oldLogLevel;
     if (oldLogLevel != newLogLevel) {
       auto result = ConfigMgr.setLogLevel(newLogLevel);
       if (result.isSuccess()) {
@@ -129,38 +191,44 @@ bool AdminHandler::processConfigUpdates(String& changes) {
     }
     // File logging enabled
     bool oldFileLogging = ConfigMgr.isFileLoggingEnabled();
-    bool newFileLogging = _server.hasArg("file_logging_enabled");
-    if (oldFileLogging != newFileLogging) {
-      ConfigMgr.setFileLoggingEnabled(newFileLogging);
-      changes += F("<li>Datei-Logging ");
-      changes += newFileLogging ? F("aktiviert") : F("deaktiviert");
-      changes += F("</li>");
-      updated = true;
+    if (serverHasArg("file_logging_enabled")) {
+      bool newFileLogging = serverBool("file_logging_enabled");
+      if (oldFileLogging != newFileLogging) {
+        ConfigMgr.setFileLoggingEnabled(newFileLogging);
+        changes += F("<li>Datei-Logging ");
+        changes += newFileLogging ? F("aktiviert") : F("deaktiviert");
+        changes += F("</li>");
+        updated = true;
+      }
     }
   } else if (section == "system") {
     // MD5 verification
     bool oldMD5 = ConfigMgr.isMD5Verification();
-    bool newMD5 = _server.hasArg("md5_verification");
-    if (oldMD5 != newMD5) {
-      ConfigMgr.setMD5Verification(newMD5);
-      changes += F("<li>MD5-Überprüfung ");
-      changes += newMD5 ? F("aktiviert") : F("deaktiviert");
-      changes += F("</li>");
-      updated = true;
+    if (serverHasArg("md5_verification")) {
+      bool newMD5 = serverBool("md5_verification");
+      if (oldMD5 != newMD5) {
+        ConfigMgr.setMD5Verification(newMD5);
+        changes += F("<li>MD5-Überprüfung ");
+        changes += newMD5 ? F("aktiviert") : F("deaktiviert");
+        changes += F("</li>");
+        updated = true;
+      }
     }
     // Collectd enabled
     bool oldCollectd = ConfigMgr.isCollectdEnabled();
-    bool newCollectd = _server.hasArg("collectd_enabled");
-    if (oldCollectd != newCollectd) {
-      ConfigMgr.setCollectdEnabled(newCollectd);
-      changes += F("<li>InfluxDB/Collectd ");
-      changes += newCollectd ? F("aktiviert") : F("deaktiviert");
-      changes += F("</li>");
-      updated = true;
+    if (serverHasArg("collectd_enabled")) {
+      bool newCollectd = serverBool("collectd_enabled");
+      if (oldCollectd != newCollectd) {
+        ConfigMgr.setCollectdEnabled(newCollectd);
+        changes += F("<li>InfluxDB/Collectd ");
+        changes += newCollectd ? F("aktiviert") : F("deaktiviert");
+        changes += F("</li>");
+        updated = true;
+      }
     }
     // Device name
-    if (_server.hasArg("device_name")) {
-      String newName = _server.arg("device_name");
+    if (serverHasArg("device_name")) {
+      String newName = serverArg("device_name");
       if (newName != ConfigMgr.getDeviceName()) {
         ConfigMgr.setDeviceName(newName);
         updated = true;
@@ -170,8 +238,8 @@ bool AdminHandler::processConfigUpdates(String& changes) {
   } else if (section == "led_traffic_light") {
     // LED Traffic Light Mode
     uint8_t oldMode = ConfigMgr.getLedTrafficLightMode();
-    uint8_t newMode = _server.hasArg("led_traffic_light_mode")
-                          ? _server.arg("led_traffic_light_mode").toInt()
+    uint8_t newMode = serverHasArg("led_traffic_light_mode")
+                          ? serverArg("led_traffic_light_mode").toInt()
                           : oldMode;
     if (oldMode != newMode) {
       auto result = ConfigMgr.setLedTrafficLightMode(newMode);
@@ -195,9 +263,9 @@ bool AdminHandler::processConfigUpdates(String& changes) {
 
     // LED Traffic Light Selected Measurement
     String oldMeasurement = ConfigMgr.getLedTrafficLightSelectedMeasurement();
-    String newMeasurement = _server.hasArg("led_traffic_light_measurement")
-                                ? _server.arg("led_traffic_light_measurement")
-                                : "";
+    String newMeasurement = serverHasArg("led_traffic_light_measurement")
+                                ? serverArg("led_traffic_light_measurement")
+                                : String();
     if (oldMeasurement != newMeasurement) {
       auto result =
           ConfigMgr.setLedTrafficLightSelectedMeasurement(newMeasurement);
@@ -216,7 +284,7 @@ bool AdminHandler::processConfigUpdates(String& changes) {
   } else if (section == "mail") {
     // Mail enabled
     bool oldMailEnabled = ConfigMgr.isMailEnabled();
-    bool newMailEnabled = _server.hasArg("mail_enabled");
+    bool newMailEnabled = serverBool("mail_enabled");
     if (oldMailEnabled != newMailEnabled) {
       auto result = ConfigMgr.setMailEnabled(newMailEnabled);
       if (result.isSuccess()) {
@@ -228,8 +296,8 @@ bool AdminHandler::processConfigUpdates(String& changes) {
     }
 
     // SMTP Host
-    if (_server.hasArg("smtp_host")) {
-      String newSmtpHost = _server.arg("smtp_host");
+    if (serverHasArg("smtp_host")) {
+      String newSmtpHost = serverArg("smtp_host");
       if (newSmtpHost != ConfigMgr.getSmtpHost()) {
         auto result = ConfigMgr.setSmtpHost(newSmtpHost);
         if (result.isSuccess()) {
@@ -240,8 +308,8 @@ bool AdminHandler::processConfigUpdates(String& changes) {
     }
 
     // SMTP Port
-    if (_server.hasArg("smtp_port")) {
-      uint16_t newSmtpPort = _server.arg("smtp_port").toInt();
+    if (serverHasArg("smtp_port")) {
+      uint16_t newSmtpPort = serverArg("smtp_port").toInt();
       if (newSmtpPort != ConfigMgr.getSmtpPort()) {
         auto result = ConfigMgr.setSmtpPort(newSmtpPort);
         if (result.isSuccess()) {
@@ -252,8 +320,8 @@ bool AdminHandler::processConfigUpdates(String& changes) {
     }
 
     // SMTP User
-    if (_server.hasArg("smtp_user")) {
-      String newSmtpUser = _server.arg("smtp_user");
+    if (serverHasArg("smtp_user")) {
+      String newSmtpUser = serverArg("smtp_user");
       if (newSmtpUser != ConfigMgr.getSmtpUser()) {
         auto result = ConfigMgr.setSmtpUser(newSmtpUser);
         if (result.isSuccess()) {
@@ -264,8 +332,8 @@ bool AdminHandler::processConfigUpdates(String& changes) {
     }
 
     // SMTP Password
-    if (_server.hasArg("smtp_password")) {
-      String newSmtpPassword = _server.arg("smtp_password");
+    if (serverHasArg("smtp_password")) {
+      String newSmtpPassword = serverArg("smtp_password");
       if (newSmtpPassword != ConfigMgr.getSmtpPassword()) {
         auto result = ConfigMgr.setSmtpPassword(newSmtpPassword);
         if (result.isSuccess()) {
@@ -276,8 +344,8 @@ bool AdminHandler::processConfigUpdates(String& changes) {
     }
 
     // SMTP Sender Name
-    if (_server.hasArg("smtp_sender_name")) {
-      String newSmtpSenderName = _server.arg("smtp_sender_name");
+    if (serverHasArg("smtp_sender_name")) {
+      String newSmtpSenderName = serverArg("smtp_sender_name");
       if (newSmtpSenderName != ConfigMgr.getSmtpSenderName()) {
         auto result = ConfigMgr.setSmtpSenderName(newSmtpSenderName);
         if (result.isSuccess()) {
@@ -288,8 +356,8 @@ bool AdminHandler::processConfigUpdates(String& changes) {
     }
 
     // SMTP Sender Email
-    if (_server.hasArg("smtp_sender_email")) {
-      String newSmtpSenderEmail = _server.arg("smtp_sender_email");
+    if (serverHasArg("smtp_sender_email")) {
+      String newSmtpSenderEmail = serverArg("smtp_sender_email");
       if (newSmtpSenderEmail != ConfigMgr.getSmtpSenderEmail()) {
         auto result = ConfigMgr.setSmtpSenderEmail(newSmtpSenderEmail);
         if (result.isSuccess()) {

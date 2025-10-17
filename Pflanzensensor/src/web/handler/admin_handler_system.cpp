@@ -76,6 +76,36 @@ void AdminHandler::handleAdminUpdate() {
       css, js);
 }
 
+void AdminHandler::handleAdminUpdateJson() {
+  String changes;
+  bool updated = processConfigUpdates(changes);
+
+  if (!updated) {
+    sendJsonResponse(200, F("{\"success\":true,\"message\":\"Keine Änderungen\"}"));
+    return;
+  }
+
+  auto result = ConfigMgr.saveConfig();
+  if (!result.isSuccess()) {
+    String payload = F("{\"success\":false,\"error\":\"");
+    payload += result.getMessage();
+    payload += F("\"}");
+    sendJsonResponse(500, payload);
+    return;
+  }
+
+  // Success - include a short changes summary
+  String payload = F("{\"success\":true,\"changes\":\"");
+  // Escape quotes/newlines lightly
+  String escaped = changes;
+  // Replace double quote with escaped sequence \"
+  escaped.replace("\"", "\\\"");
+  escaped.replace('\n', ' ');
+  payload += escaped;
+  payload += F("\"}");
+  sendJsonResponse(200, payload);
+}
+
 void AdminHandler::handleConfigReset() {
   auto result = ConfigMgr.resetToDefaults();
   std::vector<String> css = {"admin"};

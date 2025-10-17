@@ -55,16 +55,23 @@ async function startUpdate() {
             throw new Error(`Failed to set update flags: ${flagsResponse.statusText}`);
         }
 
-        // Warte kurz bis Gerät im Update-Modus ist
-        await new Promise(resolve => setTimeout(resolve, 2000));
+    // Warte bis Gerät im Update-Modus ist (poll /status). Wenn das Gerät
+    // etwas länger zum Umbau in den Update-Modus braucht, vermeiden wir
+    // so ein vorzeitiges Abbrechen des Uploads. Erhöhe Timeout auf 30s.
+    showStatus('Warte, bis Gerät in den Update-Modus wechselt...', 'info');
+    const waitOk = await waitForUpdateMode(60000, 500);
+        if (!waitOk) {
+            throw new Error('Timeout waiting for device to enter update mode');
+        }
 
         // Starte Upload
         uploadInProgress = true;
         showStatus('Starte Upload...', 'info');
         updateProgress(0);
 
-        const formData = new FormData();
-        formData.append('update', file);
+    const formData = new FormData();
+    // Use the same field name as the server form input ('firmware')
+    formData.append('firmware', file);
 
         // Füge MD5 hinzu falls vorhanden
         if (md5Input && md5Input.value) {
@@ -76,7 +83,12 @@ async function startUpdate() {
             formData.append('mode', 'fs');
         }
 
-        const response = await fetch('/update', {
+        // If this is a filesystem image, include the mode as a query
+        // parameter so the server can detect it immediately during the
+        // streaming upload (some servers don't expose multipart form
+        // fields until after the file is processed).
+        const uploadUrl = isFileSystem ? '/update?mode=fs' : '/update';
+        const response = await fetch(uploadUrl, {
             method: 'POST',
             body: formData
         });
@@ -98,6 +110,25 @@ async function startUpdate() {
         console.error('Update error:', error);
         uploadInProgress = false;
     }
+}
+
+// Poll /status until device reports inUpdateMode or timeout.
+// timeoutMs: maximum time to wait, intervalMs: poll interval
+async function waitForUpdateMode(timeoutMs = 15000, intervalMs = 500) {
+    const deadline = Date.now() + timeoutMs;
+    while (Date.now() < deadline) {
+        try {
+            const resp = await fetch('/status');
+            if (resp.ok) {
+                const json = await resp.json().catch(() => null);
+                if (json && json.inUpdateMode) return true;
+            }
+        } catch (e) {
+            // ignore network errors while waiting
+        }
+        await new Promise(r => setTimeout(r, intervalMs));
+    }
+    return false;
 }
 
 // Hilfsfunktionen für die UI

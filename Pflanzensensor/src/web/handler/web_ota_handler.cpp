@@ -316,6 +316,9 @@ void WebOTAHandler::handleUpdateUpload() {
       }
 
       uint8_t command = isFilesystem ? U_FS : U_FLASH;
+      logger.debug(F("WebOTAHandler"), F("Update command: ") + String(command) +
+                                   F(", contentLength: ") + String(contentLength) +
+                                   F(", freeSpace: ") + String(freeSpace));
       if (!Update.begin(contentLength, command)) {
         String error = F("Update begin failed: ") + String(Update.getError());
         logger.error(F("WebOTAHandler"), error);
@@ -432,6 +435,13 @@ void WebOTAHandler::handleUpdateUpload() {
           ;  // Force watchdog reset
       } else {
         if (!errorReported) {
+          // Provide additional diagnostic logging: the number of bytes the
+          // upload reported, the expected total we set in begin(), and the
+          // numeric Update error code returned by the Update API.
+          logger.error(F("WebOTAHandler"), F("Update.end() returned failure"));
+          logger.debug(F("WebOTAHandler"), F("Upload totalSize: ") + String(upload.totalSize) +
+                                        F(", expected (status totalSize): ") + String(_status.totalSize));
+          logger.debug(F("WebOTAHandler"), F("Update error code: ") + String(Update.getError()));
           String error = F("Update failed: ") + String(Update.getError());
           logger.error(F("WebOTAHandler"), error);
 
