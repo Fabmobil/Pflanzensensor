@@ -103,5 +103,27 @@ hr {
   text-shadow: 0 0 8px #dc2626;
 }
 
+/* Links in warning boxes: make them stand out with a gold accent and subtle glow */
+.warning-box a {
+  color: #fbbf24; /* gold/yellow */
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  font-weight: 600;
+  transition: color 0.15s ease, text-shadow 0.15s ease, transform 0.08s ease;
+}
+.warning-box a:hover,
+.warning-box a:focus {
+  color: #ffdf7a;
+  text-shadow: 0 0 8px rgba(251,191,36,0.25);
+  transform: translateY(-1px);
+}
+
+/* A small utility for muted inline links used elsewhere */
+.muted-link {
+  color: #9b9b9b;
+  text-decoration: underline dotted;
+}
+
 
 

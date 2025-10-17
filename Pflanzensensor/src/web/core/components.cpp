@@ -185,7 +185,7 @@ void sendPixelatedFooter(ESP8266WebServer& server, const String& version,
   }
 
   // Logo (Row 2, Column 1)
-  sendChunk(server, F("<div class='footer-logo'><img src='/img/fabmobil.png' alt='FABMOBIL' /></div>"));
+  sendChunk(server, F("<div class='footer-logo'><a href='https://www.fabmobil.org' target='_blank'><img src='/img/fabmobil.png' alt='FABMOBIL' /></a></div>"));
 
   // Version (Row 2, Column 2)
   sendChunk(server, F("<div class='footer-version'>V "));

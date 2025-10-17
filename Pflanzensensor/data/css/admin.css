@@ -116,7 +116,7 @@
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.3);
   padding: 1.2em;
-  margin-bottom: 0;
+  margin-bottom: 1em;
   color: #f2f2f2;
 }
 
@@ -273,6 +273,47 @@ button.warning,
 button.warning:hover,
 .button-warning:hover {
   background: #d97706;
+}
+
+/* Themed file input: style the browse button and filename to match admin buttons */
+.card input[type="file"] {
+  color: #b0b0b0; /* filename color */
+  font: inherit;
+}
+
+/* Modern browsers */
+.card input[type="file"]::file-selector-button {
+  background: #a855f7;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.45em 0.9em;
+  margin-right: 0.6em;
+  cursor: pointer;
+  font: inherit;
+}
+
+/* WebKit / Blink legacy */
+.card input[type="file"]::-webkit-file-upload-button {
+  background: #a855f7;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.45em 0.9em;
+  margin-right: 0.6em;
+  cursor: pointer;
+  font: inherit;
+}
+
+.card input[type="file"]::file-selector-button:hover,
+.card input[type="file"]::-webkit-file-upload-button:hover {
+  background: #9333ea;
+}
+
+/* Make the file input look less cramped on small screens */
+.card .form-group input[type="file"] {
+  display: inline-block;
+  vertical-align: middle;
 }
 
 

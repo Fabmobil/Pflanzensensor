@@ -69,8 +69,10 @@
 }
 
 .log-controls-card {
-  flex: 1 1 auto;
-  min-width: min(280px, 100%);
+  /* Two control cards should sit beside each other on wide screens */
+  flex: 0 1 calc(50% - 0.75em);
+  min-width: 220px;
+  max-width: 680px;
   margin-bottom: 0;
 }
 
@@ -79,6 +81,22 @@
   margin-bottom: 0.8em;
   font-size: 1.05em;
   color: #d4a574;
+}
+
+/* Make control buttons slightly smaller and more compact */
+.log-controls-card .button,
+.log-controls-card .log-level-btn,
+.log-controls-card .button-group .button {
+  padding: 0.4em 0.8em;
+  margin: 0.25em 0.25em 0.25em 0;
+  font-size: 0.95em;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5em;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 /* === Button-Styles für Log-Level === */

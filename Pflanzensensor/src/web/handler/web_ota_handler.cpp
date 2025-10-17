@@ -118,7 +118,12 @@ void WebOTAHandler::handleUpdatePage() {
         sendChunk(F("<h3>⚠️ Wichtige Hinweise</h3><ul>"));
         sendChunk(
             F("<li>Stelle sicher, dass die neue Firmware für dieses Gerät "
-              "geeignet ist</li>"));
+              "geeignet ist. "));
+        sendChunk(
+            F("Du kannst dir die aktuellen Dateien <a href='https://github.com/Fabmobil/Pflanzensensor/releases' "
+              "target='_blank'>hier</a> herunterladen.</li>"));
+        sendChunk(
+            F("<li>Wenn du das Dateisystem ersetzt werden alle deine Einstellungen zurückgesetzt und du musst Namen, WiFi, Grenzwerte usw. neu einstellen.</li>"));
         sendChunk(
             F("<li>Das Gerät wird nach erfolgreichem Update automatisch neu "
               "gestartet</li>"));
@@ -133,7 +138,7 @@ void WebOTAHandler::handleUpdatePage() {
 
         // File input
         sendChunk(
-            F("<div class='form-group'><label>Firmware Datei (.bin):</label>"));
+            F("<div class='form-group'><label>Firmware Datei (firmware.bin) oder Dateisystem Datei (littlefs.bin):</label>"));
         sendChunk(
             F("<input type='file' id='update-file' name='firmware' "
               "accept='.bin' required>"));
