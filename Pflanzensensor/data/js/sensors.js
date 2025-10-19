@@ -136,17 +136,86 @@ window.addEventListener('DOMContentLoaded', () => {
   const faceImage = document.querySelector('.face');
   const navLinks = document.querySelectorAll('.nav-item');
 
+  // Hilfsfunktionen, um den Inhalt der Fußzeile ohne Neuladen umzuschalten
+  function showFooterAdminMenu() {
+    const adminMenu = document.getElementById('footer-admin-menu');
+    const statsLabels = document.getElementById('footer-stats-labels');
+    const statsValues = document.getElementById('footer-stats-values');
+    const adminValues = document.getElementById('footer-admin-values');
+    const navAdmin = document.getElementById('nav-admin');
+    if (!adminMenu || !statsLabels || !statsValues) return;
+
+    // Remove any active marker from admin submenu entries so none is
+    // pre-selected when the menu is opened.
+    const activeSubmenuItems = adminMenu.querySelectorAll('.nav-item.active');
+    activeSubmenuItems.forEach(el => el.classList.remove('active'));
+
+    adminMenu.style.display = 'block';
+    if (adminValues) adminValues.style.display = 'block';
+    statsLabels.style.display = 'none';
+    statsValues.style.display = 'none';
+    if (navAdmin) navAdmin.classList.add('active');
+  }
+
+  function hideFooterAdminMenu() {
+    const adminMenu = document.getElementById('footer-admin-menu');
+    const statsLabels = document.getElementById('footer-stats-labels');
+    const statsValues = document.getElementById('footer-stats-values');
+    const adminValues = document.getElementById('footer-admin-values');
+    const navAdmin = document.getElementById('nav-admin');
+    if (!adminMenu || !statsLabels || !statsValues) return;
+
+    adminMenu.style.display = 'none';
+    if (adminValues) adminValues.style.display = 'none';
+    statsLabels.style.display = '';
+    statsValues.style.display = '';
+    if (navAdmin) navAdmin.classList.remove('active');
+
+    // Entferne aktive Markierung aus Untermenü
+    const activeSub = adminMenu.querySelector('.nav-item.active');
+    if (activeSub) activeSub.classList.remove('active');
+  }
+
+  function toggleFooterAdminMenu() {
+    const adminMenu = document.getElementById('footer-admin-menu');
+    if (!adminMenu) return;
+    const visible = window.getComputedStyle(adminMenu).display !== 'none';
+    if (visible) hideFooterAdminMenu(); else showFooterAdminMenu();
+  }
+
   if (faceImage && navLinks.length > 0) {
     navLinks.forEach(link => {
       link.addEventListener('click', (e) => {
         const href = link.getAttribute('href');
-        // Only prevent default for hash or empty links
+        // Nur Standardaktion verhindern für Hash- oder leere Links
         if (href === '#' || !href) {
           e.preventDefault();
+          return;
         }
+        // Do not prevent clicks on submenu links; top-level ADMIN is handled separately
       });
     });
-  }
+
+    // Top-Level Navigationsanker (IDs werden serverseitig gesetzt)
+     const navAdmin = document.getElementById('nav-admin');
+     const navStart = document.getElementById('nav-start');
+     const navLogs = document.getElementById('nav-logs');
+
+    if (navAdmin) {
+      navAdmin.addEventListener('click', (e) => {
+        // Only intercept ADMIN clicks when we're on the start page
+        if (location.pathname === '/' || location.pathname === '' || location.pathname.endsWith('/index.html')) {
+          e.preventDefault();
+          toggleFooterAdminMenu();
+        }
+      });
+    }
+
+    // Admin-Menü verbergen, wenn zu START oder LOGS navigiert wird
+    const hideAdminOnClick = () => hideFooterAdminMenu();
+     if (navStart) navStart.addEventListener('click', hideAdminOnClick);
+     if (navLogs) navLogs.addEventListener('click', hideAdminOnClick);
+   }
 });
 
 // Sensor data update functions
@@ -213,7 +282,7 @@ function updateSensorValues() {
 function updateFooterStats(data) {
   // Update IP if available
   if (data.ip) {
-    const ipElement = document.querySelector('.stats-values li:nth-child(3)');
+    const ipElement = document.querySelector('#footer-stats-values li:nth-child(3)');
     if (ipElement) {
       ipElement.textContent = data.ip;
     }

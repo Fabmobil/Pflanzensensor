@@ -112,77 +112,87 @@ void sendPixelatedFooter(ESP8266WebServer& server, const String& version,
   sendChunk(server, F("<nav class='nav-box' aria-label='Navigation'><ul class='nav-list'>"));
 
   // Main navigation
-  sendChunk(server, F("<li><a href='/' class='nav-item"));
+  sendChunk(server, F("<li><a href='/' id='nav-start' class='nav-item"));
   if (activeSection == "start" || activeSection == "/" || activeSection == "") sendChunk(server, F(" active"));
   sendChunk(server, F("'>START</a></li>"));
 
-  sendChunk(server, F("<li><a href='/logs' class='nav-item"));
+  sendChunk(server, F("<li><a href='/logs' id='nav-logs' class='nav-item"));
   if (activeSection == "logs") sendChunk(server, F(" active"));
   sendChunk(server, F("'>LOGS</a></li>"));
 
-  sendChunk(server, F("<li><a href='/admin' class='nav-item"));
+  sendChunk(server, F("<li><a href='/admin' id='nav-admin' class='nav-item"));
   if (activeSection.startsWith("admin")) sendChunk(server, F(" active"));
   sendChunk(server, F("'>ADMIN</a></li>"));
 
   sendChunk(server, F("</ul></nav>"));
 
-  // Stats Labels (Row 1, Column 2)
-  sendChunk(server, F("<ul class='stats-labels'>"));
-
-  if (activeSection.startsWith("admin")) {
-    // Admin submenu - only highlight exact match
-    sendChunk(server, F("<li><a href='/admin' class='nav-item"));
-    if (activeSection == "admin") sendChunk(server, F(" active"));  // Only /admin, not /admin/xyz
-    sendChunk(server, F("'>Einstellungen</a></li>"));
-
-    sendChunk(server, F("<li><a href='/admin/sensors' class='nav-item"));
-    if (activeSection == "admin/sensors") sendChunk(server, F(" active"));
-    sendChunk(server, F("'>Sensoren</a></li>"));
-
-#if USE_DISPLAY
-    sendChunk(server, F("<li><a href='/admin/display' class='nav-item"));
-    if (activeSection == "admin/display") sendChunk(server, F(" active"));
-    sendChunk(server, F("'>Display</a></li>"));
-#endif
-
-    sendChunk(server, F("<li><a href='/admin/update' class='nav-item"));
-    if (activeSection == "admin/update") sendChunk(server, F(" active"));
-    sendChunk(server, F("'>OTA Update</a></li>"));
-  } else {
-    // System info for non-admin pages
-    sendChunk(server, F("<li>📅 Zeit</li>"));
-    sendChunk(server, F("<li>🌐 SSID</li>"));
-    sendChunk(server, F("<li>💻 IP</li>"));
-    sendChunk(server, F("<li>📶 WIFI</li>"));
-    sendChunk(server, F("<li>⏲️ UPTIME</li>"));
-    sendChunk(server, F("<li>🔄 RESTARTS</li>"));
-  }
+  // Stats Labels (Zeile 1, Spalte 2)
+  // Rendere sowohl die System-Status-Labels als auch das Admin-Untermenü.
+  // Serverseitig wird jeweils das passende Element per Inline-Style sichtbar
+  // gelassen. Client-seitiges JavaScript kann die Ansicht toggeln, ohne die
+  // Seite neu zu laden.
+  // System stats labels
+  sendChunk(server, F("<ul class='stats-labels' id='footer-stats-labels'"));
+  if (activeSection.startsWith("admin")) sendChunk(server, F(" style='display:none'"));
+  sendChunk(server, F(">"));
+  sendChunk(server, F("<li>📅 Zeit</li>"));
+  sendChunk(server, F("<li>🌐 SSID</li>"));
+  sendChunk(server, F("<li>💻 IP</li>"));
+  sendChunk(server, F("<li>📶 WIFI</li>"));
+  sendChunk(server, F("<li>⏲️ UPTIME</li>"));
+  sendChunk(server, F("<li>🔄 RESTARTS</li>"));
   sendChunk(server, F("</ul>"));
 
-  // Stats Values (Row 1, Column 3) - only for non-admin pages
-  if (!activeSection.startsWith("admin")) {
-    sendChunk(server, F("<ul class='stats-values'>"));
-    sendChunk(server, F("<li>"));
+  // Admin submenu labels (hidden on non-admin pages)
+  sendChunk(server, F("<ul class='stats-labels' id='footer-admin-menu'"));
+  if (!activeSection.startsWith("admin")) sendChunk(server, F(" style='display:none'"));
+  sendChunk(server, F(">"));
+  sendChunk(server, F("<li><a href='/admin' class='nav-item"));
+  if (activeSection == "admin") sendChunk(server, F(" active"));
+  sendChunk(server, F("'>Einstellungen</a></li>"));
 
-    sendChunk(server, Helper::getFormattedDate());
-    sendChunk(server, F(" "));
-    sendChunk(server, Helper::getFormattedTime());
+  sendChunk(server, F("<li><a href='/admin/sensors' class='nav-item"));
+  if (activeSection == "admin/sensors") sendChunk(server, F(" active"));
+  sendChunk(server, F("'>Sensoren</a></li>"));
 
-    sendChunk(server, F("</li><li>"));
-    sendChunk(server, WiFi.SSID());
-    sendChunk(server, F("</li><li>"));
-    sendChunk(server, WiFi.localIP().toString());
-    sendChunk(server, F("</li><li>"));
-    sendChunk(server, String(WiFi.RSSI()));
-    sendChunk(server, F(" dBm"));
-    sendChunk(server, F("</li><li>"));
-    sendChunk(server, Helper::getFormattedUptime());
-    sendChunk(server, F("</li><li>"));
-    sendChunk(server, String(Helper::getRebootCount()));
-    sendChunk(server, F("</li></ul>"));
-  } else {
-    sendChunk(server, F("<ul class='stats-values'></ul>"));
-  }
+#if USE_DISPLAY
+  sendChunk(server, F("<li><a href='/admin/display' class='nav-item"));
+  if (activeSection == "admin/display") sendChunk(server, F(" active"));
+  sendChunk(server, F("'>Display</a></li>"));
+#endif
+
+  sendChunk(server, F("<li><a href='/admin/update' class='nav-item"));
+  if (activeSection == "admin/update") sendChunk(server, F(" active"));
+  sendChunk(server, F("'>OTA Update</a></li>"));
+  sendChunk(server, F("</ul>"));
+
+  // Stats Values (Row 1, Column 3)
+  // Render both the numeric/stat values and an empty admin-values placeholder.
+  // The server sets the inline style so the correct one is visible by default.
+  sendChunk(server, F("<ul class='stats-values' id='footer-stats-values'"));
+  if (activeSection.startsWith("admin")) sendChunk(server, F(" style='display:none'"));
+  sendChunk(server, F(">"));
+  sendChunk(server, F("<li>"));
+  sendChunk(server, Helper::getFormattedDate());
+  sendChunk(server, F(" "));
+  sendChunk(server, Helper::getFormattedTime());
+  sendChunk(server, F("</li><li>"));
+  sendChunk(server, WiFi.SSID());
+  sendChunk(server, F("</li><li>"));
+  sendChunk(server, WiFi.localIP().toString());
+  sendChunk(server, F("</li><li>"));
+  sendChunk(server, String(WiFi.RSSI()));
+  sendChunk(server, F(" dBm"));
+  sendChunk(server, F("</li><li>"));
+  sendChunk(server, Helper::getFormattedUptime());
+  sendChunk(server, F("</li><li>"));
+  sendChunk(server, String(Helper::getRebootCount()));
+  sendChunk(server, F("</li></ul>"));
+
+  // Admin values placeholder (empty for now) - visible only when admin menu is active
+  sendChunk(server, F("<ul class='stats-values' id='footer-admin-values'"));
+  if (!activeSection.startsWith("admin")) sendChunk(server, F(" style='display:none'"));
+  sendChunk(server, F("></ul>"));
 
   // Logo (Row 2, Column 1)
   sendChunk(server, F("<div class='footer-logo'><a href='https://www.fabmobil.org' target='_blank'><img src='/img/fabmobil.png' alt='FABMOBIL' /></a></div>"));

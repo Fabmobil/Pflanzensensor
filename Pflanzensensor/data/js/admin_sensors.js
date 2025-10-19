@@ -5,6 +5,58 @@
 
 console.log('[admin_sensors.js] loaded');
 
+// Central helper for admin AJAX POSTs: ensures credentials, X-Requested-With header
+// and an `ajax=1` marker are always sent. Accepts FormData, URLSearchParams or
+// a plain object (converted to urlencoded). Returns the raw fetch Response
+// promise so callers can check status or parse JSON as needed.
+function adminPost(url, data) {
+  const opts = {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  };
+
+  if (data instanceof FormData) {
+    // Avoid duplicate ajax field
+    if (!data.get('ajax')) data.append('ajax', '1');
+    opts.body = data;
+    // Do NOT set Content-Type when sending FormData (browser will add boundary)
+  } else if (data instanceof URLSearchParams) {
+    if (!data.has('ajax')) data.append('ajax', '1');
+    opts.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    opts.body = data;
+  } else if (typeof data === 'object' && data !== null) {
+    const params = new URLSearchParams();
+    Object.keys(data).forEach(k => params.append(k, data[k]));
+    if (!params.has('ajax')) params.append('ajax', '1');
+    opts.headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    opts.body = params;
+  } else {
+    // raw body (string) — caller must ensure correct format
+    opts.body = data;
+  }
+
+  // Debug: print body and headers so we can verify ajax marker / params on client
+  try {
+    let bodyDump = null;
+    if (opts.body instanceof URLSearchParams) {
+      bodyDump = opts.body.toString();
+    } else if (opts.body instanceof FormData) {
+      bodyDump = {};
+      for (const pair of opts.body.entries()) bodyDump[pair[0]] = pair[1];
+    } else if (typeof opts.body === 'string') {
+      bodyDump = opts.body;
+    } else if (typeof opts.body === 'object') {
+      bodyDump = JSON.stringify(opts.body);
+    }
+    console.debug(`[adminPost] POST ${url}`, bodyDump, opts.headers);
+  } catch (e) {
+    console.debug('[adminPost] Could not serialize body for debug', e);
+  }
+
+  return fetch(url, opts);
+}
+
 // Global object to store initial values for each measurement
 const initialMeasurementValues = {};
 
@@ -125,25 +177,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
       const formData = new FormData();
       formData.append('sensor', sensor);
-
-      fetch('/admin/sensors/flower_status', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      })
-      .then(parseJsonResponse)
-      .then(data => {
-        if (data.success) {
-          showSuccessMessage('Blumen-Status Sensor erfolgreich aktualisiert');
-        } else {
-          showErrorMessage('Fehler beim Speichern: ' + (data.error || 'Unbekannter Fehler'));
-        }
-      })
-      .catch(error => {
-        console.error('[admin_sensors.js] Error updating flower status:', error);
-        showErrorMessage('Fehler beim Speichern: ' + error.message);
-      });
+      // Use centralized helper so headers / credentials / ajax flag are consistent
+      adminPost('/admin/sensors/flower_status', formData)
+       .then(parseJsonResponse)
+       .then(data => {
+         if (data.success) {
+           showSuccessMessage('Blumen-Status Sensor erfolgreich aktualisiert');
+         } else {
+           showErrorMessage('Fehler beim Speichern: ' + (data.error || 'Unbekannter Fehler'));
+         }
+       })
+       .catch(error => {
+         console.error('[admin_sensors.js] Error updating flower status:', error);
+         showErrorMessage('Fehler beim Speichern: ' + error.message);
+       });
     });
   }
 
@@ -504,8 +551,8 @@ function updateAbsoluteMinMaxDisplay(sensorId, measurementIndex, absoluteMin, ab
           absMinMarker.style.left = `${pct}%`;
           absMinLabel.style.left = `${pct}%`;
         }
-        absMinMarker.title = `Min: ${absMinVal.toFixed(2)}`;
-        absMinLabel.textContent = `Min: ${absMinVal.toFixed(2)}`;
+        absMinMarker.title = `🔽${absMinVal.toFixed(2)}`;
+        absMinLabel.textContent = `🔽${absMinVal.toFixed(2)}`;
       } else {
         if (absMinMarker) absMinMarker.remove();
         if (absMinLabel) absMinLabel.remove();
@@ -536,8 +583,8 @@ function updateAbsoluteMinMaxDisplay(sensorId, measurementIndex, absoluteMin, ab
           absMaxMarker.style.left = `${pct}%`;
           absMaxLabel.style.left = `${pct}%`;
         }
-        absMaxMarker.title = `Max: ${absMaxVal.toFixed(2)}`;
-        absMaxLabel.textContent = `Max: ${absMaxVal.toFixed(2)}`;
+        absMaxMarker.title = `🔼${absMaxVal.toFixed(2)}`;
+        absMaxLabel.textContent = `🔼${absMaxVal.toFixed(2)}`;
       } else {
         if (absMaxMarker) absMaxMarker.remove();
         if (absMaxLabel) absMaxLabel.remove();
@@ -552,15 +599,15 @@ function updateAbsoluteMinMaxDisplay(sensorId, measurementIndex, absoluteMin, ab
  * Reset absolute min/max values via AJAX
  */
 function resetAbsoluteMinMax(sensorId, measurementIndex) {
-  const formData = new FormData();
-  formData.append('sensor_id', sensorId);
-  formData.append('measurement_index', measurementIndex.toString());
+  // Build URL encoded params (server expects 'sensor_id' and 'measurement_index')
+  const params = new URLSearchParams();
+  params.append('sensor_id', sensorId);
+  if (typeof measurementIndex !== 'undefined' && measurementIndex !== null && !isNaN(measurementIndex)) {
+    params.append('measurement_index', measurementIndex.toString());
+  }
 
-  fetch('/admin/reset_absolute_minmax', {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ sensor: sensorId })
-  })
+  // POST to reset absolute min/max values
+  adminPost('/admin/reset_absolute_minmax', params)
   .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
@@ -626,15 +673,14 @@ function updateAbsoluteRawMinMaxDisplay(sensorId, measurementIndex, absoluteRawM
  * Reset absolute raw min/max values via AJAX
  */
 function resetAbsoluteRawMinMax(sensorId, measurementIndex) {
-  const formData = new FormData();
-  formData.append('sensor_id', sensorId);
-  formData.append('measurement_index', measurementIndex.toString());
+  const params = new URLSearchParams();
+  params.append('sensor_id', sensorId);
+  if (typeof measurementIndex !== 'undefined' && measurementIndex !== null && !isNaN(measurementIndex)) {
+    params.append('measurement_index', measurementIndex.toString());
+  }
 
-  fetch('/admin/reset_absolute_raw_minmax', {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ sensor: sensorId })
-  })
+  // POST to reset absolute raw min/max values
+  adminPost('/admin/reset_absolute_raw_minmax', params)
   .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
@@ -680,16 +726,19 @@ function initMeasureButtonHandlers() {
   document.querySelectorAll('.measure-button').forEach(button => {
     button.addEventListener('click', function() {
       const sensorId = this.dataset.sensor;
-      console.log('[admin_sensors.js] Trigger measurement for sensor:', sensorId);
+      const measurementIndexStr = this.dataset.measurementIndex;
+      const measurementIndex = (typeof measurementIndexStr !== 'undefined' && measurementIndexStr !== '') ? parseInt(measurementIndexStr) : undefined;
+      console.log('[admin_sensors.js] Trigger measurement for sensor:', sensorId, 'measurementIndex:', measurementIndex);
 
-      const formData = new FormData();
-      formData.append('sensor_id', sensorId);
+      // Build URL encoded params and include measurement_index only when present
+      const params = new URLSearchParams();
+      params.append('sensor_id', sensorId);
+      if (typeof measurementIndex !== 'undefined' && measurementIndex !== null && !isNaN(measurementIndex)) {
+        params.append('measurement_index', measurementIndex.toString());
+      }
 
-      fetch('/trigger_measurement', {
-        method: 'POST',
-        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ sensor_id: sensorId, measurement_index: measurementIndex })
-      })
+      // Trigger a manual measurement
+      adminPost('/trigger_measurement', params)
       .then(parseJsonResponse)
       .then(data => {
         if (data.success) {
@@ -712,15 +761,12 @@ function initMeasureButtonHandlers() {
  * Update measurement interval via AJAX
  */
 function updateMeasurementInterval(sensorId, interval) {
-  const formData = new FormData();
-  formData.append('sensor_id', sensorId);
-  formData.append('interval', interval.toString());
+  const params = new URLSearchParams();
+  params.append('sensor_id', sensorId);
+  params.append('interval', interval.toString());
 
-  fetch('/admin/measurement_interval', {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ sensor: sensorId, interval: interval })
-  })
+  // Update sensor measurement interval
+  adminPost('/admin/measurement_interval', params)
   .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
@@ -741,17 +787,16 @@ function updateMeasurementInterval(sensorId, interval) {
 function updateAnalogMinMax(sensorId, measurementIndex, minValue, maxValue) {
   console.log(`[updateAnalogMinMax] Sending request for ${sensorId}_${measurementIndex}: min=${minValue}, max=${maxValue}`);
 
-  const formData = new FormData();
-  formData.append('sensor_id', sensorId);
-  formData.append('measurement_index', measurementIndex.toString());
-  formData.append('min', minValue.toString());
-  formData.append('max', maxValue.toString());
+  const params = new URLSearchParams();
+  params.append('sensor_id', sensorId);
+  if (typeof measurementIndex !== 'undefined' && measurementIndex !== null && !isNaN(measurementIndex)) {
+    params.append('measurement_index', measurementIndex.toString());
+  }
+  params.append('min', minValue.toString());
+  params.append('max', maxValue.toString());
 
-  fetch('/admin/analog_minmax', {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ sensor: sensorId, measurement: idx, min: min, max: max })
-  })
+  // Update analog sensor min/max
+  adminPost('/admin/analog_minmax', params)
   .then(response => {
     console.log(`[updateAnalogMinMax] Response status: ${response.status}`);
     return parseJsonResponse(response);
@@ -774,16 +819,15 @@ function updateAnalogMinMax(sensorId, measurementIndex, minValue, maxValue) {
  * Update analog sensor inverted flag via AJAX
  */
 function updateAnalogInverted(sensorId, measurementIndex, inverted) {
-  const formData = new FormData();
-  formData.append('sensor_id', sensorId);
-  formData.append('measurement_index', measurementIndex.toString());
-  formData.append('inverted', inverted.toString());
+  const params = new URLSearchParams();
+  params.append('sensor_id', sensorId);
+  if (typeof measurementIndex !== 'undefined' && measurementIndex !== null && !isNaN(measurementIndex)) {
+    params.append('measurement_index', measurementIndex.toString());
+  }
+  params.append('inverted', inverted ? 'true' : 'false');
 
-  fetch('/admin/analog_inverted', {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ sensor: sensorId, measurement: idx, inverted: inverted ? 1 : 0 })
-  })
+  // Update analog inverted flag
+  adminPost('/admin/analog_inverted', params)
   .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
@@ -803,16 +847,15 @@ function updateAnalogInverted(sensorId, measurementIndex, inverted) {
  */
 function updateThresholds(sensorId, measurementIndex, thresholds) {
   console.log('[DEBUG] updateThresholds called for', sensorId, measurementIndex, thresholds);
-  const formData = new FormData();
-  formData.append('sensor_id', sensorId);
-  formData.append('measurement_index', measurementIndex.toString());
-  formData.append('thresholds', thresholds.join(','));
+  const params = new URLSearchParams();
+  params.append('sensor_id', sensorId);
+  if (typeof measurementIndex !== 'undefined' && measurementIndex !== null && !isNaN(measurementIndex)) {
+    params.append('measurement_index', measurementIndex.toString());
+  }
+  params.append('thresholds', thresholds.join(','));
 
-  fetch('/admin/thresholds', {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ sensor: sensorId, measurement: idx, yellowLow: yellowLow, greenLow: greenLow, greenHigh: greenHigh, yellowHigh: yellowHigh })
-  })
+  // Update thresholds
+  adminPost('/admin/thresholds', params)
   .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
@@ -832,16 +875,15 @@ function updateThresholds(sensorId, measurementIndex, thresholds) {
  */
 function updateMeasurementName(sensorId, measurementIndex, name) {
   console.log('[DEBUG] updateMeasurementName called for', sensorId, measurementIndex, name);
-  const formData = new FormData();
-  formData.append('sensor_id', sensorId);
-  formData.append('measurement_index', measurementIndex.toString());
-  formData.append('name', name);
+  const params = new URLSearchParams();
+  params.append('sensor_id', sensorId);
+  if (typeof measurementIndex !== 'undefined' && measurementIndex !== null && !isNaN(measurementIndex)) {
+    params.append('measurement_index', measurementIndex.toString());
+  }
+  params.append('name', name);
 
-  fetch('/admin/measurement_name', {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ sensor: sensorId, measurement: idx, name: name })
-  })
+  // Update measurement name
+  adminPost('/admin/measurement_name', params)
   .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
@@ -1093,14 +1135,14 @@ function renderInteractiveThresholdSlider({ container, min, max, thresholds, mea
       absMinMarker.dataset.sensorId = sensorId;
       absMinMarker.dataset.measurementIndex = measurementIndex;
       absMinMarker.style.left = `${absMinPercentage}%`;
-      absMinMarker.title = `Min: ${sensorConfig.absoluteMin.toFixed(2)}`;
+      absMinMarker.title = `🔽${sensorConfig.absoluteMin.toFixed(2)}`;
       container.appendChild(absMinMarker);
 
       const absMinLabel = document.createElement('div');
       absMinLabel.className = 'absolute-min-label';
       absMinLabel.dataset.sensorId = sensorId;
       absMinLabel.dataset.measurementIndex = measurementIndex;
-      absMinLabel.textContent = `Min: ${sensorConfig.absoluteMin.toFixed(2)}`;
+      absMinLabel.textContent = `🔽${sensorConfig.absoluteMin.toFixed(2)}`;
       absMinLabel.style.left = `${absMinPercentage}%`;
       container.appendChild(absMinLabel);
     }
@@ -1113,14 +1155,14 @@ function renderInteractiveThresholdSlider({ container, min, max, thresholds, mea
       absMaxMarker.dataset.sensorId = sensorId;
       absMaxMarker.dataset.measurementIndex = measurementIndex;
       absMaxMarker.style.left = `${absMaxPercentage}%`;
-      absMaxMarker.title = `Max: ${sensorConfig.absoluteMax.toFixed(2)}`;
+      absMaxMarker.title = `🔼${sensorConfig.absoluteMax.toFixed(2)}`;
       container.appendChild(absMaxMarker);
 
       const absMaxLabel = document.createElement('div');
       absMaxLabel.className = 'absolute-max-label';
       absMaxLabel.dataset.sensorId = sensorId;
       absMaxLabel.dataset.measurementIndex = measurementIndex;
-      absMaxLabel.textContent = `Max: ${sensorConfig.absoluteMax.toFixed(2)}`;
+      absMaxLabel.textContent = `🔼${sensorConfig.absoluteMax.toFixed(2)}`;
       absMaxLabel.style.left = `${absMaxPercentage}%`;
       container.appendChild(absMaxLabel);
     }

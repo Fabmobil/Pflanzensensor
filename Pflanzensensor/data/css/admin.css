@@ -474,10 +474,8 @@ button.warning:hover,
 .threshold-gradient-bar {
   position: relative;
   width: 100%;
-  /* responsive bar height */
-  height: clamp(0.45rem, 0.6vw, 0.85rem);
-  /* responsive border radius */
-  border-radius: clamp(0.35rem, 0.8vw, 0.6rem);
+  height: 12px;
+  border-radius: 6px;
   background: linear-gradient(
     90deg,
     #e53935 0%, #e53935 20%,
@@ -486,7 +484,7 @@ button.warning:hover,
     #fbc02d 60%, #fbc02d 80%,
     #e53935 80%, #e53935 100%
   );
-  box-shadow: 0 clamp(0.06rem, 0.12vw, 0.18rem) clamp(0.28rem, 0.6vw, 0.6rem) rgba(0,0,0,0.15);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
 
   margin: 0;
 }
@@ -496,14 +494,12 @@ button.warning:hover,
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  /* responsive handle size */
-  width: clamp(0.9rem, 1.8vw, 1.4rem);
-  height: clamp(0.9rem, 1.8vw, 1.4rem);
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background: #fff;
-  /* responsive border */
-  border: clamp(0.12rem, 0.24vw, 0.2rem) solid #888;
-  box-shadow: 0 clamp(0.06rem, 0.12vw, 0.12rem) clamp(0.18rem, 0.36vw, 0.36rem) rgba(0,0,0,0.10);
+  border: 3px solid #888;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.10);
   z-index: 5;
   transition: left 0.3s cubic-bezier(.4,2,.6,1), border-color 0.2s;
   cursor: pointer;
@@ -514,31 +510,27 @@ button.warning:hover,
   position: absolute;
   left: 50%;
   transform: translate(-50%, 0);
-  /* place label relative to the slider: above the bar */
-  bottom: calc(100% + 0.6em);
+  bottom: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #fff;
   color: #111;
-  /* responsive padding */
-  padding: clamp(0.18rem, 0.6vw, 0.36rem);
-  border-radius: clamp(0.6rem, 1.2vw, 1rem);
-  /* responsive font size keeping current visual weight */
-  font-size: clamp(0.95rem, 1.1vw, 1.18rem);
+  padding: 3px;
+  border-radius: 16px;
+  font-size: 1.18em;
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0,0,0,0.10), 0 0px 1px #fff;
-  box-shadow: 0 clamp(0.06rem, 0.12vw, 0.24rem) clamp(0.28rem, 0.56vw, 0.56rem) rgba(0,0,0,0.10);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
   white-space: nowrap;
   pointer-events: none;
   z-index: 4;
-  /* responsive minimum sizes */
-  min-width: clamp(2.2rem, 6.2vw, 3.6rem);
-  min-height: clamp(1.05rem, 2.4vw, 1.6rem);
+  min-width: 40px;
+  min-height: 28px;
   box-sizing: border-box;
   text-align: center;
   overflow: hidden;
-  line-height: 1.2;
+  line-height: 1.4;
 }
 
 /* Gradient backgrounds for threshold labels */
@@ -560,21 +552,20 @@ button.warning:hover,
   border-color: #2196f3;
   color: #1565c0;
   bottom: auto;
-  /* place below the bar */
-  top: calc(100% + 0.6em);
+  top: 40px;
 }
 
 .measured-value-dot {
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: clamp(0.7rem, 1.5vw, 1.05rem);
-  height: clamp(0.7rem, 1.5vw, 1.05rem);
+  width: 14px;
+  height: 14px;
   background: #2196f3;
-  border: clamp(0.08rem, 0.18vw, 0.12rem) solid #fff;
+  border: 2px solid #fff;
   border-radius: 50%;
   z-index: 6;
-  box-shadow: 0 clamp(0.04rem, 0.08vw, 0.12rem) clamp(0.12rem, 0.24vw, 0.24rem) rgba(0,0,0,0.2);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
   pointer-events: none;
 }
 
@@ -585,16 +576,15 @@ button.warning:hover,
   bottom: 100%;
   left: 50%;
   transform: translate(-50%, 0);
-  /* responsive triangle sizes */
-  border-width: 0 clamp(0.4rem, 0.9vw, 0.6rem) clamp(0.4rem, 0.9vw, 0.6rem) clamp(0.4rem, 0.9vw, 0.6rem);
+  border-width: 0 8px 8px 8px;
   border-style: solid;
   border-color: transparent transparent #fff transparent;
-  filter: drop-shadow(0 clamp(0.04rem, 0.08vw, 0.12rem) clamp(0.06rem, 0.12vw, 0.12rem) rgba(0,0,0,0.12));
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12));
   z-index: 3;
 }
 
 .measured-value-label::after {
-  border-width: clamp(0.4rem, 0.9vw, 0.6rem) clamp(0.4rem, 0.9vw, 0.6rem) 0 clamp(0.4rem, 0.9vw, 0.6rem);
+  border-width: 8px 8px 0 8px;
   border-color: #e3f2fd transparent transparent transparent;
   top: auto;
   bottom: 100%;
@@ -605,15 +595,13 @@ button.warning:hover,
   position: absolute;
   top: 50%;
   transform: translate(-50%, -50%);
-  /* responsive size instead of fixed px */
-  width: clamp(0.6rem, 1.2vw, 1rem);
-  height: clamp(0.6rem, 1.2vw, 1rem);
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
   background: #616161; /* subtle grey */
-  /* border thickness relative to font-size / viewport */
-  border: clamp(0.12rem, 0.22vw, 0.18rem) solid #fff;
+  border: 2px solid #fff;
   z-index: 5;
-  box-shadow: 0 clamp(0.08rem, 0.16vw, 0.36rem) clamp(0.2rem, 0.4vw, 0.6rem) rgba(0,0,0,0.2);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   pointer-events: none;
 }
 
@@ -621,54 +609,39 @@ button.warning:hover,
   position: absolute;
   left: 50%;
   transform: translate(-50%, 0);
-  /* place below the slider container (use container height as anchor) */
-  top: calc(100% + 0.6em);
+  top: 40px; /* place below the measured-value-label */
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(90deg, #f5f5f5 0%, #ffffff 100%);
   color: #111;
-  padding: 0.28em 0.6em; /* responsive padding */
-  border-radius: 0.9em;
-  font-size: clamp(0.85rem, 1vw, 1rem);
+  padding: 3px 8px;
+  border-radius: 14px;
+  font-size: 0.95em;
   font-weight: 700;
-  box-shadow: 0 clamp(0.08rem, 0.16vw, 0.24rem) clamp(0.12rem, 0.24vw, 0.36rem) rgba(0,0,0,0.08);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   z-index: 3;
   pointer-events: none;
-  /* use a relative min width so the label is readable on small screens */
-  min-width: clamp(2rem, 6vw, 3.2rem);
+  min-width: 36px;
   text-align: center;
 }
 
 .absolute-min-label::after, .absolute-max-label::after {
   content: '';
   position: absolute;
-  /* place the little triangle pointing up to the marker */
-  top: calc(-0.45em);
+  top: -8px;
   left: 50%;
   transform: translate(-50%, 0);
-  border-width: 0.45em 0.45em 0 0.45em; /* responsive triangle */
+  border-width: 8px 8px 0 8px;
   border-style: solid;
   border-color: #f5f5f5 transparent transparent transparent;
   z-index: 2;
-  filter: drop-shadow(0 0.06rem 0.12rem rgba(0,0,0,0.08));
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.08));
 }
 
 /* Slight color differentiation for max label to make it distinct */
 .absolute-max-label {
   background: linear-gradient(90deg, #fafafa 0%, #f1f1f1 100%);
-}
-
-@media (max-width: 600px) {
-  .absolute-min-label, .absolute-max-label {
-    font-size: 0.85rem;
-    padding: 0.2em 0.45em;
-    min-width: 2.2rem;
-  }
-  .absolute-min-marker, .absolute-max-marker {
-    width: clamp(0.5rem, 1.8vw, 0.85rem);
-    height: clamp(0.5rem, 1.8vw, 0.85rem);
-  }
 }
 
 /* --- Utility Classes --- */

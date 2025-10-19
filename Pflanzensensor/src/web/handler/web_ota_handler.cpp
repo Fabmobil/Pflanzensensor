@@ -38,13 +38,13 @@ void WebOTAHandler::handleStatus() {
   if (ConfigMgr.isFileSystemUpdatePending() &&
       ConfigMgr.isFirmwareUpdatePending()) {
     logger.error(F("WebOTAHandler"),
-                 F("Invalid state: Both update flags are set"));
+                 F("Ungültiger Zustand: Beide Update-Flags sind gesetzt"));
     ConfigMgr.setUpdateFlags(false, false);  // Reset flags
   }
 
   String response;
   serializeJson(doc, response);
-  logger.debug(F("WebOTAHandler"), "Status response: " + response);
+  logger.debug(F("WebOTAHandler"), F("Status-Antwort: ") + response);
   sendJsonResponse(200, response);
 }
 
@@ -68,7 +68,7 @@ RouterResult WebOTAHandler::onRegisterRoutes(WebRouter& router) {
       },
       [this]() { handleUpdateUpload(); });
 
-  logger.info(F("WebOTAHandler"), F("OTA routes registered"));
+  logger.info(F("WebOTAHandler"), F("OTA-Routen registriert"));
   return RouterResult::success();
 }
 
@@ -188,15 +188,15 @@ TypedResult<ResourceError, void> WebOTAHandler::beginUpdate(size_t size,
   // Normal mode checks
   if (!ConfigMgr.getDoFirmwareUpgrade()) {
     if (!isFilesystem && !ConfigMgr.isFirmwareUpdatePending()) {
-      logger.error(F("WebOTAHandler"), F("Firmware update not pending"));
+      logger.error(F("WebOTAHandler"), F("Kein Firmware-Update ausstehend"));
       return TypedResult<ResourceError, void>::fail(
-          ResourceError::INVALID_STATE, F("Firmware update not pending"));
+          ResourceError::INVALID_STATE, F("Kein Firmware-Update ausstehend"));
     }
 
     if (isFilesystem && !ConfigMgr.isFileSystemUpdatePending()) {
-      logger.error(F("WebOTAHandler"), F("Filesystem update not pending"));
+      logger.error(F("WebOTAHandler"), F("Kein Dateisystem-Update ausstehend"));
       return TypedResult<ResourceError, void>::fail(
-          ResourceError::INVALID_STATE, F("Filesystem update not pending"));
+          ResourceError::INVALID_STATE, F("Kein Dateisystem-Update ausstehend"));
     }
   }
 
@@ -227,7 +227,7 @@ TypedResult<ResourceError, void> WebOTAHandler::endUpdate(bool reboot) {
   }
 
   if (!Update.end(true)) {
-    String error = F("Update failed: ");
+    String error = F("Update fehlgeschlagen: ");
     error += Update.getError();
     return TypedResult<ResourceError, void>::fail(
         ResourceError::OPERATION_FAILED, error);
@@ -236,7 +236,7 @@ TypedResult<ResourceError, void> WebOTAHandler::endUpdate(bool reboot) {
   _status.inProgress = false;
 
   if (reboot) {
-    logger.info(F("WebOTAHandler"), F("Update successful, rebooting..."));
+    logger.info(F("WebOTAHandler"), F("Update erfolgreich, Neustart..."));
     delay(1000);
     ESP.restart();
   }
@@ -248,7 +248,7 @@ void WebOTAHandler::abortUpdate() {
   if (_status.inProgress) {
     Update.end();
     _status = OTAStatus();
-    logger.warning(F("WebOTAHandler"), F("Update aborted"));
+    logger.warning(F("WebOTAHandler"), F("Update abgebrochen"));
   }
 }
 
@@ -271,11 +271,11 @@ void WebOTAHandler::handleUpdateUpload() {
       errorReported = false;
 
       logger.info(F("WebOTAHandler"),
-                  F("Starting upload: ") + filename + F(" (type: ") +
-                      String(isFilesystem ? F("filesystem") : F("firmware")) +
+                  F("Upload gestartet: ") + filename + F(" (Typ: ") +
+                      String(isFilesystem ? F("Dateisystem") : F("Firmware")) +
                       F(")"));
       logger.debug(F("WebOTAHandler"),
-                   F("Content length: ") + String(contentLength) + F(" bytes"));
+                   F("Inhaltlänge: ") + String(contentLength) + F(" Bytes"));
 
       size_t freeSpace;
       if (isFilesystem) {
@@ -283,43 +283,43 @@ void WebOTAHandler::handleUpdateUpload() {
           CriticalSection cs;
           FSInfo fs_info;
           if (LittleFS.info(fs_info)) {
-            logger.debug(F("WebOTAHandler"), F("Filesystem total: ") +
+            logger.debug(F("WebOTAHandler"), F("Dateisystem gesamt: ") +
                                                  String(fs_info.totalBytes) +
-                                                 F(" bytes"));
-            logger.debug(F("WebOTAHandler"), F("Filesystem used: ") +
+                                                 F(" Bytes"));
+            logger.debug(F("WebOTAHandler"), F("Dateisystem belegt: ") +
                                                  String(fs_info.usedBytes) +
-                                                 F(" bytes"));
+                                                 F(" Bytes"));
             freeSpace = fs_info.totalBytes;
 
             if (contentLength > fs_info.totalBytes) {
               logger.debug(
                   F("WebOTAHandler"),
-                  F("Adjusting content length to match filesystem size"));
+                  F("Inhaltslänge an Dateisystemgröße angepasst"));
               contentLength = fs_info.totalBytes;
             }
           } else {
             logger.error(F("WebOTAHandler"),
-                         F("Failed to get filesystem info"));
-            _status.lastError = F("Failed to get filesystem info");
+                         F("Fehler beim Lesen der Dateisysteminformationen"));
+            _status.lastError = F("Fehler beim Lesen der Dateisysteminformationen");
             return;
           }
         }
       } else {
         freeSpace = ESP.getFreeSketchSpace();
-        logger.debug(F("WebOTAHandler"), F("Free sketch space: ") +
-                                             String(freeSpace) + F(" bytes"));
+        logger.debug(F("WebOTAHandler"), F("Freier Sketch-Speicher: ") +
+                                             String(freeSpace) + F(" Bytes"));
       }
 
       logger.debug(F("WebOTAHandler"),
-                   F("Update mode: ") + String(ConfigMgr.getDoFirmwareUpgrade()
+                   F("Update-Modus: ") + String(ConfigMgr.getDoFirmwareUpgrade()
                                                    ? F("minimal")
                                                    : F("normal")));
-      logger.debug(F("WebOTAHandler"), F("Final content length: ") +
-                                           String(contentLength) + F(" bytes"));
+      logger.debug(F("WebOTAHandler"), F("Endgültige Inhaltslänge: ") +
+                                           String(contentLength) + F(" Bytes"));
 
       if (contentLength > freeSpace) {
-        String error = F("Not enough space - required: ") +
-                       String(contentLength) + F(", available: ") +
+        String error = F("Nicht genug Speicherplatz - benötigt: ") +
+                       String(contentLength) + F(", verfügbar: ") +
                        String(freeSpace);
         logger.error(F("WebOTAHandler"), error);
         _status.lastError = error;
@@ -327,23 +327,23 @@ void WebOTAHandler::handleUpdateUpload() {
       }
 
       uint8_t command = isFilesystem ? U_FS : U_FLASH;
-      logger.debug(F("WebOTAHandler"), F("Update command: ") + String(command) +
-                                   F(", contentLength: ") + String(contentLength) +
-                                   F(", freeSpace: ") + String(freeSpace));
+      logger.debug(F("WebOTAHandler"), F("Update-Befehl: ") + String(command) +
+                                   F(", Inhaltlänge: ") + String(contentLength) +
+                                   F(", verfügbarer Speicher: ") + String(freeSpace));
       if (!Update.begin(contentLength, command)) {
-        String error = F("Update begin failed: ") + String(Update.getError());
+        String error = F("Start des Updates fehlgeschlagen: ") + String(Update.getError());
         logger.error(F("WebOTAHandler"), error);
         logger.error(F("WebOTAHandler"),
-                     F("Free space: ") + String(freeSpace) + F(" bytes"));
+                     F("Verfügbarer Speicher: ") + String(freeSpace) + F(" Bytes"));
         logger.error(F("WebOTAHandler"),
-                     F("Required: ") + String(contentLength) + F(" bytes"));
+                     F("Benötigt: ") + String(contentLength) + F(" Bytes"));
         _status.lastError = error;
         return;
       }
 
       if (_server.hasArg("md5")) {
         Update.setMD5(_server.arg("md5").c_str());
-        logger.debug(F("WebOTAHandler"), F("MD5 set: ") + _server.arg("md5"));
+        logger.debug(F("WebOTAHandler"), F("MD5 gesetzt: ") + _server.arg("md5"));
       }
 
       _status.inProgress = true;
@@ -352,8 +352,8 @@ void WebOTAHandler::handleUpdateUpload() {
       lastProgressTime = millis();
       lastProgressUpdate = 0;
 
-      logger.info(F("WebOTAHandler"), F("Update started - size: ") +
-                                          String(contentLength) + F(" bytes"));
+      logger.info(F("WebOTAHandler"), F("Update gestartet - Größe: ") +
+                                          String(contentLength) + F(" Bytes"));
 
 #if USE_DISPLAY
       // Show update start on display
@@ -371,7 +371,7 @@ void WebOTAHandler::handleUpdateUpload() {
 
       if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
         if (!errorReported) {
-          String error = F("Update write failed: ") + String(Update.getError());
+          String error = F("Update-Schreibvorgang fehlgeschlagen: ") + String(Update.getError());
           logger.error(F("WebOTAHandler"), error);
           _status.lastError = error;
           errorReported = true;
@@ -385,7 +385,7 @@ void WebOTAHandler::handleUpdateUpload() {
       if (progress != lastProgressUpdate &&
           (progress % 25 == 0 || millis() - lastProgressTime >= 5000)) {
         logger.info(F("WebOTAHandler"),
-                    F("Update progress: ") + String(progress) + F("%"));
+                    F("Update-Fortschritt: ") + String(progress) + F("%"));
 
 #if USE_DISPLAY
         // Show progress on display
@@ -407,7 +407,7 @@ void WebOTAHandler::handleUpdateUpload() {
       if (Update.end(true)) {
         logger.info(
             F("WebOTAHandler"),
-            F("Update Success: ") + String(upload.totalSize) + F(" bytes"));
+            F("Update erfolgreich: ") + String(upload.totalSize) + F(" Bytes"));
 
 #if USE_DISPLAY
         // Show success on display
@@ -433,13 +433,13 @@ void WebOTAHandler::handleUpdateUpload() {
 
         // Now try to clear update flags (this might crash, but response is
         // already sent)
-        logger.info(F("WebOTAHandler"), F("Clearing update flags..."));
+        logger.info(F("WebOTAHandler"), F("Update-Flags werden zurückgesetzt..."));
         auto result = ConfigMgr.setUpdateFlags(false, false);
         if (!result.isSuccess()) {
-          logger.error(F("WebOTAHandler"), F("Failed to clear update flags"));
+          logger.error(F("WebOTAHandler"), F("Fehler beim Zurücksetzen der Update-Flags"));
         }
 
-        logger.info(F("WebOTAHandler"), F("Forcing immediate reset..."));
+        logger.info(F("WebOTAHandler"), F("Sofortiger Reset wird erzwungen..."));
         ESP.wdtDisable();
         ESP.wdtEnable(1);
         while (1)
@@ -449,11 +449,11 @@ void WebOTAHandler::handleUpdateUpload() {
           // Provide additional diagnostic logging: the number of bytes the
           // upload reported, the expected total we set in begin(), and the
           // numeric Update error code returned by the Update API.
-          logger.error(F("WebOTAHandler"), F("Update.end() returned failure"));
-          logger.debug(F("WebOTAHandler"), F("Upload totalSize: ") + String(upload.totalSize) +
-                                        F(", expected (status totalSize): ") + String(_status.totalSize));
-          logger.debug(F("WebOTAHandler"), F("Update error code: ") + String(Update.getError()));
-          String error = F("Update failed: ") + String(Update.getError());
+          logger.error(F("WebOTAHandler"), F("Update.end() gab einen Fehler zurück"));
+          logger.debug(F("WebOTAHandler"), F("Hochgeladene Gesamtgröße: ") + String(upload.totalSize) +
+                                        F(", erwartet (status totalSize): ") + String(_status.totalSize));
+          logger.debug(F("WebOTAHandler"), F("Update Fehlercode: ") + String(Update.getError()));
+          String error = F("Update fehlgeschlagen: ") + String(Update.getError());
           logger.error(F("WebOTAHandler"), error);
 
 #if USE_DISPLAY
@@ -477,8 +477,8 @@ void WebOTAHandler::handleUpdateUpload() {
       // Check if we already completed successfully
       if (Update.hasError() && !errorReported) {
         Update.end();
-        _status.lastError = F("Update aborted");
-        logger.error(F("WebOTAHandler"), F("Update aborted"));
+        _status.lastError = F("Update abgebrochen");
+        logger.error(F("WebOTAHandler"), F("Update abgebrochen"));
 
 #if USE_DISPLAY
         // Show aborted message on display
@@ -491,7 +491,7 @@ void WebOTAHandler::handleUpdateUpload() {
 
         StaticJsonDocument<200> response;
         response["success"] = false;
-        response["error"] = "Update aborted";
+        response["error"] = "Update abgebrochen";
         String jsonStr;
         serializeJson(response, jsonStr);
         sendJsonResponse(400, jsonStr);
@@ -502,7 +502,7 @@ void WebOTAHandler::handleUpdateUpload() {
     }
 
     default:
-      logger.warning(F("WebOTAHandler"), F("Unknown upload status"));
+      logger.warning(F("WebOTAHandler"), F("Unbekannter Upload-Status"));
       break;
   }
 
