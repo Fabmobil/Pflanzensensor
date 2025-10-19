@@ -17,8 +17,10 @@
 class WebSocketService {
  public:
   static constexpr size_t MAX_CLIENTS = 1;
-  static constexpr size_t RING_BUFFER_SIZE = 1024;
-  static constexpr size_t MAX_MESSAGE_SIZE = 512;
+  // Reduced ring buffer to save RAM on ESP8266
+  static constexpr size_t RING_BUFFER_SIZE = 512;
+  // Keep messages reasonably sized to avoid large static buffers
+  static constexpr size_t MAX_MESSAGE_SIZE = 256;
 
   using WebSocketEventHandler = std::function<void(
       uint8_t num, WStype_t type, uint8_t* payload, size_t length)>;

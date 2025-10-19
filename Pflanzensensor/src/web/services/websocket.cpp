@@ -2,6 +2,7 @@
 
 #include "logger/logger.h"
 
+// s_sendBuffer size is driven by MAX_MESSAGE_SIZE in the header
 char WebSocketService::s_sendBuffer[WebSocketService::MAX_MESSAGE_SIZE];
 
 WebSocketService& WebSocketService::getInstance() {

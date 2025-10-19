@@ -249,7 +249,14 @@ void ConfigPersistence::readUpdateFlagsFromFile(bool& fs, bool& fw) {
 #if USE_MAIL
 // Helper function to load mail configuration
 void ConfigPersistence::loadMailConfig(const StaticJsonDocument<512>& doc, ConfigData& config) {
+  // Default for mail_enabled: if compile-time SMTP_HOST is provided enable by
+  // default (convenience for preconfigured builds), otherwise keep disabled
+  // for security.
+#ifdef SMTP_HOST
+  config.mailEnabled = doc.containsKey(F("mail_enabled")) ? doc[F("mail_enabled")] : true;
+#else
   config.mailEnabled = doc.containsKey(F("mail_enabled")) ? doc[F("mail_enabled")] : false;
+#endif
 
   config.smtpHost = doc.containsKey(F("smtp_host")) ? doc[F("smtp_host")].as<String>()
 #ifdef SMTP_HOST
@@ -324,7 +331,14 @@ void ConfigPersistence::loadMailConfig(const StaticJsonDocument<512>& doc, Confi
 
 // Helper function to set mail configuration defaults
 void ConfigPersistence::setMailConfigDefaults(ConfigData& config) {
+  // Default mail enabled: enable by default only when compile-time SMTP_HOST
+  // is provided (useful for images preconfigured to send mail). Otherwise
+  // keep it disabled for security.
+#ifdef SMTP_HOST
+  config.mailEnabled = true;
+#else
   config.mailEnabled = false;  // Disabled by default for security
+#endif
 
 #ifdef SMTP_HOST
   config.smtpHost = F(SMTP_HOST);

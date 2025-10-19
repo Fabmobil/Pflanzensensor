@@ -57,7 +57,6 @@ void AdminSensorHandler::handleAnalogInverted() {
     return;
   }
 
-  AnalogSensor* analog = static_cast<AnalogSensor*>(sensor);
   SensorConfig& config = sensor->mutableConfig();
   if (measurementIndex >= config.measurements.size()) {
     logger.error(F("AdminSensorHandler"),

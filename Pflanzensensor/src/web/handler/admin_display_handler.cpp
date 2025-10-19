@@ -278,8 +278,8 @@ void AdminDisplayHandler::handleMeasurementDisplayToggle() {
     if (_server.hasArg("measurement_index")) {
       // Toggle individual measurement
       int index = _server.arg("measurement_index").toInt();
-      if (index >= 0 && index < sensor->config().measurements.size()) {
-        sensor->mutableConfig().measurements[index].enabled = enabled;
+      if (index >= 0 && static_cast<size_t>(index) < sensor->config().measurements.size()) {
+        sensor->mutableConfig().measurements[static_cast<size_t>(index)].enabled = enabled;
       } else {
         sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messungsindex\"}"));
         return;

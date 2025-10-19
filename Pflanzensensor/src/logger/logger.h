@@ -230,7 +230,7 @@ class Logger {
   bool m_ntpInitialized;
   bool m_fileLoggingEnabled;
   const char* m_logFileName = "/log.txt";
-  const size_t m_maxFileSize = 100 * 1024;  // 100 KB
+  const size_t m_maxFileSize = MAX_LOG_FILE_SIZE; // in bytes
   unsigned long lastErrorLogTime = 0;
   const unsigned long errorLogInterval = 5000;  // 5 seconds
   int errorCount = 0;

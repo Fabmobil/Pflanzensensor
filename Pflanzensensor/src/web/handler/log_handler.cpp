@@ -220,6 +220,14 @@ bool LogHandler::initWebSocket() {
   }
 
   logger.debug(F("LogHandler"), F("WebSocket server already initialized"));
+
+  // Register logger callback for broadcasting logs
+  logger.setCallback([](LogLevel level, const String& message) {
+    auto* logHandler = LogHandler::s_instance;
+    if (logHandler && logHandler->isInitialized()) {
+      logHandler->broadcastLog(level, message);
+    }
+  });
   return true;
 }
 
@@ -275,7 +283,8 @@ void LogHandler::broadcastLog(LogLevel level, const String& message) {
   }
 
   // Create JSON document for the log message
-  StaticJsonDocument<512> doc;
+  // Reduced document size to save RAM; payload contains only level/message/timestamp
+  StaticJsonDocument<256> doc;
   doc["type"] = "log";
   doc["level"] = Logger::logLevelToString(level);
   doc["message"] = message;
@@ -335,6 +344,10 @@ void LogHandler::cleanupAllClients() {
   _cleaned = false;
 
   logger.debug(F("LogHandler"), F("All WebSocket clients cleaned up"));
+#if USE_WEBSOCKET
+  // Unregister logger callback to free std::function memory
+  logger.setCallback(nullptr);
+#endif
 #endif
 }
 
@@ -402,7 +415,8 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type,
       }
 
       // Handle text messages with better error handling
-      StaticJsonDocument<200> doc;
+  // Smaller JSON buffer for incoming control messages
+  StaticJsonDocument<128> doc;
       DeserializationError error = deserializeJson(doc, (char*)payload);
 
       if (error) {

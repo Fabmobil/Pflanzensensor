@@ -381,15 +381,70 @@ void Logger::truncateLogFileIfNeeded() {
     return;
   }
 
-  // Simple truncation - just delete if too large
-  file.close();
-  LittleFS.remove(m_logFileName);
+  // Keep the most recent portion of the file instead of deleting everything.
+  // Strategy: copy the last `keepSize` bytes to a temporary file in small
+  // chunks, prepend a header that indicates truncation, then replace the
+  // original file with the temp file. This avoids allocating a large buffer
+  // on the heap (important on ESP8266) and keeps newer log entries.
+  size_t fileSize = file.size();
+  info(F("Logger"), String(F("Logdatei prüfen: Größe=")) + fileSize + F(" Bytes, Limit=" ) + m_maxFileSize + F(" Bytes"));
+  // Try to keep the newer half, but don't exceed the configured maximum
+  size_t keepSize = min(fileSize / 2, static_cast<size_t>(m_maxFileSize));
+  size_t startPos = (fileSize > keepSize) ? (fileSize - keepSize) : 0;
 
-  // Create new file with header
-  file = LittleFS.open(m_logFileName, "w");
-  if (file) {
-  file.println(F("Logdatei aufgrund Größenlimit gekürzt"));
+  String tmpName = String(m_logFileName) + ".tmp";
+  File tmp = LittleFS.open(tmpName.c_str(), "w");
+  if (!tmp) {
+    // If temp file can't be created, fallback to simple truncation
+    warning(F("Logger"), F("Temporäre Logdatei konnte nicht erstellt werden, falle auf vollständige Kürzung zurück"));
     file.close();
+    LittleFS.remove(m_logFileName);
+    File nf = LittleFS.open(m_logFileName, "w");
+    if (nf) {
+      nf.println(F("Logdatei aufgrund Größenlimit gekürzt"));
+      nf.close();
+    }
+    return;
+  }
+
+  // Write header indicating truncation
+  tmp.println(F("--- Vorherige Einträge wurden aufgrund des Größenlimits entfernt ---"));
+
+  // Copy the tail of the original file in small chunks
+  const size_t BUF_SIZE = 512;
+  uint8_t buffer[BUF_SIZE];
+  size_t remaining = keepSize;
+  file.seek(startPos);
+  debug(F("Logger"), String(F("Beginne Kopieren ab Position ")) + startPos + F(" (Bytes zu kopieren: ") + keepSize + F(")"));
+  while (remaining > 0) {
+    size_t toRead = (remaining > BUF_SIZE) ? BUF_SIZE : remaining;
+    size_t r = file.readBytes(reinterpret_cast<char*>(buffer), toRead);
+    if (r == 0) break;  // read error or EOF
+    tmp.write(buffer, r);
+    remaining -= r;
+  }
+
+  size_t copied = keepSize - remaining;
+  info(F("Logger"), String(F("Kopiert ")) + copied + F(" Bytes in temporäre Datei"));
+
+  file.close();
+  tmp.close();
+
+  // Replace original file with temp file. Try to be atomic when possible.
+  // Remove original first to ensure rename succeeds on platforms that don't
+  // support overwrite-rename.
+  LittleFS.remove(m_logFileName);
+  if (LittleFS.rename(tmpName.c_str(), m_logFileName)) {
+    info(F("Logger"), F("Logdatei erfolgreich gekürzt; ältere Einträge entfernt"));
+  } else {
+    // Rename failed — try fallback: create a fresh file with header only
+    warning(F("Logger"), F("Umbenennen der temporären Logdatei fehlgeschlagen, fallback aktiv"));
+    LittleFS.remove(tmpName.c_str());
+    File nf = LittleFS.open(m_logFileName, "w");
+    if (nf) {
+      nf.println(F("Logdatei aufgrund Größenlimit gekürzt"));
+      nf.close();
+    }
   }
 }
 

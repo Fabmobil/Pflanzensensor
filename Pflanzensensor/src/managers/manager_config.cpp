@@ -219,24 +219,10 @@ ConfigManager::ConfigResult ConfigManager::setLogLevel(const String& level) {
         validation.getMessage());
   }
 
-  // Enter critical operation to prevent WebSocket interference
-  auto criticalResult = ResourceMgr.enterCriticalOperation("log_level_change");
-  if (!criticalResult.isSuccess()) {
-    return ConfigResult::fail(ConfigError::UNKNOWN_ERROR,
-                              F("Cannot enter critical operation"));
-  }
-
-  // Use critical section instead of callback manipulation to prevent memory
-  // corruption
-  CriticalSection cs;
-
   logger.setLogLevel(Logger::stringToLogLevel(level));
   notifyConfigChange("log_level", level, true);
 
   auto result = saveConfig();
-
-  // Exit critical operation
-  ResourceMgr.exitCriticalOperation();
 
   return result;
 }
@@ -379,12 +365,10 @@ void ConfigManager::addChangeCallback(ConfigNotifier::ChangeCallback callback) {
 
 void ConfigManager::notifyConfigChange(const String& key, const String& value,
                                        bool updateSensors) {
-  // Handle special cases that require immediate action
-  if (key == "file_logging_enabled") {
-    logger.enableFileLogging(m_configData.fileLoggingEnabled);
-  }
+
 
   // Delegate to notifier
+  logger.debug(F("ConfigM"), String(F("Notifying config change for key: ")) + key + F(" (updateSensors=") + String(updateSensors) + F(")"));
   m_notifier.notifyChange(key, value, updateSensors);
 }
 

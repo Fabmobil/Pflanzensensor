@@ -39,7 +39,7 @@ void AdminHandler::generateAndSendDebugSettingsCard() {
       F("<input type='checkbox' id='debug_measurement_cycle' "
         "name='debug_measurement_cycle' value='true'"));
   if (ConfigMgr.isDebugMeasurementCycle()) sendChunk(F(" checked"));
-  sendChunk(F("> Debug Measurement Cycle</label></div>"));
+  sendChunk(F("> Debug Messzyklus</label></div>"));
   // Debug Sensor
   sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
   sendChunk(

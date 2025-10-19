@@ -68,7 +68,7 @@ class Manager {
 
     auto result = initialize();
     if (!result.isSuccess()) {
-      setError("Initialization failed: " + result.getMessage(), 1000);
+      setError("Initialisierung fehlgeschlagen: " + result.getMessage(), 1000);
       return result;
     }
 
@@ -90,7 +90,7 @@ class Manager {
   void setState(ManagerState state) {
     m_status.setState(state);
     logger.debug(F("BaseM"),
-                 m_name + ": State changed to " + stateToString(state));
+                 m_name + ": Status gewechselt zu " + stateToString(state));
   }
 
   /**
@@ -101,7 +101,7 @@ class Manager {
   void setError(const String& message, uint16_t code) {
     m_status.setError(message, code);
     logger.error(F("BaseM"),
-                 m_name + ": " + message + " (code: " + String(code) + ")");
+                 m_name + ": " + message + " (Code: " + String(code) + ")");
   }
 
   /**
@@ -145,19 +145,19 @@ class Manager {
   static String stateToString(ManagerState state) {
     switch (state) {
       case ManagerState::UNINITIALIZED:
-        return F("UNINITIALIZED");
+        return F("NICHT INITIALISIERT");
       case ManagerState::INITIALIZING:
-        return F("INITIALIZING");
+        return F("INITIALISIERE");
       case ManagerState::INITIALIZED:
-        return F("INITIALIZED");
+        return F("INITIALISIERT");
       case ManagerState::ERROR:
-        return F("ERROR");
+        return F("FEHLER");
       case ManagerState::MINIMAL:
         return F("MINIMAL");
       case ManagerState::SUSPENDED:
-        return F("SUSPENDED");
+        return F("PAUSIERT");
       default:
-        return F("UNKNOWN");
+        return F("UNBEKANNT");
     }
   }
 };

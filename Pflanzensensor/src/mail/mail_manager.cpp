@@ -49,7 +49,7 @@ TypedResult<ResourceError, void> MailManager::initialize() {
     uint32_t freeHeap = ESP.getFreeHeap();
     logger.debug(F("MailManager"), F("Freier Speicher für Test-Mail: ") + String(freeHeap) + F(" Bytes"));
 
-    if (freeHeap >= 12288) { // Require 12KB for safer operation
+    if (freeHeap >= SMTP_MIN_FREE_HEAP_FOR_TEST) { // configurable minimum free heap
       logger.info(F("MailManager"), F("Sende Test-Mail beim Start"));
       ResourceResult testResult = sendTestMail();
       if (testResult.isError()) {
@@ -89,7 +89,7 @@ ResourceResult MailManager::sendMail(const String& subject, const String& messag
   logger.debug(F("MailManager"), F("Freier Speicher vor E-Mail: ") + String(freeHeapBefore) + F(" Bytes"));
 
   // Require at least 12KB free heap for SSL operations (increased from 8KB)
-  if (freeHeapBefore < 12288) {
+  if (freeHeapBefore < SMTP_MIN_FREE_HEAP_FOR_TEST) {
     logger.error(F("MailManager"), F("Nicht genug Speicher für E-Mail"));
     return ResourceResult::fail(ResourceError::INSUFFICIENT_MEMORY,
                                F("Nicht genügend Speicher"));

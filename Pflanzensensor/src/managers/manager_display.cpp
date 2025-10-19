@@ -395,7 +395,7 @@ void DisplayManager::showSensorData(const String& sensorId,
         if (ConfigMgr.isDebugDisplay()) {
           logger.debug(F("DisplayM"),
                        "Sensor status: " + sensor->getStatus(measurementIndex) +
-                           " for value: " +
+                           " für Wert: " +
                            String(measurementData.values[measurementIndex]));
         }
       } else {

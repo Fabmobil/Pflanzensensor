@@ -10,7 +10,6 @@
 #define DEVICE_NAME "Sensor Name"  /* Name Ihres Geräts */
 #define FILE_LOGGING_ENABLED false /* Logging ins Dateisystem aktivieren */
 #define MAX_LOG_FILE_SIZE 50000    /* Maximale Größe der Log-Datei in Bytes */
-#define MAX_LOG_ENTRIES 20         /* Maximale Anzahl zu behaltender Log-Einträge */
 #define LOG_LEVEL "INFO"           /* Log-Level: INFO, DEBUG, ERROR, WARNING */
 
 // Feature-Flags
