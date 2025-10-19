@@ -129,7 +129,8 @@ document.addEventListener('DOMContentLoaded', function() {
       fetch('/admin/sensors/flower_status', {
         method: 'POST',
         body: formData,
-        credentials: 'include'
+        credentials: 'include',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
       })
       .then(parseJsonResponse)
       .then(data => {
@@ -472,8 +473,8 @@ function resetAbsoluteMinMax(sensorId, measurementIndex) {
 
   fetch('/admin/reset_absolute_minmax', {
     method: 'POST',
-    body: formData,
-    credentials: 'include'
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ sensor: sensorId })
   })
   .then(parseJsonResponse)
   .then(data => {
@@ -546,8 +547,8 @@ function resetAbsoluteRawMinMax(sensorId, measurementIndex) {
 
   fetch('/admin/reset_absolute_raw_minmax', {
     method: 'POST',
-    body: formData,
-    credentials: 'include'
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ sensor: sensorId })
   })
   .then(parseJsonResponse)
   .then(data => {
@@ -601,8 +602,8 @@ function initMeasureButtonHandlers() {
 
       fetch('/trigger_measurement', {
         method: 'POST',
-        body: formData,
-        credentials: 'include'
+        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ sensor_id: sensorId, measurement_index: measurementIndex })
       })
       .then(parseJsonResponse)
       .then(data => {
@@ -632,8 +633,8 @@ function updateMeasurementInterval(sensorId, interval) {
 
   fetch('/admin/measurement_interval', {
     method: 'POST',
-    body: formData,
-    credentials: 'include'
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ sensor: sensorId, interval: interval })
   })
   .then(parseJsonResponse)
   .then(data => {
@@ -663,8 +664,8 @@ function updateAnalogMinMax(sensorId, measurementIndex, minValue, maxValue) {
 
   fetch('/admin/analog_minmax', {
     method: 'POST',
-    body: formData,
-    credentials: 'include'
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ sensor: sensorId, measurement: idx, min: min, max: max })
   })
   .then(response => {
     console.log(`[updateAnalogMinMax] Response status: ${response.status}`);
@@ -695,8 +696,8 @@ function updateAnalogInverted(sensorId, measurementIndex, inverted) {
 
   fetch('/admin/analog_inverted', {
     method: 'POST',
-    body: formData,
-    credentials: 'include'
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ sensor: sensorId, measurement: idx, inverted: inverted ? 1 : 0 })
   })
   .then(parseJsonResponse)
   .then(data => {
@@ -724,8 +725,8 @@ function updateThresholds(sensorId, measurementIndex, thresholds) {
 
   fetch('/admin/thresholds', {
     method: 'POST',
-    body: formData,
-    credentials: 'include'
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ sensor: sensorId, measurement: idx, yellowLow: yellowLow, greenLow: greenLow, greenHigh: greenHigh, yellowHigh: yellowHigh })
   })
   .then(parseJsonResponse)
   .then(data => {
@@ -753,8 +754,8 @@ function updateMeasurementName(sensorId, measurementIndex, name) {
 
   fetch('/admin/measurement_name', {
     method: 'POST',
-    body: formData,
-    credentials: 'include'
+    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ sensor: sensorId, measurement: idx, name: name })
   })
   .then(parseJsonResponse)
   .then(data => {

@@ -109,9 +109,75 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(
           ? doc["flower_status_sensor"].as<String>()
           : "ANALOG_1";  // Default to ANALOG_1 (Bodenfeuchte)
 
-#if USE_MAIL
-  loadMailConfig(doc, config);
-#endif
+  // --- Migration: if keys are missing in an existing config.json, add them
+  // using compile-time defaults so devices upgraded from older firmware still
+  // get the new settings present in the file. This is a best-effort write.
+  bool modified = false;
+  if (!doc.containsKey("md5_verification")) {
+    doc["md5_verification"] = config.md5Verification;
+    modified = true;
+  }
+  if (!doc.containsKey("collectd_enabled")) {
+    doc["collectd_enabled"] = config.collectdEnabled;
+    modified = true;
+  }
+  if (!doc.containsKey("file_logging_enabled")) {
+    doc["file_logging_enabled"] = config.fileLoggingEnabled;
+    modified = true;
+  }
+  if (!doc.containsKey("device_name")) {
+    doc["device_name"] = config.deviceName;
+    modified = true;
+  }
+  if (!doc.containsKey("debug_ram")) {
+    doc["debug_ram"] = config.debugRAM;
+    modified = true;
+  }
+  if (!doc.containsKey("debug_measurement_cycle")) {
+    doc["debug_measurement_cycle"] = config.debugMeasurementCycle;
+    modified = true;
+  }
+  if (!doc.containsKey("debug_sensor")) {
+    doc["debug_sensor"] = config.debugSensor;
+    modified = true;
+  }
+  if (!doc.containsKey("debug_display")) {
+    doc["debug_display"] = config.debugDisplay;
+    modified = true;
+  }
+  if (!doc.containsKey("debug_websocket")) {
+    doc["debug_websocket"] = config.debugWebSocket;
+    modified = true;
+  }
+  if (!doc.containsKey("wifi_ssid_1")) {
+    doc["wifi_ssid_1"] = config.wifiSSID1;
+    modified = true;
+  }
+  if (!doc.containsKey("wifi_password_1")) {
+    doc["wifi_password_1"] = config.wifiPassword1;
+    modified = true;
+  }
+  if (!doc.containsKey("led_traffic_light_mode")) {
+    doc["led_traffic_light_mode"] = config.ledTrafficLightMode;
+    modified = true;
+  }
+  if (!doc.containsKey("led_traffic_light_selected_measurement")) {
+    doc["led_traffic_light_selected_measurement"] = config.ledTrafficLightSelectedMeasurement;
+    modified = true;
+  }
+  if (!doc.containsKey("flower_status_sensor")) {
+    doc["flower_status_sensor"] = config.flowerStatusSensor;
+    modified = true;
+  }
+
+  if (modified) {
+    String err;
+    if (PersistenceUtils::writeJsonFile("/config.json", doc, err)) {
+      logger.info(F("ConfigP"), F("Konfigurationsdatei mit fehlenden Compile‑Defaults ergänzt"));
+    } else {
+      logger.warning(F("ConfigP"), F("Fehler beim Migrieren neuer Config‑Keys: ") + err);
+    }
+  }
 
   logger.logMemoryStats(F("ConfigP_load_after"));
   return PersistenceResult::success();
@@ -222,6 +288,14 @@ ConfigPersistence::PersistenceResult ConfigPersistence::saveToFileMinimal(
   if (!PersistenceUtils::writeJsonFile("/config.json", doc, errorMsg)) {
     return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
   }
+
+  // Log key debug flags and other safe-to-log settings for auditing
+  logger.info(F("ConfigP"), String(F("Konfiguration gespeichert: debug_ram=")) + (config.debugRAM ? F("true") : F("false")) +
+              F(", debug_measurement_cycle=") + (config.debugMeasurementCycle ? F("true") : F("false")) +
+              F(", debug_sensor=") + (config.debugSensor ? F("true") : F("false")) +
+              F(", debug_display=") + (config.debugDisplay ? F("true") : F("false")) +
+              F(", debug_websocket=") + (config.debugWebSocket ? F("true") : F("false")));
+
   return PersistenceResult::success();
 }
 

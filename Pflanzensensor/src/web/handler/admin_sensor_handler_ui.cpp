@@ -19,7 +19,7 @@ void AdminSensorHandler::handleSensorConfig() {
   if (!validateRequest()) {
     logger.debug(F("AdminSensorHandler"),
                  F("Authentifizierung in handleSensorConfig fehlgeschlagen"));
-    sendError(401, F("Authentifizierung erforderlich"));
+    this->sendError(401, F("Authentifizierung erforderlich"));
     return;
   }
   std::vector<String> css = {"admin"};

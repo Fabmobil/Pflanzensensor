@@ -53,15 +53,8 @@ ResourceResult WebManager::begin(uint16_t port) {
           F("Failed to create or initialize LogHandler"));
     }
 
-    // Set up real-time log broadcasting
-#if USE_WEBSOCKET
-    logger.setCallback([](LogLevel level, const String& message) {
-      auto* logHandler = LogHandler::s_instance;
-      if (logHandler && logHandler->isInitialized()) {
-        logHandler->broadcastLog(level, message);
-      }
-    });
-#endif
+    // Set up real-time log broadcasting handled by LogHandler when it
+    // initializes the WebSocket (lazy registration)
 
     // Set up log forwarding
 #if USE_WEBSOCKET

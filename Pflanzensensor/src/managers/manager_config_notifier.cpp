@@ -13,7 +13,7 @@ void ConfigNotifier::addChangeCallback(ChangeCallback callback) {
 
 void ConfigNotifier::notifyChange(const String& key, const String& value,
                                   bool updateSensors) {
-  logger.info(F("ConfigN"), "Config changed: " + key + " = " + value);
+  logger.info(F("ConfigN"), String(F("Config changed: ")) + key + F(" = ") + value + F(", updateSensors=") + String(updateSensors));
 
   // Notify all registered callbacks
   for (const auto& callback : m_callbacks) {

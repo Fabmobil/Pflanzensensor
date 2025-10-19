@@ -11,6 +11,7 @@
 #include "utils/helper.h"
 
 void AdminSensorHandler::handleResetAbsoluteMinMax() {
+  if (!requireAjaxRequest()) return;
   if (!validateRequest()) {
     sendJsonResponse(
         401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
@@ -98,6 +99,7 @@ void AdminSensorHandler::handleResetAbsoluteMinMax() {
 }
 
 void AdminSensorHandler::handleResetAbsoluteRawMinMax() {
+  if (!requireAjaxRequest()) return;
   if (!validateRequest()) {
     sendJsonResponse(
         401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));

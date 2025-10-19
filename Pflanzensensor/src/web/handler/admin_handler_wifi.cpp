@@ -4,7 +4,6 @@
  * @details Handles WiFi settings cards and WiFi configuration updates
  */
 
-#include <ArduinoJson.h>
 #include <LittleFS.h>
 
 #include "configs/config.h"
@@ -24,7 +23,7 @@ void AdminHandler::generateAndSendWiFiSettingsCard() {
     sendChunk(F("<div class='form-group'>"));
     sendChunk(F("<label>SSID "));
     sendChunk(String(i));
-    sendChunk(F(":</label>"));
+    sendChunk(F(" :</label>"));
     if (isActive) {
       sendChunk(
           F("<div class='active-wifi-notice'>Aktive Verbindung – Bearbeitung "
@@ -46,7 +45,7 @@ void AdminHandler::generateAndSendWiFiSettingsCard() {
     sendChunk(F("<div class='form-group'>"));
     sendChunk(F("<label>Passwort "));
     sendChunk(String(i));
-    sendChunk(F(":</label>"));
+    sendChunk(F(" :</label>"));
     if (isActive) {
       sendChunk(
           F("<div class='active-wifi-notice'>Aktive Verbindung – Bearbeitung "
@@ -65,7 +64,8 @@ void AdminHandler::generateAndSendWiFiSettingsCard() {
     }
     sendChunk(F("</div>"));
   }
-  // Save handled automatically via AJAX/partial updates; keep form for fallback but remove visible submit button
+  // AJAX-only: WiFi settings are updated via JavaScript fetch calls. The form
+  // remains as a DOM container only and should not be submitted directly.
   sendChunk(F("</form></div>"));
 }
 
@@ -73,44 +73,62 @@ void AdminHandler::handleWiFiUpdate() {
   bool changed = false;
   String changes;
   int activeSlot = getActiveWiFiSlot() + 1;  // getActiveWiFiSlot is 0-based
+
+  // Require AJAX-only updates
+  if (!requireAjaxRequest()) return;
+
   for (int i = 1; i <= 3; ++i) {
     if (i == activeSlot) continue;  // Skip the active slot!
     String ssidArg = "ssid" + String(i);
     String pwdArg = "pwd" + String(i);
-  bool hasSsid = _server.hasArg(ssidArg);
-  bool hasPwd = _server.hasArg(pwdArg);
-  String ssid = hasSsid ? _server.arg(ssidArg) : String();
-  String pwd = hasPwd ? _server.arg(pwdArg) : String();
+    bool hasSsid = _server.hasArg(ssidArg);
+    bool hasPwd = _server.hasArg(pwdArg);
+    String ssid = hasSsid ? _server.arg(ssidArg) : String();
+    String pwd = hasPwd ? _server.arg(pwdArg) : String();
     if (i == 1) {
       if (hasSsid && ssid != ConfigMgr.getWiFiSSID1()) {
-        ConfigMgr.setWiFiSSID1(ssid);
+        auto r = ConfigMgr.setWiFiSSID1(ssid);
+        if (!r.isSuccess()) {
+          String payload = String("{\"success\":false,\"error\":\"") + r.getMessage() + "\"}";
+          sendJsonResponse(400, payload);
+          return;
+        }
         changed = true;
         changes += F("<li>SSID 1 geändert</li>");
       }
       if (hasPwd && pwd != ConfigMgr.getWiFiPassword1()) {
-        ConfigMgr.setWiFiPassword1(pwd);
+        auto r = ConfigMgr.setWiFiPassword1(pwd);
+        if (!r.isSuccess()) {
+          String payload = String("{\"success\":false,\"error\":\"") + r.getMessage() + "\"}";
+          sendJsonResponse(400, payload);
+          return;
+        }
         changed = true;
         changes += F("<li>Passwort 1 geändert</li>");
       }
     } else if (i == 2) {
       if (hasSsid && ssid != ConfigMgr.getWiFiSSID2()) {
-        ConfigMgr.setWiFiSSID2(ssid);
+        auto r = ConfigMgr.setWiFiSSID2(ssid);
+        if (!r.isSuccess()) { String payload = String("{\"success\":false,\"error\":\"") + r.getMessage() + "\"}"; sendJsonResponse(400, payload); return; }
         changed = true;
         changes += F("<li>SSID 2 geändert</li>");
       }
       if (hasPwd && pwd != ConfigMgr.getWiFiPassword2()) {
-        ConfigMgr.setWiFiPassword2(pwd);
+        auto r = ConfigMgr.setWiFiPassword2(pwd);
+        if (!r.isSuccess()) { String payload = String("{\"success\":false,\"error\":\"") + r.getMessage() + "\"}"; sendJsonResponse(400, payload); return; }
         changed = true;
         changes += F("<li>Passwort 2 geändert</li>");
       }
     } else if (i == 3) {
       if (hasSsid && ssid != ConfigMgr.getWiFiSSID3()) {
-        ConfigMgr.setWiFiSSID3(ssid);
+        auto r = ConfigMgr.setWiFiSSID3(ssid);
+        if (!r.isSuccess()) { String payload = String("{\"success\":false,\"error\":\"") + r.getMessage() + "\"}"; sendJsonResponse(400, payload); return; }
         changed = true;
         changes += F("<li>SSID 3 geändert</li>");
       }
       if (hasPwd && pwd != ConfigMgr.getWiFiPassword3()) {
-        ConfigMgr.setWiFiPassword3(pwd);
+        auto r = ConfigMgr.setWiFiPassword3(pwd);
+        if (!r.isSuccess()) { String payload = String("{\"success\":false,\"error\":\"") + r.getMessage() + "\"}"; sendJsonResponse(400, payload); return; }
         changed = true;
         changes += F("<li>Passwort 3 geändert</li>");
       }
@@ -121,47 +139,17 @@ void AdminHandler::handleWiFiUpdate() {
   if (changed) {
     auto result = ConfigMgr.saveConfig();
     if (!result.isSuccess()) {
-      // Handle save error
-      std::vector<String> css = {"admin"};
-      std::vector<String> js = {"admin"};
-      renderAdminPage(
-          ConfigMgr.getDeviceName(), "admin",
-          [this, &result]() {
-            sendChunk(F("<div class='card'>"));
-            sendChunk(
-                F("<h2>❌ Fehler beim Speichern</h2>"));
-            sendChunk(F("<p class='error-message'>"));
-            sendChunk(result.getMessage());
-            sendChunk(F("</p>"));
-            sendChunk(F("<br><a href='/admin' class='button button-primary'>"));
-            sendChunk(F("Zurück zur Administration</a>"));
-            sendChunk(F("</div>"));
-          },
-          css, js);
+      String payload = String("{\"success\":false,\"error\":\"") + result.getMessage() + "\"}";
+      sendJsonResponse(500, payload);
       return;
     }
   }
 
-  std::vector<String> css = {"admin"};
-  std::vector<String> js = {"admin"};
-  renderAdminPage(
-      ConfigMgr.getDeviceName(), "admin",
-      [this, changed, changes]() {
-        sendChunk(F("<div class='card'>"));
-        if (changed) {
-          sendChunk(F("<h2>✓ WiFi Einstellungen gespeichert</h2>"));
-          sendChunk(F("<p>Folgende Änderungen wurden vorgenommen:</p>"));
-          sendChunk(F("<ul class='changes-list'>"));
-          sendChunk(changes);
-          sendChunk(F("</ul>"));
-        } else {
-          sendChunk(F("<h2>Keine Änderungen vorgenommen</h2>"));
-          sendChunk(F("<p>Es wurden keine Änderungen an den WiFi-Einstellungen erkannt.</p>"));
-        }
-        sendChunk(
-            F("<br><a href='/admin' class='button button-primary'>Zurück zur "
-              "Administration</a>"));
-        sendChunk(F("</div>"));
-      },
-      css, js);
+  // Always respond with JSON
+  if (changed) {
+    String payload = String("{\"success\":true,\"changes\":\"") + changes + "\"}";
+    sendJsonResponse(200, payload);
+  } else {
+    sendJsonResponse(200, F("{\"success\":true,\"message\":\"Keine Änderungen\"}"));
+  }
 }

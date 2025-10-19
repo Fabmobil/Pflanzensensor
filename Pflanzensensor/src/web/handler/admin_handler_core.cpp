@@ -48,20 +48,9 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/updateSettings-Route"));
 
-  // Register AJAX JSON update route for admin settings
-  result = router.addRoute(HTTP_POST, "/admin/updateSettings/json", [this]() {
-    if (!validateRequest()) {
-      _server.requestAuthentication();
-      return;
-    }
-    logger.debug(F("AdminHandler"), F("Handling admin update (JSON) request"));
-    handleAdminUpdateJson();
-  });
-  if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/updateSettings/json-Route fehlgeschlagen"));
-    return result;
-  }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/updateSettings/json-Route"));
+  // Note: AJAX/partial updates are handled by the single /admin/updateSettings
+  // endpoint which expects AJAX and returns JSON responses. Duplicate JSON
+  // routes were removed to keep a single consistent code path.
 
   // Register config reset route
   result = router.addRoute(HTTP_POST, "/admin/reset", [this]() {
@@ -94,8 +83,7 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
 
   // Register config set route
   // Note: /admin/config/set handled by legacy route in WebManager; admin
-  // updates are consolidated to /admin/updateSettings/json and
-  // AdminHandler::handleAdminUpdateJson().
+  // updates are consolidated to the single /admin/updateSettings endpoint.
 
   result = router.addRoute(HTTP_GET, "/admin/downloadLog", [this]() {
     if (!validateRequest()) {
@@ -153,30 +141,8 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
                  }
                }
 
-               // Distinguish AJAX/fetch uploads from normal form posts.
-               String xhr = _server.header("X-Requested-With");
-               String accept = _server.header("Accept");
-               bool wantsJson = false;
-               if (xhr == "XMLHttpRequest") wantsJson = true;
-               if (accept.indexOf("application/json") >= 0) wantsJson = true;
-               // Some multipart/form-data uploads may not include headers; the
-               // form will include an 'ajax' field when JS submits.
-               if (_server.hasArg("ajax")) wantsJson = true;
-
-               if (wantsJson) {
-                 _server.send(200, "application/json", body);
-               } else {
-                 // Redirect back to admin page with a short status flag so the
-                 // page JS can surface a notification. Use upload=ok or upload=err
-                 // depending on success field in body.
-                 bool success = false;
-                 StaticJsonDocument<256> doc;
-                 DeserializationError err = deserializeJson(doc, body);
-                 if (!err && doc.containsKey("success") && doc["success"] == true) success = true;
-                 String loc = String("/admin?upload=") + (success ? "ok" : "err");
-                 _server.sendHeader("Location", loc);
-                 _server.send(303, "text/plain", "");
-               }
+               // Always return JSON for uploads (AJAX-only API).
+               _server.send(200, "application/json", body);
              },
              [this]() { handleUploadConfig(); });
   logger.debug(F("AdminHandler"), F("Registrierte /admin/uploadConfig-Route (multipart)"));
@@ -233,7 +199,7 @@ HandlerResult AdminHandler::handlePost(const String& uri,
 }
 
 // AdminHandler::handleConfigSet removed - admin updates are handled via
-// AdminHandler::handleAdminUpdateJson() and /admin/updateSettings/json.
+// the single AJAX endpoint /admin/updateSettings.
 
 void AdminHandler::handleAdminPage() {
   logger.debug(F("AdminHandler"), F("handleAdminPage called"));
@@ -264,26 +230,26 @@ void AdminHandler::handleAdminPage() {
 
 void AdminHandler::handleDownloadLog() {
   if (!ConfigMgr.isFileLoggingEnabled()) {
-    sendError(404, F("Datei-Logging ist auf diesem Gerät nicht aktiviert"));
+    this->sendError(404, F("Datei-Logging ist auf diesem Gerät nicht aktiviert"));
     return;
   }
 
   const char* LOG_FILE = "/log.txt";
   if (!LittleFS.exists(LOG_FILE)) {
-    sendError(404, F("Keine Log-Datei gefunden"));
+    this->sendError(404, F("Keine Log-Datei gefunden"));
     return;
   }
 
   File logFile = LittleFS.open(LOG_FILE, "r");
   if (!logFile) {
-    sendError(500, F("Öffnen der Log-Datei fehlgeschlagen"));
+    this->sendError(500, F("Öffnen der Log-Datei fehlgeschlagen"));
     return;
   }
 
   size_t fileSize = logFile.size();
   if (fileSize == 0) {
     logFile.close();
-    sendError(404, F("Log-Datei ist leer"));
+    this->sendError(404, F("Log-Datei ist leer"));
     return;
   }
 

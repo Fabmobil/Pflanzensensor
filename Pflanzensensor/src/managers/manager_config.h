@@ -334,8 +334,10 @@ class ConfigManager {
    * @brief Set WiFi SSID 1
    */
   ConfigResult setWiFiSSID1(const String& ssid) {
+    ScopedLock lock;
     m_configData.wifiSSID1 = ssid;
-    return saveConfig();
+    notifyConfigChange("wifi_ssid_1", ssid, false);
+    return ConfigResult::success();
   }
   /**
    * @brief Get WiFi Password 1
@@ -345,8 +347,10 @@ class ConfigManager {
    * @brief Set WiFi Password 1
    */
   ConfigResult setWiFiPassword1(const String& pwd) {
+    ScopedLock lock;
     m_configData.wifiPassword1 = pwd;
-    return saveConfig();
+    notifyConfigChange("wifi_pwd_1", "***", false);
+    return ConfigResult::success();
   }
   /**
    * @brief Get WiFi SSID 2
@@ -356,8 +360,10 @@ class ConfigManager {
    * @brief Set WiFi SSID 2
    */
   ConfigResult setWiFiSSID2(const String& ssid) {
+    ScopedLock lock;
     m_configData.wifiSSID2 = ssid;
-    return saveConfig();
+    notifyConfigChange("wifi_ssid_2", ssid, false);
+    return ConfigResult::success();
   }
   /**
    * @brief Get WiFi Password 2
@@ -367,8 +373,10 @@ class ConfigManager {
    * @brief Set WiFi Password 2
    */
   ConfigResult setWiFiPassword2(const String& pwd) {
+    ScopedLock lock;
     m_configData.wifiPassword2 = pwd;
-    return saveConfig();
+    notifyConfigChange("wifi_pwd_2", "***", false);
+    return ConfigResult::success();
   }
   /**
    * @brief Get WiFi SSID 3
@@ -378,8 +386,10 @@ class ConfigManager {
    * @brief Set WiFi SSID 3
    */
   ConfigResult setWiFiSSID3(const String& ssid) {
+    ScopedLock lock;
     m_configData.wifiSSID3 = ssid;
-    return saveConfig();
+    notifyConfigChange("wifi_ssid_3", ssid, false);
+    return ConfigResult::success();
   }
   /**
    * @brief Get WiFi Password 3
@@ -389,8 +399,10 @@ class ConfigManager {
    * @brief Set WiFi Password 3
    */
   ConfigResult setWiFiPassword3(const String& pwd) {
+    ScopedLock lock;
     m_configData.wifiPassword3 = pwd;
-    return saveConfig();
+    notifyConfigChange("wifi_pwd_3", "***", false);
+    return ConfigResult::success();
   }
 
 #if USE_MAIL

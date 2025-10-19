@@ -299,13 +299,94 @@ class BaseHandler {
   }
 
   /**
-   * @brief Send error response
+   * @brief Send an error response; JSON for AJAX requests, HTML otherwise
    * @param code HTTP status code
    * @param message Error message
-   * @details Sends error response with plain text message
    */
   void sendError(int code, const String& message) {
-    _server.send(code, F("text/plain"), message);
+    // Determine if caller expects JSON
+    String xhr = _server.header("X-Requested-With");
+    String accept = _server.header("Accept");
+    bool wantsJson = (xhr == "XMLHttpRequest") || (accept.indexOf("application/json") >= 0) || isAjaxRequest();
+
+    if (wantsJson) {
+      String escaped = escapeJson(message);
+      // Build JSON safely without relying on potentially problematic
+      // multi-character literals — append characters explicitly.
+      String json;
+      json.reserve(escaped.length() + 64);
+      json += "{\"success\":false,\"error\":\"";
+      json += escaped;
+      json += '"';
+      json += '}';
+      sendJsonResponse(code, json);
+    } else {
+      // Small HTML error page as fallback
+      String html;
+      html.reserve(128 + message.length());
+      html += "<html><head><meta charset='utf-8'><title>Fehler</title></head><body>";
+      html += "<div style='max-width:760px;margin:40px auto;font-family:Arial,Helvetica,sans-serif;'>";
+      html += "<h2>Fehler</h2><p>";
+      html += message;
+      html += "</p>";
+      html += "</div></body></html>";
+      sendHtmlResponse(code, html);
+    }
+  }
+
+  /**
+   * @brief Check if the incoming request is an AJAX partial update
+   * @return true when request has X-Requested-With: XMLHttpRequest or ajax=1
+   */
+  bool isAjaxRequest() {
+    String xhr = _server.header("X-Requested-With");
+    bool hasAjaxParam = _server.hasArg("ajax") && (_server.arg("ajax") == "1" || _server.arg("ajax") == "true");
+    return (xhr == "XMLHttpRequest") || hasAjaxParam;
+  }
+
+  /**
+   * @brief Require that the request is AJAX; if not, send a standardized JSON error
+   * @return true when request is AJAX, false after sending the error response
+   */
+  bool requireAjaxRequest() {
+    if (!isAjaxRequest()) {
+      logger.warning(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
+      sendJsonResponse(400, F("{\"success\":false,\"error\":\"Nur AJAX-Updates werden unterstützt. Bitte die Admin-Oberfläche verwenden.\"}"));
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * @brief Ensure the caller is AJAX; if not, set an error string (no response sent)
+   * @param outError optional pointer to String to receive a localized error message
+   * @return true when request is AJAX, false otherwise
+   */
+  bool ensureAjaxAndSetError(String* outError) {
+    if (!isAjaxRequest()) {
+      if (outError) *outError = F("Nur AJAX-Updates werden unterstützt. Bitte die Admin-Oberfläche verwenden.");
+      logger.warning(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
+      return false;
+    }
+    return true;
+  }
+
+  // Simple JSON escaper — minimal set for error messages
+  static String escapeJson(const String& in) {
+    String out;
+    out.reserve(in.length() * 2 + 10);
+    for (size_t i = 0; i < in.length(); ++i) {
+      char c = in.charAt(i);
+      switch (c) {
+        case '"': out += "\\\""; break; // \"
+        case '\\': out += "\\\\"; break; // \\\\ -> \\\\ in string
+        case '\n': out += "\\n"; break;
+        case '\r': out += "\\r"; break;
+        case '\t': out += "\\t"; break;
+        default: out += c; break;
+      }
+    }
+    return out;
   }
 
   /**

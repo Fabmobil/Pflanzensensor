@@ -23,85 +23,46 @@
 
 void AdminHandler::handleAdminUpdate() {
   String changes;
-  bool updated = processConfigUpdates(changes);
+  String error;
 
-  std::vector<String> css = {"admin"};
-  std::vector<String> js = {"admin"};
+  // Require AJAX partial updates only (centralized check)
+  if (!requireAjaxRequest()) return;
 
-  if (!updated) {
-    renderAdminPage(
-        ConfigMgr.getDeviceName(), "admin",
-        [this]() {
-          sendChunk(F("<div class='card'>"));
-          sendChunk(F("<h2>Keine Änderungen vorgenommen</h2>"));
-          sendChunk(F("<p>Es wurden keine Änderungen an den Einstellungen erkannt.</p>"));
-          sendChunk(F("<br><a href='/admin' class='button button-primary'>"));
-          sendChunk(F("Zurück zur Administration</a>"));
-          sendChunk(F("</div>"));
-        },
-        css, js);
+  bool updated = processConfigUpdates(changes, &error);
+
+  if (!error.isEmpty()) {
+    String payload = F("{\"success\":false,\"error\":\"");
+    String escaped = error;
+    escaped.replace("\"", "\\\"");
+    escaped.replace('\n', ' ');
+    payload += escaped;
+    payload += F("\"}");
+    sendJsonResponse(400, payload);
     return;
   }
-
-  // Save changes
-  auto result = ConfigMgr.saveConfig();
-  if (!result.isSuccess()) {
-    renderAdminPage(
-        ConfigMgr.getDeviceName(), "admin",
-        [this, &result]() {
-          sendChunk(F("<div class='card'>"));
-          sendChunk(F("<h2>❌ Fehler beim Speichern</h2>"));
-          sendChunk(F("<p class='error-message'>"));
-          sendChunk(result.getMessage());
-          sendChunk(F("</p>"));
-          sendChunk(F("<br><a href='/admin' class='button button-primary'>"));
-          sendChunk(F("Zurück zur Administration</a>"));
-          sendChunk(F("</div>"));
-        },
-        css, js);
-    return;
-  }
-
-  // Show success page with changes
-  renderAdminPage(
-      ConfigMgr.getDeviceName(), "admin",
-      [this, changes]() {  // Pass changes by value since it's a String
-        sendChunk(F("<div class='card'>"));
-        sendChunk(F("<h2>✓ Einstellungen gespeichert</h2>"));
-        sendChunk(F("<p>Folgende Änderungen wurden vorgenommen:</p>"));
-        sendChunk(F("<ul class='changes-list'>"));
-        sendChunk(changes);
-        sendChunk(F("</ul>"));
-        sendChunk(F("<br><a href='/admin' class='button button-primary'>"));
-        sendChunk(F("Zurück zur Administration</a>"));
-        sendChunk(F("</div>"));
-      },
-      css, js);
-}
-
-void AdminHandler::handleAdminUpdateJson() {
-  String changes;
-  bool updated = processConfigUpdates(changes);
 
   if (!updated) {
     sendJsonResponse(200, F("{\"success\":true,\"message\":\"Keine Änderungen\"}"));
     return;
   }
 
+  // Save changes and return JSON
   auto result = ConfigMgr.saveConfig();
   if (!result.isSuccess()) {
     String payload = F("{\"success\":false,\"error\":\"");
-    payload += result.getMessage();
+    String escaped = result.getMessage();
+    escaped.replace("\"", "\\\"");
+    escaped.replace('\n', ' ');
+    payload += escaped;
     payload += F("\"}");
     sendJsonResponse(500, payload);
     return;
   }
 
-  // Success - include a short changes summary
+  // Success - include a short change summary
+  logger.info(F("AdminHandler"), String(F("Konfiguration gespeichert, Änderungen: ")) + changes);
   String payload = F("{\"success\":true,\"changes\":\"");
-  // Escape quotes/newlines lightly
   String escaped = changes;
-  // Replace double quote with escaped sequence \"
   escaped.replace("\"", "\\\"");
   escaped.replace('\n', ' ');
   payload += escaped;
@@ -162,13 +123,13 @@ void AdminHandler::handleDownloadConfig() {
   logger.info(F("AdminHandler"), F("Download-Anfrage für settings.json von ") + clientIp);
   if (!LittleFS.exists(PATH)) {
     logger.warning(F("AdminHandler"), F("Konfigurationsdatei nicht gefunden"));
-    sendError(404, F("Konfigurationsdatei nicht gefunden"));
+    this->sendError(404, F("Konfigurationsdatei nicht gefunden"));
     return;
   }
   File f = LittleFS.open(PATH, "r");
   if (!f) {
     logger.error(F("AdminHandler"), F("Öffnen der Konfigurationsdatei fehlgeschlagen"));
-    sendError(500, F("Öffnen der Konfigurationsdatei fehlgeschlagen"));
+    this->sendError(500, F("Öffnen der Konfigurationsdatei fehlgeschlagen"));
     return;
   }
   size_t size = f.size();
@@ -204,13 +165,13 @@ void AdminHandler::handleDownloadSensors() {
   logger.info(F("AdminHandler"), F("Download-Anfrage für sensors.json von ") + clientIp);
   if (!LittleFS.exists(PATH)) {
   logger.warning(F("AdminHandler"), F("Sensorkonfigurationsdatei nicht gefunden"));
-    sendError(404, F("Sensorkonfigurationsdatei nicht gefunden"));
+    this->sendError(404, F("Sensorkonfigurationsdatei nicht gefunden"));
     return;
   }
   File f = LittleFS.open(PATH, "r");
   if (!f) {
     logger.error(F("AdminHandler"), F("Öffnen der Sensorkonfigurationsdatei fehlgeschlagen"));
-    sendError(500, F("Öffnen der Sensorkonfigurationsdatei fehlgeschlagen"));
+    this->sendError(500, F("Öffnen der Sensorkonfigurationsdatei fehlgeschlagen"));
     return;
   }
   size_t size = f.size();

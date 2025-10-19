@@ -150,7 +150,8 @@ function initConfigAutoSave() {
   // specially below).
   if (!(actionAttr.includes('/admin/updateSettings') || actionAttr.includes('/admin/updateWiFi'))) return;
 
-    // Hide the visual save button to reduce clutter but keep it for fallback
+    // Hide the visual save button to reduce clutter. The form remains in the DOM for accessibility,
+    // but it must be submitted via JavaScript (AJAX) and direct HTML submissions are not supported.
     const submitButtons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
     submitButtons.forEach(btn => { btn.style.display = 'none'; });
 
@@ -175,17 +176,27 @@ function initConfigAutoSave() {
             const params = new URLSearchParams();
             params.append('section', sectionInput.value);
             params.append(lastChanged.name, lastChanged.value);
+            // Mark as AJAX partial update so the server accepts the request even if custom headers are stripped
+            params.append('ajax', '1');
 
-            fetch('/admin/updateSettings/json', {
+            fetch('/admin/updateSettings', {
               method: 'POST',
               body: params,
               credentials: 'include',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+              headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }
             })
             .then(parseJsonResponse)
             .then(data => {
               if (data.success) {
-                showSuccessMessage('Einstellung gespeichert');
+                if (data.changes) {
+                  // Strip HTML tags for the toast and show a compact summary
+                  const summary = data.changes.replace(/<[^>]+>/g, '').trim();
+                  showSuccessMessage('Gespeichert: ' + (summary || 'Änderungen übernommen'));
+                } else if (data.message) {
+                  showSuccessMessage(data.message);
+                } else {
+                  showSuccessMessage('Einstellung gespeichert');
+                }
               } else {
                 showErrorMessage('Fehler beim Speichern: ' + (data.error || data.message || 'Unbekannter Fehler'));
               }
@@ -202,12 +213,14 @@ function initConfigAutoSave() {
           // For WiFi forms, send only the changed field to the WiFi update endpoint
           const params = new URLSearchParams();
           params.append(lastChanged.name, lastChanged.value);
+          // Mark as AJAX partial update for WiFi requests
+          params.append('ajax', '1');
 
           fetch('/admin/updateWiFi', {
             method: 'POST',
             body: params,
             credentials: 'include',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }
           })
             .then(response => {
               const contentType = response.headers.get('content-type') || '';
@@ -226,6 +239,9 @@ function initConfigAutoSave() {
               // If JSON was returned, we may show messages accordingly
               if (data && data.success === false) {
                 showErrorMessage('Fehler beim Speichern: ' + (data.error || data.message || 'Unbekannter Fehler'));
+              } else if (data && data.success && data.changes) {
+                const summary = data.changes.replace(/<[^>]+>/g, '').trim();
+                showSuccessMessage('Gespeichert: ' + (summary || 'Änderungen übernommen'));
               }
             })
           .catch(err => {
@@ -237,34 +253,11 @@ function initConfigAutoSave() {
           return;
         }
       }
-      // Fallback: submit the whole form (legacy behavior)
-      const action = '/admin/updateSettings/json';
-      // Fallback: send the whole form as urlencoded (less RAM than JSON
-      // stringification on the device and supported by the server).
-      const formData = new FormData(form);
-      const params = new URLSearchParams();
-      for (const pair of formData.entries()) {
-        params.append(pair[0], pair[1]);
-      }
-
-      fetch(action, {
-        method: 'POST',
-        body: params,
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-      })
-      .then(parseJsonResponse)
-      .then(data => {
-        if (data.success) {
-          showSuccessMessage('Einstellungen automatisch gespeichert');
-        } else {
-          showErrorMessage('Fehler beim automatischen Speichern: ' + (data.error || data.message || 'Unbekannter Fehler'));
-        }
-      })
-      .catch(err => {
-        console.error('[admin.js] Auto-save error:', err);
-        showErrorMessage('Fehler beim automatischen Speichern: ' + err.message);
-      });
+      // Fallback: do nothing — partial updates only
+      // Previously we submitted the whole form here; that behavior is removed
+      // to enforce partial updates via AJAX from the UI.
+      lastChanged = null;
+      return;
     }
 
     function scheduleSubmit() {
@@ -298,34 +291,45 @@ function initConfigAutoSave() {
       // For checkboxes/selects etc. also debounce
       scheduleSubmit();
     });
+
+    // Intercept explicit form submission (e.g., Enter key) and submit whole form via AJAX
+    form.addEventListener('submit', function(evt) {
+      evt.preventDefault();
+      const action = actionAttr || form.getAttribute('action') || window.location.pathname;
+      const params = new URLSearchParams(new FormData(form));
+      params.append('ajax', '1');
+
+      fetch(action, {
+        method: 'POST',
+        body: params,
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(parseJsonResponse)
+      .then(data => {
+        if (data.success) {
+          if (data.changes) {
+            const summary = data.changes.replace(/<[^>]+>/g, '').trim();
+            showSuccessMessage('Gespeichert: ' + (summary || 'Änderungen übernommen'));
+          } else if (data.message) {
+            showSuccessMessage(data.message);
+          } else {
+            showSuccessMessage('Einstellungen gespeichert');
+          }
+        } else {
+          showErrorMessage('Fehler beim Speichern: ' + (data.error || data.message || 'Unbekannter Fehler'));
+        }
+      })
+      .catch(err => {
+        console.error('[admin.js] Full form submit error:', err);
+        showErrorMessage('Fehler beim Speichern: ' + err.message);
+      });
+    });
   });
 }
 
 // Initialize auto-save on load
 window.addEventListener('load', () => {
   initConfigAutoSave();
-  // If the admin page was loaded after a redirect from an upload, show a
-  // notification based on the query param upload=ok|err
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const u = params.get('upload');
-    if (u === 'ok') {
-      showSuccessMessage('Datei erfolgreich importiert');
-      // remove param from URL without reloading
-      if (window.history && window.history.replaceState) {
-        const url = new URL(window.location);
-        url.searchParams.delete('upload');
-        window.history.replaceState({}, document.title, url.pathname + url.search);
-      }
-    } else if (u === 'err') {
-      showErrorMessage('Fehler beim Importieren der Datei');
-      if (window.history && window.history.replaceState) {
-        const url = new URL(window.location);
-        url.searchParams.delete('upload');
-        window.history.replaceState({}, document.title, url.pathname + url.search);
-      }
-    }
-  } catch (e) {
-    // ignore URL parsing issues
-  }
+  // No legacy redirect handling required: uploads return JSON now.
 });

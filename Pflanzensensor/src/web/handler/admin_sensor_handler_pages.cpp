@@ -14,167 +14,122 @@
 #include "utils/helper.h"
 
 void AdminSensorHandler::handleSensorUpdate() {
-  if (!validateRequest()) return;
-  std::vector<String> css = {"admin"};
-  std::vector<String> js = {"admin", "sensors", "admin_sensors"};
-  renderAdminPage(
-      ConfigMgr.getDeviceName(), "admin/sensors",
-      [this]() {
-        sendChunk(F("<div class='container'>"));
-        bool changesOccurred = false;
-    // Speicher-Logging vor dem Update
-    logger.info(F("AdminSensorHandler"),
-          F("Speicher vor Update: freier Heap = ") +
-            String(ESP.getFreeHeap()) +
-            F(" bytes, Fragmentierung = ") +
-            String(ESP.getHeapFragmentation()) + F("%"));
-        auto result = ResourceMgr.executeCritical(
-            "Sensor Config Update", [&]() -> ResourceResult {
-              // Speicher-Logging innerhalb des kritischen Abschnitts
-              logger.info(F("AdminSensorHandler"),
-                          F("Speicher im kritischen Abschnitt: freier Heap = ") +
-                              String(ESP.getFreeHeap()) +
-                              F(" bytes, Fragmentierung = ") +
-                              String(ESP.getHeapFragmentation()) + F("%"));
-              if (!_sensorManager.isHealthy()) {
-                return ResourceResult::fail(ResourceError::INVALID_STATE,
-                                            F("Sensor-Manager nicht betriebsbereit"));
+  if (!requireAjaxRequest()) return;
+
+  if (!validateRequest()) {
+    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
+    return;
+  }
+
+  String changes;
+  bool changesOccurred = false;
+
+  auto result = ResourceMgr.executeCritical(
+      "Sensor Config Update", [&]() -> ResourceResult {
+        if (!_sensorManager.isHealthy()) {
+          return ResourceResult::fail(ResourceError::INVALID_STATE, F("Sensor-Manager nicht betriebsbereit"));
+        }
+        const auto& sensors = _sensorManager.getSensors();
+        for (auto& sensor : sensors) {
+          if (!sensor) continue;
+          if (!sensor->isInitialized()) continue;
+          String id = sensor->getId();
+          SensorConfig& config = sensor->mutableConfig();
+          for (size_t i = 0; i < config.activeMeasurements && i < config.measurements.size(); ++i) {
+            // Name update
+            String nameArg = "name_" + id + "_" + String(i);
+            if (_server.hasArg(nameArg)) {
+              String newName = _server.arg(nameArg);
+              if (newName != config.measurements[i].name) {
+                config.measurements[i].name = newName;
+                logger.info(F("AdminSensorHandler"), F("Name aktualisiert für ") + id + F("[") + String(i) + F("]: ") + newName);
+                changes += "<li>Sensor " + id + " Messwert " + String(i) + ": Name geändert zu '" + newName + "'</li>";
+                changesOccurred = true;
               }
-              const auto& sensors = _sensorManager.getSensors();
-              for (auto& sensor : sensors) {
-                if (!sensor) continue;
-                if (!sensor->isInitialized()) continue;
-                String id = sensor->getId();
-                SensorConfig& config = sensor->mutableConfig();
-                for (size_t i = 0; i < config.activeMeasurements &&
-                                   i < config.measurements.size();
-                     ++i) {
-                  // Name update
-                  String nameArg = "name_" + id + "_" + String(i);
-                  if (_server.hasArg(nameArg)) {
-                    String newName = _server.arg(nameArg);
-                    if (newName != config.measurements[i].name) {
-                      config.measurements[i].name = newName;
-            logger.info(F("AdminSensorHandler"),
-                  F("Name aktualisiert für ") + id + F("[") +
-                    String(i) + F("]: ") + newName);
-                      sendChunk(F("<li>Sensor "));
-                      sendChunk(id);
-                      sendChunk(F(" Messwert "));
-                      sendChunk(String(i));
-                      sendChunk(F(": Name geändert zu '"));
-                      sendChunk(newName);
-                      sendChunk(F("'</li>"));
-                      changesOccurred = true;
-                    }
-                  }
-                  // Thresholds
-                  if (processThresholds(sensor.get(), i)) {
-                    sendChunk(F("<li>Sensor "));
-                    sendChunk(id);
-                    sendChunk(F(" Messwert "));
-                    sendChunk(String(i));
-                    sendChunk(F(": Schwellwerte aktualisiert</li>"));
-                    changesOccurred = true;
-                  }
-          // Min/max update
+            }
+            // Thresholds
+            if (processThresholds(sensor.get(), i)) {
+              changes += "<li>Sensor " + id + " Messwert " + String(i) + ": Schwellwerte aktualisiert</li>";
+              changesOccurred = true;
+            }
 #if USE_ANALOG
-                  if (isAnalogSensor(sensor.get())) {
-                    AnalogSensor* analog =
-                        static_cast<AnalogSensor*>(sensor.get());
-                    String minArg = "min_" + id + "_" + String(i);
-                    String maxArg = "max_" + id + "_" + String(i);
-                    String invertedArg = "inverted_" + id + "_" + String(i);
-                    if (_server.hasArg(minArg)) {
-                      float newMin = _server.arg(minArg).toFloat();
-                      if (newMin != analog->getMinValue(i)) {
-                        analog->setMinValue(i, newMin);
-                        changesOccurred = true;
-                      }
-                    }
-                    if (_server.hasArg(maxArg)) {
-                      float newMax = _server.arg(maxArg).toFloat();
-                      if (newMax != analog->getMaxValue(i)) {
-                        analog->setMaxValue(i, newMax);
-                        changesOccurred = true;
-                      }
-                    }
-                    if (_server.hasArg(invertedArg)) {
-                      bool newInverted = _server.hasArg(invertedArg);
-                      if (newInverted != config.measurements[i].inverted) {
-                        config.measurements[i].inverted = newInverted;
-                        changesOccurred = true;
-                      }
-                    }
-                  }
-#endif
-                  // Persist thresholds
-                }
-                // Process enabled state (sensor-wide)
-                bool newEnabled = _server.hasArg("enabled_" + id);
-                if (newEnabled != sensor->isEnabled()) {
-                  sensor->setEnabled(newEnabled);
-                  logger.info(
-                      F("AdminSensorHandler"),
-                      F("Aktivierungszustand für ") + id + F(": ") +
-                          (newEnabled ? F("aktiviert") : F("deaktiviert")));
-                  sendChunk(F("<li>Sensor "));
-                  sendChunk(id);
-                  sendChunk(newEnabled ? F(": aktiviert</li>")
-                                       : F(": deaktiviert</li>"));
+            if (isAnalogSensor(sensor.get())) {
+              AnalogSensor* analog = static_cast<AnalogSensor*>(sensor.get());
+              String minArg = "min_" + id + "_" + String(i);
+              String maxArg = "max_" + id + "_" + String(i);
+              String invertedArg = "inverted_" + id + "_" + String(i);
+              if (_server.hasArg(minArg)) {
+                float newMin = _server.arg(minArg).toFloat();
+                if (newMin != analog->getMinValue(i)) {
+                  analog->setMinValue(i, newMin);
                   changesOccurred = true;
                 }
               }
-              // Save sensor config if changes occurred
-              if (changesOccurred) {
-                auto saveResult = SensorPersistence::saveToFileMinimal();
-                logger.info(
-                    F("AdminSensorHandler"),
-                    F("SensorPersistence::saveToFile() called, result: ") +
-                        saveResult.getMessage());
-                if (!saveResult.isSuccess()) {
-                  return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR,
-                                              F("Fehler beim Speichern der Sensor-Konfiguration: ") +
-                                                  saveResult.getMessage());
+              if (_server.hasArg(maxArg)) {
+                float newMax = _server.arg(maxArg).toFloat();
+                if (newMax != analog->getMaxValue(i)) {
+                  analog->setMaxValue(i, newMax);
+                  changesOccurred = true;
                 }
               }
-              // Speicher-Logging nach dem Update
-              logger.info(F("AdminSensorHandler"),
-                          F("Speicher nach Update: freier Heap = ") +
-                              String(ESP.getFreeHeap()) +
-                              F(" bytes, Fragmentierung = ") +
-                              String(ESP.getHeapFragmentation()) + F("%"));
-              return ResourceResult::success();
-            });
-    // Speicher-Logging nach Handler
-    logger.info(F("AdminSensorHandler"),
-          F("Speicher nach Handler: freier Heap = ") +
-            String(ESP.getFreeHeap()) +
-            F(" bytes, Fragmentierung = ") +
-            String(ESP.getHeapFragmentation()) + F("%"));
-        if (!result.isSuccess()) {
-          sendChunk(F("<h2>Fehler</h2><p>Fehler beim Speichern: "));
-          sendChunk(result.getMessage());
-          sendChunk(F("</p>"));
-        } else if (changesOccurred) {
-          sendChunk(F("<h2>Änderungen gespeichert</h2>"));
-        } else {
-          sendChunk(F("<h2>Keine Änderungen</h2>"));
-          sendChunk(F("<p>Es wurden keine Änderungen vorgenommen.</p>"));
+              if (_server.hasArg(invertedArg)) {
+                bool newInverted = _server.hasArg(invertedArg);
+                if (newInverted != config.measurements[i].inverted) {
+                  config.measurements[i].inverted = newInverted;
+                  changesOccurred = true;
+                }
+              }
+            }
+#endif
+          }
+          // Process enabled state (sensor-wide)
+          bool newEnabled = _server.hasArg("enabled_" + id);
+          if (newEnabled != sensor->isEnabled()) {
+            sensor->setEnabled(newEnabled);
+            logger.info(F("AdminSensorHandler"), F("Aktivierungszustand für ") + id + F(": ") + (newEnabled ? F("aktiviert") : F("deaktiviert")));
+            changes += String("<li>Sensor ") + id + (newEnabled ? F(": aktiviert</li>") : F(": deaktiviert</li>"));
+            changesOccurred = true;
+          }
         }
-        sendChunk(
-            F("<br><a href='/admin/sensors' class='button button-primary'>"
-              "Zurück zur Sensorkonfiguration</a>"));
-        sendChunk(F("</div>"));
-      },
-      css, js);
+        if (changesOccurred) {
+          auto saveResult = SensorPersistence::saveToFileMinimal();
+          logger.info(F("AdminSensorHandler"), F("SensorPersistence::saveToFile() called, result: ") + saveResult.getMessage());
+          if (!saveResult.isSuccess()) {
+            return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR, F("Fehler beim Speichern der Sensor-Konfiguration: ") + saveResult.getMessage());
+          }
+        }
+        return ResourceResult::success();
+      });
+
+  if (!result.isSuccess()) {
+    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Speichern der Sensor-Konfiguration\"}"));
+    return;
+  }
+
+  // Build JSON response with changes as HTML list (UI will display in toast)
+  String resp;
+  resp.reserve(256 + changes.length());
+  resp += "{\"success\":true,\"changes\":\"";
+  // Escape double quotes and backslashes inside changes
+  for (size_t i = 0; i < changes.length(); ++i) {
+    char c = changes.charAt(i);
+    if (c == '\\') resp += "\\\\";
+    else if (c == '"') resp += "\\\"";
+    else if (c == '\n') resp += "\\n";
+    else if (c == '\r') resp += "\\r";
+    else resp += c;
+  }
+  resp += "\"}";
+  sendJsonResponse(200, resp.c_str());
 }
 
 void AdminSensorHandler::handleTriggerMeasurement() {
+  if (!requireAjaxRequest()) return;
+
   if (!_server.hasArg("sensor_id")) {
     logger.error(F("AdminSensorHandler"),
                  F("Messung auslösen: fehlende Sensor-ID"));
-    sendError(400, F("Fehlende Sensor-ID"));
+    this->sendError(400, F("Fehlende Sensor-ID"));
     return;
   }
 
@@ -189,7 +144,7 @@ void AdminSensorHandler::handleTriggerMeasurement() {
   if (!_sensorManager.isHealthy()) {
     logger.error(F("AdminSensorHandler"),
                  F("Messung auslösen: Sensor-Manager nicht betriebsbereit"));
-    sendError(500, F("Sensor-Manager nicht betriebsbereit"));
+    this->sendError(500, F("Sensor-Manager nicht betriebsbereit"));
     return;
   }
 
@@ -197,7 +152,7 @@ void AdminSensorHandler::handleTriggerMeasurement() {
   if (!sensor) {
     logger.error(F("AdminSensorHandler"),
                  F("Messung auslösen: Sensor nicht gefunden: ") + sensorId);
-    sendError(404, F("Sensor nicht gefunden"));
+    this->sendError(404, F("Sensor nicht gefunden"));
     return;
   }
 

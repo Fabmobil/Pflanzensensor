@@ -11,6 +11,7 @@
 
 void AdminSensorHandler::handleAnalogInverted() {
 #if USE_ANALOG
+  if (!requireAjaxRequest()) return;
   if (!validateRequest()) {
     sendJsonResponse(
         401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
@@ -105,6 +106,7 @@ void AdminSensorHandler::handleAnalogInverted() {
 
 void AdminSensorHandler::handleAnalogMinMax() {
 #if USE_ANALOG
+  if (!requireAjaxRequest()) return;
   if (!validateRequest()) {
     sendJsonResponse(
         401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));

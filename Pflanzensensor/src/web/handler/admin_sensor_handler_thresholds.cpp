@@ -69,6 +69,7 @@ bool AdminSensorHandler::updateThreshold(const String& baseId,
 }
 
 void AdminSensorHandler::handleThresholds() {
+  if (!requireAjaxRequest()) return;
   if (!validateRequest()) {
     sendJsonResponse(
         401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));

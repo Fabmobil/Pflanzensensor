@@ -13,6 +13,7 @@
 #include "utils/helper.h"
 
 void AdminSensorHandler::handleSingleSensorUpdate() {
+  if (!requireAjaxRequest()) return;
   if (!validateRequest()) {
     sendJsonResponse(
         401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
@@ -170,6 +171,7 @@ void AdminSensorHandler::handleSingleSensorUpdate() {
 }
 
 void AdminSensorHandler::handleMeasurementName() {
+  if (!requireAjaxRequest()) return;
   if (!validateRequest()) {
     sendJsonResponse(
         401, F("{\"success\":false,\"error\":\"Authentication required\"}"));

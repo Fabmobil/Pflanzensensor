@@ -69,10 +69,9 @@ class AdminHandler : public BaseHandler {
    *          - Tracks changes
    *          - Returns results
    * @note Expects JSON in format: {"key": "setting_name", "value": "new_value"}
+   * Individual key updates are handled via AJAX partial updates to
+   * /admin/updateSettings (AJAX-only). No HTML form POST fallback is supported.
    */
-  // Deprecated: individual key updates are handled by /admin/updateSettings/json
-  // and AdminHandler::handleAdminUpdateJson().
-
   /**
    * @brief Streams the log file to the client for download if file logging is
    * enabled.
@@ -177,12 +176,11 @@ class AdminHandler : public BaseHandler {
    *          - Applies changes
    *          - Updates storage
    *          - Logs modifications
+   *
+   * This single endpoint supports only AJAX partial updates
+   * (indicated by X-Requested-With or ajax=1) and always returns JSON.
    */
   void handleAdminUpdate();
-  /**
-   * @brief Handle admin settings update via AJAX (returns JSON)
-   */
-  void handleAdminUpdateJson();
 
   /**
    * @brief Handle configuration reset requests
@@ -234,6 +232,7 @@ class AdminHandler : public BaseHandler {
   /**
    * @brief Processes configuration updates from form submission
    * @param changes String to store descriptions of changes made
+   * @param error Optional output parameter to receive an error message when processing fails
    * @return bool True if any settings were updated
    * @details Handles updates for:
    *          - Debug flags
@@ -241,7 +240,7 @@ class AdminHandler : public BaseHandler {
    *          - Measurement intervals
    *          - System settings
    */
-  bool processConfigUpdates(String& changes);
+  bool processConfigUpdates(String& changes, String* error = nullptr);
 
   /**
    * @brief Format memory size in human readable format

@@ -156,6 +156,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
 }
 
 void AdminDisplayHandler::handleScreenDurationUpdate() {
+  if (!requireAjaxRequest()) return;
   if (!validateRequest()) {
     sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
@@ -186,6 +187,7 @@ void AdminDisplayHandler::handleScreenDurationUpdate() {
 }
 
 void AdminDisplayHandler::handleClockFormatUpdate() {
+  if (!requireAjaxRequest()) return;
   if (!validateRequest()) {
     sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
@@ -216,6 +218,7 @@ void AdminDisplayHandler::handleClockFormatUpdate() {
 }
 
 void AdminDisplayHandler::handleDisplayToggle() {
+  if (!requireAjaxRequest()) return;
   if (!validateRequest()) {
     sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
@@ -255,6 +258,7 @@ void AdminDisplayHandler::handleDisplayToggle() {
 }
 
 void AdminDisplayHandler::handleMeasurementDisplayToggle() {
+  if (!requireAjaxRequest()) return;
   if (!validateRequest()) {
     sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
