@@ -461,6 +461,91 @@ function updateAbsoluteMinMaxDisplay(sensorId, measurementIndex, absoluteMin, ab
   } else {
     console.warn(`[updateAbsoluteMinMaxDisplay] Max input not found for ${sensorId}_${measurementIndex}`);
   }
+
+  // --- Update slider absolute min/max markers and labels (non-raw) ---
+  try {
+    const sliderContainer = document.getElementById(`threshold_${sensorId}_${measurementIndex}`);
+    if (sliderContainer) {
+      // Determine display range (fallback to 0-100)
+      let rangeMin = parseFloat(sliderContainer.getAttribute('data-min'));
+      let rangeMax = parseFloat(sliderContainer.getAttribute('data-max'));
+      if (!isFinite(rangeMin)) rangeMin = 0;
+      if (!isFinite(rangeMax) || rangeMax <= rangeMin) rangeMax = rangeMin + 100;
+
+      const toPercent = (v) => {
+        if (!isFinite(v)) return null;
+        const p = ((v - rangeMin) / (rangeMax - rangeMin)) * 100;
+        if (isNaN(p)) return null;
+        return Math.max(0, Math.min(100, p));
+      };
+
+      // Absolute MIN
+      const absMinExists = absoluteMin !== undefined && absoluteMin !== Infinity;
+      const absMinVal = absMinExists ? parseFloat(absoluteMin) : null;
+      let absMinMarker = sliderContainer.querySelector(`.absolute-min-marker[data-sensor-id="${sensorId}"][data-measurement-index="${measurementIndex}"]`);
+      let absMinLabel = sliderContainer.querySelector(`.absolute-min-label[data-sensor-id="${sensorId}"][data-measurement-index="${measurementIndex}"]`);
+      if (absMinExists && !isNaN(absMinVal)) {
+        const pct = toPercent(absMinVal);
+        if (!absMinMarker) {
+          absMinMarker = document.createElement('div');
+          absMinMarker.className = 'absolute-min-marker';
+          absMinMarker.dataset.sensorId = sensorId;
+          absMinMarker.dataset.measurementIndex = measurementIndex;
+          sliderContainer.appendChild(absMinMarker);
+        }
+        if (!absMinLabel) {
+          absMinLabel = document.createElement('div');
+          absMinLabel.className = 'absolute-min-label';
+          absMinLabel.dataset.sensorId = sensorId;
+          absMinLabel.dataset.measurementIndex = measurementIndex;
+          sliderContainer.appendChild(absMinLabel);
+        }
+        if (pct !== null) {
+          absMinMarker.style.left = `${pct}%`;
+          absMinLabel.style.left = `${pct}%`;
+        }
+        absMinMarker.title = `Min: ${absMinVal.toFixed(2)}`;
+        absMinLabel.textContent = `Min: ${absMinVal.toFixed(2)}`;
+      } else {
+        if (absMinMarker) absMinMarker.remove();
+        if (absMinLabel) absMinLabel.remove();
+      }
+
+      // Absolute MAX
+      const absMaxExists = absoluteMax !== undefined && absoluteMax !== -Infinity;
+      const absMaxVal = absMaxExists ? parseFloat(absoluteMax) : null;
+      let absMaxMarker = sliderContainer.querySelector(`.absolute-max-marker[data-sensor-id="${sensorId}"][data-measurement-index="${measurementIndex}"]`);
+      let absMaxLabel = sliderContainer.querySelector(`.absolute-max-label[data-sensor-id="${sensorId}"][data-measurement-index="${measurementIndex}"]`);
+      if (absMaxExists && !isNaN(absMaxVal)) {
+        const pct = toPercent(absMaxVal);
+        if (!absMaxMarker) {
+          absMaxMarker = document.createElement('div');
+          absMaxMarker.className = 'absolute-max-marker';
+          absMaxMarker.dataset.sensorId = sensorId;
+          absMaxMarker.dataset.measurementIndex = measurementIndex;
+          sliderContainer.appendChild(absMaxMarker);
+        }
+        if (!absMaxLabel) {
+          absMaxLabel = document.createElement('div');
+          absMaxLabel.className = 'absolute-max-label';
+          absMaxLabel.dataset.sensorId = sensorId;
+          absMaxLabel.dataset.measurementIndex = measurementIndex;
+          sliderContainer.appendChild(absMaxLabel);
+        }
+        if (pct !== null) {
+          absMaxMarker.style.left = `${pct}%`;
+          absMaxLabel.style.left = `${pct}%`;
+        }
+        absMaxMarker.title = `Max: ${absMaxVal.toFixed(2)}`;
+        absMaxLabel.textContent = `Max: ${absMaxVal.toFixed(2)}`;
+      } else {
+        if (absMaxMarker) absMaxMarker.remove();
+        if (absMaxLabel) absMaxLabel.remove();
+      }
+    }
+  } catch (err) {
+    console.error('[updateAbsoluteMinMaxDisplay] Error updating slider absolute min/max:', err);
+  }
 }
 
 /**
@@ -990,18 +1075,31 @@ function renderInteractiveThresholdSlider({ container, min, max, thresholds, mea
 
   // --- Absolute min/max markers ---
   // Get absolute min/max values from the sensor configuration
-  const sensorConfig = initialMeasurementValues[`${sensorId}_${inputRefs ? inputRefs.length - 1 : 0}`];
+  // Determine measurement index from container id (container id format: 'threshold_<sensorId>_<measurementIndex>')
+  let measurementIndex = 0;
+  if (container && container.id) {
+    const parts = container.id.split('_');
+    const last = parts.length ? parts[parts.length - 1] : '0';
+    measurementIndex = parseInt(last, 10);
+    if (isNaN(measurementIndex)) measurementIndex = 0;
+  }
+  const sensorConfig = initialMeasurementValues[`${sensorId}_${measurementIndex}`];
   if (sensorConfig) {
     if (typeof sensorConfig.absoluteMin !== 'undefined' && sensorConfig.absoluteMin !== Infinity) {
       const absMinPercentage = pos(sensorConfig.absoluteMin);
       const absMinMarker = document.createElement('div');
       absMinMarker.className = 'absolute-min-marker';
+      // mark the element so we can find it later
+      absMinMarker.dataset.sensorId = sensorId;
+      absMinMarker.dataset.measurementIndex = measurementIndex;
       absMinMarker.style.left = `${absMinPercentage}%`;
       absMinMarker.title = `Min: ${sensorConfig.absoluteMin.toFixed(2)}`;
       container.appendChild(absMinMarker);
 
       const absMinLabel = document.createElement('div');
       absMinLabel.className = 'absolute-min-label';
+      absMinLabel.dataset.sensorId = sensorId;
+      absMinLabel.dataset.measurementIndex = measurementIndex;
       absMinLabel.textContent = `Min: ${sensorConfig.absoluteMin.toFixed(2)}`;
       absMinLabel.style.left = `${absMinPercentage}%`;
       container.appendChild(absMinLabel);
@@ -1011,12 +1109,17 @@ function renderInteractiveThresholdSlider({ container, min, max, thresholds, mea
       const absMaxPercentage = pos(sensorConfig.absoluteMax);
       const absMaxMarker = document.createElement('div');
       absMaxMarker.className = 'absolute-max-marker';
+      // mark the element so we can find it later
+      absMaxMarker.dataset.sensorId = sensorId;
+      absMaxMarker.dataset.measurementIndex = measurementIndex;
       absMaxMarker.style.left = `${absMaxPercentage}%`;
       absMaxMarker.title = `Max: ${sensorConfig.absoluteMax.toFixed(2)}`;
       container.appendChild(absMaxMarker);
 
       const absMaxLabel = document.createElement('div');
       absMaxLabel.className = 'absolute-max-label';
+      absMaxLabel.dataset.sensorId = sensorId;
+      absMaxLabel.dataset.measurementIndex = measurementIndex;
       absMaxLabel.textContent = `Max: ${sensorConfig.absoluteMax.toFixed(2)}`;
       absMaxLabel.style.left = `${absMaxPercentage}%`;
       container.appendChild(absMaxLabel);
