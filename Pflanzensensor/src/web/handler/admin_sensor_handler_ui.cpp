@@ -29,7 +29,10 @@ void AdminSensorHandler::handleSensorConfig() {
       [this]() {
         // Flower Status Sensor Selection Card
         renderFlowerStatusSensorCard();
-
+#if USE_LED_TRAFFIC_LIGHT
+        // LED Traffic Light Settings Card
+        generateAndSendLedTrafficLightSettingsCard();
+#endif
         sendChunk(F("<div class='admin-grid'>"));
         if (_sensorManager.isHealthy()) {
           const auto& sensors = _sensorManager.getSensors();
@@ -433,4 +436,108 @@ void AdminSensorHandler::renderFlowerStatusSensorCard() {
 
   sendChunk(F("</div>"));
   yield();
+}
+
+void AdminSensorHandler::generateAndSendLedTrafficLightSettingsCard() {
+#if USE_LED_TRAFFIC_LIGHT
+  sendChunk(F("<div class='card'><h3>LED-Ampel Einstellungen</h3>"));
+  sendChunk(F("<form method='post' action='/admin/updateSettings' "
+              "class='config-form'>"));
+  sendChunk(F("<input type='hidden' name='section' value='led_traffic_light'>"));
+
+  // Mode selection
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<label>LED-Ampel Modus:</label>"));
+  sendChunk(F("<select name='led_traffic_light_mode'>"));
+  sendChunk(F("<option value='0'"));
+  if (ConfigMgr.getLedTrafficLightMode() == 0)
+    sendChunk(F(" selected"));
+  sendChunk(F(">Modus 0: LED-Ampel aus</option>"));
+  sendChunk(F("<option value='1'"));
+  if (ConfigMgr.getLedTrafficLightMode() == 1)
+    sendChunk(F(" selected"));
+  sendChunk(F(">Modus 1: Alle Messungen anzeigen</option>"));
+  sendChunk(F("<option value='2'"));
+  if (ConfigMgr.getLedTrafficLightMode() == 2)
+    sendChunk(F(" selected"));
+  sendChunk(F(">Modus 2: Nur ausgewählte Messung anzeigen</option>"));
+  sendChunk(F("</select>"));
+  sendChunk(F("</div>"));
+
+  // Measurement selection (only visible in mode 2)
+  sendChunk(F("<div class='form-group' id='measurement_selection_group'"));
+  if (ConfigMgr.getLedTrafficLightMode() != 2) {
+    sendChunk(F(" style='display: none;'"));
+  }
+  sendChunk(F(">"));
+  sendChunk(F("<label for='led_traffic_light_measurement'>Ausgewählte "
+              "Messung:</label>"));
+  sendChunk(F("<select name='led_traffic_light_measurement' "
+              "id='led_traffic_light_measurement'>"));
+  sendChunk(F("<option value=''>-- Messung auswählen --</option>"));
+
+  // Get available measurements from sensor manager
+  extern std::unique_ptr<SensorManager> sensorManager;
+  if (sensorManager) {
+    for (const auto& sensor : sensorManager->getSensors()) {
+      if (sensor && sensor->isEnabled()) {
+        String sensorId = sensor->getId();
+        String sensorName = sensor->getName();
+
+        // Get all measurements for this sensor
+        for (size_t i = 0; i < sensor->config().activeMeasurements; i++) {
+          String measurementName = sensor->getMeasurementName(i);
+          String fieldName = sensor->config().measurements[i].fieldName;
+
+          // Create measurement identifier
+          String measurementId = sensorId + "_" + String(i);
+
+          // Create display name
+          String displayName = sensorName;
+          if (!measurementName.isEmpty()) {
+            displayName += " - " + measurementName;
+          }
+          if (!fieldName.isEmpty()) {
+            displayName += " (" + fieldName + ")";
+          }
+
+          sendChunk(F("<option value='"));
+          sendChunk(measurementId);
+          sendChunk(F("'"));
+          if (ConfigMgr.getLedTrafficLightSelectedMeasurement() == measurementId)
+            sendChunk(F(" selected"));
+          sendChunk(F(">"));
+          sendChunk(displayName);
+          sendChunk(F("</option>"));
+        }
+      }
+    }
+  }
+  sendChunk(F("</select>"));
+  sendChunk(F("</div>"));
+
+  // Save handled automatically via AJAX; keep form for fallback but remove visible submit button
+  sendChunk(F("</form>"));
+
+  // Add JavaScript to show/hide measurement selection based on mode
+  sendChunk(F("<script>"));
+  sendChunk(F("document.addEventListener('DOMContentLoaded', function() {"));
+  sendChunk(F("  const modeSelect = "
+              "document.querySelector('select[name=\"led_traffic_light_mode\"]');"));
+  sendChunk(F("  const measurementGroup = "
+              "document.getElementById('measurement_selection_group');"));
+  sendChunk(F("  function toggleMeasurementSelection() {"));
+  sendChunk(F("    if (modeSelect.value === '2') {")); // Changed to '2' for mode 2
+  sendChunk(F("      measurementGroup.style.display = 'block';"));
+  sendChunk(F("    } else {"));
+  sendChunk(F("      measurementGroup.style.display = 'none';"));
+  sendChunk(F("    }"));
+  sendChunk(F("  }"));
+  sendChunk(F("  modeSelect.addEventListener('change', toggleMeasurementSelection);"));
+  sendChunk(F("  toggleMeasurementSelection();"));
+  sendChunk(F("});"));
+  sendChunk(F("</script>"));
+
+  sendChunk(F("</div>"));
+#endif // USE_LED_TRAFFIC_LIGHT
 }

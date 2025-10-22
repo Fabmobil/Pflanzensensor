@@ -65,7 +65,8 @@ function updateScreenDuration(duration) {
   fetch('/admin/display/screen_duration', {
     method: 'POST',
     headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ screen_duration: duration })
+    credentials: 'include',
+    body: new URLSearchParams({ screen_duration: duration, ajax: '1' })
   })
   .then(parseJsonResponse)
   .then(data => {
@@ -104,7 +105,8 @@ function updateClockFormat(format) {
   fetch('/admin/display/clock_format', {
     method: 'POST',
     headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ clock_format: format })
+    credentials: 'include',
+    body: new URLSearchParams({ clock_format: format, ajax: '1' })
   })
   .then(parseJsonResponse)
   .then(data => {
@@ -153,7 +155,8 @@ function updateDisplayToggle(setting, enabled) {
   fetch('/admin/display/toggle', {
     method: 'POST',
     headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ display: setting, enabled: enabled })
+    credentials: 'include',
+    body: new URLSearchParams({ display: setting, enabled: enabled, ajax: '1' })
   })
   .then(parseJsonResponse)
   .then(data => {
@@ -216,7 +219,8 @@ function updateMeasurementDisplay(sensorId, enabled, measurementIndex) {
   fetch('/admin/display/measurement_toggle', {
     method: 'POST',
     headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams(bodyParams)
+    credentials: 'include',
+    body: new URLSearchParams(Object.assign({}, bodyParams, { ajax: '1' }))
   })
   .then(parseJsonResponse)
   .then(data => {

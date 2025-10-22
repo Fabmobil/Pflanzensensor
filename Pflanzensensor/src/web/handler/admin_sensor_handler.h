@@ -76,6 +76,9 @@ public:
   // Flower status sensor configuration
   void renderFlowerStatusSensorCard();
 
+  // LED Traffic Light Settings
+  void generateAndSendLedTrafficLightSettingsCard();
+
 protected:
   WebAuth& _auth;                ///< Reference to authentication service
   CSSService& _cssService;       ///< Reference to CSS service

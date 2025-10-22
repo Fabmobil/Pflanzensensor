@@ -559,7 +559,9 @@ public:
    * @return Selected measurement ID string, empty if no measurement selected
    */
   inline String getLedTrafficLightSelectedMeasurement() const {
-    return m_configData.ledTrafficLightSelectedMeasurement;
+    return m_configData.ledTrafficLightSelectedMeasurement.isEmpty()
+               ? String("ANALOG_1")
+               : m_configData.ledTrafficLightSelectedMeasurement;
   }
 
   /**

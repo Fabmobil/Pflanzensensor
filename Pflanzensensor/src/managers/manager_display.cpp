@@ -16,6 +16,7 @@
 #include "managers/manager_sensor.h"
 #include "utils/critical_section.h"
 #include "utils/helper.h"
+#include "utils/persistence_utils.h"
 #include "utils/result_types.h"
 
 extern std::unique_ptr<SensorManager> sensorManager;
@@ -166,6 +167,11 @@ DisplayResult DisplayManager::saveConfig() {
   }
 
   configFile.close();
+
+  // Log success and written size for diagnostics (helps detect silent FS failures)
+  size_t bytes = PersistenceUtils::getFileSize("/display_config.json");
+  logger.info(F("DisplayM"),
+              String(F("Display-Konfiguration gespeichert, Bytes geschrieben: ")) + String(bytes));
 #endif
   return DisplayResult::success();
 }

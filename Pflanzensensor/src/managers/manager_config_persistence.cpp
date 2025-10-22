@@ -88,18 +88,27 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(ConfigData&
       doc.containsKey("debug_websocket") ? doc["debug_websocket"] : DEBUG_WEBSOCKET;
 
   // LED Traffic Light settings
+  // Default to mode 2 (single measurement) as initial default for new devices
   config.ledTrafficLightMode = doc.containsKey("led_traffic_light_mode")
                                    ? doc["led_traffic_light_mode"]
-                                   : 1; // Default to mode 1 (all measurements)
+                                   : 2; // Default to mode 2 (single measurement)
+  // If the selected measurement is missing or empty, default to ANALOG_1 so
+  // the UI shows a meaningful selection on first boot.
   config.ledTrafficLightSelectedMeasurement =
-      doc.containsKey("led_traffic_light_selected_measurement")
+      (doc.containsKey("led_traffic_light_selected_measurement") &&
+       doc["led_traffic_light_selected_measurement"].as<String>() != "")
           ? doc["led_traffic_light_selected_measurement"].as<String>()
-          : ""; // Default to empty (no measurement selected)
+          : String("ANALOG_1"); // Default to ANALOG_1
 
   // Flower Status settings
-  config.flowerStatusSensor = doc.containsKey("flower_status_sensor")
-                                  ? doc["flower_status_sensor"].as<String>()
-                                  : "ANALOG_1"; // Default to ANALOG_1 (Bodenfeuchte)
+  // If the key is missing or the value is an empty string, treat it as missing
+  // and use the compile-time default. This ensures devices with an empty
+  // value in an existing config.json still get the intended default and
+  // the value is written back during migration.
+  config.flowerStatusSensor =
+      (doc.containsKey("flower_status_sensor") && doc["flower_status_sensor"].as<String>() != "")
+          ? doc["flower_status_sensor"].as<String>()
+          : String("ANALOG_1"); // Default to ANALOG_1 (Bodenfeuchte)
 
   // --- Migration: if keys are missing in an existing config.json, add them
   // using compile-time defaults so devices upgraded from older firmware still
@@ -149,15 +158,19 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(ConfigData&
     doc["wifi_password_1"] = config.wifiPassword1;
     modified = true;
   }
+  // Ensure migration also fills in defaults when key is missing or empty
   if (!doc.containsKey("led_traffic_light_mode")) {
     doc["led_traffic_light_mode"] = config.ledTrafficLightMode;
     modified = true;
   }
-  if (!doc.containsKey("led_traffic_light_selected_measurement")) {
+  if (!doc.containsKey("led_traffic_light_selected_measurement") ||
+      doc["led_traffic_light_selected_measurement"].as<String>() == "") {
     doc["led_traffic_light_selected_measurement"] = config.ledTrafficLightSelectedMeasurement;
     modified = true;
   }
-  if (!doc.containsKey("flower_status_sensor")) {
+  // If the key is missing or present but empty, add the compile-time/default
+  // value to the file so upgrades populate the new setting consistently.
+  if (!doc.containsKey("flower_status_sensor") || doc["flower_status_sensor"].as<String>() == "") {
     doc["flower_status_sensor"] = config.flowerStatusSensor;
     modified = true;
   }

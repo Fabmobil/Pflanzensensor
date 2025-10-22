@@ -197,7 +197,7 @@ void sendPixelatedFooter(ESP8266WebServer& server, const String& version, const 
   sendChunk(server, F("<li><a href='/admin/update' class='nav-item"));
   if (activeSection == "admin/update")
     sendChunk(server, F(" active"));
-  sendChunk(server, F("'>OTA Update</a></li>"));
+  sendChunk(server, F("'>Update</a></li>"));
   sendChunk(server, F("</ul>"));
 
   // Stats Values (Row 1, Column 3)

@@ -209,9 +209,6 @@ void AdminHandler::handleAdminPage() {
         generateAndSendSystemSettingsCard();
         generateAndSendSystemActionsCard();
         generateAndSendWiFiSettingsCard();
-#if USE_LED_TRAFFIC_LIGHT
-        generateAndSendLedTrafficLightSettingsCard();
-#endif
         generateAndSendSystemInfoCard();
 #if USE_MAIL
         generateAndSendMailSettingsCard();

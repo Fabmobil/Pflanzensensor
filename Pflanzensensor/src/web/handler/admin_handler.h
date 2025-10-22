@@ -108,12 +108,6 @@ public:
   void generateAndSendSystemInfoCard();
 
   /**
-   * @brief Generate and send the LED Traffic Light Settings card for the admin
-   * page.
-   */
-  void generateAndSendLedTrafficLightSettingsCard();
-
-  /**
    * @brief Generate and send the WiFi Settings card for the admin page.
    */
   void generateAndSendWiFiSettingsCard();
