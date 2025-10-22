@@ -59,23 +59,6 @@ ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
 void sendChunk(ESP8266WebServer& server, const String& chunk);
 
 /**
- * @brief Send navigation menu
- * @param server Reference to web server
- * @param activeItem Currently active menu item
- * @details DEPRECATED: Navigation is now in footer. Use sendPixelatedFooter instead.
- */
-void sendNavigation(ESP8266WebServer& server, const String& activeItem);
-
-/**
- * @brief Send footer with version information
- * @param server Reference to web server
- * @param version Version string
- * @param buildDate Build date string
- * @details DEPRECATED: Use sendPixelatedFooter instead.
- */
-void sendFooter(ESP8266WebServer& server, const String& version, const String& buildDate);
-
-/**
  * @brief Send pixelated footer with navigation and system info
  * @param server Reference to web server
  * @param version Version string

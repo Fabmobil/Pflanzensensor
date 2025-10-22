@@ -151,17 +151,6 @@ private:
    *          - Manages unknown states
    */
   const char* translateStatus(const char* status) const;
-
-  /**
-   * @brief Render WiFi setup form for AP mode
-   * @details Generates WiFi setup form when device is in AP mode:
-   *          - Slot selection (1-3)
-   *          - Network scanning and selection
-   *          - Password input
-   *          - Submit button
-   *          - Signal strength and security info
-   */
-  void renderWiFiSetupForm();
 };
 
 #endif // STARTPAGE_HANDLER_H

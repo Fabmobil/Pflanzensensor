@@ -153,7 +153,6 @@ void WebManager::cleanupHandlers() {
     _logHandler->cleanup();
   if (_minimalAdminHandler)
     _minimalAdminHandler->cleanup();
-    // WiFiSetupHandler deprecated/entfernt: keine explizite Bereinigung nötig
 #if USE_DISPLAY
   if (_displayHandler)
     _displayHandler->cleanup();

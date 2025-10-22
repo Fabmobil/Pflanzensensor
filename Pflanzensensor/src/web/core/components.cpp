@@ -111,16 +111,6 @@ void sendChunk(ESP8266WebServer& server, const String& chunk) {
   }
 }
 
-void sendNavigation(ESP8266WebServer& server, const String& activeItem) {
-  // Navigation wird im Footer angezeigt (siehe sendPixelatedFooter)
-  // Diese Funktion wird nicht mehr genutzt, bleibt aber für Kompatibilität
-}
-
-void sendFooter(ESP8266WebServer& server, const String& version, const String& buildDate) {
-  // Footer wird mit sendPixelatedFooter erstellt
-  // Diese Funktion wird nicht mehr genutzt, bleibt aber für Kompatibilität
-}
-
 void sendPixelatedFooter(ESP8266WebServer& server, const String& version, const String& buildDate,
                          const String& activeSection) {
   sendChunk(server, F("<div class='footer'>"));

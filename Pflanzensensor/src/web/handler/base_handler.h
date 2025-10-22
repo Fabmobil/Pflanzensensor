@@ -127,7 +127,6 @@ protected:
    * @param content Content generation function
    * @param additionalCss Additional CSS files
    * @param additionalScripts Additional JS files
-   * @details DEPRECATED: Use renderPixelatedPage instead.
    *          Renders complete HTML page with:
    *          - Header with title
    *          - Navigation menu
@@ -142,7 +141,6 @@ protected:
       return;
     }
 
-    Component::sendNavigation(_server, activeNav);
     Component::sendChunk(_server, F("<div class='main-container'>"));
     Component::sendChunk(_server, F("<div class='content-container'>"));
     Component::sendChunk(_server, F("<div class='page-container'>"));
@@ -150,7 +148,6 @@ protected:
     content();
 
     Component::sendChunk(_server, F("</div></div></div>"));
-    Component::sendFooter(_server, VERSION, __DATE__);
     Component::endResponse(_server, additionalScripts);
   }
 
@@ -216,43 +213,6 @@ protected:
     Component::beginContentBox(_server, activeSection);
     content();
     Component::endContentBox(_server);
-
-    Component::sendPixelatedFooter(_server, VERSION, __DATE__, activeSection);
-    Component::endPixelatedPage(_server);
-    Component::endResponse(_server, additionalScripts);
-  }
-
-  /**
-   * @brief DEPRECATED: Render a complete page with pixelated design
-   * @deprecated Use renderStartPage() for start page or renderAdminPage() for admin/logs
-   */
-  void renderPixelatedPage(const String& title, const String& activeSection,
-                           std::function<void()> content,
-                           const std::vector<String>& additionalCss = std::vector<String>(),
-                           const std::vector<String>& additionalScripts = std::vector<String>(),
-                           const String& statusClass = "status-unknown",
-                           bool showContentBox = true) {
-
-    // Ensure start.css is included
-    std::vector<String> css = {"start"};
-    css.insert(css.end(), additionalCss.begin(), additionalCss.end());
-
-    if (!Component::beginResponse(_server, title, css)) {
-      return;
-    }
-
-    Component::beginPixelatedPage(_server, statusClass);
-
-    // Cloud title BEFORE content box
-    Component::sendCloudTitle(_server, title);
-
-    if (showContentBox) {
-      Component::beginContentBox(_server);
-      content();
-      Component::endContentBox(_server);
-    } else {
-      content();
-    }
 
     Component::sendPixelatedFooter(_server, VERSION, __DATE__, activeSection);
     Component::endPixelatedPage(_server);
