@@ -1,0 +1,631 @@
+/* Neues UI Design für Pflanzensensor Startseite */
+/* @import url("https://fonts.googleapis.com/css?family=DM+Mono:500"); */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: #000;
+  font-family: "DM Mono", Helvetica, monospace;
+}
+
+img {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.box {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden auto;
+  background: linear-gradient(180deg, #d4b3ff 0%, #a855f7 50%, #7c3aed 100%);
+  scroll-behavior: smooth;
+  display: flex;
+  justify-content: center;
+  padding: 2em 0 0;
+  box-sizing: border-box;
+  transition: background 0.5s ease;
+}
+
+/* Status-basierte Hintergrund-Gradienten */
+.box.status-green {
+  background: linear-gradient(180deg, #d4b3ff 0%, #a855f7 50%, #7c3aed 100%);
+}
+
+.box.status-yellow {
+  background: linear-gradient(180deg, #debdff 0%, #a77fcd 50%, #8868bf 100%);
+}
+
+.box.status-red {
+  background: linear-gradient(180deg, #d8d1e1 0%, #a695b7 50%, #8e80a7 100%);
+}
+
+.box.status-error {
+  background: linear-gradient(180deg, #d4b3ff 0%, #a855f7 50%, #7c3aed 100%);
+}
+
+.box.status-unknown {
+  background: linear-gradient(180deg, #d4b3ff 0%, #a855f7 50%, #7c3aed 100%);
+}
+
+.box .group {
+  position: relative;
+  width: clamp(90%, 95%, 800px);
+  max-width: 800px;
+  font-size: clamp(0.7em, 2vw + 0.3em, 1.8em);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+  padding: 0 clamp(0.2em, 1vw, 0.5em);
+}
+
+/* Breitere group für Admin-Seiten */
+.box .group:has(.admin-content-box) {
+  width: 98%;
+  max-width: 1400px;
+}
+
+.box .div {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.box .flower-wrap {
+  position: relative;
+  width: 70%;
+  margin-bottom: 2em;
+  z-index: 3;
+}
+
+/* Animierte Hintergründe hinter der Blume */
+.box .flower-wrap::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150%;
+  height: 150%;
+  border-radius: 50%;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.5s;
+  z-index: -1;
+  animation: rotate 10s linear infinite;
+}
+
+/* Grüner Status - Rotierende grüne Streifen */
+.box.status-green .flower-wrap::before {
+  background: repeating-conic-gradient(from 0deg, rgb(209, 255, 209) 0deg 30deg, transparent 30deg 60deg);
+  mask-image: radial-gradient(black 20%, transparent 60%);
+  opacity: 1;
+}
+
+/* Gelber Status - Pulsierender gelber Glow */
+.box.status-yellow .flower-wrap::before {
+  background: radial-gradient(circle, rgba(255,255,0,0.9) 0%, rgba(255,255,0,0.6) 30%, transparent 60%);
+  animation: glow 1.5s ease-in-out infinite;
+  opacity: 1;
+}
+
+/* Roter Status - Pulsierender roter Ring */
+.box.status-red .flower-wrap::before {
+  background: radial-gradient(circle, transparent 45%, rgba(255,0,0,0.8) 45%, rgba(255,0,0,0.8) 55%, transparent 55%);
+  background-size: 100% 100%;
+  background-position: center;
+  animation: pulse 2s ease-out infinite;
+  opacity: 1;
+}
+
+/* Unbekannter Status - Blitz-Emoji */
+.box.status-unknown .flower-wrap::before {
+  content: '?';
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20em;
+  animation: symbol-dance 2s ease-in-out infinite;
+  opacity: 0.6;
+}
+
+/* Error Status - Fragezeichen-Emoji */
+.box.status-error .flower-wrap::before {
+  content: '⚡';
+  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20em;
+  animation: symbol-dance 3s ease-in-out infinite;
+  opacity: 0.5;
+}
+
+.box .flower {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.box .face {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18%;
+  height: auto;
+  pointer-events: none;
+  filter: none !important;
+}
+
+.box .footer {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+}
+
+.box .footer .base {
+  position: relative;
+  width: 100%;
+  background: #1a1a1a;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: clamp(0.4em, 1.5vw, 1em);
+  margin-top: 1em;
+  box-sizing: border-box;
+}
+
+.box .footer .base::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14%;
+  min-width: 40px;
+  height: 1.2em;
+  background: #1a1a1a;
+}
+
+.box .footer .base .earth {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  width: 30%;
+  max-width: 150px;
+  height: auto;
+  image-rendering: pixelated;
+}
+
+.sensors-container {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -2em;
+  z-index: 4;
+}
+
+.box .sensor {
+  position: relative;
+  width: 80%;
+  max-width: 600px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  image-rendering: pixelated;
+  margin: 0;
+  padding: 0;
+}
+
+.box .sensor .stem {
+  position: absolute;
+  width: 100%;
+  height: auto;
+  display: block;
+  image-rendering: pixelated;
+  z-index: 1;
+  top: 0;
+  left: 0;
+}
+
+.box .sensor .leaf {
+  width: 100%;
+  height: auto;
+  display: block;
+  image-rendering: pixelated;
+  position: relative;
+  z-index: 0;
+  transition: transform 0.5s ease, filter 0.5s ease;
+}
+
+.box .sensor .card {
+  position: absolute;
+  top: 45%;
+  transform: translateY(-50%);
+  padding: 0.2em 0.3em;
+  box-sizing: border-box;
+  width: 52%;
+}
+
+.box .sensor.left .card {
+  left: 0;
+}
+
+.box .sensor.right .card {
+  right: 0;
+}
+
+/* === Card Top-Positionierung basierend auf Status === */
+.box .sensor.sensor-status-green .card,
+.box .sensor.sensor-status-unknown .card,
+.box .sensor.sensor-status-error .card {
+  top: 40%;
+}
+
+.box .sensor.sensor-status-yellow .card {
+  top: 50%;
+}
+
+.box .sensor.sensor-status-red .card {
+  top: 63%;
+}
+
+.box .sensor .label {
+  font-size: clamp(0.5rem, 1.2vw + 0.3rem, 1rem);
+  color: #f2f2f2;
+  line-height: 1.2;
+  margin-bottom: 0.2em;
+}
+
+.box .sensor .value {
+  font-size: clamp(0.7rem, 1.8vw + 4rem, 1.5rem);
+  color: #f2f2f2;
+  white-space: nowrap;
+  line-height: 1.1;
+  margin: 0.1em 0;
+  font-weight: 500;
+}
+
+.box .sensor .status {
+  font-size: clamp(0.5rem, 1.2vw + 0.3rem, 1rem);
+  margin: 0.2em 0;
+  line-height: 1.2;
+  text-align: center;
+  padding-top: clamp(0.3em, 1.5vw, 1em);
+}
+
+.box .sensor .interval {
+  font-size: clamp(0.45rem, 1vw + 0.25rem, 1rem);
+  color: #f2f2f2;
+  margin-top: 0.2em;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.box .sensor .status.green { color: #00ff00; }
+.box .sensor .status.yellow { color: #ffff00; }
+.box .sensor .status.red { color: #ff6700; }
+.box .sensor .status.error { color: #d6cece; }
+.box .sensor .status.unknown { color: #d6cece; }
+
+/* === Sensor Leaf Transformationen === */
+.box .sensor.left .leaf {
+  transform: scaleX(-1);
+  transform-origin: center center;
+}
+
+/* === Leaf Color Tinting === */
+.box .sensor.sensor-status-green .leaf {
+  filter: sepia(0.7) saturate(8) hue-rotate(70deg) brightness(1.5);
+}
+
+.box .sensor.sensor-status-yellow .leaf {
+  filter: sepia(0.7) saturate(8) hue-rotate(10deg) brightness(1.5);
+}
+
+.box .sensor.sensor-status-red .leaf {
+  filter: sepia(0.7) saturate(8) hue-rotate(-30deg) brightness(1.5);
+}
+
+/* === Leaf Rotation basierend auf Status === */
+.box .sensor.sensor-status-yellow.left .leaf {
+  transform: scaleX(-1) rotate(8deg);
+}
+
+.box .sensor.sensor-status-yellow.right .leaf {
+  transform: rotate(8deg);
+}
+
+.box .sensor.sensor-status-red.left .leaf {
+  transform: scaleX(-1) rotate(16deg);
+}
+
+.box .sensor.sensor-status-red.right .leaf {
+  transform: rotate(16deg);
+}
+
+.box .sensor.sensor-status-error.left .leaf {
+  transform: scaleX(-1) scaleY(-1);
+}
+
+.box .sensor.sensor-status-error.right .leaf {
+  transform: scaleY(-1);
+}
+
+.box .sensor.sensor-status-unknown .leaf {
+  opacity: 0.4;
+}
+
+/* === Active Sensor Glow === */
+.box .sensor.active.sensor-status-green .leaf {
+  filter: sepia(0.7) saturate(8) hue-rotate(70deg) brightness(1.5) drop-shadow(0 0 0.5em rgba(255,255,255,0.8));
+}
+
+.box .sensor.active.sensor-status-yellow .leaf {
+  filter: sepia(0.7) saturate(8) hue-rotate(10deg) brightness(1.5) drop-shadow(0 0 0.5em rgba(255,255,255,0.8));
+}
+
+.box .sensor.active.sensor-status-red .leaf {
+  filter: sepia(0.7) saturate(8) hue-rotate(-30deg) brightness(1.5) drop-shadow(0 0 0.5em rgba(255,255,255,0.8));
+}
+
+.box .sensor.active.sensor-status-error .leaf,
+.box .sensor.active.sensor-status-unknown .leaf {
+  filter: drop-shadow(0 0 0.5em rgba(255,255,255,0.8));
+}
+
+/* === Card Counter-Rotation === */
+.box .sensor.sensor-status-yellow.left .card {
+  transform: translateY(-50%) rotate(-8deg);
+}
+
+.box .sensor.sensor-status-yellow.right .card {
+  transform: translateY(-50%) rotate(8deg);
+}
+
+.box .sensor.sensor-status-red.left .card {
+  transform: translateY(-50%) rotate(-16deg);
+}
+
+.box .sensor.sensor-status-red.right .card {
+  transform: translateY(-50%) rotate(16deg);
+}
+
+/* === Error State Card Swap === */
+.box .sensor.sensor-status-error.left .card {
+  left: auto;
+  right: 0;
+  top: 55%;
+  transform: translateY(-50%) rotate(180deg);
+  transform-origin: left center;
+  padding: 0.5em 0.3em 0.3em 0.5em;
+}
+
+.box .sensor.sensor-status-error.right .card {
+  right: auto;
+  left: 0;
+  top: 55%;
+  transform: translateY(-50%) rotate(180deg);
+  transform-origin: right center;
+  padding: 0.5em 0.5em 0.3em 0.3em;
+}
+
+.box .sensor.sensor-status-error.left .label,
+.box .sensor.sensor-status-error.left .value {
+  text-align: right;
+}
+
+.box .sensor.sensor-status-error.right .label,
+.box .sensor.sensor-status-error.right .value {
+  text-align: left;
+}
+
+.box .sensor.sensor-status-unknown .card {
+  opacity: 0.7;
+}
+
+.box .sensor.left .label,
+.box .sensor.left .value {
+  text-align: left;
+}
+
+.box .sensor.right .label,
+.box .sensor.right .value {
+  text-align: right;
+}
+
+.box .cloud {
+  position: relative;
+  width: 100%;
+  max-width: 20em;
+  pointer-events: none;
+  z-index: 4;
+  margin-bottom: 2em;
+}
+
+/* === Keyframe Animationen === */
+@keyframes rotate {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(0);
+    opacity: 0.8;
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    opacity: 0.3;
+    filter: blur(0px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(10px);
+  }
+}
+
+@keyframes symbol-dance {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  25% {
+    transform: translate(-45%, -55%) scale(1.2);
+  }
+  50% {
+    transform: translate(-55%, -50%) scale(0.8);
+  }
+  75% {
+    transform: translate(-50%, -45%) scale(1.1);
+  }
+}
+
+.box .cloud-img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.box .cloud-label {
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #000;
+  font-weight: 500;
+  font-size: clamp(0.7em, 1.5vw + 0.4em, 1.2em);
+  white-space: nowrap;
+}
+
+.base-overlay {
+  width: 100%;
+  margin-top: 1.5em;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto auto;
+  gap: clamp(0.15em, 0.8vw, 0.5em) clamp(0.2em, 1.5vw, 1em);
+  width: 100%;
+  min-width: 0;
+}
+
+.nav-box {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.2em, 0.8vw, 0.5em);
+}
+
+/* Footer Navigation - größere Schrift für Hauptmenü */
+.nav-item {
+  font-size: clamp(0.65em, 2vw + 0.2em, 1.4em);
+  line-height: 1.1;
+}
+
+.stats-labels, .stats-values {
+  grid-row: 1;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.2em, 0.8vw, 0.5em);
+  font-size: clamp(0.4em, 1.2vw + 0.15em, 0.75em);
+  color: #8e8e8e;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.stats-labels {
+  grid-column: 2;
+  text-align: right;
+  align-items: flex-end;
+}
+
+/* Kleinere Schrift für Labels/Werte auf Startseite */
+.stats-labels .nav-item,
+.stats-values .nav-item {
+  font-size: inherit;
+}
+
+.stats-labels li,
+.stats-values li {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stats-values {
+  grid-column: 3;
+}
+
+.footer-logo {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+}
+
+.footer-logo img {
+  height: clamp(0.9em, 2vw + 0.3em, 1.5em);
+  width: auto;
+  image-rendering: pixelated;
+}
+
+.footer-version, .footer-build {
+  grid-row: 2;
+  color: #8e8e8e;
+  font-size: clamp(0.35em, 1vw + 0.15em, 0.6em);
+  display: flex;
+  align-items: center;
+}
+
+.footer-version {
+  grid-column: 2;
+  justify-content: flex-end;
+  text-align: right;
+}
+
+.footer-build {
+  grid-column: 3;
+}
+
+/* Minimale Anpassungen nur wo wirklich nötig */
+@media (max-width: 480px) {
+  .box { padding: clamp(0.5em, 2vw, 2em) 0 0; }
+  .box .flower-wrap { width: 75%; }
+  .box .sensor { width: 90%; }
+  .box .sensor .card { width: 54%; padding: clamp(0.15em, 0.5vw, 0.3em) clamp(0.2em, 0.8vw, 0.5em); }
+}
+
+@media (min-width: 481px) {
+  .box .sensor { width: 80%; }
+}

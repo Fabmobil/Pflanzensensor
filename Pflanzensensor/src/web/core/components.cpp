@@ -1,0 +1,324 @@
+/**
+ * @file components.cpp
+ * @brief Implementation of web components and HTML utilities
+ */
+
+#include "web/core/components.h"
+
+#include <ESP8266WiFi.h>
+#include <algorithm>
+
+#include "logger/logger.h"
+#include "utils/helper.h"
+
+namespace Component {
+
+// Return the appropriate IP to display in the web UI.
+// If the device is running an AP (or AP+STA) return the softAP IP,
+// otherwise return the station local IP. If no IP is assigned, return
+// a localized placeholder.
+String getDisplayIP() {
+  IPAddress ip;
+  if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+    ip = WiFi.softAPIP();
+  } else {
+    ip = WiFi.localIP();
+  }
+  String ipStr = ip.toString();
+  if (ipStr == "0.0.0.0")
+    return String(F("(IP nicht gesetzt)"));
+  return ipStr;
+}
+
+String getDisplaySSID() {
+  if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+    String ssid = WiFi.softAPSSID();
+    if (ssid.length() == 0)
+      return String(F("(AP SSID unbekannt)"));
+    return ssid;
+  }
+  String ssid = WiFi.SSID();
+  if (ssid.length() == 0)
+    return String(F("(SSID unbekannt)"));
+  return ssid;
+}
+
+ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
+                             const std::vector<String>& additionalCss) {
+  static const char CONTENT_TYPE[] PROGMEM = "Content-Type";
+  static const char TEXT_HTML[] PROGMEM = "text/html";
+  static const char CONNECTION[] PROGMEM = "Connection";
+  static const char CLOSE[] PROGMEM = "close";
+  static const char CACHE_CONTROL[] PROGMEM = "Cache-Control";
+  static const char NO_CACHE[] PROGMEM = "no-cache";
+
+  // Check memory before starting
+  uint32_t freeHeap = ESP.getFreeHeap();
+  if (freeHeap < SAFE_HEAP_SIZE) {
+    server.send(503, F("text/plain"), F("Unzureichender Speicher, bitte später erneut versuchen"));
+    return ResourceResult::fail(ResourceError::INSUFFICIENT_MEMORY,
+                                F("Unzureichender Speicher für HTML-Antwort"));
+  }
+
+  server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+  server.sendHeader(FPSTR(CONTENT_TYPE), FPSTR(TEXT_HTML));
+  server.sendHeader(FPSTR(CONNECTION), FPSTR(CLOSE));
+  server.sendHeader(FPSTR(CACHE_CONTROL), FPSTR(NO_CACHE));
+  server.send(200, FPSTR(TEXT_HTML), F(""));
+
+  // Send initial HTML
+  sendChunk(server, F("<!DOCTYPE html><html lang='de'><head>"
+                      "<meta charset='UTF-8'>"
+                      "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+                      "<title>"));
+  sendChunk(server, title);
+  sendChunk(server, F("</title>"
+                      "<link rel='stylesheet' href='/css/style.css'>"));
+
+  // Add each additional CSS file
+  for (const auto& css : additionalCss) {
+    if (!css.isEmpty()) {
+      sendChunk(server, F("<link rel='stylesheet' href='/css/"));
+      sendChunk(server, css);
+      sendChunk(server, F(".css'>"));
+    }
+  }
+
+  sendChunk(server, F("</head><body>"));
+  return ResourceResult::success();
+}
+
+void sendChunk(ESP8266WebServer& server, const String& chunk) {
+  static char buffer[128]; // Reuse buffer
+  size_t remaining = chunk.length();
+  size_t offset = 0;
+  static unsigned long lastYield = 0;
+  const unsigned long YIELD_INTERVAL = 100; // Yield every 100ms
+
+  while (remaining > 0) {
+    size_t toSend =
+        std::min<size_t>(remaining, sizeof(buffer) - 1); // Leave space for null terminator
+    chunk.substring(offset, offset + toSend).toCharArray(buffer, sizeof(buffer));
+    server.sendContent(buffer);
+    remaining -= toSend;
+    offset += toSend;
+
+    // Yield periodically to prevent watchdog timeouts
+    if (millis() - lastYield > YIELD_INTERVAL) {
+      yield();
+      lastYield = millis();
+    }
+  }
+}
+
+void sendPixelatedFooter(ESP8266WebServer& server, const String& version, const String& buildDate,
+                         const String& activeSection) {
+  sendChunk(server, F("<div class='footer'>"));
+  sendChunk(server, F("<div class='base'>"));
+
+  // Earth image
+  sendChunk(server, F("<img class='earth' src='/img/earth.png' alt='Earth' />"));
+
+  // Base overlay with navigation and stats
+  sendChunk(server, F("<footer class='base-overlay' aria-label='Statusleiste'>"));
+  sendChunk(server, F("<div class='footer-grid'>"));
+
+  // Navigation (Row 1, Column 1)
+  sendChunk(server, F("<nav class='nav-box' aria-label='Navigation'><ul class='nav-list'>"));
+
+  // Main navigation
+  sendChunk(server, F("<li><a href='/' id='nav-start' class='nav-item"));
+  if (activeSection == "start" || activeSection == "/" || activeSection == "")
+    sendChunk(server, F(" active"));
+  sendChunk(server, F("'>START</a></li>"));
+
+  sendChunk(server, F("<li><a href='/logs' id='nav-logs' class='nav-item"));
+  if (activeSection == "logs")
+    sendChunk(server, F(" active"));
+  sendChunk(server, F("'>LOGS</a></li>"));
+
+  sendChunk(server, F("<li><a href='/admin' id='nav-admin' class='nav-item"));
+  if (activeSection.startsWith("admin"))
+    sendChunk(server, F(" active"));
+  sendChunk(server, F("'>ADMIN</a></li>"));
+
+  sendChunk(server, F("</ul></nav>"));
+
+  // Stats Labels (Zeile 1, Spalte 2)
+  // Rendere sowohl die System-Status-Labels als auch das Admin-Untermenü.
+  // Serverseitig wird jeweils das passende Element per Inline-Style sichtbar
+  // gelassen. Client-seitiges JavaScript kann die Ansicht toggeln, ohne die
+  // Seite neu zu laden.
+  // System stats labels
+  sendChunk(server, F("<ul class='stats-labels' id='footer-stats-labels'"));
+  if (activeSection.startsWith("admin"))
+    sendChunk(server, F(" style='display:none'"));
+  sendChunk(server, F(">"));
+  sendChunk(server, F("<li>📅 Zeit</li>"));
+  sendChunk(server, F("<li>🌐 SSID</li>"));
+  sendChunk(server, F("<li>💻 IP</li>"));
+  sendChunk(server, F("<li>📶 WIFI</li>"));
+  sendChunk(server, F("<li>⏲️ UPTIME</li>"));
+  sendChunk(server, F("<li>🔄 RESTARTS</li>"));
+  sendChunk(server, F("</ul>"));
+
+  // Admin submenu labels (hidden on non-admin pages)
+  sendChunk(server, F("<ul class='stats-labels' id='footer-admin-menu'"));
+  if (!activeSection.startsWith("admin"))
+    sendChunk(server, F(" style='display:none'"));
+  sendChunk(server, F(">"));
+  sendChunk(server, F("<li><a href='/admin' class='nav-item"));
+  if (activeSection == "admin")
+    sendChunk(server, F(" active"));
+  sendChunk(server, F("'>Einstellungen</a></li>"));
+
+  sendChunk(server, F("<li><a href='/admin/sensors' class='nav-item"));
+  if (activeSection == "admin/sensors")
+    sendChunk(server, F(" active"));
+  sendChunk(server, F("'>Sensoren</a></li>"));
+
+#if USE_DISPLAY
+  sendChunk(server, F("<li><a href='/admin/display' class='nav-item"));
+  if (activeSection == "admin/display")
+    sendChunk(server, F(" active"));
+  sendChunk(server, F("'>Display</a></li>"));
+#endif
+
+  sendChunk(server, F("<li><a href='/admin/update' class='nav-item"));
+  if (activeSection == "admin/update")
+    sendChunk(server, F(" active"));
+  sendChunk(server, F("'>Update</a></li>"));
+  sendChunk(server, F("</ul>"));
+
+  // Stats Values (Row 1, Column 3)
+  // Render both the numeric/stat values and an empty admin-values placeholder.
+  // The server sets the inline style so the correct one is visible by default.
+  sendChunk(server, F("<ul class='stats-values' id='footer-stats-values'"));
+  if (activeSection.startsWith("admin"))
+    sendChunk(server, F(" style='display:none'"));
+  sendChunk(server, F(">"));
+  sendChunk(server, F("<li>"));
+  sendChunk(server, Helper::getFormattedDate());
+  sendChunk(server, F(" "));
+  sendChunk(server, Helper::getFormattedTime());
+  sendChunk(server, F("</li><li>"));
+  // Prefer AP SSID when in AP mode so users can identify the device network
+  sendChunk(server, getDisplaySSID());
+  sendChunk(server, F("</li><li>"));
+  // Prefer showing AP IP when in AP mode so users can find the device
+  // when it created its own network for configuration.
+  sendChunk(server, getDisplayIP());
+  sendChunk(server, F("</li><li>"));
+  sendChunk(server, String(WiFi.RSSI()));
+  sendChunk(server, F(" dBm"));
+  sendChunk(server, F("</li><li>"));
+  sendChunk(server, Helper::getFormattedUptime());
+  sendChunk(server, F("</li><li>"));
+  sendChunk(server, String(Helper::getRebootCount()));
+  sendChunk(server, F("</li></ul>"));
+
+  // Admin values placeholder (empty for now) - visible only when admin menu is active
+  sendChunk(server, F("<ul class='stats-values' id='footer-admin-values'"));
+  if (!activeSection.startsWith("admin"))
+    sendChunk(server, F(" style='display:none'"));
+  sendChunk(server, F("></ul>"));
+
+  // Logo (Row 2, Column 1)
+  sendChunk(server, F("<div class='footer-logo'><a href='https://www.fabmobil.org' "
+                      "target='_blank'><img src='/img/fabmobil.png' alt='FABMOBIL' /></a></div>"));
+
+  // Version (Row 2, Column 2)
+  sendChunk(server, F("<div class='footer-version'>V "));
+  sendChunk(server, version);
+  sendChunk(server, F("</div>"));
+
+  // Build (Row 2, Column 3)
+  sendChunk(server, F("<div class='footer-build'>BUILD: "));
+  sendChunk(server, buildDate);
+  sendChunk(server, F("</div>"));
+
+  sendChunk(server, F("</div>"));    // Close footer-grid
+  sendChunk(server, F("</footer>")); // Close base-overlay
+  sendChunk(server, F("</div>"));    // Close base
+  sendChunk(server, F("</div>"));    // Close footer
+}
+
+void endResponse(ESP8266WebServer& server, const std::vector<String>& additionalScripts) {
+  // Add each additional script
+  for (const auto& script : additionalScripts) {
+    if (!script.isEmpty()) {
+      sendChunk(server, F("<script src='/js/"));
+      sendChunk(server, script);
+      sendChunk(server, F(".js'></script>"));
+    }
+  }
+
+  sendChunk(server, F("</body></html>"));
+  server.sendContent(F("")); // Final empty chunk to signify end of response
+}
+
+void formGroup(ESP8266WebServer& server, const String& label, const String& content) {
+  sendChunk(server, F("<div class='form-group'>"));
+  sendChunk(server, F("<label>"));
+  sendChunk(server, label);
+  sendChunk(server, F("</label>"));
+  sendChunk(server, content);
+  sendChunk(server, F("</div>"));
+}
+
+void button(ESP8266WebServer& server, const String& text, const String& type,
+            const String& className, bool disabled, const String& id) {
+  sendChunk(server, F("<button type='"));
+  sendChunk(server, type);
+  sendChunk(server, F("' class='button "));
+  sendChunk(server, className);
+  sendChunk(server, F("'"));
+
+  if (id.length() > 0) {
+    sendChunk(server, F(" id='"));
+    sendChunk(server, id);
+    sendChunk(server, F("'"));
+  }
+
+  if (disabled) {
+    sendChunk(server, F(" disabled"));
+  }
+
+  sendChunk(server, F(">"));
+  sendChunk(server, text);
+  sendChunk(server, F("</button>"));
+}
+
+void beginPixelatedPage(ESP8266WebServer& server, const String& statusClass) {
+  sendChunk(server, F("<div class='box "));
+  sendChunk(server, statusClass);
+  sendChunk(server, F("'><div class='group'>"));
+}
+
+void sendCloudTitle(ESP8266WebServer& server, const String& title) {
+  sendChunk(server, F("<div class='cloud' aria-label='"));
+  sendChunk(server, title);
+  sendChunk(server, F("'>"));
+  sendChunk(server, F("<img class='cloud-img' src='/img/cloud_big.png' alt='' />"));
+  sendChunk(server, F("<div class='cloud-label'>"));
+  sendChunk(server, title);
+  sendChunk(server, F("</div></div>"));
+}
+
+void beginContentBox(ESP8266WebServer& server, const String& section) {
+  sendChunk(server, F("<div class='admin-content-box'"));
+  if (!section.isEmpty()) {
+    sendChunk(server, F(" data-section='"));
+    sendChunk(server, section);
+    sendChunk(server, F("'"));
+  }
+  sendChunk(server, F(">"));
+}
+
+void endContentBox(ESP8266WebServer& server) { sendChunk(server, F("</div>")); }
+
+void endPixelatedPage(ESP8266WebServer& server) {
+  sendChunk(server, F("</div></div>")); // Close group and box
+}
+
+} // namespace Component

@@ -1,0 +1,878 @@
+/**
+ * @file admin.css
+ * @brief Admin-Seiten Styling (dunkel, kompakt)
+ * @details Basis-Font-Size global gesetzt, dann nur noch wo wirklich nötig überschreiben
+ */
+
+/* === Globale Font-Size für Admin-Seiten === */
+.admin-content-box {
+  font-size: clamp(0.75em, 1.5vw + 0.2em, 0.9em);
+}
+
+/* --- Admin Content Box (dunkler Container für Admin-Seiten) --- */
+.admin-content-box {
+  position: relative;
+  width: 90%;
+  max-width: 1200px;
+  background: linear-gradient(135deg, #2d1810 0%, #1a1a1a 50%, #2d1810 100%);
+  border: 2px solid #8b4513;
+  border-radius: 8px;
+  padding: clamp(1em, 2.5vw, 2em);
+  margin: 0 auto clamp(1.5em, 3vw, 2em) auto;
+  box-shadow: 0 6px 16px rgba(139, 69, 19, 0.3), 0 0 40px rgba(220, 38, 38, 0.15);
+  z-index: 3;
+}
+
+/* Admin-Bereich Indikator */
+.admin-content-box::before {
+  content: 'ADMIN';
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+  padding: 4px 20px;
+  border-radius: 12px;
+  font-size: 0.7em;
+  font-weight: 700;
+  letter-spacing: 2px;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.4);
+  border: 1px solid #991b1b;
+}
+
+/* Spezifische Admin-Bereiche */
+.admin-content-box[data-section="admin"]::before {
+  content: 'ADMIN';
+  background: linear-gradient(90deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.admin-content-box[data-section="sensors"]::before,
+.admin-content-box[data-section*="/sensors"]::before {
+  content: 'SENSOREN';
+  background: linear-gradient(90deg, #8b4513 0%, #654321 100%);
+}
+
+.admin-content-box[data-section="display"]::before,
+.admin-content-box[data-section*="/display"]::before {
+  content: 'DISPLAY';
+  background: linear-gradient(90deg, #d97706 0%, #b45309 100%);
+}
+
+.admin-content-box[data-section="wifi"]::before,
+.admin-content-box[data-section*="/wifi"]::before {
+  content: 'WIFI';
+  background: linear-gradient(90deg, #7c3aed 0%, #6d28d9 100%);
+}
+
+.admin-content-box[data-section="system"]::before,
+.admin-content-box[data-section*="/system"]::before {
+  content: 'SYSTEM';
+  background: linear-gradient(90deg, #059669 0%, #047857 100%);
+}
+
+.admin-content-box[data-section="ota"]::before,
+.admin-content-box[data-section*="/update"]::before {
+  content: 'UPDATE';
+  background: linear-gradient(90deg, #0891b2 0%, #0e7490 100%);
+}
+
+.admin-content-box[data-section="logs"]::before {
+  content: 'LOGS';
+  background: linear-gradient(90deg, #64748b 0%, #475569 100%);
+}
+
+
+/* --- Layout --- */
+.admin-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.2em;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
+.admin-grid .card {
+  min-width: 100%;
+  max-width: 100%;
+  margin-bottom: 0;
+}
+
+@media (max-width: 900px) {
+  .admin-grid {
+    flex-direction: column;
+    gap: 1em;
+  }
+  .admin-grid .card {
+    max-width: 100%;
+    min-width: 100%;
+  }
+}
+
+/* --- Card Components --- */
+.card {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  padding: 1.2em;
+  margin-bottom: 1em;
+  color: #f2f2f2;
+}
+
+.card-header {
+  margin-bottom: 0.8em;
+  padding-bottom: 0.5em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+}
+
+.card-section {
+  margin-bottom: 1em;
+}
+
+
+.card > h1 {
+  font-size: 1.5em;
+  margin-bottom: 0.8em;
+  color: #f2f2f2;
+  text-align: center;
+}
+
+.card > h2 {
+  font-size: 1.2em;
+  color: #f2f2f2;
+  margin-bottom: 0.6em;
+}
+
+.card > h3 {
+  font-size: 1em;
+  color: #d4b3ff;
+  margin: 0.5em 0;
+}
+
+.card h4 {
+  font-size: 0.9em;
+  color: #a855f7;
+  margin: 0.4em 0 0.3em 0;
+}
+
+.card label {
+  color: #b0b0b0;
+  display: block;
+  margin-bottom: 0.3em;
+}
+
+.card input[type="text"],
+.card input[type="password"],
+.card select {
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  color: #f2f2f2;
+  border-radius: 4px;
+  padding: 0.5em;
+  width: 100%;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.card input[type="number"] {
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  color: #f2f2f2;
+  border-radius: 4px;
+  padding: 0.5em;
+  min-width: 4em;
+  font-size: inherit;
+  font-family: inherit;
+}
+
+.card input[type="text"]:focus,
+.card input[type="number"]:focus,
+.card input[type="password"]:focus,
+.card select:focus {
+  outline: none;
+  border-color: #a855f7;
+  box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.2);
+}
+
+.card input[type="checkbox"] {
+  accent-color: #a855f7;
+  cursor: pointer;
+  width: auto;
+  margin-right: 0.5em;
+}
+
+/* --- Buttons --- */
+button,
+input[type="submit"],
+input[type="button"],
+.button {
+  background: #a855f7;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0.6em 1.2em;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.2s;
+  display: inline-block;
+  text-decoration: none;
+  font-size: inherit;
+  font-family: inherit;
+  margin: 0.5em;
+}
+
+button:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover,
+.button:hover {
+  background: #9333ea;
+}
+
+button.primary,
+.button-primary {
+  background: #a855f7;
+  color: white;
+}
+
+button.primary:hover,
+.button-primary:hover {
+  background: #9333ea;
+}
+
+button.secondary,
+.button-secondary {
+  background: #3a3a3a;
+  color: #f2f2f2;
+}
+
+button.secondary:hover,
+.button-secondary:hover {
+  background: #4a4a4a;
+}
+
+button.danger,
+.button-danger {
+  background: #dc2626;
+}
+
+button.danger:hover,
+.button-danger:hover {
+  background: #b91c1c;
+}
+
+button.warning,
+.button-warning {
+  background: #f59e0b;
+}
+
+button.warning:hover,
+.button-warning:hover {
+  background: #d97706;
+}
+
+/* Themed file input: style the browse button and filename to match admin buttons */
+.card input[type="file"] {
+  color: #b0b0b0; /* filename color */
+  font: inherit;
+}
+
+/* Modern browsers */
+.card input[type="file"]::file-selector-button {
+  background: #a855f7;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.45em 0.9em;
+  margin-right: 0.6em;
+  cursor: pointer;
+  font: inherit;
+}
+
+/* WebKit / Blink legacy */
+.card input[type="file"]::-webkit-file-upload-button {
+  background: #a855f7;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.45em 0.9em;
+  margin-right: 0.6em;
+  cursor: pointer;
+  font: inherit;
+}
+
+.card input[type="file"]::file-selector-button:hover,
+.card input[type="file"]::-webkit-file-upload-button:hover {
+  background: #9333ea;
+}
+
+/* Make the file input look less cramped on small screens */
+.card .form-group input[type="file"] {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+
+/* --- Sensor Cards (nutzt .card Basis-Styling) --- */
+.sensor-card {
+  /* Erbt von .card: background, border, border-radius, box-shadow, color */
+  margin-bottom: 1.5em;
+  margin-top: 1em;
+}
+
+.measurement-card {
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  border-radius: 6px;
+  margin: 1em 0;
+  padding: 1em;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  color: #f2f2f2;
+}
+
+.measurement-card:not(:last-child) {
+  margin-bottom: 1.2em;
+}
+
+/* --- Sensor Titles --- */
+.sensor-id-title {
+  font-weight: bold;
+  color: #f2f2f2;
+  margin-bottom: 0.8em;
+}
+
+.sensor-id-title h2 {
+  font-size: 1.3em;
+  color: #d4b3ff;
+  margin: 0.3em 0;
+}
+
+.sensor-id-title h3 {
+  font-size: 0.9em;
+  color: #b0b0b0;
+  margin: 0.2em 0;
+  font-weight: normal;
+}
+
+/* --- Measurement Input Fields --- */
+.measurement-name {
+  font-weight: bold;
+  width: 100%;
+  margin-bottom: 0.3em;
+  border: 1px solid #4a4a4a;
+  border-radius: 4px;
+  padding: 0.4em 0.6em;
+  background: #3a3a3a;
+  color: #f2f2f2;
+  font-size: inherit;
+}
+
+
+.readonly-value {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  color: #b0b0b0;
+  width: 5em;
+  text-align: right;
+  pointer-events: none;
+  padding: 0.3em;
+  border-radius: 4px;
+  font-size: inherit;
+}
+
+/* --- Layout Rows --- */
+.name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+  align-items: center;
+}
+
+.status-row .label {
+  color: #b0b0b0;
+  margin-right: 0.2em;
+}
+
+.status-row .value {
+  font-weight: bold;
+  color: #f2f2f2;
+}
+
+.status-row .error-count {
+  color: #ef4444;
+  font-weight: bold;
+}
+
+/* --- Threshold Configuration --- */
+.threshold-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin-bottom: 0.5em;
+}
+
+.threshold-row label {
+  color: #b0b0b0;
+  margin-bottom: 0.2em;
+  display: block;
+}
+
+.threshold-row input[type="number"] {
+  background: #3a3a3a;
+  border: 1px solid #4a4a4a;
+  color: #f2f2f2;
+  border-radius: 4px;
+  padding: 0.3em;
+  width: 3.5em;
+}
+
+/* --- Analog Sensor Sections --- */
+.minmax-section {
+  margin-bottom: 0.8em;
+  padding: 0.6em;
+  background: #2a2a2a;
+  border-radius: 4px;
+}
+
+.inverted-section {
+  margin-bottom: 0.8em;
+}
+
+/* --- Threshold Slider Container --- */
+.threshold-slider-container {
+  position: relative;
+  width: 100%;
+  min-width: 220px;
+  height: 56px;
+  margin: 1em 0 0.8em 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.threshold-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* --- Threshold Slider Gradient Bar --- */
+.threshold-gradient-bar {
+  position: relative;
+  width: 100%;
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    #e53935 0%, #e53935 20%,
+    #fbc02d 20%, #fbc02d 40%,
+    #43a047 40%, #43a047 60%,
+    #fbc02d 60%, #fbc02d 80%,
+    #e53935 80%, #e53935 100%
+  );
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+
+  margin: 0;
+}
+
+.threshold-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid #888;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+  z-index: 5;
+  transition: left 0.3s cubic-bezier(.4,2,.6,1), border-color 0.2s;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.threshold-label, .measured-value-label {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 0);
+  bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  color: #111;
+  padding: 3px;
+  border-radius: 16px;
+  font-size: 1.18em;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.10), 0 0px 1px #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 4;
+  min-width: 40px;
+  min-height: 28px;
+  box-sizing: border-box;
+  text-align: center;
+  overflow: hidden;
+  line-height: 1.4;
+}
+
+/* Gradient backgrounds for threshold labels */
+.threshold-label-yellowlow {
+  background: linear-gradient(90deg, #e53935 0%, #fbc02d 100%);
+}
+.threshold-label-greenlow {
+  background: linear-gradient(90deg, #fbc02d 0%, #43a047 100%);
+}
+.threshold-label-greenhigh {
+  background: linear-gradient(90deg, #43a047 0%, #fbc02d 100%);
+}
+.threshold-label-yellowhigh {
+  background: linear-gradient(90deg, #fbc02d 0%, #e53935 100%);
+}
+
+.measured-value-label {
+  background: linear-gradient(90deg, #e3f2fd 0%, #90caf9 100%);
+  border-color: #2196f3;
+  color: #1565c0;
+  bottom: auto;
+  top: 40px;
+}
+
+.measured-value-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background: #2196f3;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  z-index: 6;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  pointer-events: none;
+}
+
+/* Connect labels to handles with triangles */
+.threshold-label::after, .measured-value-label::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  border-width: 0 8px 8px 8px;
+  border-style: solid;
+  border-color: transparent transparent #fff transparent;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.12));
+  z-index: 3;
+}
+
+.measured-value-label::after {
+  border-width: 8px 8px 0 8px;
+  border-color: #e3f2fd transparent transparent transparent;
+  top: auto;
+  bottom: 100%;
+}
+
+/* Absolute min/max marker and label (non-raw min/max shown under the slider) */
+.absolute-min-marker, .absolute-max-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #616161; /* subtle grey */
+  border: 2px solid #fff;
+  z-index: 5;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  pointer-events: none;
+}
+
+.absolute-min-label, .absolute-max-label {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 0);
+  top: 40px; /* place below the measured-value-label */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(90deg, #f5f5f5 0%, #ffffff 100%);
+  color: #111;
+  padding: 3px 8px;
+  border-radius: 14px;
+  font-size: 0.95em;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  z-index: 3;
+  pointer-events: none;
+  min-width: 36px;
+  text-align: center;
+}
+
+.absolute-min-label::after, .absolute-max-label::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translate(-50%, 0);
+  border-width: 8px 8px 0 8px;
+  border-style: solid;
+  border-color: #f5f5f5 transparent transparent transparent;
+  z-index: 2;
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.08));
+}
+
+/* Slight color differentiation for max label to make it distinct */
+.absolute-max-label {
+  background: linear-gradient(90deg, #fafafa 0%, #f1f1f1 100%);
+}
+
+/* --- Utility Classes --- */
+.flash {
+  animation: flash 0.3s ease-in-out;
+}
+
+@keyframes flash {
+  0% { opacity: 1; }
+  50% { opacity: 0.7; }
+  100% { opacity: 1; }
+}
+
+/* --- JSON Debug Display --- */
+.json-debug-pre {
+  max-height: 600px;
+  overflow: auto;
+  background: #222;
+  color: #fff;
+  padding: 8px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85em;
+}
+
+.json-debug-pre.error {
+  color: #ff5555;
+  background: #2a0000;
+}
+
+.json-debug-pre.warning {
+  color: #ffb300;
+  background: #332800;
+}
+
+/* --- AJAX Messages --- */
+.ajax-message {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 10px 15px;
+  border-radius: 5px;
+  color: white;
+  font-weight: bold;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.ajax-message-success {
+  background-color: #4CAF50;
+}
+
+.ajax-message-error {
+  background-color: #f44336;
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 700px) {
+  .measurement-card {
+    padding: 12px 4px 12px 4px;
+  }
+  .card-header {
+    padding-bottom: 2px;
+    margin-bottom: 6px;
+  }
+  .card-section {
+    margin-bottom: 6px;
+  }
+}
+
+@media (max-width: 600px) {
+  .threshold-slider-container {
+    height: 70px;
+  }
+  .threshold-gradient-bar {
+    height: 8px;
+  }
+  .threshold-label, .measured-value-label {
+    font-size: 0.85em;
+    padding: 2px 7px;
+  }
+  .threshold-handle {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+/* === OTA Update Styles === */
+.info-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5em;
+}
+
+.info-table td {
+  padding: 0.6em 0.8em;
+  border-bottom: 1px solid rgba(139, 69, 19, 0.3);
+  color: #e5e5e5;
+}
+
+.info-table td:first-child {
+  font-weight: 600;
+  color: #d4a574;
+  width: 40%;
+}
+
+.warning-box {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.15) 0%, rgba(239, 108, 0, 0.1) 100%);
+  border: 2px solid #ff9800;
+  border-radius: 8px;
+  padding: 1em 1.2em;
+  margin-bottom: 1.5em;
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.2);
+}
+
+.warning-box h3 {
+  color: #ffb74d;
+  margin-top: 0;
+  margin-bottom: 0.8em;
+  font-size: 1.1em;
+}
+
+.warning-box ul {
+  margin: 0;
+  padding-left: 1.5em;
+  color: #ffcc80;
+}
+
+.warning-box li {
+  margin-bottom: 0.4em;
+}
+
+.progress-container {
+  width: 100%;
+  height: 24px;
+  background: linear-gradient(90deg, rgba(139, 69, 19, 0.3) 0%, rgba(26, 26, 26, 0.5) 100%);
+  border: 2px solid rgba(139, 69, 19, 0.5);
+  border-radius: 12px;
+  margin: 1.5em 0;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.progress {
+  width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%);
+  border-radius: 10px;
+  transition: width 0.3s ease-in-out;
+  text-align: center;
+  color: white;
+  line-height: 24px;
+  font-size: 0.85em;
+  font-weight: 600;
+  box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+}
+
+.status {
+  margin: 1.5em 0;
+  padding: 0.8em 1em;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+.status-error {
+  background: linear-gradient(135deg, rgba(239, 83, 80, 0.2) 0%, rgba(198, 40, 40, 0.15) 100%);
+  border: 2px solid #ef5350;
+  color: #ffcdd2;
+}
+
+.status-warning {
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.2) 0%, rgba(239, 108, 0, 0.15) 100%);
+  border: 2px solid #ff9800;
+  color: #ffcc80;
+}
+
+.status-success {
+  background: linear-gradient(135deg, rgba(76, 175, 80, 0.2) 0%, rgba(46, 125, 50, 0.15) 100%);
+  border: 2px solid #4caf50;
+  color: #c8e6c9;
+}
+
+.status-info {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.2) 0%, rgba(21, 101, 192, 0.15) 100%);
+  border: 2px solid #2196f3;
+  color: #bbdefb;
+}
+
+.update-section {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+/* === Bestätigungsseiten (Success/Error/Info) === */
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 1em;
+}
+
+.error-message {
+  color: #ffcdd2;
+  background: rgba(239, 83, 80, 0.15);
+  padding: 0.8em;
+  border-left: 3px solid #ef5350;
+  border-radius: 4px;
+  margin: 1em 0;
+}
+
+.changes-list {
+  list-style: none;
+  padding: 0;
+  margin: 1em 0;
+}
+
+.changes-list li {
+  padding: 0.5em 0.8em;
+  margin: 0.5em 0;
+  background: rgba(139, 69, 19, 0.2);
+  border-left: 3px solid #8b4513;
+  border-radius: 4px;
+}
+
+.changes-list li::before {
+  content: '▸ ';
+  color: #d4a574;
+  font-weight: bold;
+  margin-right: 0.5em;
+}
+
+/* === Footer Override für Admin-Seiten === */
+/* Größere Schrift für Admin-Untermenü (rechte Spalte) */
+.stats-labels .nav-item {
+  font-size: clamp(0.6em, 1.8vw + 0.2em, 1.1em);
+}

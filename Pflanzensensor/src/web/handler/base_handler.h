@@ -1,0 +1,464 @@
+/**
+ * @file base_handler.h
+ * @brief Base class for web request handlers
+ * @details Provides comprehensive base functionality for web request handling:
+ *          - Request processing
+ *          - Response generation
+ *          - Content management
+ *          - Error handling
+ *          - Resource cleanup
+ */
+
+#pragma once
+
+#include <Arduino.h>
+#include <ESP8266WebServer.h>
+
+#include <map>
+#include <string>
+#include <vector>
+
+#include "logger/logger.h"
+#include "utils/result_types.h"
+#include "web/core/components.h"
+#include "web/core/web_router.h"
+
+/**
+ * @class BaseHandler
+ * @brief Enhanced base class for web request handlers
+ * @details Provides common functionality for web request handling:
+ *          - Request processing
+ *          - Response formatting
+ *          - Content generation
+ *          - Resource management
+ *          - Error handling
+ */
+class BaseHandler {
+public:
+  /**
+   * @brief Constructor
+   * @param server Reference to web server instance
+   * @details Initializes handler with server reference
+   */
+  explicit BaseHandler(ESP8266WebServer& server) : _server(server) {}
+
+  // Prevent copying
+  BaseHandler(const BaseHandler&) = delete;
+  BaseHandler& operator=(const BaseHandler&) = delete;
+
+  /**
+   * @brief Virtual destructor
+   * @details Ensures proper cleanup of derived classes
+   */
+  virtual ~BaseHandler() = default;
+
+  /**
+   * @brief Clean up handler resources
+   * @return true if cleanup was successful, false if already cleaned
+   * @details Performs cleanup operations:
+   *          - Calls onCleanup() for derived class-specific cleanup
+   *          - Sets cleanup flag
+   *          - Prevents multiple cleanups
+   *
+   * @note Derived classes should override onCleanup() for custom cleanup logic.
+   */
+  virtual bool cleanup() {
+    if (!_cleaned) {
+      onCleanup();
+      _cleaned = true;
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * @brief Hook for derived classes to perform custom cleanup.
+   * @details Called by cleanup() if not already cleaned. Override in derived
+   * classes for custom cleanup logic.
+   */
+  virtual void onCleanup() {}
+
+  /**
+   * @brief Handle GET requests
+   * @param uri Request URI
+   * @param query Query parameters
+   * @return Handler result indicating success or failure
+   * @details Pure virtual function for GET request processing
+   */
+  virtual HandlerResult handleGet(const String& uri, const std::map<String, String>& query) = 0;
+
+  /**
+   * @brief Handle POST requests
+   * @param uri Request URI
+   * @param params POST parameters
+   * @return Handler result indicating success or failure
+   * @details Pure virtual function for POST request processing
+   */
+  virtual HandlerResult handlePost(const String& uri, const std::map<String, String>& params) = 0;
+
+  /**
+   * @brief Register routes with router
+   * @param router Reference to router instance
+   * @return Router result indicating success or failure
+   * @details Calls onRegisterRoutes for derived class-specific route
+   * registration. Prevents multiple registrations if needed.
+   *
+   * @note Derived classes should override onRegisterRoutes for custom logic.
+   */
+  virtual RouterResult registerRoutes(WebRouter& router) final { return onRegisterRoutes(router); }
+
+  /**
+   * @brief Hook for derived classes to register routes.
+   * @param router Reference to router instance
+   * @return Router result indicating success or failure
+   * @details Called by registerRoutes(). Override in derived classes for custom
+   * route registration logic.
+   */
+  virtual RouterResult onRegisterRoutes(WebRouter& router) = 0;
+
+protected:
+  ESP8266WebServer& _server; ///< Protected server reference
+  bool _cleaned = false;     ///< Flag indicating if handler has been cleaned up
+
+  /**
+   * @brief Render page with standard layout (DEPRECATED)
+   * @param title Page title
+   * @param activeNav Active navigation item
+   * @param content Content generation function
+   * @param additionalCss Additional CSS files
+   * @param additionalScripts Additional JS files
+   *          Renders complete HTML page with:
+   *          - Header with title
+   *          - Navigation menu
+   *          - Content container
+   *          - Footer with version
+   *          - Required scripts
+   */
+  void renderPage(const String& title, const String& activeNav, std::function<void()> content,
+                  const std::vector<String>& additionalCss = std::vector<String>(),
+                  const std::vector<String>& additionalScripts = std::vector<String>()) {
+    if (!Component::beginResponse(_server, title, additionalCss)) {
+      return;
+    }
+
+    Component::sendChunk(_server, F("<div class='main-container'>"));
+    Component::sendChunk(_server, F("<div class='content-container'>"));
+    Component::sendChunk(_server, F("<div class='page-container'>"));
+
+    content();
+
+    Component::sendChunk(_server, F("</div></div></div>"));
+    Component::endResponse(_server, additionalScripts);
+  }
+
+  /**
+   * @brief Render start page with pixelated design (flower graphic, sensors)
+   * @param title Page title shown in cloud
+   * @param activeSection Active navigation section
+   * @param content Lambda function that generates page content (flower, sensors)
+   * @param additionalCss Additional CSS files to include
+   * @param additionalScripts Additional JavaScript files to include
+   * @param statusClass Status class for background (status-green, status-red, etc.)
+   */
+  void renderStartPage(const String& title, const String& activeSection,
+                       std::function<void()> content,
+                       const std::vector<String>& additionalCss = std::vector<String>(),
+                       const std::vector<String>& additionalScripts = std::vector<String>(),
+                       const String& statusClass = "status-unknown") {
+
+    // Ensure start.css is included
+    std::vector<String> css = {"start"};
+    css.insert(css.end(), additionalCss.begin(), additionalCss.end());
+
+    if (!Component::beginResponse(_server, title, css)) {
+      return;
+    }
+
+    Component::beginPixelatedPage(_server, statusClass);
+    Component::sendCloudTitle(_server, title);
+
+    // Content goes directly into .group (flower, sensors, etc.)
+    content();
+
+    Component::sendPixelatedFooter(_server, VERSION, __DATE__, activeSection);
+    Component::endPixelatedPage(_server);
+    Component::endResponse(_server, additionalScripts);
+  }
+
+  /**
+   * @brief Render admin/logs page with dark content box
+   * @param title Page title shown in cloud
+   * @param activeSection Active navigation section (admin, sensors, display, wifi, system, ota, logs)
+   * @param content Lambda function that generates content inside dark box
+   * @param additionalCss Additional CSS files to include
+   * @param additionalScripts Additional JavaScript files to include
+   */
+  void renderAdminPage(const String& title, const String& activeSection,
+                       std::function<void()> content,
+                       const std::vector<String>& additionalCss = std::vector<String>(),
+                       const std::vector<String>& additionalScripts = std::vector<String>()) {
+
+    // Ensure start.css and admin.css are included
+    std::vector<String> css = {"start", "admin"};
+    css.insert(css.end(), additionalCss.begin(), additionalCss.end());
+
+    if (!Component::beginResponse(_server, title, css)) {
+      return;
+    }
+
+    Component::beginPixelatedPage(_server, "status-unknown");
+    Component::sendCloudTitle(_server, title);
+
+    // Content wrapped in dark content box (90% width) with section indicator
+    Component::beginContentBox(_server, activeSection);
+    content();
+    Component::endContentBox(_server);
+
+    Component::sendPixelatedFooter(_server, VERSION, __DATE__, activeSection);
+    Component::endPixelatedPage(_server);
+    Component::endResponse(_server, additionalScripts);
+  }
+
+  /**
+   * @brief Send JSON response
+   * @param code HTTP status code
+   * @param json JSON content
+   * @details Sends JSON response with appropriate headers
+   */
+  void sendJsonResponse(int code, const String& json) {
+    _server.send(code, F("application/json"), json);
+  }
+
+  /**
+   * @brief Send HTML response
+   * @param code HTTP status code
+   * @param html HTML content
+   * @details Sends HTML response with appropriate headers
+   */
+  void sendHtmlResponse(int code, const String& html) { _server.send(code, F("text/html"), html); }
+
+  /**
+   * @brief Send redirect response
+   * @param url Redirect target URL
+   * @details Sends 302 redirect with Location header
+   */
+  void sendRedirect(const String& url) {
+    _server.sendHeader(F("Location"), url);
+    _server.send(302, F("text/plain"), F(""));
+  }
+
+  /**
+   * @brief Send an error response; JSON for AJAX requests, HTML otherwise
+   * @param code HTTP status code
+   * @param message Error message
+   */
+  void sendError(int code, const String& message) {
+    // Determine if caller expects JSON
+    String xhr = _server.header("X-Requested-With");
+    String accept = _server.header("Accept");
+    bool wantsJson =
+        (xhr == "XMLHttpRequest") || (accept.indexOf("application/json") >= 0) || isAjaxRequest();
+
+    if (wantsJson) {
+      String escaped = escapeJson(message);
+      // Build JSON safely without relying on potentially problematic
+      // multi-character literals — append characters explicitly.
+      String json;
+      json.reserve(escaped.length() + 64);
+      json += "{\"success\":false,\"error\":\"";
+      json += escaped;
+      json += '"';
+      json += '}';
+      sendJsonResponse(code, json);
+    } else {
+      // Small HTML error page as fallback
+      String html;
+      html.reserve(128 + message.length());
+      html += "<html><head><meta charset='utf-8'><title>Fehler</title></head><body>";
+      html +=
+          "<div style='max-width:760px;margin:40px auto;font-family:Arial,Helvetica,sans-serif;'>";
+      html += "<h2>Fehler</h2><p>";
+      html += message;
+      html += "</p>";
+      html += "</div></body></html>";
+      sendHtmlResponse(code, html);
+    }
+  }
+
+  /**
+   * @brief Check if the incoming request is an AJAX partial update
+   * @return true when request has X-Requested-With: XMLHttpRequest or ajax=1
+   */
+  bool isAjaxRequest() {
+    // Try common header casings for X-Requested-With
+    String xhr = _server.header("X-Requested-With");
+    if (xhr.length() == 0)
+      xhr = _server.header("x-requested-with");
+    if (xhr.length() == 0)
+      xhr = _server.header("X-requested-with");
+    // Normalize to lowercase for comparison
+    String xhrLower = xhr;
+    xhrLower.toLowerCase();
+    bool hasXhr = (xhrLower == "xmlhttprequest");
+
+    // Accept explicit ajax param (ajax=1 or ajax=true)
+    bool hasAjaxParam =
+        _server.hasArg("ajax") && (_server.arg("ajax") == "1" || _server.arg("ajax") == "true");
+
+    // Also accept requests that explicitly ask for JSON or use common urlencoded content-type
+    String accept = _server.header("Accept");
+    if (accept.length() == 0)
+      accept = _server.header("accept");
+    String contentType = _server.header("Content-Type");
+    if (contentType.length() == 0)
+      contentType = _server.header("content-type");
+    bool wantsJson = (accept.length() && accept.indexOf("application/json") >= 0);
+    bool isUrlEncoded =
+        (contentType.length() && contentType.indexOf("application/x-www-form-urlencoded") >= 0);
+
+    return hasXhr || hasAjaxParam || wantsJson || isUrlEncoded;
+  }
+
+  /**
+   * @brief Require that the request is AJAX; if not, send a standardized JSON error
+   * @return true when request is AJAX, false after sending the error response
+   */
+  bool requireAjaxRequest() {
+    if (!isAjaxRequest()) {
+      logger.warning(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
+      sendJsonResponse(400, F("{\"success\":false,\"error\":\"Nur AJAX-Updates werden unterstützt. "
+                              "Bitte die Admin-Oberfläche verwenden.\"}"));
+      return false;
+    }
+    return true;
+  }
+
+  /**
+   * @brief Ensure the caller is AJAX; if not, set an error string (no response sent)
+   * @param outError optional pointer to String to receive a localized error message
+   * @return true when request is AJAX, false otherwise
+   */
+  bool ensureAjaxAndSetError(String* outError) {
+    if (!isAjaxRequest()) {
+      if (outError)
+        *outError = F("Nur AJAX-Updates werden unterstützt. Bitte die Admin-Oberfläche verwenden.");
+      logger.warning(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
+      return false;
+    }
+    return true;
+  }
+
+  // Simple JSON escaper — minimal set for error messages
+  static String escapeJson(const String& in) {
+    String out;
+    out.reserve(in.length() * 2 + 10);
+    for (size_t i = 0; i < in.length(); ++i) {
+      char c = in.charAt(i);
+      switch (c) {
+      case '"':
+        out += "\\\"";
+        break; // \"
+      case '\\':
+        out += "\\\\";
+        break; // \\\\ -> \\\\ in string
+      case '\n':
+        out += "\\n";
+        break;
+      case '\r':
+        out += "\\r";
+        break;
+      case '\t':
+        out += "\\t";
+        break;
+      default:
+        out += c;
+        break;
+      }
+    }
+    return out;
+  }
+
+  /**
+   * @brief Get request argument
+   * @param name Argument name
+   * @param defaultValue Default value if argument not found
+   * @return Argument value or default
+   * @details Retrieves argument from request:
+   *          - Checks argument existence
+   *          - Returns value or default
+   */
+  String getArg(const String& name, const String& defaultValue = "") {
+    if (!_server.hasArg(name)) {
+      return defaultValue;
+    }
+    return _server.arg(name);
+  }
+
+  /**
+   * @brief Check Content-Type header
+   * @param expected Expected content type
+   * @return true if content type matches
+   * @details Validates request Content-Type:
+   *          - Checks header existence
+   *          - Compares with expected type
+   */
+  bool hasValidContentType(const String& expected) {
+    if (!_server.hasHeader("Content-Type")) {
+      return false;
+    }
+    return _server.header("Content-Type").equals(expected);
+  }
+
+  /**
+   * @brief Begin chunked response
+   * @param contentType Response content type
+   * @return true if response started successfully
+   * @details Sets up chunked response:
+   *          - Sets unknown content length
+   *          - Sets content type
+   *          - Sets connection close
+   *          - Sends initial response
+   */
+  bool beginChunkedResponse(const String& contentType) {
+    static const char CONTENT_TYPE[] PROGMEM = "Content-Type";
+    static const char CONNECTION[] PROGMEM = "Connection";
+    static const char CLOSE[] PROGMEM = "close";
+
+    _server.setContentLength(CONTENT_LENGTH_UNKNOWN);
+    _server.sendHeader(FPSTR(CONTENT_TYPE), contentType);
+    _server.sendHeader(FPSTR(CONNECTION), FPSTR(CLOSE));
+    _server.send(200, contentType, F(""));
+    return true;
+  }
+
+  /**
+   * @brief Send response chunk
+   * @param chunk Content chunk to send
+   * @details Sends part of chunked response
+   */
+  void sendChunk(const String& chunk) { Component::sendChunk(_server, chunk); }
+
+  /**
+   * @brief End chunked response
+   * @details Finalizes chunked response:
+   *          - Sends empty chunk
+   *          - Closes connection
+   */
+  void endChunkedResponse() { _server.sendContent(""); }
+
+  /**
+   * @brief Format build date
+   * @param timestamp Build timestamp
+   * @return Formatted date string
+   * @details Formats timestamp to readable date:
+   *          - Converts to GMT
+   *          - Formats as "MMM DD YYYY"
+   *          - Handles buffer management
+   */
+  String formatBuildDate(time_t timestamp) {
+    char buildDate[32];
+    struct tm* timeinfo = gmtime(&timestamp);
+    strftime(buildDate, sizeof(buildDate), "%b %d %Y", timeinfo);
+    return String(buildDate);
+  }
+};

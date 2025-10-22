@@ -1,0 +1,28 @@
+# .clang-format
+---
+Language:        Cpp
+BasedOnStyle:    LLVM
+IndentWidth:     2
+TabWidth:        2
+UseTab:          Never
+ColumnLimit:     100
+
+# Pointer/reference binding style (Left keeps `int* p` vs `int *p`)
+PointerAlignment: Left
+
+# Keep short functions in one line when possible
+AllowShortFunctionsOnASingleLine: All
+
+# Control how constructor initializer lists are formatted
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+
+# Don't reflow block comments aggressively
+ReflowComments: false
+
+# Keep includes ordering as-is (avoid aggressive reordering)
+IncludeBlocks: Preserve
+
+# A few spacing rules that fit embedded code readability
+SpaceBeforeParens: ControlStatements
+SpacesBeforeTrailingComments: 1
+...

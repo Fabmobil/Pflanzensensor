@@ -1,0 +1,206 @@
+/**
+ * @file logs.css
+ * @brief Log-Viewer spezifische Styles
+ * @details Nutzt Basis-Styles aus style.css und admin.css
+ */
+
+/* === Log-Entry Styles === */
+.log-entry {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.5em;
+  padding: 0.3em 0.5em;
+  line-height: 1.4;
+  border-bottom: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  transition: background-color 0.2s;
+}
+
+.log-entry:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Log-Level Farben */
+.log-entry.debug { color: #569cd6; }
+.log-entry.info { color: #6a9955; }
+.log-entry.warning { color: #dcdcaa; }
+.log-entry.error { color: #f44747; }
+.log-entry.system { color: #808080; }
+
+/* === Log-Container === */
+.log-container {
+  height: 75vh;
+  overflow-y: auto;
+  background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+  color: #d4d4d4;
+  border: 2px solid rgba(139, 69, 19, 0.4);
+  border-radius: 8px;
+  padding: 1em;
+  margin: 1em 0;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+  scrollbar-width: thin;
+  scrollbar-color: #666 #1a1a1a;
+}
+
+.log-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.log-container::-webkit-scrollbar-track {
+  background: #1a1a1a;
+}
+
+.log-container::-webkit-scrollbar-thumb {
+  background: #666;
+  border-radius: 4px;
+}
+
+.log-container::-webkit-scrollbar-thumb:hover {
+  background: #888;
+}
+
+/* === Log-Controls === */
+.log-controls-row {
+  display: flex;
+  gap: clamp(1em, 3vw, 1.5em);
+  margin-bottom: 1.5em;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.log-controls-card {
+  /* Two control cards should sit beside each other on wide screens */
+  flex: 0 1 calc(50% - 0.75em);
+  min-width: 220px;
+  max-width: 680px;
+  margin-bottom: 0;
+}
+
+.log-controls-label {
+  font-weight: 600;
+  margin-bottom: 0.8em;
+  font-size: 1.05em;
+  color: #d4a574;
+}
+
+/* Make control buttons slightly smaller and more compact */
+.log-controls-card .button,
+.log-controls-card .log-level-btn,
+.log-controls-card .button-group .button {
+  padding: 0.4em 0.8em;
+  margin: 0.25em 0.25em 0.25em 0;
+  font-size: 0.95em;
+}
+
+.button-group {
+  display: flex;
+  gap: 0.5em;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* === Button-Styles für Log-Level === */
+.button-debug {
+  background: linear-gradient(135deg, #569cd6 0%, #4a8bc2 100%);
+  color: #fff;
+  border: 1px solid #3a7bb0;
+}
+
+.button-info {
+  background: linear-gradient(135deg, #6a9955 0%, #5a8745 100%);
+  color: #fff;
+  border: 1px solid #4a7535;
+}
+
+.button-warning {
+  background: linear-gradient(135deg, #dcdcaa 0%, #c9c998 100%);
+  color: #333;
+  border: 1px solid #b9b988;
+}
+
+.button-error {
+  background: linear-gradient(135deg, #f44747 0%, #e03737 100%);
+  color: #fff;
+  border: 1px solid #d02727;
+}
+
+/* === WebSocket Status === */
+.ws-status {
+  font-weight: 600;
+  color: #dcdcaa;
+  transition: color 0.3s;
+  display: inline-block;
+  padding: 0.2em 0.6em;
+  border-radius: 4px;
+  background: rgba(220, 220, 170, 0.1);
+}
+
+.ws-status.connected {
+  color: #6a9955;
+  background: rgba(106, 153, 85, 0.15);
+}
+
+.ws-status.error,
+.ws-status.disconnected {
+  color: #f44747;
+  background: rgba(244, 71, 71, 0.15);
+}
+
+/* Log-Level Button States */
+.log-level-btn {
+  opacity: 0.5;
+  filter: grayscale(60%);
+  transition: opacity 0.2s, filter 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.log-level-btn.active {
+  opacity: 1;
+  filter: none;
+  transform: scale(1.05);
+  box-shadow: 0 0 0 2px currentColor, 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.log-level-btn:hover:not(.active) {
+  opacity: 0.7;
+  filter: grayscale(30%);
+}
+
+
+/* === Responsive Design === */
+@media (max-width: 768px) {
+  .log-container {
+    height: calc(100vh - 400px);
+    min-height: 40vh;
+  }
+
+  .log-entry {
+    font-size: 0.8em;
+  }
+}
+
+@media (max-width: 700px) {
+  .log-controls-row {
+    flex-direction: column;
+    gap: 1em;
+  }
+
+  .log-controls-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .button-group {
+    flex-wrap: wrap;
+    gap: 0.5em;
+  }
+
+  .log-level-btn {
+    flex: 1 1 calc(50% - 0.5em);
+    min-width: 90px;
+  }
+
+  .log-container {
+    height: 50vh;
+    padding: 0.8em;
+  }
+}

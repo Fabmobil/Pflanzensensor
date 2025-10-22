@@ -1,7 +1,8 @@
-passwoerter.cpp
+Pflanzensensor/src/configs/config_pflanzensensor.h
 Dokumentation/Workshop\ Unterlagen/2\ Tage/*
 Dokumentation/Workshop\ Unterlagen/3\ Tage/*
-temp_arduino15/*
+logs/*
+.github/*
 
 # Prerequisites
 *.d
@@ -41,3 +42,6 @@ temp_arduino15/*
 
 # vscode
 .vscode
+
+# python .venv
+.venv
