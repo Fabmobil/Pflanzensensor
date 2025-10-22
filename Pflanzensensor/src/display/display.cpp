@@ -276,7 +276,16 @@ DisplayResult SSD1306Display::showInfoScreen(const String& ipAddress) {
   if (ip.startsWith(F("http://")))
     ip = ip.substring(7);
   String versionStr = "v" VERSION;
-  String ssid = WiFi.SSID();
+  String ssid;
+  if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+    ssid = WiFi.softAPSSID();
+    if (ssid.length() == 0)
+      ssid = String(F("(AP SSID unbekannt)"));
+  } else {
+    ssid = WiFi.SSID();
+    if (ssid.length() == 0)
+      ssid = String(F("(SSID unbekannt)"));
+  }
 
   // Build URL for QR code
   String url = F("http://");

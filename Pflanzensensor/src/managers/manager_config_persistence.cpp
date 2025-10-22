@@ -176,74 +176,33 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(ConfigData&
 }
 
 ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(ConfigData& config) {
-  logger.logMemoryStats(F("ConfigP_reset_before"));
-  StaticJsonDocument<512> doc;
-  doc.clear();
+  // Simplified reset: remove stored config and sensors files and reboot.
+  logger.info(F("ConfigP"),
+              F("ResetToDefaults requested: deleting /config.json and /sensors.json"));
 
-  config.adminPassword = INITIAL_ADMIN_PASSWORD;
-  config.md5Verification = false;
-  config.fileLoggingEnabled = FILE_LOGGING_ENABLED;
-  config.deviceName = String(DEVICE_NAME);
-
-  // Initialize debug flags to defaults
-  config.debugRAM = DEBUG_RAM;
-  config.debugMeasurementCycle = DEBUG_MEASUREMENT_CYCLE;
-  config.debugSensor = DEBUG_SENSOR;
-  config.debugDisplay = DEBUG_DISPLAY;
-  config.debugWebSocket = DEBUG_WEBSOCKET;
-
-  // LED Traffic Light settings - default to mode 1
-  config.ledTrafficLightMode = 1;
-  config.ledTrafficLightSelectedMeasurement = "";
-
-  // Flower Status settings - default to ANALOG_1 (Bodenfeuchte)
-  config.flowerStatusSensor = "ANALOG_1";
-
-#if USE_MAIL
-  setMailConfigDefaults(config);
-#endif
-
-  doc["admin_password"] = config.adminPassword;
-  doc["md5_verification"] = config.md5Verification;
-  doc["collectd_enabled"] = config.collectdEnabled;
-  doc["file_logging_enabled"] = config.fileLoggingEnabled;
-  doc["device_name"] = config.deviceName;
-  doc["debug_ram"] = config.debugRAM;
-  doc["debug_measurement_cycle"] = config.debugMeasurementCycle;
-  doc["debug_sensor"] = config.debugSensor;
-  doc["debug_display"] = config.debugDisplay;
-  doc["debug_websocket"] = config.debugWebSocket;
-  doc["wifi_ssid_1"] = config.wifiSSID1;
-  doc["wifi_password_1"] = config.wifiPassword1;
-  doc["wifi_ssid_2"] = config.wifiSSID2;
-  doc["wifi_password_2"] = config.wifiPassword2;
-  doc["wifi_ssid_3"] = config.wifiSSID3;
-  doc["wifi_password_3"] = config.wifiPassword3;
-  doc["led_traffic_light_mode"] = config.ledTrafficLightMode;
-  doc["led_traffic_light_selected_measurement"] = config.ledTrafficLightSelectedMeasurement;
-#if USE_MAIL
-  doc["mail_enabled"] = config.mailEnabled;
-  doc["smtp_host"] = config.smtpHost;
-  doc["smtp_port"] = config.smtpPort;
-  doc["smtp_user"] = config.smtpUser;
-  doc["smtp_password"] = config.smtpPassword;
-  doc["smtp_sender_name"] = config.smtpSenderName;
-  doc["smtp_sender_email"] = config.smtpSenderEmail;
-  doc["smtp_recipient"] = config.smtpRecipient;
-  doc["smtp_enable_starttls"] = config.smtpEnableStartTLS;
-  doc["smtp_debug"] = config.smtpDebug;
-  doc["smtp_send_test_mail_on_boot"] = config.smtpSendTestMailOnBoot;
-#endif
-
-  String errorMsg;
-  if (PersistenceUtils::writeJsonFile("/config.json", doc, errorMsg)) {
-    logger.info(F("ConfigP"), F("Minimale Konfigurationsdatei erstellt"));
+  // Attempt to remove config and sensors files; ignore errors but log them
+  if (LittleFS.exists("/config.json")) {
+    if (LittleFS.remove("/config.json")) {
+      logger.info(F("ConfigP"), F("/config.json deleted"));
+    } else {
+      logger.warning(F("ConfigP"), F("Failed to delete /config.json"));
+    }
   } else {
-    logger.error(F("ConfigP"),
-                 F("Erstellen der initialen Konfigurationsdatei fehlgeschlagen: ") + errorMsg);
+    logger.info(F("ConfigP"), F("/config.json not present"));
   }
 
-  logger.logMemoryStats(F("ConfigP_reset_after"));
+  if (LittleFS.exists("/sensors.json")) {
+    if (LittleFS.remove("/sensors.json")) {
+      logger.info(F("ConfigP"), F("/sensors.json deleted"));
+    } else {
+      logger.warning(F("ConfigP"), F("Failed to delete /sensors.json"));
+    }
+  } else {
+    logger.info(F("ConfigP"), F("/sensors.json not present"));
+  }
+
+  // Done: files removed. Return success; caller (UI) will handle reboot so the
+  // admin page can be rendered and the user sees confirmation.
   return PersistenceResult::success();
 }
 

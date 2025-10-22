@@ -63,14 +63,17 @@ int getActiveWiFiSlot();
 extern WiFiClient client;
 
 /**
- * @brief Start WiFi Access Point for manual configuration
- * @details Starts AP with HOSTNAME as SSID, no password, for manual WiFi setup.
+ * @brief (DEPRECATED) Start WiFi Access Point for manual configuration
+ * @details Früher: Startet AP mit HOSTNAME als SSID ohne Passwort für manuelle
+ * WiFi-Konfiguration. Wird nicht mehr automatisch gestartet.
  */
 void startAPMode();
 
 /**
- * @brief Check if AP mode is active
+ * @brief (DEPRECATED) Check if AP mode is active
  * @return true if AP mode is active
+ * @note Diese Funktion ist veraltet und wird nicht mehr für Captive-Portal-Logik
+ *       im Code verwendet.
  */
 bool isCaptivePortalAPActive();
 

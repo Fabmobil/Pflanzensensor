@@ -9,7 +9,6 @@
 #include "logger/logger.h"
 #include "web/core/web_manager.h"
 #include "web/handler/log_handler.h"
-#include "web/handler/wifi_setup_handler.h"
 #if USE_WEBSOCKET
 #include "web/services/websocket.h"
 #endif
@@ -294,26 +293,15 @@ ResourceResult WebManager::setupServices() {
 void WebManager::setupMiddleware() {
   logger.debug(F("WebManager"), F("Setting up middleware..."));
 
-  // AP mode middleware - allow WiFi setup and sensor data access
+  // Middleware: Public assets and start page are accessible; admin routes require authentication.
   _router->addMiddleware([this](HTTPMethod method, String url) {
-    if (isCaptivePortalAPActive()) {
-      // Allow WiFi setup, sensor data, start page, and static assets
-      if (url == "/" || url == "/getLatestValues" || url.startsWith("/css/") ||
-          url.startsWith("/js/") || url.startsWith("/img/") || url.startsWith("/favicon")) {
-        // Allow these URLs in AP mode
-        return true;
-      }
-
-      // Allow WiFi update endpoint in AP mode
-      if (url == "/admin/updateWiFi") {
-        return true;
-      }
-
-      // For other URLs, allow them (no forced redirects)
+    // Public routes
+    if (url == "/" || url == "/getLatestValues" || url.startsWith("/css/") ||
+        url.startsWith("/js/") || url.startsWith("/img/") || url.startsWith("/favicon")) {
       return true;
     }
 
-    // Normal mode - add authentication for admin routes
+    // Admin routes require authentication
     if (url.startsWith("/admin")) {
       if (!_server->authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
         _server->requestAuthentication();

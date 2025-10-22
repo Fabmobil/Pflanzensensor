@@ -88,8 +88,19 @@ ConfigManager::ConfigResult ConfigManager::resetToDefaults() {
   // Sync subsystem data
   syncSubsystemData();
 
+  // Ensure in-memory config reflects compile-time defaults for items that
+  // should be reset immediately (device name, etc.). We intentionally do
+  // NOT persist these values here to avoid re-creating a config file from
+  // in-memory values after the persistence layer deleted it. The Admin
+  // handler will perform the reboot after rendering a confirmation page.
+  m_configData.deviceName = String(DEVICE_NAME);
+
   notifyConfigChange("config", "reset", true);
-  return saveConfig();
+  // Do not call saveConfig() here — that could re-write the deleted
+  // config.json with current in-memory values. The caller (web UI) will
+  // trigger a reboot so the device boots with empty storage and will use
+  // compile-time defaults on next load.
+  return ConfigResult::success();
 }
 
 ConfigManager::ConfigResult ConfigManager::updateFromWeb(ESP8266WebServer& server) {

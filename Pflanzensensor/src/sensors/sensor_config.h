@@ -36,6 +36,7 @@ struct AnalogSensorDefaults {
   float yellowHigh;                  ///< Upper yellow warning threshold
   unsigned long measurementInterval; ///< Time between measurements in milliseconds
   bool calibrationMode;              ///< Whether sensor is in calibration mode
+  bool inverted;                     ///< Whether the sensor scale is inverted (true = inverted)
 
   /**
    * @brief Constructor for AnalogSensorDefaults
@@ -49,10 +50,10 @@ struct AnalogSensorDefaults {
    * @param yh Yellow high threshold
    * @param mi Measurement interval in milliseconds
    * @param cal Calibration mode flag
+   * @param inv Inverted scale flag
    */
-  AnalogSensorDefaults(const char* n = "", const char* f = "", int rmin = 0, int rmax = 1023,
-                       float yl = 0.0f, float gl = 0.0f, float gh = 100.0f, float yh = 100.0f,
-                       unsigned long mi = 60000, bool cal = false)
+  AnalogSensorDefaults(const char* n, const char* f, int rmin, int rmax, float yl, float gl,
+                       float gh, float yh, unsigned long mi, bool cal, bool inv)
       : name(n),
         fieldName(f),
         rawMin(rmin),
@@ -62,7 +63,8 @@ struct AnalogSensorDefaults {
         greenHigh(gh),
         yellowHigh(yh),
         measurementInterval(mi),
-        calibrationMode(cal) {}
+        calibrationMode(cal),
+        inverted(inv) {}
 };
 
 /**
@@ -91,7 +93,8 @@ struct DS18B20SensorDefaults {
   AnalogSensorDefaults(ANALOG_##N##_NAME, ANALOG_##N##_FIELD_NAME, ANALOG_##N##_MIN,               \
                        ANALOG_##N##_MAX, ANALOG_##N##_YELLOW_LOW, ANALOG_##N##_GREEN_LOW,          \
                        ANALOG_##N##_GREEN_HIGH, ANALOG_##N##_YELLOW_HIGH,                          \
-                       MEASUREMENT_INTERVAL * 1000, ANALOG_##N##_CALIBRATION_MODE)
+                       MEASUREMENT_INTERVAL * 1000, ANALOG_##N##_CALIBRATION_MODE,                 \
+                       ANALOG_##N##_INVERTED)
 
 /**
  * @brief Helper macro to create DS18B20 sensor defaults from index

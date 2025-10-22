@@ -95,6 +95,14 @@ void AdminHandler::handleConfigReset() {
         sendChunk(F("</div>"));
       },
       css, js);
+  // Give the web response time to be sent to the client, then reboot.
+  // This avoids the device immediately rebooting before the admin sees the
+  // confirmation page. 2000ms is a reasonable short delay.
+  delay(2000);
+  if (result.isSuccess()) {
+    logger.warning(F("AdminHandler"), F("Rebooting after config reset"));
+    ESP.restart();
+  }
 }
 
 void AdminHandler::handleReboot() {

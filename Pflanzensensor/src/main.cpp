@@ -68,7 +68,6 @@ extern std::unique_ptr<LedTrafficLightManager> ledTrafficLightManager;
 void setup() {
   // Initialize serial communication first
   Serial.begin(115200);
-  delay(100);  // Give serial time to initialize
   delay(1000); // Give sensors time to power up and stabilize
 
   logger.beginMemoryTracking(F("managers_init"));
@@ -181,14 +180,12 @@ void setup() {
 #if USE_DISPLAY
     // WiFi status is now shown in real-time during connection attempts
     if (displayManager) {
-      if (isCaptivePortalAPActive()) {
-        displayManager->updateLogStatus(F("AP-Modus aktiv"), false);
-        displayManager->updateLogStatus(F("SSID: ") + WiFi.softAPSSID(), false);
-        displayManager->updateLogStatus(F("IP: ") + WiFi.softAPIP().toString(), false);
-      } else {
+      if (WiFi.status() == WL_CONNECTED) {
         displayManager->updateLogStatus(F("WiFi verbunden"), false);
         displayManager->updateLogStatus(F("SSID: ") + WiFi.SSID(), false);
         displayManager->updateLogStatus(F("IP: ") + WiFi.localIP().toString(), false);
+      } else {
+        displayManager->updateLogStatus(F("WiFi nicht verbunden"), false);
       }
     }
 #endif
@@ -261,6 +258,7 @@ void setup() {
   if (displayManager) {
     if (isCaptivePortalAPActive()) {
       displayManager->updateLogStatus(F("AP-Modus aktiv"), true);
+      // Show the AP SSID so users can identify the network to join
       displayManager->updateLogStatus(F("SSID: ") + WiFi.softAPSSID(), true);
       displayManager->updateLogStatus(F("IP: ") + WiFi.softAPIP().toString(), true);
 
@@ -278,7 +276,7 @@ void setup() {
 
   // Initialize NTP time synchronization
 #if USE_WIFI
-  if (!isCaptivePortalAPActive()) {
+  if (WiFi.status() == WL_CONNECTED) {
 #endif
     Helper::initializeComponent(F("NTP time sync"), []() -> ResourceResult {
       logger.info(F("main"), F("Initialisiere NTP-Zeitsynchronisation"));
@@ -309,7 +307,7 @@ void setup() {
     });
 #if USE_WIFI
   } else {
-    logger.info(F("main"), F("Überspringe NTP-Initialisierung im AP/Captive-Portal-Modus"));
+    logger.info(F("main"), F("WiFi nicht verbunden - NTP-Initialisierung übersprungen"));
   }
 #endif
 
@@ -364,17 +362,12 @@ void setup() {
 #if USE_DISPLAY
   if (displayManager) {
     displayManager->updateLogStatus(F("Webserver..."), true);
-
-    // Add WiFi setup instructions if in AP mode
-    if (isCaptivePortalAPActive()) {
-      displayManager->updateLogStatus(F("WiFi Setup bereit"), true);
-    }
   }
 #endif
 #endif
 
 #if USE_MAIL
-  if (!isCaptivePortalAPActive()) {
+  if (WiFi.status() == WL_CONNECTED) {
     Helper::initializeComponent(F("E-Mail"), []() -> ResourceResult {
       auto& mailManager = MailManager::getInstance();
       auto result = mailManager.init();
@@ -393,7 +386,7 @@ void setup() {
       displayManager->updateLogStatus(F("E-Mail..."), true);
 #endif
   } else {
-    logger.info(F("main"), F("Überspringe E-Mail-Initialisierung im AP/Captive-Portal-Modus"));
+    logger.info(F("main"), F("WiFi nicht verbunden - E-Mail-Initialisierung übersprungen"));
   }
 #endif
 
@@ -531,11 +524,14 @@ void loop() {
   }
 #endif
 
-  // Handle sensor measurements with a minimum delay between updates
+  // Handle sensor measurements with a minimum delay between updates.
+  // NOTE: Measurements should run regardless of station WiFi connectivity so
+  // the device still collects data while in AP-mode. Network-dependent
+  // operations (NTP, Mail, Influx) are handled elsewhere and check for
+  // connectivity as needed.
   static constexpr unsigned long MEASUREMENT_UPDATE_INTERVAL =
       1000; // 1s between measurement updates
   if (sensorManager && sensorManager->getState() == ManagerState::INITIALIZED &&
-      WiFi.status() == WL_CONNECTED &&
       currentMillis - lastMeasurementUpdate >= MEASUREMENT_UPDATE_INTERVAL) {
     sensorManager->updateMeasurements();
 

@@ -13,6 +13,36 @@
 
 namespace Component {
 
+// Return the appropriate IP to display in the web UI.
+// If the device is running an AP (or AP+STA) return the softAP IP,
+// otherwise return the station local IP. If no IP is assigned, return
+// a localized placeholder.
+String getDisplayIP() {
+  IPAddress ip;
+  if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+    ip = WiFi.softAPIP();
+  } else {
+    ip = WiFi.localIP();
+  }
+  String ipStr = ip.toString();
+  if (ipStr == "0.0.0.0")
+    return String(F("(IP nicht gesetzt)"));
+  return ipStr;
+}
+
+String getDisplaySSID() {
+  if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+    String ssid = WiFi.softAPSSID();
+    if (ssid.length() == 0)
+      return String(F("(AP SSID unbekannt)"));
+    return ssid;
+  }
+  String ssid = WiFi.SSID();
+  if (ssid.length() == 0)
+    return String(F("(SSID unbekannt)"));
+  return ssid;
+}
+
 ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
                              const std::vector<String>& additionalCss) {
   static const char CONTENT_TYPE[] PROGMEM = "Content-Type";
@@ -182,9 +212,12 @@ void sendPixelatedFooter(ESP8266WebServer& server, const String& version, const 
   sendChunk(server, F(" "));
   sendChunk(server, Helper::getFormattedTime());
   sendChunk(server, F("</li><li>"));
-  sendChunk(server, WiFi.SSID());
+  // Prefer AP SSID when in AP mode so users can identify the device network
+  sendChunk(server, getDisplaySSID());
   sendChunk(server, F("</li><li>"));
-  sendChunk(server, WiFi.localIP().toString());
+  // Prefer showing AP IP when in AP mode so users can find the device
+  // when it created its own network for configuration.
+  sendChunk(server, getDisplayIP());
   sendChunk(server, F("</li><li>"));
   sendChunk(server, String(WiFi.RSSI()));
   sendChunk(server, F(" dBm"));

@@ -28,10 +28,9 @@
 #include "web/handler/sensor_handler.h"
 #include "web/handler/startpage_handler.h"
 #include "web/handler/web_ota_handler.h"
-#include "web/handler/wifi_setup_handler.h"
 #include "web/services/css_service.h"
 
-class WiFiSetupHandler; ///< Forward declaration for WiFi setup handler
+// WiFiSetupHandler removed: WiFi configuration is handled via AdminHandler
 
 /**
  * @class WebManager
@@ -424,7 +423,7 @@ private:
   std::unique_ptr<SensorHandler> _sensorHandler;           ///< Sensor data handler
   std::unique_ptr<AdminSensorHandler> _adminSensorHandler; ///< Sensor admin handler
   std::unique_ptr<LogHandler> _logHandler;                 ///< Logging handler
-  std::unique_ptr<WiFiSetupHandler> _wifiSetupHandler;     ///< WiFi setup handler
+  // WiFiSetupHandler entfernt: AdminHandler behandelt WiFi-Updates über /admin/updateWiFi
 #if USE_DISPLAY
   std::unique_ptr<AdminDisplayHandler> _displayHandler; ///< Display admin handler
 #endif

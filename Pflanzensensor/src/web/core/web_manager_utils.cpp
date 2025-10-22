@@ -9,7 +9,7 @@
 #include "web/core/web_manager.h"
 
 bool WebManager::isCaptivePortalAPActive() const {
-  // Check if we're in AP mode or have no WiFi connection
-  return (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA ||
-          WiFi.status() != WL_CONNECTED);
+  // Captive-Portal logic removed. Always return false to disable AP-specific
+  // routing and middleware.
+  return false;
 }

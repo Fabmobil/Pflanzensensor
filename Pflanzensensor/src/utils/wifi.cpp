@@ -120,12 +120,28 @@ bool tryAllWiFiCredentials() {
  * @details Starts AP with HOSTNAME as SSID, no password, for manual WiFi setup.
  */
 void startAPMode() {
+  // Use the device name from configuration as the AP SSID so that the
+  // SSID reflects what the user set in the Admin page. Fall back to the
+  // compile-time HOSTNAME when the device name is empty.
+  String deviceName = ConfigMgr.getDeviceName();
+  // Clean up device name for SSID use
+  deviceName.replace('\n', ' ');
+  deviceName.replace('\r', ' ');
+  deviceName.trim();
+  if (deviceName.length() == 0) {
+    deviceName = String(HOSTNAME);
+  }
+  // SSID must be <= 32 characters
+  if (deviceName.length() > 32) {
+    deviceName = deviceName.substring(0, 32);
+  }
+
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(HOSTNAME); // No password
+  WiFi.softAP(deviceName.c_str()); // No password
   IPAddress apIP = WiFi.softAPIP();
 
   apModeActive = true;
-  logger.warning(F("WiFi"), F("AP-Modus gestartet: ") + String(HOSTNAME));
+  logger.warning(F("WiFi"), F("AP-Modus gestartet: ") + deviceName);
   logger.info(F("WiFi"), F("AP IP-Adresse: ") + apIP.toString());
   logger.info(F("WiFi"), F("WiFi-Setup erreichbar unter: ") + apIP.toString());
 }
@@ -157,6 +173,9 @@ ResourceResult setupWiFi() {
     apModeActive = false;
     return ResourceResult::success();
   } else {
+    // Wenn keine Verbindung hergestellt werden kann, starte den Access Point
+    // damit Benutzer sich mit dem Gerät verbinden und die Admin-Seite nutzen
+    // können. Das Captive-Portal wurde entfernt, nur der AP wird gestartet.
     startAPMode();
     return ResourceResult::fail(ResourceError::WIFI_ERROR,
                                 F("Verbindungs-Timeout für alle Zugangsdaten; AP-Modus gestartet"));

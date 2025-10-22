@@ -60,7 +60,7 @@ void SensorHandler::handleGetLatestValues() {
   sendChunk(F("\",\"flowerStatusSensor\":\""));
   sendChunk(ConfigMgr.getFlowerStatusSensor());
   sendChunk(F("\",\"ip\":\""));
-  sendChunk(WiFi.localIP().toString());
+  sendChunk(Component::getDisplayIP());
   sendChunk(F("\",\"sensors\":{"));
 
   auto managerState = _sensorManager.getState();

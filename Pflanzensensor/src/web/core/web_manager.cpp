@@ -141,11 +141,7 @@ void WebManager::cleanup() {
     _logHandler.reset();
   }
 
-  // Clean up WiFi setup handler
-  if (_wifiSetupHandler) {
-    _wifiSetupHandler->cleanup();
-    _wifiSetupHandler.reset();
-  }
+  // WiFiSetupHandler entfernt/Deprecated: keine explizite Reinigung erforderlich
 
   // Clean up other handlers
   if (_startHandler) {

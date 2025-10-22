@@ -129,6 +129,17 @@ void endContentBox(ESP8266WebServer& server);
 void endPixelatedPage(ESP8266WebServer& server);
 
 /**
+ * @brief Get a display-friendly IP address string
+ * @return SoftAP IP when in AP mode, otherwise station local IP or a placeholder
+ */
+String getDisplayIP();
+/**
+ * @brief Get the SSID to display in the web UI
+ * @return SoftAP SSID when in AP mode, otherwise station SSID or placeholder
+ */
+String getDisplaySSID();
+
+/**
  * @brief End HTML response
  * @param server Reference to web server
  * @param additionalScripts Optional vector of JavaScript files to include

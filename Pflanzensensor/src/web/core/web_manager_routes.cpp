@@ -13,23 +13,8 @@ void WebManager::setupRoutes() {
     return;
   }
 
-  // WiFi setup handler - only when in AP mode
-  if (isCaptivePortalAPActive()) {
-    if (!_wifiSetupHandler) {
-      logger.info(F("WebManager"), F("Gerät im AP-Modus - WiFi-Setup-Routen werden registriert"));
-      _wifiSetupHandler = std::make_unique<WiFiSetupHandler>(*_server, *_auth, *_cssService);
-      auto result = _wifiSetupHandler->registerRoutes(*_router);
-      if (!result.isSuccess()) {
-        logger.error(F("WebManager"), F("Registrieren der WiFi-Setup-Routen fehlgeschlagen: ") +
-                                          result.getMessage());
-      } else {
-        logger.info(F("WebManager"), F("WiFi-Setup-Routen registriert"));
-      }
-    }
-
-  } else {
-    logger.debug(F("WebManager"), F("WiFi verbunden - WiFi-Setup-Routen übersprungen"));
-  }
+  // Hinweis: Captive-Portal / AP-spezifische WiFi-Setup-Routen wurden entfernt.
+  // WiFi-Updates werden über den Admin-Bereich (/admin) verwaltet.
 
   // START PAGE - ALWAYS register (shows sensor data in both modes)
   _router->addRoute(HTTP_GET, "/", [this]() {
@@ -83,19 +68,7 @@ void WebManager::setupRoutes() {
   _router->addRoute(HTTP_POST, "/admin/config/setConfigValue",
                     [this]() { handleSetConfigValue(); });
 
-  // WiFi update route for admin interface (not captive portal)
-  _router->addRoute(HTTP_POST, "/admin/updateWiFi", [this]() {
-    // Delegate to admin handler for admin interface
-    if (!_adminHandler) {
-      _adminHandler = std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
-      auto result = _adminHandler->registerRoutes(*_router);
-      if (!result.isSuccess()) {
-        logger.error(F("WebManager"),
-                     F("Registrieren der Admin-Routen fehlgeschlagen: ") + result.getMessage());
-      }
-    }
-    _adminHandler->handleWiFiUpdate();
-  });
+  // /admin/updateWiFi wird vom AdminHandler registriert; keine explizite Delegierung hier nötig.
 
   _router->addRoute(HTTP_POST, "/admin/reboot", [this]() {
     if (!_adminHandler) {
@@ -208,24 +181,8 @@ void WebManager::setupMinimalRoutes() {
     return;
   }
 
-  // WiFi setup only if in AP mode
-  if (isCaptivePortalAPActive()) {
-    if (!_wifiSetupHandler) {
-      logger.info(F("WebManager"),
-                  F("Minimalmodus + AP-Modus - WiFi-Setup-Routen werden registriert"));
-      _wifiSetupHandler = std::make_unique<WiFiSetupHandler>(*_server, *_auth, *_cssService);
-      auto result = _wifiSetupHandler->registerRoutes(*_router);
-      if (!result.isSuccess()) {
-        logger.error(F("WebManager"), F("Registrieren der WiFi-Setup-Routen fehlgeschlagen: ") +
-                                          result.getMessage());
-      } else {
-        logger.info(F("WebManager"),
-                    F("WiFi-Setup-Routen für minimales Captive-Portal registriert"));
-      }
-    }
-  } else {
-    logger.debug(F("WebManager"), F("Minimalmodus, WiFi verbunden - kein Captive Portal nötig"));
-  }
+  // Hinweis: Captive-Portal-spezifische WiFi-Setup-Routen im Minimalmodus entfernt.
+  // Admin-API bleibt für konfigurierte Admin-Routen verfügbar.
 
   // SENSOR FUNCTIONALITY - ALWAYS available in minimal mode too
   if (_sensorManager) {

@@ -119,6 +119,16 @@ void WebManager::cleanupNonEssentialHandlers() {
     _logHandler.reset();
   }
 
+  // Ensure all cached handlers are cleaned up before clearing the cache.
+  // Some handlers (e.g. LogHandler) hold resources like WebSocket client
+  // lists or callbacks that must be released via cleanup(). Simply
+  // clearing the list would drop unique_ptrs without calling their
+  // cleanup hooks which can leak memory/resources on constrained devices.
+  for (auto& entry : m_handlerCache) {
+    if (entry.handler) {
+      entry.handler->cleanup();
+    }
+  }
   // Clear the entire handler cache
   m_handlerCache.clear();
 
@@ -143,8 +153,7 @@ void WebManager::cleanupHandlers() {
     _logHandler->cleanup();
   if (_minimalAdminHandler)
     _minimalAdminHandler->cleanup();
-  if (_wifiSetupHandler)
-    _wifiSetupHandler->cleanup();
+    // WiFiSetupHandler deprecated/entfernt: keine explizite Bereinigung nötig
 #if USE_DISPLAY
   if (_displayHandler)
     _displayHandler->cleanup();

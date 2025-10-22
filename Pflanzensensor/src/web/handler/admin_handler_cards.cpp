@@ -277,11 +277,12 @@ void AdminHandler::generateAndSendSystemInfoCard() {
   sendChunk(F("</td></tr>"));
   yield();
   sendChunk(F("<tr><td>WiFi SSID</td><td>"));
-  sendChunk(WiFi.SSID());
+  sendChunk(Component::getDisplaySSID());
   sendChunk(F("</td></tr><tr><td>WiFi Signal</td><td>"));
   sendChunk(String(WiFi.RSSI()));
   sendChunk(F(" dBm</td></tr><tr><td>IP Adresse</td><td>"));
-  sendChunk(WiFi.localIP().toString());
+  // Use the display IP helper so AP-mode shows softAP IP
+  sendChunk(Component::getDisplayIP());
   sendChunk(F("</td></tr><tr><td>MAC Adresse</td><td>"));
   sendChunk(WiFi.macAddress());
   sendChunk(F("</td></tr>"));

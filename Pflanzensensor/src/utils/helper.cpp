@@ -12,7 +12,7 @@ extern bool tryAllWiFiCredentials();
 String Helper::getFormattedDate() {
   time_t now = getCurrentTime();
   if (now == 0) {
-    return "Zeit nicht synchronisiert";
+    return "???";
   }
 
   struct tm* timeinfo = localtime(&now);
@@ -25,7 +25,7 @@ String Helper::getFormattedDate() {
 String Helper::getFormattedTime(bool use24Hour) {
   time_t now = getCurrentTime();
   if (now == 0) {
-    return "Zeit nicht synchronisiert";
+    return "???";
   }
 
   struct tm* timeinfo = localtime(&now);

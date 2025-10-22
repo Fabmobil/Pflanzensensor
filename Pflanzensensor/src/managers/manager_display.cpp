@@ -229,7 +229,8 @@ void DisplayManager::rotateScreen() {
       logger.debug(F("DisplayM"), F("IP-Anzeige wird angezeigt"));
     }
     IPAddress ip;
-    if (isCaptivePortalAPActive()) {
+    // Show softAP IP if we're in AP mode (manual AP started on failure)
+    if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
       ip = WiFi.softAPIP();
     } else if (WiFi.status() == WL_CONNECTED) {
       ip = WiFi.localIP();

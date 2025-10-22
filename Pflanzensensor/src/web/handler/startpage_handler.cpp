@@ -149,6 +149,15 @@ void StartpageHandler::generateAndSendSensorGrid() {
   sendChunk(F("</div>"));
 }
 
+void StartpageHandler::renderWiFiSetupForm() {
+  // WiFi-Setup über Startseite entfernt. Benutzer sollen die WiFi-Einstellungen
+  // über die Admin-Seite ändern (geschützte Seite).
+  sendChunk(F("<div class='card'><h3>WiFi-Konfiguration</h3>"));
+  sendChunk(F("<p>Änderungen an WiFi-Zugangsdaten bitte über die Einstellungsseite (/admin) "
+              "vornehmen.</p>"));
+  sendChunk(F("</div>"));
+}
+
 void StartpageHandler::generateSensorBox(const Sensor* sensor, float value, const String& name,
                                          const String& unit, const char* status,
                                          size_t measurementIndex, size_t sensorIndex) {

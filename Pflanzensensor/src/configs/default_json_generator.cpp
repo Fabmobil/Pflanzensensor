@@ -148,7 +148,8 @@ void ensureConfigFilesExist() {
       m["enabled"] = true;
       m["min"] = ANALOG_SENSOR_DEFAULTS[i].rawMin;
       m["max"] = ANALOG_SENSOR_DEFAULTS[i].rawMax;
-      m["inverted"] = false; // Default to not inverted
+      // Use the compiled ANALOG_SENSOR_DEFAULTS to populate inverted flag.
+      m["inverted"] = ANALOG_SENSOR_DEFAULTS[i].inverted;
       m["calibrationMode"] = ANALOG_SENSOR_DEFAULTS[i].calibrationMode;
       // Do NOT pre-populate absolute raw extremum storage with autocal
       // defaults. The extremum store should reflect measured history only.
