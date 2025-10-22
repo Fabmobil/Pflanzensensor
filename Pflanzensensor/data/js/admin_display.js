@@ -186,7 +186,10 @@ function initMeasurementDisplayHandlers() {
   document.querySelectorAll('.sensor-display-checkbox').forEach(checkbox => {
     checkbox.addEventListener('change', function() {
       const sensorId = this.dataset.sensorId;
-      updateMeasurementDisplay(sensorId, this.checked, null);
+      // For single-measurement sensors, explicitly send measurement_index=0
+      // so the server toggles the measurement display flag instead of
+      // toggling all measurements.
+      updateMeasurementDisplay(sensorId, this.checked, '0');
     });
   });
   console.log('[admin_display.js] Measurement display handlers initialized');
@@ -203,10 +206,17 @@ function updateMeasurementDisplay(sensorId, enabled, measurementIndex) {
     formData.append('measurement_index', measurementIndex);
   }
 
+  // Build URLSearchParams body; include measurement_index when provided so
+  // the server can act on the single measurement instead of toggling all.
+  const bodyParams = { measurement: sensorId, enabled: enabled };
+  if (measurementIndex !== null) {
+    bodyParams.measurement_index = measurementIndex;
+  }
+
   fetch('/admin/display/measurement_toggle', {
     method: 'POST',
     headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ measurement: sensorId, enabled: enabled })
+    body: new URLSearchParams(bodyParams)
   })
   .then(parseJsonResponse)
   .then(data => {

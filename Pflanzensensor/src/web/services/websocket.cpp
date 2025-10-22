@@ -122,20 +122,24 @@ bool WebSocketService::sendBIN(uint8_t num, const uint8_t* data, size_t len) {
 }
 
 bool WebSocketService::isClientConnected(uint8_t num) const {
-  return (m_connectedClients & (1 << num)) != 0;
+  if (num >= 3) // our bitmask only supports up to 3 clients
+    return false;
+  return (m_connectedClients & (1UL << num)) != 0;
 }
 
 void WebSocketService::setClientConnected(uint8_t num, bool connected) {
+  if (num >= 3) // our bitmask only supports up to 3 clients
+    return;
   if (connected) {
-    m_connectedClients |= (1 << num);
+    m_connectedClients |= (1UL << num);
   } else {
-    m_connectedClients &= ~(1 << num);
+    m_connectedClients &= ~(1UL << num);
   }
 }
 
 uint8_t WebSocketService::countConnectedClients() const {
   uint8_t count = 0;
-  for (uint8_t i = 0; i < MAX_CLIENTS; i++) {
+  for (uint8_t i = 0; i < MAX_CLIENTS && i < 32; i++) {
     if (isClientConnected(i))
       count++;
   }
@@ -154,7 +158,8 @@ IPAddress WebSocketService::remoteIP(uint8_t num) const {
 void WebSocketService::handleEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
   switch (type) {
   case WStype_CONNECTED: {
-    if (countConnectedClients() >= MAX_CLIENTS) {
+    // Validate client id is within supported range
+    if (num >= MAX_CLIENTS || countConnectedClients() >= MAX_CLIENTS) {
       logger.warning(F("Websocket"),
                      F("Maximale Anzahl WebSocket-Clients erreicht, Verbindung abgelehnt"));
       _wsServer->disconnect(num);
@@ -175,7 +180,7 @@ void WebSocketService::handleEvent(uint8_t num, WStype_t type, uint8_t* payload,
   }
 
   case WStype_DISCONNECTED: {
-    if (isClientConnected(num)) {
+    if (num < MAX_CLIENTS && isClientConnected(num)) {
       logger.info(F("Websocket"),
                   String(F("WebSocket-Client ")) + String(num) + String(F(" getrennt")));
       setClientConnected(num, false);

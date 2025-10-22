@@ -138,12 +138,30 @@ void AdminDisplayHandler::handleDisplayConfig() {
               sendChunk(F("</div>"));
             } else {
               // Sensor has only one measurement - show as simple checkbox
+              // The checkbox controls the DISPLAY of the measurement on the
+              // display, not whether the sensor itself is enabled. If the
+              // sensor exposes measurement metadata we prefer the
+              // measurement enabled flag; otherwise fall back to sensor
+              // enabled state for compatibility.
               sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
               sendChunk(
                   F("<input type='checkbox' class='sensor-display-checkbox' data-sensor-id='"));
               sendChunk(id);
               sendChunk(F("'"));
-              if (sensor->isEnabled()) {
+              bool checked = false;
+              // Prefer per-measurement enabled flag when available
+              if (measurementData.isValid() && measurementData.activeValues >= 1) {
+                if (sensor->config().measurements.size() > 0 &&
+                    sensor->config().measurements[0].enabled) {
+                  checked = true;
+                }
+              } else {
+                // Fallback (older sensors): use sensor enabled state
+                if (sensor->isEnabled()) {
+                  checked = true;
+                }
+              }
+              if (checked) {
                 sendChunk(F(" checked"));
               }
               sendChunk(F("> "));
@@ -166,12 +184,14 @@ void AdminDisplayHandler::handleScreenDurationUpdate() {
     return;
   }
 
-  if (!_server.hasArg("duration")) {
-    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Fehlende Parameter\"}"));
+  // Require new AJAX param 'screen_duration'
+  if (!_server.hasArg("screen_duration")) {
+    sendJsonResponse(
+        400, F("{\"success\":false,\"error\":\"Fehlende Parameter: screen_duration erwartet\"}"));
     return;
   }
 
-  int duration = _server.arg("duration").toInt();
+  int duration = _server.arg("screen_duration").toInt();
   if (duration < 1 || duration > 60) {
     sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültige Dauer (1-60 Sekunden)\"}"));
     return;
@@ -198,12 +218,14 @@ void AdminDisplayHandler::handleClockFormatUpdate() {
     return;
   }
 
-  if (!_server.hasArg("format")) {
-    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Fehlende Parameter\"}"));
+  // Require new AJAX param 'clock_format'
+  if (!_server.hasArg("clock_format")) {
+    sendJsonResponse(
+        400, F("{\"success\":false,\"error\":\"Fehlende Parameter: clock_format erwartet\"}"));
     return;
   }
 
-  String format = _server.arg("format");
+  String format = _server.arg("clock_format");
   if (format != "24h" && format != "12h") {
     sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiges Format\"}"));
     return;
@@ -229,13 +251,15 @@ void AdminDisplayHandler::handleDisplayToggle() {
     sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
   }
-
-  if (!_server.hasArg("setting") || !_server.hasArg("enabled")) {
-    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Fehlende Parameter\"}"));
+  // Require new AJAX params 'display' and 'enabled'
+  if (!_server.hasArg("display") || !_server.hasArg("enabled")) {
+    sendJsonResponse(
+        400,
+        F("{\"success\":false,\"error\":\"Fehlende Parameter: display und enabled erwartet\"}"));
     return;
   }
 
-  String setting = _server.arg("setting");
+  String setting = _server.arg("display");
   bool enabled = _server.arg("enabled") == "true";
 
   if (displayManager) {
@@ -271,12 +295,14 @@ void AdminDisplayHandler::handleMeasurementDisplayToggle() {
     return;
   }
 
-  if (!_server.hasArg("sensor_id") || !_server.hasArg("enabled")) {
-    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Fehlende Parameter\"}"));
+  // Require new AJAX params 'measurement' and 'enabled'
+  if (!_server.hasArg("measurement") || !_server.hasArg("enabled")) {
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Fehlende Parameter: measurement und "
+                            "enabled erwartet\"}"));
     return;
   }
 
-  String sensorId = _server.arg("sensor_id");
+  String sensorId = _server.arg("measurement");
   bool enabled = _server.arg("enabled") == "true";
 
   if (sensorManager) {
@@ -286,27 +312,56 @@ void AdminDisplayHandler::handleMeasurementDisplayToggle() {
       return;
     }
 
+    // Toggle individual measurement if 'measurement_index' is provided
     if (_server.hasArg("measurement_index")) {
-      // Toggle individual measurement
       int index = _server.arg("measurement_index").toInt();
       if (index >= 0 && static_cast<size_t>(index) < sensor->config().measurements.size()) {
+        // Persist atomically via SensorPersistence
+        auto res = SensorPersistence::updateMeasurementEnabled(sensorId, static_cast<size_t>(index),
+                                                               enabled);
+        if (!res.isSuccess()) {
+          sendJsonResponse(500,
+                           String("{\"success\":false,\"error\":\"") + res.getMessage() + "\"}");
+          return;
+        }
+        // Update in-memory config
         sensor->mutableConfig().measurements[static_cast<size_t>(index)].enabled = enabled;
       } else {
         sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messungsindex\"}"));
         return;
       }
     } else {
-      // Toggle entire sensor
-      sensor->setEnabled(enabled);
+      // No index provided. If the sensor exposes multiple measurements, toggle
+      // all active measurements' display flags. If it only has a single
+      // measurement, toggle measurements[0].enabled (do NOT disable the
+      // sensor itself).
+      SensorConfig& cfg = sensor->mutableConfig();
+      size_t cnt = cfg.activeMeasurements ? cfg.activeMeasurements : 1;
+      if (cnt > 1) {
+        for (size_t i = 0; i < cnt; ++i) {
+          auto res = SensorPersistence::updateMeasurementEnabled(sensorId, i, enabled);
+          if (!res.isSuccess()) {
+            sendJsonResponse(500,
+                             String("{\"success\":false,\"error\":\"") + res.getMessage() + "\"}");
+            return;
+          }
+          cfg.measurements[i].enabled = enabled;
+        }
+      } else {
+        // Single measurement sensor: update measurement 0 enabled flag
+        auto res = SensorPersistence::updateMeasurementEnabled(sensorId, 0, enabled);
+        if (!res.isSuccess()) {
+          sendJsonResponse(500,
+                           String("{\"success\":false,\"error\":\"") + res.getMessage() + "\"}");
+          return;
+        }
+        // measurements is a fixed-size array; index 0 is always valid
+        cfg.measurements[0].enabled = enabled;
+      }
     }
 
-    // Save sensor config
-    auto result = SensorPersistence::saveToFileMinimal();
-    if (result.isSuccess()) {
-      sendJsonResponse(200, F("{\"success\":true}"));
-    } else {
-      sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Speichern\"}"));
-    }
+    // Success
+    sendJsonResponse(200, F("{\"success\":true}"));
   } else {
     sendJsonResponse(500, F("{\"success\":false,\"error\":\"Sensor Manager nicht verfügbar\"}"));
   }

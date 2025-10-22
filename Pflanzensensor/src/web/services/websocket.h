@@ -68,7 +68,9 @@ private:
   std::unique_ptr<WebSocketsServer> _wsServer;
   WebSocketEventHandler _eventHandler;
   RingBuffer m_ringBuffer;
-  uint8_t m_connectedClients = 0;
+  // Use a wider bitmask to safely support multiple client ids without UB
+  // when shifting bits. Keep memory small but sufficient for expected clients.
+  uint32_t m_connectedClients = 0;
   static char s_sendBuffer[MAX_MESSAGE_SIZE];
 
   void handleEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length);

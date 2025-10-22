@@ -330,10 +330,33 @@ protected:
    * @return true when request has X-Requested-With: XMLHttpRequest or ajax=1
    */
   bool isAjaxRequest() {
+    // Try common header casings for X-Requested-With
     String xhr = _server.header("X-Requested-With");
+    if (xhr.length() == 0)
+      xhr = _server.header("x-requested-with");
+    if (xhr.length() == 0)
+      xhr = _server.header("X-requested-with");
+    // Normalize to lowercase for comparison
+    String xhrLower = xhr;
+    xhrLower.toLowerCase();
+    bool hasXhr = (xhrLower == "xmlhttprequest");
+
+    // Accept explicit ajax param (ajax=1 or ajax=true)
     bool hasAjaxParam =
         _server.hasArg("ajax") && (_server.arg("ajax") == "1" || _server.arg("ajax") == "true");
-    return (xhr == "XMLHttpRequest") || hasAjaxParam;
+
+    // Also accept requests that explicitly ask for JSON or use common urlencoded content-type
+    String accept = _server.header("Accept");
+    if (accept.length() == 0)
+      accept = _server.header("accept");
+    String contentType = _server.header("Content-Type");
+    if (contentType.length() == 0)
+      contentType = _server.header("content-type");
+    bool wantsJson = (accept.length() && accept.indexOf("application/json") >= 0);
+    bool isUrlEncoded =
+        (contentType.length() && contentType.indexOf("application/x-www-form-urlencoded") >= 0);
+
+    return hasXhr || hasAjaxParam || wantsJson || isUrlEncoded;
   }
 
   /**
