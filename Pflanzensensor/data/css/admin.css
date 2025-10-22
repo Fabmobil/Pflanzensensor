@@ -166,7 +166,6 @@
 
 .card input[type="text"],
 .card input[type="password"],
-.card input[type="email"],
 .card select {
   background: #3a3a3a;
   border: 1px solid #4a4a4a;
@@ -192,7 +191,6 @@
 .card input[type="text"]:focus,
 .card input[type="number"]:focus,
 .card input[type="password"]:focus,
-.card input[type="email"]:focus,
 .card select:focus {
   outline: none;
   border-color: #a855f7;

@@ -45,11 +45,6 @@
 #include "web/services/websocket.h"
 #endif
 
-#if USE_MAIL
-#include "mail/mail_helper.h"
-#include "mail/mail_manager.h"
-#endif
-
 // helper methods
 #include "configs/default_json_generator.h"
 #include "utils/helper.h"
@@ -364,30 +359,6 @@ void setup() {
     displayManager->updateLogStatus(F("Webserver..."), true);
   }
 #endif
-#endif
-
-#if USE_MAIL
-  if (WiFi.status() == WL_CONNECTED) {
-    Helper::initializeComponent(F("E-Mail"), []() -> ResourceResult {
-      auto& mailManager = MailManager::getInstance();
-      auto result = mailManager.init();
-      if (!result.isSuccess()) {
-#if USE_DISPLAY
-        if (displayManager)
-          displayManager->updateLogStatus(F("Mail Fehler"), true);
-#endif
-        logger.error(F("main"), F("E-Mail-Initialisierung fehlgeschlagen: ") + result.getMessage());
-        return result;
-      }
-      return ResourceResult::success();
-    });
-#if USE_DISPLAY
-    if (displayManager)
-      displayManager->updateLogStatus(F("E-Mail..."), true);
-#endif
-  } else {
-    logger.info(F("main"), F("WiFi nicht verbunden - E-Mail-Initialisierung übersprungen"));
-  }
 #endif
 
 #if USE_DISPLAY

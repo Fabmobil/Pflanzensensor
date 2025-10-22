@@ -148,22 +148,6 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
       [this]() { handleUploadConfig(); });
   logger.debug(F("AdminHandler"), F("Registrierte /admin/uploadConfig-Route (multipart)"));
 
-#if USE_MAIL
-  // Register test mail route
-  result = router.addRoute(HTTP_POST, "/admin/testMail", [this]() {
-    if (!validateRequest()) {
-      _server.requestAuthentication();
-      return;
-    }
-    handleTestMail();
-  });
-  if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/testMail-Route fehlgeschlagen"));
-    return result;
-  }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/testMail-Route"));
-#endif
-
   // Register WiFi settings update route
   result = router.addRoute(HTTP_POST, "/admin/updateWiFi", [this]() {
     if (!validateRequest()) {

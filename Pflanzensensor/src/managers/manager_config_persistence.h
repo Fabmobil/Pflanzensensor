@@ -72,29 +72,6 @@ private:
    * @param config Configuration data to populate
    */
   static void loadSensorErrors(const ArduinoJson::JsonObject& sensorErrors, ConfigData& config);
-
-#if USE_MAIL
-  /**
-   * @brief Load mail configuration from JSON document
-   * @param doc JSON document containing configuration
-   * @param config Configuration data to populate
-   */
-  static void loadMailConfig(const ArduinoJson::StaticJsonDocument<512>& doc, ConfigData& config);
-
-  /**
-   * @brief Set mail configuration to default values
-   * @param config Configuration data to populate with defaults
-   */
-  static void setMailConfigDefaults(ConfigData& config);
-
-  /**
-   * @brief Save mail configuration to JSON document
-   * @param doc JSON document to populate
-   * @param config Configuration data to save
-   */
-  static void saveMailConfigToJson(ArduinoJson::StaticJsonDocument<512>& doc,
-                                   const ConfigData& config);
-#endif
 };
 
 // Function to apply sensor settings directly from JSON

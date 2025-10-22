@@ -92,21 +92,6 @@ struct ConfigData {
   String flowerStatusSensor; ///< Sensor that controls the flower face status
                              ///< (format: "sensorId_measurementIndex",
                              ///< default: "ANALOG_1" for Bodenfeuchte)
-
-#if USE_MAIL
-  // Mail/SMTP settings
-  bool mailEnabled;            ///< Enable/disable mail functionality
-  String smtpHost;             ///< SMTP server host
-  uint16_t smtpPort;           ///< SMTP server port (587, 465, 25)
-  String smtpUser;             ///< SMTP username/email
-  String smtpPassword;         ///< SMTP password/app password
-  String smtpSenderName;       ///< Sender display name
-  String smtpSenderEmail;      ///< Sender email address
-  String smtpRecipient;        ///< Default recipient email
-  bool smtpEnableStartTLS;     ///< Enable STARTTLS encryption
-  bool smtpDebug;              ///< Enable SMTP debug output
-  bool smtpSendTestMailOnBoot; ///< Send test mail on device startup
-#endif
 };
 
 /**

@@ -208,17 +208,6 @@ private:
    */
   void handleUploadConfig();
 
-#if USE_MAIL
-  /**
-   * @brief Handle test mail sending requests
-   * @details Sends test email using current SMTP configuration:
-   *          - Validates mail settings
-   *          - Sends test email
-   *          - Provides feedback
-   */
-  void handleTestMail();
-#endif
-
   // Utility methods - implemented in admin_handler_utils.cpp
   /**
    * @brief Processes configuration updates from form submission
