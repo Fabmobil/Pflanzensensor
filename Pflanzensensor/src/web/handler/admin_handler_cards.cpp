@@ -219,6 +219,23 @@ void AdminHandler::generateAndSendSystemSettingsCard() {
   if (ConfigMgr.isMD5Verification())
     sendChunk(F(" checked"));
   sendChunk(F("> MD5-Überprüfung für Updates aktivieren</label></div>"));
+  // Admin password change (entered twice, saved via explicit button)
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<label>Administrator Passwort:</label>"));
+  // Note: omit the 'name' attribute to avoid auto-save during typing. JS will
+  // submit the admin_password parameter only when the user clicks Speichern.
+  sendChunk(F("<input type='password' id='admin_password' placeholder='Neues Admin-Passwort' "
+              "autocomplete='new-password' value=''>"));
+  sendChunk(F("</div>"));
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<label>Passwort wiederholen:</label>"));
+  sendChunk(F("<input type='password' id='admin_password_confirm' placeholder='Passwort "
+              "wiederholen' autocomplete='new-password' value=''>"));
+  sendChunk(F("</div>"));
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<button type='button' id='save_admin_password' class='button "
+              "button-primary'>Passwort speichern</button>"));
+  sendChunk(F("</div>"));
   // Save handled automatically via AJAX; keep form for fallback but remove visible submit button
   sendChunk(F("</form></div>"));
 }

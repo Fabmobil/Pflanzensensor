@@ -61,8 +61,14 @@ void AdminHandler::generateAndSendWiFiSettingsCard() {
     }
     sendChunk(F("</div>"));
   }
+  // Add explicit save button — WiFi settings should only be saved on user
+  // action and must not be auto-saved while editing.
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<button type='button' id='save_wifi_settings' class='button button-primary'>WiFi "
+              "Einstellungen speichern</button>"));
+  sendChunk(F("</div>"));
   // AJAX-only: WiFi settings are updated via JavaScript fetch calls. The form
-  // remains as a DOM container only and should not be submitted directly.
+  // remains as a DOM container only and should not be auto-submitted on input.
   sendChunk(F("</form></div>"));
 }
 

@@ -10,8 +10,19 @@
 ConfigValidator::ValidationResult ConfigValidator::validatePassword(const String& password) {
   if (password.length() < ConfigValidationRules::MIN_PASSWORD_LENGTH ||
       password.length() > ConfigValidationRules::MAX_PASSWORD_LENGTH) {
-    return ValidationResult::fail(ConfigError::VALIDATION_ERROR,
-                                  F("Passwortlänge muss zwischen 8 und 32 Zeichen liegen"));
+    return ValidationResult::fail(
+        ConfigError::VALIDATION_ERROR,
+        F("Passwortlänge muss zwischen ") + String(ConfigValidationRules::MIN_PASSWORD_LENGTH) +
+            F(" und ") + String(ConfigValidationRules::MAX_PASSWORD_LENGTH) + F(" Zeichen liegen"));
+  }
+  // Enforce ASCII-only characters (no Unicode). Accept bytes in range 0x20-0x7E
+  for (size_t i = 0; i < password.length(); ++i) {
+    unsigned char c = static_cast<unsigned char>(password[i]);
+    if (c < 0x20 || c > 0x7E) {
+      return ValidationResult::fail(
+          ConfigError::VALIDATION_ERROR,
+          F("Nur ASCII-Zeichen erlaubt (keine Sonderzeichen außerhalb von 0x20-0x7E)"));
+    }
   }
   return ValidationResult::success();
 }

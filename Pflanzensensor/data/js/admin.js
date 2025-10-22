@@ -38,6 +38,73 @@ window.addEventListener('load', () => {
   // No table population or fetch logic needed for /admin/sensors or any admin page
 });
 
+// Handler for saving admin password explicitly (does not participate in auto-save)
+window.addEventListener('load', () => {
+  const saveBtn = document.getElementById('save_admin_password');
+  if (!saveBtn) return;
+
+  saveBtn.addEventListener('click', function () {
+    const pw = document.getElementById('admin_password');
+    const pw2 = document.getElementById('admin_password_confirm');
+    if (!pw || !pw2) return;
+    const v1 = pw.value || '';
+    const v2 = pw2.value || '';
+
+    if (v1.length === 0) {
+      showErrorMessage('Bitte ein Passwort eingeben');
+      return;
+    }
+    // Enforce length constraints (match server): min 8, max 32
+    if (v1.length < 8 || v1.length > 32) {
+      showErrorMessage('Passwortlänge muss zwischen 8 und 32 Zeichen liegen');
+      return;
+    }
+    // ASCII-only check: allow characters 0x20..0x7E
+    for (let i = 0; i < v1.length; ++i) {
+      const code = v1.charCodeAt(i);
+      if (code < 0x20 || code > 0x7E) {
+        showErrorMessage('Nur ASCII-Zeichen erlaubt');
+        return;
+      }
+    }
+    if (v1 !== v2) {
+      showErrorMessage('Passwörter stimmen nicht überein');
+      return;
+    }
+
+    // Prepare urlencoded body for AJAX partial update
+    const params = new URLSearchParams();
+    params.append('section', 'system');
+    params.append('admin_password', v1);
+    params.append('ajax', '1');
+
+    // Visual feedback
+    showSuccessMessage('Speichere Passwort...');
+
+    fetch('/admin/updateSettings', {
+      method: 'POST',
+      body: params,
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(parseJsonResponse)
+    .then(data => {
+      if (data && data.success) {
+        showSuccessMessage('Passwort erfolgreich geändert');
+        // Clear fields after success
+        pw.value = '';
+        pw2.value = '';
+      } else {
+        showErrorMessage('Fehler beim Speichern: ' + (data && (data.error || data.message) ? (data.error || data.message) : 'Unbekannt'));
+      }
+    })
+    .catch(err => {
+      console.error('[admin.js] Password save error:', err);
+      showErrorMessage('Fehler beim Speichern: ' + (err.message || err));
+    });
+  });
+});
+
 // Intercept the single upload form for settings/sensors and show notifications
 window.addEventListener('load', () => {
   const uploadForm = document.getElementById('upload-config-form');
@@ -198,10 +265,10 @@ function parseJsonResponse(response) {
 function initConfigAutoSave() {
   document.querySelectorAll('form.config-form').forEach(form => {
     const actionAttr = form.getAttribute('action') || '';
-  // Only target the main settings forms which post to /admin/updateSettings
-  // or the WiFi form which posts to /admin/updateWiFi (we handle WiFi
-  // specially below).
-  if (!(actionAttr.includes('/admin/updateSettings') || actionAttr.includes('/admin/updateWiFi'))) return;
+  // Only target the main settings forms which post to /admin/updateSettings.
+  // WiFi form (action '/admin/updateWiFi') should not auto-save — it will be
+  // handled by an explicit Save button below.
+  if (!actionAttr.includes('/admin/updateSettings')) return;
 
     // Hide the visual save button to reduce clutter. The form remains in the DOM for accessibility,
     // but it must be submitted via JavaScript (AJAX) and direct HTML submissions are not supported.
@@ -262,48 +329,6 @@ function initConfigAutoSave() {
             lastChanged = null;
             return;
           }
-        } else if (actionAttr.includes('/admin/updateWiFi')) {
-          // For WiFi forms, send only the changed field to the WiFi update endpoint
-          const params = new URLSearchParams();
-          params.append(lastChanged.name, lastChanged.value);
-          // Mark as AJAX partial update for WiFi requests
-          params.append('ajax', '1');
-
-          fetch('/admin/updateWiFi', {
-            method: 'POST',
-            body: params,
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }
-          })
-            .then(response => {
-              const contentType = response.headers.get('content-type') || '';
-              if (contentType.includes('application/json')) {
-                return parseJsonResponse(response);
-              }
-              // If server returns non-JSON but status is OK we treat it as success
-              if (response.ok) {
-                showSuccessMessage('WiFi-Einstellung gespeichert');
-                return {};
-              }
-              // Otherwise try to read body and surface error
-              return response.text().then(text => { throw new Error(text || 'Unbekannter Serverfehler'); });
-            })
-            .then(data => {
-              // If JSON was returned, we may show messages accordingly
-              if (data && data.success === false) {
-                showErrorMessage('Fehler beim Speichern: ' + (data.error || data.message || 'Unbekannter Fehler'));
-              } else if (data && data.success && data.changes) {
-                const summary = data.changes.replace(/<[^>]+>/g, '').trim();
-                showSuccessMessage('Gespeichert: ' + (summary || 'Änderungen übernommen'));
-              }
-            })
-          .catch(err => {
-            console.error('[admin.js] WiFi partial update error:', err);
-            showErrorMessage('Fehler beim Speichern: ' + err.message);
-          });
-
-          lastChanged = null;
-          return;
         }
       }
       // Fallback: do nothing — partial updates only
@@ -384,5 +409,44 @@ function initConfigAutoSave() {
 // Initialize auto-save on load
 window.addEventListener('load', () => {
   initConfigAutoSave();
+    // Attach explicit Save handler for WiFi settings (if present)
+    const wifiSaveBtn = document.getElementById('save_wifi_settings');
+    if (wifiSaveBtn) {
+      wifiSaveBtn.addEventListener('click', function () {
+        // Find the closest form (the WiFi settings form)
+        const form = document.querySelector('form.config-form[action="/admin/updateWiFi"]');
+        if (!form) return;
+        const params = new URLSearchParams(new FormData(form));
+        params.append('ajax', '1');
+
+        showSuccessMessage('Speichere WiFi Einstellungen...');
+
+        fetch('/admin/updateWiFi', {
+          method: 'POST',
+          body: params,
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(parseJsonResponse)
+        .then(data => {
+          if (data && data.success) {
+            if (data.changes) {
+              const summary = data.changes.replace(/<[^>]+>/g, '').trim();
+              showSuccessMessage('Gespeichert: ' + (summary || 'Änderungen übernommen'));
+            } else if (data.message) {
+              showSuccessMessage(data.message);
+            } else {
+              showSuccessMessage('WiFi Einstellungen gespeichert');
+            }
+          } else {
+            showErrorMessage('Fehler beim Speichern: ' + (data && (data.error || data.message) ? (data.error || data.message) : 'Unbekannt'));
+          }
+        })
+        .catch(err => {
+          console.error('[admin.js] WiFi save error:', err);
+          showErrorMessage('Fehler beim Speichern: ' + (err.message || err));
+        });
+      });
+    }
   // No legacy redirect handling required: uploads return JSON now.
 });
