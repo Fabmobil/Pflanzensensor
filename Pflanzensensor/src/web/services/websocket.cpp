@@ -12,7 +12,7 @@ WebSocketService& WebSocketService::getInstance() {
 
 bool WebSocketService::init(uint16_t port, WebSocketEventHandler handler) {
   if (_wsServer) {
-  logger.debug(F("Websocket"), F("WebSocket-Server bereits initialisiert"));
+    logger.debug(F("Websocket"), F("WebSocket-Server bereits initialisiert"));
     return true;
   }
 
@@ -21,25 +21,24 @@ bool WebSocketService::init(uint16_t port, WebSocketEventHandler handler) {
     _wsServer = std::make_unique<WebSocketsServer>(port);
 
     if (!_wsServer) {
-  logger.error(F("Websocket"), F("WebSocket-Server konnte nicht erstellt werden"));
+      logger.error(F("Websocket"), F("WebSocket-Server konnte nicht erstellt werden"));
       return false;
     }
 
     // Enable heartbeat with 15s interval, timeout after 3s, and 2 missed pings
     _wsServer->enableHeartbeat(15000, 3000, 2);
 
-    _wsServer->onEvent(
-        [this](uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
-          handleEvent(num, type, payload, length);
-        });
+    _wsServer->onEvent([this](uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
+      handleEvent(num, type, payload, length);
+    });
 
     _wsServer->begin();
-  logger.info(F("Websocket"), F("WebSocket-Server erfolgreich gestartet"));
+    logger.info(F("Websocket"), F("WebSocket-Server erfolgreich gestartet"));
     return true;
 
   } catch (const std::exception& e) {
-  logger.error(F("Websocket"),
-         String(F("WebSocket-Initialisierung fehlgeschlagen: ")) + String(e.what()));
+    logger.error(F("Websocket"),
+                 String(F("WebSocket-Initialisierung fehlgeschlagen: ")) + String(e.what()));
     stop();
     return false;
   }
@@ -137,14 +136,13 @@ void WebSocketService::setClientConnected(uint8_t num, bool connected) {
 uint8_t WebSocketService::countConnectedClients() const {
   uint8_t count = 0;
   for (uint8_t i = 0; i < MAX_CLIENTS; i++) {
-    if (isClientConnected(i)) count++;
+    if (isClientConnected(i))
+      count++;
   }
   return count;
 }
 
-bool WebSocketService::clientIsConnected(uint8_t num) const {
-  return isClientConnected(num);
-}
+bool WebSocketService::clientIsConnected(uint8_t num) const { return isClientConnected(num); }
 
 IPAddress WebSocketService::remoteIP(uint8_t num) const {
   if (!_wsServer) {
@@ -153,49 +151,46 @@ IPAddress WebSocketService::remoteIP(uint8_t num) const {
   return _wsServer->remoteIP(num);
 }
 
-void WebSocketService::handleEvent(uint8_t num, WStype_t type, uint8_t* payload,
-                                   size_t length) {
+void WebSocketService::handleEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
   switch (type) {
-    case WStype_CONNECTED: {
-      if (countConnectedClients() >= MAX_CLIENTS) {
-    logger.warning(
-      F("Websocket"),
-      F("Maximale Anzahl WebSocket-Clients erreicht, Verbindung abgelehnt"));
-        _wsServer->disconnect(num);
-        return;
-      }
+  case WStype_CONNECTED: {
+    if (countConnectedClients() >= MAX_CLIENTS) {
+      logger.warning(F("Websocket"),
+                     F("Maximale Anzahl WebSocket-Clients erreicht, Verbindung abgelehnt"));
+      _wsServer->disconnect(num);
+      return;
+    }
 
-      IPAddress ip = remoteIP(num);
-  logger.info(F("Websocket"), String(F("WebSocket-Client ")) + String(num) +
-              String(F(" verbunden von ")) + ip.toString() +
-              String(F(" (")) +
-              String(countConnectedClients() + 1) +
-              String(F("/")) + String(MAX_CLIENTS) + String(F(" aktiv)")));
+    IPAddress ip = remoteIP(num);
+    logger.info(F("Websocket"), String(F("WebSocket-Client ")) + String(num) +
+                                    String(F(" verbunden von ")) + ip.toString() + String(F(" (")) +
+                                    String(countConnectedClients() + 1) + String(F("/")) +
+                                    String(MAX_CLIENTS) + String(F(" aktiv)")));
 
-      setClientConnected(num, true);
+    setClientConnected(num, true);
+    if (_eventHandler) {
+      _eventHandler(num, type, payload, length);
+    }
+    break;
+  }
+
+  case WStype_DISCONNECTED: {
+    if (isClientConnected(num)) {
+      logger.info(F("Websocket"),
+                  String(F("WebSocket-Client ")) + String(num) + String(F(" getrennt")));
+      setClientConnected(num, false);
       if (_eventHandler) {
         _eventHandler(num, type, payload, length);
       }
-      break;
     }
+    break;
+  }
 
-    case WStype_DISCONNECTED: {
-      if (isClientConnected(num)) {
-  logger.info(F("Websocket"),
-        String(F("WebSocket-Client ")) + String(num) + String(F(" getrennt")));
-        setClientConnected(num, false);
-        if (_eventHandler) {
-          _eventHandler(num, type, payload, length);
-        }
-      }
-      break;
+  default: {
+    if (isClientConnected(num) && _eventHandler) {
+      _eventHandler(num, type, payload, length);
     }
-
-    default: {
-      if (isClientConnected(num) && _eventHandler) {
-        _eventHandler(num, type, payload, length);
-      }
-      break;
-    }
+    break;
+  }
   }
 }

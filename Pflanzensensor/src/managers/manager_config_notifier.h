@@ -12,7 +12,7 @@
 #include <vector>
 
 class ConfigNotifier {
- public:
+public:
   using ChangeCallback = std::function<void(const String&, const String&)>;
 
   /**
@@ -27,8 +27,7 @@ class ConfigNotifier {
    * @param value The new value of the configuration
    * @param updateSensors Whether to update sensor settings
    */
-  void notifyChange(const String& key, const String& value,
-                    bool updateSensors = true);
+  void notifyChange(const String& key, const String& value, bool updateSensors = true);
 
   /**
    * @brief Clear all registered callbacks
@@ -41,7 +40,7 @@ class ConfigNotifier {
    */
   size_t getCallbackCount() const;
 
- private:
+private:
   std::vector<ChangeCallback> m_callbacks;
 };
 

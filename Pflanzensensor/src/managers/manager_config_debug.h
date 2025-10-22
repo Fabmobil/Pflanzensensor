@@ -9,10 +9,10 @@
 #include "../utils/result_types.h"
 #include "manager_config_types.h"
 
-class ConfigNotifier;  // Forward declaration
+class ConfigNotifier; // Forward declaration
 
 class DebugConfig {
- public:
+public:
   using DebugResult = TypedResult<ConfigError, void>;
 
   /**
@@ -32,9 +32,7 @@ class DebugConfig {
    * @brief Check if measurement cycle debugging is enabled
    * @return True if measurement cycle debugging is enabled, false otherwise
    */
-  bool isMeasurementCycleDebugEnabled() const {
-    return m_debugMeasurementCycle;
-  }
+  bool isMeasurementCycleDebugEnabled() const { return m_debugMeasurementCycle; }
 
   /**
    * @brief Check if sensor debugging is enabled
@@ -103,7 +101,7 @@ class DebugConfig {
    */
   void saveToConfigData(ConfigData& data) const;
 
- private:
+private:
   ConfigNotifier& m_notifier;
 
   bool m_debugRAM = false;

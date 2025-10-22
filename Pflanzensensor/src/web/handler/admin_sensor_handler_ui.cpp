@@ -34,22 +34,22 @@ void AdminSensorHandler::handleSensorConfig() {
         if (_sensorManager.isHealthy()) {
           const auto& sensors = _sensorManager.getSensors();
           for (const auto& sensor : sensors) {
-            if (!sensor) continue;
-            if (!sensor->isInitialized() || !sensor->isEnabled()) continue;
+            if (!sensor)
+              continue;
+            if (!sensor->isInitialized() || !sensor->isEnabled())
+              continue;
             String id = sensor->getId();
             SensorConfig& config = sensor->mutableConfig();
             if (config.activeMeasurements > SensorConfig::MAX_MEASUREMENTS) {
               logger.warning(F("AdminSensorHandler"),
-                             F("Clamping activeMeasurements for sensor ") + id +
-                                 F(" from ") +
+                             F("Clamping activeMeasurements for sensor ") + id + F(" from ") +
                                  String(config.activeMeasurements) + F(" to ") +
                                  String(SensorConfig::MAX_MEASUREMENTS));
               config.activeMeasurements = SensorConfig::MAX_MEASUREMENTS;
             }
-            size_t nRows =
-                config.activeMeasurements < config.measurements.size()
-                    ? config.activeMeasurements
-                    : config.measurements.size();
+            size_t nRows = config.activeMeasurements < config.measurements.size()
+                               ? config.activeMeasurements
+                               : config.measurements.size();
 
             // Begin sensor card
             sendChunk(F("<div class='card sensor-card' data-sensor='"));
@@ -65,14 +65,12 @@ void AdminSensorHandler::handleSensorConfig() {
 
             // Measurement interval input (sensor-wide)
             sendChunk(F("<div class='card-section status-row'>"));
-            sendChunk(
-                F("Messintervall: <input type='number' step='any' size='4' "
-                  "name='interval_"));
+            sendChunk(F("Messintervall: <input type='number' step='any' size='4' "
+                        "name='interval_"));
             sendChunk(id);
             sendChunk(F("' value='"));
             sendChunk(String(int(config.measurementInterval / 1000)));
-            sendChunk(
-                F("' class='measurement-interval-input' data-sensor-id='"));
+            sendChunk(F("' class='measurement-interval-input' data-sensor-id='"));
             sendChunk(id);
             sendChunk(F("' style='width:60px;'> Sekunden"));
 
@@ -87,25 +85,24 @@ void AdminSensorHandler::handleSensorConfig() {
             // Render all measurements for this sensor
             for (size_t i = 0; i < nRows; ++i) {
               if (i > 0)
-                sendChunk(F("<hr>"));  // separation between measurement cards
+                sendChunk(F("<hr>")); // separation between measurement cards
               renderSensorMeasurementRow(sensor.get(), i, nRows);
             }
 
-            sendChunk(F("</div>"));  // end sensor card
+            sendChunk(F("</div>")); // end sensor card
           }
         }
-        sendChunk(F("</div>"));  // end admin-grid
+        sendChunk(F("</div>")); // end admin-grid
       },
       css, js);
 }
 
-void AdminSensorHandler::generateThresholdConfig(Sensor* sensor,
-                                                 size_t measurementIdx) {
-  if (!sensor) return;
+void AdminSensorHandler::generateThresholdConfig(Sensor* sensor, size_t measurementIdx) {
+  if (!sensor)
+    return;
   String id = sensor->getId();
   const auto& config = sensor->config();
-  if (measurementIdx >= config.activeMeasurements ||
-      measurementIdx >= config.measurements.size())
+  if (measurementIdx >= config.activeMeasurements || measurementIdx >= config.measurements.size())
     return;
   // Only output the container div; JS will generate the inputs and
   // visualization
@@ -117,8 +114,7 @@ void AdminSensorHandler::generateThresholdConfig(Sensor* sensor,
 }
 
 // New function: renderSensorMeasurementRow
-void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
-                                                    size_t nRows) {
+void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i, size_t nRows) {
   String id = sensor->getId();
   auto measurementData = sensor->getMeasurementData();
   SensorConfig& config = sensor->mutableConfig();
@@ -132,8 +128,7 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   sendChunk(F("_"));
   sendChunk(String(i));
   sendChunk(F("'>Sensorname:</label> "));
-  sendChunk(
-  F("<input type='text' size='20' class='measurement-name' id='name_"));
+  sendChunk(F("<input type='text' size='20' class='measurement-name' id='name_"));
   sendChunk(id);
   sendChunk(F("_"));
   sendChunk(String(i));
@@ -145,8 +140,8 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   sendChunk(config.measurements[i].name);
   sendChunk(F("' placeholder='Messwert Name'></div>"));
 
-  // Inverted scale checkbox
-  #if USE_ANALOG
+// Inverted scale checkbox
+#if USE_ANALOG
   if (analog) {
     sendChunk(F("<div class='card-section inverted-section'>"));
     sendChunk(F("<label><input type='checkbox' name='inverted_"));
@@ -161,19 +156,17 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
     if (config.measurements[i].inverted) {
       sendChunk(F(" checked"));
     }
-    sendChunk(
-        F("> Skala invertieren (hohe Rohwerte = niedrige Prozente)</label>"));
+    sendChunk(F("> Skala invertieren (hohe Rohwerte = niedrige Prozente)</label>"));
     sendChunk(F("</div>"));
   }
-  #endif
+#endif
 
   // Absolute min/max values section
   sendChunk(F("<div class='card-section minmax-section'>"));
   // Last value, error count, and measurement button
   sendChunk(F("<div class='card-section status-row'>"));
-  sendChunk(
-      F("Letzter Messwert: <input readonly class='readonly-value' "
-        "data-sensor='"));
+  sendChunk(F("Letzter Messwert: <input readonly class='readonly-value' "
+              "data-sensor='"));
   sendChunk(id);
   sendChunk(F("_"));
   sendChunk(String(i));
@@ -190,9 +183,8 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   sendChunk(String(sensor->getErrorCount()));
   sendChunk(F(") "));
   sendChunk(F("</div>"));
-  sendChunk(
-      F("Min: <input readonly class='readonly-value absolute-min-input' "
-        "data-sensor-id='"));
+  sendChunk(F("Min: <input readonly class='readonly-value absolute-min-input' "
+              "data-sensor-id='"));
   sendChunk(id);
   sendChunk(F("' data-measurement-index='"));
   sendChunk(String(i));
@@ -204,9 +196,8 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   }
   sendChunk(F("'> "));
   sendChunk(measurementData.units[i]);
-  sendChunk(
-      F(" | Max: <input readonly class='readonly-value "
-        "absolute-max-input' data-sensor-id='"));
+  sendChunk(F(" | Max: <input readonly class='readonly-value "
+              "absolute-max-input' data-sensor-id='"));
   sendChunk(id);
   sendChunk(F("' data-measurement-index='"));
   sendChunk(String(i));
@@ -218,7 +209,8 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   }
   sendChunk(F("'> "));
   sendChunk(measurementData.units[i]);
-  sendChunk(F(" <button type='button' class='button-secondary reset-minmax-button warning' data-sensor-id='"));
+  sendChunk(F(" <button type='button' class='button-secondary reset-minmax-button warning' "
+              "data-sensor-id='"));
   sendChunk(id);
   sendChunk(F("' data-measurement-index='"));
   sendChunk(String(i));
@@ -228,32 +220,28 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   sendChunk(F("<div class='status-row'><h3>Schwellwerte</h3></div>"));
   sendChunk(F("<div class='card-section threshold-row'>"));
   sendChunk(F("<div class='threshold-inputs'>"));
-  sendChunk(
-      F("<label>Gelb min: <input type='number' size='4' step='any' name='"));
+  sendChunk(F("<label>Gelb min: <input type='number' size='4' step='any' name='"));
   sendChunk(id);
   sendChunk(F("_"));
   sendChunk(String(i));
   sendChunk(F("_yellowLow' value='"));
   sendChunk(String(int(config.measurements[i].limits.yellowLow)));
   sendChunk(F("' class='threshold-input' style='width:60px;'></label>"));
-  sendChunk(
-      F("<label>Grün min: <input type='number' size='4' step='any' name='"));
+  sendChunk(F("<label>Grün min: <input type='number' size='4' step='any' name='"));
   sendChunk(id);
   sendChunk(F("_"));
   sendChunk(String(i));
   sendChunk(F("_greenLow' value='"));
   sendChunk(String(int(config.measurements[i].limits.greenLow)));
   sendChunk(F("' class='threshold-input' style='width:60px;'></label>"));
-  sendChunk(
-      F("<label>Grün max: <input type='number' size='4' step='any' name='"));
+  sendChunk(F("<label>Grün max: <input type='number' size='4' step='any' name='"));
   sendChunk(id);
   sendChunk(F("_"));
   sendChunk(String(i));
   sendChunk(F("_greenHigh' value='"));
   sendChunk(String(int(config.measurements[i].limits.greenHigh)));
   sendChunk(F("' class='threshold-input' style='width:60px;'></label>"));
-  sendChunk(
-      F("<label>Gelb max: <input type='number' size='4' step='any' name='"));
+  sendChunk(F("<label>Gelb max: <input type='number' size='4' step='any' name='"));
   sendChunk(id);
   sendChunk(F("_"));
   sendChunk(String(i));
@@ -261,11 +249,10 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   sendChunk(String(int(config.measurements[i].limits.yellowHigh)));
   sendChunk(F("' class='threshold-input' style='width:60px;'></label>"));
   sendChunk(F("</div>"));
-  float lastValue =
-      (measurementData.isValid() && i < measurementData.activeValues &&
-       i < measurementData.values.size() && i < SensorConfig::MAX_MEASUREMENTS)
-          ? measurementData.values[i]
-          : NAN;
+  float lastValue = (measurementData.isValid() && i < measurementData.activeValues &&
+                     i < measurementData.values.size() && i < SensorConfig::MAX_MEASUREMENTS)
+                        ? measurementData.values[i]
+                        : NAN;
   sendChunk(F("<div class='threshold-slider-container' "));
   if (!isnan(lastValue)) {
     sendChunk(F("data-last-value='"));
@@ -275,7 +262,7 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   sendChunk(F(">"));
   generateThresholdConfig(sensor, i);
   sendChunk(F("</div>"));
-  sendChunk(F("</div>"));  // end threshold-row
+  sendChunk(F("</div>")); // end threshold-row
 
   sendChunk(F("</div>"));
 
@@ -313,8 +300,7 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
     } else {
       sendChunk(F("--"));
     }
-    sendChunk(
-        F("'> | Max: <input type='number' step='any' size='4' name='max_"));
+    sendChunk(F("'> | Max: <input type='number' step='any' size='4' name='max_"));
     sendChunk(id);
     sendChunk(F("_"));
     sendChunk(String(i));
@@ -350,7 +336,9 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
     if (config.measurements[i].calibrationMode) {
       sendChunk(F(" checked"));
     }
-    sendChunk(F("> Autokalibrierung aktivieren<a href=\"https://github.com/Fabmobil/Pflanzensensor/wiki/automatische-Kalibrierung\" target=\"_blank\">❔</a></label>"));
+    sendChunk(F("> Autokalibrierung aktivieren<a "
+                "href=\"https://github.com/Fabmobil/Pflanzensensor/wiki/"
+                "automatische-Kalibrierung\" target=\"_blank\">❔</a></label>"));
     sendChunk(F("</div>"));
 
     sendChunk(F("</div>"));
@@ -358,9 +346,8 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
     // Raw min/max values section
     sendChunk(F("<div class='card-section minmax-section'>"));
     sendChunk(F("<div class='status-row'><h3>Rohwerte Extremmesswerte:</h3></div>"));
-    sendChunk(
-        F("Min: <input readonly class='readonly-value absolute-raw-min-input' "
-          "data-sensor-id='"));
+    sendChunk(F("Min: <input readonly class='readonly-value absolute-raw-min-input' "
+                "data-sensor-id='"));
     sendChunk(id);
     sendChunk(F("' data-measurement-index='"));
     sendChunk(String(i));
@@ -370,9 +357,8 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
     } else {
       sendChunk(F("--"));
     }
-    sendChunk(
-        F("'> | Max: <input readonly class='readonly-value "
-          "absolute-raw-max-input' data-sensor-id='"));
+    sendChunk(F("'> | Max: <input readonly class='readonly-value "
+                "absolute-raw-max-input' data-sensor-id='"));
     sendChunk(id);
     sendChunk(F("' data-measurement-index='"));
     sendChunk(String(i));
@@ -382,19 +368,17 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
     } else {
       sendChunk(F("--"));
     }
-    sendChunk(
-        F("'> <button type='button' class='button-secondary reset-raw-minmax-button warning' data-sensor-id='"));
+    sendChunk(F("'> <button type='button' class='button-secondary reset-raw-minmax-button warning' "
+                "data-sensor-id='"));
     sendChunk(id);
-  sendChunk(F("' data-measurement-index='"));
-  sendChunk(String(i));
-  sendChunk(F("' style='margin-left:8px;'>Zurücksetzen</button>"));
-  sendChunk(F("</div>"));
-
-
+    sendChunk(F("' data-measurement-index='"));
+    sendChunk(String(i));
+    sendChunk(F("' style='margin-left:8px;'>Zurücksetzen</button>"));
+    sendChunk(F("</div>"));
   }
- #endif
+#endif
 
-  sendChunk(F("</div>"));  // end measurement-card
+  sendChunk(F("</div>")); // end measurement-card
   yield();
 }
 
@@ -416,8 +400,10 @@ void AdminSensorHandler::renderFlowerStatusSensorCard() {
   if (_sensorManager.isHealthy()) {
     const auto& sensors = _sensorManager.getSensors();
     for (const auto& sensor : sensors) {
-      if (!sensor) continue;
-      if (!sensor->isInitialized() || !sensor->isEnabled()) continue;
+      if (!sensor)
+        continue;
+      if (!sensor->isInitialized() || !sensor->isEnabled())
+        continue;
 
       String sensorId = sensor->getId();
       SensorConfig& config = sensor->mutableConfig();

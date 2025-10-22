@@ -11,7 +11,7 @@
 #include "manager_config_types.h"
 
 class ConfigValidator {
- public:
+public:
   using ValidationResult = TypedResult<ConfigError, void>;
 
   /**
@@ -35,7 +35,7 @@ class ConfigValidator {
    */
   static ValidationResult validateConfigData(const ConfigData& config);
 
- private:
+private:
   ConfigValidator() = default;
 };
 

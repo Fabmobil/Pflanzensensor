@@ -23,7 +23,7 @@
  * and error handling.
  */
 class SensorMeasurementCycleManager {
- public:
+public:
   /**
    * @brief Constructor for the measurement cycle manager
    * @param sensor Pointer to the sensor to manage
@@ -66,44 +66,34 @@ class SensorMeasurementCycleManager {
    */
   void forceImmediateMeasurement() {
     unsigned long now = millis();
-    m_state.setState(MeasurementState::WAITING_FOR_DUE,
-                     m_sensor ? m_sensor->getId() : "");
+    m_state.setState(MeasurementState::WAITING_FOR_DUE, m_sensor ? m_sensor->getId() : "");
     m_state.nextDueTime = now;
   }
 
- private:
+private:
   // Timeouts and delays
-  static constexpr unsigned long INIT_TIMEOUT =
-      5000;  ///< Timeout for initialization (5 seconds)
-  static constexpr unsigned long MEASURE_TIMEOUT =
-      30000;  ///< Timeout for measurement (30 seconds)
+  static constexpr unsigned long INIT_TIMEOUT = 5000; ///< Timeout for initialization (5 seconds)
+  static constexpr unsigned long MEASURE_TIMEOUT = 30000; ///< Timeout for measurement (30 seconds)
   static constexpr unsigned long ERROR_RETRY_DELAY =
-      1000;  ///< Delay before retrying after error (1 second)
-  static constexpr unsigned long INIT_DELAY =
-      100;  ///< Delay after initialization (100ms)
-  static constexpr unsigned long WARMUP_DELAY =
-      100;  ///< Delay after warmup (100ms)
-  static constexpr unsigned long DEBUG_INTERVAL =
-      5000;  ///< Interval between debug logs (5 seconds)
+      1000;                                        ///< Delay before retrying after error (1 second)
+  static constexpr unsigned long INIT_DELAY = 100; ///< Delay after initialization (100ms)
+  static constexpr unsigned long WARMUP_DELAY = 100;    ///< Delay after warmup (100ms)
+  static constexpr unsigned long DEBUG_INTERVAL = 5000; ///< Interval between debug logs (5 seconds)
   static constexpr unsigned long SLOT_RETRY_DELAY =
-      50;  ///< Delay between slot attempts (50ms, reduced from 100ms)
-  static constexpr unsigned long SLOT_TIMEOUT =
-      30000;  ///< Maximum slot hold time (30 seconds)
+      50; ///< Delay between slot attempts (50ms, reduced from 100ms)
+  static constexpr unsigned long SLOT_TIMEOUT = 30000; ///< Maximum slot hold time (30 seconds)
 
   // Member variables
-  Sensor* m_sensor;              ///< Pointer to the managed sensor
-  MeasurementStateInfo m_state;  ///< Current state information
-  MeasurementState m_lastState;  ///< Previous state for transition tracking
-  std::vector<float> m_currentResults;  ///< Current measurement results
+  Sensor* m_sensor;                    ///< Pointer to the managed sensor
+  MeasurementStateInfo m_state;        ///< Current state information
+  MeasurementState m_lastState;        ///< Previous state for transition tracking
+  std::vector<float> m_currentResults; ///< Current measurement results
   // **CRITICAL FIX: Remove local MeasurementData copy to prevent memory
   // corruption** We'll work directly with the sensor's MeasurementData instead
-  unsigned long m_lastDebugTime{0};  ///< Last debug message timestamp
-  unsigned long m_cycleStartTime{
-      0};  ///< Start time of current measurement cycle
-  unsigned long m_lastSlotAttemptTime{
-      0};  ///< Last attempt to acquire measurement slot
-  unsigned long m_slotRequestStartTime{
-      0};  ///< When current slot request started
+  unsigned long m_lastDebugTime{0};        ///< Last debug message timestamp
+  unsigned long m_cycleStartTime{0};       ///< Start time of current measurement cycle
+  unsigned long m_lastSlotAttemptTime{0};  ///< Last attempt to acquire measurement slot
+  unsigned long m_slotRequestStartTime{0}; ///< When current slot request started
 
   // State handlers (defined in separate files)
 
@@ -205,4 +195,4 @@ class SensorMeasurementCycleManager {
   void startSlotRequest();
 };
 
-#endif  // SENSOR_MEASUREMENT_CYCLE_MANAGER_H
+#endif // SENSOR_MEASUREMENT_CYCLE_MANAGER_H

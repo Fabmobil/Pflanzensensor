@@ -13,10 +13,10 @@
 #include "../utils/result_types.h"
 #include "manager_config_types.h"
 
-class ConfigNotifier;  // Forward declaration
+class ConfigNotifier; // Forward declaration
 
 class SensorErrorTracker {
- public:
+public:
   using ErrorResult = TypedResult<ConfigError, void>;
 
   /**
@@ -29,7 +29,7 @@ class SensorErrorTracker {
    * @brief Set or get persistent error flags directly on each sensor's config.
    * Error tracking is now per-sensor, not via a map.
    */
- private:
+private:
   ConfigNotifier& m_notifier;
   // REMOVED: std::map<String, bool> m_sensorErrorFlags;
   // REMOVED: std::map<String, Thresholds> m_sensorThresholds;

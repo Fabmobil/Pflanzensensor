@@ -8,7 +8,8 @@
 #include "web/core/web_manager.h"
 
 void WebManager::initializeRemainingHandlers() {
-  if (m_handlersInitialized) return;
+  if (m_handlersInitialized)
+    return;
 
   try {
     if (_router) {
@@ -18,9 +19,8 @@ void WebManager::initializeRemainingHandlers() {
         if (url == "/" || url == "/getLatestValues") {
           BaseHandler* handler = getCachedHandler("startpage");
           if (!handler) {
-              logger.debug(F("WebManager"), F("Lade StartpageHandler bei Bedarf"));
-            auto newHandler = std::make_unique<StartpageHandler>(
-                *_server, *_auth, *_cssService);
+            logger.debug(F("WebManager"), F("Lade StartpageHandler bei Bedarf"));
+            auto newHandler = std::make_unique<StartpageHandler>(*_server, *_auth, *_cssService);
             newHandler->registerRoutes(*_router);
             cacheHandler(std::move(newHandler), "startpage");
           } else {
@@ -31,7 +31,7 @@ void WebManager::initializeRemainingHandlers() {
         else if (url.startsWith("/logs")) {
           BaseHandler* handler = getCachedHandler("log");
           if (!handler) {
-              logger.debug(F("WebManager"), F("Lade LogHandler bei Bedarf"));
+            logger.debug(F("WebManager"), F("Lade LogHandler bei Bedarf"));
             if (!_logHandler) {
               _logHandler = std::unique_ptr<LogHandler>(
                   LogHandler::getInstance(*_server, *_auth, *_cssService));
@@ -45,26 +45,22 @@ void WebManager::initializeRemainingHandlers() {
         // Admin sensor routes are now handled by explicit registration in
         // setupRoutes No middleware intervention needed for /admin/sensors and
         // /trigger_measurement General admin routes
-        else if (url.startsWith("/admin") &&
-                 !url.startsWith("/admin/sensors") &&
-                 !url.startsWith("/admin/display") &&
-                 !(url == "/admin/update") &&
+        else if (url.startsWith("/admin") && !url.startsWith("/admin/sensors") &&
+                 !url.startsWith("/admin/display") && !(url == "/admin/update") &&
                  !url.startsWith("/admin/config/update")) {
           BaseHandler* handler = getCachedHandler("admin");
           if (!handler) {
-              logger.debug(F("WebManager"),
-                           String(F("Lade AdminHandler für URL bei Bedarf: ")) + url);
-            auto newHandler =
-                std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
+            logger.debug(F("WebManager"),
+                         String(F("Lade AdminHandler für URL bei Bedarf: ")) + url);
+            auto newHandler = std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
             auto result = newHandler->registerRoutes(*_router);
             if (!result.isSuccess()) {
-      logger.error(
-        F("WebManager"),
-        String(F("Registrieren der Admin-Routen fehlgeschlagen: ")) + result.getMessage());
+              logger.error(F("WebManager"),
+                           String(F("Registrieren der Admin-Routen fehlgeschlagen: ")) +
+                               result.getMessage());
               return true;
             }
-              logger.debug(F("WebManager"),
-                           F("Admin-Routen erfolgreich registriert"));
+            logger.debug(F("WebManager"), F("Admin-Routen erfolgreich registriert"));
             cacheHandler(std::move(newHandler), "admin");
           } else {
             updateHandlerAccess("admin");
@@ -74,9 +70,9 @@ void WebManager::initializeRemainingHandlers() {
         else if (url.startsWith("/sensor") && _sensorManager) {
           BaseHandler* handler = getCachedHandler("sensor");
           if (!handler) {
-              logger.debug(F("WebManager"), F("Lade SensorHandler bei Bedarf"));
-            auto newHandler = std::make_unique<SensorHandler>(
-                *_server, *_auth, *_cssService, *_sensorManager);
+            logger.debug(F("WebManager"), F("Lade SensorHandler bei Bedarf"));
+            auto newHandler =
+                std::make_unique<SensorHandler>(*_server, *_auth, *_cssService, *_sensorManager);
             newHandler->registerRoutes(*_router);
             cacheHandler(std::move(newHandler), "sensor");
           } else {
@@ -88,14 +84,13 @@ void WebManager::initializeRemainingHandlers() {
         else if (url.startsWith("/admin/display")) {
           BaseHandler* handler = getCachedHandler("display");
           if (!handler) {
-              logger.debug(F("WebManager"),
-                           F("Lade AdminDisplayHandler bei Bedarf"));
+            logger.debug(F("WebManager"), F("Lade AdminDisplayHandler bei Bedarf"));
             auto newHandler = std::make_unique<AdminDisplayHandler>(*_server);
             auto result = newHandler->registerRoutes(*_router);
             if (!result.isSuccess()) {
-        logger.error(
-          F("WebManager"),
-          String(F("Registrieren der Display-Routen fehlgeschlagen: ")) + result.getMessage());
+              logger.error(F("WebManager"),
+                           String(F("Registrieren der Display-Routen fehlgeschlagen: ")) +
+                               result.getMessage());
               return true;
             }
             cacheHandler(std::move(newHandler), "display");
@@ -108,12 +103,11 @@ void WebManager::initializeRemainingHandlers() {
       });
 
       m_handlersInitialized = true;
-    logger.info(F("WebManager"),
-        F("Middleware zur Handler-Initialisierung registriert"));
+      logger.info(F("WebManager"), F("Middleware zur Handler-Initialisierung registriert"));
     }
   } catch (const std::exception& e) {
     logger.error(F("WebManager"),
-           String(F("Handler konnten nicht initialisiert werden: ")) + String(e.what()));
+                 String(F("Handler konnten nicht initialisiert werden: ")) + String(e.what()));
     cleanupNonEssentialHandlers();
   }
 }
@@ -135,24 +129,32 @@ void WebManager::cleanupHandlers() {
   logger.beginMemoryTracking(F("handlers_cleanup"));
 
   // Cleanup all handlers
-  if (_startHandler) _startHandler->cleanup();
-  if (_adminHandler) _adminHandler->cleanup();
-  if (_sensorHandler) _sensorHandler->cleanup();
-  if (_adminSensorHandler) _adminSensorHandler->cleanup();
-  if (_otaHandler) _otaHandler->cleanup();
-  if (_logHandler) _logHandler->cleanup();
-  if (_minimalAdminHandler) _minimalAdminHandler->cleanup();
-  if (_wifiSetupHandler) _wifiSetupHandler->cleanup();
+  if (_startHandler)
+    _startHandler->cleanup();
+  if (_adminHandler)
+    _adminHandler->cleanup();
+  if (_sensorHandler)
+    _sensorHandler->cleanup();
+  if (_adminSensorHandler)
+    _adminSensorHandler->cleanup();
+  if (_otaHandler)
+    _otaHandler->cleanup();
+  if (_logHandler)
+    _logHandler->cleanup();
+  if (_minimalAdminHandler)
+    _minimalAdminHandler->cleanup();
+  if (_wifiSetupHandler)
+    _wifiSetupHandler->cleanup();
 #if USE_DISPLAY
-  if (_displayHandler) _displayHandler->cleanup();
+  if (_displayHandler)
+    _displayHandler->cleanup();
 #endif
 
   logger.endMemoryTracking(F("handlers_cleanup"));
 }
 
-void WebManager::cacheHandler(std::unique_ptr<BaseHandler> handler,
-                              const String& handlerType) {
-    logger.debug(F("WebManager"), String(F("Cache-Handler: ")) + handlerType);
+void WebManager::cacheHandler(std::unique_ptr<BaseHandler> handler, const String& handlerType) {
+  logger.debug(F("WebManager"), String(F("Cache-Handler: ")) + handlerType);
 
   // Remove oldest handler if at capacity
   if (m_handlerCache.size() >= MAX_ACTIVE_HANDLERS) {
@@ -167,7 +169,7 @@ void WebManager::cacheHandler(std::unique_ptr<BaseHandler> handler,
 BaseHandler* WebManager::getCachedHandler(const String& handlerType) {
   for (auto& entry : m_handlerCache) {
     if (entry.handlerType == handlerType) {
-      entry.lastAccess = millis();  // Update access time
+      entry.lastAccess = millis(); // Update access time
       return entry.handler.get();
     }
   }
@@ -175,7 +177,8 @@ BaseHandler* WebManager::getCachedHandler(const String& handlerType) {
 }
 
 void WebManager::evictOldestHandler() {
-  if (m_handlerCache.empty()) return;
+  if (m_handlerCache.empty())
+    return;
 
   // Find oldest entry
   auto oldest = m_handlerCache.begin();
@@ -186,7 +189,7 @@ void WebManager::evictOldestHandler() {
   }
 
   // Log eviction
-    logger.debug(F("WebManager"), String(F("Entferne Handler aus Cache: ")) + oldest->handlerType);
+  logger.debug(F("WebManager"), String(F("Entferne Handler aus Cache: ")) + oldest->handlerType);
 
   // Cleanup handler before removing
   if (oldest->handler) {

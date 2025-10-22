@@ -15,9 +15,8 @@ bool LogHandler::s_initialized = false;
 
 RouterResult LogHandler::onRegisterRoutes(WebRouter& router) {
   if (!isInitialized()) {
-    logger.error(
-        F("LogHandler"),
-        F("Kann Routen nicht registrieren - LogHandler nicht initialisiert"));
+    logger.error(F("LogHandler"),
+                 F("Kann Routen nicht registrieren - LogHandler nicht initialisiert"));
     return RouterResult::fail(RouterError::INITIALIZATION_ERROR,
                               F("LogHandler nicht initialisiert"));
   }
@@ -27,7 +26,8 @@ RouterResult LogHandler::onRegisterRoutes(WebRouter& router) {
     logger.debug(F("LogHandler"), F("Log route handler called"));
     handleLogs();
   });
-  if (!result.isSuccess()) return result;
+  if (!result.isSuccess())
+    return result;
 
 #if USE_WEBSOCKET
   if (!initWebSocket()) {
@@ -41,36 +41,29 @@ RouterResult LogHandler::onRegisterRoutes(WebRouter& router) {
   return RouterResult::success();
 }
 
-HandlerResult LogHandler::handleGet(const String& uri,
-                                    const std::map<String, String>& query) {
+HandlerResult LogHandler::handleGet(const String& uri, const std::map<String, String>& query) {
   if (!isInitialized()) {
-    logger.error(
-        F("LogHandler"),
-        F("Kann GET-Anfrage nicht verarbeiten - LogHandler nicht initialisiert"));
+    logger.error(F("LogHandler"),
+                 F("Kann GET-Anfrage nicht verarbeiten - LogHandler nicht initialisiert"));
     return HandlerResult::fail(HandlerError::INITIALIZATION_ERROR,
                                F("LogHandler nicht initialisiert"));
   }
-  return HandlerResult::fail(HandlerError::INVALID_REQUEST,
-                             F("Bitte registerRoutes verwenden"));
+  return HandlerResult::fail(HandlerError::INVALID_REQUEST, F("Bitte registerRoutes verwenden"));
 }
 
-HandlerResult LogHandler::handlePost(const String& uri,
-                                     const std::map<String, String>& params) {
+HandlerResult LogHandler::handlePost(const String& uri, const std::map<String, String>& params) {
   if (!isInitialized()) {
-    logger.error(
-        F("LogHandler"),
-        F("Kann POST-Anfrage nicht verarbeiten - LogHandler nicht initialisiert"));
+    logger.error(F("LogHandler"),
+                 F("Kann POST-Anfrage nicht verarbeiten - LogHandler nicht initialisiert"));
     return HandlerResult::fail(HandlerError::INITIALIZATION_ERROR,
                                F("LogHandler nicht initialisiert"));
   }
-  return HandlerResult::fail(HandlerError::INVALID_REQUEST,
-                             F("Bitte registerRoutes verwenden"));
+  return HandlerResult::fail(HandlerError::INVALID_REQUEST, F("Bitte registerRoutes verwenden"));
 }
 
 void LogHandler::handleLogs() {
   if (!isInitialized()) {
-    logger.error(F("LogHandler"),
-                 F("Cannot handle logs - LogHandler not properly initialized"));
+    logger.error(F("LogHandler"), F("Cannot handle logs - LogHandler not properly initialized"));
     _server.send(500, F("text/plain"), F("LogHandler not initialized"));
     return;
   }
@@ -79,7 +72,7 @@ void LogHandler::handleLogs() {
   _cleaned = false;
 
   // Check memory before proceeding
-  if (ESP.getFreeHeap() < 6000) {  // Higher threshold for log handling
+  if (ESP.getFreeHeap() < 6000) { // Higher threshold for log handling
     logger.warning(F("LogHandler"), F("Wenig Speicher, liefere minimale Log-Seite"));
     _server.send(200, F("text/html"),
                  F("<!DOCTYPE html><html><body><h1>Wenig Speicher</h1>"
@@ -106,29 +99,23 @@ void LogHandler::handleLogs() {
         sendChunk(F("<div class='card log-controls-card'>"));
         sendChunk(F("<div class='log-controls-label'>Log-Level:</div>"));
         sendChunk(F("<div class='button-group'>"));
-        sendChunk(
-            F("<button onclick='setLogLevel(\"DEBUG\")' class='button "
-              "button-debug log-level-btn level-debug'>DEBUG</button>"));
-        sendChunk(
-            F("<button onclick='setLogLevel(\"INFO\")' class='button "
-              "button-info log-level-btn level-info'>INFO</button>"));
-        sendChunk(
-            F("<button onclick='setLogLevel(\"WARNING\")' class='button "
-              "button-warning log-level-btn level-warning'>WARNING</button>"));
-        sendChunk(
-            F("<button onclick='setLogLevel(\"ERROR\")' class='button "
-              "button-error log-level-btn level-error'>ERROR</button>"));
+        sendChunk(F("<button onclick='setLogLevel(\"DEBUG\")' class='button "
+                    "button-debug log-level-btn level-debug'>DEBUG</button>"));
+        sendChunk(F("<button onclick='setLogLevel(\"INFO\")' class='button "
+                    "button-info log-level-btn level-info'>INFO</button>"));
+        sendChunk(F("<button onclick='setLogLevel(\"WARNING\")' class='button "
+                    "button-warning log-level-btn level-warning'>WARNING</button>"));
+        sendChunk(F("<button onclick='setLogLevel(\"ERROR\")' class='button "
+                    "button-error log-level-btn level-error'>ERROR</button>"));
         sendChunk(F("</div>"));
         sendChunk(F("</div>"));
         // Card 2: WebSocket Status and Auto-scroll
         sendChunk(F("<div class='card log-controls-card'>"));
-        sendChunk(F(
-            "<div class='log-controls-label'>WebSocket Status: <span "
-            "id='wsStatusCard' class='ws-status'>Connecting...</span></div>"));
+        sendChunk(F("<div class='log-controls-label'>WebSocket Status: <span "
+                    "id='wsStatusCard' class='ws-status'>Connecting...</span></div>"));
         sendChunk(F("<div class='button-group'>"));
-        sendChunk(
-            F("<button id='autoScrollBtn' class='button "
-              "button-primary'>Auto-scroll: ON</button>"));
+        sendChunk(F("<button id='autoScrollBtn' class='button "
+                    "button-primary'>Auto-scroll: ON</button>"));
         sendChunk(F("</div>"));
         sendChunk(F("</div>"));
         sendChunk(F("</div>"));
@@ -147,9 +134,8 @@ void LogHandler::handleLogs() {
         // Static log container for non-WebSocket mode
         sendChunk(F("<div class='log-container'>"));
         sendChunk(F("<div class='log-entry system'>"));
-        sendChunk(
-            F("WebSocket functionality is disabled. Logs will not update in "
-              "real-time."));
+        sendChunk(F("WebSocket functionality is disabled. Logs will not update in "
+                    "real-time."));
         sendChunk(F("</div>"));
         sendChunk(F("</div>"));
 #endif
@@ -191,25 +177,24 @@ void LogHandler::cleanupLogs() {
 
 String LogHandler::getLogLevelColor(LogLevel level) const {
   switch (level) {
-    case LogLevel::DEBUG:
-      return F("#569cd6");  // Blue
-    case LogLevel::INFO:
-      return F("#6a9955");  // Green
-    case LogLevel::WARNING:
-      return F("#dcdcaa");  // Yellow
-    case LogLevel::ERROR:
-      return F("#f44747");  // Red
-    default:
-      return F("#808080");  // Gray
+  case LogLevel::DEBUG:
+    return F("#569cd6"); // Blue
+  case LogLevel::INFO:
+    return F("#6a9955"); // Green
+  case LogLevel::WARNING:
+    return F("#dcdcaa"); // Yellow
+  case LogLevel::ERROR:
+    return F("#f44747"); // Red
+  default:
+    return F("#808080"); // Gray
   }
 }
 
 #if USE_WEBSOCKET
 bool LogHandler::initWebSocket() {
   if (!isInitialized()) {
-    logger.error(
-        F("LogHandler"),
-        F("Cannot initialize WebSocket - LogHandler not properly initialized"));
+    logger.error(F("LogHandler"),
+                 F("Cannot initialize WebSocket - LogHandler not properly initialized"));
     return false;
   }
 
@@ -233,7 +218,8 @@ bool LogHandler::initWebSocket() {
 
 void LogHandler::loop() {
 #if USE_WEBSOCKET
-  if (!isInitialized()) return;
+  if (!isInitialized())
+    return;
 
   auto& ws = WebSocketService::getInstance();
   if (ws.isInitialized()) {
@@ -252,7 +238,8 @@ void LogHandler::loop() {
 void LogHandler::broadcastLog(LogLevel level, const String& message) {
 #if USE_WEBSOCKET
   static bool inBroadcast = false;
-  if (inBroadcast) return;  // Prevent recursion from log callback
+  if (inBroadcast)
+    return; // Prevent recursion from log callback
   inBroadcast = true;
 
   // DO NOT log inside this function! Logging here would cause infinite
@@ -288,8 +275,7 @@ void LogHandler::broadcastLog(LogLevel level, const String& message) {
   doc["type"] = "log";
   doc["level"] = Logger::logLevelToString(level);
   doc["message"] = message;
-  doc["timestamp"] =
-      logger.isNTPInitialized() ? logger.getSynchronizedTime() : millis();
+  doc["timestamp"] = logger.isNTPInitialized() ? logger.getSynchronizedTime() : millis();
 
   String json;
   serializeJson(doc, json);
@@ -301,7 +287,8 @@ void LogHandler::broadcastLog(LogLevel level, const String& message) {
     if (!ws.clientIsConnected(*it)) {
       // Do not log here to avoid recursion
       it = _clients.erase(it);
-      if (_clients.empty()) break;
+      if (_clients.empty())
+        break;
       continue;
     }
     // Do not log here to avoid recursion
@@ -315,7 +302,8 @@ void LogHandler::broadcastLog(LogLevel level, const String& message) {
         _clients.clear();
         break;
       }
-      if (_clients.empty()) break;
+      if (_clients.empty())
+        break;
     } else {
       // Do not log here to avoid recursion
       ++it;
@@ -327,7 +315,8 @@ void LogHandler::broadcastLog(LogLevel level, const String& message) {
 
 void LogHandler::cleanupAllClients() {
 #if USE_WEBSOCKET
-  if (!isInitialized()) return;
+  if (!isInitialized())
+    return;
 
   auto& ws = WebSocketService::getInstance();
 
@@ -351,10 +340,10 @@ void LogHandler::cleanupAllClients() {
 #endif
 }
 
-void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type,
-                                      uint8_t* payload, size_t length) {
+void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
 #if USE_WEBSOCKET
-  if (!isInitialized()) return;
+  if (!isInitialized())
+    return;
 
   // Check memory and critical operations before any WebSocket operations
   if (ESP.getFreeHeap() < 3000 || ResourceMgr.isInCriticalOperation()) {
@@ -365,144 +354,140 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type,
   auto& ws = WebSocketService::getInstance();
 
   switch (type) {
-    case WStype_CONNECTED: {
-      IPAddress ip = ws.remoteIP(num);
+  case WStype_CONNECTED: {
+    IPAddress ip = ws.remoteIP(num);
+    if (ConfigMgr.isDebugWebSocket()) {
+      logger.debug(F("LogHandler"),
+                   "WebSocket client " + String(num) + " connected from " + ip.toString());
+    }
+    // Only add if not already present
+    if (std::find(_clients.begin(), _clients.end(), num) == _clients.end()) {
+      _clients.push_back(num);
+    }
+    // Send welcome message with minimal memory usage
+    StaticJsonDocument<128> doc; // Reduced size
+    doc["type"] = "connected";
+    doc["status"] = "ok";
+    String json;
+    serializeJson(doc, json);
+    if (ESP.getFreeHeap() > 4000 && logger.isCallbackEnabled()) {
+      ws.sendTXT(num, json);
+    }
+    // Removed log buffer/history send
+    break;
+  }
+  case WStype_DISCONNECTED: {
+    if (ConfigMgr.isDebugWebSocket()) {
+      logger.debug(F("LogHandler"), "WebSocket client " + String(num) + " disconnected");
+    }
+    // Remove only the disconnected client
+    _clients.remove(num);
+    cleanupClientResources(num);
+    break;
+  }
+
+  case WStype_TEXT: {
+    if (length > WebSocketService::MAX_MESSAGE_SIZE) {
       if (ConfigMgr.isDebugWebSocket()) {
-        logger.debug(F("LogHandler"), "WebSocket client " + String(num) +
-                                          " connected from " + ip.toString());
+        logger.warning(F("LogHandler"), F("Message too large, ignoring"));
       }
-      // Only add if not already present
-      if (std::find(_clients.begin(), _clients.end(), num) == _clients.end()) {
-        _clients.push_back(num);
-      }
-      // Send welcome message with minimal memory usage
-      StaticJsonDocument<128> doc;  // Reduced size
-      doc["type"] = "connected";
-      doc["status"] = "ok";
-      String json;
-      serializeJson(doc, json);
-      if (ESP.getFreeHeap() > 4000 && logger.isCallbackEnabled()) {
-        ws.sendTXT(num, json);
-      }
-      // Removed log buffer/history send
-      break;
+      return;
     }
-    case WStype_DISCONNECTED: {
+
+    // Additional memory check before JSON parsing
+    if (ESP.getFreeHeap() < 4000) {
       if (ConfigMgr.isDebugWebSocket()) {
-        logger.debug(F("LogHandler"),
-                     "WebSocket client " + String(num) + " disconnected");
+        logger.warning(F("LogHandler"), F("Low memory, skipping message"));
       }
-      // Remove only the disconnected client
-      _clients.remove(num);
-      cleanupClientResources(num);
-      break;
+      return;
     }
 
-    case WStype_TEXT: {
-      if (length > WebSocketService::MAX_MESSAGE_SIZE) {
-        if (ConfigMgr.isDebugWebSocket()) {
-          logger.warning(F("LogHandler"), F("Message too large, ignoring"));
-        }
-        return;
-      }
+    // Handle text messages with better error handling
+    // Smaller JSON buffer for incoming control messages
+    StaticJsonDocument<128> doc;
+    DeserializationError error = deserializeJson(doc, (char*)payload);
 
-      // Additional memory check before JSON parsing
-      if (ESP.getFreeHeap() < 4000) {
-        if (ConfigMgr.isDebugWebSocket()) {
-          logger.warning(F("LogHandler"), F("Low memory, skipping message"));
-        }
-        return;
-      }
-
-      // Handle text messages with better error handling
-  // Smaller JSON buffer for incoming control messages
-  StaticJsonDocument<128> doc;
-      DeserializationError error = deserializeJson(doc, (char*)payload);
-
-      if (error) {
-        if (ConfigMgr.isDebugWebSocket()) {
-          logger.error(F("LogHandler"), "Failed to parse WebSocket message: " +
-                                            String(error.c_str()));
-        }
-        return;
-      }
-
-      // Extract type and data with null checks
-      const char* typeStr = doc["type"];
-      const char* dataStr = doc["data"];
-
-      if (!typeStr) {
-        if (ConfigMgr.isDebugWebSocket()) {
-          logger.warning(F("LogHandler"), F("Message missing type field"));
-        }
-        return;
-      }
-
-      String type = String(typeStr);
-      String data = dataStr ? String(dataStr) : "";
-
-      handleClientMessage(num, type, data);
-      break;
-    }
-
-    case WStype_ERROR: {
+    if (error) {
       if (ConfigMgr.isDebugWebSocket()) {
         logger.error(F("LogHandler"),
-                     "WebSocket error on client " + String(num));
+                     "Failed to parse WebSocket message: " + String(error.c_str()));
       }
-      cleanupClientResources(num);
-      _clients.remove(num);
-      break;
+      return;
     }
 
-    case WStype_PING:
-      // Respond to ping with pong
-      if (ESP.getFreeHeap() > 4000 && logger.isCallbackEnabled()) {
-        ws.sendTXT(num, "{\"type\":\"pong\"}");
-      }
-      break;
+    // Extract type and data with null checks
+    const char* typeStr = doc["type"];
+    const char* dataStr = doc["data"];
 
-    case WStype_PONG:
-      // Simply acknowledge PONG without logging
-      break;
-
-    default:
+    if (!typeStr) {
       if (ConfigMgr.isDebugWebSocket()) {
-        if (type != WStype_PING) {  // Don't log PING events
-          logger.debug(F("LogHandler"),
-                       "Unhandled WebSocket event type: " + String(type));
-        }
+        logger.warning(F("LogHandler"), F("Message missing type field"));
       }
-      break;
+      return;
+    }
+
+    String type = String(typeStr);
+    String data = dataStr ? String(dataStr) : "";
+
+    handleClientMessage(num, type, data);
+    break;
+  }
+
+  case WStype_ERROR: {
+    if (ConfigMgr.isDebugWebSocket()) {
+      logger.error(F("LogHandler"), "WebSocket error on client " + String(num));
+    }
+    cleanupClientResources(num);
+    _clients.remove(num);
+    break;
+  }
+
+  case WStype_PING:
+    // Respond to ping with pong
+    if (ESP.getFreeHeap() > 4000 && logger.isCallbackEnabled()) {
+      ws.sendTXT(num, "{\"type\":\"pong\"}");
+    }
+    break;
+
+  case WStype_PONG:
+    // Simply acknowledge PONG without logging
+    break;
+
+  default:
+    if (ConfigMgr.isDebugWebSocket()) {
+      if (type != WStype_PING) { // Don't log PING events
+        logger.debug(F("LogHandler"), "Unhandled WebSocket event type: " + String(type));
+      }
+    }
+    break;
   }
 #endif
 }
 
 void LogHandler::cleanupClientResources(uint8_t clientNum) {
 #if USE_WEBSOCKET
-  _messageQueue.erase(std::remove_if(_messageQueue.begin(), _messageQueue.end(),
-                                     [clientNum](const QueuedMessage& msg) {
-                                       return msg.clientId == clientNum;
-                                     }),
-                      _messageQueue.end());
+  _messageQueue.erase(
+      std::remove_if(_messageQueue.begin(), _messageQueue.end(),
+                     [clientNum](const QueuedMessage& msg) { return msg.clientId == clientNum; }),
+      _messageQueue.end());
 #endif
 }
 
-void LogHandler::handleClientMessage(uint8_t clientNum, const String& type,
-                                     const String& data) {
+void LogHandler::handleClientMessage(uint8_t clientNum, const String& type, const String& data) {
 #if USE_WEBSOCKET
-  if (!isInitialized()) return;
+  if (!isInitialized())
+    return;
 
   auto& ws = WebSocketService::getInstance();
-  if (!ws.isInitialized()) return;
+  if (!ws.isInitialized())
+    return;
 
   // Check memory and critical operations before processing any message
   if (ESP.getFreeHeap() < 5000 || ResourceMgr.isInCriticalOperation()) {
     // Send error response if memory is too low or in critical operation
     StaticJsonDocument<64> response;
     response["type"] = "error";
-    response["message"] = ResourceMgr.isInCriticalOperation() ? F("System busy")
-                                                              : F("Low memory");
+    response["message"] = ResourceMgr.isInCriticalOperation() ? F("System busy") : F("Low memory");
     String jsonResponse;
     serializeJson(response, jsonResponse);
     if (ESP.getFreeHeap() > 4000 && logger.isCallbackEnabled()) {
@@ -559,7 +544,7 @@ void LogHandler::handleClientMessage(uint8_t clientNum, const String& type,
     StaticJsonDocument<96> response;
     response["type"] = "log_level_changed";
     response["data"] = data;
-    response["saved"] = true;  // Assume success initially
+    response["saved"] = true; // Assume success initially
     String jsonResponse;
     serializeJson(response, jsonResponse);
 
@@ -590,8 +575,7 @@ void LogHandler::handleClientMessage(uint8_t clientNum, const String& type,
     yield();
 
     // Send final confirmation if different from initial
-    if (!saveResult.isSuccess() && ESP.getFreeHeap() > 4096 &&
-        logger.isCallbackEnabled()) {
+    if (!saveResult.isSuccess() && ESP.getFreeHeap() > 4096 && logger.isCallbackEnabled()) {
       StaticJsonDocument<96> errorResponse;
       errorResponse["type"] = "log_level_changed";
       errorResponse["data"] = data;

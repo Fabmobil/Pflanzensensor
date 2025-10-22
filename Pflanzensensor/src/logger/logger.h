@@ -27,7 +27,7 @@ enum class LogLevel { DEBUG, INFO, WARNING, ERROR };
  */
 struct LogEntry {
   LogLevel level;
-  char message[128];  // Fixed-size buffer for log message
+  char message[128]; // Fixed-size buffer for log message
   unsigned long timestamp;
 };
 
@@ -40,8 +40,8 @@ struct MemoryStats {
   uint8_t fragmentation;
   uint32_t freeContStack;
   uint32_t freeStack;
-  uint32_t totalHeap;   // Total heap size
-  uint32_t totalStack;  // Total stack size
+  uint32_t totalHeap;  // Total heap size
+  uint32_t totalStack; // Total stack size
 };
 
 /**
@@ -67,7 +67,7 @@ struct MemoryTrackingState {
  * @brief Logger class for handling log messages
  */
 class Logger {
- public:
+public:
   /**
    * @brief Constructor for Logger class
    * @param logLevel Minimum log level to display
@@ -173,9 +173,7 @@ class Logger {
    */
   bool isFileLoggingEnabled() const;
 
-  bool isNTPInitialized() const {
-    return m_ntpInitialized && m_timeClient != nullptr;
-  }
+  bool isNTPInitialized() const { return m_ntpInitialized && m_timeClient != nullptr; }
 
   time_t getSynchronizedTime() const {
     if (m_ntpInitialized && m_timeClient) {
@@ -221,7 +219,7 @@ class Logger {
    */
   bool isCallbackEnabled() const;
 
- private:
+private:
   LogLevel m_logLevel;
   bool m_useSerial;
   bool m_useColors;
@@ -232,7 +230,7 @@ class Logger {
   const char* m_logFileName = "/log.txt";
   const size_t m_maxFileSize = MAX_LOG_FILE_SIZE; // in bytes
   unsigned long lastErrorLogTime = 0;
-  const unsigned long errorLogInterval = 5000;  // 5 seconds
+  const unsigned long errorLogInterval = 5000; // 5 seconds
   int errorCount = 0;
 
   // Memory tracking
@@ -279,7 +277,7 @@ class Logger {
   void truncateLogFileIfNeeded();
 
   static inline String readProgmemString(const char* progmem_str) {
-    char buffer[128];  // Adjust size as needed
+    char buffer[128]; // Adjust size as needed
     strcpy_P(buffer, progmem_str);
     return String(buffer);
   }
@@ -310,4 +308,4 @@ class Logger {
 
 extern Logger logger;
 
-#endif  // LOGGER_H
+#endif // LOGGER_H

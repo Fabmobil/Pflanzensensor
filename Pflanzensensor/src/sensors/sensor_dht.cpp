@@ -16,29 +16,25 @@ DHTSensor::DHTSensor(const DHTConfig& config, SensorManager* sensorManager)
     : Sensor(config, sensorManager), m_pin(config.pin), m_type(DHT_TYPE) {
   // Use config as source of truth for thresholds, writing macro defaults if
   // missing
-  ThresholdDefaults tempDefaults = {
-      DHT_TEMPERATURE_YELLOW_LOW, DHT_TEMPERATURE_GREEN_LOW,
-      DHT_TEMPERATURE_GREEN_HIGH, DHT_TEMPERATURE_YELLOW_HIGH};
+  ThresholdDefaults tempDefaults = {DHT_TEMPERATURE_YELLOW_LOW, DHT_TEMPERATURE_GREEN_LOW,
+                                    DHT_TEMPERATURE_GREEN_HIGH, DHT_TEMPERATURE_YELLOW_HIGH};
   mutableConfig().measurements[0].limits.yellowLow = tempDefaults.yellowLow;
   mutableConfig().measurements[0].limits.greenLow = tempDefaults.greenLow;
   mutableConfig().measurements[0].limits.greenHigh = tempDefaults.greenHigh;
   mutableConfig().measurements[0].limits.yellowHigh = tempDefaults.yellowHigh;
-  initMeasurement(0, DHT_TEMPERATURE_NAME, DHT_TEMPERATURE_FIELD_NAME,
-                  DHT_TEMPERATURE_UNIT,
+  initMeasurement(0, DHT_TEMPERATURE_NAME, DHT_TEMPERATURE_FIELD_NAME, DHT_TEMPERATURE_UNIT,
                   mutableConfig().measurements[0].limits.yellowLow,
                   mutableConfig().measurements[0].limits.greenLow,
                   mutableConfig().measurements[0].limits.greenHigh,
                   mutableConfig().measurements[0].limits.yellowHigh);
 
-  ThresholdDefaults humDefaults = {
-      DHT_HUMIDITY_YELLOW_LOW, DHT_HUMIDITY_GREEN_LOW, DHT_HUMIDITY_GREEN_HIGH,
-      DHT_HUMIDITY_YELLOW_HIGH};
+  ThresholdDefaults humDefaults = {DHT_HUMIDITY_YELLOW_LOW, DHT_HUMIDITY_GREEN_LOW,
+                                   DHT_HUMIDITY_GREEN_HIGH, DHT_HUMIDITY_YELLOW_HIGH};
   mutableConfig().measurements[1].limits.yellowLow = humDefaults.yellowLow;
   mutableConfig().measurements[1].limits.greenLow = humDefaults.greenLow;
   mutableConfig().measurements[1].limits.greenHigh = humDefaults.greenHigh;
   mutableConfig().measurements[1].limits.yellowHigh = humDefaults.yellowHigh;
-  initMeasurement(1, DHT_HUMIDITY_NAME, DHT_HUMIDITY_FIELD_NAME,
-                  DHT_HUMIDITY_UNIT,
+  initMeasurement(1, DHT_HUMIDITY_NAME, DHT_HUMIDITY_FIELD_NAME, DHT_HUMIDITY_UNIT,
                   mutableConfig().measurements[1].limits.yellowLow,
                   mutableConfig().measurements[1].limits.greenLow,
                   mutableConfig().measurements[1].limits.greenHigh,
@@ -50,8 +46,7 @@ DHTSensor::~DHTSensor() {
 }
 
 void DHTSensor::logDebugDetails() const {
-  logDebug(F("DHT-Konfig: pin=") + String(m_pin) + F(", typ=") +
-           String(m_type));
+  logDebug(F("DHT-Konfig: pin=") + String(m_pin) + F(", typ=") + String(m_type));
 }
 
 SensorResult DHTSensor::init() {
@@ -60,8 +55,7 @@ SensorResult DHTSensor::init() {
   m_dhtesp.setup(m_pin, dhtModel);
   m_initialized = true;
   logger.debug(getName(), F("DHTesp-Initialisierung abgeschlossen (Typ: ") +
-                              String((m_type == 22) ? "DHT22" : "DHT11") +
-                              F(")"));
+                              String((m_type == 22) ? "DHT22" : "DHT11") + F(")"));
   return SensorResult::success();
 }
 
@@ -82,8 +76,7 @@ void DHTSensor::deinitialize() {
 }
 
 bool DHTSensor::requiresWarmup(unsigned long& warmupTime) const {
-  warmupTime =
-      1000;  // DHT sensors need 1 second between readings (reduced from 2000ms)
+  warmupTime = 1000; // DHT sensors need 1 second between readings (reduced from 2000ms)
   return true;
 }
 
@@ -129,8 +122,7 @@ SensorResult DHTSensor::continueMeasurement() {
 }
 
 bool DHTSensor::isValidValue(float value, size_t measurementIndex) const {
-  return measurementIndex == 0 ? isValidTemperature(value)
-                               : isValidHumidity(value);
+  return measurementIndex == 0 ? isValidTemperature(value) : isValidHumidity(value);
 }
 
 SharedHardwareInfo DHTSensor::getSharedHardwareInfo() const {

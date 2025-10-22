@@ -14,9 +14,7 @@
 #include "../web/handler/web_ota_handler.h"
 
 ConfigManager::ConfigManager()
-    : m_webHandler(*this),
-      m_debugConfig(m_notifier),
-      m_sensorErrorTracker(m_notifier) {}
+    : m_webHandler(*this), m_debugConfig(m_notifier), m_sensorErrorTracker(m_notifier) {}
 
 ConfigManager& ConfigManager::getInstance() {
   static ConfigManager instance;
@@ -29,9 +27,8 @@ ConfigManager::ConfigResult ConfigManager::loadConfig() {
   // Load main configuration
   auto result = ConfigPersistence::loadFromFile(m_configData);
   if (!result.isSuccess()) {
-    return ConfigResult::fail(
-        result.error().value_or(ConfigError::UNKNOWN_ERROR),
-        result.getMessage());
+    return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
+                              result.getMessage());
   }
 
   // Sync subsystem data
@@ -55,19 +52,17 @@ ConfigManager::ConfigResult ConfigManager::saveConfig() {
   // Validate before saving
   auto validationResult = ConfigValidator::validateConfigData(m_configData);
   if (!validationResult.isSuccess()) {
-    logger.error(F("ConfigM"), F("Konfigurationsvalidierung fehlgeschlagen: ") +
-                                   validationResult.getMessage());
-    return ConfigResult::fail(
-        validationResult.error().value_or(ConfigError::UNKNOWN_ERROR),
-        validationResult.getMessage());
+    logger.error(F("ConfigM"),
+                 F("Konfigurationsvalidierung fehlgeschlagen: ") + validationResult.getMessage());
+    return ConfigResult::fail(validationResult.error().value_or(ConfigError::UNKNOWN_ERROR),
+                              validationResult.getMessage());
   }
 
   // Save main configuration
   auto result = ConfigPersistence::saveToFileMinimal(m_configData);
   if (!result.isSuccess()) {
-    return ConfigResult::fail(
-        result.error().value_or(ConfigError::UNKNOWN_ERROR),
-        result.getMessage());
+    return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
+                              result.getMessage());
   }
 
   // Save sensor configuration
@@ -86,9 +81,8 @@ ConfigManager::ConfigResult ConfigManager::resetToDefaults() {
 
   auto result = ConfigPersistence::resetToDefaults(m_configData);
   if (!result.isSuccess()) {
-    return ConfigResult::fail(
-        result.error().value_or(ConfigError::UNKNOWN_ERROR),
-        result.getMessage());
+    return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
+                              result.getMessage());
   }
 
   // Sync subsystem data
@@ -98,21 +92,18 @@ ConfigManager::ConfigResult ConfigManager::resetToDefaults() {
   return saveConfig();
 }
 
-ConfigManager::ConfigResult ConfigManager::updateFromWeb(
-    ESP8266WebServer& server) {
+ConfigManager::ConfigResult ConfigManager::updateFromWeb(ESP8266WebServer& server) {
   ScopedLock lock;
   return m_webHandler.updateFromWebRequest(server);
 }
 
-ConfigManager::ConfigResult ConfigManager::setAdminPassword(
-    const String& password) {
+ConfigManager::ConfigResult ConfigManager::setAdminPassword(const String& password) {
   ScopedLock lock;
 
   auto validation = ConfigValidator::validatePassword(password);
   if (!validation.isSuccess()) {
-    return ConfigResult::fail(
-        validation.error().value_or(ConfigError::UNKNOWN_ERROR),
-        validation.getMessage());
+    return ConfigResult::fail(validation.error().value_or(ConfigError::UNKNOWN_ERROR),
+                              validation.getMessage());
   }
 
   m_configData.adminPassword = password;
@@ -142,8 +133,7 @@ ConfigManager::ConfigResult ConfigManager::setFileLoggingEnabled(bool enabled) {
   return ConfigResult::success();
 }
 
-ConfigManager::ConfigResult ConfigManager::setUpdateFlags(bool fileSystem,
-                                                          bool firmware) {
+ConfigManager::ConfigResult ConfigManager::setUpdateFlags(bool fileSystem, bool firmware) {
   ScopedLock lock;
 
   // Only one update type can be active at a time
@@ -152,15 +142,12 @@ ConfigManager::ConfigResult ConfigManager::setUpdateFlags(bool fileSystem,
                               F("Es kann jeweils nur ein Update-Typ aktiv sein"));
   }
 
-  logger.info(F("ConfigM"),
-              F("Setze Update-Flags - Dateisystem: ") + String(fileSystem) +
-                  F(", Firmware: ") + String(firmware));
+  logger.info(F("ConfigM"), F("Setze Update-Flags - Dateisystem: ") + String(fileSystem) +
+                                F(", Firmware: ") + String(firmware));
 
   ConfigPersistence::writeUpdateFlagsToFile(fileSystem, firmware);
 
-  notifyConfigChange("update_flags",
-                     "fs:" + String(fileSystem) + ",fw:" + String(firmware),
-                     true);
+  notifyConfigChange("update_flags", "fs:" + String(fileSystem) + ",fw:" + String(firmware), true);
 
   return ConfigResult::success();
 }
@@ -202,11 +189,9 @@ ConfigManager::ConfigResult ConfigManager::setDoFirmwareUpgrade(bool enable) {
   return ConfigResult::success();
 }
 
-ConfigManager::ConfigResult ConfigManager::setCollectdSendSingleMeasurement(
-    bool enable) {
+ConfigManager::ConfigResult ConfigManager::setCollectdSendSingleMeasurement(bool enable) {
   ScopedLock lock;
-  notifyConfigChange("collectd_single_measurement", enable ? "true" : "false",
-                     true);
+  notifyConfigChange("collectd_single_measurement", enable ? "true" : "false", true);
   return ConfigResult::success();
 }
 
@@ -215,9 +200,8 @@ ConfigManager::ConfigResult ConfigManager::setLogLevel(const String& level) {
 
   auto validation = ConfigValidator::validateLogLevel(level);
   if (!validation.isSuccess()) {
-    return ConfigResult::fail(
-        validation.error().value_or(ConfigError::UNKNOWN_ERROR),
-        validation.getMessage());
+    return ConfigResult::fail(validation.error().value_or(ConfigError::UNKNOWN_ERROR),
+                              validation.getMessage());
   }
 
   logger.setLogLevel(Logger::stringToLogLevel(level));
@@ -227,9 +211,7 @@ ConfigManager::ConfigResult ConfigManager::setLogLevel(const String& level) {
   return ConfigResult::success();
 }
 
-String ConfigManager::getLogLevel() const {
-  return logger.logLevelToString(logger.getLogLevel());
-}
+String ConfigManager::getLogLevel() const { return logger.logLevelToString(logger.getLogLevel()); }
 
 // Debug configuration convenience methods
 ConfigManager::ConfigResult ConfigManager::setDebugRAM(bool enabled) {
@@ -242,8 +224,7 @@ ConfigManager::ConfigResult ConfigManager::setDebugRAM(bool enabled) {
                             result.getMessage());
 }
 
-ConfigManager::ConfigResult ConfigManager::setDebugMeasurementCycle(
-    bool enabled) {
+ConfigManager::ConfigResult ConfigManager::setDebugMeasurementCycle(bool enabled) {
   auto result = m_debugConfig.setMeasurementCycleDebug(enabled);
   if (result.isSuccess()) {
     return ConfigResult::success();
@@ -279,8 +260,7 @@ ConfigManager::ConfigResult ConfigManager::setDebugWebSocket(bool enabled) {
                             result.getMessage());
 }
 
-ConfigManager::ConfigResult ConfigManager::setConfigValue(const char* key,
-                                                          const char* value) {
+ConfigManager::ConfigResult ConfigManager::setConfigValue(const char* key, const char* value) {
   ScopedLock lock;
   String keyStr(key);
   String valueStr(value);
@@ -322,19 +302,24 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const char* key,
     bool newValue = (valueStr == "true" || valueStr == "1");
     if (keyStr == "debug_ram") {
       auto result = setDebugRAM(newValue);
-      if (!result.isSuccess()) return result;
+      if (!result.isSuccess())
+        return result;
     } else if (keyStr == "debug_measurement_cycle") {
       auto result = setDebugMeasurementCycle(newValue);
-      if (!result.isSuccess()) return result;
+      if (!result.isSuccess())
+        return result;
     } else if (keyStr == "debug_sensor") {
       auto result = setDebugSensor(newValue);
-      if (!result.isSuccess()) return result;
+      if (!result.isSuccess())
+        return result;
     } else if (keyStr == "debug_display") {
       auto result = setDebugDisplay(newValue);
-      if (!result.isSuccess()) return result;
+      if (!result.isSuccess())
+        return result;
     } else if (keyStr == "debug_websocket") {
       auto result = setDebugWebSocket(newValue);
-      if (!result.isSuccess()) return result;
+      if (!result.isSuccess())
+        return result;
     }
   } else if (keyStr == "log_level") {
     String currentLevel = getLogLevel();
@@ -365,12 +350,11 @@ void ConfigManager::addChangeCallback(ConfigNotifier::ChangeCallback callback) {
   m_notifier.addChangeCallback(callback);
 }
 
-void ConfigManager::notifyConfigChange(const String& key, const String& value,
-                                       bool updateSensors) {
-
+void ConfigManager::notifyConfigChange(const String& key, const String& value, bool updateSensors) {
 
   // Delegate to notifier
-  logger.debug(F("ConfigM"), String(F("Notifying config change for key: ")) + key + F(" (updateSensors=") + String(updateSensors) + F(")"));
+  logger.debug(F("ConfigM"), String(F("Notifying config change for key: ")) + key +
+                                 F(" (updateSensors=") + String(updateSensors) + F(")"));
   m_notifier.notifyChange(key, value, updateSensors);
 }
 
@@ -421,7 +405,7 @@ ConfigManager::ConfigResult ConfigManager::setSmtpUser(const String& user) {
 ConfigManager::ConfigResult ConfigManager::setSmtpPassword(const String& password) {
   if (m_configData.smtpPassword != password) {
     m_configData.smtpPassword = password;
-    notifyConfigChange("smtp_password", "***", false);  // Mask password in logs
+    notifyConfigChange("smtp_password", "***", false); // Mask password in logs
     return ConfigResult::success();
   }
   return ConfigResult::success();
@@ -482,8 +466,7 @@ ConfigManager::ConfigResult ConfigManager::setSmtpSendTestMailOnBoot(bool enable
 }
 #endif // USE_MAIL
 
-ConfigManager::ConfigResult ConfigManager::setLedTrafficLightMode(
-    uint8_t mode) {
+ConfigManager::ConfigResult ConfigManager::setLedTrafficLightMode(uint8_t mode) {
   if (m_configData.ledTrafficLightMode != mode) {
     m_configData.ledTrafficLightMode = mode;
     String modeStr = String(mode);
@@ -494,19 +477,16 @@ ConfigManager::ConfigResult ConfigManager::setLedTrafficLightMode(
 }
 
 ConfigManager::ConfigResult
-ConfigManager::setLedTrafficLightSelectedMeasurement(
-    const String& measurementId) {
+ConfigManager::setLedTrafficLightSelectedMeasurement(const String& measurementId) {
   if (m_configData.ledTrafficLightSelectedMeasurement != measurementId) {
     m_configData.ledTrafficLightSelectedMeasurement = measurementId;
-    notifyConfigChange("led_traffic_light_selected_measurement", measurementId,
-                       false);
+    notifyConfigChange("led_traffic_light_selected_measurement", measurementId, false);
     return ConfigResult::success();
   }
   return ConfigResult::success();
 }
 
-ConfigManager::ConfigResult ConfigManager::setFlowerStatusSensor(
-    const String& sensorId) {
+ConfigManager::ConfigResult ConfigManager::setFlowerStatusSensor(const String& sensorId) {
   if (m_configData.flowerStatusSensor != sensorId) {
     m_configData.flowerStatusSensor = sensorId;
     notifyConfigChange("flower_status_sensor", sensorId, false);

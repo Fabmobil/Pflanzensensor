@@ -16,8 +16,8 @@
 // Declare external global sensor manager
 extern std::unique_ptr<SensorManager> sensorManager;
 
-HandlerResult StartpageHandler::handleGet(
-    const String& uri, const std::map<String, String>& query) {
+HandlerResult StartpageHandler::handleGet(const String& uri,
+                                          const std::map<String, String>& query) {
   if (uri == "/") {
     handleRoot();
     return HandlerResult::success();
@@ -25,10 +25,9 @@ HandlerResult StartpageHandler::handleGet(
   return HandlerResult::fail(HandlerError::NOT_FOUND, "Unbekannter Endpunkt");
 }
 
-HandlerResult StartpageHandler::handlePost(
-    const String& uri, const std::map<String, String>& params) {
-  return HandlerResult::fail(HandlerError::NOT_FOUND,
-                             "Keine POST-Endpunkte verfügbar");
+HandlerResult StartpageHandler::handlePost(const String& uri,
+                                           const std::map<String, String>& params) {
+  return HandlerResult::fail(HandlerError::NOT_FOUND, "Keine POST-Endpunkte verfügbar");
 }
 
 void StartpageHandler::handleRoot() {
@@ -81,7 +80,8 @@ void StartpageHandler::generateAndSendSensorGrid() {
   if (sensorManager) {
     size_t sensorIndex = 0;
     for (const auto& sensor : sensorManager->getSensors()) {
-      if (!sensor || !sensor->isEnabled()) continue;
+      if (!sensor || !sensor->isEnabled())
+        continue;
 
       // Check if sensor has any valid data to display
       bool hasValidData = false;
@@ -91,7 +91,7 @@ void StartpageHandler::generateAndSendSensorGrid() {
         auto measurementData = sensor->getMeasurementData();
         if (measurementData.activeValues > 0) {
           hasValidData = true;
-          statusStr = sensor->getStatus(0);  // Get status for first measurement
+          statusStr = sensor->getStatus(0); // Get status for first measurement
         }
       }
 
@@ -101,7 +101,7 @@ void StartpageHandler::generateAndSendSensorGrid() {
         const SensorConfig& config = sensor->config();
         if (config.activeMeasurements > 0) {
           hasValidData = true;
-          statusStr = "error";  // Mark as error state
+          statusStr = "error"; // Mark as error state
         }
       }
 
@@ -114,7 +114,8 @@ void StartpageHandler::generateAndSendSensorGrid() {
       // Generate a box for each active measurement
       const SensorConfig& config = sensor->config();
       for (size_t i = 0; i < config.activeMeasurements; i++) {
-        if (!config.measurements[i].enabled) continue;
+        if (!config.measurements[i].enabled)
+          continue;
 
         String measurementName = config.measurements[i].name;
         if (measurementName.length() == 0) {
@@ -138,8 +139,8 @@ void StartpageHandler::generateAndSendSensorGrid() {
           unit = config.measurements[i].unit;
         }
 
-        generateSensorBox(sensor.get(), value, measurementName, unit,
-                          statusStr.c_str(), i, sensorIndex);
+        generateSensorBox(sensor.get(), value, measurementName, unit, statusStr.c_str(), i,
+                          sensorIndex);
         sensorIndex++;
         yield();
       }
@@ -148,14 +149,12 @@ void StartpageHandler::generateAndSendSensorGrid() {
   sendChunk(F("</div>"));
 }
 
-void StartpageHandler::generateSensorBox(const Sensor* sensor, float value,
-                                         const String& name, const String& unit,
-                                         const char* status,
+void StartpageHandler::generateSensorBox(const Sensor* sensor, float value, const String& name,
+                                         const String& unit, const char* status,
                                          size_t measurementIndex, size_t sensorIndex) {
   // Safety check: ensure sensor exists
   if (!sensor) {
-    logger.warning(F("StartpageHandler"),
-                   F("Attempted to generate sensor box for null sensor"));
+    logger.warning(F("StartpageHandler"), F("Attempted to generate sensor box for null sensor"));
     return;
   }
 
@@ -235,17 +234,23 @@ void StartpageHandler::generateSensorBox(const Sensor* sensor, float value,
   }
   sendChunk(F("</span></div>"));
 
-  sendChunk(F("</div>"));  // Close card
-  sendChunk(F("</div>"));  // Close sensor
+  sendChunk(F("</div>")); // Close card
+  sendChunk(F("</div>")); // Close sensor
 }
 
 const char* StartpageHandler::translateStatus(const char* status) const {
-  if (strcmp(status, "green") == 0) return "OK";
-  if (strcmp(status, "yellow") == 0) return "Warnung";
-  if (strcmp(status, "red") == 0) return "Kritisch";
-  if (strcmp(status, "error") == 0) return "Fehler";
-  if (strcmp(status, "warmup") == 0) return "Aufwärmen";
-  if (strcmp(status, "unknown") == 0) return "Unbekannt";
+  if (strcmp(status, "green") == 0)
+    return "OK";
+  if (strcmp(status, "yellow") == 0)
+    return "Warnung";
+  if (strcmp(status, "red") == 0)
+    return "Kritisch";
+  if (strcmp(status, "error") == 0)
+    return "Fehler";
+  if (strcmp(status, "warmup") == 0)
+    return "Aufwärmen";
+  if (strcmp(status, "unknown") == 0)
+    return "Unbekannt";
   return status;
 }
 
@@ -256,9 +261,8 @@ RouterResult StartpageHandler::onRegisterRoutes(WebRouter& router) {
 
   auto result = router.addRoute(HTTP_GET, "/", [this]() { handleRoot(); });
   if (!result.isSuccess()) {
-    return RouterResult::fail(
-        RouterError::REGISTRATION_FAILED,
-        "Failed to register root handler: " + result.getMessage());
+    return RouterResult::fail(RouterError::REGISTRATION_FAILED,
+                              "Failed to register root handler: " + result.getMessage());
   }
 
   return RouterResult::success();

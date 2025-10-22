@@ -7,9 +7,9 @@
 
 #if USE_MAIL
 
-#include "mail_manager.h"
 #include "../logger/logger.h"
 #include "../managers/manager_config.h"
+#include "mail_manager.h"
 #include <ESP8266WiFi.h>
 
 extern Logger logger; // Global logger instance

@@ -22,9 +22,9 @@
  *          Includes timeout mechanisms to prevent deadlocks.
  */
 class SensorManagerLimiter {
- public:
+public:
   /// Maximum time a sensor can hold a measurement slot before forced release
-  static constexpr unsigned long SLOT_TIMEOUT_MS = 20000;  // 20 second timeout
+  static constexpr unsigned long SLOT_TIMEOUT_MS = 20000; // 20 second timeout
 
   /**
    * @brief Gets the singleton instance of the limiter
@@ -47,11 +47,9 @@ class SensorManagerLimiter {
     unsigned long now = millis();
 
     // Check if current holder has timed out
-    if (!m_currentSensor.isEmpty() &&
-        (now - m_slotAcquiredTime >= SLOT_TIMEOUT_MS)) {
-      logger.warning(F("SensorLimiter"), F("Forcing slot release from ") +
-                                             m_currentSensor +
-                                             F(" due to timeout"));
+    if (!m_currentSensor.isEmpty() && (now - m_slotAcquiredTime >= SLOT_TIMEOUT_MS)) {
+      logger.warning(F("SensorLimiter"),
+                     F("Forcing slot release from ") + m_currentSensor + F(" due to timeout"));
       m_currentSensor = "";
     }
 
@@ -64,11 +62,9 @@ class SensorManagerLimiter {
       return true;
     }
 
-    if (ConfigMgr.isDebugMeasurementCycle() &&
-        m_lastBlockingSensor != m_currentSensor) {
-      logger.debug(F("SensorLimiter"),
-                   F("Slot acquisition failed for ") + sensorId +
-                       F(" - currently held by: ") + m_currentSensor);
+    if (ConfigMgr.isDebugMeasurementCycle() && m_lastBlockingSensor != m_currentSensor) {
+      logger.debug(F("SensorLimiter"), F("Slot acquisition failed for ") + sensorId +
+                                           F(" - currently held by: ") + m_currentSensor);
       m_lastBlockingSensor = m_currentSensor;
     }
     return false;
@@ -88,9 +84,8 @@ class SensorManagerLimiter {
       m_currentSensor = "";
       m_slotAcquiredTime = 0;
     } else if (!m_currentSensor.isEmpty()) {
-      logger.warning(F("SensorLimiter"),
-                     F("Attempt to release slot by ") + sensorId +
-                         F(" but slot is held by: ") + m_currentSensor);
+      logger.warning(F("SensorLimiter"), F("Attempt to release slot by ") + sensorId +
+                                             F(" but slot is held by: ") + m_currentSensor);
     }
   }
 
@@ -99,9 +94,7 @@ class SensorManagerLimiter {
    * @param sensorId Unique identifier of the sensor to check
    * @return true if the specified sensor holds the slot
    */
-  bool hasSlot(const String& sensorId) const {
-    return m_currentSensor == sensorId;
-  }
+  bool hasSlot(const String& sensorId) const { return m_currentSensor == sensorId; }
 
   /**
    * @brief Gets the ID of the sensor currently holding the slot
@@ -114,11 +107,12 @@ class SensorManagerLimiter {
    * @return Time in milliseconds the slot has been held, 0 if slot is free
    */
   unsigned long getSlotHoldTime() const {
-    if (m_slotAcquiredTime == 0) return 0;
+    if (m_slotAcquiredTime == 0)
+      return 0;
     return millis() - m_slotAcquiredTime;
   }
 
- private:
+private:
   /**
    * @brief Private constructor for singleton pattern
    * @details Initializes random seed for potential future use
@@ -131,16 +125,14 @@ class SensorManagerLimiter {
   ~SensorManagerLimiter() = default;
 
   // Prevent copying
-  SensorManagerLimiter(const SensorManagerLimiter&) =
-      delete;  ///< Copy constructor disabled
-  SensorManagerLimiter& operator=(const SensorManagerLimiter&) =
-      delete;  ///< Assignment operator disabled
+  SensorManagerLimiter(const SensorManagerLimiter&) = delete; ///< Copy constructor disabled
+  SensorManagerLimiter&
+  operator=(const SensorManagerLimiter&) = delete; ///< Assignment operator disabled
 
-  String m_currentSensor;       ///< ID of sensor currently holding the slot
-  String m_lastBlockingSensor;  ///< ID of last sensor that was blocked from
-                                ///< acquiring slot
-  unsigned long m_slotAcquiredTime{
-      0};  ///< Timestamp when current slot was acquired
+  String m_currentSensor;              ///< ID of sensor currently holding the slot
+  String m_lastBlockingSensor;         ///< ID of last sensor that was blocked from
+                                       ///< acquiring slot
+  unsigned long m_slotAcquiredTime{0}; ///< Timestamp when current slot was acquired
 };
 
-#endif  // SENSOR_MANAGER_LIMITER_H
+#endif // SENSOR_MANAGER_LIMITER_H

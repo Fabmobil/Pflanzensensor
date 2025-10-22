@@ -11,7 +11,7 @@
 #include <array>
 #include <vector>
 
-#include "sensor_config.h"  // Ensure configuration macros are defined first
+#include "sensor_config.h" // Ensure configuration macros are defined first
 #include "sensors/sensor_autocalibration.h"
 
 class Sensor;
@@ -27,7 +27,7 @@ enum class SensorType {
   HX711,
   BMP280,
   ANALOG,
-  SERIAL_RECEIVER,  ///< Serial data receiver for external Arduino devices
+  SERIAL_RECEIVER, ///< Serial data receiver for external Arduino devices
   UNKNOWN
 };
 
@@ -48,26 +48,25 @@ enum class MeasurementError {
  * @brief Sensor threshold limits
  */
 struct SensorLimits {
-  float yellowLow;   ///< Lower warning threshold
-  float greenLow;    ///< Lower normal threshold
-  float greenHigh;   ///< Upper normal threshold
-  float yellowHigh;  ///< Upper warning threshold
+  float yellowLow;  ///< Lower warning threshold
+  float greenLow;   ///< Lower normal threshold
+  float greenHigh;  ///< Upper normal threshold
+  float yellowHigh; ///< Upper warning threshold
 
-  SensorLimits()
-      : yellowLow(0.0f), greenLow(0.0f), greenHigh(0.0f), yellowHigh(0.0f) {}
+  SensorLimits() : yellowLow(0.0f), greenLow(0.0f), greenHigh(0.0f), yellowHigh(0.0f) {}
 };
 
 /**
  * @brief Structure for measurement configuration
  */
 struct MeasurementConfig {
-  String name;                  ///< Human readable measurement name
-  String fieldName;             ///< Field name for database
-  String unit;                  ///< Unit of measurement
-  mutable SensorLimits limits;  ///< Thresholds for this measurement
-  bool enabled{true};           ///< Whether this measurement is active
-  unsigned long retryDelay;     ///< Delay before retry on failure (ms)
-  uint8_t maxRetries;           ///< Maximum number of retries
+  String name;                 ///< Human readable measurement name
+  String fieldName;            ///< Field name for database
+  String unit;                 ///< Unit of measurement
+  mutable SensorLimits limits; ///< Thresholds for this measurement
+  bool enabled{true};          ///< Whether this measurement is active
+  unsigned long retryDelay;    ///< Delay before retry on failure (ms)
+  uint8_t maxRetries;          ///< Maximum number of retries
   /**
    * @brief Minimum value for analog measurement (if applicable)
    */
@@ -136,28 +135,26 @@ struct SensorConfig {
   static constexpr size_t UNIT_LEN = 8;
   static constexpr size_t ERROR_MSG_LEN = 64;
 
-  uint8_t pin{0};      ///< Hardware pin number for the sensor
-  String id;           ///< Unique identifier for the sensor
-  String name;         ///< Human-readable name of the sensor
-  bool enabled{true};  ///< Whether the sensor is active
-  unsigned long measurementInterval{
-      0};                         ///< Time between measurements in milliseconds
-  unsigned long minimumDelay{0};  ///< Minimum delay between readings
-  unsigned long warmupTime{0};    ///< Time needed for sensor to warm up
-  bool requiresWarmup{false};     ///< Whether sensor needs warmup period
-  int measurementErrorCount{0};   ///< Count of consecutive measurement errors
+  uint8_t pin{0};                       ///< Hardware pin number for the sensor
+  String id;                            ///< Unique identifier for the sensor
+  String name;                          ///< Human-readable name of the sensor
+  bool enabled{true};                   ///< Whether the sensor is active
+  unsigned long measurementInterval{0}; ///< Time between measurements in milliseconds
+  unsigned long minimumDelay{0};        ///< Minimum delay between readings
+  unsigned long warmupTime{0};          ///< Time needed for sensor to warm up
+  bool requiresWarmup{false};           ///< Whether sensor needs warmup period
+  int measurementErrorCount{0};         ///< Count of consecutive measurement errors
   /**
    * @brief Persistent error flag for this sensor (replaces sensorErrorFlags
    * map)
    */
-  bool hasPersistentError{
-      false};                    ///< True if this sensor has a persistent error
-  size_t activeMeasurements{1};  ///< Number of active measurements
+  bool hasPersistentError{false}; ///< True if this sensor has a persistent error
+  size_t activeMeasurements{1};   ///< Number of active measurements
   std::array<MeasurementConfig, MAX_MEASUREMENTS>
-      measurements;  ///< Array of measurement configurations
+      measurements; ///< Array of measurement configurations
   bool deinitializeAfterMeasurement{
-      MEASUREMENT_DEINITIALIZE_SENSORS};  ///< Whether to deinitialize after
-                                          ///< measuring
+      MEASUREMENT_DEINITIALIZE_SENSORS}; ///< Whether to deinitialize after
+                                         ///< measuring
 
   /**
    * @brief Virtual destructor for proper cleanup in derived classes
@@ -175,15 +172,13 @@ struct SensorConfig {
  * @brief Measurement data structure
  */
 struct MeasurementData {
-  std::array<float, SensorConfig::MAX_MEASUREMENTS>
-      values;  ///< Measurement values
+  std::array<float, SensorConfig::MAX_MEASUREMENTS> values; ///< Measurement values
   char fieldNames[SensorConfig::MAX_MEASUREMENTS][SensorConfig::FIELD_NAME_LEN];
   char units[SensorConfig::MAX_MEASUREMENTS][SensorConfig::UNIT_LEN];
-  size_t activeValues{0};  ///< Number of active values
-  MeasurementError lastError{
-      MeasurementError::NONE};                     ///< Last error that occurred
-  char errorMessage[SensorConfig::ERROR_MSG_LEN];  ///< Detailed error message
-  bool valid{true};  ///< True if this struct is valid and owned by a sensor
+  size_t activeValues{0};                             ///< Number of active values
+  MeasurementError lastError{MeasurementError::NONE}; ///< Last error that occurred
+  char errorMessage[SensorConfig::ERROR_MSG_LEN];     ///< Detailed error message
+  bool valid{true}; ///< True if this struct is valid and owned by a sensor
 
   /**
    * @brief Default constructor
@@ -210,8 +205,7 @@ struct MeasurementData {
     }
     if (activeValues > SensorConfig::MAX_MEASUREMENTS) {
       logger.error(F("MeasurementData"),
-                   F("isValid failed: activeValues > MAX_MEASUREMENTS: ") +
-                       String(activeValues));
+                   F("isValid failed: activeValues > MAX_MEASUREMENTS: ") + String(activeValues));
       return false;
     }
     return true;
@@ -229,15 +223,13 @@ struct MeasurementData {
    */
   void setError(MeasurementError error, const String& message = "") {
     lastError = error;
-    errorMessage[0] = '\0';  // Clear previous error message
+    errorMessage[0] = '\0'; // Clear previous error message
     if (message.length() < SensorConfig::ERROR_MSG_LEN) {
       strncpy(errorMessage, message.c_str(), SensorConfig::ERROR_MSG_LEN - 1);
-      errorMessage[SensorConfig::ERROR_MSG_LEN - 1] =
-          '\0';  // Ensure null termination
+      errorMessage[SensorConfig::ERROR_MSG_LEN - 1] = '\0'; // Ensure null termination
     } else {
       strncpy(errorMessage, message.c_str(), SensorConfig::ERROR_MSG_LEN - 1);
-      errorMessage[SensorConfig::ERROR_MSG_LEN - 1] =
-          '\0';  // Ensure null termination
+      errorMessage[SensorConfig::ERROR_MSG_LEN - 1] = '\0'; // Ensure null termination
     }
   }
 };
@@ -246,13 +238,13 @@ struct MeasurementData {
  * @brief Structure for shared hardware management
  */
 struct SharedHardwareInfo {
-  SensorType type;         ///< Type of the sensor hardware
-  uint8_t pin;             ///< Hardware pin (if applicable)
-  unsigned long minDelay;  ///< Minimum delay between readings
-  bool exclusive{false};   ///< Whether device needs exclusive access
+  SensorType type;        ///< Type of the sensor hardware
+  uint8_t pin;            ///< Hardware pin (if applicable)
+  unsigned long minDelay; ///< Minimum delay between readings
+  bool exclusive{false};  ///< Whether device needs exclusive access
 
   SharedHardwareInfo(SensorType t, uint8_t p, unsigned long d, bool e = false)
       : type(t), pin(p), minDelay(d), exclusive(e) {}
 };
 
-#endif  // SENSOR_TYPES_H
+#endif // SENSOR_TYPES_H

@@ -29,7 +29,7 @@
  *          - Result processing
  */
 class SensorMeasurement {
- public:
+public:
   /**
    * @brief Constructor for sensor measurement handler
    * @param sensor Pointer to sensor instance to manage
@@ -46,13 +46,13 @@ class SensorMeasurement {
         m_lastStateChange(0),
         m_stateDebugPrinted(false) {}
 
- private:
-  Sensor* m_sensor;                      ///< Managed sensor instance
-  uint8_t m_retryCount;                  ///< Current retry attempt count
-  unsigned long m_measurementStartTime;  ///< Start time of current measurement
-  unsigned long m_lastStateChange;       ///< Timestamp of last state change
-  MeasurementState m_lastState{MeasurementState::IDLE};  ///< Previous state
-  bool m_stateDebugPrinted;  ///< State change logging flag
+private:
+  Sensor* m_sensor;                                     ///< Managed sensor instance
+  uint8_t m_retryCount;                                 ///< Current retry attempt count
+  unsigned long m_measurementStartTime;                 ///< Start time of current measurement
+  unsigned long m_lastStateChange;                      ///< Timestamp of last state change
+  MeasurementState m_lastState{MeasurementState::IDLE}; ///< Previous state
+  bool m_stateDebugPrinted;                             ///< State change logging flag
 
   /// Maximum number of retry attempts
   static constexpr uint8_t MAX_RETRIES = 3;
@@ -60,4 +60,4 @@ class SensorMeasurement {
   static constexpr unsigned long STATE_TIMEOUT = 30000;
 };
 
-#endif  // SENSOR_MEASUREMENT_H
+#endif // SENSOR_MEASUREMENT_H

@@ -6,7 +6,8 @@
 
 // Implementation of helper methods
 bool SensorFactory::validateSensorConfig(const Sensor* sensor) {
-  if (!sensor) return false;
+  if (!sensor)
+    return false;
 
   bool valid = true;
   if (sensor->getId().isEmpty()) {
@@ -15,19 +16,16 @@ bool SensorFactory::validateSensorConfig(const Sensor* sensor) {
   }
 
   if (sensor->getName().isEmpty()) {
-    logger.error(F("SensorFactory"),
-                 F("Sensor ") + sensor->getId() + F(" hat keinen Namen"));
+    logger.error(F("SensorFactory"), F("Sensor ") + sensor->getId() + F(" hat keinen Namen"));
     valid = false;
   }
 
   // Add explicit check for measurement interval
   if (sensor->getMeasurementInterval() < MEASUREMENT_MINIMUM_DELAY) {
-  logger.error(F("SensorFactory"),
-         F("Sensor ") + sensor->getId() +
-           F(" hat ein ungültiges Messintervall: ") +
-           String(sensor->getMeasurementInterval()) +
-           F(" (Minimum: ") + String(MEASUREMENT_MINIMUM_DELAY) +
-           F(")"));
+    logger.error(F("SensorFactory"),
+                 F("Sensor ") + sensor->getId() + F(" hat ein ungültiges Messintervall: ") +
+                     String(sensor->getMeasurementInterval()) + F(" (Minimum: ") +
+                     String(MEASUREMENT_MINIMUM_DELAY) + F(")"));
     valid = false;
   }
 
@@ -35,31 +33,29 @@ bool SensorFactory::validateSensorConfig(const Sensor* sensor) {
 }
 
 void SensorFactory::logSensorStatus(const String& phase, const Sensor* sensor) {
-  if (!sensor) return;
+  if (!sensor)
+    return;
 
-  logger.debug(F("SensorFactory"),
-               phase + F(": Sensor ") + sensor->getName() + F(" [ID: ") +
-                   sensor->getId() + F(", Aktiv: ") +
-                   String(sensor->isEnabled() ? "ja" : "nein") +
-                   F(", Fehler: ") + String(sensor->getErrorCount()) +
-                   F(", Status: ") + sensor->getStatus() + F("]"));
+  logger.debug(F("SensorFactory"), phase + F(": Sensor ") + sensor->getName() + F(" [ID: ") +
+                                       sensor->getId() + F(", Aktiv: ") +
+                                       String(sensor->isEnabled() ? "ja" : "nein") +
+                                       F(", Fehler: ") + String(sensor->getErrorCount()) +
+                                       F(", Status: ") + sensor->getStatus() + F("]"));
 }
 
 SensorResult SensorFactory::initializeSensor(std::unique_ptr<Sensor>& sensor) {
   if (!sensor) {
-    return SensorResult::fail(SensorError::INITIALIZATION_ERROR,
-                              "Null sensor pointer");
+    return SensorResult::fail(SensorError::INITIALIZATION_ERROR, "Null sensor pointer");
   }
 
-  logger.debug(F("SensorFactory"),
-               F("Beginne Initialisierung für ") + sensor->getName());
+  logger.debug(F("SensorFactory"), F("Beginne Initialisierung für ") + sensor->getName());
 
   // Basic initialization
   auto initResult = sensor->init();
   if (!initResult.isSuccess()) {
-    logger.error(F("SensorFactory"), F("Konnte ") +
-                                         sensor->getName() +
-                                         F(" nicht initialisieren - sensor->init() fehlgeschlagen"));
+    logger.error(F("SensorFactory"),
+                 F("Konnte ") + sensor->getName() +
+                     F(" nicht initialisieren - sensor->init() fehlgeschlagen"));
     sensor->setEnabled(false);
     return SensorResult::fail(SensorError::INITIALIZATION_ERROR);
   }
@@ -71,14 +67,13 @@ SensorResult SensorFactory::initializeSensor(std::unique_ptr<Sensor>& sensor) {
   // No action needed here unless you want to override from another source.
 
   sensor->setEnabled(true);
-  logger.debug(F("SensorFactory"),
-               sensor->getName() + F(" erfolgreich initialisiert"));
+  logger.debug(F("SensorFactory"), sensor->getName() + F(" erfolgreich initialisiert"));
   return SensorResult::success();
 }
 
-SensorFactory::SensorResult SensorFactory::createAllSensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager) {
+SensorFactory::SensorResult
+SensorFactory::createAllSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                SensorManager* sensorManager) {
   logger.info(F("SensorFactory"), F("Starte Sensor-Erstellungsprozess"));
 
   try {
@@ -87,12 +82,12 @@ SensorFactory::SensorResult SensorFactory::createAllSensors(
 
     std::vector<String> errors;
 
-    #if USE_ANALOG
-        addAnalogSensors(sensors, sensorManager, errors);
-    #endif
-    #if USE_DHT
-        addDHTSensors(sensors, sensorManager, errors);
-    #endif
+#if USE_ANALOG
+    addAnalogSensors(sensors, sensorManager, errors);
+#endif
+#if USE_DHT
+    addDHTSensors(sensors, sensorManager, errors);
+#endif
 
     logger.logMemoryStats(F("nach_sensor_erstellung"));
 
@@ -104,7 +99,8 @@ SensorFactory::SensorResult SensorFactory::createAllSensors(
         // Join all errors with semicolons
         String errorMsg;
         for (size_t i = 0; i < errors.size(); i++) {
-          if (i > 0) errorMsg += F("; ");
+          if (i > 0)
+            errorMsg += F("; ");
           errorMsg += errors[i];
         }
         return SensorResult::partialSuccess(errorMsg);
@@ -119,15 +115,14 @@ SensorFactory::SensorResult SensorFactory::createAllSensors(
                  F("Ausnahme während der Sensorerstellung: ") + String(e.what()));
     return SensorResult::fail(SensorError::INITIALIZATION_ERROR, e.what());
   } catch (...) {
-    logger.error(F("SensorFactory"),
-                 F("Unbekannte Ausnahme während der Sensorerstellung"));
+    logger.error(F("SensorFactory"), F("Unbekannte Ausnahme während der Sensorerstellung"));
     return SensorResult::fail(SensorError::INITIALIZATION_ERROR);
   }
 }
 
-SensorFactory::SensorResult SensorFactory::createDHTSensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager) {
+SensorFactory::SensorResult
+SensorFactory::createDHTSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                SensorManager* sensorManager) {
 #if USE_DHT
   DHTConfig config;
   auto dhtSensor = std::make_unique<DHTSensor>(config, sensorManager);
@@ -145,9 +140,9 @@ SensorFactory::SensorResult SensorFactory::createDHTSensors(
   return SensorResult::success();
 }
 
-SensorFactory::SensorResult SensorFactory::createAnalogSensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager) {
+SensorFactory::SensorResult
+SensorFactory::createAnalogSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                   SensorManager* sensorManager) {
 #if USE_ANALOG
   AnalogConfig config;
   auto analogSensor = std::make_unique<AnalogSensor>(config, sensorManager);
@@ -167,10 +162,8 @@ SensorFactory::SensorResult SensorFactory::createAnalogSensors(
 
 // Memory-optimized sensor creation helper functions
 #if USE_DHT
-void SensorFactory::addDHTSensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager,
-    std::vector<String>& errors) {
+void SensorFactory::addDHTSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                  SensorManager* sensorManager, std::vector<String>& errors) {
   auto dhtResult = createDHTSensors(sensors, sensorManager);
   if (!dhtResult.isSuccess()) {
     errors.push_back(F("DHT: ") + dhtResult.getFullErrorMessage());
@@ -181,10 +174,8 @@ void SensorFactory::addDHTSensors(
 #endif
 
 #if USE_ANALOG
-void SensorFactory::addAnalogSensors(
-    std::vector<std::unique_ptr<Sensor>>& sensors,
-    SensorManager* sensorManager,
-    std::vector<String>& errors) {
+void SensorFactory::addAnalogSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                     SensorManager* sensorManager, std::vector<String>& errors) {
   auto analogResult = createAnalogSensors(sensors, sensorManager);
   if (!analogResult.isSuccess()) {
     errors.push_back(F("Analog: ") + analogResult.getFullErrorMessage());

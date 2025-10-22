@@ -4,15 +4,14 @@
 #include <ArduinoJson.h>
 #include <math.h>
 
-void AutoCal_init(AutoCal& cal, float initial_reading,
-                  uint32_t current_time_minutes) {
+void AutoCal_init(AutoCal& cal, float initial_reading, uint32_t current_time_minutes) {
   cal.min_value = initial_reading;
   cal.max_value = initial_reading;
   cal.last_update_time = current_time_minutes;
 }
 
-bool AutoCal_update(AutoCal& cal, uint16_t new_reading,
-                    uint32_t current_time_minutes, float alpha) {
+bool AutoCal_update(AutoCal& cal, uint16_t new_reading, uint32_t current_time_minutes,
+                    float alpha) {
   bool changed = false;
 
   // Convert reading to float for EMA operations
@@ -83,14 +82,16 @@ bool AutoCal_update(AutoCal& cal, uint16_t new_reading,
 bool AutoCal_from_json(const JsonObject& obj, AutoCal& cal) {
   bool changed = false;
   if (!obj.isNull()) {
-    if (obj["min_value"].is<float>() || obj["min_value"].is<int>() || obj["min_value"].is<unsigned int>()) {
+    if (obj["min_value"].is<float>() || obj["min_value"].is<int>() ||
+        obj["min_value"].is<unsigned int>()) {
       float v = obj["min_value"].as<float>();
       if (fabsf(v - cal.min_value) >= 0.001f) {
         cal.min_value = v;
         changed = true;
       }
     }
-    if (obj["max_value"].is<float>() || obj["max_value"].is<int>() || obj["max_value"].is<unsigned int>()) {
+    if (obj["max_value"].is<float>() || obj["max_value"].is<int>() ||
+        obj["max_value"].is<unsigned int>()) {
       float v = obj["max_value"].as<float>();
       if (fabsf(v - cal.max_value) >= 0.001f) {
         cal.max_value = v;
@@ -109,7 +110,8 @@ bool AutoCal_from_json(const JsonObject& obj, AutoCal& cal) {
 }
 
 void AutoCal_to_json(const AutoCal& cal, JsonObject& obj) {
-  if (obj.isNull()) return;
+  if (obj.isNull())
+    return;
   // Store float values directly — callers decide whether to round before
   // persisting to the public min/max fields in sensors.json to reduce
   // flash wear. The admin UI currently renders ints but can show float

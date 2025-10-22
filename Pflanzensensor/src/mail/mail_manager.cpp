@@ -2,8 +2,8 @@
 
 #if USE_MAIL
 
-#include "../configs/config_pflanzensensor.h"
 #include "../configs/config.h"
+#include "../configs/config_pflanzensensor.h"
 #include "../managers/manager_config.h"
 #include "../managers/manager_resource.h"
 #include <ReadyMail.h>
@@ -47,7 +47,8 @@ TypedResult<ResourceError, void> MailManager::initialize() {
   if (ConfigMgr.isSmtpSendTestMailOnBoot()) {
     // Check available memory before test
     uint32_t freeHeap = ESP.getFreeHeap();
-    logger.debug(F("MailManager"), F("Freier Speicher für Test-Mail: ") + String(freeHeap) + F(" Bytes"));
+    logger.debug(F("MailManager"),
+                 F("Freier Speicher für Test-Mail: ") + String(freeHeap) + F(" Bytes"));
 
     if (freeHeap >= SMTP_MIN_FREE_HEAP_FOR_TEST) { // configurable minimum free heap
       logger.info(F("MailManager"), F("Sende Test-Mail beim Start"));
@@ -65,34 +66,32 @@ TypedResult<ResourceError, void> MailManager::initialize() {
 
 ResourceResult MailManager::sendTestMail() {
   return sendMail(
-    F("Test Mail"),
-    F("Test-Mail vom Pflanzensensor.<br/><br/>"
-      "Wenn Sie diese Nachricht erhalten, funktioniert die E-Mail-Konfiguration korrekt.")
-  );
+      F("Test Mail"),
+      F("Test-Mail vom Pflanzensensor.<br/><br/>"
+        "Wenn Sie diese Nachricht erhalten, funktioniert die E-Mail-Konfiguration korrekt."));
 }
 
 ResourceResult MailManager::sendMail(const String& subject, const String& message) {
   if (!m_initialized) {
     logger.error(F("MailManager"), F("MailManager nicht initialisiert"));
-    return ResourceResult::fail(ResourceError::INVALID_STATE,
-                               F("MailManager nicht initialisiert"));
+    return ResourceResult::fail(ResourceError::INVALID_STATE, F("MailManager nicht initialisiert"));
   }
 
   if (!ConfigMgr.isMailEnabled()) {
     logger.error(F("MailManager"), F("Mail-Funktionalität ist deaktiviert"));
     return ResourceResult::fail(ResourceError::INVALID_STATE,
-                               F("Mail-Funktionalität ist deaktiviert"));
+                                F("Mail-Funktionalität ist deaktiviert"));
   }
 
   // Check available memory before attempting to send email
   uint32_t freeHeapBefore = ESP.getFreeHeap();
-  logger.debug(F("MailManager"), F("Freier Speicher vor E-Mail: ") + String(freeHeapBefore) + F(" Bytes"));
+  logger.debug(F("MailManager"),
+               F("Freier Speicher vor E-Mail: ") + String(freeHeapBefore) + F(" Bytes"));
 
   // Require at least 12KB free heap for SSL operations (increased from 8KB)
   if (freeHeapBefore < SMTP_MIN_FREE_HEAP_FOR_TEST) {
     logger.error(F("MailManager"), F("Nicht genug Speicher für E-Mail"));
-    return ResourceResult::fail(ResourceError::INSUFFICIENT_MEMORY,
-                               F("Nicht genügend Speicher"));
+    return ResourceResult::fail(ResourceError::INSUFFICIENT_MEMORY, F("Nicht genügend Speicher"));
   }
 
   logger.info(F("MailManager"), F("Sende E-Mail"));
@@ -124,12 +123,13 @@ ResourceResult MailManager::sendMail(const String& subject, const String& messag
 
     // First attempt: WiFiClientSecure with insecure mode for STARTTLS
     BearSSL::WiFiClientSecure ssl_client;
-    ssl_client.setInsecure(); // Skip certificate validation
+    ssl_client.setInsecure();            // Skip certificate validation
     ssl_client.setBufferSizes(512, 512); // Smaller buffers for ESP8266
     ReadyMailSMTP::SMTPClient smtp_ssl(ssl_client);
 
-    ResourceResult result = performSMTPOperations(smtp_ssl, host, port, username, password,
-                                                 senderName, senderEmail, recipient, subject, message, true);
+    ResourceResult result =
+        performSMTPOperations(smtp_ssl, host, port, username, password, senderName, senderEmail,
+                              recipient, subject, message, true);
 
     if (result.isError()) {
       logger.warning(F("MailManager"), F("Port 587 fehlgeschlagen, teste Port 465"));
@@ -145,13 +145,12 @@ ResourceResult MailManager::sendMail(const String& subject, const String& messag
       ReadyMailSMTP::SMTPClient smtp_465(ssl_client_465);
 
       logger.debug(F("MailManager"), F("Versuche Port 465"));
-      return performSMTPOperations(smtp_465, host, port, username, password,
-                                  senderName, senderEmail, recipient, subject, message, true);
+      return performSMTPOperations(smtp_465, host, port, username, password, senderName,
+                                   senderEmail, recipient, subject, message, true);
     }
 
     return result;
   }
-
 
   // Handle other connection types
   if (usePlainConnection) {
@@ -160,18 +159,18 @@ ResourceResult MailManager::sendMail(const String& subject, const String& messag
     ReadyMailSMTP::SMTPClient smtp(client);
     logger.debug(F("MailManager"), F("Verwende plain Client"));
 
-    return performSMTPOperations(smtp, host, port, username, password,
-                                senderName, senderEmail, recipient, subject, message, false);
+    return performSMTPOperations(smtp, host, port, username, password, senderName, senderEmail,
+                                 recipient, subject, message, false);
   } else if (useDirectSSL) {
     // Use direct SSL client for port 465 (smtps)
     BearSSL::WiFiClientSecure ssl_client;
-    ssl_client.setInsecure(); // Skip certificate validation for ESP8266
+    ssl_client.setInsecure();            // Skip certificate validation for ESP8266
     ssl_client.setBufferSizes(512, 512); // Smaller buffers for stability
     ReadyMailSMTP::SMTPClient smtp(ssl_client);
     logger.debug(F("MailManager"), F("Verwende Direct SSL"));
 
-    return performSMTPOperations(smtp, host, port, username, password,
-                                senderName, senderEmail, recipient, subject, message, true);
+    return performSMTPOperations(smtp, host, port, username, password, senderName, senderEmail,
+                                 recipient, subject, message, true);
   } else {
     // Fallback for unexpected configuration
     logger.error(F("MailManager"), F("Unbekannte SMTP-Konfiguration"));
@@ -179,12 +178,10 @@ ResourceResult MailManager::sendMail(const String& subject, const String& messag
   }
 }
 
-ResourceResult MailManager::performSMTPOperations(ReadyMailSMTP::SMTPClient& smtp,
-                                                 const String& host, uint16_t port,
-                                                 const String& username, const String& password,
-                                                 const String& senderName, const String& senderEmail,
-                                                 const String& recipient, const String& subject,
-                                                 const String& message, bool useDirectSSL) {
+ResourceResult MailManager::performSMTPOperations(
+    ReadyMailSMTP::SMTPClient& smtp, const String& host, uint16_t port, const String& username,
+    const String& password, const String& senderName, const String& senderEmail,
+    const String& recipient, const String& subject, const String& message, bool useDirectSSL) {
 
   // Status callback for debugging - minimal logging to save memory
   auto statusCallback = [](ReadyMailSMTP::SMTPStatus status) {
@@ -222,7 +219,8 @@ ResourceResult MailManager::performSMTPOperations(ReadyMailSMTP::SMTPClient& smt
   if (!smtp.authenticate(username, password, readymail_auth_password, true)) {
     logger.error(F("MailManager"), F("SMTP Authentifizierung fehlgeschlagen"));
     smtp.stop();
-    return ResourceResult::fail(ResourceError::VALIDATION_ERROR, F("SMTP Authentifizierung fehlgeschlagen"));
+    return ResourceResult::fail(ResourceError::VALIDATION_ERROR,
+                                F("SMTP Authentifizierung fehlgeschlagen"));
   }
 
   if (!smtp.isAuthenticated()) {
@@ -234,7 +232,7 @@ ResourceResult MailManager::performSMTPOperations(ReadyMailSMTP::SMTPClient& smt
   logger.debug(F("MailManager"), F("SMTP Authentifizierung erfolgreich"));
 
   // Create message following ReadyMail v0.3.0+ pattern
-  ReadyMailSMTP::SMTPMessage &msg = smtp.getMessage();
+  ReadyMailSMTP::SMTPMessage& msg = smtp.getMessage();
 
   // Set headers using the new API pattern
   msg.headers.add(ReadyMailSMTP::rfc822_from, senderName + " <" + senderEmail + ">");
@@ -263,14 +261,15 @@ ResourceResult MailManager::performSMTPOperations(ReadyMailSMTP::SMTPClient& smt
     logger.error(F("MailManager"), F("E-Mail Fehler: ") + String(finalStatus.errorCode));
     smtp.stop();
     return ResourceResult::fail(ResourceError::OPERATION_FAILED,
-                               F("E-Mail Fehler: ") + String(finalStatus.errorCode));
+                                F("E-Mail Fehler: ") + String(finalStatus.errorCode));
   }
 
   smtp.stop();
 
   uint32_t freeHeapAfter = ESP.getFreeHeap();
   logger.info(F("MailManager"), F("E-Mail erfolgreich gesendet"));
-  logger.debug(F("MailManager"), F("Freier Speicher nach E-Mail: ") + String(freeHeapAfter) + F(" Bytes"));
+  logger.debug(F("MailManager"),
+               F("Freier Speicher nach E-Mail: ") + String(freeHeapAfter) + F(" Bytes"));
 
   yield();
   return ResourceResult::success();

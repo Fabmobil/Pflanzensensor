@@ -17,8 +17,8 @@
  * @brief Configuration structure for DHT sensor
  */
 struct DHTConfig : public SensorConfig {
-  uint8_t pin;   ///< Digital pin for DHT sensor
-  uint8_t type;  ///< DHT sensor type (DHT11, DHT22, etc.)
+  uint8_t pin;  ///< Digital pin for DHT sensor
+  uint8_t type; ///< DHT sensor type (DHT11, DHT22, etc.)
 
   /**
    * @brief Default constructor for DHTConfig
@@ -27,7 +27,7 @@ struct DHTConfig : public SensorConfig {
    */
   DHTConfig() : pin(DHT_PIN), type(0) {
     name = F("DHT");
-    id = F("DHT");  // Unified ID
+    id = F("DHT"); // Unified ID
     activeMeasurements = 2;
     if (measurementInterval == 0)
       measurementInterval = DHT_MEASUREMENT_INTERVAL * 1000;
@@ -42,13 +42,12 @@ struct DHTConfig : public SensorConfig {
  * temperature and humidity measurements with validation and error handling.
  */
 class DHTSensor : public Sensor {
- public:
+public:
   /**
    * @brief Constructor
    * @param config Sensor configuration
    */
-  explicit DHTSensor(const DHTConfig& config,
-                     class SensorManager* sensorManager);
+  explicit DHTSensor(const DHTConfig& config, class SensorManager* sensorManager);
 
   /**
    * @brief Destructor
@@ -130,30 +129,30 @@ class DHTSensor : public Sensor {
    */
   void logDebugDetails() const override;
 
- protected:
+protected:
   /**
    * @brief Returns the number of measurements for DHTSensor (2: temperature and
    * humidity)
    */
   size_t getNumMeasurements() const override { return 2; }
 
- private:
+private:
   // DHTConfig m_config;  ///< DHT-specific configuration - removed, using
   // manager's config instead DHTesp m_dhtesp; ///< DHTesp sensor instance
-  uint8_t m_pin;   ///< GPIO pin number
-  uint8_t m_type;  ///< DHT sensor type (DHT11, DHT22)
+  uint8_t m_pin;  ///< GPIO pin number
+  uint8_t m_type; ///< DHT sensor type (DHT11, DHT22)
 
   // Measurement state
   struct MeasurementState {
-    bool readInProgress{false};           ///< Whether a read is in progress
-    unsigned long operationStartTime{0};  ///< When the operation started
-    bool readingTemperature{true};        ///< Whether reading temperature
-    unsigned long lastHardwareAccess{0};  ///< Last hardware access time
+    bool readInProgress{false};          ///< Whether a read is in progress
+    unsigned long operationStartTime{0}; ///< When the operation started
+    bool readingTemperature{true};       ///< Whether reading temperature
+    unsigned long lastHardwareAccess{0}; ///< Last hardware access time
   } m_state;
 
-  static constexpr uint8_t REQUIRED_SAMPLES = 3;  ///< Number of samples to take
+  static constexpr uint8_t REQUIRED_SAMPLES = 3; ///< Number of samples to take
   static constexpr unsigned long HARDWARE_ACCESS_DELAY_MS =
-      1000;  ///< Delay between hardware accesses (reduced from 2000ms)
+      1000; ///< Delay between hardware accesses (reduced from 2000ms)
 
   /**
    * @brief Validates temperature reading
@@ -180,4 +179,4 @@ class DHTSensor : public Sensor {
   bool canAccessHardware() const;
 };
 
-#endif  // SENSOR_DHT_H
+#endif // SENSOR_DHT_H

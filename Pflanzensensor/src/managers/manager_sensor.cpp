@@ -13,8 +13,7 @@ std::unique_ptr<SensorManager> sensorManager;
 
 void SensorManager::applySensorSettingsFromConfig() {
   if (ConfigMgr.isDebugSensor()) {
-  logger.debug(F("SensorM"),
-         F("Wende Sensoreinstellungen aus der Konfiguration an"));
+    logger.debug(F("SensorM"), F("Wende Sensoreinstellungen aus der Konfiguration an"));
   }
 
   logger.info(F("SensorM"), F("Sensoreinstellungen aus der Konfiguration werden angewendet"));
@@ -22,14 +21,13 @@ void SensorManager::applySensorSettingsFromConfig() {
   // Load sensor configuration from file
   auto result = SensorPersistence::loadFromFile();
   if (!result.isSuccess()) {
-  logger.warning(F("SensorM"),
-           F("Sensor-Konfiguration konnte nicht geladen werden: ") + result.getMessage());
+    logger.warning(F("SensorM"),
+                   F("Sensor-Konfiguration konnte nicht geladen werden: ") + result.getMessage());
     return;
   }
 
   if (ConfigMgr.isDebugSensor()) {
-  logger.debug(F("SensorM"),
-         F("Sensor-Konfiguration erfolgreich aus Datei geladen"));
+    logger.debug(F("SensorM"), F("Sensor-Konfiguration erfolgreich aus Datei geladen"));
   }
 
   logger.info(F("SensorM"), F("Sensoreinstellungen erfolgreich angewendet"));

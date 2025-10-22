@@ -42,33 +42,23 @@ enum class MeasurementState {
  * of the measurement state machine.
  */
 struct MeasurementStateInfo {
-  MeasurementState state{
-      MeasurementState::WAITING_FOR_DUE}; /**< Current state of the measurement
+  MeasurementState state{MeasurementState::WAITING_FOR_DUE}; /**< Current state of the measurement
                                              cycle */
-  unsigned long stateStartTime{
-      0}; /**< Timestamp when the current state started (milliseconds) */
-  unsigned long lastAttemptTime{
-      0}; /**< Timestamp of the last slot attempt (milliseconds) */
-  uint8_t errorCount{0}; /**< Number of consecutive errors encountered */
-  bool needsInitialization{
-      true}; /**< Flag indicating if sensor initialization is needed */
-  bool needsWarmup{
-      false}; /**< Flag indicating if sensor warmup period is needed */
-  bool measurementStarted{
-      false}; /**< Flag indicating if measurement process has started */
-  unsigned long warmupTimeNeeded{
-      0};                           /**< Required warmup time in milliseconds */
-  unsigned long warmupStartTime{0}; /**< Timestamp when warmup period started */
+  unsigned long stateStartTime{0};   /**< Timestamp when the current state started (milliseconds) */
+  unsigned long lastAttemptTime{0};  /**< Timestamp of the last slot attempt (milliseconds) */
+  uint8_t errorCount{0};             /**< Number of consecutive errors encountered */
+  bool needsInitialization{true};    /**< Flag indicating if sensor initialization is needed */
+  bool needsWarmup{false};           /**< Flag indicating if sensor warmup period is needed */
+  bool measurementStarted{false};    /**< Flag indicating if measurement process has started */
+  unsigned long warmupTimeNeeded{0}; /**< Required warmup time in milliseconds */
+  unsigned long warmupStartTime{0};  /**< Timestamp when warmup period started */
 
   // Timing information
-  unsigned long lastMeasurementTime{
-      0}; /**< Timestamp of the last successful measurement */
-  unsigned long nextDueTime{
-      0}; /**< Timestamp when the next measurement should start */
+  unsigned long lastMeasurementTime{0}; /**< Timestamp of the last successful measurement */
+  unsigned long nextDueTime{0};         /**< Timestamp when the next measurement should start */
   unsigned long minimumDelayEndTime{
       0}; /**< Timestamp when the minimum delay between operations ends */
-  unsigned long measurementInterval{
-      0}; /**< Interval between measurements in milliseconds */
+  unsigned long measurementInterval{0}; /**< Interval between measurements in milliseconds */
 
   // Error tracking
   String lastError;               /**< Description of the most recent error */
@@ -85,8 +75,8 @@ struct MeasurementStateInfo {
   void setState(MeasurementState newState, const String& sensorName = "") {
     if (state != newState) {
       if (ConfigMgr.isDebugMeasurementCycle()) {
-        String transition = sensorName + F(": State ") + stateToString(state) +
-                            F(" -> ") + stateToString(newState);
+        String transition =
+            sensorName + F(": State ") + stateToString(state) + F(" -> ") + stateToString(newState);
         logger.debug(F("MeasurementState"), transition);
       }
       state = newState;
@@ -125,9 +115,7 @@ struct MeasurementStateInfo {
    * @param delay The minimum delay in milliseconds
    * @details Calculates and stores the timestamp when the delay period will end
    */
-  void setMinimumDelay(unsigned long delay) {
-    minimumDelayEndTime = millis() + delay;
-  }
+  void setMinimumDelay(unsigned long delay) { minimumDelayEndTime = millis() + delay; }
 
   /**
    * @brief Checks if the minimum delay has elapsed
@@ -179,30 +167,30 @@ struct MeasurementStateInfo {
    */
   static String stateToString(MeasurementState state) {
     switch (state) {
-      case MeasurementState::WAITING_FOR_DUE:
-        return "WAITING_FOR_DUE";
-      case MeasurementState::WAITING_FOR_SLOT:
-        return "WAITING_FOR_SLOT";
-      case MeasurementState::WAITING_FOR_DELAY:
-        return "WAITING_FOR_DELAY";
-      case MeasurementState::INITIALIZING:
-        return "INITIALIZING";
-      case MeasurementState::WARMUP:
-        return "WARMUP";
-      case MeasurementState::MEASURING:
-        return "MEASURING";
-      case MeasurementState::PROCESSING:
-        return "PROCESSING";
-      case MeasurementState::SENDING_INFLUX:
-        return "SENDING_INFLUX";
-      case MeasurementState::DEINITIALIZING:
-        return "DEINITIALIZING";
-      case MeasurementState::ERROR:
-        return "ERROR";
-      default:
-        return "UNKNOWN";
+    case MeasurementState::WAITING_FOR_DUE:
+      return "WAITING_FOR_DUE";
+    case MeasurementState::WAITING_FOR_SLOT:
+      return "WAITING_FOR_SLOT";
+    case MeasurementState::WAITING_FOR_DELAY:
+      return "WAITING_FOR_DELAY";
+    case MeasurementState::INITIALIZING:
+      return "INITIALIZING";
+    case MeasurementState::WARMUP:
+      return "WARMUP";
+    case MeasurementState::MEASURING:
+      return "MEASURING";
+    case MeasurementState::PROCESSING:
+      return "PROCESSING";
+    case MeasurementState::SENDING_INFLUX:
+      return "SENDING_INFLUX";
+    case MeasurementState::DEINITIALIZING:
+      return "DEINITIALIZING";
+    case MeasurementState::ERROR:
+      return "ERROR";
+    default:
+      return "UNKNOWN";
     }
   }
 };
 
-#endif  // SENSOR_MEASUREMENT_STATE_H
+#endif // SENSOR_MEASUREMENT_STATE_H

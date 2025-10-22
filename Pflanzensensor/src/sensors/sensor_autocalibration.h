@@ -24,15 +24,14 @@ typedef struct AutoCal {
   // fractional adjustments.
   float min_value_f{0.0f};
   float max_value_f{1023.0f};
-  uint32_t last_update_time{0};  // minutes since start
+  uint32_t last_update_time{0}; // minutes since start
 } AutoCal;
 
 /**
  * Initialize an AutoCal block with an initial reading and timestamp.
  * Sets min/max := initial_reading and last_update_time := current_time
  */
-void AutoCal_init(AutoCal& cal, float initial_reading,
-                  uint32_t current_time_minutes);
+void AutoCal_init(AutoCal& cal, float initial_reading, uint32_t current_time_minutes);
 
 /**
  * Update AutoCal with a new raw reading. Uses an Exponential Moving
@@ -43,8 +42,7 @@ void AutoCal_init(AutoCal& cal, float initial_reading,
  * - alpha should be small (e.g. 0.0001f) for very slow adaptation.
  * - last_update_time will be set to current_time_minutes on every call.
  */
-bool AutoCal_update(AutoCal& cal, uint16_t new_reading,
-                    uint32_t current_time_minutes,
+bool AutoCal_update(AutoCal& cal, uint16_t new_reading, uint32_t current_time_minutes,
                     float alpha = 0.0001f);
 
 /**
@@ -59,4 +57,4 @@ bool AutoCal_from_json(const JsonObject& obj, AutoCal& cal);
  */
 void AutoCal_to_json(const AutoCal& cal, JsonObject& obj);
 
-#endif  // SENSOR_AUTOCALIBRATION_H
+#endif // SENSOR_AUTOCALIBRATION_H

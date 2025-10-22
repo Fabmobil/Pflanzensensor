@@ -18,7 +18,7 @@
  *          All methods are constexpr to ensure compile-time evaluation.
  */
 class SensorCounter {
- public:
+public:
   /**
    * @brief Calculate total number of enabled sensors
    * @return Total count of enabled sensors across all types
@@ -30,8 +30,7 @@ class SensorCounter {
    *          - Analog: Count from configuration
    */
   static constexpr size_t getEnabledSensorCount() {
-    size_t count =
-        (USE_DHT ? 1 : 0);
+    size_t count = (USE_DHT ? 1 : 0);
 #if USE_ANALOG
     count += ANALOG_SENSOR_COUNT;
 #endif
@@ -46,7 +45,6 @@ class SensorCounter {
    *          - Humidity
    */
   static constexpr size_t getDHTMeasurementCount() { return USE_DHT ? 2 : 0; }
-
 
   /**
    * @brief Calculate total number of measurements across all sensors
@@ -73,9 +71,7 @@ class SensorCounter {
    *          that produce multiple values. This is used for memory allocation
    *          in measurement storage systems.
    */
-  static constexpr size_t getMaxCollectedMeasurements() {
-    return getTotalMeasurementCount();
-  }
+  static constexpr size_t getMaxCollectedMeasurements() { return getTotalMeasurementCount(); }
 
   /**
    * @brief Get maximum number of simultaneous measurements possible
@@ -84,9 +80,7 @@ class SensorCounter {
    *          the maximum number of simultaneous measurement operations that
    *          could occur. Used for resource allocation in measurement systems.
    */
-  static constexpr size_t getMaxSimultaneousMeasurements() {
-    return getEnabledSensorCount();
-  }
+  static constexpr size_t getMaxSimultaneousMeasurements() { return getEnabledSensorCount(); }
 };
 
-#endif  // SENSOR_COUNT_H
+#endif // SENSOR_COUNT_H

@@ -12,11 +12,11 @@
 #endif
 
 // Memory thresholds
-constexpr uint32_t LOW_MEMORY_THRESHOLD = 4096;  // 4KB
+constexpr uint32_t LOW_MEMORY_THRESHOLD = 4096; // 4KB
 #if USE_WEBSOCKET
-constexpr uint32_t WEBSOCKET_MEMORY_THRESHOLD = 8192;  // 8KB
+constexpr uint32_t WEBSOCKET_MEMORY_THRESHOLD = 8192; // 8KB
 #endif
-constexpr uint32_t HANDLER_MEMORY_THRESHOLD = 6144;  // 6KB
+constexpr uint32_t HANDLER_MEMORY_THRESHOLD = 6144; // 6KB
 
 // Static members
 char WebManager::s_responseBuffer[WebManager::BUFFER_SIZE];
@@ -41,7 +41,8 @@ WebManager::WebManager()
 WebManager::~WebManager() { stop(); }
 
 void WebManager::handleClient() {
-  if (!_initialized || !_server) return;
+  if (!_initialized || !_server)
+    return;
 
   // In minimal mode, only handle basic web requests
   if (ConfigMgr.getDoFirmwareUpgrade()) {
@@ -58,8 +59,8 @@ void WebManager::handleClientInternal() {
   const unsigned long currentTime = millis();
 
   // Initialize remaining handlers if not done yet
-  if (!m_handlersInitialized && currentTime > 10000) {  // Wait 10s after boot
-    if (ESP.getFreeHeap() > 8192) {                     // Only if enough memory
+  if (!m_handlersInitialized && currentTime > 10000) { // Wait 10s after boot
+    if (ESP.getFreeHeap() > 8192) {                    // Only if enough memory
       initializeRemainingHandlers();
     }
   }
@@ -71,15 +72,13 @@ void WebManager::handleClientInternal() {
 
     // Only log if handler count has changed
     if (currentHandlerCount != lastHandlerCount) {
-      logger.debug(F("WebManager"), F("Active handlers: ") +
-                                        String(currentHandlerCount) + F("/") +
+      logger.debug(F("WebManager"), F("Active handlers: ") + String(currentHandlerCount) + F("/") +
                                         String(MAX_ACTIVE_HANDLERS));
       lastHandlerCount = currentHandlerCount;
     }
 
     if (freeHeap < 4096) {
-      logger.warning(F("WebManager"),
-                     "Low memory in web handler: " + String(freeHeap));
+      logger.warning(F("WebManager"), "Low memory in web handler: " + String(freeHeap));
       cleanupNonEssentialHandlers();
       delay(100);
       return;
@@ -208,7 +207,6 @@ void WebManager::cleanup() {
 ResourceResult WebManager::setFirmwareUpgradeFlag(bool enabled) {
   // Implementation would depend on your config system
   // This is a placeholder
-  logger.info(F("WebManager"),
-              "Setting firmware upgrade flag to: " + String(enabled));
+  logger.info(F("WebManager"), "Setting firmware upgrade flag to: " + String(enabled));
   return ResourceResult::success();
 }

@@ -34,7 +34,7 @@
  *          - Error handling
  */
 class BaseHandler {
- public:
+public:
   /**
    * @brief Constructor
    * @param server Reference to web server instance
@@ -85,8 +85,7 @@ class BaseHandler {
    * @return Handler result indicating success or failure
    * @details Pure virtual function for GET request processing
    */
-  virtual HandlerResult handleGet(const String& uri,
-                                  const std::map<String, String>& query) = 0;
+  virtual HandlerResult handleGet(const String& uri, const std::map<String, String>& query) = 0;
 
   /**
    * @brief Handle POST requests
@@ -95,8 +94,7 @@ class BaseHandler {
    * @return Handler result indicating success or failure
    * @details Pure virtual function for POST request processing
    */
-  virtual HandlerResult handlePost(const String& uri,
-                                   const std::map<String, String>& params) = 0;
+  virtual HandlerResult handlePost(const String& uri, const std::map<String, String>& params) = 0;
 
   /**
    * @brief Register routes with router
@@ -107,9 +105,7 @@ class BaseHandler {
    *
    * @note Derived classes should override onRegisterRoutes for custom logic.
    */
-  virtual RouterResult registerRoutes(WebRouter& router) final {
-    return onRegisterRoutes(router);
-  }
+  virtual RouterResult registerRoutes(WebRouter& router) final { return onRegisterRoutes(router); }
 
   /**
    * @brief Hook for derived classes to register routes.
@@ -120,9 +116,9 @@ class BaseHandler {
    */
   virtual RouterResult onRegisterRoutes(WebRouter& router) = 0;
 
- protected:
-  ESP8266WebServer& _server;  ///< Protected server reference
-  bool _cleaned = false;  ///< Flag indicating if handler has been cleaned up
+protected:
+  ESP8266WebServer& _server; ///< Protected server reference
+  bool _cleaned = false;     ///< Flag indicating if handler has been cleaned up
 
   /**
    * @brief Render page with standard layout (DEPRECATED)
@@ -139,11 +135,9 @@ class BaseHandler {
    *          - Footer with version
    *          - Required scripts
    */
-  void renderPage(
-      const String& title, const String& activeNav,
-      std::function<void()> content,
-      const std::vector<String>& additionalCss = std::vector<String>(),
-      const std::vector<String>& additionalScripts = std::vector<String>()) {
+  void renderPage(const String& title, const String& activeNav, std::function<void()> content,
+                  const std::vector<String>& additionalCss = std::vector<String>(),
+                  const std::vector<String>& additionalScripts = std::vector<String>()) {
     if (!Component::beginResponse(_server, title, additionalCss)) {
       return;
     }
@@ -169,12 +163,11 @@ class BaseHandler {
    * @param additionalScripts Additional JavaScript files to include
    * @param statusClass Status class for background (status-green, status-red, etc.)
    */
-  void renderStartPage(
-      const String& title, const String& activeSection,
-      std::function<void()> content,
-      const std::vector<String>& additionalCss = std::vector<String>(),
-      const std::vector<String>& additionalScripts = std::vector<String>(),
-      const String& statusClass = "status-unknown") {
+  void renderStartPage(const String& title, const String& activeSection,
+                       std::function<void()> content,
+                       const std::vector<String>& additionalCss = std::vector<String>(),
+                       const std::vector<String>& additionalScripts = std::vector<String>(),
+                       const String& statusClass = "status-unknown") {
 
     // Ensure start.css is included
     std::vector<String> css = {"start"};
@@ -203,11 +196,10 @@ class BaseHandler {
    * @param additionalCss Additional CSS files to include
    * @param additionalScripts Additional JavaScript files to include
    */
-  void renderAdminPage(
-      const String& title, const String& activeSection,
-      std::function<void()> content,
-      const std::vector<String>& additionalCss = std::vector<String>(),
-      const std::vector<String>& additionalScripts = std::vector<String>()) {
+  void renderAdminPage(const String& title, const String& activeSection,
+                       std::function<void()> content,
+                       const std::vector<String>& additionalCss = std::vector<String>(),
+                       const std::vector<String>& additionalScripts = std::vector<String>()) {
 
     // Ensure start.css and admin.css are included
     std::vector<String> css = {"start", "admin"};
@@ -234,13 +226,12 @@ class BaseHandler {
    * @brief DEPRECATED: Render a complete page with pixelated design
    * @deprecated Use renderStartPage() for start page or renderAdminPage() for admin/logs
    */
-  void renderPixelatedPage(
-      const String& title, const String& activeSection,
-      std::function<void()> content,
-      const std::vector<String>& additionalCss = std::vector<String>(),
-      const std::vector<String>& additionalScripts = std::vector<String>(),
-      const String& statusClass = "status-unknown",
-      bool showContentBox = true) {
+  void renderPixelatedPage(const String& title, const String& activeSection,
+                           std::function<void()> content,
+                           const std::vector<String>& additionalCss = std::vector<String>(),
+                           const std::vector<String>& additionalScripts = std::vector<String>(),
+                           const String& statusClass = "status-unknown",
+                           bool showContentBox = true) {
 
     // Ensure start.css is included
     std::vector<String> css = {"start"};
@@ -284,9 +275,7 @@ class BaseHandler {
    * @param html HTML content
    * @details Sends HTML response with appropriate headers
    */
-  void sendHtmlResponse(int code, const String& html) {
-    _server.send(code, F("text/html"), html);
-  }
+  void sendHtmlResponse(int code, const String& html) { _server.send(code, F("text/html"), html); }
 
   /**
    * @brief Send redirect response
@@ -307,7 +296,8 @@ class BaseHandler {
     // Determine if caller expects JSON
     String xhr = _server.header("X-Requested-With");
     String accept = _server.header("Accept");
-    bool wantsJson = (xhr == "XMLHttpRequest") || (accept.indexOf("application/json") >= 0) || isAjaxRequest();
+    bool wantsJson =
+        (xhr == "XMLHttpRequest") || (accept.indexOf("application/json") >= 0) || isAjaxRequest();
 
     if (wantsJson) {
       String escaped = escapeJson(message);
@@ -325,7 +315,8 @@ class BaseHandler {
       String html;
       html.reserve(128 + message.length());
       html += "<html><head><meta charset='utf-8'><title>Fehler</title></head><body>";
-      html += "<div style='max-width:760px;margin:40px auto;font-family:Arial,Helvetica,sans-serif;'>";
+      html +=
+          "<div style='max-width:760px;margin:40px auto;font-family:Arial,Helvetica,sans-serif;'>";
       html += "<h2>Fehler</h2><p>";
       html += message;
       html += "</p>";
@@ -340,7 +331,8 @@ class BaseHandler {
    */
   bool isAjaxRequest() {
     String xhr = _server.header("X-Requested-With");
-    bool hasAjaxParam = _server.hasArg("ajax") && (_server.arg("ajax") == "1" || _server.arg("ajax") == "true");
+    bool hasAjaxParam =
+        _server.hasArg("ajax") && (_server.arg("ajax") == "1" || _server.arg("ajax") == "true");
     return (xhr == "XMLHttpRequest") || hasAjaxParam;
   }
 
@@ -351,7 +343,8 @@ class BaseHandler {
   bool requireAjaxRequest() {
     if (!isAjaxRequest()) {
       logger.warning(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
-      sendJsonResponse(400, F("{\"success\":false,\"error\":\"Nur AJAX-Updates werden unterstützt. Bitte die Admin-Oberfläche verwenden.\"}"));
+      sendJsonResponse(400, F("{\"success\":false,\"error\":\"Nur AJAX-Updates werden unterstützt. "
+                              "Bitte die Admin-Oberfläche verwenden.\"}"));
       return false;
     }
     return true;
@@ -364,7 +357,8 @@ class BaseHandler {
    */
   bool ensureAjaxAndSetError(String* outError) {
     if (!isAjaxRequest()) {
-      if (outError) *outError = F("Nur AJAX-Updates werden unterstützt. Bitte die Admin-Oberfläche verwenden.");
+      if (outError)
+        *outError = F("Nur AJAX-Updates werden unterstützt. Bitte die Admin-Oberfläche verwenden.");
       logger.warning(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
       return false;
     }
@@ -378,12 +372,24 @@ class BaseHandler {
     for (size_t i = 0; i < in.length(); ++i) {
       char c = in.charAt(i);
       switch (c) {
-        case '"': out += "\\\""; break; // \"
-        case '\\': out += "\\\\"; break; // \\\\ -> \\\\ in string
-        case '\n': out += "\\n"; break;
-        case '\r': out += "\\r"; break;
-        case '\t': out += "\\t"; break;
-        default: out += c; break;
+      case '"':
+        out += "\\\"";
+        break; // \"
+      case '\\':
+        out += "\\\\";
+        break; // \\\\ -> \\\\ in string
+      case '\n':
+        out += "\\n";
+        break;
+      case '\r':
+        out += "\\r";
+        break;
+      case '\t':
+        out += "\\t";
+        break;
+      default:
+        out += c;
+        break;
       }
     }
     return out;

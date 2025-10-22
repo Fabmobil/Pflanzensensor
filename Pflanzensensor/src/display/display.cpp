@@ -5,13 +5,14 @@
 // #include <qrcodegen.h>  // QR code generation (commented out)
 
 #include "configs/config.h"
-#include "display_qrcode.h"  // microqrcode
+#include "display_qrcode.h" // microqrcode
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "utils/critical_section.h"
 
 DisplayResult SSD1306Display::begin() {
-  if (m_initialized) return DisplayResult::success();
+  if (m_initialized)
+    return DisplayResult::success();
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!m_display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS)) {
@@ -30,8 +31,7 @@ DisplayResult SSD1306Display::begin() {
 DisplayResult SSD1306Display::clear() {
 #if USE_DISPLAY
   if (!m_initialized) {
-  return DisplayResult::fail(DisplayError::INVALID_STATE,
-                 F("Display nicht initialisiert"));
+    return DisplayResult::fail(DisplayError::INVALID_STATE, F("Display nicht initialisiert"));
   }
 
   m_display.clearDisplay();
@@ -51,7 +51,7 @@ String SSD1306Display::convertSpecialChars(const String& text) {
   result.replace("Ö", "Oe");
   result.replace("Ü", "Ue");
   result.replace("ß", "ss");
-  result.replace("°", "*");  // Replace degree symbol with asterisk
+  result.replace("°", "*"); // Replace degree symbol with asterisk
 
   return result;
 }
@@ -59,8 +59,7 @@ String SSD1306Display::convertSpecialChars(const String& text) {
 DisplayResult SSD1306Display::showText(const String& text) {
 #if USE_DISPLAY
   if (!m_initialized) {
-    return DisplayResult::fail(DisplayError::INVALID_STATE,
-                               F("Display not initialized"));
+    return DisplayResult::fail(DisplayError::INVALID_STATE, F("Display not initialized"));
   }
 
   String displayText = convertSpecialChars(text);
@@ -78,23 +77,22 @@ DisplayResult SSD1306Display::showText(const String& text) {
 DisplayResult SSD1306Display::showImage(const String& imagePath) {
 #if USE_DISPLAY
   if (!m_initialized) {
-    return DisplayResult::fail(DisplayError::INVALID_STATE,
-                               F("Display not initialized"));
+    return DisplayResult::fail(DisplayError::INVALID_STATE, F("Display not initialized"));
   }
 
   {
     CriticalSection cs;
     if (!LittleFS.exists(imagePath)) {
-  logger.error(F("Display"), String(F("Bilddatei nicht gefunden: ")) + imagePath);
-  return DisplayResult::fail(DisplayError::FILE_ERROR,
-             String(F("Bilddatei nicht gefunden: ")) + imagePath);
+      logger.error(F("Display"), String(F("Bilddatei nicht gefunden: ")) + imagePath);
+      return DisplayResult::fail(DisplayError::FILE_ERROR,
+                                 String(F("Bilddatei nicht gefunden: ")) + imagePath);
     }
 
     File imageFile = LittleFS.open(imagePath, "r");
     if (!imageFile) {
-  logger.error(F("Display"), String(F("Öffnen der Bilddatei fehlgeschlagen: ")) + imagePath);
-  return DisplayResult::fail(DisplayError::FILE_ERROR,
-             String(F("Öffnen der Bilddatei fehlgeschlagen: ")) + imagePath);
+      logger.error(F("Display"), String(F("Öffnen der Bilddatei fehlgeschlagen: ")) + imagePath);
+      return DisplayResult::fail(DisplayError::FILE_ERROR,
+                                 String(F("Öffnen der Bilddatei fehlgeschlagen: ")) + imagePath);
     }
 
     m_display.clearDisplay();
@@ -110,26 +108,23 @@ DisplayResult SSD1306Display::showImage(const String& imagePath) {
 DisplayResult SSD1306Display::showBitmap(const unsigned char* bitmap) {
 #if USE_DISPLAY
   if (!m_initialized) {
-    return DisplayResult::fail(DisplayError::INVALID_STATE,
-                               F("Display not initialized"));
+    return DisplayResult::fail(DisplayError::INVALID_STATE, F("Display not initialized"));
   }
 
   m_display.clearDisplay();
-  m_display.drawBitmap(0, 0, bitmap, DISPLAY_WIDTH, DISPLAY_HEIGHT,
-                       SSD1306_WHITE);
+  m_display.drawBitmap(0, 0, bitmap, DISPLAY_WIDTH, DISPLAY_HEIGHT, SSD1306_WHITE);
   m_display.display();
   return DisplayResult::success();
 #endif
   return DisplayResult::success();
 }
 
-DisplayResult SSD1306Display::showMeasurementValue(
-    const String& measurementName, float measurementValue,
-    const String& measurementUnit) {
+DisplayResult SSD1306Display::showMeasurementValue(const String& measurementName,
+                                                   float measurementValue,
+                                                   const String& measurementUnit) {
 #if USE_DISPLAY
   if (!m_initialized) {
-    return DisplayResult::fail(DisplayError::INVALID_STATE,
-                               F("Display not initialized"));
+    return DisplayResult::fail(DisplayError::INVALID_STATE, F("Display not initialized"));
   }
 
   String displayName = convertSpecialChars(measurementName);
@@ -142,8 +137,8 @@ DisplayResult SSD1306Display::showMeasurementValue(
 
   // Prepare value + unit string (assume unit is always 2 chars)
   char valueStr[10];
-  dtostrf(measurementValue, 4, 1, valueStr);                    // e.g. " 4.4"
-  String valueWithUnit = String(valueStr) + " " + displayUnit;  // e.g. "4.4 %"
+  dtostrf(measurementValue, 4, 1, valueStr);                   // e.g. " 4.4"
+  String valueWithUnit = String(valueStr) + " " + displayUnit; // e.g. "4.4 %"
 
   // Set text size and color for value+unit
 
@@ -154,21 +149,22 @@ DisplayResult SSD1306Display::showMeasurementValue(
   m_display.setTextSize(1);
   m_display.getTextBounds(displayName, 0, 0, &x1, &y1, &w, &h);
   int nameX = (DISPLAY_WIDTH - w) / 2;
-  if (nameX < 0) nameX = 0;
+  if (nameX < 0)
+    nameX = 0;
   m_display.setCursor(nameX, 14);
   m_display.print(displayName);
 
   // Center the value+unit string
   m_display.getTextBounds(valueWithUnit, 0, 0, &x1, &y1, &w, &h);
   int valueX = (DISPLAY_WIDTH - w) / 2;
-  if (valueX < 0) valueX = 0;
+  if (valueX < 0)
+    valueX = 0;
   m_display.setTextSize(2);
   m_display.setCursor(valueX, 36);
   m_display.print(valueWithUnit);
 
   // Draw a horizontal line at the bottom
-  m_display.drawLine(0, DISPLAY_HEIGHT - 1, DISPLAY_WIDTH - 1,
-                     DISPLAY_HEIGHT - 1, SSD1306_WHITE);
+  m_display.drawLine(0, DISPLAY_HEIGHT - 1, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1, SSD1306_WHITE);
 
   m_display.display();
 #endif
@@ -192,8 +188,7 @@ void SSD1306Display::drawCenteredText(const String& text, int y) {
 DisplayResult SSD1306Display::showQrCode2x(const String& text) {
 #if USE_DISPLAY
   if (!m_initialized) {
-    return DisplayResult::fail(DisplayError::INVALID_STATE,
-                               F("Display not initialized"));
+    return DisplayResult::fail(DisplayError::INVALID_STATE, F("Display not initialized"));
   }
   m_display.clearDisplay();
   // Try version 2 first, then version 3
@@ -219,8 +214,7 @@ DisplayResult SSD1306Display::showQrCode2x(const String& text) {
   m_display.setCursor(0, 0);
   m_display.println(F("QR ERR"));
   m_display.display();
-  return DisplayResult::fail(DisplayError::INVALID_CONFIG,
-                             F("QR-Code Generierung fehlgeschlagen"));
+  return DisplayResult::fail(DisplayError::INVALID_CONFIG, F("QR-Code Generierung fehlgeschlagen"));
 #else
   return DisplayResult::success();
 #endif
@@ -234,13 +228,12 @@ void SSD1306Display::drawQrCode2x(const QRCode& qrcode) {
 #if USE_DISPLAY
   int scale = 2;
   int size = qrcode.size;
-  int qrX = 128 - size * scale;  // right-aligned
-  int qrY = 0;                   // top
+  int qrX = 128 - size * scale; // right-aligned
+  int qrY = 0;                  // top
   for (int y = 0; y < size; ++y) {
     for (int x = 0; x < size; ++x) {
       if (qrcode_getModule((QRCode*)&qrcode, x, y)) {
-        m_display.fillRect(qrX + x * scale, qrY + y * scale, scale, scale,
-                           SSD1306_WHITE);
+        m_display.fillRect(qrX + x * scale, qrY + y * scale, scale, scale, SSD1306_WHITE);
       }
     }
   }
@@ -254,18 +247,19 @@ String SSD1306Display::truncateToFit(const String& text, int maxWidth) {
   uint16_t w, h;
   while (out.length() > 0) {
     m_display.getTextBounds(out, 0, 0, &x1, &y1, &w, &h);
-    if (w <= maxWidth) break;
+    if (w <= maxWidth)
+      break;
     out.remove(out.length() - 1);
   }
-  if (out != text) out += F("~");
+  if (out != text)
+    out += F("~");
   return out;
 }
 
 DisplayResult SSD1306Display::showInfoScreen(const String& ipAddress) {
 #if USE_DISPLAY
   if (!m_initialized) {
-    return DisplayResult::fail(DisplayError::INVALID_STATE,
-                               F("Display not initialized"));
+    return DisplayResult::fail(DisplayError::INVALID_STATE, F("Display not initialized"));
   }
 
   m_display.clearDisplay();
@@ -279,7 +273,8 @@ DisplayResult SSD1306Display::showInfoScreen(const String& ipAddress) {
   // Prepare info
   String name = ConfigMgr.getDeviceName();
   String ip = ipAddress;
-  if (ip.startsWith(F("http://"))) ip = ip.substring(7);
+  if (ip.startsWith(F("http://")))
+    ip = ip.substring(7);
   String versionStr = "v" VERSION;
   String ssid = WiFi.SSID();
 
@@ -290,14 +285,14 @@ DisplayResult SSD1306Display::showInfoScreen(const String& ipAddress) {
 
   // Update cached QR code if needed
   bool qrValid = updateQrCodeIfNeeded(url);
-  logger.debug(F("DisplayM"), F("QR input: ") + url + F(" (len=") +
-                                  String(url.length()) + F(")"));
+  logger.debug(F("DisplayM"), F("QR input: ") + url + F(" (len=") + String(url.length()) + F(")"));
 
   // Layout
   int qrScale = 2;
   int qrSize = (qrValid) ? (m_cachedQrcode.size * qrScale) : 0;
-  int textBlockWidth = 128 - qrSize - 4;         // 4px margin
-  if (textBlockWidth < 40) textBlockWidth = 40;  // minimum for text
+  int textBlockWidth = 128 - qrSize - 4; // 4px margin
+  if (textBlockWidth < 40)
+    textBlockWidth = 40; // minimum for text
   int yOffset = 8;
 
   // Draw stacked text block (left side), truncating if needed
@@ -317,8 +312,7 @@ DisplayResult SSD1306Display::showInfoScreen(const String& ipAddress) {
     for (int y = 0; y < m_cachedQrcode.size; ++y) {
       for (int x = 0; x < m_cachedQrcode.size; ++x) {
         if (qrcode_getModule(&m_cachedQrcode, x, y)) {
-          m_display.fillRect(qrX + x * qrScale, qrY + y * qrScale, qrScale,
-                             qrScale, SSD1306_WHITE);
+          m_display.fillRect(qrX + x * qrScale, qrY + y * qrScale, qrScale, qrScale, SSD1306_WHITE);
         }
       }
     }
@@ -335,7 +329,7 @@ DisplayResult SSD1306Display::showInfoScreen(const String& ipAddress) {
 bool SSD1306Display::updateQrCodeIfNeeded(const String& url) {
   // Check if URL has changed
   if (m_qrcodeValid && m_lastQrUrl == url) {
-    return true;  // Use cached QR code
+    return true; // Use cached QR code
   }
 
   // URL changed, regenerate QR code
@@ -369,12 +363,10 @@ bool SSD1306Display::updateQrCodeIfNeeded(const String& url) {
   return false;
 }
 
-DisplayResult SSD1306Display::showClock(const String& dateStr,
-                                        const String& timeStr) {
+DisplayResult SSD1306Display::showClock(const String& dateStr, const String& timeStr) {
 #if USE_DISPLAY
   if (!m_initialized) {
-    return DisplayResult::fail(DisplayError::INVALID_STATE,
-                               F("Display not initialized"));
+    return DisplayResult::fail(DisplayError::INVALID_STATE, F("Display not initialized"));
   }
 
   m_display.clearDisplay();
@@ -402,8 +394,7 @@ DisplayResult SSD1306Display::showClock(const String& dateStr,
   m_display.print(dateStr);
 
   // Draw a horizontal line at the bottom
-  m_display.drawLine(0, DISPLAY_HEIGHT - 1, DISPLAY_WIDTH - 1,
-                     DISPLAY_HEIGHT - 1, SSD1306_WHITE);
+  m_display.drawLine(0, DISPLAY_HEIGHT - 1, DISPLAY_WIDTH - 1, DISPLAY_HEIGHT - 1, SSD1306_WHITE);
 
   m_display.display();
 #endif
@@ -414,28 +405,27 @@ DisplayResult SSD1306Display::showBootScreen(const String& header,
                                              const std::vector<String>& lines) {
 #if USE_DISPLAY
   if (!m_initialized) {
-    return DisplayResult::fail(DisplayError::INVALID_STATE,
-                               F("Display not initialized"));
+    return DisplayResult::fail(DisplayError::INVALID_STATE, F("Display not initialized"));
   }
   m_display.clearDisplay();
   m_display.setTextSize(1);
   m_display.setTextColor(SSD1306_WHITE);
   m_display.setCursor(0, 0);
   m_display.println(convertSpecialChars(header));
-  int y = 16;  // Start below header
+  int y = 16; // Start below header
   for (const auto& line : lines) {
     m_display.setCursor(0, y);
     m_display.println(convertSpecialChars(line));
-    y += 8;  // 8px per line at text size 1
-    if (y > DISPLAY_HEIGHT - 8) break;
+    y += 8; // 8px per line at text size 1
+    if (y > DISPLAY_HEIGHT - 8)
+      break;
   }
   m_display.display();
 #endif
   return DisplayResult::success();
 }
 
-DisplayResult SSD1306Display::showBootScreen(const String& header,
-                                             const String& status) {
+DisplayResult SSD1306Display::showBootScreen(const String& header, const String& status) {
   return showBootScreen(header, std::vector<String>{status});
 }
 

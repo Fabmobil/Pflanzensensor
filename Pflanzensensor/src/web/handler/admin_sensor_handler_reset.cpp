@@ -11,50 +11,44 @@
 #include "utils/helper.h"
 
 void AdminSensorHandler::handleResetAbsoluteMinMax() {
-  if (!requireAjaxRequest()) return;
+  if (!requireAjaxRequest())
+    return;
   if (!validateRequest()) {
-    sendJsonResponse(
-        401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
+    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
   }
 
   if (!_server.hasArg("sensor_id") || !_server.hasArg("measurement_index")) {
-    sendJsonResponse(
-        400,
-        F("{\"success\":false,\"error\":\"Erforderliche Parameter fehlen\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Erforderliche Parameter fehlen\"}"));
     return;
   }
 
   String sensorId = _server.arg("sensor_id");
   size_t measurementIndex = _server.arg("measurement_index").toInt();
 
-  logger.debug(F("AdminSensorHandler"),
-               F("handleResetAbsoluteMinMax: sensor=") + sensorId +
-                   F(", measurement=") + String(measurementIndex));
+  logger.debug(F("AdminSensorHandler"), F("handleResetAbsoluteMinMax: sensor=") + sensorId +
+                                            F(", measurement=") + String(measurementIndex));
 
   if (!_sensorManager.isHealthy()) {
-    sendJsonResponse(
-        500, F("{\"success\":false,\"error\":\"Sensor-Manager nicht betriebsbereit\"}"));
+    sendJsonResponse(500,
+                     F("{\"success\":false,\"error\":\"Sensor-Manager nicht betriebsbereit\"}"));
     return;
   }
 
   Sensor* sensor = _sensorManager.getSensor(sensorId);
   if (!sensor) {
-    sendJsonResponse(404,
-                     F("{\"success\":false,\"error\":\"Sensor nicht gefunden\"}"));
+    sendJsonResponse(404, F("{\"success\":false,\"error\":\"Sensor nicht gefunden\"}"));
     return;
   }
 
   if (!sensor->isInitialized()) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Sensor nicht initialisiert\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Sensor nicht initialisiert\"}"));
     return;
   }
 
   SensorConfig& config = sensor->mutableConfig();
   if (measurementIndex >= config.measurements.size()) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Ungültiger Messindex\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messindex\"}"));
     return;
   }
 
@@ -63,20 +57,21 @@ void AdminSensorHandler::handleResetAbsoluteMinMax() {
   config.measurements[measurementIndex].absoluteMax = -INFINITY;
 
   // Use atomic update to reset absolute min/max values
-  auto result = SensorPersistence::updateAbsoluteMinMax(
-      sensorId, measurementIndex, INFINITY, -INFINITY);
+  auto result =
+      SensorPersistence::updateAbsoluteMinMax(sensorId, measurementIndex, INFINITY, -INFINITY);
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Fehler beim Zurücksetzen von absoluten min/max Werten: ") + result.getMessage());
-    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Zurücksetzen der absoluten min/max Werte\"}"));
+                 F("Fehler beim Zurücksetzen von absoluten min/max Werten: ") +
+                     result.getMessage());
+    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Zurücksetzen der absoluten "
+                            "min/max Werte\"}"));
     return;
   }
 
   // Reload the sensor configuration from the JSON file to ensure in-memory
   // values are updated
   if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("AdminSensorHandler"),
-                 F("Reloading sensor configuration after reset"));
+    logger.debug(F("AdminSensorHandler"), F("Reloading sensor configuration after reset"));
   }
 
   auto reloadResult = SensorPersistence::loadFromFile();
@@ -85,70 +80,62 @@ void AdminSensorHandler::handleResetAbsoluteMinMax() {
                    F("Fehler beim Nachladen der Sensor-Konfiguration nach dem Zurücksetzen: ") +
                        reloadResult.getMessage());
   } else {
-      if (ConfigMgr.isDebugSensor()) {
+    if (ConfigMgr.isDebugSensor()) {
       logger.debug(F("AdminSensorHandler"),
                    F("Sensor-Konfiguration nach dem Zurücksetzen erfolgreich neu geladen"));
     }
   }
 
-  logger.info(F("AdminSensorHandler"), F("Absolute min/max zurückgesetzt für ") +
-                                           sensorId + F("[") +
-                                           String(measurementIndex) + F("]"));
+  logger.info(F("AdminSensorHandler"), F("Absolute min/max zurückgesetzt für ") + sensorId +
+                                           F("[") + String(measurementIndex) + F("]"));
 
   sendJsonResponse(200, F("{\"success\":true}"));
 }
 
 void AdminSensorHandler::handleResetAbsoluteRawMinMax() {
-  if (!requireAjaxRequest()) return;
+  if (!requireAjaxRequest())
+    return;
   if (!validateRequest()) {
-    sendJsonResponse(
-        401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
+    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
   }
 
   if (!_server.hasArg("sensor_id") || !_server.hasArg("measurement_index")) {
-    sendJsonResponse(
-        400,
-        F("{\"success\":false,\"error\":\"Erforderliche Parameter fehlen\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Erforderliche Parameter fehlen\"}"));
     return;
   }
 
   String sensorId = _server.arg("sensor_id");
   size_t measurementIndex = _server.arg("measurement_index").toInt();
 
-  logger.debug(F("AdminSensorHandler"),
-               F("handleResetAbsoluteRawMinMax: sensor=") + sensorId +
-                   F(", measurement=") + String(measurementIndex));
+  logger.debug(F("AdminSensorHandler"), F("handleResetAbsoluteRawMinMax: sensor=") + sensorId +
+                                            F(", measurement=") + String(measurementIndex));
 
   if (!_sensorManager.isHealthy()) {
-    sendJsonResponse(
-        500, F("{\"success\":false,\"error\":\"Sensor-Manager nicht betriebsbereit\"}"));
+    sendJsonResponse(500,
+                     F("{\"success\":false,\"error\":\"Sensor-Manager nicht betriebsbereit\"}"));
     return;
   }
 
   Sensor* sensor = _sensorManager.getSensor(sensorId);
   if (!sensor) {
-    sendJsonResponse(404,
-                     F("{\"success\":false,\"error\":\"Sensor nicht gefunden\"}"));
+    sendJsonResponse(404, F("{\"success\":false,\"error\":\"Sensor nicht gefunden\"}"));
     return;
   }
 
   if (!sensor->isInitialized()) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Sensor nicht initialisiert\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Sensor nicht initialisiert\"}"));
     return;
   }
 
   if (!isAnalogSensor(sensor)) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Sensor ist nicht analog\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Sensor ist nicht analog\"}"));
     return;
   }
 
   SensorConfig& config = sensor->mutableConfig();
   if (measurementIndex >= config.measurements.size()) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Ungültiger Messindex\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messindex\"}"));
     return;
   }
 
@@ -158,31 +145,29 @@ void AdminSensorHandler::handleResetAbsoluteRawMinMax() {
 
   if (ConfigMgr.isDebugSensor()) {
     logger.debug(F("AdminSensorHandler"),
-                 F("Zurücksetzen der absoluten Roh-Min/Max-Werte für Sensor ") +
-                     sensorId + F(" Messung ") + String(measurementIndex));
+                 F("Zurücksetzen der absoluten Roh-Min/Max-Werte für Sensor ") + sensorId +
+                     F(" Messung ") + String(measurementIndex));
   }
 
   // Use atomic update to reset absolute raw min/max values
-  auto result = SensorPersistence::updateAnalogRawMinMax(
-      sensorId, measurementIndex, INT_MAX, INT_MIN);
+  auto result =
+      SensorPersistence::updateAnalogRawMinMax(sensorId, measurementIndex, INT_MAX, INT_MIN);
   if (!result.isSuccess()) {
-    logger.error(
-        F("AdminSensorHandler"),
-        F("Fehler beim Zurücksetzen der Roh-Min/Max-Werte: ") + result.getMessage());
-    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Zurücksetzen der Roh-Min/Max-Werte\"}"));
+    logger.error(F("AdminSensorHandler"),
+                 F("Fehler beim Zurücksetzen der Roh-Min/Max-Werte: ") + result.getMessage());
+    sendJsonResponse(
+        500, F("{\"success\":false,\"error\":\"Fehler beim Zurücksetzen der Roh-Min/Max-Werte\"}"));
     return;
   }
 
   // No need to reload configs anymore - we now have a single source of truth
   if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("AdminSensorHandler"), F("Zurücksetzen abgeschlossen für Sensor ") +
-                                              sensorId + F(" Messung ") +
-                                              String(measurementIndex));
+    logger.debug(F("AdminSensorHandler"), F("Zurücksetzen abgeschlossen für Sensor ") + sensorId +
+                                              F(" Messung ") + String(measurementIndex));
   }
 
-  logger.info(F("AdminSensorHandler"), F("Absolute Roh-Min/Max zurückgesetzt für ") +
-                                           sensorId + F("[") +
-                                           String(measurementIndex) + F("]"));
+  logger.info(F("AdminSensorHandler"), F("Absolute Roh-Min/Max zurückgesetzt für ") + sensorId +
+                                           F("[") + String(measurementIndex) + F("]"));
 
   sendJsonResponse(200, F("{\"success\":true}"));
 }

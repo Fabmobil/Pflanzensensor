@@ -31,7 +31,6 @@
 #include "utils/wifi.h"
 #endif
 
-
 #if USE_WEBSERVER
 #include <ESP8266WebServer.h>
 
@@ -47,8 +46,8 @@
 #endif
 
 #if USE_MAIL
-#include "mail/mail_manager.h"
 #include "mail/mail_helper.h"
+#include "mail/mail_manager.h"
 #endif
 
 // helper methods
@@ -69,8 +68,8 @@ extern std::unique_ptr<LedTrafficLightManager> ledTrafficLightManager;
 void setup() {
   // Initialize serial communication first
   Serial.begin(115200);
-  delay(100);   // Give serial time to initialize
-  delay(1000);  // Give sensors time to power up and stabilize
+  delay(100);  // Give serial time to initialize
+  delay(1000); // Give sensors time to power up and stabilize
 
   logger.beginMemoryTracking(F("managers_init"));
 
@@ -88,31 +87,26 @@ void setup() {
   }
 
 #if USE_LED_TRAFFIC_LIGHT
-  if (!Helper::initializeComponent(
-          F("LED traffic light manager"), []() -> ResourceResult {
-            ledTrafficLightManager = std::make_unique<LedTrafficLightManager>();
-            auto result = ledTrafficLightManager->init();
-            if (!result.isSuccess()) {
-              logger.warning(
-                  F("main"),
-                  F("LED-Ampel-Manager Initialisierung fehlgeschlagen: ") +
-                      result.getMessage());
-            }
-            return result;
-          })) {
+  if (!Helper::initializeComponent(F("LED traffic light manager"), []() -> ResourceResult {
+        ledTrafficLightManager = std::make_unique<LedTrafficLightManager>();
+        auto result = ledTrafficLightManager->init();
+        if (!result.isSuccess()) {
+          logger.warning(F("main"), F("LED-Ampel-Manager Initialisierung fehlgeschlagen: ") +
+                                        result.getMessage());
+        }
+        return result;
+      })) {
     return;
   }
 #endif
 
 #if USE_DISPLAY
-    if (!Helper::initializeComponent(
-          F("display manager"), []() -> ResourceResult {
-            displayManager = std::make_unique<DisplayManager>();
-            return displayManager->init();
-          })) {
+  if (!Helper::initializeComponent(F("display manager"), []() -> ResourceResult {
+        displayManager = std::make_unique<DisplayManager>();
+        return displayManager->init();
+      })) {
     // Note: Don't return here - display is optional
-    logger.warning(F("main"),
-                   F("Display-Manager Initialisierung fehlgeschlagen, fahre fort"));
+    logger.warning(F("main"), F("Display-Manager Initialisierung fehlgeschlagen, fahre fort"));
   } else {
     displayManager->showLogScreen(F("Filesystem..."), true);
   }
@@ -125,10 +119,9 @@ void setup() {
   if (!Helper::initializeComponent(F("configuration"), []() -> ResourceResult {
         auto result = ConfigMgr.loadConfig();
         if (!result.isSuccess()) {
-          logger.error(F("main"), F("Konfiguration konnte nicht geladen werden: ") +
-                                      result.getMessage());
-          return ResourceResult::fail(ResourceError::CONFIG_ERROR,
-                                      result.getMessage());
+          logger.error(F("main"),
+                       F("Konfiguration konnte nicht geladen werden: ") + result.getMessage());
+          return ResourceResult::fail(ResourceError::CONFIG_ERROR, result.getMessage());
         }
         return ResourceResult::success();
       })) {
@@ -139,7 +132,8 @@ void setup() {
     return;
   }
 #if USE_DISPLAY
-  if (displayManager) displayManager->updateLogStatus(F("Config..."), true);
+  if (displayManager)
+    displayManager->updateLogStatus(F("Config..."), true);
 #endif
 
   // increase reboot count
@@ -147,12 +141,11 @@ void setup() {
 
   // **CRITICAL FIX: Check for update mode BEFORE initializing heavy managers**
   if (ConfigMgr.getDoFirmwareUpgrade()) {
-  logger.info(F("main"),
-     F("Firmware-Upgrade-Modus erkannt - wechsle in Minimalmodus"));
+    logger.info(F("main"), F("Firmware-Upgrade-Modus erkannt - wechsle in Minimalmodus"));
 
 #if USE_DISPLAY
     // Inform user about update mode on display
-      if (displayManager) {
+    if (displayManager) {
       displayManager->showLogScreen(F("Firmware-Update-Modus"), false);
       displayManager->updateLogStatus(F("Starte Minimal-Setup..."), false);
     }
@@ -164,8 +157,8 @@ void setup() {
           // Simplified approach without lambda callback
           auto result = setupWiFi();
           if (!result.isSuccess()) {
-            logger.error(F("main"), F("WiFi-Initialisierung fehlgeschlagen: ") +
-                                        result.getMessage());
+            logger.error(F("main"),
+                         F("WiFi-Initialisierung fehlgeschlagen: ") + result.getMessage());
           }
           return result;
         })) {
@@ -175,9 +168,9 @@ void setup() {
     // Setup WiFi for update mode without display
     if (!Helper::initializeComponent(F("WiFi"), []() -> ResourceResult {
           auto result = setupWiFi();
-            if (!result.isSuccess()) {
-              logger.error(F("main"), F("WiFi-Initialisierung fehlgeschlagen: ") +
-                                          result.getMessage());
+          if (!result.isSuccess()) {
+            logger.error(F("main"),
+                         F("WiFi-Initialisierung fehlgeschlagen: ") + result.getMessage());
           }
           return result;
         })) {
@@ -191,28 +184,25 @@ void setup() {
       if (isCaptivePortalAPActive()) {
         displayManager->updateLogStatus(F("AP-Modus aktiv"), false);
         displayManager->updateLogStatus(F("SSID: ") + WiFi.softAPSSID(), false);
-        displayManager->updateLogStatus(F("IP: ") + WiFi.softAPIP().toString(),
-                                        false);
+        displayManager->updateLogStatus(F("IP: ") + WiFi.softAPIP().toString(), false);
       } else {
         displayManager->updateLogStatus(F("WiFi verbunden"), false);
         displayManager->updateLogStatus(F("SSID: ") + WiFi.SSID(), false);
-        displayManager->updateLogStatus(F("IP: ") + WiFi.localIP().toString(),
-                                        false);
+        displayManager->updateLogStatus(F("IP: ") + WiFi.localIP().toString(), false);
       }
     }
 #endif
 
     // Initialize minimal web server for OTA updates
-    if (!Helper::initializeComponent(
-            F("minimal web server"), []() -> ResourceResult {
-              auto& webManager = WebManager::getInstance();
-                if (!webManager.beginUpdateMode()) {
-                  return ResourceResult::fail(
-                      ResourceError::WEBSERVER_ERROR,
-                      F("Initialisierung des minimalen Webservers fehlgeschlagen"));
-              }
-              return ResourceResult::success();
-            })) {
+    if (!Helper::initializeComponent(F("minimal web server"), []() -> ResourceResult {
+          auto& webManager = WebManager::getInstance();
+          if (!webManager.beginUpdateMode()) {
+            return ResourceResult::fail(ResourceError::WEBSERVER_ERROR,
+                                        F("Initialisierung des minimalen "
+                                          "Webservers fehlgeschlagen"));
+          }
+          return ResourceResult::success();
+        })) {
       return;
     }
 
@@ -221,12 +211,12 @@ void setup() {
     if (displayManager) {
       displayManager->updateLogStatus(F("Webserver bereit"), false);
       displayManager->updateLogStatus(F("Bereit für Updates"), false);
-      delay(1000);  // Show completion message briefly
+      delay(1000); // Show completion message briefly
       displayManager->endUpdateMode();
     }
 #endif
 
-  logger.info(F("main"), F("Minimal-Update-Modus Setup abgeschlossen"));
+    logger.info(F("main"), F("Minimal-Update-Modus Setup abgeschlossen"));
 
 #if USE_DISPLAY
     // Final status before exiting update mode
@@ -237,12 +227,12 @@ void setup() {
     }
 #endif
 
-    return;  // Exit setup() early - don't initialize other managers
+    return; // Exit setup() early - don't initialize other managers
   }
 
 #if USE_DISPLAY
   // Inform user about normal mode on display
-    if (displayManager) {
+  if (displayManager) {
     displayManager->updateLogStatus(F("Normalmodus startet..."), true);
   }
 #endif
@@ -252,9 +242,8 @@ void setup() {
   Helper::initializeComponent(F("WiFi"), []() -> ResourceResult {
     // Simplified approach without lambda callback
     auto result = setupWiFi();
-      if (!result.isSuccess()) {
-        logger.error(F("main"),
-                     F("WiFi-Initialisierung fehlgeschlagen: ") + result.getMessage());
+    if (!result.isSuccess()) {
+      logger.error(F("main"), F("WiFi-Initialisierung fehlgeschlagen: ") + result.getMessage());
     }
     return result;
   });
@@ -263,8 +252,7 @@ void setup() {
   Helper::initializeComponent(F("WiFi"), []() -> ResourceResult {
     auto result = setupWiFi();
     if (!result.isSuccess()) {
-      logger.error(F("main"),
-                   F("Failed to initialize WiFi: ") + result.getMessage());
+      logger.error(F("main"), F("Failed to initialize WiFi: ") + result.getMessage());
     }
     return result;
   });
@@ -274,19 +262,16 @@ void setup() {
     if (isCaptivePortalAPActive()) {
       displayManager->updateLogStatus(F("AP-Modus aktiv"), true);
       displayManager->updateLogStatus(F("SSID: ") + WiFi.softAPSSID(), true);
-      displayManager->updateLogStatus(F("IP: ") + WiFi.softAPIP().toString(),
-                                      true);
+      displayManager->updateLogStatus(F("IP: ") + WiFi.softAPIP().toString(), true);
 
       // WiFi connection attempts are now shown in real-time
       displayManager->updateLogStatus(F("WiFi einrichten:"), true);
       displayManager->updateLogStatus(F("1. Verbinde mit AP"), true);
-      displayManager->updateLogStatus(
-          F("2. Browser: ") + WiFi.softAPIP().toString(), true);
+      displayManager->updateLogStatus(F("2. Browser: ") + WiFi.softAPIP().toString(), true);
     } else {
       displayManager->updateLogStatus(F("WiFi verbunden"), true);
       displayManager->updateLogStatus(F("SSID: ") + WiFi.SSID(), true);
-      displayManager->updateLogStatus(F("IP: ") + WiFi.localIP().toString(),
-                                      true);
+      displayManager->updateLogStatus(F("IP: ") + WiFi.localIP().toString(), true);
     }
   }
 #endif
@@ -300,8 +285,7 @@ void setup() {
       logger.initNTP();
       int timeSync = 0;
       while (timeSync < 10) {
-        if (logger.getSynchronizedTime() >
-            24 * 3600) {  // Time is after Jan 1, 1970
+        if (logger.getSynchronizedTime() > 24 * 3600) { // Time is after Jan 1, 1970
           // Verify timezone setup
           logger.verifyTimezone();
 #if USE_DISPLAY
@@ -319,15 +303,13 @@ void setup() {
       if (displayManager)
         displayManager->updateLogStatus(F("NTP-Fehler"), true);
 #endif
-  logger.error(F("main"),
-       F("NTP-Zeitsynchronisation fehlgeschlagen"));
-  return ResourceResult::fail(ResourceError::TIME_SYNC_ERROR,
-              F("Zeit konnte nicht synchronisiert werden"));
+      logger.error(F("main"), F("NTP-Zeitsynchronisation fehlgeschlagen"));
+      return ResourceResult::fail(ResourceError::TIME_SYNC_ERROR,
+                                  F("Zeit konnte nicht synchronisiert werden"));
     });
 #if USE_WIFI
   } else {
-    logger.info(F("main"),
-                F("Überspringe NTP-Initialisierung im AP/Captive-Portal-Modus"));
+    logger.info(F("main"), F("Überspringe NTP-Initialisierung im AP/Captive-Portal-Modus"));
   }
 #endif
 
@@ -336,8 +318,8 @@ void setup() {
     sensorManager = std::make_unique<SensorManager>();
     auto result = sensorManager->init();
     if (!result.isSuccess()) {
-      logger.error(F("main"), F("Sensor-Manager Initialisierung fehlgeschlagen: ") +
-                                  result.getMessage());
+      logger.error(F("main"),
+                   F("Sensor-Manager Initialisierung fehlgeschlagen: ") + result.getMessage());
 #if USE_DISPLAY
       if (displayManager)
         displayManager->updateLogStatus(F("Sensor Fehler"), true);
@@ -346,8 +328,10 @@ void setup() {
     return result;
   });
 #if USE_DISPLAY
-  if (displayManager) displayManager->updateLogStatus(F("Sensoren..."), true);
-  if (displayManager) displayManager->logEnabledSensors();
+  if (displayManager)
+    displayManager->updateLogStatus(F("Sensoren..."), true);
+  if (displayManager)
+    displayManager->logEnabledSensors();
 #endif
 
 #if USE_WEBSERVER
@@ -358,8 +342,7 @@ void setup() {
       webManager.setSensorManager(*sensorManager);
       logger.debug(F("main"), F("Sensor-Manager im WebManager gesetzt"));
     } else {
-      logger.error(F("main"),
-                   F("Sensor-Manager ist null beim Setzen im WebManager"));
+      logger.error(F("main"), F("Sensor-Manager ist null beim Setzen im WebManager"));
 #if USE_DISPLAY
       if (displayManager)
         displayManager->updateLogStatus(F("Web Fehler"), true);
@@ -372,11 +355,9 @@ void setup() {
       if (displayManager)
         displayManager->updateLogStatus(F("Web Fehler"), true);
 #endif
-    logger.error(
-  F("main"),
-  F("Web-Manager Initialisierung fehlgeschlagen: konnte nicht initialisiert werden"));
-    return ResourceResult::fail(ResourceError::WEBSERVER_ERROR,
-                  F("Konnte nicht initialisieren"));
+      logger.error(F("main"), F("Web-Manager Initialisierung fehlgeschlagen: "
+                                "konnte nicht initialisiert werden"));
+      return ResourceResult::fail(ResourceError::WEBSERVER_ERROR, F("Konnte nicht initialisieren"));
     }
     return ResourceResult::success();
   });
@@ -402,24 +383,23 @@ void setup() {
         if (displayManager)
           displayManager->updateLogStatus(F("Mail Fehler"), true);
 #endif
-        logger.error(F("main"), F("E-Mail-Initialisierung fehlgeschlagen: ") +
-                                    result.getMessage());
+        logger.error(F("main"), F("E-Mail-Initialisierung fehlgeschlagen: ") + result.getMessage());
         return result;
       }
       return ResourceResult::success();
     });
 #if USE_DISPLAY
-    if (displayManager) displayManager->updateLogStatus(F("E-Mail..."), true);
+    if (displayManager)
+      displayManager->updateLogStatus(F("E-Mail..."), true);
 #endif
   } else {
-    logger.info(
-      F("main"),
-      F("Überspringe E-Mail-Initialisierung im AP/Captive-Portal-Modus"));
+    logger.info(F("main"), F("Überspringe E-Mail-Initialisierung im AP/Captive-Portal-Modus"));
   }
 #endif
 
 #if USE_DISPLAY
-  if (displayManager) displayManager->updateLogStatus(F("Ampel..."), true);
+  if (displayManager)
+    displayManager->updateLogStatus(F("Ampel..."), true);
 #endif
 
 #if USE_DISPLAY
@@ -436,7 +416,7 @@ void setup() {
 #if USE_DISPLAY
   if (displayManager) {
     // Add delay before ending boot mode so user can read the information
-    delay(1000);  // 1 second delay
+    delay(1000); // 1 second delay
     displayManager->endBootMode();
   }
 #endif
@@ -468,26 +448,23 @@ void loop() {
   if (ConfigMgr.getDoFirmwareUpgrade()) {
     // Debug: Log update mode recovery state (every 30 seconds)
     if (currentMillis - lastUpdateModeLog >= 30000) {
-  logger.debug(F("main"),
-       F("[UpdateMode] loop: getDoFirmwareUpgrade()=true"));
+      logger.debug(F("main"), F("[UpdateMode] loop: getDoFirmwareUpgrade()=true"));
       auto& webManager = WebManager::getInstance();
       unsigned long updateStart = webManager.getUpdateModeStartTime();
       unsigned long timeout = webManager.getUpdateModeTimeout();
-  logger.debug(F("main"), F("[UpdateMode] loop: currentMillis=") +
-              String(currentMillis) + F(", updateStart=") +
-              String(updateStart) + F(", timeout=") +
-              String(timeout));
+      logger.debug(F("main"), F("[UpdateMode] loop: currentMillis=") + String(currentMillis) +
+                                  F(", updateStart=") + String(updateStart) + F(", timeout=") +
+                                  String(timeout));
       if (updateStart > 0 && currentMillis - updateStart > timeout) {
-  logger.warning(F("main"), F("Update-Mode Timeout erreicht. Beende Update-Modus automatisch."));
+        logger.warning(F("main"), F("Update-Mode Timeout erreicht. Beende "
+                                    "Update-Modus automatisch."));
         ConfigMgr.setUpdateFlags(false, false);
         webManager.resetUpdateModeStartTime();
-  logger.warning(F("main"), F("ESP startet neu."));
-        ESP.restart();  // Force reboot to reload config and exit update mode
+        logger.warning(F("main"), F("ESP startet neu."));
+        ESP.restart(); // Force reboot to reload config and exit update mode
         return;
       } else {
-    logger.debug(
-      F("main"),
-      F("[UpdateMode] loop: Kein Timeout, Update-Modus läuft weiter."));
+        logger.debug(F("main"), F("[UpdateMode] loop: Kein Timeout, Update-Modus läuft weiter."));
       }
       lastUpdateModeLog = currentMillis;
     }
@@ -506,14 +483,13 @@ void loop() {
 #endif
 
   // Regular system checks and maintenance
-  if (currentMillis - lastMemoryCheck >= 30000) {  // Every 30 seconds
+  if (currentMillis - lastMemoryCheck >= 30000) { // Every 30 seconds
     logger.logMemoryStats(F("loop_monitor"));
     lastMemoryCheck = currentMillis;
 
     // Emergency cleanup if memory is critically low
     if (ESP.getFreeHeap() < 3000) {
-      logger.warning(F("main"),
-                     F("Kritischer Speichermangel, führe Bereinigung durch"));
+      logger.warning(F("main"), F("Kritischer Speichermangel, führe Bereinigung durch"));
       if (sensorManager) {
         sensorManager->cleanup();
       }
@@ -521,22 +497,21 @@ void loop() {
   }
 
   // WiFi connectivity check
-  if (currentMillis - lastWiFiCheck >= 30000) {  // Every 30 seconds
+  if (currentMillis - lastWiFiCheck >= 30000) { // Every 30 seconds
 #if USE_WIFI
     if (!isCaptivePortalAPActive()) {
       logger.debug(F("main"), F("Prüfe WiFi-Verbindung"));
       checkWiFiConnection();
     } else {
-      logger.debug(F("main"),
-                   F("AP-Modus aktiv, überspringe erneute WiFi-Verbindungsversuche"));
+      logger.debug(F("main"), F("AP-Modus aktiv, überspringe erneute WiFi-Verbindungsversuche"));
     }
 #endif
     lastWiFiCheck = currentMillis;
   }
 
   // System maintenance tasks
-  if (currentMillis - lastMaintenanceCheck >= 600000) {  // Every 10 minutes
-  logger.debug(F("main"), F("Führe Wartungsaufgaben aus"));
+  if (currentMillis - lastMaintenanceCheck >= 600000) { // Every 10 minutes
+    logger.debug(F("main"), F("Führe Wartungsaufgaben aus"));
 
 #if USE_WIFI
     logger.updateNTP();
@@ -558,7 +533,7 @@ void loop() {
 
   // Handle sensor measurements with a minimum delay between updates
   static constexpr unsigned long MEASUREMENT_UPDATE_INTERVAL =
-      1000;  // 1s between measurement updates
+      1000; // 1s between measurement updates
   if (sensorManager && sensorManager->getState() == ManagerState::INITIALIZED &&
       WiFi.status() == WL_CONNECTED &&
       currentMillis - lastMeasurementUpdate >= MEASUREMENT_UPDATE_INTERVAL) {
@@ -576,5 +551,5 @@ void loop() {
 
   // Basic system maintenance
   yield();
-  delay(1);  // Prevent tight loop
+  delay(1); // Prevent tight loop
 }

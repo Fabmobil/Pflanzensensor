@@ -12,37 +12,33 @@ void SensorMeasurementCycleManager::handleProcessing() {
   // const_cast**
   const MeasurementData& currentData = m_sensor->getMeasurementData();
   logger.debug(F("MeasurementCycle"),
-               F("Verarbeite: Feldnamen=") +
-                   String(SensorConfig::MAX_MEASUREMENTS) + F(", Einheiten=") +
-                   String(SensorConfig::MAX_MEASUREMENTS) + F(", Werte=") +
+               F("Verarbeite: Feldnamen=") + String(SensorConfig::MAX_MEASUREMENTS) +
+                   F(", Einheiten=") + String(SensorConfig::MAX_MEASUREMENTS) + F(", Werte=") +
                    String(m_currentResults.size()) + F(", currentResults=") +
                    String(m_currentResults.size()));
 
   // CRITICAL: Validate measurement data before processing
   if (!currentData.isValid()) {
-    logger.error(F("MeasurementCycle"),
-                 F("Ungültige Messdatenstruktur"));
+    logger.error(F("MeasurementCycle"), F("Ungültige Messdatenstruktur"));
     handleStateError(F("Ungültige Messdatenstruktur"));
     return;
   }
 
   // Validate array sizes to prevent bounds violations
   if (m_currentResults.size() != currentData.activeValues) {
-    logger.error(F("MeasurementCycle"),
-         F("Größenabweichung der Messdatenarray: currentResults=") +
-           String(m_currentResults.size()) + F(", activeValues=") +
-           String(currentData.activeValues));
+    logger.error(F("MeasurementCycle"), F("Größenabweichung der Messdatenarray: currentResults=") +
+                                            String(m_currentResults.size()) + F(", activeValues=") +
+                                            String(currentData.activeValues));
     handleStateError(F("Größenabweichung der Messdatenarray"));
     return;
   }
 
   // Create a new MeasurementData object with the updated values
-  MeasurementData updatedData = currentData;  // Copy current data
+  MeasurementData updatedData = currentData; // Copy current data
 
   // Validate and process the data
   bool hasValidData = false;
-  size_t maxFields =
-      std::min(m_currentResults.size(), currentData.activeValues);
+  size_t maxFields = std::min(m_currentResults.size(), currentData.activeValues);
 
   // CRITICAL: Add bounds checking for measurement data arrays
   if (maxFields > currentData.values.size()) {
@@ -81,13 +77,12 @@ void SensorMeasurementCycleManager::handleProcessing() {
               config.measurements[i].absoluteMax);
           if (saveResult.isSuccess()) {
             logger.debug(F("MeasurementCycle"),
-                 F("Gespeicherte aktualisierte absolute Min/Max für Sensor ") +
-                   m_sensor->getId() + F(" Messung ") +
-                   String(i));
+                         F("Gespeicherte aktualisierte absolute Min/Max für Sensor ") +
+                             m_sensor->getId() + F(" Messung ") + String(i));
           } else {
             logger.warning(F("MeasurementCycle"),
-                   F("Konnte aktualisierte absolute Min/Max nicht speichern: ") +
-                     saveResult.getMessage());
+                           F("Konnte aktualisierte absolute Min/Max nicht speichern: ") +
+                               saveResult.getMessage());
           }
         }
       }
@@ -122,8 +117,7 @@ void SensorMeasurementCycleManager::handleProcessing() {
 void SensorMeasurementCycleManager::handleSendingInflux() {
 #if USE_INFLUXDB
 
-  auto result =
-      influxdbSendMeasurement(m_sensor, m_sensor->getMeasurementData());
+  auto result = influxdbSendMeasurement(m_sensor, m_sensor->getMeasurementData());
   if (!result.isSuccess()) {
     logger.error(F("MeasurementCycle"),
                  F("Fehler beim Senden der Daten an InfluxDB: ") + result.getMessage());
@@ -139,8 +133,7 @@ void SensorMeasurementCycleManager::handleSendingInflux() {
 void SensorMeasurementCycleManager::handleDeinitializing() {
   // Release the measurement slot
   if (ConfigMgr.isDebugMeasurementCycle()) {
-    logger.debug(F("MeasurementCycle"),
-                 m_sensor->getName() + F(": Messslot freigeben"));
+    logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Messslot freigeben"));
   }
   SensorManagerLimiter::getInstance().releaseSlot(m_sensor->getId());
 
@@ -149,8 +142,7 @@ void SensorMeasurementCycleManager::handleDeinitializing() {
 
   if (shouldDeinit) {
     if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("MeasurementCycle"),
-                   m_sensor->getName() + F(": Sensor deinitialisieren"));
+      logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Sensor deinitialisieren"));
     }
     m_sensor->deinitialize();
   }
@@ -169,13 +161,11 @@ void SensorMeasurementCycleManager::handleDeinitializing() {
 
   if (ConfigMgr.isDebugMeasurementCycle()) {
     unsigned long elapsed = now - m_cycleStartTime;
-    unsigned long nextIn =
-        m_state.nextDueTime > now ? m_state.nextDueTime - now : 0;
+    unsigned long nextIn = m_state.nextDueTime > now ? m_state.nextDueTime - now : 0;
 
-    logger.debug(F("MeasurementCycle"),
-                 m_sensor->getName() + F(": Messzyklus abgeschlossen in ") +
-                     String(elapsed) + F(" ms, nächste Messung in ") +
-                     String(nextIn) + F(" ms"));
+    logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Messzyklus abgeschlossen in ") +
+                                            String(elapsed) + F(" ms, nächste Messung in ") +
+                                            String(nextIn) + F(" ms"));
   }
 
   // **CRITICAL FIX: Add debug logging for measurement data if not already
@@ -185,17 +175,15 @@ void SensorMeasurementCycleManager::handleDeinitializing() {
 
     // CRITICAL: Validate data before logging
     if (!data.isValid()) {
-      logger.debug(F("MeasurementCycle"),
-                   F("Messdaten ungültig, Debug-Logging überspringen"));
+      logger.debug(F("MeasurementCycle"), F("Messdaten ungültig, Debug-Logging überspringen"));
     } else {
-      logger.debug(F("MeasurementCycle"),
-                   F("Messdaten für ") + m_sensor->getName() +
-                       F(": Felder=") + String(SensorConfig::MAX_MEASUREMENTS) +
-                       F(", Ergebnisse=") + String(m_currentResults.size()));
+      logger.debug(F("MeasurementCycle"), F("Messdaten für ") + m_sensor->getName() +
+                                              F(": Felder=") +
+                                              String(SensorConfig::MAX_MEASUREMENTS) +
+                                              F(", Ergebnisse=") + String(m_currentResults.size()));
 
       // Log each field name and unit with bounds checking
-      size_t maxDebugFields =
-          std::min(m_currentResults.size(), SensorConfig::MAX_MEASUREMENTS);
+      size_t maxDebugFields = std::min(m_currentResults.size(), SensorConfig::MAX_MEASUREMENTS);
       maxDebugFields = std::min(maxDebugFields, SensorConfig::MAX_MEASUREMENTS);
 
       for (size_t i = 0; i < maxDebugFields; i++) {
@@ -206,11 +194,10 @@ void SensorMeasurementCycleManager::handleDeinitializing() {
         } else {
           valueStr = String(m_currentResults[i], 2);
         }
-        logger.debug(F("MeasurementCycle"),
-                     F("Feld ") + String(i) + F(": Name='") +
-                         String(data.fieldNames[i]) + F("' Wert='") +
-                         valueStr + F("' Einheit='") + String(data.units[i]) +
-                         F("'"));
+        logger.debug(F("MeasurementCycle"), F("Feld ") + String(i) + F(": Name='") +
+                                                String(data.fieldNames[i]) + F("' Wert='") +
+                                                valueStr + F("' Einheit='") +
+                                                String(data.units[i]) + F("'"));
       }
     }
   }
@@ -219,21 +206,19 @@ void SensorMeasurementCycleManager::handleDeinitializing() {
 }
 
 void SensorMeasurementCycleManager::logMeasurementResults() {
-  if (m_currentResults.empty()) return;
+  if (m_currentResults.empty())
+    return;
 
   String summary = m_sensor->getName() + F(" Messungen:");
 
   // **CRITICAL FIX: Use sensor's measurement data directly**
   const auto& measurementData = m_sensor->getMeasurementData();
-  size_t maxFields =
-      std::min(m_currentResults.size(), SensorConfig::MAX_MEASUREMENTS);
+  size_t maxFields = std::min(m_currentResults.size(), SensorConfig::MAX_MEASUREMENTS);
   maxFields = std::min(maxFields, SensorConfig::MAX_MEASUREMENTS);
 
   for (size_t i = 0; i < maxFields; i++) {
     if (i >= SensorConfig::MAX_MEASUREMENTS || i >= m_currentResults.size()) {
-      logger.error(
-          F("MeasurementCycle"),
-          F("Index außerhalb des Bereichs: ") + String(i));
+      logger.error(F("MeasurementCycle"), F("Index außerhalb des Bereichs: ") + String(i));
       continue;
     }
     String fieldName = measurementData.fieldNames[i];
@@ -247,8 +232,7 @@ void SensorMeasurementCycleManager::logMeasurementResults() {
     } else {
       valueStr = String(m_currentResults[i], 2);
     }
-    summary +=
-        F(" ") + fieldName + F("=") + valueStr + measurementData.units[i];
+    summary += F(" ") + fieldName + F("=") + valueStr + measurementData.units[i];
   }
 
   logger.info(F("MeasurementCycle"), summary);

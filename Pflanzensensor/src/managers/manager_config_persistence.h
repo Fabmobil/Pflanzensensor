@@ -13,7 +13,7 @@
 #include "manager_config_types.h"
 
 class ConfigPersistence {
- public:
+public:
   using PersistenceResult = TypedResult<ConfigError, void>;
 
   /**
@@ -63,7 +63,7 @@ class ConfigPersistence {
    */
   static void readUpdateFlagsFromFile(bool& fs, bool& fw);
 
- private:
+private:
   ConfigPersistence() = default;
 
   /**
@@ -71,8 +71,7 @@ class ConfigPersistence {
    * @param sensorErrors JSON document containing sensor errors
    * @param config Configuration data to populate
    */
-  static void loadSensorErrors(const ArduinoJson::JsonObject& sensorErrors,
-                               ConfigData& config);
+  static void loadSensorErrors(const ArduinoJson::JsonObject& sensorErrors, ConfigData& config);
 
 #if USE_MAIL
   /**
@@ -93,12 +92,12 @@ class ConfigPersistence {
    * @param doc JSON document to populate
    * @param config Configuration data to save
    */
-  static void saveMailConfigToJson(ArduinoJson::StaticJsonDocument<512>& doc, const ConfigData& config);
+  static void saveMailConfigToJson(ArduinoJson::StaticJsonDocument<512>& doc,
+                                   const ConfigData& config);
 #endif
 };
 
 // Function to apply sensor settings directly from JSON
-void applySensorSettingsFromJson(const String& sensorId,
-                                 const JsonObject& sensorConfig);
+void applySensorSettingsFromJson(const String& sensorId, const JsonObject& sensorConfig);
 
 #endif

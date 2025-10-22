@@ -12,7 +12,7 @@
  * tracking, error handling, and health monitoring.
  */
 class Manager {
- public:
+public:
   /**
    * @brief Construct a new Manager object
    * @param name Name identifier for the manager
@@ -30,9 +30,7 @@ class Manager {
    * @brief Initialize the manager
    * @return Result indicating success or failure
    */
-  TypedResult<ResourceError, void> init() {
-    return initializeWithStateTracking();
-  }
+  TypedResult<ResourceError, void> init() { return initializeWithStateTracking(); }
 
   /**
    * @brief Check if manager is initialized and healthy
@@ -76,7 +74,7 @@ class Manager {
     return TypedResult<ResourceError, void>::success();
   }
 
- protected:
+protected:
   /**
    * @brief Initialize the manager
    * @return Result indicating success or failure
@@ -89,8 +87,7 @@ class Manager {
    */
   void setState(ManagerState state) {
     m_status.setState(state);
-    logger.debug(F("BaseM"),
-                 m_name + ": Status gewechselt zu " + stateToString(state));
+    logger.debug(F("BaseM"), m_name + ": Status gewechselt zu " + stateToString(state));
   }
 
   /**
@@ -100,24 +97,19 @@ class Manager {
    */
   void setError(const String& message, uint16_t code) {
     m_status.setError(message, code);
-    logger.error(F("BaseM"),
-                 m_name + ": " + message + " (Code: " + String(code) + ")");
+    logger.error(F("BaseM"), m_name + ": " + message + " (Code: " + String(code) + ")");
   }
 
   /**
    * @brief Track memory at initialization
    */
-  inline void recordInitMemory() {
-    m_status.freeHeapOnInit = ESP.getFreeHeap();
-  }
+  inline void recordInitMemory() { m_status.freeHeapOnInit = ESP.getFreeHeap(); }
 
   /**
    * @brief Check if memory is critically low
    * @return true if memory is below safe threshold
    */
-  inline bool isMemoryCritical() const {
-    return ESP.getFreeHeap() < LOW_MEMORY_THRESHOLD;
-  }
+  inline bool isMemoryCritical() const { return ESP.getFreeHeap() < LOW_MEMORY_THRESHOLD; }
 
   /**
    * @brief Update manager state based on health check
@@ -131,11 +123,10 @@ class Manager {
     }
   }
 
- private:
-  static constexpr uint32_t LOW_MEMORY_THRESHOLD =
-      4096;                ///< 4KB minimum memory threshold
-  const String m_name;     ///< Manager name identifier
-  ManagerStatus m_status;  ///< Current manager status
+private:
+  static constexpr uint32_t LOW_MEMORY_THRESHOLD = 4096; ///< 4KB minimum memory threshold
+  const String m_name;                                   ///< Manager name identifier
+  ManagerStatus m_status;                                ///< Current manager status
 
   /**
    * @brief Convert manager state to string representation
@@ -144,22 +135,22 @@ class Manager {
    */
   static String stateToString(ManagerState state) {
     switch (state) {
-      case ManagerState::UNINITIALIZED:
-        return F("NICHT INITIALISIERT");
-      case ManagerState::INITIALIZING:
-        return F("INITIALISIERE");
-      case ManagerState::INITIALIZED:
-        return F("INITIALISIERT");
-      case ManagerState::ERROR:
-        return F("FEHLER");
-      case ManagerState::MINIMAL:
-        return F("MINIMAL");
-      case ManagerState::SUSPENDED:
-        return F("PAUSIERT");
-      default:
-        return F("UNBEKANNT");
+    case ManagerState::UNINITIALIZED:
+      return F("NICHT INITIALISIERT");
+    case ManagerState::INITIALIZING:
+      return F("INITIALISIERE");
+    case ManagerState::INITIALIZED:
+      return F("INITIALISIERT");
+    case ManagerState::ERROR:
+      return F("FEHLER");
+    case ManagerState::MINIMAL:
+      return F("MINIMAL");
+    case ManagerState::SUSPENDED:
+      return F("PAUSIERT");
+    default:
+      return F("UNBEKANNT");
     }
   }
 };
 
-#endif  // MANAGER_BASE_H
+#endif // MANAGER_BASE_H

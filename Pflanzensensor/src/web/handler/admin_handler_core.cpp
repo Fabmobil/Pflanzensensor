@@ -12,7 +12,7 @@
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
 #include "utils/critical_section.h"
-#include "utils/wifi.h"  // For getActiveWiFiSlot()
+#include "utils/wifi.h" // For getActiveWiFiSlot()
 #include "web/handler/admin_handler.h"
 
 RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
@@ -75,8 +75,7 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleReboot();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"),
-                 F("Registrieren der /admin/reboot-Route fehlgeschlagen"));
+    logger.error(F("AdminHandler"), F("Registrieren der /admin/reboot-Route fehlgeschlagen"));
     return result;
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/reboot-Route"));
@@ -93,8 +92,7 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleDownloadLog();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"),
-                 F("Registrieren der /admin/downloadLog-Route fehlgeschlagen"));
+    logger.error(F("AdminHandler"), F("Registrieren der /admin/downloadLog-Route fehlgeschlagen"));
     return result;
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadLog-Route"));
@@ -108,7 +106,8 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleDownloadConfig();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/downloadConfig-Route fehlgeschlagen"));
+    logger.error(F("AdminHandler"),
+                 F("Registrieren der /admin/downloadConfig-Route fehlgeschlagen"));
     return result;
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadConfig-Route"));
@@ -121,30 +120,32 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleDownloadSensors();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/downloadSensors-Route fehlgeschlagen"));
+    logger.error(F("AdminHandler"),
+                 F("Registrieren der /admin/downloadSensors-Route fehlgeschlagen"));
     return result;
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadSensors-Route"));
 
   // Register upload endpoint (single field). The upload handler will detect
   // whether the uploaded JSON is config or sensors and act accordingly.
-  _server.on("/admin/uploadConfig", HTTP_POST,
-             [this]() {
-               const char* resPath = "/upload_result.json";
-               String body = "{\"success\":true}";
-               if (LittleFS.exists(resPath)) {
-                 File rf = LittleFS.open(resPath, "r");
-                 if (rf) {
-                   body = rf.readString();
-                   rf.close();
-                   LittleFS.remove(resPath);
-                 }
-               }
+  _server.on(
+      "/admin/uploadConfig", HTTP_POST,
+      [this]() {
+        const char* resPath = "/upload_result.json";
+        String body = "{\"success\":true}";
+        if (LittleFS.exists(resPath)) {
+          File rf = LittleFS.open(resPath, "r");
+          if (rf) {
+            body = rf.readString();
+            rf.close();
+            LittleFS.remove(resPath);
+          }
+        }
 
-               // Always return JSON for uploads (AJAX-only API).
-               _server.send(200, "application/json", body);
-             },
-             [this]() { handleUploadConfig(); });
+        // Always return JSON for uploads (AJAX-only API).
+        _server.send(200, "application/json", body);
+      },
+      [this]() { handleUploadConfig(); });
   logger.debug(F("AdminHandler"), F("Registrierte /admin/uploadConfig-Route (multipart)"));
 
 #if USE_MAIL
@@ -157,8 +158,7 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleTestMail();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"),
-                 F("Registrieren der /admin/testMail-Route fehlgeschlagen"));
+    logger.error(F("AdminHandler"), F("Registrieren der /admin/testMail-Route fehlgeschlagen"));
     return result;
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/testMail-Route"));
@@ -173,8 +173,7 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleWiFiUpdate();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"),
-                 F("Registrieren der /admin/updateWiFi-Route fehlgeschlagen"));
+    logger.error(F("AdminHandler"), F("Registrieren der /admin/updateWiFi-Route fehlgeschlagen"));
     return result;
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/updateWiFi-Route"));
@@ -184,18 +183,14 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   return result;
 }
 
-HandlerResult AdminHandler::handleGet(const String& uri,
-                                      const std::map<String, String>& query) {
+HandlerResult AdminHandler::handleGet(const String& uri, const std::map<String, String>& query) {
   // Let registerRoutes handle the actual routing
-  return HandlerResult::fail(HandlerError::INVALID_REQUEST,
-                             "Bitte registerRoutes verwenden");
+  return HandlerResult::fail(HandlerError::INVALID_REQUEST, "Bitte registerRoutes verwenden");
 }
 
-HandlerResult AdminHandler::handlePost(const String& uri,
-                                       const std::map<String, String>& params) {
+HandlerResult AdminHandler::handlePost(const String& uri, const std::map<String, String>& params) {
   // Let registerRoutes handle the actual routing
-  return HandlerResult::fail(HandlerError::INVALID_REQUEST,
-                             "Bitte registerRoutes verwenden");
+  return HandlerResult::fail(HandlerError::INVALID_REQUEST, "Bitte registerRoutes verwenden");
 }
 
 // AdminHandler::handleConfigSet removed - admin updates are handled via
@@ -214,13 +209,13 @@ void AdminHandler::handleAdminPage() {
         generateAndSendSystemSettingsCard();
         generateAndSendSystemActionsCard();
         generateAndSendWiFiSettingsCard();
-        #if USE_LED_TRAFFIC_LIGHT
+#if USE_LED_TRAFFIC_LIGHT
         generateAndSendLedTrafficLightSettingsCard();
-        #endif
+#endif
         generateAndSendSystemInfoCard();
-        #if USE_MAIL
+#if USE_MAIL
         generateAndSendMailSettingsCard();
-        #endif
+#endif
         generateAndSendDebugSettingsCard();
         sendChunk(F("</div>"));
       },
@@ -254,12 +249,11 @@ void AdminHandler::handleDownloadLog() {
   }
 
   _server.sendHeader(F("Content-Type"), F("text/plain"));
-  _server.sendHeader(F("Content-Disposition"),
-                     F("attachment; filename=log.txt"));
+  _server.sendHeader(F("Content-Disposition"), F("attachment; filename=log.txt"));
   _server.sendHeader(F("Connection"), F("close"));
   _server.sendHeader(F("Content-Length"), String(fileSize));
   _server.setContentLength(fileSize);
-  _server.send(200, F("text/plain"), "");  // Send headers
+  _server.send(200, F("text/plain"), ""); // Send headers
 
   const size_t CHUNK_SIZE = 1024;
   uint8_t buffer[CHUNK_SIZE];
@@ -268,7 +262,8 @@ void AdminHandler::handleDownloadLog() {
   while (remainingBytes > 0) {
     size_t bytesToRead = min(remainingBytes, CHUNK_SIZE);
     size_t bytesRead = logFile.read(buffer, bytesToRead);
-    if (bytesRead == 0) break;
+    if (bytesRead == 0)
+      break;
     _server.sendContent((char*)buffer, bytesRead);
     remainingBytes -= bytesRead;
     yield();

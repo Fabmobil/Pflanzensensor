@@ -8,7 +8,7 @@
 
 #include <ArduinoJson.h>
 #include <LittleFS.h>
-#include <time.h>  // For timezone support
+#include <time.h> // For timezone support
 #include <umm_malloc/umm_malloc.h>
 
 #include "configs/config.h"
@@ -19,12 +19,11 @@
 #endif
 
 const char Logger::MSG_MEMORY_STATS[] PROGMEM =
-  "Speicher [%s] Heap:%u/%u Block:%u Stack:%u/%u Frag:%u%%";
+    "Speicher [%s] Heap:%u/%u Block:%u Stack:%u/%u Frag:%u%%";
 const char Logger::MSG_FREE_HEAP[] PROGMEM = "- Freier Heap: %u Bytes";
 const char Logger::MSG_MAX_FREE_BLOCK[] PROGMEM = "- Größter freier Block: %u Bytes";
 const char Logger::MSG_FRAGMENTATION[] PROGMEM = "- Fragmentierung: %u%%";
-const char Logger::MSG_FREE_CONT_STACK[] PROGMEM =
-  "- Freier Cont-Stack: %u Bytes";
+const char Logger::MSG_FREE_CONT_STACK[] PROGMEM = "- Freier Cont-Stack: %u Bytes";
 const char Logger::MSG_FREE_STACK[] PROGMEM = "- Freier Stack: %u Bytes";
 const char Logger::MSG_BYTES[] PROGMEM = " Bytes";
 const char Logger::MSG_INITIALIZING[] PROGMEM = "Initialisiere ";
@@ -36,17 +35,21 @@ const char Logger::MSG_INFO[] PROGMEM = ":I:";
 const char Logger::MSG_BEFORE[] PROGMEM = "vorher";
 const char Logger::MSG_AFTER[] PROGMEM = "nachher";
 const char Logger::MSG_MEMORY_CHANGES[] PROGMEM =
-  "Speicheränderungen [%s] Heap:%+d Block:%+d Stack:%+d Frag:%+d%%";
+    "Speicheränderungen [%s] Heap:%+d Block:%+d Stack:%+d Frag:%+d%%";
 
 // Determine default log level from compile-time macro LOG_LEVEL (e.g., "INFO")
 static LogLevel getDefaultLogLevelFromConfig() {
 #ifdef LOG_LEVEL
-  if (strcmp(LOG_LEVEL, "DEBUG") == 0) return LogLevel::DEBUG;
-  if (strcmp(LOG_LEVEL, "INFO") == 0) return LogLevel::INFO;
-  if (strcmp(LOG_LEVEL, "WARNING") == 0) return LogLevel::WARNING;
-  if (strcmp(LOG_LEVEL, "ERROR") == 0) return LogLevel::ERROR;
+  if (strcmp(LOG_LEVEL, "DEBUG") == 0)
+    return LogLevel::DEBUG;
+  if (strcmp(LOG_LEVEL, "INFO") == 0)
+    return LogLevel::INFO;
+  if (strcmp(LOG_LEVEL, "WARNING") == 0)
+    return LogLevel::WARNING;
+  if (strcmp(LOG_LEVEL, "ERROR") == 0)
+    return LogLevel::ERROR;
 #endif
-  return LogLevel::INFO;  // Fallback if not defined or invalid
+  return LogLevel::INFO; // Fallback if not defined or invalid
 }
 
 Logger logger(getDefaultLogLevelFromConfig(), true, FILE_LOGGING_ENABLED);
@@ -61,7 +64,7 @@ Logger::Logger(LogLevel logLevel, bool useSerial, bool fileLoggingEnabled)
       m_useColors(false),
       m_timeClient(nullptr),
       m_ntpInitialized(false),
-      m_fileLoggingEnabled(false) {  // Start false, will be enabled after setup
+      m_fileLoggingEnabled(false) { // Start false, will be enabled after setup
   if (m_useSerial) {
     Serial.begin(115200);
   }
@@ -93,7 +96,7 @@ Logger::Logger(LogLevel logLevel, bool useSerial, bool fileLoggingEnabled)
 
     m_fileLoggingEnabled = true;
     if (m_useSerial) {
-  Serial.println(F("Dateilogs erfolgreich initialisiert"));
+      Serial.println(F("Dateilogs erfolgreich initialisiert"));
     }
   }
 }
@@ -128,45 +131,41 @@ void Logger::log(LogLevel level, const String& module, const String& message) {
   String timestamp = getFormattedTimestamp();
   String prefix;
   switch (level) {
-    case LogLevel::DEBUG:
-      prefix = readProgmemString(MSG_DEBUG);
-      break;
-    case LogLevel::INFO:
-      prefix = readProgmemString(MSG_INFO);
-      break;
-    case LogLevel::WARNING:
-      prefix = readProgmemString(MSG_WARNING);
-      break;
-    case LogLevel::ERROR:
-      prefix = readProgmemString(MSG_ERROR);
-      break;
+  case LogLevel::DEBUG:
+    prefix = readProgmemString(MSG_DEBUG);
+    break;
+  case LogLevel::INFO:
+    prefix = readProgmemString(MSG_INFO);
+    break;
+  case LogLevel::WARNING:
+    prefix = readProgmemString(MSG_WARNING);
+    break;
+  case LogLevel::ERROR:
+    prefix = readProgmemString(MSG_ERROR);
+    break;
   }
 
   char formattedMessage[128];
-  snprintf(formattedMessage, sizeof(formattedMessage), "%s [%s] %s",
-           prefix.c_str(), module.c_str(), safeMessage.c_str());
+  snprintf(formattedMessage, sizeof(formattedMessage), "%s [%s] %s", prefix.c_str(), module.c_str(),
+           safeMessage.c_str());
 
   if (m_useSerial) {
     String serialMessage;
     if (m_useColors) {
       // Add simple color codes for better compatibility
       switch (level) {
-        case LogLevel::DEBUG:
-          serialMessage = "\x1b[90m" + timestamp + " " + formattedMessage +
-                          "\x1b[0m";  // Grey
-          break;
-        case LogLevel::INFO:
-          serialMessage = "\x1b[32m" + timestamp + " " + formattedMessage +
-                          "\x1b[0m";  // Green
-          break;
-        case LogLevel::WARNING:
-          serialMessage = "\x1b[33m" + timestamp + " " + formattedMessage +
-                          "\x1b[0m";  // Orange
-          break;
-        case LogLevel::ERROR:
-          serialMessage = "\x1b[31m" + timestamp + " " + formattedMessage +
-                          "\x1b[0m";  // Red
-          break;
+      case LogLevel::DEBUG:
+        serialMessage = "\x1b[90m" + timestamp + " " + formattedMessage + "\x1b[0m"; // Grey
+        break;
+      case LogLevel::INFO:
+        serialMessage = "\x1b[32m" + timestamp + " " + formattedMessage + "\x1b[0m"; // Green
+        break;
+      case LogLevel::WARNING:
+        serialMessage = "\x1b[33m" + timestamp + " " + formattedMessage + "\x1b[0m"; // Orange
+        break;
+      case LogLevel::ERROR:
+        serialMessage = "\x1b[31m" + timestamp + " " + formattedMessage + "\x1b[0m"; // Red
+        break;
       }
     } else {
       serialMessage = timestamp + " " + formattedMessage;
@@ -204,11 +203,10 @@ MemoryStats Logger::getMemoryStats() {
 #ifdef ESP32
   stats.totalHeap = ESP.getHeapSize();
 #else
-  stats.totalHeap = 81920;  // ESP8266 typically has 80KB heap
+  stats.totalHeap = 81920; // ESP8266 typically has 80KB heap
 #endif
 
-  stats.totalStack =
-      ESP.getFreeContStack() + (ESP.getFreeHeap() - ESP.getMaxFreeBlockSize());
+  stats.totalStack = ESP.getFreeContStack() + (ESP.getFreeHeap() - ESP.getMaxFreeBlockSize());
 
   // Update peak values
   updatePeakStats(stats);
@@ -219,28 +217,29 @@ MemoryStats Logger::getMemoryStats() {
 void Logger::updatePeakStats(const MemoryStats& stats) {
   m_peakStats.minFreeHeap = min(m_peakStats.minFreeHeap, stats.freeHeap);
   m_peakStats.minFreeBlock = min(m_peakStats.minFreeBlock, stats.maxFreeBlock);
-  m_peakStats.maxFragmentation =
-      max(m_peakStats.maxFragmentation, stats.fragmentation);
+  m_peakStats.maxFragmentation = max(m_peakStats.maxFragmentation, stats.fragmentation);
 }
 
 void Logger::logMemoryStats(const String& location) {
-  if (!ConfigMgr.isDebugRAM()) return;
+  if (!ConfigMgr.isDebugRAM())
+    return;
   MemoryStats stats = getMemoryStats();
 
   char buffer[128];
-  snprintf_P(buffer, sizeof(buffer), MSG_MEMORY_STATS, location.c_str(),
-             stats.freeHeap, stats.totalHeap, stats.maxFreeBlock,
-             stats.freeStack, stats.totalStack, stats.fragmentation);
+  snprintf_P(buffer, sizeof(buffer), MSG_MEMORY_STATS, location.c_str(), stats.freeHeap,
+             stats.totalHeap, stats.maxFreeBlock, stats.freeStack, stats.totalStack,
+             stats.fragmentation);
 
   debug("Memory", buffer);
 }
 
 void Logger::beginMemoryTracking(const String& sectionName) {
-  if (!ConfigMgr.isDebugRAM()) return;
+  if (!ConfigMgr.isDebugRAM())
+    return;
 
   if (m_currentTracking.isTracking) {
-    warning("Memory", F("Previous memory tracking section not closed: ") +
-                          m_currentTracking.sectionName);
+    warning("Memory",
+            F("Previous memory tracking section not closed: ") + m_currentTracking.sectionName);
     endMemoryTracking(m_currentTracking.sectionName);
   }
 
@@ -254,7 +253,8 @@ void Logger::beginMemoryTracking(const String& sectionName) {
 }
 
 void Logger::endMemoryTracking(const String& sectionName) {
-  if (!ConfigMgr.isDebugRAM()) return;
+  if (!ConfigMgr.isDebugRAM())
+    return;
 
   if (!m_currentTracking.isTracking) {
     warning("Memory", F("No active memory tracking section"));
@@ -263,8 +263,7 @@ void Logger::endMemoryTracking(const String& sectionName) {
 
   if (sectionName != m_currentTracking.sectionName) {
     warning("Memory", F("Memory tracking section mismatch! Expected: ") +
-                          m_currentTracking.sectionName + F(" Got: ") +
-                          sectionName);
+                          m_currentTracking.sectionName + F(" Got: ") + sectionName);
     return;
   }
 
@@ -278,8 +277,8 @@ void Logger::endMemoryTracking(const String& sectionName) {
   int32_t fragDiff = currentStats.fragmentation - initialStats.fragmentation;
 
   char buffer[128];
-  snprintf_P(buffer, sizeof(buffer), MSG_MEMORY_CHANGES, sectionName.c_str(),
-             heapDiff, blockDiff, stackDiff, fragDiff);
+  snprintf_P(buffer, sizeof(buffer), MSG_MEMORY_CHANGES, sectionName.c_str(), heapDiff, blockDiff,
+             stackDiff, fragDiff);
 
   info("Memory", String(buffer) + F(" (") + duration + F("ms)"));
   logMemoryStats(readProgmemString(MSG_AFTER));
@@ -293,7 +292,8 @@ void Logger::enableFileLogging(bool enable) {
     if (!LittleFS.exists("/")) {
       if (!LittleFS.begin()) {
         if (m_useSerial) {
-          Serial.println(F("Dateisystem konnte beim Aktivieren des Loggings nicht eingehängt werden"));
+          Serial.println(
+              F("Dateisystem konnte beim Aktivieren des Loggings nicht eingehängt werden"));
         }
         return;
       }
@@ -322,7 +322,7 @@ void Logger::enableFileLogging(bool enable) {
 bool Logger::isFileLoggingEnabled() const { return m_fileLoggingEnabled; }
 
 void Logger::writeToFile(const String& logMessage) {
-  static bool inWriteToFile = false;  // Prevent recursive calls
+  static bool inWriteToFile = false; // Prevent recursive calls
 
   if (!m_fileLoggingEnabled || inWriteToFile) {
     return;
@@ -348,7 +348,7 @@ void Logger::writeToFile(const String& logMessage) {
     if (!file) {
       m_fileLoggingEnabled = false;
       if (m_useSerial) {
-  Serial.println(F("Logdatei konnte nicht zum Schreiben geöffnet werden"));
+        Serial.println(F("Logdatei konnte nicht zum Schreiben geöffnet werden"));
       }
       inWriteToFile = false;
       return;
@@ -360,7 +360,7 @@ void Logger::writeToFile(const String& logMessage) {
 
   // Only check size occasionally to reduce filesystem operations
   static uint32_t lastCheck = 0;
-  if (millis() - lastCheck > 30000) {  // Check every 30 seconds
+  if (millis() - lastCheck > 30000) { // Check every 30 seconds
     lastCheck = millis();
     truncateLogFileIfNeeded();
   }
@@ -369,12 +369,14 @@ void Logger::writeToFile(const String& logMessage) {
 }
 
 void Logger::truncateLogFileIfNeeded() {
-  if (!m_fileLoggingEnabled) return;
+  if (!m_fileLoggingEnabled)
+    return;
 
   CriticalSection cs;
 
   File file = LittleFS.open(m_logFileName, "r");
-  if (!file) return;
+  if (!file)
+    return;
 
   if (file.size() <= m_maxFileSize) {
     file.close();
@@ -387,7 +389,8 @@ void Logger::truncateLogFileIfNeeded() {
   // original file with the temp file. This avoids allocating a large buffer
   // on the heap (important on ESP8266) and keeps newer log entries.
   size_t fileSize = file.size();
-  info(F("Logger"), String(F("Logdatei prüfen: Größe=")) + fileSize + F(" Bytes, Limit=" ) + m_maxFileSize + F(" Bytes"));
+  info(F("Logger"), String(F("Logdatei prüfen: Größe=")) + fileSize + F(" Bytes, Limit=") +
+                        m_maxFileSize + F(" Bytes"));
   // Try to keep the newer half, but don't exceed the configured maximum
   size_t keepSize = min(fileSize / 2, static_cast<size_t>(m_maxFileSize));
   size_t startPos = (fileSize > keepSize) ? (fileSize - keepSize) : 0;
@@ -396,7 +399,8 @@ void Logger::truncateLogFileIfNeeded() {
   File tmp = LittleFS.open(tmpName.c_str(), "w");
   if (!tmp) {
     // If temp file can't be created, fallback to simple truncation
-    warning(F("Logger"), F("Temporäre Logdatei konnte nicht erstellt werden, falle auf vollständige Kürzung zurück"));
+    warning(F("Logger"), F("Temporäre Logdatei konnte nicht erstellt werden, falle auf "
+                           "vollständige Kürzung zurück"));
     file.close();
     LittleFS.remove(m_logFileName);
     File nf = LittleFS.open(m_logFileName, "w");
@@ -415,11 +419,13 @@ void Logger::truncateLogFileIfNeeded() {
   uint8_t buffer[BUF_SIZE];
   size_t remaining = keepSize;
   file.seek(startPos);
-  debug(F("Logger"), String(F("Beginne Kopieren ab Position ")) + startPos + F(" (Bytes zu kopieren: ") + keepSize + F(")"));
+  debug(F("Logger"), String(F("Beginne Kopieren ab Position ")) + startPos +
+                         F(" (Bytes zu kopieren: ") + keepSize + F(")"));
   while (remaining > 0) {
     size_t toRead = (remaining > BUF_SIZE) ? BUF_SIZE : remaining;
     size_t r = file.readBytes(reinterpret_cast<char*>(buffer), toRead);
-    if (r == 0) break;  // read error or EOF
+    if (r == 0)
+      break; // read error or EOF
     tmp.write(buffer, r);
     remaining -= r;
   }
@@ -450,36 +456,36 @@ void Logger::truncateLogFileIfNeeded() {
 
 String Logger::logLevelToString(LogLevel level) {
   switch (level) {
-    case LogLevel::DEBUG:
-      return "DEBUG";
-    case LogLevel::INFO:
-      return "INFO";
-    case LogLevel::WARNING:
-      return "WARNING";
-    case LogLevel::ERROR:
-      return "ERROR";
-    default:
-      return "UNKNOWN";
+  case LogLevel::DEBUG:
+    return "DEBUG";
+  case LogLevel::INFO:
+    return "INFO";
+  case LogLevel::WARNING:
+    return "WARNING";
+  case LogLevel::ERROR:
+    return "ERROR";
+  default:
+    return "UNKNOWN";
   }
 }
 
 String Logger::getIndent(const String& logLevelStr) const {
-  const int maxLength = 5;  // Length of the longest log level string
+  const int maxLength = 5; // Length of the longest log level string
   return String(' ', maxLength - logLevelStr.length());
 }
 
 String Logger::logLevelToColor(LogLevel level) const {
   switch (level) {
-    case LogLevel::DEBUG:
-      return "blue";
-    case LogLevel::INFO:
-      return "green";
-    case LogLevel::WARNING:
-      return "orange";
-    case LogLevel::ERROR:
-      return "red";
-    default:
-      return "black";
+  case LogLevel::DEBUG:
+    return "blue";
+  case LogLevel::INFO:
+    return "green";
+  case LogLevel::WARNING:
+    return "orange";
+  case LogLevel::ERROR:
+    return "red";
+  default:
+    return "black";
   }
 }
 
@@ -503,7 +509,7 @@ void Logger::initNTP() {
 
   // Debug: Show timezone setup verification
   if (m_useSerial) {
-  Serial.println(F("NTP mit Zeitzonenunterstützung initialisiert"));
+    Serial.println(F("NTP mit Zeitzonenunterstützung initialisiert"));
   }
 }
 
@@ -514,14 +520,14 @@ void Logger::setupTimezone() {
 
   // Debug: Log the timezone setup
   if (m_useSerial) {
-  Serial.println(F("Zeitzone auf Berlin (CET/CEST) gesetzt"));
+    Serial.println(F("Zeitzone auf Berlin (CET/CEST) gesetzt"));
   }
 }
 
 void Logger::verifyTimezone() {
   if (!m_ntpInitialized || !m_timeClient) {
     if (m_useSerial) {
-  Serial.println(F("NTP nicht initialisiert, Zeitzone kann nicht geprüft werden"));
+      Serial.println(F("NTP nicht initialisiert, Zeitzone kann nicht geprüft werden"));
     }
     return;
   }
@@ -536,10 +542,10 @@ void Logger::verifyTimezone() {
   strftime(local_buffer, 32, "%Y-%m-%d %H:%M:%S", local_time);
 
   if (m_useSerial) {
-  Serial.print(F("UTC-Zeit: "));
+    Serial.print(F("UTC-Zeit: "));
     Serial.println(utc_buffer);
-  Serial.print(F("Ortszeit: "));
-  Serial.println(local_buffer);
+    Serial.print(F("Ortszeit: "));
+    Serial.println(local_buffer);
   }
 }
 
@@ -550,22 +556,21 @@ void Logger::updateNTP() {
 }
 
 LogLevel Logger::stringToLogLevel(const String& level) {
-  if (level == "DEBUG") return LogLevel::DEBUG;
-  if (level == "INFO") return LogLevel::INFO;
-  if (level == "WARNING") return LogLevel::WARNING;
-  if (level == "ERROR") return LogLevel::ERROR;
-  return LogLevel::INFO;  // Default to INFO
+  if (level == "DEBUG")
+    return LogLevel::DEBUG;
+  if (level == "INFO")
+    return LogLevel::INFO;
+  if (level == "WARNING")
+    return LogLevel::WARNING;
+  if (level == "ERROR")
+    return LogLevel::ERROR;
+  return LogLevel::INFO; // Default to INFO
 }
 
-void Logger::setCallback(
-    std::function<void(LogLevel, const String&)> callback) {
+void Logger::setCallback(std::function<void(LogLevel, const String&)> callback) {
   s_logCallback = std::move(callback);
 }
 
-std::function<void(LogLevel, const String&)> Logger::getCallback() const {
-  return s_logCallback;
-}
+std::function<void(LogLevel, const String&)> Logger::getCallback() const { return s_logCallback; }
 
-bool Logger::isCallbackEnabled() const {
-  return static_cast<bool>(s_logCallback);
-}
+bool Logger::isCallbackEnabled() const { return static_cast<bool>(s_logCallback); }

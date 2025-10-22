@@ -10,10 +10,10 @@
 #include <memory>
 #include <vector>
 
-#include "configs/config.h"  // Must come before other includes
+#include "configs/config.h" // Must come before other includes
 
 #if USE_DISPLAY
-#include "display/display.h"  // Include the full definition instead of forward declaration
+#include "display/display.h" // Include the full definition instead of forward declaration
 #include "display/display_config.h"
 #if USE_LED_TRAFFIC_LIGHT
 #include "led-traffic-light/led.h"
@@ -22,7 +22,7 @@
 #include "utils/result_types.h"
 
 class DisplayManager : public Manager {
- public:
+public:
   // Constructor with member initializer list
   DisplayManager()
       : Manager("DisplayManager"),
@@ -35,15 +35,15 @@ class DisplayManager : public Manager {
         m_config(),
         m_lastScreenChange(0),
         m_currentScreenIndex(0) {
-  }  // Fixed initialization order to match declaration order
+  } // Fixed initialization order to match declaration order
 
   // Configuration methods
   DisplayResult setScreenDuration(unsigned long duration);
   DisplayResult setClockFormat(const String& format);
   DisplayResult setIpScreenEnabled(bool enabled);
-  DisplayResult setClockEnabled(bool enabled);          // New method
-  DisplayResult setFlowerImageEnabled(bool enabled);    // New method
-  DisplayResult setFabmobilImageEnabled(bool enabled);  // New method
+  DisplayResult setClockEnabled(bool enabled);         // New method
+  DisplayResult setFlowerImageEnabled(bool enabled);   // New method
+  DisplayResult setFabmobilImageEnabled(bool enabled); // New method
   DisplayResult saveConfig();
 
   /**
@@ -57,9 +57,7 @@ class DisplayManager : public Manager {
    * @brief Get the screen duration
    * @return Screen duration in milliseconds
    */
-  inline unsigned long getScreenDuration() const {
-    return m_config.screenDuration;
-  }
+  inline unsigned long getScreenDuration() const { return m_config.screenDuration; }
 
   /**
    * @brief Get the clock format
@@ -89,9 +87,7 @@ class DisplayManager : public Manager {
    * @brief Check if Fabmobil image is enabled
    * @return True if Fabmobil image is enabled, false otherwise
    */
-  inline bool isFabmobilImageEnabled() const {
-    return m_config.showFabmobilImage;
-  }
+  inline bool isFabmobilImageEnabled() const { return m_config.showFabmobilImage; }
 
   // Display operations
   void showInfoScreen(const String& ipAddress);
@@ -153,10 +149,10 @@ class DisplayManager : public Manager {
     m_logLineCount = 0;
   }
 
- protected:
+protected:
   TypedResult<ResourceError, void> initialize() override;
 
- private:
+private:
   std::unique_ptr<SSD1306Display> m_display;
 #if USE_LED_TRAFFIC_LIGHT
   std::unique_ptr<LedLights> m_ledLights;
@@ -170,9 +166,9 @@ class DisplayManager : public Manager {
   // Boot screen state
   bool m_bootMode = true;
   static constexpr size_t BOOT_LOG_LINES = 6;
-  String m_logLines[BOOT_LOG_LINES];  ///< Log lines for boot/update screens
-                                      ///< (fixed size)
-  size_t m_logLineCount = 0;          ///< Number of log lines currently stored
+  String m_logLines[BOOT_LOG_LINES]; ///< Log lines for boot/update screens
+                                     ///< (fixed size)
+  size_t m_logLineCount = 0;         ///< Number of log lines currently stored
 
   // Update mode state
   bool m_updateMode = false;
@@ -191,6 +187,6 @@ class DisplayManager : public Manager {
 
 extern std::unique_ptr<DisplayManager> displayManager;
 
-#endif  // USE_DISPLAY
+#endif // USE_DISPLAY
 
-#endif  // manager_display_H
+#endif // manager_display_H

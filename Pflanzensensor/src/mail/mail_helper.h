@@ -18,30 +18,30 @@
  * @brief Helper-Funktionen für E-Mail-Operationen
  */
 namespace MailHelper {
-  /**
+/**
    * @brief Sende schnell eine Test-E-Mail
    * @return ResourceResult mit Erfolgsstatus
    */
-  ResourceResult sendQuickTestMail();
+ResourceResult sendQuickTestMail();
 
-  /**
+/**
    * @brief Sende E-Mail mit System-Info
    * @return ResourceResult mit Erfolgsstatus
    */
-  ResourceResult sendSystemInfo();
+ResourceResult sendSystemInfo();
 
-  /**
+/**
    * @brief Prüfe ob E-Mail-System bereit ist
    * @return true wenn bereit für E-Mail-Versand
    */
-  bool isMailSystemReady();
+bool isMailSystemReady();
 
-  /**
+/**
    * @brief Formatiere Systemstatistiken als String
    * @return String mit Systeminfo
    */
-  String getSystemInfoString();
-}
+String getSystemInfoString();
+} // namespace MailHelper
 
 #endif // USE_MAIL
 #endif // MAIL_HELPER_H

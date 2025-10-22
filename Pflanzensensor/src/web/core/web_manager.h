@@ -31,7 +31,7 @@
 #include "web/handler/wifi_setup_handler.h"
 #include "web/services/css_service.h"
 
-class WiFiSetupHandler;  ///< Forward declaration for WiFi setup handler
+class WiFiSetupHandler; ///< Forward declaration for WiFi setup handler
 
 /**
  * @class WebManager
@@ -46,7 +46,7 @@ class WiFiSetupHandler;  ///< Forward declaration for WiFi setup handler
  *          - OTA update coordination
  */
 class WebManager {
- public:
+public:
   /**
    * @brief Get singleton instance
    * @return Reference to WebManager instance
@@ -64,9 +64,7 @@ class WebManager {
    * @brief Set sensor manager reference
    * @param sensorManager Reference to sensor manager instance
    */
-  void setSensorManager(SensorManager& sensorManager) {
-    _sensorManager = &sensorManager;
-  }
+  void setSensorManager(SensorManager& sensorManager) { _sensorManager = &sensorManager; }
 
   /**
    * @brief Get sensor manager reference
@@ -171,9 +169,8 @@ class WebManager {
    */
   void resetUpdateModeStartTime() { m_updateModeStartTime = 0; }
 
- private:
-  static const size_t MAX_ACTIVE_HANDLERS =
-      4;  ///< Maximum number of cached handlers
+private:
+  static const size_t MAX_ACTIVE_HANDLERS = 4; ///< Maximum number of cached handlers
 
   /**
    * @struct HandlerCacheEntry
@@ -181,10 +178,9 @@ class WebManager {
    * @details Stores handler instances and their metadata for efficient reuse
    */
   struct HandlerCacheEntry {
-    std::unique_ptr<BaseHandler>
-        handler;               ///< Unique pointer to handler instance
-    unsigned long lastAccess;  ///< Timestamp of last handler access
-    String handlerType;        ///< Type identifier for the handler
+    std::unique_ptr<BaseHandler> handler; ///< Unique pointer to handler instance
+    unsigned long lastAccess;             ///< Timestamp of last handler access
+    String handlerType;                   ///< Type identifier for the handler
   };
 
   /**
@@ -299,8 +295,7 @@ class WebManager {
    * @details Validates update request parameters and sets appropriate flags
    *          for the update process.
    */
-  ResourceResult validateUpdateRequest(const String& json,
-                                       bool& fileSystemUpdate,
+  ResourceResult validateUpdateRequest(const String& json, bool& fileSystemUpdate,
                                        bool& firmwareUpdate, bool& updateMode);
 
   /**
@@ -312,8 +307,7 @@ class WebManager {
    * @details Configures system for update process based on
    *          specified update types and mode.
    */
-  bool prepareUpdateMode(bool fileSystemUpdate, bool firmwareUpdate,
-                         bool updateMode);
+  bool prepareUpdateMode(bool fileSystemUpdate, bool firmwareUpdate, bool updateMode);
 
   /**
    * @brief Convert HTTP method to string representation
@@ -356,8 +350,7 @@ class WebManager {
    *          - Evicts oldest handler if cache is full
    *          - Updates access timestamps
    */
-  void cacheHandler(std::unique_ptr<BaseHandler> handler,
-                    const String& handlerType);
+  void cacheHandler(std::unique_ptr<BaseHandler> handler, const String& handlerType);
 
   /**
    * @brief Get handler from cache if it exists
@@ -394,8 +387,7 @@ class WebManager {
    * @details Serves static files without using the built-in serveStatic
    *          to avoid MD5 calculation issues that can cause crashes.
    */
-  void serveStaticFile(const String& path, const String& contentType,
-                       const String& cacheControl);
+  void serveStaticFile(const String& path, const String& contentType, const String& cacheControl);
 
   // Utility methods (web_manager_utils.cpp)
   /**
@@ -409,43 +401,39 @@ class WebManager {
   bool isCaptivePortalAPActive() const;
 
   // Member variables
-  std::list<HandlerCacheEntry> m_handlerCache;  ///< LRU cache of handlers
+  std::list<HandlerCacheEntry> m_handlerCache; ///< LRU cache of handlers
 
   // Configuration constants
-  unsigned long m_updateModeTimeout =
-      60000;                               ///< Update mode timeout (1 minute)
-  unsigned long m_updateModeStartTime = 0;  ///< Update mode start timestamp
-  static constexpr size_t BUFFER_SIZE = 256;  ///< Response buffer size
-  static char s_responseBuffer[BUFFER_SIZE];  ///< Static response buffer
+  unsigned long m_updateModeTimeout = 60000; ///< Update mode timeout (1 minute)
+  unsigned long m_updateModeStartTime = 0;   ///< Update mode start timestamp
+  static constexpr size_t BUFFER_SIZE = 256; ///< Response buffer size
+  static char s_responseBuffer[BUFFER_SIZE]; ///< Static response buffer
 
-  bool m_handlersInitialized{false};           ///< Handler initialization flag
-  std::unique_ptr<ESP8266WebServer> _server;   ///< Web server instance
-  std::unique_ptr<WebRouter> _router;          ///< URL router
-  std::unique_ptr<WebAuth> _auth;              ///< Authentication service
-  std::unique_ptr<CSSService> _cssService;     ///< CSS management service
-  std::unique_ptr<WebOTAHandler> _otaHandler;  ///< OTA update handler
-  std::unique_ptr<AdminMinimalHandler>
-      _minimalAdminHandler;       ///< Minimal admin interface
-  SensorManager* _sensorManager;  ///< Sensor management
+  bool m_handlersInitialized{false};                         ///< Handler initialization flag
+  std::unique_ptr<ESP8266WebServer> _server;                 ///< Web server instance
+  std::unique_ptr<WebRouter> _router;                        ///< URL router
+  std::unique_ptr<WebAuth> _auth;                            ///< Authentication service
+  std::unique_ptr<CSSService> _cssService;                   ///< CSS management service
+  std::unique_ptr<WebOTAHandler> _otaHandler;                ///< OTA update handler
+  std::unique_ptr<AdminMinimalHandler> _minimalAdminHandler; ///< Minimal admin interface
+  SensorManager* _sensorManager;                             ///< Sensor management
 
   // On-demand handlers
-  std::unique_ptr<StartpageHandler> _startHandler;  ///< Start page handler
-  std::unique_ptr<AdminHandler> _adminHandler;      ///< Admin interface handler
-  std::unique_ptr<SensorHandler> _sensorHandler;    ///< Sensor data handler
-  std::unique_ptr<AdminSensorHandler>
-      _adminSensorHandler;                  ///< Sensor admin handler
-  std::unique_ptr<LogHandler> _logHandler;  ///< Logging handler
-  std::unique_ptr<WiFiSetupHandler> _wifiSetupHandler;  ///< WiFi setup handler
+  std::unique_ptr<StartpageHandler> _startHandler;         ///< Start page handler
+  std::unique_ptr<AdminHandler> _adminHandler;             ///< Admin interface handler
+  std::unique_ptr<SensorHandler> _sensorHandler;           ///< Sensor data handler
+  std::unique_ptr<AdminSensorHandler> _adminSensorHandler; ///< Sensor admin handler
+  std::unique_ptr<LogHandler> _logHandler;                 ///< Logging handler
+  std::unique_ptr<WiFiSetupHandler> _wifiSetupHandler;     ///< WiFi setup handler
 #if USE_DISPLAY
-  std::unique_ptr<AdminDisplayHandler>
-      _displayHandler;  ///< Display admin handler
+  std::unique_ptr<AdminDisplayHandler> _displayHandler; ///< Display admin handler
 #endif
 
-  bool _initialized{false};  ///< Initialization state flag
-  uint16_t _port;            ///< Server port number
+  bool _initialized{false}; ///< Initialization state flag
+  uint16_t _port;           ///< Server port number
 };
 
 // Global instance declaration
 extern WebManager& webManager;
 
-#endif  // WEB_MANAGER_H
+#endif // WEB_MANAGER_H

@@ -16,13 +16,12 @@ RouterResult WiFiSetupHandler::onRegisterRoutes(WebRouter& router) {
   // Register WiFi update endpoint (GET route removed - form is now integrated
   // in startpage)
   auto result = router.addRoute(HTTP_POST, "/admin/updateWiFi", [this]() {
-  logger.debug(F("WiFiSetupHandler"), F("POST /admin/updateWiFi aufgerufen"));
+    logger.debug(F("WiFiSetupHandler"), F("POST /admin/updateWiFi aufgerufen"));
     handleWiFiUpdate();
   });
   if (!result.isSuccess()) {
-  logger.error(
-    F("WiFiSetupHandler"),
-    "Registrierung POST /admin/updateWiFi fehlgeschlagen: " + result.getMessage());
+    logger.error(F("WiFiSetupHandler"),
+                 "Registrierung POST /admin/updateWiFi fehlgeschlagen: " + result.getMessage());
     return result;
   }
 
@@ -30,8 +29,8 @@ RouterResult WiFiSetupHandler::onRegisterRoutes(WebRouter& router) {
   return RouterResult::success();
 }
 
-HandlerResult WiFiSetupHandler::handlePost(
-    const String& uri, const std::map<String, String>& params) {
+HandlerResult WiFiSetupHandler::handlePost(const String& uri,
+                                           const std::map<String, String>& params) {
   if (uri == "/admin/updateWiFi") {
     handleWiFiUpdate();
     return HandlerResult::success();
@@ -54,13 +53,12 @@ void WiFiSetupHandler::handleWiFiUpdate() {
   String ssid = _server.arg("wifi_ssid");
   String password = _server.arg("wifi_password");
 
-  logger.info(F("WiFiSetupHandler"), F("Aktualisiere WiFi-Zugangsdaten - Slot: ") +
-                                         String(slot) + F(", SSID: ") + ssid);
+  logger.info(F("WiFiSetupHandler"),
+              F("Aktualisiere WiFi-Zugangsdaten - Slot: ") + String(slot) + F(", SSID: ") + ssid);
 
   // Validate slot number
   if (slot < 1 || slot > 3) {
-    logger.error(F("WiFiSetupHandler"),
-                 F("Ungültige Slot-Nummer: ") + String(slot));
+    logger.error(F("WiFiSetupHandler"), F("Ungültige Slot-Nummer: ") + String(slot));
     _server.send(400, F("text/plain"), F("Ungültiger Slot"));
     return;
   }
@@ -68,35 +66,33 @@ void WiFiSetupHandler::handleWiFiUpdate() {
   // Validate credentials
   if (!validateCredentials(ssid, password)) {
     logger.error(F("WiFiSetupHandler"), F("Ungültige Zugangsdaten"));
-    _server.send(400, F("text/plain"),
-                 F("Ungültige SSID oder Passwort (zu kurz/lang)"));
+    _server.send(400, F("text/plain"), F("Ungültige SSID oder Passwort (zu kurz/lang)"));
     return;
   }
 
   // Update configuration based on slot
   bool updated = false;
   switch (slot) {
-    case 1:
-      ConfigMgr.setWiFiSSID1(ssid);
-      ConfigMgr.setWiFiPassword1(password);
-      updated = true;
-      break;
-    case 2:
-      ConfigMgr.setWiFiSSID2(ssid);
-      ConfigMgr.setWiFiPassword2(password);
-      updated = true;
-      break;
-    case 3:
-      ConfigMgr.setWiFiSSID3(ssid);
-      ConfigMgr.setWiFiPassword3(password);
-      updated = true;
-      break;
+  case 1:
+    ConfigMgr.setWiFiSSID1(ssid);
+    ConfigMgr.setWiFiPassword1(password);
+    updated = true;
+    break;
+  case 2:
+    ConfigMgr.setWiFiSSID2(ssid);
+    ConfigMgr.setWiFiPassword2(password);
+    updated = true;
+    break;
+  case 3:
+    ConfigMgr.setWiFiSSID3(ssid);
+    ConfigMgr.setWiFiPassword3(password);
+    updated = true;
+    break;
   }
 
   if (!updated) {
     logger.error(F("WiFiSetupHandler"), F("Aktualisierung der Zugangsdaten fehlgeschlagen"));
-    _server.send(500, F("text/plain"),
-                 F("Konfiguration konnte nicht gespeichert werden"));
+    _server.send(500, F("text/plain"), F("Konfiguration konnte nicht gespeichert werden"));
     return;
   }
 
@@ -105,8 +101,7 @@ void WiFiSetupHandler::handleWiFiUpdate() {
   if (!saveResult.isSuccess()) {
     logger.error(F("WiFiSetupHandler"),
                  F("Konfiguration konnte nicht gespeichert werden: ") + saveResult.getMessage());
-    _server.send(500, F("text/plain"),
-                 F("Konfiguration konnte nicht gespeichert werden"));
+    _server.send(500, F("text/plain"), F("Konfiguration konnte nicht gespeichert werden"));
     return;
   }
 
@@ -117,8 +112,7 @@ void WiFiSetupHandler::handleWiFiUpdate() {
   // Give response time to be sent
   delay(500);
 
-  logger.info(F("WiFiSetupHandler"),
-              F("WiFi-Zugangsdaten aktualisiert, starte neu..."));
+  logger.info(F("WiFiSetupHandler"), F("WiFi-Zugangsdaten aktualisiert, starte neu..."));
 
   // Try to connect with all available credentials
   tryAllWiFiCredentials();
@@ -135,20 +129,21 @@ String WiFiSetupHandler::generateNetworkSelection() {
   int networkCount = WiFi.scanNetworks();
 
   if (networkCount == 0) {
-  html += F("<option value=''>Keine Netzwerke gefunden</option>");
-  logger.warning(F("WiFiSetupHandler"), F("Keine WiFi-Netzwerke gefunden"));
+    html += F("<option value=''>Keine Netzwerke gefunden</option>");
+    logger.warning(F("WiFiSetupHandler"), F("Keine WiFi-Netzwerke gefunden"));
   } else if (networkCount > 0) {
-  logger.info(F("WiFiSetupHandler"),
-        F("Gefunden: ") + String(networkCount) + F(" WiFi-Netzwerke"));
+    logger.info(F("WiFiSetupHandler"),
+                F("Gefunden: ") + String(networkCount) + F(" WiFi-Netzwerke"));
 
     // Add networks to dropdown
-    for (int i = 0; i < networkCount && i < 20; ++i) {  // Limit to 20 networks
+    for (int i = 0; i < networkCount && i < 20; ++i) { // Limit to 20 networks
       String networkSSID = WiFi.SSID(i);
       int32_t rssi = WiFi.RSSI(i);
       uint8_t encType = WiFi.encryptionType(i);
 
       // Skip empty SSIDs
-      if (networkSSID.length() == 0) continue;
+      if (networkSSID.length() == 0)
+        continue;
 
       html += F("<option value='");
       html += networkSSID;
@@ -161,8 +156,8 @@ String WiFiSetupHandler::generateNetworkSelection() {
       html += F(")</option>");
     }
   } else {
-  html += F("<option value=''>Scan-Fehler</option>");
-  logger.error(F("WiFiSetupHandler"), F("WiFi-Scan fehlgeschlagen"));
+    html += F("<option value=''>Scan-Fehler</option>");
+    logger.error(F("WiFiSetupHandler"), F("WiFi-Scan fehlgeschlagen"));
   }
 
   html += F("</select>");
@@ -171,30 +166,30 @@ String WiFiSetupHandler::generateNetworkSelection() {
 
 int WiFiSetupHandler::getActiveWiFiSlot() {
   if (WiFi.status() != WL_CONNECTED) {
-    return 0;  // Keine aktive Verbindung
+    return 0; // Keine aktive Verbindung
   }
 
   String currentSSID = WiFi.SSID();
 
-  if (currentSSID == ConfigMgr.getWiFiSSID1()) return 1;
-  if (currentSSID == ConfigMgr.getWiFiSSID2()) return 2;
-  if (currentSSID == ConfigMgr.getWiFiSSID3()) return 3;
+  if (currentSSID == ConfigMgr.getWiFiSSID1())
+    return 1;
+  if (currentSSID == ConfigMgr.getWiFiSSID2())
+    return 2;
+  if (currentSSID == ConfigMgr.getWiFiSSID3())
+    return 3;
 
-  return 0;  // Connected but not to a configured network
+  return 0; // Connected but not to a configured network
 }
 
-bool WiFiSetupHandler::validateCredentials(const String& ssid,
-                                           const String& password) {
+bool WiFiSetupHandler::validateCredentials(const String& ssid, const String& password) {
   // SSID validation
   if (ssid.length() == 0 || ssid.length() > 32) {
-    logger.warning(F("WiFiSetupHandler"),
-                   F("Invalid SSID length: ") + String(ssid.length()));
+    logger.warning(F("WiFiSetupHandler"), F("Invalid SSID length: ") + String(ssid.length()));
     return false;
   }
 
   // Password validation (WPA requires at least 8 characters, max 64)
-  if (password.length() > 0 &&
-      (password.length() < 8 || password.length() > 64)) {
+  if (password.length() > 0 && (password.length() < 8 || password.length() > 64)) {
     logger.warning(F("WiFiSetupHandler"),
                    F("Invalid password length: ") + String(password.length()));
     return false;
@@ -203,8 +198,7 @@ bool WiFiSetupHandler::validateCredentials(const String& ssid,
   return true;
 }
 
-bool WiFiSetupHandler::testConnection(const String& ssid,
-                                      const String& password) {
+bool WiFiSetupHandler::testConnection(const String& ssid, const String& password) {
   logger.debug(F("WiFiSetupHandler"), F("Testing connection to: ") + ssid);
 
   // Save current WiFi state
@@ -216,7 +210,7 @@ bool WiFiSetupHandler::testConnection(const String& ssid,
 
   // Wait for connection with timeout
   unsigned long startTime = millis();
-  const unsigned long timeout = 10000;  // 10 seconds
+  const unsigned long timeout = 10000; // 10 seconds
 
   while (WiFi.status() != WL_CONNECTED && millis() - startTime < timeout) {
     delay(100);
@@ -235,8 +229,7 @@ bool WiFiSetupHandler::testConnection(const String& ssid,
       // Try to reconnect to original network
       // This is a simplified restoration - in practice, you'd need
       // to find and use the original password
-      logger.debug(F("WiFiSetupHandler"),
-                   F("Attempting to restore connection"));
+      logger.debug(F("WiFiSetupHandler"), F("Attempting to restore connection"));
     }
   }
 
@@ -244,9 +237,12 @@ bool WiFiSetupHandler::testConnection(const String& ssid,
 }
 
 String WiFiSetupHandler::formatSignalStrength(int32_t rssi) {
-  if (rssi > -50) return F("Ausgezeichnet");
-  if (rssi > -60) return F("Gut");
-  if (rssi > -70) return F("Mäßig");
+  if (rssi > -50)
+    return F("Ausgezeichnet");
+  if (rssi > -60)
+    return F("Gut");
+  if (rssi > -70)
+    return F("Mäßig");
   return F("Schwach");
 }
 

@@ -31,7 +31,7 @@
  * @inherits Manager
  */
 class SensorManager : public Manager {
- public:
+public:
   /**
    * @brief Constructs a new SensorManager instance
    * @details Initializes the sensor management system and sets up logging
@@ -55,62 +55,59 @@ class SensorManager : public Manager {
    * @note Only processes sensors if the manager is in INITIALIZED state
    */
   void updateMeasurements() {
-    if (getState() != ManagerState::INITIALIZED) {  // Using getState() from
-                                                    // Manager base class
+    if (getState() != ManagerState::INITIALIZED) { // Using getState() from
+                                                   // Manager base class
       return;
     }
 
-      for (const auto& sensor : m_sensors) {
-        if (!sensor || !sensor->isEnabled()) {
+    for (const auto& sensor : m_sensors) {
+      if (!sensor || !sensor->isEnabled()) {
         continue;
-        }
+      }
 
-        auto& stateLog = m_sensorStates[sensor->getId()];
-        auto cycleManager = m_cycleManagers[sensor->getId()].get();
+      auto& stateLog = m_sensorStates[sensor->getId()];
+      auto cycleManager = m_cycleManagers[sensor->getId()].get();
 
-        if (!cycleManager) {
-        logger.error(F("SensorManager"),
-               F("Kein Zyklusmanager für Sensor: ") + sensor->getId());
+      if (!cycleManager) {
+        logger.error(F("SensorManager"), F("Kein Zyklusmanager für Sensor: ") + sensor->getId());
         continue;
-        }
+      }
 
-        MeasurementState currentState = cycleManager->getCurrentState();
-        unsigned long now = millis();
+      MeasurementState currentState = cycleManager->getCurrentState();
+      unsigned long now = millis();
 
-        // Prüfe auf Zustandsänderungen und aktualisiere Tracking
-        bool stateChanged = (currentState != stateLog.lastState);
-        stateLog.lastState = currentState;  // Zustand sofort aktualisieren
+      // Prüfe auf Zustandsänderungen und aktualisiere Tracking
+      bool stateChanged = (currentState != stateLog.lastState);
+      stateLog.lastState = currentState; // Zustand sofort aktualisieren
 
-        // Nur tatsächliche Zustandsänderungen loggen
-        if (stateChanged && ConfigMgr.isDebugMeasurementCycle()) {
-        logger.debug(F("SensorManager"),
-               F("Sensor: ") + sensor->getId() + F(" Zustand: ") +
-                 String(static_cast<int>(currentState)) +
-                 F(" (geändert)"));
+      // Nur tatsächliche Zustandsänderungen loggen
+      if (stateChanged && ConfigMgr.isDebugMeasurementCycle()) {
+        logger.debug(F("SensorManager"), F("Sensor: ") + sensor->getId() + F(" Zustand: ") +
+                                             String(static_cast<int>(currentState)) +
+                                             F(" (geändert)"));
         stateLog.lastStateLogTime = now;
-        }
+      }
 
-        // Messzyklus verarbeiten wenn:
-        // 1. Sensor ist im Zustand WAITING_FOR_DUE und ist fällig, oder
-        // 2. Sensor ist in einem anderen aktiven Zustand
-        bool shouldProcess = (currentState == MeasurementState::WAITING_FOR_DUE &&
-                  cycleManager->isDue()) ||
-                   (currentState != MeasurementState::WAITING_FOR_DUE);
+      // Messzyklus verarbeiten wenn:
+      // 1. Sensor ist im Zustand WAITING_FOR_DUE und ist fällig, oder
+      // 2. Sensor ist in einem anderen aktiven Zustand
+      bool shouldProcess =
+          (currentState == MeasurementState::WAITING_FOR_DUE && cycleManager->isDue()) ||
+          (currentState != MeasurementState::WAITING_FOR_DUE);
 
-        if (shouldProcess) {
+      if (shouldProcess) {
         bool cycleResult = cycleManager->updateMeasurementCycle();
         bool resultChanged = (cycleResult != stateLog.lastUpdateResult);
-        stateLog.lastUpdateResult =
-          cycleResult;  // Ergebnis sofort aktualisieren
+        stateLog.lastUpdateResult = cycleResult; // Ergebnis sofort aktualisieren
 
         // Nur bei Ergebnisänderungen loggen
         if (resultChanged && ConfigMgr.isDebugMeasurementCycle()) {
           logger.debug(F("SensorManager"),
-                 F("Sensor: ") + sensor->getId() + F(" Zyklus: ") +
-                   (cycleResult ? F("Abgeschlossen") : F("In Bearbeitung")) +
-                   F(" (geändert)"));
+                       F("Sensor: ") + sensor->getId() + F(" Zyklus: ") +
+                           (cycleResult ? F("Abgeschlossen") : F("In Bearbeitung")) +
+                           F(" (geändert)"));
         }
-        }
+      }
 
       // Allow other processes to run
       yield();
@@ -125,9 +122,8 @@ class SensorManager : public Manager {
   Sensor* getSensor(const String& id) {
     // Remove excessive runtime logging - this is called constantly during
     // normal operation
-    auto it = std::find_if(
-        m_sensors.begin(), m_sensors.end(),
-        [&id](const auto& sensor) { return sensor && sensor->getId() == id; });
+    auto it = std::find_if(m_sensors.begin(), m_sensors.end(),
+                           [&id](const auto& sensor) { return sensor && sensor->getId() == id; });
     return it != m_sensors.end() ? it->get() : nullptr;
   }
 
@@ -135,9 +131,7 @@ class SensorManager : public Manager {
    * @brief Gets all sensors managed by this class
    * @return Const reference to the vector of sensor pointers
    */
-  const std::vector<std::unique_ptr<Sensor>>& getSensors() const {
-    return m_sensors;
-  }
+  const std::vector<std::unique_ptr<Sensor>>& getSensors() const { return m_sensors; }
 
   /**
    * @brief Stops all sensors and deinitializes them if required
@@ -173,7 +167,8 @@ class SensorManager : public Manager {
    */
   bool forceImmediateMeasurement(const String& id) {
     auto it = m_cycleManagers.find(id);
-    if (it == m_cycleManagers.end() || !it->second) return false;
+    if (it == m_cycleManagers.end() || !it->second)
+      return false;
     auto* cycleManager = it->second.get();
     cycleManager->forceImmediateMeasurement();
     return true;
@@ -186,7 +181,7 @@ class SensorManager : public Manager {
    */
   void applySensorSettingsFromConfig();
 
- protected:
+protected:
   /**
    * @brief Initialisiert das Sensormanagement-System
    * @return TypedResult mit Erfolg oder Fehlerdetails
@@ -196,9 +191,9 @@ class SensorManager : public Manager {
     // Sensoren mit Factory erstellen
     auto result = SensorFactory::createAllSensors(m_sensors, this);
     if (!result.isSuccess() && !result.isPartialSuccess()) {
-      return TypedResult<ResourceError, void>::fail(
-          ResourceError::OPERATION_FAILED,
-          F("Sensoren konnten nicht erstellt werden: ") + result.getMessage());
+      return TypedResult<ResourceError, void>::fail(ResourceError::OPERATION_FAILED,
+                                                    F("Sensoren konnten nicht erstellt werden: ") +
+                                                        result.getMessage());
     }
 
     if (result.isPartialSuccess()) {
@@ -215,9 +210,10 @@ class SensorManager : public Manager {
         // Überspringe Re-Initialisierung für Sensoren, die während der Fabrikprüfung deinitialisiert wurden
         // Verhindert Zugriff auf freigegebene Messdaten
         if (!sensor->isInitialized()) {
-          logger.debug(F("SensorM"), F("Zuvor fehlgeschlagener Sensor ") +
-                                         sensor->getName() +
-                                         F(" wurde während der Fabrikprüfung deinitialisiert, Fehlerflag wird entfernt"));
+          logger.debug(
+              F("SensorM"),
+              F("Zuvor fehlgeschlagener Sensor ") + sensor->getName() +
+                  F(" wurde während der Fabrikprüfung deinitialisiert, Fehlerflag wird entfernt"));
           // Fehlerflag entfernen, da Sensor funktioniert (wurde nur zur Speicherersparnis deinitialisiert)
           sensor->mutableConfig().hasPersistentError = false;
           continue;
@@ -225,14 +221,12 @@ class SensorManager : public Manager {
 
         if (sensor->init().isSuccess()) {
           // Sensor nach Neustart wieder funktionsfähig
-          logger.info(F("SensorM"), F("Zuvor fehlgeschlagener Sensor ") +
-                                        sensor->getName() +
+          logger.info(F("SensorM"), F("Zuvor fehlgeschlagener Sensor ") + sensor->getName() +
                                         F(" ist nach Neustart wieder funktionsfähig"));
           sensor->mutableConfig().hasPersistentError = false;
         } else {
           // Sensor nach Neustart weiterhin fehlerhaft
-          logger.error(F("SensorM"), F("Zuvor fehlgeschlagener Sensor ") +
-                                         sensor->getName() +
+          logger.error(F("SensorM"), F("Zuvor fehlgeschlagener Sensor ") + sensor->getName() +
                                          F(" ist nach Neustart weiterhin fehlerhaft"));
           sensor->stop();
           hasFailedSensors = true;
@@ -258,13 +252,11 @@ class SensorManager : public Manager {
     size_t enabledCount = 0;
     for (auto& sensor : m_sensors) {
       if (sensor && sensor->isEnabled()) {
-        auto cycleManager =
-            std::make_unique<SensorMeasurementCycleManager>(sensor.get());
+        auto cycleManager = std::make_unique<SensorMeasurementCycleManager>(sensor.get());
         String sensorId = sensor->getId();
         m_cycleManagers[sensorId] = std::move(cycleManager);
         enabledCount++;
-        logger.debug(F("SensorM"),
-                     F("Zyklusmanager für Sensor erstellt: ") + sensorId);
+        logger.debug(F("SensorM"), F("Zyklusmanager für Sensor erstellt: ") + sensorId);
       }
     }
 
@@ -275,10 +267,9 @@ class SensorManager : public Manager {
     msg += F(" Sensoren erstellt");
     logger.debug(F("SensorM"), msg);
 
-    logger.info(F("SensorM"),
-                F("Initialisierung des Sensormanagers abgeschlossen mit ") +
-                    String(m_sensors.size()) + F(" Sensoren (") +
-                    String(enabledCount) + F(" aktiviert)"));
+    logger.info(F("SensorM"), F("Initialisierung des Sensormanagers abgeschlossen mit ") +
+                                  String(m_sensors.size()) + F(" Sensoren (") +
+                                  String(enabledCount) + F(" aktiviert)"));
 
     // Setze Zustand auf INITIALIZED bevor Einstellungen angewendet werden
     setState(ManagerState::INITIALIZED);
@@ -295,12 +286,11 @@ class SensorManager : public Manager {
     return TypedResult<ResourceError, void>::success();
   }
 
- private:
-  static constexpr unsigned long MEMORY_LOG_INTERVAL = 60000;  // 1 minute
+private:
+  static constexpr unsigned long MEMORY_LOG_INTERVAL = 60000; // 1 minute
 
   std::vector<std::unique_ptr<Sensor>> m_sensors;
-  std::map<String, std::unique_ptr<SensorMeasurementCycleManager>>
-      m_cycleManagers;
+  std::map<String, std::unique_ptr<SensorMeasurementCycleManager>> m_cycleManagers;
   unsigned long m_lastMemoryLog{0};
 
   /**
@@ -312,9 +302,9 @@ class SensorManager : public Manager {
     bool lastUpdateResult{false};
     unsigned long lastStateLogTime{0};
     static constexpr unsigned long LOG_THROTTLE_INTERVAL =
-        5000;  // Only log same state every 5 seconds
+        5000; // Only log same state every 5 seconds
   };
   std::map<String, SensorStateLog> m_sensorStates;
 };
 
-#endif  // MANAGER_SENSOR_H
+#endif // MANAGER_SENSOR_H

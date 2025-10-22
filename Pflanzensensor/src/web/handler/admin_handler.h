@@ -28,7 +28,7 @@
  *          - Maintenance operations
  */
 class AdminHandler : public BaseHandler {
- public:
+public:
   /**
    * @brief Constructor
    * @param server Reference to web server instance
@@ -42,7 +42,7 @@ class AdminHandler : public BaseHandler {
    */
   AdminHandler(ESP8266WebServer& server, [[maybe_unused]] WebAuth& auth,
                [[maybe_unused]] CSSService& cssService)
-      : BaseHandler(server) {  // We only use the server parameter
+      : BaseHandler(server) { // We only use the server parameter
     logger.debug(F("AdminHandler"), F("Initializing AdminHandler"));
     logger.logMemoryStats(F("Admihandler"));
   }
@@ -124,7 +124,7 @@ class AdminHandler : public BaseHandler {
    */
   void handleWiFiUpdate();
 
- protected:
+protected:
   /**
    * @brief Handle GET requests
    * @param uri Request URI
@@ -136,8 +136,7 @@ class AdminHandler : public BaseHandler {
    *          - Configuration data
    *          - Status updates
    */
-  HandlerResult handleGet(const String& uri,
-                          const std::map<String, String>& query) override;
+  HandlerResult handleGet(const String& uri, const std::map<String, String>& query) override;
 
   /**
    * @brief Handle POST requests
@@ -150,13 +149,11 @@ class AdminHandler : public BaseHandler {
    *          - Maintenance operations
    *          - Security settings
    */
-  HandlerResult handlePost(const String& uri,
-                           const std::map<String, String>& params) override;
+  HandlerResult handlePost(const String& uri, const std::map<String, String>& params) override;
 
- private:
+private:
   friend class WebManager;
-  String
-      _tempChanges;  ///< Temporary storage for tracking configuration changes
+  String _tempChanges; ///< Temporary storage for tracking configuration changes
 
   /**
    * @brief Handle main admin page request
@@ -293,4 +290,4 @@ class AdminHandler : public BaseHandler {
   void onCleanup() override { _tempChanges = String(); }
 };
 
-#endif  // ADMIN_HANDLER_H
+#endif // ADMIN_HANDLER_H

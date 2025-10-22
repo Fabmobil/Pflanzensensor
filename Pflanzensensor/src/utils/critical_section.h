@@ -28,7 +28,7 @@
  * @endcode
  */
 class CriticalSection {
- public:
+public:
   /**
    * @brief Constructor - enters critical section
    * @details Disables interrupts by setting processor interrupt level to
@@ -51,14 +51,12 @@ class CriticalSection {
     xt_wsr_ps(savedPS);
   }
 
- private:
-  uint32_t savedPS;  ///< Saved processor state register value
+private:
+  uint32_t savedPS; ///< Saved processor state register value
 
   // Prevent copying and assignment
-  CriticalSection(const CriticalSection&) =
-      delete;  ///< Copy constructor disabled
-  CriticalSection& operator=(const CriticalSection&) =
-      delete;  ///< Assignment operator disabled
+  CriticalSection(const CriticalSection&) = delete;            ///< Copy constructor disabled
+  CriticalSection& operator=(const CriticalSection&) = delete; ///< Assignment operator disabled
 };
 
 /**
@@ -80,4 +78,4 @@ class CriticalSection {
  */
 using ScopedLock = CriticalSection;
 
-#endif  // CRITICAL_SECTION_H
+#endif // CRITICAL_SECTION_H

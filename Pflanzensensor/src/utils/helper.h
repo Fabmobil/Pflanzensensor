@@ -28,7 +28,7 @@ constexpr const char* REBOOT_COUNT_FILE = "/reboot_count.txt";
  *          without instantiation.
  */
 class Helper {
- public:
+public:
   /**
    * @brief Template function for initializing components with consistent error
    * handling
@@ -38,27 +38,24 @@ class Helper {
    * @return True if initialization succeeded, false otherwise
    */
   template <typename F>
-  static bool initializeComponent(const __FlashStringHelper* componentName,
-                                  F initFunc) {
+  static bool initializeComponent(const __FlashStringHelper* componentName, F initFunc) {
     logger.info(F("main"), String(F("Initializing ")) + componentName);
     try {
       auto result = initFunc();
       if (!result.isSuccess()) {
-        logger.error(F("main"), String(F("Failed to initialize ")) +
-                                    componentName + F(": ") +
+        logger.error(F("main"), String(F("Failed to initialize ")) + componentName + F(": ") +
                                     result.getMessage());
         return false;
       }
-      logger.debug(F("main"),
-                   String(componentName) + F(" initialized successfully"));
+      logger.debug(F("main"), String(componentName) + F(" initialized successfully"));
       return true;
     } catch (const std::exception& e) {
       logger.error(F("main"), String(F("Exception during ")) + componentName +
                                   F(" initialization: ") + String(e.what()));
       return false;
     } catch (...) {
-      logger.error(F("main"), String(F("Unknown exception during ")) +
-                                  componentName + F(" initialization"));
+      logger.error(F("main"),
+                   String(F("Unknown exception during ")) + componentName + F(" initialization"));
       return false;
     }
   }
@@ -130,8 +127,7 @@ class Helper {
    */
 #if USE_DISPLAY
   static void displayWiFiConnectionAttempts(DisplayManager* displayManager,
-                                            const String& attemptsInfo,
-                                            bool isBootMode);
+                                            const String& attemptsInfo, bool isBootMode);
 #endif
 };
 
@@ -141,9 +137,10 @@ class Helper {
  * @return true if the sensor ID starts with "ANALOG", false otherwise
  */
 inline bool isAnalogSensor(const Sensor* sensor) {
-  if (!sensor) return false;
+  if (!sensor)
+    return false;
   String id = sensor->getId();
   return id.startsWith("ANALOG");
 }
 
-#endif  // HELPER_H
+#endif // HELPER_H

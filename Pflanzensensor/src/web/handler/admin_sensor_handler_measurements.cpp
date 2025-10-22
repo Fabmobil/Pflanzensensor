@@ -9,15 +9,12 @@
 
 void AdminSensorHandler::handleMeasurementInterval() {
   if (!validateRequest()) {
-    sendJsonResponse(
-        401, F("{\"success\":false,\"error\":\"Authentication required\"}"));
+    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentication required\"}"));
     return;
   }
 
   if (!_server.hasArg("sensor_id") || !_server.hasArg("interval")) {
-    sendJsonResponse(
-        400,
-        F("{\"success\":false,\"error\":\"Missing required parameters\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Missing required parameters\"}"));
     return;
   }
 
@@ -25,9 +22,8 @@ void AdminSensorHandler::handleMeasurementInterval() {
   unsigned long intervalSeconds = _server.arg("interval").toInt();
   unsigned long intervalMilliseconds = intervalSeconds * 1000;
 
-  logger.debug(F("AdminSensorHandler"),
-               F("handleMeasurementInterval: sensor=") + sensorId +
-                   F(", interval=") + String(intervalSeconds) + F("s"));
+  logger.debug(F("AdminSensorHandler"), F("handleMeasurementInterval: sensor=") + sensorId +
+                                            F(", interval=") + String(intervalSeconds) + F("s"));
 
   // Validate interval
   if (intervalSeconds < 10 || intervalSeconds > 3600) {
@@ -37,21 +33,18 @@ void AdminSensorHandler::handleMeasurementInterval() {
   }
 
   if (!_sensorManager.isHealthy()) {
-    sendJsonResponse(
-        500, F("{\"success\":false,\"error\":\"Sensor manager not healthy\"}"));
+    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Sensor manager not healthy\"}"));
     return;
   }
 
   Sensor* sensor = _sensorManager.getSensor(sensorId);
   if (!sensor) {
-    sendJsonResponse(404,
-                     F("{\"success\":false,\"error\":\"Sensor not found\"}"));
+    sendJsonResponse(404, F("{\"success\":false,\"error\":\"Sensor not found\"}"));
     return;
   }
 
   if (!sensor->isInitialized()) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Sensor not initialized\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Sensor not initialized\"}"));
     return;
   }
 
@@ -60,14 +53,11 @@ void AdminSensorHandler::handleMeasurementInterval() {
     config.measurementInterval = intervalMilliseconds;
     sensor->setMeasurementInterval(intervalMilliseconds);
     // Use atomic update for measurement interval
-    auto result = SensorPersistence::updateMeasurementInterval(
-        sensorId, intervalMilliseconds);
+    auto result = SensorPersistence::updateMeasurementInterval(sensorId, intervalMilliseconds);
     if (!result.isSuccess()) {
-      logger.error(
-          F("AdminSensorHandler"),
-          F("Failed to update measurement interval: ") + result.getMessage());
-      sendJsonResponse(
-          500, F("{\"success\":false,\"error\":\"Failed to save interval\"}"));
+      logger.error(F("AdminSensorHandler"),
+                   F("Failed to update measurement interval: ") + result.getMessage());
+      sendJsonResponse(500, F("{\"success\":false,\"error\":\"Failed to save interval\"}"));
       return;
     }
   }

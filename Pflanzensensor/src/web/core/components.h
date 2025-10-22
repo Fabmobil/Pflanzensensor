@@ -44,9 +44,8 @@ static const size_t SAFE_HEAP_SIZE = 4096;
  *          - Responsive viewport settings
  *          Performs memory checks before proceeding.
  */
-ResourceResult beginResponse(
-    ESP8266WebServer& server, const String& title,
-    const std::vector<String>& additionalCss = std::vector<String>());
+ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
+                             const std::vector<String>& additionalCss = std::vector<String>());
 
 /**
  * @brief Send a chunk of HTML safely with memory checks
@@ -74,8 +73,7 @@ void sendNavigation(ESP8266WebServer& server, const String& activeItem);
  * @param buildDate Build date string
  * @details DEPRECATED: Use sendPixelatedFooter instead.
  */
-void sendFooter(ESP8266WebServer& server, const String& version,
-                const String& buildDate);
+void sendFooter(ESP8266WebServer& server, const String& version, const String& buildDate);
 
 /**
  * @brief Send pixelated footer with navigation and system info
@@ -89,8 +87,8 @@ void sendFooter(ESP8266WebServer& server, const String& version,
  *          - Version and build information
  *          - Fabmobil logo
  */
-void sendPixelatedFooter(ESP8266WebServer& server, const String& version,
-                         const String& buildDate, const String& activeSection);
+void sendPixelatedFooter(ESP8266WebServer& server, const String& version, const String& buildDate,
+                         const String& activeSection);
 
 /**
  * @brief Begin pixelated page layout
@@ -140,9 +138,8 @@ void endPixelatedPage(ESP8266WebServer& server);
  *          - Adds any final scripts
  *          - Flushes remaining content
  */
-void endResponse(
-    ESP8266WebServer& server,
-    const std::vector<String>& additionalScripts = std::vector<String>());
+void endResponse(ESP8266WebServer& server,
+                 const std::vector<String>& additionalScripts = std::vector<String>());
 
 /**
  * @brief Create a form group component
@@ -155,8 +152,7 @@ void endResponse(
  *          - Proper spacing and alignment
  *          - Accessibility attributes
  */
-void formGroup(ESP8266WebServer& server, const String& label,
-               const String& content);
+void formGroup(ESP8266WebServer& server, const String& label, const String& content);
 
 /**
  * @brief Create a button component
@@ -174,9 +170,8 @@ void formGroup(ESP8266WebServer& server, const String& label,
  *          - Proper ARIA attributes
  */
 void button(ESP8266WebServer& server, const String& text, const String& type,
-            const String& className = "", bool disabled = false,
-            const String& id = "");
+            const String& className = "", bool disabled = false, const String& id = "");
 
-}  // namespace Component
+} // namespace Component
 
-#endif  // COMPONENTS_H
+#endif // COMPONENTS_H

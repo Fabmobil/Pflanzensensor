@@ -24,7 +24,7 @@
  *          - Security checks
  */
 class AdminMinimalHandler : public BaseHandler {
- public:
+public:
   /**
    * @brief Constructor for minimal admin handler
    * @param server Reference to web server instance
@@ -34,10 +34,8 @@ class AdminMinimalHandler : public BaseHandler {
    *          - Configures authentication
    *          - Initializes logging
    */
-  AdminMinimalHandler(ESP8266WebServer& server, WebAuth& auth)
-      : BaseHandler(server), _auth(auth) {
-    logger.debug(F("AdminMinimalHandler"),
-                 F("Initializing AdminMinimalHandler"));
+  AdminMinimalHandler(ESP8266WebServer& server, WebAuth& auth) : BaseHandler(server), _auth(auth) {
+    logger.debug(F("AdminMinimalHandler"), F("Initializing AdminMinimalHandler"));
   }
 
   /**
@@ -51,13 +49,11 @@ class AdminMinimalHandler : public BaseHandler {
    * @note Override onRegisterRoutes for custom logic.
    */
   RouterResult onRegisterRoutes(WebRouter& router) override {
-    auto result = router.addRoute(HTTP_POST, "/admin/reboot",
-                                  [this]() { handleReboot(); });
+    auto result = router.addRoute(HTTP_POST, "/admin/reboot", [this]() { handleReboot(); });
     if (!result.isSuccess()) {
       return result;
     }
-    logger.debug(F("AdminMinimalHandler"),
-                 F("Minimal admin routes registered"));
+    logger.debug(F("AdminMinimalHandler"), F("Minimal admin routes registered"));
     return RouterResult::success();
   }
 
@@ -71,9 +67,8 @@ class AdminMinimalHandler : public BaseHandler {
    *          - Maintains interface compliance
    *          - Logs attempt if needed
    */
-  HandlerResult handleGet(
-      [[maybe_unused]] const String& uri,
-      [[maybe_unused]] const std::map<String, String>& query) override {
+  HandlerResult handleGet([[maybe_unused]] const String& uri,
+                          [[maybe_unused]] const std::map<String, String>& query) override {
     return HandlerResult::fail(HandlerError::NOT_FOUND, "Not implemented");
   }
 
@@ -87,9 +82,8 @@ class AdminMinimalHandler : public BaseHandler {
    *          - Validates endpoints
    *          - Returns appropriate status
    */
-  HandlerResult handlePost(
-      const String& uri,
-      [[maybe_unused]] const std::map<String, String>& params) override {
+  HandlerResult handlePost(const String& uri,
+                           [[maybe_unused]] const std::map<String, String>& params) override {
     if (uri == "/admin/reboot") {
       handleReboot();
       return HandlerResult::success();
@@ -106,7 +100,8 @@ class AdminMinimalHandler : public BaseHandler {
    *          - Provides feedback
    */
   void handleReboot() {
-    if (!validateRequest()) return;
+    if (!validateRequest())
+      return;
 
     _server.send(200, "text/html",
                  F("<h2>Reboot in progress...</h2>"
@@ -114,13 +109,13 @@ class AdminMinimalHandler : public BaseHandler {
                    "<script>setTimeout(function() { window.location.href = "
                    "'/'; }, 10000);</script>"));
 
-    delay(500);  // Give time to send response
+    delay(500); // Give time to send response
     logger.warning(F("AdminMinimalHandler"), F("Rebooting ESP"));
     ESP.restart();
   }
 
- private:
-  WebAuth& _auth;  ///< Reference to authentication service
+private:
+  WebAuth& _auth; ///< Reference to authentication service
 
   /**
    * @brief Validate if the current request is authorized
@@ -131,8 +126,8 @@ class AdminMinimalHandler : public BaseHandler {
    *          - Ensures security
    */
   bool validateRequest() const {
-    return _auth.authenticate();  // Changed from checkAuth to validateRequest
+    return _auth.authenticate(); // Changed from checkAuth to validateRequest
   }
 };
 
-#endif  // ADMIN_MINIMAL_HANDLER_H
+#endif // ADMIN_MINIMAL_HANDLER_H

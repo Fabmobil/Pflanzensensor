@@ -21,8 +21,7 @@
 // Check if DISPLAY_DEFAULT_TIME is defined
 #ifndef DISPLAY_DEFAULT_TIME
 #define DISPLAY_DEFAULT_TIME 5
-#warning \
-    "DISPLAY_DEFAULT_TIME not defined in config file, defaulting to 5 seconds"
+#warning "DISPLAY_DEFAULT_TIME not defined in config file, defaulting to 5 seconds"
 #endif
 
 /**
@@ -30,9 +29,9 @@
  */
 struct DisplayConfig {
   bool showIpScreen;
-  bool showClock;          // New field for clock display
-  bool showFlowerImage;    // New field for flower image
-  bool showFabmobilImage;  // New field for fabmobil image
+  bool showClock;         // New field for clock display
+  bool showFlowerImage;   // New field for flower image
+  bool showFabmobilImage; // New field for fabmobil image
   unsigned long screenDuration;
   String clockFormat;
   /**
@@ -48,8 +47,7 @@ struct DisplayConfig {
   // Constructor with parameters (not used in practice, but kept for
   // compatibility)
   DisplayConfig(bool showIp, bool showClk, bool showFlower, bool showFabmobil,
-                unsigned long duration, const String& format,
-                const std::vector<String>& sensors)
+                unsigned long duration, const String& format, const std::vector<String>& sensors)
       : showIpScreen(showIp),
         showClock(showClk),
         showFlowerImage(showFlower),
@@ -61,4 +59,4 @@ struct DisplayConfig {
 // Display defaults
 #define DISPLAY_DEFAULTS DisplayConfig()
 
-#endif  // DISPLAY_CONFIG_H
+#endif // DISPLAY_CONFIG_H

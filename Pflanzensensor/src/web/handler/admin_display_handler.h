@@ -36,7 +36,7 @@
  *          - Display customization
  */
 class AdminDisplayHandler : public BaseHandler {
- public:
+public:
   /**
    * @brief Constructor
    * @param server Reference to web server instance
@@ -66,7 +66,7 @@ class AdminDisplayHandler : public BaseHandler {
    */
   RouterResult onRegisterRoutes(WebRouter& router) override;
 
- protected:
+protected:
   /**
    * @brief Handle GET requests
    * @param uri Request URI
@@ -77,10 +77,8 @@ class AdminDisplayHandler : public BaseHandler {
    *          - Redirects to route registration
    *          - Returns appropriate error
    */
-  HandlerResult handleGet(const String& uri,
-                          const std::map<String, String>& query) override {
-    return HandlerResult::fail(HandlerError::INVALID_REQUEST,
-                               "Use registerRoutes instead");
+  HandlerResult handleGet(const String& uri, const std::map<String, String>& query) override {
+    return HandlerResult::fail(HandlerError::INVALID_REQUEST, "Use registerRoutes instead");
   }
 
   /**
@@ -93,13 +91,11 @@ class AdminDisplayHandler : public BaseHandler {
    *          - Redirects to route registration
    *          - Returns appropriate error
    */
-  HandlerResult handlePost(const String& uri,
-                           const std::map<String, String>& params) override {
-    return HandlerResult::fail(HandlerError::INVALID_REQUEST,
-                               "Use registerRoutes instead");
+  HandlerResult handlePost(const String& uri, const std::map<String, String>& params) override {
+    return HandlerResult::fail(HandlerError::INVALID_REQUEST, "Use registerRoutes instead");
   }
 
- private:
+private:
   friend class WebManager;
 
   /**
@@ -135,6 +131,6 @@ class AdminDisplayHandler : public BaseHandler {
   bool validateRequest() const;
 };
 
-#endif  // USE_DISPLAY
+#endif // USE_DISPLAY
 
-#endif  // ADMIN_DISPLAY_HANDLER_H
+#endif // ADMIN_DISPLAY_HANDLER_H

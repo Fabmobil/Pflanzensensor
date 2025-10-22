@@ -28,7 +28,7 @@
  *          - Setup completion workflow
  */
 class WiFiSetupHandler : public BaseHandler {
- public:
+public:
   /**
    * @brief Constructor for WiFi setup handler
    * @param server Reference to web server instance
@@ -40,8 +40,7 @@ class WiFiSetupHandler : public BaseHandler {
    *          - CSS management
    *          - Network scanning
    */
-  WiFiSetupHandler(ESP8266WebServer& server, WebAuth& auth,
-                   CSSService& cssService)
+  WiFiSetupHandler(ESP8266WebServer& server, WebAuth& auth, CSSService& cssService)
       : BaseHandler(server), _auth(auth), _cssService(cssService) {
     logger.debug(F("WiFiSetupHandler"), F("Initializing WiFiSetupHandler"));
   }
@@ -56,7 +55,7 @@ class WiFiSetupHandler : public BaseHandler {
    */
   RouterResult onRegisterRoutes(WebRouter& router) override;
 
- protected:
+protected:
   /**
    * @brief Handle GET requests (not supported in this handler)
    * @param uri Request URI
@@ -66,8 +65,7 @@ class WiFiSetupHandler : public BaseHandler {
    *          GET requests are not supported since the form is integrated
    *          into the startpage.
    */
-  HandlerResult handleGet(const String& uri,
-                          const std::map<String, String>& query) override {
+  HandlerResult handleGet(const String& uri, const std::map<String, String>& query) override {
     return HandlerResult::fail(HandlerError::NOT_FOUND, "GET not supported");
   }
 
@@ -81,14 +79,13 @@ class WiFiSetupHandler : public BaseHandler {
    *          - Network selection
    *          - Connection attempts
    */
-  HandlerResult handlePost(const String& uri,
-                           const std::map<String, String>& params) override;
+  HandlerResult handlePost(const String& uri, const std::map<String, String>& params) override;
 
- private:
-  friend class WebManager;  // Allow WebManager to access private members
+private:
+  friend class WebManager; // Allow WebManager to access private members
 
-  WebAuth& _auth;           ///< Reference to authentication service
-  CSSService& _cssService;  ///< Reference to CSS service
+  WebAuth& _auth;          ///< Reference to authentication service
+  CSSService& _cssService; ///< Reference to CSS service
 
   /**
    * @brief Handle WiFi credential update
@@ -180,4 +177,4 @@ class WiFiSetupHandler : public BaseHandler {
   bool isCaptivePortalMode();
 };
 
-#endif  // WIFI_SETUP_HANDLER_H
+#endif // WIFI_SETUP_HANDLER_H

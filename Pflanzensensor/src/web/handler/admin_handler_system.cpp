@@ -17,16 +17,17 @@
 #if USE_MAIL
 #include "mail/mail_helper.h"
 #endif
-#include "utils/persistence_utils.h"
 #include "managers/manager_config_persistence.h"
 #include "managers/manager_sensor_persistence.h"
+#include "utils/persistence_utils.h"
 
 void AdminHandler::handleAdminUpdate() {
   String changes;
   String error;
 
   // Require AJAX partial updates only (centralized check)
-  if (!requireAjaxRequest()) return;
+  if (!requireAjaxRequest())
+    return;
 
   bool updated = processConfigUpdates(changes, &error);
 
@@ -81,9 +82,8 @@ void AdminHandler::handleConfigReset() {
 
         if (result.isSuccess()) {
           sendChunk(F("<h2>✓ Konfiguration zurückgesetzt</h2>"));
-          sendChunk(
-              F("<p>Die Konfiguration wurde erfolgreich auf Standardwerte "
-                "zurückgesetzt.</p>"));
+          sendChunk(F("<p>Die Konfiguration wurde erfolgreich auf Standardwerte "
+                      "zurückgesetzt.</p>"));
         } else {
           sendChunk(F("<h2>❌ Fehler</h2><p class='error-message'>Fehler beim Zurücksetzen: "));
           sendChunk(result.getMessage());
@@ -133,7 +133,8 @@ void AdminHandler::handleDownloadConfig() {
     return;
   }
   size_t size = f.size();
-  logger.info(F("AdminHandler"), F("Sende settings.json, Größe: ") + String(size) + F(" Bytes an ") + clientIp);
+  logger.info(F("AdminHandler"),
+              F("Sende settings.json, Größe: ") + String(size) + F(" Bytes an ") + clientIp);
   _server.sendHeader(F("Content-Type"), F("application/json"));
   _server.sendHeader(F("Content-Disposition"), F("attachment; filename=settings.json"));
   _server.sendHeader(F("Connection"), F("close"));
@@ -147,7 +148,7 @@ void AdminHandler::handleDownloadConfig() {
     size_t toRead = min(rem, CHUNK);
     size_t read = f.read(buf, toRead);
     if (read == 0) {
-  logger.warning(F("AdminHandler"), F("Lesen lieferte 0 Bytes beim Senden von settings.json"));
+      logger.warning(F("AdminHandler"), F("Lesen lieferte 0 Bytes beim Senden von settings.json"));
       break;
     }
     _server.sendContent((char*)buf, read);
@@ -155,7 +156,8 @@ void AdminHandler::handleDownloadConfig() {
     yield();
   }
   f.close();
-  logger.info(F("AdminHandler"), F("Download von settings.json abgeschlossen für ") + clientIp + F(" (") + String(size - rem) + F(" Bytes gesendet)"));
+  logger.info(F("AdminHandler"), F("Download von settings.json abgeschlossen für ") + clientIp +
+                                     F(" (") + String(size - rem) + F(" Bytes gesendet)"));
 }
 
 // Download sensors.json
@@ -164,7 +166,7 @@ void AdminHandler::handleDownloadSensors() {
   String clientIp = _server.client().remoteIP().toString();
   logger.info(F("AdminHandler"), F("Download-Anfrage für sensors.json von ") + clientIp);
   if (!LittleFS.exists(PATH)) {
-  logger.warning(F("AdminHandler"), F("Sensorkonfigurationsdatei nicht gefunden"));
+    logger.warning(F("AdminHandler"), F("Sensorkonfigurationsdatei nicht gefunden"));
     this->sendError(404, F("Sensorkonfigurationsdatei nicht gefunden"));
     return;
   }
@@ -175,7 +177,8 @@ void AdminHandler::handleDownloadSensors() {
     return;
   }
   size_t size = f.size();
-  logger.info(F("AdminHandler"), F("Sende sensors.json, Größe: ") + String(size) + F(" Bytes an ") + clientIp);
+  logger.info(F("AdminHandler"),
+              F("Sende sensors.json, Größe: ") + String(size) + F(" Bytes an ") + clientIp);
   _server.sendHeader(F("Content-Type"), F("application/json"));
   _server.sendHeader(F("Content-Disposition"), F("attachment; filename=sensors.json"));
   _server.sendHeader(F("Connection"), F("close"));
@@ -189,7 +192,7 @@ void AdminHandler::handleDownloadSensors() {
     size_t toRead = min(rem, CHUNK);
     size_t read = f.read(buf, toRead);
     if (read == 0) {
-  logger.warning(F("AdminHandler"), F("Lesen lieferte 0 Bytes beim Senden von sensors.json"));
+      logger.warning(F("AdminHandler"), F("Lesen lieferte 0 Bytes beim Senden von sensors.json"));
       break;
     }
     _server.sendContent((char*)buf, read);
@@ -197,7 +200,8 @@ void AdminHandler::handleDownloadSensors() {
     yield();
   }
   f.close();
-  logger.info(F("AdminHandler"), F("Download von sensors.json abgeschlossen für ") + clientIp + F(" (") + String(size - rem) + F(" Bytes gesendet)"));
+  logger.info(F("AdminHandler"), F("Download von sensors.json abgeschlossen für ") + clientIp +
+                                     F(" (") + String(size - rem) + F(" Bytes gesendet)"));
 }
 
 // note: upload handling uses _server.upload() inside the member handlers
@@ -212,7 +216,9 @@ void AdminHandler::handleUploadConfig() {
     // remove any previous temp
     LittleFS.remove("/config.json.tmp");
     upload_written = 0;
-  logger.info(F("AdminHandler"), F("Upload gestartet von ") + clientIp + F(" Dateiname: ") + upload.filename + F(" Gesamtgröße (falls bekannt): ") + String(upload.totalSize));
+    logger.info(F("AdminHandler"), F("Upload gestartet von ") + clientIp + F(" Dateiname: ") +
+                                       upload.filename + F(" Gesamtgröße (falls bekannt): ") +
+                                       String(upload.totalSize));
   } else if (upload.status == UPLOAD_FILE_WRITE) {
     File tmp = LittleFS.open("/config.json.tmp", "a");
     if (tmp && upload.currentSize > 0) {
@@ -220,15 +226,16 @@ void AdminHandler::handleUploadConfig() {
       upload_written += upload.currentSize;
       tmp.close();
     }
-  }
-  else if (upload.status == UPLOAD_FILE_END) {
-  logger.info(F("AdminHandler"), F("Upload beendet von ") + clientIp + F(" Gesamtbytes geschrieben: ") + String(upload_written));
+  } else if (upload.status == UPLOAD_FILE_END) {
+    logger.info(F("AdminHandler"), F("Upload beendet von ") + clientIp +
+                                       F(" Gesamtbytes geschrieben: ") + String(upload_written));
     // Validate JSON
     StaticJsonDocument<2048> doc;
     String err;
     if (!PersistenceUtils::readJsonFile("/config.json.tmp", doc, err)) {
       // remove tmp and return error
-  logger.error(F("AdminHandler"), String(F("Ungültiges JSON hochgeladen von ")) + clientIp + F(": ") + err);
+      logger.error(F("AdminHandler"),
+                   String(F("Ungültiges JSON hochgeladen von ")) + clientIp + F(": ") + err);
       LittleFS.remove("/config.json.tmp");
       File rf = LittleFS.open("/upload_result.json", "w");
       if (rf) {
@@ -245,7 +252,8 @@ void AdminHandler::handleUploadConfig() {
 
     JsonObject root = doc.as<JsonObject>();
     // Check for common config keys
-    if (root.containsKey("device_name") || root.containsKey("admin_password") || root.containsKey("wifi_ssid_1")) {
+    if (root.containsKey("device_name") || root.containsKey("admin_password") ||
+        root.containsKey("wifi_ssid_1")) {
       looksLikeConfig = true;
     }
 
@@ -264,46 +272,62 @@ void AdminHandler::handleUploadConfig() {
 
     String payload;
     if (looksLikeConfig) {
-  logger.info(F("AdminHandler"), F("Hochgeladenes JSON wurde als config.json erkannt von ") + clientIp);
+      logger.info(F("AdminHandler"),
+                  F("Hochgeladenes JSON wurde als config.json erkannt von ") + clientIp);
       // Replace config.json
-      if (LittleFS.exists("/config.json")) LittleFS.remove("/config.json");
+      if (LittleFS.exists("/config.json"))
+        LittleFS.remove("/config.json");
       if (!LittleFS.rename("/config.json.tmp", "/config.json")) {
-  logger.error(F("AdminHandler"), F("Umbenennen der temporären Datei nach /config.json fehlgeschlagen"));
-        payload = F("{\"success\":false,\"error\":\"Umbenennen der Konfigurationsdatei fehlgeschlagen\"}");
+        logger.error(F("AdminHandler"),
+                     F("Umbenennen der temporären Datei nach /config.json fehlgeschlagen"));
+        payload = F(
+            "{\"success\":false,\"error\":\"Umbenennen der Konfigurationsdatei fehlgeschlagen\"}");
       } else {
         auto loadResult = ConfigMgr.loadConfig();
         if (loadResult.isSuccess()) {
-          logger.info(F("AdminHandler"), F("Konfiguration erfolgreich importiert von ") + clientIp + F(" (") + String(upload_written) + F(" Bytes)"));
+          logger.info(F("AdminHandler"), F("Konfiguration erfolgreich importiert von ") + clientIp +
+                                             F(" (") + String(upload_written) + F(" Bytes)"));
           payload = F("{\"success\":true,\"message\":\"Konfiguration importiert\"}");
         } else {
           String escaped = loadResult.getMessage();
           escaped.replace("\"", "\\\"");
-          logger.error(F("AdminHandler"), String(F("Fehler beim Laden der Konfiguration nach Import von ")) + clientIp + F(": ") + escaped);
+          logger.error(F("AdminHandler"),
+                       String(F("Fehler beim Laden der Konfiguration nach Import von ")) +
+                           clientIp + F(": ") + escaped);
           payload = String("{\"success\":false,\"error\":\"") + escaped + "}";
         }
       }
     } else if (looksLikeSensors) {
-  logger.info(F("AdminHandler"), F("Hochgeladenes JSON wurde als sensors.json erkannt von ") + clientIp);
+      logger.info(F("AdminHandler"),
+                  F("Hochgeladenes JSON wurde als sensors.json erkannt von ") + clientIp);
       // Replace sensors.json
-      if (LittleFS.exists("/sensors.json")) LittleFS.remove("/sensors.json");
+      if (LittleFS.exists("/sensors.json"))
+        LittleFS.remove("/sensors.json");
       if (!LittleFS.rename("/config.json.tmp", "/sensors.json")) {
-  logger.error(F("AdminHandler"), F("Umbenennen der temporären Datei nach /sensors.json fehlgeschlagen"));
-        payload = F("{\"success\":false,\"error\":\"Umbenennen der Sensorkonfigurationsdatei fehlgeschlagen\"}");
+        logger.error(F("AdminHandler"),
+                     F("Umbenennen der temporären Datei nach /sensors.json fehlgeschlagen"));
+        payload = F("{\"success\":false,\"error\":\"Umbenennen der Sensorkonfigurationsdatei "
+                    "fehlgeschlagen\"}");
       } else {
         auto reloadResult = SensorPersistence::loadFromFile();
         if (reloadResult.isSuccess()) {
-          logger.info(F("AdminHandler"), F("Sensorkonfiguration erfolgreich importiert von ") + clientIp + F(" (") + String(upload_written) + F(" Bytes)"));
+          logger.info(F("AdminHandler"), F("Sensorkonfiguration erfolgreich importiert von ") +
+                                             clientIp + F(" (") + String(upload_written) +
+                                             F(" Bytes)"));
           payload = F("{\"success\":true,\"message\":\"Sensorkonfiguration importiert\"}");
         } else {
           String escaped = reloadResult.getMessage();
           escaped.replace("\"", "\\\"");
-          logger.error(F("AdminHandler"), String(F("Fehler beim Neuladen der Sensorkonfiguration nach Import von ")) + clientIp + F(": ") + escaped);
+          logger.error(F("AdminHandler"),
+                       String(F("Fehler beim Neuladen der Sensorkonfiguration nach Import von ")) +
+                           clientIp + F(": ") + escaped);
           payload = String("{\"success\":false,\"error\":\"") + escaped + "}";
         }
       }
     } else {
       // Unknown file structure
-  logger.warning(F("AdminHandler"), F("Hochgeladenes JSON hat unbekannte Struktur von ") + clientIp);
+      logger.warning(F("AdminHandler"),
+                     F("Hochgeladenes JSON hat unbekannte Struktur von ") + clientIp);
       LittleFS.remove("/config.json.tmp");
       payload = F("{\"success\":false,\"error\":\"Unbekanntes JSON-Format\"}");
     }

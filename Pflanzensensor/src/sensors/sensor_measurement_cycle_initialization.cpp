@@ -5,16 +5,15 @@
 
 void SensorMeasurementCycleManager::handleInitializing() {
   if (ConfigMgr.isDebugMeasurementCycle()) {
-    logger.debug(F("MeasurementCycle"),
-                 m_sensor->getName() + F(": Beginne Initialisierung"));
+    logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Beginne Initialisierung"));
   }
 
   // Validate memory state before initialization
   auto memoryResult = m_sensor->validateMemoryState();
   if (!memoryResult.isSuccess()) {
-  logger.error(F("MeasurementCycle"),
-         m_sensor->getName() +
-           F(": Speicherüberprüfung vor Initialisierung fehlgeschlagen"));
+    logger.error(F("MeasurementCycle"),
+                 m_sensor->getName() +
+                     F(": Speicherüberprüfung vor Initialisierung fehlgeschlagen"));
 
     // Attempt memory state reset
     auto resetResult = m_sensor->resetMemoryState();
@@ -35,32 +34,29 @@ void SensorMeasurementCycleManager::handleInitializing() {
       return;
     }
 
-  logger.info(
-    F("MeasurementCycle"),
-    m_sensor->getName() + F(": Speicherzustand erfolgreich wiederhergestellt"));
+    logger.info(F("MeasurementCycle"),
+                m_sensor->getName() + F(": Speicherzustand erfolgreich wiederhergestellt"));
   }
 
   // Check if sensor needs initialization
   if (!m_sensor->isInitialized()) {
     if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(
-          F("MeasurementCycle"),
-          m_sensor->getName() + F(": Sensor nicht initialisiert, rufe init() auf"));
+      logger.debug(F("MeasurementCycle"),
+                   m_sensor->getName() + F(": Sensor nicht initialisiert, rufe init() auf"));
     }
 
     auto initResult = m_sensor->init();
     if (!initResult.isSuccess()) {
-      logger.error(F("MeasurementCycle"),
-                   m_sensor->getName() + F(": Sensorinitialisierung fehlgeschlagen: ") +
-                       initResult.getMessage());
+      logger.error(F("MeasurementCycle"), m_sensor->getName() +
+                                              F(": Sensorinitialisierung fehlgeschlagen: ") +
+                                              initResult.getMessage());
       handleStateError(F("Sensorinitialisierung fehlgeschlagen"));
       return;
     }
 
     if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(
-          F("MeasurementCycle"),
-          m_sensor->getName() + F(": Sensorinitialisierung erfolgreich"));
+      logger.debug(F("MeasurementCycle"),
+                   m_sensor->getName() + F(": Sensorinitialisierung erfolgreich"));
     }
   } else {
     if (ConfigMgr.isDebugMeasurementCycle()) {
@@ -74,10 +70,9 @@ void SensorMeasurementCycleManager::handleInitializing() {
   if (m_sensor->getSharedHardwareInfo().type == SensorType::DS18B20) {
     const DS18B20Sensor* ds18b20 = static_cast<const DS18B20Sensor*>(m_sensor);
     if (ds18b20->isRestartRequested()) {
-      logger.warning(
-          F("MeasurementCycle"),
-          m_sensor->getName() +
-              F(": Neustart vom Sensor angefordert, führe sauberen Neustart aus"));
+      logger.warning(F("MeasurementCycle"),
+                     m_sensor->getName() +
+                         F(": Neustart vom Sensor angefordert, führe sauberen Neustart aus"));
       // Allow time for logging and cleanup
       delay(1000);
       ESP.restart();
@@ -97,20 +92,19 @@ void SensorMeasurementCycleManager::handleInitializing() {
 
       // Stay in INITIALIZING state to allow retries
       if (ConfigMgr.isDebugMeasurementCycle()) {
-        logger.debug(F("MeasurementCycle"),
-                     m_sensor->getName() +
-                         F(": Initialisierung fehlgeschlagen, versuche erneut (Versuch ") +
-                         String(m_state.errorCount) + F("/") +
-                         String(MEASUREMENT_ERROR_COUNT) + F(")"));
+        logger.debug(
+            F("MeasurementCycle"),
+            m_sensor->getName() + F(": Initialisierung fehlgeschlagen, versuche erneut (Versuch ") +
+                String(m_state.errorCount) + F("/") + String(MEASUREMENT_ERROR_COUNT) + F(")"));
       }
-      return;  // Stay in INITIALIZING state for retry
+      return; // Stay in INITIALIZING state for retry
     }
 
     // Only treat as fatal error after max retries exceeded
-  logger.error(F("MeasurementCycle"),
-         m_sensor->getName() + F(": Initialisierung nach ") +
-           String(MEASUREMENT_ERROR_COUNT) + F(" Versuchen fehlgeschlagen"));
-  handleStateError(F("Initialisierung nach maximalen Versuchen fehlgeschlagen"));
+    logger.error(F("MeasurementCycle"), m_sensor->getName() + F(": Initialisierung nach ") +
+                                            String(MEASUREMENT_ERROR_COUNT) +
+                                            F(" Versuchen fehlgeschlagen"));
+    handleStateError(F("Initialisierung nach maximalen Versuchen fehlgeschlagen"));
     return;
   }
 
@@ -125,8 +119,7 @@ void SensorMeasurementCycleManager::handleInitializing() {
   }
 
   if (ConfigMgr.isDebugMeasurementCycle()) {
-    logger.debug(F("MeasurementCycle"),
-                 m_sensor->getName() + F(": Initialisierung erfolgreich"));
+    logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Initialisierung erfolgreich"));
   }
 
   m_state.needsInitialization = false;

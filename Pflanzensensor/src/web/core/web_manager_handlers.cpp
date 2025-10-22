@@ -21,8 +21,7 @@ void WebManager::handleSetUpdate() {
   // 2. Basic auth check with detailed logging
   logger.debug(F("WebManager"), F("Checking authentication..."));
   if (!_server->authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
-    logger.warning(F("WebManager"),
-                   F("Authentication failed for setUpdate request"));
+    logger.warning(F("WebManager"), F("Authentication failed for setUpdate request"));
     _server->requestAuthentication();
     return;
   }
@@ -37,23 +36,19 @@ void WebManager::handleSetUpdate() {
 
   // 4. Get and validate request body
   String json = _server->arg("plain");
-  logger.debug(F("WebManager"),
-               "Received update request body length: " + String(json.length()));
+  logger.debug(F("WebManager"), "Received update request body length: " + String(json.length()));
   logger.debug(F("WebManager"), "Raw request body: " + json);
 
   // 5. Validate request and extract flags
   bool fileSystemUpdate, firmwareUpdate, updateMode;
-  auto validationResult =
-      validateUpdateRequest(json, fileSystemUpdate, firmwareUpdate, updateMode);
+  auto validationResult = validateUpdateRequest(json, fileSystemUpdate, firmwareUpdate, updateMode);
   if (!validationResult.isSuccess()) {
     return;
   }
 
   // 6. Log the intended update type
-  logger.debug(F("WebManager"), F("Setting flags - FS: ") +
-                                    String(fileSystemUpdate) + F(", FW: ") +
-                                    String(firmwareUpdate) + F(", Mode: ") +
-                                    String(updateMode));
+  logger.debug(F("WebManager"), F("Setting flags - FS: ") + String(fileSystemUpdate) + F(", FW: ") +
+                                    String(firmwareUpdate) + F(", Mode: ") + String(updateMode));
 
   // 7. Save configuration and prepare for update
   if (!prepareUpdateMode(fileSystemUpdate, firmwareUpdate, updateMode)) {
@@ -73,9 +68,8 @@ void WebManager::handleSetUpdate() {
 
   // 9. Handle update mode and reboot if necessary
   if (updateMode) {
-    logger.info(F("WebManager"),
-                F("Update mode enabled, preparing for reboot..."));
-    delay(500);  // Give more time for response and logging
+    logger.info(F("WebManager"), F("Update mode enabled, preparing for reboot..."));
+    delay(500); // Give more time for response and logging
 
     // Stop non-critical services
     if (_sensorManager) {
@@ -88,7 +82,7 @@ void WebManager::handleSetUpdate() {
     cleanup();
 
     logger.info(F("WebManager"), F("Rebooting into update mode..."));
-    delay(100);  // Small delay to ensure logs are written
+    delay(100); // Small delay to ensure logs are written
     ESP.restart();
   }
 
@@ -103,8 +97,7 @@ void WebManager::handleSetConfigValue() {
 
   // Check authentication
   if (!_server->authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
-    logger.warning(F("WebManager"),
-                   F("Authentication failed for setConfigValue request"));
+    logger.warning(F("WebManager"), F("Authentication failed for setConfigValue request"));
     _server->requestAuthentication();
     return;
   }
@@ -137,8 +130,7 @@ void WebManager::handleSetConfigValue() {
   // Update config value
   auto result = ConfigMgr.setConfigValue(key, value);
   if (!result.isSuccess()) {
-    logger.error(F("WebManager"),
-                 "Failed to set config value: " + result.getMessage());
+    logger.error(F("WebManager"), "Failed to set config value: " + result.getMessage());
     sendErrorResponse(400, result.getMessage());
     return;
   }
@@ -146,8 +138,7 @@ void WebManager::handleSetConfigValue() {
   // Save config
   auto saveResult = ConfigMgr.saveConfig();
   if (!saveResult.isSuccess()) {
-    logger.error(F("WebManager"),
-                 "Failed to save config: " + saveResult.getMessage());
+    logger.error(F("WebManager"), "Failed to save config: " + saveResult.getMessage());
     sendErrorResponse(500, F("Failed to save configuration"));
     return;
   }
@@ -160,15 +151,12 @@ void WebManager::handleSetConfigValue() {
   _server->send(200, F("application/json"), jsonResponse);
 }
 
-ResourceResult WebManager::validateUpdateRequest(const String& json,
-                                                 bool& fileSystemUpdate,
-                                                 bool& firmwareUpdate,
-                                                 bool& updateMode) {
+ResourceResult WebManager::validateUpdateRequest(const String& json, bool& fileSystemUpdate,
+                                                 bool& firmwareUpdate, bool& updateMode) {
   if (json.length() == 0) {
     logger.warning(F("WebManager"), F("Empty request body"));
     sendErrorResponse(400, F("Missing request body"));
-    return ResourceResult::fail(ResourceError::VALIDATION_ERROR,
-                                F("Missing request body"));
+    return ResourceResult::fail(ResourceError::VALIDATION_ERROR, F("Missing request body"));
   }
 
   // Parse JSON with error handling
@@ -179,9 +167,8 @@ ResourceResult WebManager::validateUpdateRequest(const String& json,
     String errorMsg = String(F("JSON parse error: ")) + error.c_str();
     logger.error(F("WebManager"), errorMsg);
     sendErrorResponse(400, errorMsg);
-    return ResourceResult::fail(
-        ResourceError::VALIDATION_ERROR,
-        String(F("JSON parse error: ")) + error.c_str());
+    return ResourceResult::fail(ResourceError::VALIDATION_ERROR,
+                                String(F("JSON parse error: ")) + error.c_str());
   }
 
   // Extract and validate update flags
@@ -191,9 +178,7 @@ ResourceResult WebManager::validateUpdateRequest(const String& json,
 
   // Check that not both update types are requested
   if (fileSystemUpdate && firmwareUpdate) {
-    logger.error(
-        F("WebManager"),
-        F("Cannot update both filesystem and firmware simultaneously"));
+    logger.error(F("WebManager"), F("Cannot update both filesystem and firmware simultaneously"));
     sendErrorResponse(400, F("Only one update type allowed at a time"));
     return ResourceResult::fail(ResourceError::VALIDATION_ERROR,
                                 F("Only one update type allowed at a time"));
@@ -202,13 +187,11 @@ ResourceResult WebManager::validateUpdateRequest(const String& json,
   return ResourceResult::success();
 }
 
-bool WebManager::prepareUpdateMode(bool fileSystemUpdate, bool firmwareUpdate,
-                                   bool updateMode) {
+bool WebManager::prepareUpdateMode(bool fileSystemUpdate, bool firmwareUpdate, bool updateMode) {
   // Set flags in config with error handling
   auto result = ConfigMgr.setUpdateFlags(fileSystemUpdate, firmwareUpdate);
   if (!result.isSuccess()) {
-    logger.error(F("WebManager"),
-                 "Failed to set update flags: " + result.getMessage());
+    logger.error(F("WebManager"), "Failed to set update flags: " + result.getMessage());
     sendErrorResponse(400, result.getMessage());
     return false;
   }
@@ -227,19 +210,19 @@ void WebManager::sendErrorResponse(int code, const String& message) {
 
 String WebManager::methodToString(HTTPMethod method) {
   switch (method) {
-    case HTTP_GET:
-      return "GET";
-    case HTTP_POST:
-      return "POST";
-    case HTTP_PUT:
-      return "PUT";
-    case HTTP_PATCH:
-      return "PATCH";
-    case HTTP_DELETE:
-      return "DELETE";
-    case HTTP_OPTIONS:
-      return "OPTIONS";
-    default:
-      return "UNKNOWN";
+  case HTTP_GET:
+    return "GET";
+  case HTTP_POST:
+    return "POST";
+  case HTTP_PUT:
+    return "PUT";
+  case HTTP_PATCH:
+    return "PATCH";
+  case HTTP_DELETE:
+    return "DELETE";
+  case HTTP_OPTIONS:
+    return "OPTIONS";
+  default:
+    return "UNKNOWN";
   }
 }

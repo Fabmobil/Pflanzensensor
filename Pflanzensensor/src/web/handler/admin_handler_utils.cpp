@@ -13,8 +13,10 @@
 #include "web/handler/admin_handler.h"
 
 String AdminHandler::formatMemorySize(size_t bytes) const {
-  if (bytes < 1024) return String(bytes) + F(" B");
-  if (bytes < 1024 * 1024) return String(bytes / 1024.0, 1) + F(" KB");
+  if (bytes < 1024)
+    return String(bytes) + F(" B");
+  if (bytes < 1024 * 1024)
+    return String(bytes / 1024.0, 1) + F(" KB");
   return String(bytes / 1024.0 / 1024.0, 1) + F(" MB");
 }
 
@@ -32,8 +34,10 @@ String AdminHandler::formatUptime() const {
   unsigned int seconds = uptime % 60;
 
   String formatted;
-  if (days > 0) formatted += String(days) + F("d ");
-  if (hours > 0) formatted += String(hours) + F("h ");
+  if (days > 0)
+    formatted += String(days) + F("d ");
+  if (hours > 0)
+    formatted += String(hours) + F("h ");
   formatted += String(minutes) + F("m ");
   formatted += String(seconds) + F("s");
 
@@ -51,11 +55,13 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
   bool updated = false;
 
   // Enforce explicit AJAX updates only via centralized helper
-  if (!ensureAjaxAndSetError(error)) return false;
+  if (!ensureAjaxAndSetError(error))
+    return false;
 
   String contentType = _server.header("Content-Type");
   if (contentType.length() > 0 && contentType.indexOf("application/x-www-form-urlencoded") == -1) {
-    if (error) *error = F("Nur URL-codierte Formular-Updates werden unterstützt.");
+    if (error)
+      *error = F("Nur URL-codierte Formular-Updates werden unterstützt.");
     logger.warning(F("AdminHandler"), F("Abgelehnt: unsupported Content-Type: ") + contentType);
     return false;
   }
@@ -64,23 +70,29 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
   auto serverHasArg = [&](const String& name) -> bool { return _server.hasArg(name); };
   auto serverArg = [&](const String& name) -> String { return _server.arg(name); };
   auto serverBool = [&](const String& name) -> bool {
-    if (!_server.hasArg(name)) return false;
+    if (!_server.hasArg(name))
+      return false;
     String val = _server.arg(name);
     val.trim();
-    if (val.length() == 0) return true;  // presence-only checkbox => checked
+    if (val.length() == 0)
+      return true; // presence-only checkbox => checked
     return (val == "1" || val.equalsIgnoreCase("true") || val.equalsIgnoreCase("on"));
   };
 
   String section = serverHasArg("section") ? serverArg("section") : String();
 
-  logger.debug(F("AdminHandler"), String(F("processConfigUpdates called, section: ")) + (section.length() ? section : String("<none>")) + F(" (partial AJAX update)") );
+  logger.debug(F("AdminHandler"), String(F("processConfigUpdates called, section: ")) +
+                                      (section.length() ? section : String("<none>")) +
+                                      F(" (partial AJAX update)"));
 
   if (section == "debug") {
     // Debug RAM
     bool oldDebugRAM = ConfigMgr.isDebugRAM();
     if (serverHasArg("debug_ram")) {
       bool newDebugRAM = serverBool("debug_ram");
-      logger.debug(F("AdminHandler"), String(F("debug_ram: old=")) + (oldDebugRAM ? F("true") : F("false")) + String(F(", new=")) + (newDebugRAM ? F("true") : F("false")) );
+      logger.debug(F("AdminHandler"),
+                   String(F("debug_ram: old=")) + (oldDebugRAM ? F("true") : F("false")) +
+                       String(F(", new=")) + (newDebugRAM ? F("true") : F("false")));
       if (oldDebugRAM != newDebugRAM) {
         auto result = ConfigMgr.setDebugRAM(newDebugRAM);
         if (result.isSuccess()) {
@@ -88,10 +100,13 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += newDebugRAM ? F("aktiviert") : F("deaktiviert");
           changes += F("</li>");
           updated = true;
-          logger.info(F("AdminHandler"), String(F("debug_ram set to ")) + (newDebugRAM ? F("true") : F("false")) );
+          logger.info(F("AdminHandler"),
+                      String(F("debug_ram set to ")) + (newDebugRAM ? F("true") : F("false")));
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set debug_ram: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set debug_ram: ")) + result.getMessage());
           return false;
         }
       }
@@ -109,8 +124,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set debug_measurement_cycle: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set debug_measurement_cycle: ")) + result.getMessage());
           return false;
         }
       }
@@ -128,8 +145,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set debug_sensor: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set debug_sensor: ")) + result.getMessage());
           return false;
         }
       }
@@ -147,8 +166,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set debug_display: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set debug_display: ")) + result.getMessage());
           return false;
         }
       }
@@ -158,7 +179,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
     bool oldDebugWebSocket = ConfigMgr.isDebugWebSocket();
     if (serverHasArg("debug_websocket")) {
       bool newDebugWebSocket = serverBool("debug_websocket");
-      logger.debug(F("AdminHandler"), String(F("debug_websocket: old=")) + (oldDebugWebSocket ? F("true") : F("false")) + String(F(", new=")) + (newDebugWebSocket ? F("true") : F("false")) );
+      logger.debug(F("AdminHandler"), String(F("debug_websocket: old=")) +
+                                          (oldDebugWebSocket ? F("true") : F("false")) +
+                                          String(F(", new=")) +
+                                          (newDebugWebSocket ? F("true") : F("false")));
       if (oldDebugWebSocket != newDebugWebSocket) {
         auto result = ConfigMgr.setDebugWebSocket(newDebugWebSocket);
         if (result.isSuccess()) {
@@ -166,10 +190,13 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += newDebugWebSocket ? F("aktiviert") : F("deaktiviert");
           changes += F("</li>");
           updated = true;
-          logger.info(F("AdminHandler"), String(F("debug_websocket set to ")) + (newDebugWebSocket ? F("true") : F("false")) );
+          logger.info(F("AdminHandler"), String(F("debug_websocket set to ")) +
+                                             (newDebugWebSocket ? F("true") : F("false")));
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set debug_websocket: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set debug_websocket: ")) + result.getMessage());
           return false;
         }
       }
@@ -186,8 +213,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
         changes += F(" gesetzt</li>");
         updated = true;
       } else {
-        if (error) *error = result.getMessage();
-        logger.error(F("AdminHandler"), String(F("Failed to set log_level: ")) + result.getMessage());
+        if (error)
+          *error = result.getMessage();
+        logger.error(F("AdminHandler"),
+                     String(F("Failed to set log_level: ")) + result.getMessage());
         return false;
       }
     }
@@ -204,8 +233,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set file_logging_enabled: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set file_logging_enabled: ")) + result.getMessage());
           return false;
         }
       }
@@ -223,8 +254,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set md5_verification: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set md5_verification: ")) + result.getMessage());
           return false;
         }
       }
@@ -241,8 +274,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set collectd_enabled: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set collectd_enabled: ")) + result.getMessage());
           return false;
         }
       }
@@ -256,8 +291,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           updated = true;
           changes += F("<li>Gerätename geändert</li>");
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set device_name: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set device_name: ")) + result.getMessage());
           return false;
         }
       }
@@ -286,8 +323,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
         changes += F(" gesetzt</li>");
         updated = true;
       } else {
-        if (error) *error = result.getMessage();
-        logger.error(F("AdminHandler"), String(F("Failed to set led_traffic_light_mode: ")) + result.getMessage());
+        if (error)
+          *error = result.getMessage();
+        logger.error(F("AdminHandler"),
+                     String(F("Failed to set led_traffic_light_mode: ")) + result.getMessage());
         return false;
       }
     }
@@ -309,8 +348,11 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
         }
         updated = true;
       } else {
-        if (error) *error = result.getMessage();
-        logger.error(F("AdminHandler"), String(F("Failed to set led_traffic_light_selected_measurement: ")) + result.getMessage());
+        if (error)
+          *error = result.getMessage();
+        logger.error(F("AdminHandler"),
+                     String(F("Failed to set led_traffic_light_selected_measurement: ")) +
+                         result.getMessage());
         return false;
       }
     }
@@ -327,8 +369,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
         changes += F("</li>");
         updated = true;
       } else {
-        if (error) *error = result.getMessage();
-        logger.error(F("AdminHandler"), String(F("Failed to set mail_enabled: ")) + result.getMessage());
+        if (error)
+          *error = result.getMessage();
+        logger.error(F("AdminHandler"),
+                     String(F("Failed to set mail_enabled: ")) + result.getMessage());
         return false;
       }
     }
@@ -342,8 +386,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("<li>SMTP-Server geändert</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set smtp_host: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set smtp_host: ")) + result.getMessage());
           return false;
         }
       }
@@ -358,8 +404,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("<li>SMTP-Port geändert</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set smtp_port: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set smtp_port: ")) + result.getMessage());
           return false;
         }
       }
@@ -374,8 +422,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("<li>SMTP-Benutzername geändert</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set smtp_user: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set smtp_user: ")) + result.getMessage());
           return false;
         }
       }
@@ -390,8 +440,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("<li>SMTP-Passwort geändert</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set smtp_password: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set smtp_password: ")) + result.getMessage());
           return false;
         }
       }
@@ -406,8 +458,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("<li>Absender-Name geändert</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set smtp_sender_name: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set smtp_sender_name: ")) + result.getMessage());
           return false;
         }
       }
@@ -422,8 +476,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("<li>Absender-E-Mail geändert</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set smtp_sender_email: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set smtp_sender_email: ")) + result.getMessage());
           return false;
         }
       }
@@ -438,8 +494,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("<li>Standard-Empfänger geändert</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set smtp_recipient: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set smtp_recipient: ")) + result.getMessage());
           return false;
         }
       }
@@ -457,8 +515,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set smtp_enable_starttls: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set smtp_enable_starttls: ")) + result.getMessage());
           return false;
         }
       }
@@ -476,8 +536,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set smtp_debug: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"),
+                       String(F("Failed to set smtp_debug: ")) + result.getMessage());
           return false;
         }
       }
@@ -495,8 +557,10 @@ bool AdminHandler::processConfigUpdates(String& changes, String* error) {
           changes += F("</li>");
           updated = true;
         } else {
-          if (error) *error = result.getMessage();
-          logger.error(F("AdminHandler"), String(F("Failed to set smtp_send_test_mail_on_boot: ")) + result.getMessage());
+          if (error)
+            *error = result.getMessage();
+          logger.error(F("AdminHandler"), String(F("Failed to set smtp_send_test_mail_on_boot: ")) +
+                                              result.getMessage());
           return false;
         }
       }
@@ -536,8 +600,7 @@ bool AdminHandler::applyConfigValue(const String& key, const String& value) {
     uint8_t mode = value.toInt();
     changed = ConfigMgr.setLedTrafficLightMode(mode).isSuccess();
   } else if (key == "led_traffic_light_selected_measurement") {
-    changed =
-        ConfigMgr.setLedTrafficLightSelectedMeasurement(value).isSuccess();
+    changed = ConfigMgr.setLedTrafficLightSelectedMeasurement(value).isSuccess();
   }
 
   return changed;

@@ -16,19 +16,19 @@
 // Add ConfigError to string conversion function
 inline String errorTypeToString(ConfigError error) {
   switch (error) {
-    case ConfigError::SUCCESS:
-      return F("Success");
-    case ConfigError::VALIDATION_ERROR:
-      return F("Validation Error");
-    case ConfigError::FILE_ERROR:
-      return F("File Error");
-    case ConfigError::PARSE_ERROR:
-      return F("Parse Error");
-    case ConfigError::SAVE_FAILED:
-      return F("Save Failed");
-    case ConfigError::UNKNOWN_ERROR:
-    default:
-      return F("Unknown Config Error");
+  case ConfigError::SUCCESS:
+    return F("Success");
+  case ConfigError::VALIDATION_ERROR:
+    return F("Validation Error");
+  case ConfigError::FILE_ERROR:
+    return F("File Error");
+  case ConfigError::PARSE_ERROR:
+    return F("Parse Error");
+  case ConfigError::SAVE_FAILED:
+    return F("Save Failed");
+  case ConfigError::UNKNOWN_ERROR:
+  default:
+    return F("Unknown Config Error");
   }
 }
 
@@ -73,39 +73,39 @@ struct ConfigData {
   /**
    * @brief WiFi credentials (up to 3 sets)
    */
-  String wifiSSID1;      ///< Primary WiFi SSID
-  String wifiPassword1;  ///< Primary WiFi password
-  String wifiSSID2;      ///< Secondary WiFi SSID
-  String wifiPassword2;  ///< Secondary WiFi password
-  String wifiSSID3;      ///< Tertiary WiFi SSID
-  String wifiPassword3;  ///< Tertiary WiFi password
+  String wifiSSID1;     ///< Primary WiFi SSID
+  String wifiPassword1; ///< Primary WiFi password
+  String wifiSSID2;     ///< Secondary WiFi SSID
+  String wifiPassword2; ///< Secondary WiFi password
+  String wifiSSID3;     ///< Tertiary WiFi SSID
+  String wifiPassword3; ///< Tertiary WiFi password
 
   // LED Traffic Light settings
-  uint8_t ledTrafficLightMode;  ///< 0 = off, 1 = all measurements, 2 = single
-                                ///< measurement
-  String ledTrafficLightSelectedMeasurement;  ///< Selected measurement
-                                              ///< identifier (format:
-                                              ///< "sensorId_measurementIndex",
-                                              ///< e.g., "analog_0")
+  uint8_t ledTrafficLightMode;               ///< 0 = off, 1 = all measurements, 2 = single
+                                             ///< measurement
+  String ledTrafficLightSelectedMeasurement; ///< Selected measurement
+                                             ///< identifier (format:
+                                             ///< "sensorId_measurementIndex",
+                                             ///< e.g., "analog_0")
 
   // Flower Status settings (for startpage)
-  String flowerStatusSensor;  ///< Sensor that controls the flower face status
-                              ///< (format: "sensorId_measurementIndex",
-                              ///< default: "ANALOG_1" for Bodenfeuchte)
+  String flowerStatusSensor; ///< Sensor that controls the flower face status
+                             ///< (format: "sensorId_measurementIndex",
+                             ///< default: "ANALOG_1" for Bodenfeuchte)
 
 #if USE_MAIL
   // Mail/SMTP settings
-  bool mailEnabled;              ///< Enable/disable mail functionality
-  String smtpHost;              ///< SMTP server host
-  uint16_t smtpPort;            ///< SMTP server port (587, 465, 25)
-  String smtpUser;              ///< SMTP username/email
-  String smtpPassword;          ///< SMTP password/app password
-  String smtpSenderName;        ///< Sender display name
-  String smtpSenderEmail;       ///< Sender email address
-  String smtpRecipient;         ///< Default recipient email
-  bool smtpEnableStartTLS;      ///< Enable STARTTLS encryption
-  bool smtpDebug;               ///< Enable SMTP debug output
-  bool smtpSendTestMailOnBoot;  ///< Send test mail on device startup
+  bool mailEnabled;            ///< Enable/disable mail functionality
+  String smtpHost;             ///< SMTP server host
+  uint16_t smtpPort;           ///< SMTP server port (587, 465, 25)
+  String smtpUser;             ///< SMTP username/email
+  String smtpPassword;         ///< SMTP password/app password
+  String smtpSenderName;       ///< Sender display name
+  String smtpSenderEmail;      ///< Sender email address
+  String smtpRecipient;        ///< Default recipient email
+  bool smtpEnableStartTLS;     ///< Enable STARTTLS encryption
+  bool smtpDebug;              ///< Enable SMTP debug output
+  bool smtpSendTestMailOnBoot; ///< Send test mail on device startup
 #endif
 };
 

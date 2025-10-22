@@ -80,16 +80,13 @@ SensorResult Sensor::handleInvalidReading(float value) {
   logger.error(getName(), F(": Ungültige Messung: ") + valueStr);
 
   if (m_errorState.invalidCount >= MAX_INVALID_READINGS) {
-    logger.error(getName(),
-                 F("Zu viele ungültige Messwerte, behandle als Sensorfehler"));
+    logger.error(getName(), F("Zu viele ungültige Messwerte, behandle als Sensorfehler"));
     handleSensorError();
-    return SensorResult::fail(SensorError::MEASUREMENT_ERROR,
-                              F("Zu viele ungültige Messwerte"));
+    return SensorResult::fail(SensorError::MEASUREMENT_ERROR, F("Zu viele ungültige Messwerte"));
   }
 
   if (isInRetryDelay()) {
-    return SensorResult::fail(SensorError::MEASUREMENT_ERROR,
-                              F("Still within retry delay period"));
+    return SensorResult::fail(SensorError::MEASUREMENT_ERROR, F("Still within retry delay period"));
   }
 
   m_errorState.inRetryDelay = false;
@@ -105,17 +102,17 @@ void Sensor::resetMeasurementState() {
   m_stateInfo = MeasurementStateInfo();
   m_isInWarmup = false;
   m_warmupStartTime = 0;
-  m_errorState = ErrorState();  // Reset error state too
+  m_errorState = ErrorState(); // Reset error state too
 }
 
 void Sensor::forceNextMeasurement() { m_stateInfo.lastMeasurementTime = 0; }
 
 bool Sensor::isDueMeasurement() const {
-  if (!m_enabled) return false;
+  if (!m_enabled)
+    return false;
 
   unsigned long now = millis();
-  unsigned long timeSinceLastMeasurement =
-      now - m_stateInfo.lastMeasurementTime;
+  unsigned long timeSinceLastMeasurement = now - m_stateInfo.lastMeasurementTime;
 
   return timeSinceLastMeasurement >= m_measurementInterval;
 }
@@ -160,32 +157,22 @@ const String& Sensor::getMeasurementName(size_t index) const {
   return empty;
 }
 
-unsigned long Sensor::getMeasurementStartTime() const {
-  return m_stateInfo.lastMeasurementTime;
-}
+unsigned long Sensor::getMeasurementStartTime() const { return m_stateInfo.lastMeasurementTime; }
 
 SharedHardwareInfo Sensor::getSharedHardwareInfo() const {
   return SharedHardwareInfo(SensorType::UNKNOWN, 0, 0);
 }
 
-void Sensor::setState(MeasurementState newState) {
-  m_stateInfo.state = newState;
-}
+void Sensor::setState(MeasurementState newState) { m_stateInfo.state = newState; }
 
-void Sensor::updateLastMeasurementTime() {
-  m_stateInfo.lastMeasurementTime = millis();
-}
+void Sensor::updateLastMeasurementTime() { m_stateInfo.lastMeasurementTime = millis(); }
 
-bool Sensor::shouldRetry() const {
-  return m_errorState.errorCount < MAX_RETRIES;
-}
+bool Sensor::shouldRetry() const { return m_errorState.errorCount < MAX_RETRIES; }
 
 SensorResult Sensor::validateMemoryState() const {
   // Check if measurement data is marked as valid
   if (!m_measurementDataValid) {
-    logger.debug(
-        getName(),
-        F(": Measurement data marked as invalid, attempting recovery"));
+    logger.debug(getName(), F(": Measurement data marked as invalid, attempting recovery"));
     return SensorResult::fail(SensorError::RESOURCE_ERROR,
                               F("Measurement data invalid (deinitialized)"));
   }
@@ -193,15 +180,13 @@ SensorResult Sensor::validateMemoryState() const {
   // Check if the measurement data pointer is valid (not null)
   if (!m_lastMeasurementData) {
     logger.error(getName(), F(": Null measurement data pointer"));
-    return SensorResult::fail(SensorError::RESOURCE_ERROR,
-                              F("Null measurement data pointer"));
+    return SensorResult::fail(SensorError::RESOURCE_ERROR, F("Null measurement data pointer"));
   }
 
   // Check if measurement data structure is valid
   if (!m_lastMeasurementData->isValid()) {
     logger.error(getName(), F(": Invalid measurement data structure"));
-    return SensorResult::fail(SensorError::RESOURCE_ERROR,
-                              F("Invalid measurement data structure"));
+    return SensorResult::fail(SensorError::RESOURCE_ERROR, F("Invalid measurement data structure"));
   }
 
   // Check if measurement data arrays are properly sized
@@ -212,11 +197,9 @@ SensorResult Sensor::validateMemoryState() const {
   }
 
   // Check if active values count is reasonable
-  if (m_lastMeasurementData->activeValues >
-      m_lastMeasurementData->values.size()) {
+  if (m_lastMeasurementData->activeValues > m_lastMeasurementData->values.size()) {
     logger.error(getName(), F(": Invalid active values count"));
-    return SensorResult::fail(SensorError::RESOURCE_ERROR,
-                              F("Invalid active values count"));
+    return SensorResult::fail(SensorError::RESOURCE_ERROR, F("Invalid active values count"));
   }
 
   return SensorResult::success();
@@ -247,7 +230,8 @@ SensorResult Sensor::resetMemoryState() {
   // Validate the reset memory state
   auto validationResult = validateMemoryState();
   if (!validationResult.isSuccess()) {
-    logger.error(getName(), F(": Zurücksetzen des Speicherzustands hat die Validierung nicht bestanden"));
+    logger.error(getName(),
+                 F(": Zurücksetzen des Speicherzustands hat die Validierung nicht bestanden"));
     return validationResult;
   }
 
@@ -255,33 +239,26 @@ SensorResult Sensor::resetMemoryState() {
   return SensorResult::success();
 }
 
-void Sensor::initMeasurement(size_t index, const String& name,
-                             const String& fieldName, const String& unit,
-                             float yellowLow, float greenLow, float greenHigh,
+void Sensor::initMeasurement(size_t index, const String& name, const String& fieldName,
+                             const String& unit, float yellowLow, float greenLow, float greenHigh,
                              float yellowHigh) {
   if (index >= SensorConfig::MAX_MEASUREMENTS) {
-    logger.error(F("Sensor"),
-                 F("initMeasurement: Index außerhalb des Bereichs: ") + String(index));
+    logger.error(F("Sensor"), F("initMeasurement: Index außerhalb des Bereichs: ") + String(index));
     return;
   }
   if (!m_lastMeasurementData || index >= SensorConfig::MAX_MEASUREMENTS) {
-    logger.error(
-        F("Sensor"),
-        F("initMeasurement: Index außerhalb des MeasurementData-Array-Bereichs: ") +
-            String(index));
+    logger.error(F("Sensor"),
+                 F("initMeasurement: Index außerhalb des MeasurementData-Array-Bereichs: ") +
+                     String(index));
     return;
   }
   mutableConfig().measurements[index].name = name;
-  mutableConfig().measurements[index].fieldName =
-      fieldName;  // <-- Ensure config has fieldName
-  mutableConfig().measurements[index].unit =
-      unit;  // <-- Ensure config has unit
+  mutableConfig().measurements[index].fieldName = fieldName; // <-- Ensure config has fieldName
+  mutableConfig().measurements[index].unit = unit;           // <-- Ensure config has unit
   strncpy(m_lastMeasurementData->fieldNames[index], fieldName.c_str(),
           SensorConfig::FIELD_NAME_LEN - 1);
-  m_lastMeasurementData->fieldNames[index][SensorConfig::FIELD_NAME_LEN - 1] =
-      '\0';
-  strncpy(m_lastMeasurementData->units[index], unit.c_str(),
-          SensorConfig::UNIT_LEN - 1);
+  m_lastMeasurementData->fieldNames[index][SensorConfig::FIELD_NAME_LEN - 1] = '\0';
+  strncpy(m_lastMeasurementData->units[index], unit.c_str(), SensorConfig::UNIT_LEN - 1);
   m_lastMeasurementData->units[index][SensorConfig::UNIT_LEN - 1] = '\0';
   mutableConfig().measurements[index].limits.yellowLow = yellowLow;
   mutableConfig().measurements[index].limits.greenLow = greenLow;
@@ -327,15 +304,14 @@ void Sensor::updateStatus(size_t measurementIndex) {
   // Determine if this is a one-sided sensor
   bool isOneSided = false;
   if (getId().startsWith("SDS011") || getId().startsWith("MHZ19")) {
-    isOneSided = true;  // PM and CO2 sensors use one-sided limits
+    isOneSided = true; // PM and CO2 sensors use one-sided limits
   }
 
   // Ensure statuses vector is large enough
   if (measurementIndex >= m_statuses.size()) {
     m_statuses.resize(measurementIndex + 1, "unknown");
   }
-  m_statuses[measurementIndex] =
-      determineSensorStatus(measurementValue, limits, isOneSided);
+  m_statuses[measurementIndex] = determineSensorStatus(measurementValue, limits, isOneSided);
 }
 
 const String& Sensor::getStatus(size_t measurementIndex) const {
@@ -348,8 +324,7 @@ const String& Sensor::getStatus(size_t measurementIndex) const {
   return m_statuses[measurementIndex];
 }
 
-String Sensor::determineSensorStatus(float value, const SensorLimits& limits,
-                                     bool isOneSided) {
+String Sensor::determineSensorStatus(float value, const SensorLimits& limits, bool isOneSided) {
   if (isOneSided) {
     // One-sided limits (like PM sensors): 0 to greenHigh is green, greenHigh to
     // yellowHigh is yellow, above yellowHigh is red
@@ -377,13 +352,11 @@ String Sensor::determineSensorStatus(float value, const SensorLimits& limits,
 
 void Sensor::updateMeasurementData(const MeasurementData& data) {
   if (!isInitialized()) {
-    logger.error(getName(),
-                 F(": updateMeasurementData called on uninitialized sensor!"));
+    logger.error(getName(), F(": updateMeasurementData called on uninitialized sensor!"));
     return;
   }
   if (!data.isValid()) {
-    logger.error(getName(),
-                 F(": updateMeasurementData called with invalid data!"));
+    logger.error(getName(), F(": updateMeasurementData called with invalid data!"));
     return;
   }
   // Defensive: Clamp activeValues to MAX_MEASUREMENTS
@@ -403,17 +376,15 @@ SensorResult Sensor::init() {
     // Clamp activeMeasurements and activeValues
     if (config().activeMeasurements > SensorConfig::MAX_MEASUREMENTS) {
       logger.warning(F("Sensor"), F("Clamping activeMeasurements from ") +
-                                      String(config().activeMeasurements) +
-                                      F(" to ") +
+                                      String(config().activeMeasurements) + F(" to ") +
                                       String(SensorConfig::MAX_MEASUREMENTS));
       // Note: We can't modify the config directly anymore, but this is just a
       // warning
     }
     if (m_lastMeasurementData->activeValues > SensorConfig::MAX_MEASUREMENTS) {
-      logger.warning(F("Sensor"),
-                     F("Clamping activeValues from ") +
-                         String(m_lastMeasurementData->activeValues) +
-                         F(" to ") + String(SensorConfig::MAX_MEASUREMENTS));
+      logger.warning(F("Sensor"), F("Clamping activeValues from ") +
+                                      String(m_lastMeasurementData->activeValues) + F(" to ") +
+                                      String(SensorConfig::MAX_MEASUREMENTS));
       m_lastMeasurementData->activeValues = SensorConfig::MAX_MEASUREMENTS;
     }
     size_t maxFields = SensorConfig::MAX_MEASUREMENTS;
@@ -436,21 +407,17 @@ SensorResult Sensor::init() {
  */
 SensorResult Sensor::performMeasurementCycle() {
   if (!isInitialized()) {
-    logger.error(
-        getName(),
-        F(": performMeasurementCycle called on uninitialized sensor!"));
-    return SensorResult::fail(SensorError::INITIALIZATION_ERROR,
-                              F("Sensor not initialized"));
+    logger.error(getName(), F(": performMeasurementCycle called on uninitialized sensor!"));
+    return SensorResult::fail(SensorError::INITIALIZATION_ERROR, F("Sensor not initialized"));
   }
-  constexpr size_t NUM_SAMPLES = MEASUREMENT_AVERAGE_COUNT;  // Use config macro
+  constexpr size_t NUM_SAMPLES = MEASUREMENT_AVERAGE_COUNT; // Use config macro
   size_t numMeasurements = getNumMeasurements();
 
   // Defensive checks
   if (numMeasurements == 0) {
     logger.error(getName(), F(": getNumMeasurements() returned 0! This "
                               "indicates a configuration issue."));
-    return SensorResult::fail(SensorError::INITIALIZATION_ERROR,
-                              F("No measurements configured"));
+    return SensorResult::fail(SensorError::INITIALIZATION_ERROR, F("No measurements configured"));
   }
 
   if (numMeasurements > SensorConfig::MAX_MEASUREMENTS) {
@@ -459,12 +426,10 @@ SensorResult Sensor::performMeasurementCycle() {
     numMeasurements = SensorConfig::MAX_MEASUREMENTS;
   }
 
-  if (ESP.getFreeHeap() < 2048) {  // Ensure we have at least 2KB free
-    logger.error(getName(),
-                 F(": Insufficient memory for measurement cycle. Free heap: ") +
-                     String(ESP.getFreeHeap()));
-    return SensorResult::fail(SensorError::MEMORY_ERROR,
-                              F("Insufficient memory"));
+  if (ESP.getFreeHeap() < 2048) { // Ensure we have at least 2KB free
+    logger.error(getName(), F(": Insufficient memory for measurement cycle. Free heap: ") +
+                                String(ESP.getFreeHeap()));
+    return SensorResult::fail(SensorError::MEMORY_ERROR, F("Insufficient memory"));
   }
 
   // --- Nonblocking sample collection with minimumDelay ---
@@ -476,8 +441,7 @@ SensorResult Sensor::performMeasurementCycle() {
     try {
       m_state.samples.resize(numMeasurements);
     } catch (const std::exception& e) {
-      logger.error(getName(),
-                   F(": Failed to resize samples vector: ") + String(e.what()));
+      logger.error(getName(), F(": Failed to resize samples vector: ") + String(e.what()));
       m_state.readInProgress = false;
       return SensorResult::fail(SensorError::MEMORY_ERROR,
                                 F("Failed to allocate measurement memory"));
@@ -489,8 +453,7 @@ SensorResult Sensor::performMeasurementCycle() {
   }
 
   // Wait for minimumDelay between samples
-  if (m_state.lastSampleTime != 0 &&
-      (millis() - m_state.lastSampleTime < config().minimumDelay)) {
+  if (m_state.lastSampleTime != 0 && (millis() - m_state.lastSampleTime < config().minimumDelay)) {
     return SensorResult::fail(SensorError::PENDING, "pending");
   }
 
@@ -526,7 +489,8 @@ SensorResult Sensor::performMeasurementCycle() {
   std::vector<float> averages = averageSamples();
   size_t validCount = 0;
   for (float v : averages) {
-    if (!isnan(v)) validCount++;
+    if (!isnan(v))
+      validCount++;
   }
   if (validCount == 0) {
     logger.error(getName(), F(": All measurement results are invalid (NaN)"));
@@ -567,17 +531,14 @@ std::vector<float> Sensor::averageSamples() const {
  * @brief Returns the averaged results for each measurement channel
  * @return Vector of averaged values (one per channel)
  */
-std::vector<float> Sensor::getAveragedResults() const {
-  return averageSamples();
-}
+std::vector<float> Sensor::getAveragedResults() const { return averageSamples(); }
 
 /**
  * @brief Helper to clear and shrink a std::vector (frees memory)
  * @tparam T Vector element type
  * @param vec Reference to the vector to clear and shrink
  */
-template <typename T>
-static void clearAndShrink(std::vector<T>& vec) {
+template <typename T> static void clearAndShrink(std::vector<T>& vec) {
   vec.clear();
   vec.shrink_to_fit();
 }
@@ -605,8 +566,7 @@ size_t Sensor::getNumMeasurements() const {
   // **CRITICAL FIX: Ensure we never return 0 measurements**
   size_t count = config().activeMeasurements;
   if (count == 0) {
-    logger.warning(getName(),
-                   F(": getNumMeasurements() would return 0, using 1"));
+    logger.warning(getName(), F(": getNumMeasurements() would return 0, using 1"));
     return 1;
   }
   return count;

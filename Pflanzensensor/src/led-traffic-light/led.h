@@ -20,9 +20,9 @@
  * off.
  */
 struct LedStatus {
-  bool red;     ///< State of the red LED (true = on, false = off)
-  bool yellow;  ///< State of the yellow LED (true = on, false = off)
-  bool green;   ///< State of the green LED (true = on, false = off)
+  bool red;    ///< State of the red LED (true = on, false = off)
+  bool yellow; ///< State of the yellow LED (true = on, false = off)
+  bool green;  ///< State of the green LED (true = on, false = off)
 };
 
 /**
@@ -33,12 +33,12 @@ struct LedStatus {
  *          Uses pin configurations from the global config.
  */
 class LedLights {
- public:
+public:
   /// @name LED Color Constants
   /// @{
-  static const int RED = 1;     ///< Identifier for red LED
-  static const int YELLOW = 2;  ///< Identifier for yellow LED
-  static const int GREEN = 3;   ///< Identifier for green LED
+  static const int RED = 1;    ///< Identifier for red LED
+  static const int YELLOW = 2; ///< Identifier for yellow LED
+  static const int GREEN = 3;  ///< Identifier for green LED
   /// @}
 
   /**
@@ -73,7 +73,7 @@ class LedLights {
    */
   LedStatus getStatus() const;
 
- private:
+private:
   /**
    * @brief Validate LED color value
    * @param color Color value to check
@@ -84,6 +84,6 @@ class LedLights {
   bool isValidColor(int color) const { return color >= RED && color <= GREEN; }
 };
 
-#endif  // USE_LED_TRAFFIC_LIGHT
+#endif // USE_LED_TRAFFIC_LIGHT
 
-#endif  // LED_H
+#endif // LED_H

@@ -49,17 +49,16 @@ enum class UserRole { NONE, USER, ADMIN };
  *          - Session token for authentication
  */
 struct SessionInfo {
-  String username;           ///< User's login name
-  UserRole role;             ///< User's role level
-  unsigned long lastAccess;  ///< Timestamp of last activity
-  String token;              ///< Session authentication token
+  String username;          ///< User's login name
+  UserRole role;            ///< User's role level
+  unsigned long lastAccess; ///< Timestamp of last activity
+  String token;             ///< Session authentication token
 
   /**
    * @brief Default constructor
    * @details Initializes a session with no permissions and empty credentials
    */
-  SessionInfo()
-      : username(""), role(UserRole::NONE), lastAccess(0), token("") {}
+  SessionInfo() : username(""), role(UserRole::NONE), lastAccess(0), token("") {}
 };
 
 /**
@@ -72,7 +71,7 @@ struct SessionInfo {
  *          - Security logging
  */
 class WebAuth {
- public:
+public:
   /**
    * @brief Constructor
    * @param server Reference to web server instance
@@ -111,8 +110,7 @@ class WebAuth {
    *          - Associates role with username
    *          - Updates existing user if present
    */
-  void setCredentials(const String& username, const String& password,
-                      UserRole role);
+  void setCredentials(const String& username, const String& password, UserRole role);
 
   /**
    * @brief Create new session for user
@@ -155,18 +153,17 @@ class WebAuth {
    *          - Uses standard authentication process
    */
   bool checkAuthentication() {
-    return authenticate(UserRole::ADMIN);  // Default to requiring admin role
+    return authenticate(UserRole::ADMIN); // Default to requiring admin role
   }
 
- private:
-  ESP8266WebServer& _server;              ///< Reference to web server instance
-  std::map<String, String> _credentials;  ///< Username to password mapping
-  std::map<String, UserRole> _roles;      ///< Username to role mapping
-  std::map<String, SessionInfo> _sessions;  ///< Token to session info mapping
+private:
+  ESP8266WebServer& _server;               ///< Reference to web server instance
+  std::map<String, String> _credentials;   ///< Username to password mapping
+  std::map<String, UserRole> _roles;       ///< Username to role mapping
+  std::map<String, SessionInfo> _sessions; ///< Token to session info mapping
 
-  static const unsigned long SESSION_TIMEOUT =
-      3600000;                           ///< Session timeout (1 hour)
-  static const size_t MAX_SESSIONS = 5;  ///< Maximum concurrent sessions
+  static const unsigned long SESSION_TIMEOUT = 3600000; ///< Session timeout (1 hour)
+  static const size_t MAX_SESSIONS = 5;                 ///< Maximum concurrent sessions
 
   /**
    * @brief Check basic auth credentials
@@ -233,4 +230,4 @@ class WebAuth {
   void logAuthAttempt(const String& username, bool success);
 };
 
-#endif  // WEB_AUTH_H
+#endif // WEB_AUTH_H

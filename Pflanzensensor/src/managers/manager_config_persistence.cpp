@@ -16,9 +16,7 @@ using namespace ArduinoJson;
 #include "managers/manager_resource.h"
 #include "managers/manager_sensor.h"
 
-bool ConfigPersistence::configFileExists() {
-  return LittleFS.exists("/config.json");
-}
+bool ConfigPersistence::configFileExists() { return LittleFS.exists("/config.json"); }
 
 size_t ConfigPersistence::getConfigFileSize() {
   if (!configFileExists()) {
@@ -41,8 +39,7 @@ size_t ConfigPersistence::getConfigFileSize() {
 // Sensor settings are now handled by SensorPersistence
 // This function has been moved to manager_sensor_persistence.cpp
 
-ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(
-    ConfigData& config) {
+ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(ConfigData& config) {
   logger.logMemoryStats(F("ConfigP_load_before"));
   String errorMsg;
   StaticJsonDocument<512> doc;
@@ -68,8 +65,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(
   // Load main configuration values
   config.adminPassword = doc["admin_password"] | INITIAL_ADMIN_PASSWORD;
   config.md5Verification = doc["md5_verification"] | false;
-  config.fileLoggingEnabled =
-      doc["file_logging_enabled"] | FILE_LOGGING_ENABLED;
+  config.fileLoggingEnabled = doc["file_logging_enabled"] | FILE_LOGGING_ENABLED;
   config.deviceName = doc["device_name"] | String(DEVICE_NAME);
 
   // Load WiFi credentials
@@ -86,28 +82,24 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(
   config.debugMeasurementCycle = doc.containsKey("debug_measurement_cycle")
                                      ? doc["debug_measurement_cycle"]
                                      : DEBUG_MEASUREMENT_CYCLE;
-  config.debugSensor =
-      doc.containsKey("debug_sensor") ? doc["debug_sensor"] : DEBUG_SENSOR;
-  config.debugDisplay =
-      doc.containsKey("debug_display") ? doc["debug_display"] : DEBUG_DISPLAY;
-  config.debugWebSocket = doc.containsKey("debug_websocket")
-                              ? doc["debug_websocket"]
-                              : DEBUG_WEBSOCKET;
+  config.debugSensor = doc.containsKey("debug_sensor") ? doc["debug_sensor"] : DEBUG_SENSOR;
+  config.debugDisplay = doc.containsKey("debug_display") ? doc["debug_display"] : DEBUG_DISPLAY;
+  config.debugWebSocket =
+      doc.containsKey("debug_websocket") ? doc["debug_websocket"] : DEBUG_WEBSOCKET;
 
   // LED Traffic Light settings
   config.ledTrafficLightMode = doc.containsKey("led_traffic_light_mode")
                                    ? doc["led_traffic_light_mode"]
-                                   : 1;  // Default to mode 1 (all measurements)
+                                   : 1; // Default to mode 1 (all measurements)
   config.ledTrafficLightSelectedMeasurement =
       doc.containsKey("led_traffic_light_selected_measurement")
           ? doc["led_traffic_light_selected_measurement"].as<String>()
-          : "";  // Default to empty (no measurement selected)
+          : ""; // Default to empty (no measurement selected)
 
   // Flower Status settings
-  config.flowerStatusSensor =
-      doc.containsKey("flower_status_sensor")
-          ? doc["flower_status_sensor"].as<String>()
-          : "ANALOG_1";  // Default to ANALOG_1 (Bodenfeuchte)
+  config.flowerStatusSensor = doc.containsKey("flower_status_sensor")
+                                  ? doc["flower_status_sensor"].as<String>()
+                                  : "ANALOG_1"; // Default to ANALOG_1 (Bodenfeuchte)
 
   // --- Migration: if keys are missing in an existing config.json, add them
   // using compile-time defaults so devices upgraded from older firmware still
@@ -183,8 +175,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(
   return PersistenceResult::success();
 }
 
-ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(
-    ConfigData& config) {
+ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(ConfigData& config) {
   logger.logMemoryStats(F("ConfigP_reset_before"));
   StaticJsonDocument<512> doc;
   doc.clear();
@@ -229,8 +220,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(
   doc["wifi_ssid_3"] = config.wifiSSID3;
   doc["wifi_password_3"] = config.wifiPassword3;
   doc["led_traffic_light_mode"] = config.ledTrafficLightMode;
-  doc["led_traffic_light_selected_measurement"] =
-      config.ledTrafficLightSelectedMeasurement;
+  doc["led_traffic_light_selected_measurement"] = config.ledTrafficLightSelectedMeasurement;
 #if USE_MAIL
   doc["mail_enabled"] = config.mailEnabled;
   doc["smtp_host"] = config.smtpHost;
@@ -257,8 +247,8 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(
   return PersistenceResult::success();
 }
 
-ConfigPersistence::PersistenceResult ConfigPersistence::saveToFileMinimal(
-    const ConfigData& config) {
+ConfigPersistence::PersistenceResult
+ConfigPersistence::saveToFileMinimal(const ConfigData& config) {
   StaticJsonDocument<512> doc;
   doc[F("admin_password")] = config.adminPassword;
   doc[F("md5_verification")] = config.md5Verification;
@@ -290,11 +280,13 @@ ConfigPersistence::PersistenceResult ConfigPersistence::saveToFileMinimal(
   }
 
   // Log key debug flags and other safe-to-log settings for auditing
-  logger.info(F("ConfigP"), String(F("Konfiguration gespeichert: debug_ram=")) + (config.debugRAM ? F("true") : F("false")) +
-              F(", debug_measurement_cycle=") + (config.debugMeasurementCycle ? F("true") : F("false")) +
-              F(", debug_sensor=") + (config.debugSensor ? F("true") : F("false")) +
-              F(", debug_display=") + (config.debugDisplay ? F("true") : F("false")) +
-              F(", debug_websocket=") + (config.debugWebSocket ? F("true") : F("false")));
+  logger.info(F("ConfigP"),
+              String(F("Konfiguration gespeichert: debug_ram=")) +
+                  (config.debugRAM ? F("true") : F("false")) + F(", debug_measurement_cycle=") +
+                  (config.debugMeasurementCycle ? F("true") : F("false")) + F(", debug_sensor=") +
+                  (config.debugSensor ? F("true") : F("false")) + F(", debug_display=") +
+                  (config.debugDisplay ? F("true") : F("false")) + F(", debug_websocket=") +
+                  (config.debugWebSocket ? F("true") : F("false")));
 
   return PersistenceResult::success();
 }
@@ -334,72 +326,77 @@ void ConfigPersistence::loadMailConfig(const StaticJsonDocument<512>& doc, Confi
 
   config.smtpHost = doc.containsKey(F("smtp_host")) ? doc[F("smtp_host")].as<String>()
 #ifdef SMTP_HOST
-                    : F(SMTP_HOST);
+                                                    : F(SMTP_HOST);
 #else
-                    : F("");
+                                                            : F("");
 #endif
 
   config.smtpPort = doc.containsKey(F("smtp_port")) ? doc[F("smtp_port")]
 #ifdef SMTP_PORT
-                    : SMTP_PORT;
+                                                    : SMTP_PORT;
 #else
-                    : 587;
+                                                            : 587;
 #endif
 
   config.smtpUser = doc.containsKey(F("smtp_user")) ? doc[F("smtp_user")].as<String>()
 #ifdef SMTP_USER
-                    : F(SMTP_USER);
+                                                    : F(SMTP_USER);
 #else
-                    : F("");
+                                                            : F("");
 #endif
 
   config.smtpPassword = doc.containsKey(F("smtp_password")) ? doc[F("smtp_password")].as<String>()
 #ifdef SMTP_PASSWORD
-                        : F(SMTP_PASSWORD);
+                                                            : F(SMTP_PASSWORD);
 #else
-                        : F("");
+                                                            : F("");
 #endif
 
-  config.smtpSenderName = doc.containsKey(F("smtp_sender_name")) ? doc[F("smtp_sender_name")].as<String>()
+  config.smtpSenderName = doc.containsKey(F("smtp_sender_name"))
+                              ? doc[F("smtp_sender_name")].as<String>()
 #ifdef SMTP_SENDER_NAME
-                          : F(SMTP_SENDER_NAME);
+                              : F(SMTP_SENDER_NAME);
 #else
-                          : F(DEVICE_NAME);
+                                                            : F(DEVICE_NAME);
 #endif
 
-  config.smtpSenderEmail = doc.containsKey(F("smtp_sender_email")) ? doc[F("smtp_sender_email")].as<String>()
+  config.smtpSenderEmail = doc.containsKey(F("smtp_sender_email"))
+                               ? doc[F("smtp_sender_email")].as<String>()
 #ifdef SMTP_SENDER_EMAIL
-                           : F(SMTP_SENDER_EMAIL);
+                               : F(SMTP_SENDER_EMAIL);
 #else
-                           : F("");
+                                                            : F("");
 #endif
 
-  config.smtpRecipient = doc.containsKey(F("smtp_recipient")) ? doc[F("smtp_recipient")].as<String>()
+  config.smtpRecipient = doc.containsKey(F("smtp_recipient"))
+                             ? doc[F("smtp_recipient")].as<String>()
 #ifdef SMTP_RECIPIENT
-                         : F(SMTP_RECIPIENT);
+                             : F(SMTP_RECIPIENT);
 #else
-                         : F("");
+                                                            : F("");
 #endif
 
-  config.smtpEnableStartTLS = doc.containsKey(F("smtp_enable_starttls")) ? doc[F("smtp_enable_starttls")]
+  config.smtpEnableStartTLS = doc.containsKey(F("smtp_enable_starttls"))
+                                  ? doc[F("smtp_enable_starttls")]
 #ifdef SMTP_ENABLE_STARTTLS
-                              : SMTP_ENABLE_STARTTLS;
+                                  : SMTP_ENABLE_STARTTLS;
 #else
-                              : true;
+                                                            : true;
 #endif
 
   config.smtpDebug = doc.containsKey(F("smtp_debug")) ? doc[F("smtp_debug")]
 #ifdef SMTP_DEBUG
-                     : SMTP_DEBUG;
+                                                      : SMTP_DEBUG;
 #else
-                     : false;
+                                                            : false;
 #endif
 
-  config.smtpSendTestMailOnBoot = doc.containsKey(F("smtp_send_test_mail_on_boot")) ? doc[F("smtp_send_test_mail_on_boot")]
+  config.smtpSendTestMailOnBoot = doc.containsKey(F("smtp_send_test_mail_on_boot"))
+                                      ? doc[F("smtp_send_test_mail_on_boot")]
 #ifdef SMTP_SEND_TEST_MAIL_ON_BOOT
-                                  : SMTP_SEND_TEST_MAIL_ON_BOOT;
+                                      : SMTP_SEND_TEST_MAIL_ON_BOOT;
 #else
-                                  : false;
+                                                            : false;
 #endif
 }
 
@@ -411,7 +408,7 @@ void ConfigPersistence::setMailConfigDefaults(ConfigData& config) {
 #ifdef SMTP_HOST
   config.mailEnabled = true;
 #else
-  config.mailEnabled = false;  // Disabled by default for security
+  config.mailEnabled = false; // Disabled by default for security
 #endif
 
 #ifdef SMTP_HOST
@@ -423,7 +420,7 @@ void ConfigPersistence::setMailConfigDefaults(ConfigData& config) {
 #ifdef SMTP_PORT
   config.smtpPort = SMTP_PORT;
 #else
-  config.smtpPort = 587;  // Standard SMTP port
+  config.smtpPort = 587; // Standard SMTP port
 #endif
 
 #ifdef SMTP_USER
@@ -459,7 +456,7 @@ void ConfigPersistence::setMailConfigDefaults(ConfigData& config) {
 #ifdef SMTP_ENABLE_STARTTLS
   config.smtpEnableStartTLS = SMTP_ENABLE_STARTTLS;
 #else
-  config.smtpEnableStartTLS = true;  // Enable STARTTLS by default
+  config.smtpEnableStartTLS = true; // Enable STARTTLS by default
 #endif
 
 #ifdef SMTP_DEBUG
@@ -476,7 +473,8 @@ void ConfigPersistence::setMailConfigDefaults(ConfigData& config) {
 }
 
 // Helper function to save mail configuration to JSON
-void ConfigPersistence::saveMailConfigToJson(StaticJsonDocument<512>& doc, const ConfigData& config) {
+void ConfigPersistence::saveMailConfigToJson(StaticJsonDocument<512>& doc,
+                                             const ConfigData& config) {
   doc[F("mail_enabled")] = config.mailEnabled;
   doc[F("smtp_host")] = config.smtpHost;
   doc[F("smtp_port")] = config.smtpPort;

@@ -11,19 +11,19 @@
 
 #include <functional>
 
-#include "logger/logger.h"            // For logger
-#include "managers/manager_config.h"  // For ConfigMgr
+#include "logger/logger.h"           // For logger
+#include "managers/manager_config.h" // For ConfigMgr
 
 class WebSocketService {
- public:
+public:
   static constexpr size_t MAX_CLIENTS = 1;
   // Reduced ring buffer to save RAM on ESP8266
   static constexpr size_t RING_BUFFER_SIZE = 512;
   // Keep messages reasonably sized to avoid large static buffers
   static constexpr size_t MAX_MESSAGE_SIZE = 256;
 
-  using WebSocketEventHandler = std::function<void(
-      uint8_t num, WStype_t type, uint8_t* payload, size_t length)>;
+  using WebSocketEventHandler =
+      std::function<void(uint8_t num, WStype_t type, uint8_t* payload, size_t length)>;
 
   static WebSocketService& getInstance();
   bool init(uint16_t port, WebSocketEventHandler handler);
@@ -42,14 +42,13 @@ class WebSocketService {
   void setEventHandler(WebSocketEventHandler handler) {
     _eventHandler = std::move(handler);
     if (_wsServer) {
-      _wsServer->onEvent(
-          [this](uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
-            handleEvent(num, type, payload, length);
-          });
+      _wsServer->onEvent([this](uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
+        handleEvent(num, type, payload, length);
+      });
     }
   }
 
- private:
+private:
   WebSocketService() = default;
   ~WebSocketService();
 

@@ -7,8 +7,8 @@
 #define SENSOR_ANALOG_H
 
 #include "sensor_analog_multiplexer.h"
-#include "sensors/sensors.h"
 #include "sensors/sensor_autocalibration.h"
+#include "sensors/sensors.h"
 
 // Forward declarations
 class SensorPersistence;
@@ -22,9 +22,9 @@ class SensorPersistence;
  * including pin assignments, multiplexer settings, and calibration values.
  */
 struct AnalogConfig : public SensorConfig {
-  uint8_t pin;          ///< The analog input pin to read from
-  bool useMultiplexer;  ///< Whether to use multiplexer for multiple inputs
-  unsigned long minimumDelay;  ///< Minimum delay between readings
+  uint8_t pin;                ///< The analog input pin to read from
+  bool useMultiplexer;        ///< Whether to use multiplexer for multiple inputs
+  unsigned long minimumDelay; ///< Minimum delay between readings
 
   /**
    * @brief Default constructor for AnalogConfig
@@ -36,7 +36,7 @@ struct AnalogConfig : public SensorConfig {
         useMultiplexer(USE_MULTIPLEXER),
         minimumDelay(ANALOG_MINIMUM_DELAY) {
     name = F("Analog Sensor");
-    id = F("ANALOG");  // Unified ID
+    id = F("ANALOG"); // Unified ID
     activeMeasurements = ANALOG_SENSOR_COUNT;
     if (measurementInterval == 0)
       measurementInterval = ANALOG_MEASUREMENT_INTERVAL * 1000;
@@ -60,14 +60,13 @@ struct AnalogConfig : public SensorConfig {
  * with support for multiplexed inputs and configurable sampling.
  */
 class AnalogSensor : public Sensor {
- public:
+public:
   /**
    * @brief Constructs an analog sensor instance
    * @param config The configuration for this analog sensor
    * @param sensorManager Reference to the sensor manager
    */
-  explicit AnalogSensor(const AnalogConfig& config,
-                        class SensorManager* sensorManager);
+  explicit AnalogSensor(const AnalogConfig& config, class SensorManager* sensorManager);
 
   /**
    * @brief Initializes the analog sensor hardware
@@ -123,8 +122,7 @@ class AnalogSensor : public Sensor {
    * @override
    */
   SharedHardwareInfo getSharedHardwareInfo() const override {
-    return SharedHardwareInfo(SensorType::ANALOG, m_analogConfig.pin,
-                              m_analogConfig.minimumDelay);
+    return SharedHardwareInfo(SensorType::ANALOG, m_analogConfig.pin, m_analogConfig.minimumDelay);
   }
 
   /**
@@ -158,13 +156,15 @@ class AnalogSensor : public Sensor {
    */
   inline float getMinValue(size_t idx) const {
     if (idx < m_analogConfig.measurements.size()) {
-      const auto &m = m_analogConfig.measurements[idx];
+      const auto& m = m_analogConfig.measurements[idx];
       // Use runtime autocal if either the sensor's runtime copy or the
       // persistent config indicates calibrationMode is active. This
       // prevents transient races between persistence and runtime state.
       bool cfgCal = false;
-      if (idx < this->config().measurements.size()) cfgCal = this->config().measurements[idx].calibrationMode;
-      if (m.calibrationMode || cfgCal) return static_cast<float>(m.autocal.min_value);
+      if (idx < this->config().measurements.size())
+        cfgCal = this->config().measurements[idx].calibrationMode;
+      if (m.calibrationMode || cfgCal)
+        return static_cast<float>(m.autocal.min_value);
       return m.minValue;
     }
     return 0.0f;
@@ -185,10 +185,12 @@ class AnalogSensor : public Sensor {
    */
   inline float getMaxValue(size_t idx) const {
     if (idx < m_analogConfig.measurements.size()) {
-      const auto &m = m_analogConfig.measurements[idx];
+      const auto& m = m_analogConfig.measurements[idx];
       bool cfgCal = false;
-      if (idx < this->config().measurements.size()) cfgCal = this->config().measurements[idx].calibrationMode;
-      if (m.calibrationMode || cfgCal) return static_cast<float>(m.autocal.max_value);
+      if (idx < this->config().measurements.size())
+        cfgCal = this->config().measurements[idx].calibrationMode;
+      if (m.calibrationMode || cfgCal)
+        return static_cast<float>(m.autocal.max_value);
       return m.maxValue;
     }
     return 0.0f;
@@ -275,7 +277,7 @@ class AnalogSensor : public Sensor {
     return 1023;
   }
 
- protected:
+protected:
   /**
    * @brief Returns the number of measurements for this analog sensor (clamped
    * to MAX_MEASUREMENTS)
@@ -285,7 +287,7 @@ class AnalogSensor : public Sensor {
                     static_cast<size_t>(SensorConfig::MAX_MEASUREMENTS));
   }
 
- private:
+private:
   // Store our own copy of the config
   AnalogConfig m_analogConfig;
 
@@ -321,5 +323,5 @@ class AnalogSensor : public Sensor {
   bool canAccessHardware() const;
 };
 
-#endif  // USE_ANALOG
-#endif  // SENSOR_ANALOG_H
+#endif // USE_ANALOG
+#endif // SENSOR_ANALOG_H

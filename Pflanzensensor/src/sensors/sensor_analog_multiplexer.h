@@ -26,7 +26,7 @@
  * Sensor 8 -> 000 (0)
  */
 class Multiplexer {
- public:
+public:
   /**
    * @brief Constructor
    */
@@ -51,16 +51,16 @@ class Multiplexer {
    */
   bool switchToSensor(int sensorIndex);
 
- private:
-  static constexpr unsigned long SWITCH_DELAY = 50;     // 50ms settling time
-  static constexpr unsigned long SWITCH_TIMEOUT = 100;  // 100ms timeout
-  static constexpr int MAX_CHANNELS = 8;  // Maximum number of channels
+private:
+  static constexpr unsigned long SWITCH_DELAY = 50;    // 50ms settling time
+  static constexpr unsigned long SWITCH_TIMEOUT = 100; // 100ms timeout
+  static constexpr int MAX_CHANNELS = 8;               // Maximum number of channels
 
-  bool m_initialized{false};           // Track initialization state
-  unsigned long m_switchStartTime{0};  // Track when switch started
-  bool m_switchInProgress{false};      // Track if switch is in progress
-  int m_currentChannel{-1};            // Currently selected channel
-  int m_targetChannel{-1};             // Target channel during switch
+  bool m_initialized{false};          // Track initialization state
+  unsigned long m_switchStartTime{0}; // Track when switch started
+  bool m_switchInProgress{false};     // Track if switch is in progress
+  int m_currentChannel{-1};           // Currently selected channel
+  int m_targetChannel{-1};            // Target channel during switch
 
   /**
    * @brief Verifies that multiplexer pins match expected states
@@ -70,4 +70,4 @@ class Multiplexer {
   bool verifyPinStates(int muxAddress);
 };
 
-#endif  // SENSOR_ANALOG_MULTIPLEXER_H
+#endif // SENSOR_ANALOG_MULTIPLEXER_H

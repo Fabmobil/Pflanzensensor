@@ -5,8 +5,8 @@
 
 #include "web/core/components.h"
 
-#include <algorithm>
 #include <ESP8266WiFi.h>
+#include <algorithm>
 
 #include "logger/logger.h"
 #include "utils/helper.h"
@@ -25,8 +25,7 @@ ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
   // Check memory before starting
   uint32_t freeHeap = ESP.getFreeHeap();
   if (freeHeap < SAFE_HEAP_SIZE) {
-    server.send(503, F("text/plain"),
-                F("Unzureichender Speicher, bitte später erneut versuchen"));
+    server.send(503, F("text/plain"), F("Unzureichender Speicher, bitte später erneut versuchen"));
     return ResourceResult::fail(ResourceError::INSUFFICIENT_MEMORY,
                                 F("Unzureichender Speicher für HTML-Antwort"));
   }
@@ -38,12 +37,10 @@ ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
   server.send(200, FPSTR(TEXT_HTML), F(""));
 
   // Send initial HTML
-  sendChunk(
-      server,
-      F("<!DOCTYPE html><html lang='de'><head>"
-        "<meta charset='UTF-8'>"
-        "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
-        "<title>"));
+  sendChunk(server, F("<!DOCTYPE html><html lang='de'><head>"
+                      "<meta charset='UTF-8'>"
+                      "<meta name='viewport' content='width=device-width, initial-scale=1.0'>"
+                      "<title>"));
   sendChunk(server, title);
   sendChunk(server, F("</title>"
                       "<link rel='stylesheet' href='/css/style.css'>"));
@@ -62,17 +59,16 @@ ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
 }
 
 void sendChunk(ESP8266WebServer& server, const String& chunk) {
-  static char buffer[128];  // Reuse buffer
+  static char buffer[128]; // Reuse buffer
   size_t remaining = chunk.length();
   size_t offset = 0;
   static unsigned long lastYield = 0;
-  const unsigned long YIELD_INTERVAL = 100;  // Yield every 100ms
+  const unsigned long YIELD_INTERVAL = 100; // Yield every 100ms
 
   while (remaining > 0) {
-    size_t toSend = std::min<size_t>(
-        remaining, sizeof(buffer) - 1);  // Leave space for null terminator
-    chunk.substring(offset, offset + toSend)
-        .toCharArray(buffer, sizeof(buffer));
+    size_t toSend =
+        std::min<size_t>(remaining, sizeof(buffer) - 1); // Leave space for null terminator
+    chunk.substring(offset, offset + toSend).toCharArray(buffer, sizeof(buffer));
     server.sendContent(buffer);
     remaining -= toSend;
     offset += toSend;
@@ -90,14 +86,13 @@ void sendNavigation(ESP8266WebServer& server, const String& activeItem) {
   // Diese Funktion wird nicht mehr genutzt, bleibt aber für Kompatibilität
 }
 
-void sendFooter(ESP8266WebServer& server, const String& version,
-                const String& buildDate) {
+void sendFooter(ESP8266WebServer& server, const String& version, const String& buildDate) {
   // Footer wird mit sendPixelatedFooter erstellt
   // Diese Funktion wird nicht mehr genutzt, bleibt aber für Kompatibilität
 }
 
-void sendPixelatedFooter(ESP8266WebServer& server, const String& version,
-                         const String& buildDate, const String& activeSection) {
+void sendPixelatedFooter(ESP8266WebServer& server, const String& version, const String& buildDate,
+                         const String& activeSection) {
   sendChunk(server, F("<div class='footer'>"));
   sendChunk(server, F("<div class='base'>"));
 
@@ -113,15 +108,18 @@ void sendPixelatedFooter(ESP8266WebServer& server, const String& version,
 
   // Main navigation
   sendChunk(server, F("<li><a href='/' id='nav-start' class='nav-item"));
-  if (activeSection == "start" || activeSection == "/" || activeSection == "") sendChunk(server, F(" active"));
+  if (activeSection == "start" || activeSection == "/" || activeSection == "")
+    sendChunk(server, F(" active"));
   sendChunk(server, F("'>START</a></li>"));
 
   sendChunk(server, F("<li><a href='/logs' id='nav-logs' class='nav-item"));
-  if (activeSection == "logs") sendChunk(server, F(" active"));
+  if (activeSection == "logs")
+    sendChunk(server, F(" active"));
   sendChunk(server, F("'>LOGS</a></li>"));
 
   sendChunk(server, F("<li><a href='/admin' id='nav-admin' class='nav-item"));
-  if (activeSection.startsWith("admin")) sendChunk(server, F(" active"));
+  if (activeSection.startsWith("admin"))
+    sendChunk(server, F(" active"));
   sendChunk(server, F("'>ADMIN</a></li>"));
 
   sendChunk(server, F("</ul></nav>"));
@@ -133,7 +131,8 @@ void sendPixelatedFooter(ESP8266WebServer& server, const String& version,
   // Seite neu zu laden.
   // System stats labels
   sendChunk(server, F("<ul class='stats-labels' id='footer-stats-labels'"));
-  if (activeSection.startsWith("admin")) sendChunk(server, F(" style='display:none'"));
+  if (activeSection.startsWith("admin"))
+    sendChunk(server, F(" style='display:none'"));
   sendChunk(server, F(">"));
   sendChunk(server, F("<li>📅 Zeit</li>"));
   sendChunk(server, F("<li>🌐 SSID</li>"));
@@ -145,24 +144,29 @@ void sendPixelatedFooter(ESP8266WebServer& server, const String& version,
 
   // Admin submenu labels (hidden on non-admin pages)
   sendChunk(server, F("<ul class='stats-labels' id='footer-admin-menu'"));
-  if (!activeSection.startsWith("admin")) sendChunk(server, F(" style='display:none'"));
+  if (!activeSection.startsWith("admin"))
+    sendChunk(server, F(" style='display:none'"));
   sendChunk(server, F(">"));
   sendChunk(server, F("<li><a href='/admin' class='nav-item"));
-  if (activeSection == "admin") sendChunk(server, F(" active"));
+  if (activeSection == "admin")
+    sendChunk(server, F(" active"));
   sendChunk(server, F("'>Einstellungen</a></li>"));
 
   sendChunk(server, F("<li><a href='/admin/sensors' class='nav-item"));
-  if (activeSection == "admin/sensors") sendChunk(server, F(" active"));
+  if (activeSection == "admin/sensors")
+    sendChunk(server, F(" active"));
   sendChunk(server, F("'>Sensoren</a></li>"));
 
 #if USE_DISPLAY
   sendChunk(server, F("<li><a href='/admin/display' class='nav-item"));
-  if (activeSection == "admin/display") sendChunk(server, F(" active"));
+  if (activeSection == "admin/display")
+    sendChunk(server, F(" active"));
   sendChunk(server, F("'>Display</a></li>"));
 #endif
 
   sendChunk(server, F("<li><a href='/admin/update' class='nav-item"));
-  if (activeSection == "admin/update") sendChunk(server, F(" active"));
+  if (activeSection == "admin/update")
+    sendChunk(server, F(" active"));
   sendChunk(server, F("'>OTA Update</a></li>"));
   sendChunk(server, F("</ul>"));
 
@@ -170,7 +174,8 @@ void sendPixelatedFooter(ESP8266WebServer& server, const String& version,
   // Render both the numeric/stat values and an empty admin-values placeholder.
   // The server sets the inline style so the correct one is visible by default.
   sendChunk(server, F("<ul class='stats-values' id='footer-stats-values'"));
-  if (activeSection.startsWith("admin")) sendChunk(server, F(" style='display:none'"));
+  if (activeSection.startsWith("admin"))
+    sendChunk(server, F(" style='display:none'"));
   sendChunk(server, F(">"));
   sendChunk(server, F("<li>"));
   sendChunk(server, Helper::getFormattedDate());
@@ -191,11 +196,13 @@ void sendPixelatedFooter(ESP8266WebServer& server, const String& version,
 
   // Admin values placeholder (empty for now) - visible only when admin menu is active
   sendChunk(server, F("<ul class='stats-values' id='footer-admin-values'"));
-  if (!activeSection.startsWith("admin")) sendChunk(server, F(" style='display:none'"));
+  if (!activeSection.startsWith("admin"))
+    sendChunk(server, F(" style='display:none'"));
   sendChunk(server, F("></ul>"));
 
   // Logo (Row 2, Column 1)
-  sendChunk(server, F("<div class='footer-logo'><a href='https://www.fabmobil.org' target='_blank'><img src='/img/fabmobil.png' alt='FABMOBIL' /></a></div>"));
+  sendChunk(server, F("<div class='footer-logo'><a href='https://www.fabmobil.org' "
+                      "target='_blank'><img src='/img/fabmobil.png' alt='FABMOBIL' /></a></div>"));
 
   // Version (Row 2, Column 2)
   sendChunk(server, F("<div class='footer-version'>V "));
@@ -207,14 +214,13 @@ void sendPixelatedFooter(ESP8266WebServer& server, const String& version,
   sendChunk(server, buildDate);
   sendChunk(server, F("</div>"));
 
-  sendChunk(server, F("</div>"));  // Close footer-grid
-  sendChunk(server, F("</footer>"));  // Close base-overlay
-  sendChunk(server, F("</div>"));  // Close base
-  sendChunk(server, F("</div>"));  // Close footer
+  sendChunk(server, F("</div>"));    // Close footer-grid
+  sendChunk(server, F("</footer>")); // Close base-overlay
+  sendChunk(server, F("</div>"));    // Close base
+  sendChunk(server, F("</div>"));    // Close footer
 }
 
-void endResponse(ESP8266WebServer& server,
-                 const std::vector<String>& additionalScripts) {
+void endResponse(ESP8266WebServer& server, const std::vector<String>& additionalScripts) {
   // Add each additional script
   for (const auto& script : additionalScripts) {
     if (!script.isEmpty()) {
@@ -225,11 +231,10 @@ void endResponse(ESP8266WebServer& server,
   }
 
   sendChunk(server, F("</body></html>"));
-  server.sendContent(F(""));  // Final empty chunk to signify end of response
+  server.sendContent(F("")); // Final empty chunk to signify end of response
 }
 
-void formGroup(ESP8266WebServer& server, const String& label,
-               const String& content) {
+void formGroup(ESP8266WebServer& server, const String& label, const String& content) {
   sendChunk(server, F("<div class='form-group'>"));
   sendChunk(server, F("<label>"));
   sendChunk(server, label);
@@ -287,12 +292,10 @@ void beginContentBox(ESP8266WebServer& server, const String& section) {
   sendChunk(server, F(">"));
 }
 
-void endContentBox(ESP8266WebServer& server) {
-  sendChunk(server, F("</div>"));
-}
+void endContentBox(ESP8266WebServer& server) { sendChunk(server, F("</div>")); }
 
 void endPixelatedPage(ESP8266WebServer& server) {
-  sendChunk(server, F("</div></div>"));  // Close group and box
+  sendChunk(server, F("</div></div>")); // Close group and box
 }
 
-}  // namespace Component
+} // namespace Component

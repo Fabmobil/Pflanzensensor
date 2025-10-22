@@ -16,11 +16,11 @@
  * @brief Represents the current state of a sensor in the measurement queue
  */
 enum class SensorQueueState {
-  FREE,              ///< No sensor measuring
-  WAITING_FOR_SLOT,  ///< Sensor wants to measure but slot occupied
-  INITIALIZING,      ///< Sensor getting initialized
-  MEASURING,         ///< Sensor actively measuring
-  CLEANUP            ///< Sensor finishing/deinitializing
+  FREE,             ///< No sensor measuring
+  WAITING_FOR_SLOT, ///< Sensor wants to measure but slot occupied
+  INITIALIZING,     ///< Sensor getting initialized
+  MEASURING,        ///< Sensor actively measuring
+  CLEANUP           ///< Sensor finishing/deinitializing
 };
 
 /**
@@ -28,16 +28,17 @@ enum class SensorQueueState {
  * @brief Tracks timing information for sensor measurements
  */
 struct SensorTiming {
-  unsigned long lastMeasurement{0};  ///< Timestamp of last measurement
-  unsigned long nextDueTime{0};      ///< Timestamp when next measurement is due
-  uint8_t errorCount{0};             ///< Count of consecutive errors
+  unsigned long lastMeasurement{0}; ///< Timestamp of last measurement
+  unsigned long nextDueTime{0};     ///< Timestamp when next measurement is due
+  uint8_t errorCount{0};            ///< Count of consecutive errors
 
   /**
    * @brief Checks if a new measurement is due
    * @return true if measurement is due, false otherwise
    */
   bool isDue() const {
-    if (lastMeasurement == 0) return true;  // First measurement
+    if (lastMeasurement == 0)
+      return true; // First measurement
     unsigned long now = millis();
     return now >= nextDueTime;
   }
@@ -66,7 +67,7 @@ struct SensorTiming {
  * @brief Manages a queue of sensors waiting to take measurements
  */
 class SensorQueue {
- public:
+public:
   /**
    * @brief Adds a sensor to the measurement queue
    * @param sensor Pointer to the sensor to enqueue
@@ -87,13 +88,12 @@ class SensorQueue {
       // Check if sensor is already in queue
       for (const auto* queued : m_queue) {
         if (queued == sensor) {
-          return false;  // Already queued
+          return false; // Already queued
         }
       }
 
       m_queue.push_back(sensor);
-      logger.debug(F("SensorQueue"),
-                   sensor->getName() + F(": Added to measurement queue"));
+      logger.debug(F("SensorQueue"), sensor->getName() + F(": Added to measurement queue"));
       return true;
     }
     return false;
@@ -106,18 +106,16 @@ class SensorQueue {
   void processNext() {
     if (m_state == SensorQueueState::FREE && !m_queue.empty()) {
       m_activeSensor = m_queue.front();
-      m_queue.erase(m_queue.begin());  // Remove from front of queue
+      m_queue.erase(m_queue.begin()); // Remove from front of queue
 
-      if (!SensorManagerLimiter::getInstance().acquireSlot(
-              m_activeSensor->getId())) {
+      if (!SensorManagerLimiter::getInstance().acquireSlot(m_activeSensor->getId())) {
         m_state = SensorQueueState::WAITING_FOR_SLOT;
-        m_queue.push_back(m_activeSensor);  // Put back in queue
+        m_queue.push_back(m_activeSensor); // Put back in queue
         m_activeSensor = nullptr;
         return;
       }
 
-      if (MEASUREMENT_DEINITIALIZE_SENSORS &&
-          !m_activeSensor->isInitialized()) {
+      if (MEASUREMENT_DEINITIALIZE_SENSORS && !m_activeSensor->isInitialized()) {
         m_state = SensorQueueState::INITIALIZING;
         if (!m_activeSensor->initialize()) {
           handleError("Failed to initialize");
@@ -131,18 +129,16 @@ class SensorQueue {
         return;
       }
 
-      logger.debug(F("SensorQueue"),
-                   m_activeSensor->getName() + F(": Starting measurement"));
+      logger.debug(F("SensorQueue"), m_activeSensor->getName() + F(": Starting measurement"));
     }
   }
 
- private:
-  static constexpr uint8_t MAX_RETRIES =
-      2;                            ///< Maximum number of retry attempts
-  std::vector<Sensor*> m_queue;     ///< Queue of sensors waiting to measure
-  Sensor* m_activeSensor{nullptr};  ///< Currently active sensor
-  SensorQueueState m_state{SensorQueueState::FREE};  ///< Current queue state
-  std::map<Sensor*, SensorTiming> m_timings;  ///< Timing info for each sensor
+private:
+  static constexpr uint8_t MAX_RETRIES = 2;         ///< Maximum number of retry attempts
+  std::vector<Sensor*> m_queue;                     ///< Queue of sensors waiting to measure
+  Sensor* m_activeSensor{nullptr};                  ///< Currently active sensor
+  SensorQueueState m_state{SensorQueueState::FREE}; ///< Current queue state
+  std::map<Sensor*, SensorTiming> m_timings;        ///< Timing info for each sensor
 
   /**
    * @brief Handles errors during sensor measurement
@@ -150,10 +146,10 @@ class SensorQueue {
    * @details Manages error counting, sensor cleanup, and retry logic
    */
   void handleError(const String& message) {
-    if (!m_activeSensor) return;
+    if (!m_activeSensor)
+      return;
 
-    logger.error(F("SensorQueue"),
-                 m_activeSensor->getName() + F(": ") + message);
+    logger.error(F("SensorQueue"), m_activeSensor->getName() + F(": ") + message);
 
     auto& timing = m_timings[m_activeSensor];
     timing.errorCount++;
@@ -174,4 +170,4 @@ class SensorQueue {
   }
 };
 
-#endif  // SENSOR_MEASUREMENT_TYPES_H
+#endif // SENSOR_MEASUREMENT_TYPES_H

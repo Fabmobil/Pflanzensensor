@@ -18,23 +18,21 @@
 /**
  * @brief Minimum free heap required for OTA updates.
  */
-const uint32_t MIN_FREE_HEAP_FOR_OTA = 4096;  // 4KB minimum free heap
+const uint32_t MIN_FREE_HEAP_FOR_OTA = 4096; // 4KB minimum free heap
 
 /**
  * @brief Minimum contiguous block required for OTA updates.
  */
-const uint32_t MIN_FREE_BLOCK_FOR_OTA = 4096;  // 4KB minimum contiguous block
+const uint32_t MIN_FREE_BLOCK_FOR_OTA = 4096; // 4KB minimum contiguous block
 
 /**
  * @brief Memory thresholds for different operations
  */
 struct MemoryThresholds {
-  static const uint32_t CRITICAL_HEAP =
-      3000;                                   ///< Critical low memory threshold
-  static const uint32_t WARNING_HEAP = 4000;  ///< Warning low memory threshold
-  static const uint32_t SAFE_HEAP = 8000;  ///< Safe operating memory threshold
-  static const uint8_t MAX_FRAGMENTATION =
-      50;  ///< Maximum acceptable fragmentation percentage
+  static const uint32_t CRITICAL_HEAP = 3000;  ///< Critical low memory threshold
+  static const uint32_t WARNING_HEAP = 4000;   ///< Warning low memory threshold
+  static const uint32_t SAFE_HEAP = 8000;      ///< Safe operating memory threshold
+  static const uint8_t MAX_FRAGMENTATION = 50; ///< Maximum acceptable fragmentation percentage
 };
 
 /**
@@ -42,13 +40,13 @@ struct MemoryThresholds {
  * @brief Singleton class for managing resources and critical operations.
  */
 class ResourceManager {
- private:
+private:
   static ResourceManager* instance;
   bool m_inCriticalOperation = false;
   String m_currentOperation;
   unsigned long m_criticalOperationStartTime = 0;
   unsigned long m_lastMemoryCheck = 0;
-  static const unsigned long MEMORY_CHECK_INTERVAL = 10000;  // 10 seconds
+  static const unsigned long MEMORY_CHECK_INTERVAL = 10000; // 10 seconds
   uint8_t m_failureCount = 0;
   static const uint8_t MAX_FAILURES = 3;
   std::unique_ptr<SensorManager> m_sensorManager;
@@ -56,7 +54,7 @@ class ResourceManager {
   // Private constructor for singleton
   ResourceManager() = default;
 
- public:
+public:
   /**
    * @brief Get the singleton instance of ResourceManager.
    * @return Reference to the ResourceManager instance.
@@ -76,8 +74,7 @@ class ResourceManager {
    * @param func Function to execute.
    * @return Result of the operation.
    */
-  ResourceResult executeCritical(const String& operation,
-                                 std::function<ResourceResult()> func);
+  ResourceResult executeCritical(const String& operation, std::function<ResourceResult()> func);
 
   /**
    * @brief Enter a critical operation with memory checks.
@@ -137,25 +134,21 @@ class ResourceManager {
    * @return Current heap fragmentation as a percentage.
    */
   uint8_t getFragmentation() const {
-    return static_cast<uint8_t>(
-        100 - (ESP.getMaxFreeBlockSize() * 100.0 / ESP.getFreeHeap()));
+    return static_cast<uint8_t>(100 - (ESP.getMaxFreeBlockSize() * 100.0 / ESP.getFreeHeap()));
   }
 
   /**
    * @brief Check if memory is critically low.
    * @return True if memory is critically low.
    */
-  bool isCriticalMemory() const {
-    return ESP.getFreeHeap() < MemoryThresholds::CRITICAL_HEAP;
-  }
+  bool isCriticalMemory() const { return ESP.getFreeHeap() < MemoryThresholds::CRITICAL_HEAP; }
 
   /**
    * @brief Get the duration of the current critical operation.
    * @return Duration in milliseconds, 0 if no operation is active.
    */
   unsigned long getCriticalOperationDuration() const {
-    return m_inCriticalOperation ? (millis() - m_criticalOperationStartTime)
-                                 : 0;
+    return m_inCriticalOperation ? (millis() - m_criticalOperationStartTime) : 0;
   }
 
   /**
@@ -176,4 +169,4 @@ class ResourceManager {
 
 extern ResourceManager& ResourceMgr;
 
-#endif  // manager_resource_H
+#endif // manager_resource_H

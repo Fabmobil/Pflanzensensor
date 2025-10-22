@@ -6,8 +6,8 @@
 #ifndef OTA_HANDLER_H
 #define OTA_HANDLER_H
 
-#include <Arduino.h>
 #include "result_types.h"
+#include <Arduino.h>
 
 /**
  * @brief Status information for OTA updates
@@ -33,9 +33,7 @@ public:
    * @param md5 Expected MD5 hash (optional)
    * @return Result indicating success/failure
    */
-  virtual TypedResult<ResourceError, void> beginUpdate(
-    size_t size,
-    const String& md5 = "") = 0;
+  virtual TypedResult<ResourceError, void> beginUpdate(size_t size, const String& md5 = "") = 0;
 
   /**
    * @brief Write update data chunk
@@ -43,17 +41,14 @@ public:
    * @param len Length of data
    * @return Result indicating success/failure
    */
-  virtual TypedResult<ResourceError, void> writeData(
-    uint8_t* data,
-    size_t len) = 0;
+  virtual TypedResult<ResourceError, void> writeData(uint8_t* data, size_t len) = 0;
 
   /**
    * @brief Finalize update
    * @param reboot Whether to reboot after update
    * @return Result indicating success/failure
    */
-  virtual TypedResult<ResourceError, void> endUpdate(
-    bool reboot = true) = 0;
+  virtual TypedResult<ResourceError, void> endUpdate(bool reboot = true) = 0;
 
   /**
    * @brief Abort current update

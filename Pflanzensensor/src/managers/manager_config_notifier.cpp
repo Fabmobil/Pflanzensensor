@@ -7,13 +7,11 @@
 
 #include "../logger/logger.h"
 
-void ConfigNotifier::addChangeCallback(ChangeCallback callback) {
-  m_callbacks.push_back(callback);
-}
+void ConfigNotifier::addChangeCallback(ChangeCallback callback) { m_callbacks.push_back(callback); }
 
-void ConfigNotifier::notifyChange(const String& key, const String& value,
-                                  bool updateSensors) {
-  logger.info(F("ConfigN"), String(F("Config changed: ")) + key + F(" = ") + value + F(", updateSensors=") + String(updateSensors));
+void ConfigNotifier::notifyChange(const String& key, const String& value, bool updateSensors) {
+  logger.info(F("ConfigN"), String(F("Config changed: ")) + key + F(" = ") + value +
+                                F(", updateSensors=") + String(updateSensors));
 
   // Notify all registered callbacks
   for (const auto& callback : m_callbacks) {

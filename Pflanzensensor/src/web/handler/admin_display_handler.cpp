@@ -19,13 +19,13 @@ extern std::unique_ptr<DisplayManager> displayManager;
 
 AdminDisplayHandler::~AdminDisplayHandler() = default;
 
-AdminDisplayHandler::AdminDisplayHandler(ESP8266WebServer& server)
-    : BaseHandler(server) {
+AdminDisplayHandler::AdminDisplayHandler(ESP8266WebServer& server) : BaseHandler(server) {
   logger.debug(F("AdminDisplayHandler"), F("Initializing AdminDisplayHandler"));
 }
 
 void AdminDisplayHandler::handleDisplayConfig() {
-  if (!validateRequest()) return;
+  if (!validateRequest())
+    return;
   std::vector<String> css = {"admin"};
   std::vector<String> js = {"admin", "admin_display"};
 
@@ -39,8 +39,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
         sendChunk(F("<div class='form-group'>"));
         sendChunk(F("<label>Anzeigedauer pro Bildschirm (Sekunden):</label>"));
         sendChunk(F("<input type='number' class='screen-duration-input' value='"));
-        sendChunk(String(
-            displayManager ? displayManager->getScreenDuration() / 1000 : 5));
+        sendChunk(String(displayManager ? displayManager->getScreenDuration() / 1000 : 5));
         sendChunk(F("' min='1' max='60'>"));
         sendChunk(F("</div>"));
 
@@ -48,13 +47,14 @@ void AdminDisplayHandler::handleDisplayConfig() {
         sendChunk(F("<div class='form-group'>"));
         sendChunk(F("<label>Uhrzeitformat:</label>"));
         sendChunk(F("<select class='clock-format-select'>"));
-        String currentFormat =
-            displayManager ? displayManager->getClockFormat() : "24h";
+        String currentFormat = displayManager ? displayManager->getClockFormat() : "24h";
         sendChunk(F("<option value='24h'"));
-        if (currentFormat == "24h") sendChunk(F(" selected"));
+        if (currentFormat == "24h")
+          sendChunk(F(" selected"));
         sendChunk(F(">24-Stunden</option>"));
         sendChunk(F("<option value='12h'"));
-        if (currentFormat == "12h") sendChunk(F(" selected"));
+        if (currentFormat == "12h")
+          sendChunk(F(" selected"));
         sendChunk(F(">12-Stunden (AM/PM)</option>"));
         sendChunk(F("</select></div>"));
 
@@ -90,14 +90,15 @@ void AdminDisplayHandler::handleDisplayConfig() {
         }
         sendChunk(F("> Fabmobil-Logo anzeigen</label></div>"));
 
-        sendChunk(F("</div>"));  // Close first card
+        sendChunk(F("</div>")); // Close first card
 
         // Sensor and measurement selection in separate card
         sendChunk(F("<div class='card'>"));
         sendChunk(F("<h3>Messungen anzeigen</h3>"));
         if (sensorManager) {
           for (const auto& sensor : sensorManager->getSensors()) {
-            if (!sensor) continue;
+            if (!sensor)
+              continue;
             String id = sensor->getId();
             auto measurementData = sensor->getMeasurementData();
 
@@ -119,7 +120,8 @@ void AdminDisplayHandler::handleDisplayConfig() {
                 }
 
                 sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-                sendChunk(F("<input type='checkbox' class='measurement-display-checkbox' data-sensor-id='"));
+                sendChunk(F("<input type='checkbox' class='measurement-display-checkbox' "
+                            "data-sensor-id='"));
                 sendChunk(id);
                 sendChunk(F("' data-measurement-index='"));
                 sendChunk(String(i));
@@ -137,7 +139,8 @@ void AdminDisplayHandler::handleDisplayConfig() {
             } else {
               // Sensor has only one measurement - show as simple checkbox
               sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-              sendChunk(F("<input type='checkbox' class='sensor-display-checkbox' data-sensor-id='"));
+              sendChunk(
+                  F("<input type='checkbox' class='sensor-display-checkbox' data-sensor-id='"));
               sendChunk(id);
               sendChunk(F("'"));
               if (sensor->isEnabled()) {
@@ -150,13 +153,14 @@ void AdminDisplayHandler::handleDisplayConfig() {
             yield();
           }
         }
-        sendChunk(F("</div>"));  // Close card
+        sendChunk(F("</div>")); // Close card
       },
       css, js);
 }
 
 void AdminDisplayHandler::handleScreenDurationUpdate() {
-  if (!requireAjaxRequest()) return;
+  if (!requireAjaxRequest())
+    return;
   if (!validateRequest()) {
     sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
@@ -187,7 +191,8 @@ void AdminDisplayHandler::handleScreenDurationUpdate() {
 }
 
 void AdminDisplayHandler::handleClockFormatUpdate() {
-  if (!requireAjaxRequest()) return;
+  if (!requireAjaxRequest())
+    return;
   if (!validateRequest()) {
     sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
@@ -218,7 +223,8 @@ void AdminDisplayHandler::handleClockFormatUpdate() {
 }
 
 void AdminDisplayHandler::handleDisplayToggle() {
-  if (!requireAjaxRequest()) return;
+  if (!requireAjaxRequest())
+    return;
   if (!validateRequest()) {
     sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
@@ -258,7 +264,8 @@ void AdminDisplayHandler::handleDisplayToggle() {
 }
 
 void AdminDisplayHandler::handleMeasurementDisplayToggle() {
-  if (!requireAjaxRequest()) return;
+  if (!requireAjaxRequest())
+    return;
   if (!validateRequest()) {
     sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
@@ -314,28 +321,31 @@ bool AdminDisplayHandler::validateRequest() const {
 }
 
 RouterResult AdminDisplayHandler::onRegisterRoutes(WebRouter& router) {
-  auto result = router.addRoute(HTTP_GET, "/admin/display",
-                                [this]() { handleDisplayConfig(); });
-  if (!result.isSuccess()) return result;
+  auto result = router.addRoute(HTTP_GET, "/admin/display", [this]() { handleDisplayConfig(); });
+  if (!result.isSuccess())
+    return result;
 
   result = router.addRoute(HTTP_POST, "/admin/display/screen_duration",
                            [this]() { handleScreenDurationUpdate(); });
-  if (!result.isSuccess()) return result;
+  if (!result.isSuccess())
+    return result;
 
   result = router.addRoute(HTTP_POST, "/admin/display/clock_format",
                            [this]() { handleClockFormatUpdate(); });
-  if (!result.isSuccess()) return result;
+  if (!result.isSuccess())
+    return result;
 
-  result = router.addRoute(HTTP_POST, "/admin/display/toggle",
-                           [this]() { handleDisplayToggle(); });
-  if (!result.isSuccess()) return result;
+  result = router.addRoute(HTTP_POST, "/admin/display/toggle", [this]() { handleDisplayToggle(); });
+  if (!result.isSuccess())
+    return result;
 
   result = router.addRoute(HTTP_POST, "/admin/display/measurement_toggle",
                            [this]() { handleMeasurementDisplayToggle(); });
-  if (!result.isSuccess()) return result;
+  if (!result.isSuccess())
+    return result;
 
   logger.info(F("AdminDisplayHandler"), F("Display config routes registered"));
   return RouterResult::success();
 }
 
-#endif  // USE_DISPLAY
+#endif // USE_DISPLAY

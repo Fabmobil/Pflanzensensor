@@ -17,8 +17,8 @@ String Helper::getFormattedDate() {
 
   struct tm* timeinfo = localtime(&now);
   char buffer[32];
-  snprintf(buffer, sizeof(buffer), "%02d.%02d.%04d", timeinfo->tm_mday,
-           timeinfo->tm_mon + 1, timeinfo->tm_year + 1900);
+  snprintf(buffer, sizeof(buffer), "%02d.%02d.%04d", timeinfo->tm_mday, timeinfo->tm_mon + 1,
+           timeinfo->tm_year + 1900);
   return String(buffer);
 }
 
@@ -32,14 +32,12 @@ String Helper::getFormattedTime(bool use24Hour) {
   char buffer[32];
 
   if (use24Hour) {
-    snprintf(buffer, sizeof(buffer), "%02d:%02d", timeinfo->tm_hour,
-             timeinfo->tm_min);
+    snprintf(buffer, sizeof(buffer), "%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min);
   } else {
     int hour12 = (timeinfo->tm_hour % 12) ? (timeinfo->tm_hour % 12) : 12;
     // Use German short markers for AM/PM
     const char* ampm = timeinfo->tm_hour >= 12 ? "nachm." : "vorm.";
-    snprintf(buffer, sizeof(buffer), "%02d:%02d %s", hour12, timeinfo->tm_min,
-             ampm);
+    snprintf(buffer, sizeof(buffer), "%02d:%02d %s", hour12, timeinfo->tm_min, ampm);
   }
   return String(buffer);
 }
@@ -75,8 +73,10 @@ String Helper::getFormattedUptime() {
   unsigned int minutes = (uptime % 3600) / 60;
 
   String formatted;
-  if (days > 0) formatted += String(days) + "d ";
-  if (hours > 0) formatted += String(hours) + "h ";
+  if (days > 0)
+    formatted += String(days) + "d ";
+  if (hours > 0)
+    formatted += String(hours) + "h ";
   formatted += String(minutes) + "m";
 
   return formatted;
@@ -101,9 +101,8 @@ ResourceResult Helper::incrementRebootCount() {
 
   file = LittleFS.open(F("/reboot_count.txt"), "w");
   if (!file) {
-    return ResourceResult::fail(
-        ResourceError::FILESYSTEM_ERROR,
-        F("Fehler beim Öffnen der Neustartzähler-Datei zum Schreiben"));
+    return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR,
+                                F("Fehler beim Öffnen der Neustartzähler-Datei zum Schreiben"));
   }
 
   file.println(count);
@@ -128,8 +127,7 @@ ResourceResult Helper::initializeUpgradeMode() {
   // Wait for time sync
   int retries = 0;
   while (retries < 10) {
-    if (logger.getSynchronizedTime() >
-        24 * 3600) {  // Time is after Jan 1, 1970
+    if (logger.getSynchronizedTime() > 24 * 3600) { // Time is after Jan 1, 1970
       break;
     }
     delay(1000);
@@ -137,17 +135,15 @@ ResourceResult Helper::initializeUpgradeMode() {
     retries++;
   }
   if (!WebManager::getInstance().beginUpdateMode()) {
-    return ResourceResult::fail(
-        ResourceError::OPERATION_FAILED,
-        F("Starten des WebManagers im Update-Modus fehlgeschlagen"));
+    return ResourceResult::fail(ResourceError::OPERATION_FAILED,
+                                F("Starten des WebManagers im Update-Modus fehlgeschlagen"));
   }
   return ResourceResult::success();
 }
 
 #if USE_DISPLAY
 void Helper::displayWiFiConnectionAttempts(DisplayManager* displayManager,
-                                           const String& attemptsInfo,
-                                           bool isBootMode) {
+                                           const String& attemptsInfo, bool isBootMode) {
   if (!displayManager || attemptsInfo.length() == 0) {
     return;
   }
@@ -155,8 +151,7 @@ void Helper::displayWiFiConnectionAttempts(DisplayManager* displayManager,
   // Match the WiFi module's German phrasing for missing credentials
   if (attemptsInfo.indexOf("Keine WiFi-Zugangsdaten") >= 0 ||
       attemptsInfo.indexOf("Keine Credentials") >= 0) {
-    displayManager->updateLogStatus(F("Keine WiFi-Zugangsdaten konfiguriert"),
-                                    isBootMode);
+    displayManager->updateLogStatus(F("Keine WiFi-Zugangsdaten konfiguriert"), isBootMode);
   } else {
     // Split the long info into multiple lines for better readability
     int startPos = 0;
@@ -178,4 +173,4 @@ void Helper::displayWiFiConnectionAttempts(DisplayManager* displayManager,
     }
   }
 }
-#endif  // USE_DISPLAY
+#endif // USE_DISPLAY

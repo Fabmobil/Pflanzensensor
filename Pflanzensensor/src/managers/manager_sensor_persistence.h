@@ -17,7 +17,7 @@ class AnalogSensor;
 #endif
 
 class SensorPersistence {
- public:
+public:
   using PersistenceResult = TypedResult<ConfigError, void>;
 
   /**
@@ -42,9 +42,9 @@ class SensorPersistence {
    * @param yellowHigh Yellow high threshold value
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult updateSensorThresholds(
-      const String& sensorId, size_t measurementIndex, float yellowLow,
-      float greenLow, float greenHigh, float yellowHigh);
+  static PersistenceResult updateSensorThresholds(const String& sensorId, size_t measurementIndex,
+                                                  float yellowLow, float greenLow, float greenHigh,
+                                                  float yellowHigh);
 
   /**
    * @brief Update analog sensor min/max values atomically
@@ -55,26 +55,22 @@ class SensorPersistence {
    * @param inverted Whether the sensor is inverted
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult updateAnalogMinMax(const String& sensorId,
-                                              size_t measurementIndex,
-                                              float minValue, float maxValue,
-                                              bool inverted);
+  static PersistenceResult updateAnalogMinMax(const String& sensorId, size_t measurementIndex,
+                                              float minValue, float maxValue, bool inverted);
 
   // Variant that expects integer min/max values (for use by autocal) to
   // make callers explicit about rounding semantics.
   static PersistenceResult updateAnalogMinMaxInteger(const String& sensorId,
-                                                    size_t measurementIndex,
-                                                    int minValue, int maxValue,
-                                                    bool inverted);
+                                                     size_t measurementIndex, int minValue,
+                                                     int maxValue, bool inverted);
 
   // Variant that updates integer min/max but does NOT trigger a full
   // reload of the configuration file. Useful for autocal paths that
   // persist frequently and must avoid transient reloads that interfere
   // with runtime state.
   static PersistenceResult updateAnalogMinMaxIntegerNoReload(const String& sensorId,
-                                                            size_t measurementIndex,
-                                                            int minValue, int maxValue,
-                                                            bool inverted);
+                                                             size_t measurementIndex, int minValue,
+                                                             int maxValue, bool inverted);
 
   /**
    * @brief Update sensor measurement interval atomically
@@ -92,8 +88,7 @@ class SensorPersistence {
    * @param enabled Whether the measurement is enabled
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult updateMeasurementEnabled(const String& sensorId,
-                                                    size_t measurementIndex,
+  static PersistenceResult updateMeasurementEnabled(const String& sensorId, size_t measurementIndex,
                                                     bool enabled);
 
   /**
@@ -104,10 +99,8 @@ class SensorPersistence {
    * @param absoluteMax Absolute maximum value
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult updateAbsoluteMinMax(const String& sensorId,
-                                                size_t measurementIndex,
-                                                float absoluteMin,
-                                                float absoluteMax);
+  static PersistenceResult updateAbsoluteMinMax(const String& sensorId, size_t measurementIndex,
+                                                float absoluteMin, float absoluteMax);
 
   /**
    * @brief Update analog sensor raw min/max values atomically
@@ -117,10 +110,8 @@ class SensorPersistence {
    * @param absoluteRawMax Absolute maximum raw value
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult updateAnalogRawMinMax(const String& sensorId,
-                                                 size_t measurementIndex,
-                                                 int absoluteRawMin,
-                                                 int absoluteRawMax);
+  static PersistenceResult updateAnalogRawMinMax(const String& sensorId, size_t measurementIndex,
+                                                 int absoluteRawMin, int absoluteRawMax);
 
   /**
    * @brief Update analog sensor calibration mode flag atomically
@@ -130,8 +121,7 @@ class SensorPersistence {
    * @return PersistenceResult indicating success or failure
    */
   static PersistenceResult updateAnalogCalibrationMode(const String& sensorId,
-                                                      size_t measurementIndex,
-                                                      bool enabled);
+                                                       size_t measurementIndex, bool enabled);
 
   /**
    * @brief Check if sensor configuration file exists
@@ -145,7 +135,7 @@ class SensorPersistence {
    */
   static size_t getConfigFileSize();
 
- private:
+private:
   SensorPersistence() = default;
 
   /**
@@ -164,9 +154,10 @@ class SensorPersistence {
    * @param yellowHigh Yellow high threshold value
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult updateSensorThresholdsInternal(
-      const String& sensorId, size_t measurementIndex, float yellowLow,
-      float greenLow, float greenHigh, float yellowHigh);
+  static PersistenceResult updateSensorThresholdsInternal(const String& sensorId,
+                                                          size_t measurementIndex, float yellowLow,
+                                                          float greenLow, float greenHigh,
+                                                          float yellowHigh);
 
   /**
    * @brief Internal method for updating analog min/max values
@@ -178,10 +169,8 @@ class SensorPersistence {
    * @return PersistenceResult indicating success or failure
    */
   static PersistenceResult updateAnalogMinMaxInternal(const String& sensorId,
-                                                      size_t measurementIndex,
-                                                      float minValue,
-                                                      float maxValue,
-                                                      bool inverted);
+                                                      size_t measurementIndex, float minValue,
+                                                      float maxValue, bool inverted);
 
   /**
    * @brief Internal method for updating measurement interval
@@ -189,8 +178,8 @@ class SensorPersistence {
    * @param interval Measurement interval in milliseconds
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult updateMeasurementIntervalInternal(
-      const String& sensorId, unsigned long interval);
+  static PersistenceResult updateMeasurementIntervalInternal(const String& sensorId,
+                                                             unsigned long interval);
 
   /**
    * @brief Internal method for updating measurement enabled state
@@ -199,8 +188,8 @@ class SensorPersistence {
    * @param enabled Whether the measurement is enabled
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult updateMeasurementEnabledInternal(
-      const String& sensorId, size_t measurementIndex, bool enabled);
+  static PersistenceResult updateMeasurementEnabledInternal(const String& sensorId,
+                                                            size_t measurementIndex, bool enabled);
 
   /**
    * @brief Internal method for updating absolute min/max values
@@ -211,8 +200,7 @@ class SensorPersistence {
    * @return PersistenceResult indicating success or failure
    */
   static PersistenceResult updateAbsoluteMinMaxInternal(const String& sensorId,
-                                                        size_t measurementIndex,
-                                                        float absoluteMin,
+                                                        size_t measurementIndex, float absoluteMin,
                                                         float absoluteMax);
 
   /**
@@ -223,17 +211,16 @@ class SensorPersistence {
    * @param absoluteRawMax Absolute maximum raw value
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult updateAnalogRawMinMaxInternal(
-      const String& sensorId, size_t measurementIndex, int absoluteRawMin,
-      int absoluteRawMax);
+  static PersistenceResult updateAnalogRawMinMaxInternal(const String& sensorId,
+                                                         size_t measurementIndex,
+                                                         int absoluteRawMin, int absoluteRawMax);
 
   /**
    * @brief Apply sensor settings from JSON to sensor manager
    * @param sensorId Sensor ID
    * @param sensorConfig JSON object containing sensor configuration
    */
-  static void applySensorSettingsFromJson(const String& sensorId,
-                                          const JsonObject& sensorConfig);
+  static void applySensorSettingsFromJson(const String& sensorId, const JsonObject& sensorConfig);
 };
 
 #endif

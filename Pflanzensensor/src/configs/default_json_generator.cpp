@@ -31,7 +31,7 @@ void ensureConfigFilesExist() {
     // Add device name from macro
     config.deviceName = String(DEVICE_NAME);
     ConfigPersistence::saveToFileMinimal(config);
-  logger.info(F("main"), F("/config.json mit Standardwerten beim Start erstellt."));
+    logger.info(F("main"), F("/config.json mit Standardwerten beim Start erstellt."));
   }
 
   // SENSORS
@@ -148,7 +148,7 @@ void ensureConfigFilesExist() {
       m["enabled"] = true;
       m["min"] = ANALOG_SENSOR_DEFAULTS[i].rawMin;
       m["max"] = ANALOG_SENSOR_DEFAULTS[i].rawMax;
-      m["inverted"] = false;  // Default to not inverted
+      m["inverted"] = false; // Default to not inverted
       m["calibrationMode"] = ANALOG_SENSOR_DEFAULTS[i].calibrationMode;
       // Do NOT pre-populate absolute raw extremum storage with autocal
       // defaults. The extremum store should reflect measured history only.
@@ -169,8 +169,7 @@ void ensureConfigFilesExist() {
     {
       auto serialReceiver = doc.createNestedObject("SERIAL_RECEIVER");
       serialReceiver["name"] = "Serial Receiver";
-      serialReceiver["measurementInterval"] =
-          SERIAL_RECEIVER_MEASUREMENT_INTERVAL * 1000UL;
+      serialReceiver["measurementInterval"] = SERIAL_RECEIVER_MEASUREMENT_INTERVAL * 1000UL;
       auto measurements = serialReceiver.createNestedObject("measurements");
 
       // Flow Rate (l/min)
@@ -274,6 +273,6 @@ void ensureConfigFilesExist() {
 #endif
     String errorMsg;
     PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg);
-  logger.info(F("main"), F("/sensors.json mit Standardwerten beim Start erstellt."));
+    logger.info(F("main"), F("/sensors.json mit Standardwerten beim Start erstellt."));
   }
 }

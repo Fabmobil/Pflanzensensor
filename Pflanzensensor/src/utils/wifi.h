@@ -99,9 +99,8 @@ String getCurrentWiFiStatus();
  * @details Attempts to connect to configured WiFi networks and provides
  *          real-time feedback through the callback function.
  */
-bool tryAllWiFiCredentialsWithDisplay(
-    std::function<void(const String&, bool)> displayCallback);
+bool tryAllWiFiCredentialsWithDisplay(std::function<void(const String&, bool)> displayCallback);
 
 extern int g_activeWiFiSlot;
 
-#endif  // WIFI_H
+#endif // WIFI_H

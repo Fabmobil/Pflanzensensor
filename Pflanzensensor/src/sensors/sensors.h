@@ -11,7 +11,7 @@
 #include <vector>
 
 #include "logger/logger.h"
-#include "sensor_config.h"  // Ensure configuration macros are defined first
+#include "sensor_config.h" // Ensure configuration macros are defined first
 #include "sensor_measurement_state.h"
 #include "sensor_types.h"
 #include "utils/result_types.h"
@@ -27,23 +27,21 @@ struct ThresholdDefaults {
   float yellowHigh;
 };
 
-Thresholds getOrInitThresholds(const String& key,
-                               const ThresholdDefaults& macroDefaults);
+Thresholds getOrInitThresholds(const String& key, const ThresholdDefaults& macroDefaults);
 
 /**
  * @struct SensorMeasurementState
  * @brief Generic state for sensor measurement cycles (used by base Sensor)
  */
 struct SensorMeasurementState {
-  bool readInProgress = false;  ///< True if a measurement is in progress
-  unsigned long operationStartTime = 0;     ///< When the measurement started
-  size_t sampleCount = 0;                   ///< Number of samples collected
-  std::vector<std::vector<float>> samples;  ///< [measurement][sample]
-  unsigned long lastSampleTime =
-      0;  ///< Timestamp of last sample (for nonblocking delay)
-  size_t measurementIndex = 0;      ///< Current measurement index in cycle
-  size_t sampleIndex = 0;           ///< Current sample index for measurement
-  bool measurementStarted = false;  ///< True if measurement cycle started
+  bool readInProgress = false;             ///< True if a measurement is in progress
+  unsigned long operationStartTime = 0;    ///< When the measurement started
+  size_t sampleCount = 0;                  ///< Number of samples collected
+  std::vector<std::vector<float>> samples; ///< [measurement][sample]
+  unsigned long lastSampleTime = 0;        ///< Timestamp of last sample (for nonblocking delay)
+  size_t measurementIndex = 0;             ///< Current measurement index in cycle
+  size_t sampleIndex = 0;                  ///< Current sample index for measurement
+  bool measurementStarted = false;         ///< True if measurement cycle started
   // Extend as needed for derived sensors
 };
 
@@ -55,39 +53,33 @@ struct SensorMeasurementState {
  * measurement management, and error handling.
  */
 class Sensor {
- public:
- protected:
-  class SensorManager* m_sensorManager;  ///< Reference to sensor manager
-  String m_id;                           ///< Local copy of sensor ID
-  SensorConfig m_tempConfig;  ///< Sensor configuration (stored locally)
-  bool m_enabled{false};      ///< Whether the sensor is enabled
-  bool m_initialized{false};  ///< Whether the sensor is initialized
-  uint8_t m_errorCount{0};    ///< Count of consecutive errors
-  unsigned long m_measurementInterval{0};  ///< Time between measurements
-  std::unique_ptr<MeasurementData>
-      m_lastMeasurementData;  ///< Pointer to measurement data
-  std::vector<String>
-      m_statuses;  ///< Current sensor status for each measurement
-  MeasurementStateInfo m_stateInfo;    ///< Current state information
-  bool m_isInWarmup{false};            ///< Whether sensor is warming up
-  unsigned long m_warmupStartTime{0};  ///< When warmup started
-  unsigned long m_warmupTime{0};       ///< Required warmup duration
-  bool m_measurementDataValid{
-      false};  ///< True if m_lastMeasurementData is valid and owned
+public:
+protected:
+  class SensorManager* m_sensorManager;                   ///< Reference to sensor manager
+  String m_id;                                            ///< Local copy of sensor ID
+  SensorConfig m_tempConfig;                              ///< Sensor configuration (stored locally)
+  bool m_enabled{false};                                  ///< Whether the sensor is enabled
+  bool m_initialized{false};                              ///< Whether the sensor is initialized
+  uint8_t m_errorCount{0};                                ///< Count of consecutive errors
+  unsigned long m_measurementInterval{0};                 ///< Time between measurements
+  std::unique_ptr<MeasurementData> m_lastMeasurementData; ///< Pointer to measurement data
+  std::vector<String> m_statuses;     ///< Current sensor status for each measurement
+  MeasurementStateInfo m_stateInfo;   ///< Current state information
+  bool m_isInWarmup{false};           ///< Whether sensor is warming up
+  unsigned long m_warmupStartTime{0}; ///< When warmup started
+  unsigned long m_warmupTime{0};      ///< Required warmup duration
+  bool m_measurementDataValid{false}; ///< True if m_lastMeasurementData is valid and owned
 
-  static constexpr uint8_t MAX_RETRIES =
-      3;  ///< Maximum number of retry attempts
-  static constexpr uint8_t MAX_INVALID_READINGS =
-      3;  ///< Maximum consecutive invalid readings
-  static constexpr unsigned long RETRY_DELAY_MS =
-      1000;  ///< Delay between retries in ms
+  static constexpr uint8_t MAX_RETRIES = 3;             ///< Maximum number of retry attempts
+  static constexpr uint8_t MAX_INVALID_READINGS = 3;    ///< Maximum consecutive invalid readings
+  static constexpr unsigned long RETRY_DELAY_MS = 1000; ///< Delay between retries in ms
 
   // State tracking for error handling
   struct ErrorState {
-    uint8_t errorCount{0};    ///< Number of hard errors
-    uint8_t invalidCount{0};  ///< Number of consecutive invalid readings
-    unsigned long lastInvalidTime{0};  ///< Timestamp of last invalid reading
-    bool inRetryDelay{false};          ///< Whether we're in retry delay period
+    uint8_t errorCount{0};            ///< Number of hard errors
+    uint8_t invalidCount{0};          ///< Number of consecutive invalid readings
+    unsigned long lastInvalidTime{0}; ///< Timestamp of last invalid reading
+    bool inRetryDelay{false};         ///< Whether we're in retry delay period
   } m_errorState;
 
   /**
@@ -101,9 +93,8 @@ class Sensor {
    * @param greenHigh Upper normal threshold
    * @param yellowHigh Upper warning threshold
    */
-  void initMeasurement(size_t index, const String& name,
-                       const String& fieldName, const String& unit,
-                       float yellowLow, float greenLow, float greenHigh,
+  void initMeasurement(size_t index, const String& name, const String& fieldName,
+                       const String& unit, float yellowLow, float greenLow, float greenHigh,
                        float yellowHigh);
 
   /**
@@ -118,8 +109,7 @@ class Sensor {
    * @return true if still in retry delay period
    */
   bool isInRetryDelay() const {
-    return m_errorState.inRetryDelay &&
-           (millis() - m_errorState.lastInvalidTime < RETRY_DELAY_MS);
+    return m_errorState.inRetryDelay && (millis() - m_errorState.lastInvalidTime < RETRY_DELAY_MS);
   }
 
   /**
@@ -130,15 +120,14 @@ class Sensor {
     m_errorState.inRetryDelay = false;
   }
 
- public:
+public:
   /**
    * @brief Constructor for Sensor
    * @param config The sensor configuration
    * @param sensorManager Pointer to the sensor manager (can be null during
    * construction)
    */
-  explicit Sensor(const SensorConfig& config,
-                  class SensorManager* sensorManager);
+  explicit Sensor(const SensorConfig& config, class SensorManager* sensorManager);
 
   /**
    * @brief Virtual destructor
@@ -345,9 +334,7 @@ class Sensor {
    * @brief Gets measurement interval
    * @return Interval in milliseconds
    */
-  inline unsigned long getMeasurementInterval() const {
-    return m_measurementInterval;
-  }
+  inline unsigned long getMeasurementInterval() const { return m_measurementInterval; }
 
   /**
    * @brief Gets last measurement data
@@ -411,9 +398,7 @@ class Sensor {
    * @brief Sets measurement interval
    * @param interval New interval in milliseconds
    */
-  inline void setMeasurementInterval(unsigned long interval) {
-    m_measurementInterval = interval;
-  }
+  inline void setMeasurementInterval(unsigned long interval) { m_measurementInterval = interval; }
 
   /**
    * @brief Resets error count to zero
@@ -447,7 +432,7 @@ class Sensor {
    */
   void updateLastMeasurementTime();
 
- protected:
+protected:
   /**
    * @brief Log a debug message if sensor debug is enabled
    * @param msg The message to log
@@ -481,8 +466,7 @@ class Sensor {
    * @tparam T Vector element type
    * @param vec Reference to the vector to clear and shrink
    */
-  template <typename T>
-  static void clearAndShrink(std::vector<T>& vec) {
+  template <typename T> static void clearAndShrink(std::vector<T>& vec) {
     vec.clear();
     vec.shrink_to_fit();
   }
@@ -502,7 +486,7 @@ class Sensor {
    */
   std::vector<float> averageSamples() const;
 
-  SensorMeasurementState m_state;  ///< Generic measurement state
+  SensorMeasurementState m_state; ///< Generic measurement state
 };
 
-#endif  // SENSORS_H
+#endif // SENSORS_H

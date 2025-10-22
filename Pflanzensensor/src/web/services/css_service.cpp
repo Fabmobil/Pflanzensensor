@@ -25,13 +25,11 @@ RouterResult CSSService::onRegisterRoutes(WebRouter& router) {
   return RouterResult::success();
 }
 
-HandlerResult CSSService::handleGet(const String& uri,
-                                    const std::map<String, String>& query) {
+HandlerResult CSSService::handleGet(const String& uri, const std::map<String, String>& query) {
   return HandlerResult::fail(HandlerError::NOT_FOUND, "Unknown endpoint");
 }
 
-HandlerResult CSSService::handlePost(const String& uri,
-                                     const std::map<String, String>& params) {
+HandlerResult CSSService::handlePost(const String& uri, const std::map<String, String>& params) {
   return HandlerResult::fail(HandlerError::NOT_FOUND, "Unknown endpoint");
 }
 
@@ -39,7 +37,7 @@ bool CSSService::createBackup(const String& path) const {
   CriticalSection cs;
 
   if (!LittleFS.exists(path)) {
-    return true;  // Nothing to backup
+    return true; // Nothing to backup
   }
 
   String backupPath = path + ".bak";

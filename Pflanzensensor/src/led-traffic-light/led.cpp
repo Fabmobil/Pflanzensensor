@@ -37,15 +37,15 @@ ResourceResult LedLights::switchLedOn(int color) {
   }
 
   switch (color) {
-    case RED:
-      digitalWrite(LED_RED_PIN, HIGH);
-      break;
-    case YELLOW:
-      digitalWrite(LED_YELLOW_PIN, HIGH);
-      break;
-    case GREEN:
-      digitalWrite(LED_GREEN_PIN, HIGH);
-      break;
+  case RED:
+    digitalWrite(LED_RED_PIN, HIGH);
+    break;
+  case YELLOW:
+    digitalWrite(LED_YELLOW_PIN, HIGH);
+    break;
+  case GREEN:
+    digitalWrite(LED_GREEN_PIN, HIGH);
+    break;
   }
 
   // logger.debug(F("LED"), F("LED ") + String(color) + F(" switched on"));
@@ -60,19 +60,19 @@ ResourceResult LedLights::switchLedOff(int color) {
   }
 
   switch (color) {
-    case RED:
-      digitalWrite(LED_RED_PIN, LOW);
-      break;
-    case YELLOW:
-      digitalWrite(LED_YELLOW_PIN, LOW);
-      break;
-    case GREEN:
-      digitalWrite(LED_GREEN_PIN, LOW);
-      break;
+  case RED:
+    digitalWrite(LED_RED_PIN, LOW);
+    break;
+  case YELLOW:
+    digitalWrite(LED_YELLOW_PIN, LOW);
+    break;
+  case GREEN:
+    digitalWrite(LED_GREEN_PIN, LOW);
+    break;
   }
 
   // logger.debug(F("LED"), F("LED ") + String(color) + F(" switched off"));
   return ResourceResult::success();
 }
 
-#endif  // USE_LED_TRAFFIC_LIGHT
+#endif // USE_LED_TRAFFIC_LIGHT

@@ -5,5 +5,4 @@
 
 #include "manager_config_sensor_tracker.h"
 
-SensorErrorTracker::SensorErrorTracker(ConfigNotifier& notifier)
-    : m_notifier(notifier) {}
+SensorErrorTracker::SensorErrorTracker(ConfigNotifier& notifier) : m_notifier(notifier) {}

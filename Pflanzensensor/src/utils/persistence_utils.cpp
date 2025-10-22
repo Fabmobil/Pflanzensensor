@@ -11,8 +11,7 @@
 
 namespace PersistenceUtils {
 
-void logFileContents(const String& tag, const String& contents,
-                     size_t chunkSize) {
+void logFileContents(const String& tag, const String& contents, size_t chunkSize) {
   size_t len = contents.length();
   for (size_t i = 0; i < len; i += chunkSize) {
     size_t endPos = (i + chunkSize < len) ? i + chunkSize : len;
@@ -20,8 +19,7 @@ void logFileContents(const String& tag, const String& contents,
   }
 }
 
-bool readJsonFile(const char* path, ArduinoJson::JsonDocument& doc,
-                  String& errorMsg) {
+bool readJsonFile(const char* path, ArduinoJson::JsonDocument& doc, String& errorMsg) {
   if (!LittleFS.begin()) {
     errorMsg = F("Einbinden des Dateisystems fehlgeschlagen");
     return false;
@@ -45,8 +43,7 @@ bool readJsonFile(const char* path, ArduinoJson::JsonDocument& doc,
   return true;
 }
 
-bool writeJsonFile(const char* path, const ArduinoJson::JsonDocument& doc,
-                   String& errorMsg) {
+bool writeJsonFile(const char* path, const ArduinoJson::JsonDocument& doc, String& errorMsg) {
   // Write to a temporary file first for atomicity
   String tempPath = String(path) + F(".tmp");
   File file = LittleFS.open(tempPath.c_str(), "w");
@@ -67,11 +64,12 @@ bool writeJsonFile(const char* path, const ArduinoJson::JsonDocument& doc,
   }
   // Rename temp file to final path
   if (!LittleFS.rename(tempPath.c_str(), path)) {
-    errorMsg = F("Umbenennen der temporären Datei in den endgültigen Pfad fehlgeschlagen: ") + String(path);
+    errorMsg = F("Umbenennen der temporären Datei in den endgültigen Pfad fehlgeschlagen: ") +
+               String(path);
     LittleFS.remove(tempPath.c_str());
     return false;
   }
   return true;
 }
 
-}  // namespace PersistenceUtils
+} // namespace PersistenceUtils

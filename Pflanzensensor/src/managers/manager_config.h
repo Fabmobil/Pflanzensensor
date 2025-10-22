@@ -37,7 +37,7 @@ class WebOTAHandler;
  * web handling, notifications, debug settings, and sensor tracking.
  */
 class ConfigManager {
- public:
+public:
   using ConfigResult = TypedResult<ConfigError, void>;
 
   /**
@@ -140,9 +140,7 @@ class ConfigManager {
    * @brief Check if file logging is enabled
    * @return True if file logging is enabled, false otherwise
    */
-  inline bool isFileLoggingEnabled() const {
-    return m_configData.fileLoggingEnabled;
-  }
+  inline bool isFileLoggingEnabled() const { return m_configData.fileLoggingEnabled; }
 
   /**
    * @brief Check if a firmware upgrade is scheduled
@@ -215,17 +213,13 @@ class ConfigManager {
    * @brief Get access to sensor error tracker
    * @return Reference to SensorErrorTracker instance
    */
-  inline SensorErrorTracker& getSensorErrorTracker() {
-    return m_sensorErrorTracker;
-  }
+  inline SensorErrorTracker& getSensorErrorTracker() { return m_sensorErrorTracker; }
 
   /**
    * @brief Get access to sensor error tracker (const)
    * @return Const reference to SensorErrorTracker instance
    */
-  inline const SensorErrorTracker& getSensorErrorTracker() const {
-    return m_sensorErrorTracker;
-  }
+  inline const SensorErrorTracker& getSensorErrorTracker() const { return m_sensorErrorTracker; }
 
   // Convenience methods for backward compatibility
   /**
@@ -238,9 +232,7 @@ class ConfigManager {
    * @brief Check if measurement cycle debugging is enabled
    * @return True if measurement cycle debugging is enabled, false otherwise
    */
-  bool isDebugMeasurementCycle() const {
-    return m_debugConfig.isMeasurementCycleDebugEnabled();
-  }
+  bool isDebugMeasurementCycle() const { return m_debugConfig.isMeasurementCycleDebugEnabled(); }
 
   /**
    * @brief Check if sensor debugging is enabled
@@ -258,9 +250,7 @@ class ConfigManager {
    * @brief Check if WebSocket debugging is enabled
    * @return True if WebSocket debugging is enabled, false otherwise
    */
-  bool isDebugWebSocket() const {
-    return m_debugConfig.isWebSocketDebugEnabled();
-  }
+  bool isDebugWebSocket() const { return m_debugConfig.isWebSocketDebugEnabled(); }
 
   /**
    * @brief Set the RAM debugging status
@@ -322,9 +312,7 @@ class ConfigManager {
    * @brief Set the SensorManager instance
    * @param manager Pointer to the SensorManager instance
    */
-  inline void setSensorManager(SensorManager* manager) {
-    m_sensorManager = manager;
-  }
+  inline void setSensorManager(SensorManager* manager) { m_sensorManager = manager; }
 
   /**
    * @brief Get WiFi SSID 1
@@ -411,89 +399,67 @@ class ConfigManager {
    * @brief Check if mail functionality is enabled
    * @return True if mail is enabled, false otherwise
    */
-  inline bool isMailEnabled() const {
-    return m_configData.mailEnabled;
-  }
+  inline bool isMailEnabled() const { return m_configData.mailEnabled; }
 
   /**
    * @brief Get SMTP host
    * @return SMTP server host string
    */
-  inline String getSmtpHost() const {
-    return m_configData.smtpHost;
-  }
+  inline String getSmtpHost() const { return m_configData.smtpHost; }
 
   /**
    * @brief Get SMTP port
    * @return SMTP server port number
    */
-  inline uint16_t getSmtpPort() const {
-    return m_configData.smtpPort;
-  }
+  inline uint16_t getSmtpPort() const { return m_configData.smtpPort; }
 
   /**
    * @brief Get SMTP username
    * @return SMTP username/email string
    */
-  inline String getSmtpUser() const {
-    return m_configData.smtpUser;
-  }
+  inline String getSmtpUser() const { return m_configData.smtpUser; }
 
   /**
    * @brief Get SMTP password
    * @return SMTP password string
    */
-  inline String getSmtpPassword() const {
-    return m_configData.smtpPassword;
-  }
+  inline String getSmtpPassword() const { return m_configData.smtpPassword; }
 
   /**
    * @brief Get SMTP sender name
    * @return Sender display name string
    */
-  inline String getSmtpSenderName() const {
-    return m_configData.smtpSenderName;
-  }
+  inline String getSmtpSenderName() const { return m_configData.smtpSenderName; }
 
   /**
    * @brief Get SMTP sender email
    * @return Sender email address string
    */
-  inline String getSmtpSenderEmail() const {
-    return m_configData.smtpSenderEmail;
-  }
+  inline String getSmtpSenderEmail() const { return m_configData.smtpSenderEmail; }
 
   /**
    * @brief Get SMTP recipient email
    * @return Default recipient email string
    */
-  inline String getSmtpRecipient() const {
-    return m_configData.smtpRecipient;
-  }
+  inline String getSmtpRecipient() const { return m_configData.smtpRecipient; }
 
   /**
    * @brief Check if SMTP STARTTLS is enabled
    * @return True if STARTTLS is enabled, false otherwise
    */
-  inline bool isSmtpEnableStartTLS() const {
-    return m_configData.smtpEnableStartTLS;
-  }
+  inline bool isSmtpEnableStartTLS() const { return m_configData.smtpEnableStartTLS; }
 
   /**
    * @brief Check if SMTP debug is enabled
    * @return True if SMTP debug is enabled, false otherwise
    */
-  inline bool isSmtpDebug() const {
-    return m_configData.smtpDebug;
-  }
+  inline bool isSmtpDebug() const { return m_configData.smtpDebug; }
 
   /**
    * @brief Check if test mail on boot is enabled
    * @return True if test mail on boot is enabled, false otherwise
    */
-  inline bool isSmtpSendTestMailOnBoot() const {
-    return m_configData.smtpSendTestMailOnBoot;
-  }
+  inline bool isSmtpSendTestMailOnBoot() const { return m_configData.smtpSendTestMailOnBoot; }
 
   /**
    * @brief Set mail functionality enabled status
@@ -579,9 +545,7 @@ class ConfigManager {
    * @brief Get LED traffic light mode
    * @return 0 = off, 1 = all measurements, 2 = single measurement
    */
-  inline uint8_t getLedTrafficLightMode() const {
-    return m_configData.ledTrafficLightMode;
-  }
+  inline uint8_t getLedTrafficLightMode() const { return m_configData.ledTrafficLightMode; }
 
   /**
    * @brief Set LED traffic light mode
@@ -603,8 +567,7 @@ class ConfigManager {
    * @param measurementId Measurement ID string to select
    * @return ConfigResult indicating success or failure
    */
-  ConfigResult setLedTrafficLightSelectedMeasurement(
-      const String& measurementId);
+  ConfigResult setLedTrafficLightSelectedMeasurement(const String& measurementId);
 
   // Flower Status configuration (for startpage display)
   /**
@@ -612,9 +575,8 @@ class ConfigManager {
    * @return Sensor ID string (format: "sensorId_measurementIndex")
    */
   inline String getFlowerStatusSensor() const {
-    return m_configData.flowerStatusSensor.isEmpty()
-           ? String("ANALOG_1")  // Default to Bodenfeuchte
-           : m_configData.flowerStatusSensor;
+    return m_configData.flowerStatusSensor.isEmpty() ? String("ANALOG_1") // Default to Bodenfeuchte
+                                                     : m_configData.flowerStatusSensor;
   }
 
   /**
@@ -624,7 +586,7 @@ class ConfigManager {
    */
   ConfigResult setFlowerStatusSensor(const String& sensorId);
 
- private:
+private:
   ConfigManager();
   ~ConfigManager() = default;
   ConfigManager(const ConfigManager&) = delete;
@@ -645,8 +607,7 @@ class ConfigManager {
    * @param value The new value of the configuration
    * @param updateSensors Whether to update sensor settings
    */
-  void notifyConfigChange(const String& key, const String& value,
-                          bool updateSensors = true);
+  void notifyConfigChange(const String& key, const String& value, bool updateSensors = true);
 
   /**
    * @brief Validate and save configuration

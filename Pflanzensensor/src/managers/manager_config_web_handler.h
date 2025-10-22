@@ -11,10 +11,10 @@
 #include "../utils/result_types.h"
 #include "manager_config_types.h"
 
-class ConfigManager;  // Forward declaration
+class ConfigManager; // Forward declaration
 
 class ConfigWebHandler {
- public:
+public:
   using WebResult = TypedResult<ConfigError, void>;
 
   /**
@@ -30,17 +30,16 @@ class ConfigWebHandler {
    */
   WebResult updateFromWebRequest(ESP8266WebServer& server);
 
- private:
+private:
   /**
    * @brief Process boolean configuration settings from web request
    * @param server Reference to the ESP8266 web server
    * @param configChanged Reference to boolean indicating if config changed
    * @return WebResult indicating success or failure
    */
-  WebResult processBooleanSettings(ESP8266WebServer& server,
-                                   bool& configChanged);
+  WebResult processBooleanSettings(ESP8266WebServer& server, bool& configChanged);
 
- private:
+private:
   ConfigManager& m_configManager;
 };
 

@@ -14,7 +14,7 @@
 #include "../configs/config.h"
 #include "../logger/logger.h"
 #include "../utils/result_types.h"
-#include "display_qrcode.h"  // microqrcode
+#include "display_qrcode.h" // microqrcode
 
 /**
  * @struct SSD1306DisplayStatus
@@ -30,10 +30,9 @@ struct SSD1306DisplayStatus {
  * @brief Controls a SSD1306 OLED display
  */
 class SSD1306Display {
- public:
+public:
   SSD1306Display()
-      : m_display(DISPLAY_WIDTH, DISPLAY_HEIGHT, &Wire, DISPLAY_RESET),
-        m_initialized(false) {}
+      : m_display(DISPLAY_WIDTH, DISPLAY_HEIGHT, &Wire, DISPLAY_RESET), m_initialized(false) {}
   ~SSD1306Display() = default;
 
   /**
@@ -76,8 +75,7 @@ class SSD1306Display {
    * @param measurementUnit The unit of the measurement.
    * @return DisplayResult indicating success or failure with error details.
    */
-  DisplayResult showMeasurementValue(const String& measurementName,
-                                     float measurementValue,
+  DisplayResult showMeasurementValue(const String& measurementName, float measurementValue,
                                      const String& measurementUnit);
 
   /**
@@ -108,8 +106,7 @@ class SSD1306Display {
    * @param lines The status lines to display under the header.
    * @return DisplayResult indicating success or failure with error details.
    */
-  DisplayResult showBootScreen(const String& header,
-                               const std::vector<String>& lines);
+  DisplayResult showBootScreen(const String& header, const std::vector<String>& lines);
 
   /**
    * @brief Displays a boot screen with a header and a status line
@@ -127,7 +124,7 @@ class SSD1306Display {
    */
   DisplayResult showQrCode2x(const String& text);
 
- private:
+private:
   /**
    * @brief Converts German umlauts and special characters to ASCII equivalents.
    * @param text The text to convert.
@@ -166,10 +163,10 @@ class SSD1306Display {
 
   // Cached QR code data
   String m_lastQrUrl;
-  uint8_t m_qrcodeData2[45];   // Fixed size for version 2:
-                               // qrcode_getBufferSize(2) = 45
-  uint8_t m_qrcodeData3[102];  // Fixed size for version 3:
-                               // qrcode_getBufferSize(3) = 102
+  uint8_t m_qrcodeData2[45];  // Fixed size for version 2:
+                              // qrcode_getBufferSize(2) = 45
+  uint8_t m_qrcodeData3[102]; // Fixed size for version 3:
+                              // qrcode_getBufferSize(3) = 102
   QRCode m_cachedQrcode;
   bool m_qrcodeValid = false;
   uint8_t m_cachedQrVersion = 0;
@@ -178,4 +175,4 @@ class SSD1306Display {
   bool m_initialized;
 };
 
-#endif  // DISPLAY_H
+#endif // DISPLAY_H

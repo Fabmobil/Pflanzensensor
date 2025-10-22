@@ -34,11 +34,11 @@ class WebRouter;
  *          - Size information
  */
 struct OTAStatus {
-  bool inProgress = false;     ///< Whether an update is currently in progress
-  size_t currentProgress = 0;  ///< Current bytes processed in update
-  size_t totalSize = 0;        ///< Total size of the update in bytes
-  bool needsReboot = false;    ///< Whether system needs reboot after update
-  String lastError;            ///< Last error message if update failed
+  bool inProgress = false;    ///< Whether an update is currently in progress
+  size_t currentProgress = 0; ///< Current bytes processed in update
+  size_t totalSize = 0;       ///< Total size of the update in bytes
+  bool needsReboot = false;   ///< Whether system needs reboot after update
+  String lastError;           ///< Last error message if update failed
 };
 
 /**
@@ -53,7 +53,7 @@ struct OTAStatus {
  * @inherits BaseHandler
  */
 class WebOTAHandler final : public BaseHandler {
- public:
+public:
   /**
    * @brief Constructor
    * @param server Reference to web server instance
@@ -99,8 +99,7 @@ class WebOTAHandler final : public BaseHandler {
    *          - Status information
    * @override
    */
-  HandlerResult handleGet(const String& uri,
-                          const std::map<String, String>& query) override;
+  HandlerResult handleGet(const String& uri, const std::map<String, String>& query) override;
 
   /**
    * @brief Handle POST requests
@@ -112,8 +111,7 @@ class WebOTAHandler final : public BaseHandler {
    *          - Update commands
    * @override
    */
-  HandlerResult handlePost(const String& uri,
-                           const std::map<String, String>& params) override;
+  HandlerResult handlePost(const String& uri, const std::map<String, String>& params) override;
 
   /**
    * @brief Calculate required space for update
@@ -127,7 +125,7 @@ class WebOTAHandler final : public BaseHandler {
    */
   size_t calculateRequiredSpace(bool isFilesystem) const;
 
- protected:
+protected:
   /**
    * @brief Handle update page request
    * @details Serves the update interface page:
@@ -207,8 +205,7 @@ class WebOTAHandler final : public BaseHandler {
    *          - Initializes update
    * @throws ResourceError
    */
-  TypedResult<ResourceError, void> beginUpdate(size_t size, const String& md5,
-                                               bool isFilesystem);
+  TypedResult<ResourceError, void> beginUpdate(size_t size, const String& md5, bool isFilesystem);
 
   /**
    * @brief Check memory availability
@@ -253,12 +250,12 @@ class WebOTAHandler final : public BaseHandler {
     _server.send(code, "application/json", jsonStr);
   }
 
- private:
+private:
   /// Size of upload buffer for processing update data
   static const size_t UPLOAD_BUFFER_SIZE = 4096;
   /// Minimum required free heap space for safe operation
   static const size_t MIN_FREE_HEAP = 5500;
 
-  WebAuth& _auth;     ///< Reference to authentication manager
-  OTAStatus _status;  ///< Current update status
+  WebAuth& _auth;    ///< Reference to authentication manager
+  OTAStatus _status; ///< Current update status
 };

@@ -9,8 +9,8 @@
 #include "web/core/web_auth.h"
 #include "web/handler/base_handler.h"
 
-class CSSService;  ///< Forward declaration for CSS service
-class WebManager;  ///< Forward declaration for web manager
+class CSSService; ///< Forward declaration for CSS service
+class WebManager; ///< Forward declaration for web manager
 
 /**
  * @class AdminSensorHandler
@@ -23,8 +23,8 @@ class WebManager;  ///< Forward declaration for web manager
  *          - Interface generation
  */
 class AdminSensorHandler : public BaseHandler {
-  friend class WebManager;  // Allow WebManager to access private members
- public:
+  friend class WebManager; // Allow WebManager to access private members
+public:
   /**
    * @brief Constructor for sensor handler
    * @param server Reference to web server instance
@@ -32,12 +32,9 @@ class AdminSensorHandler : public BaseHandler {
    * @param cssService Reference to CSS management service
    * @param sensorManager Reference to sensor management service
    */
-  AdminSensorHandler(ESP8266WebServer& server, WebAuth& auth,
-                     CSSService& cssService, SensorManager& sensorManager)
-      : BaseHandler(server),
-        _auth(auth),
-        _cssService(cssService),
-        _sensorManager(sensorManager) {}
+  AdminSensorHandler(ESP8266WebServer& server, WebAuth& auth, CSSService& cssService,
+                     SensorManager& sensorManager)
+      : BaseHandler(server), _auth(auth), _cssService(cssService), _sensorManager(sensorManager) {}
 
   // Core routing and request handling
   /**
@@ -51,10 +48,8 @@ class AdminSensorHandler : public BaseHandler {
    * @note Override onRegisterRoutes for custom logic.
    */
   RouterResult onRegisterRoutes(WebRouter& router) override;
-  HandlerResult handleGet(const String& uri,
-                          const std::map<String, String>& query) override;
-  HandlerResult handlePost(const String& uri,
-                           const std::map<String, String>& params) override;
+  HandlerResult handleGet(const String& uri, const std::map<String, String>& query) override;
+  HandlerResult handlePost(const String& uri, const std::map<String, String>& params) override;
 
   // Main page handlers
   void handleSensorConfig();
@@ -81,10 +76,10 @@ class AdminSensorHandler : public BaseHandler {
   // Flower status sensor configuration
   void renderFlowerStatusSensorCard();
 
- protected:
-  WebAuth& _auth;                 ///< Reference to authentication service
-  CSSService& _cssService;        ///< Reference to CSS service
-  SensorManager& _sensorManager;  ///< Reference to sensor manager
+protected:
+  WebAuth& _auth;                ///< Reference to authentication service
+  CSSService& _cssService;       ///< Reference to CSS service
+  SensorManager& _sensorManager; ///< Reference to sensor manager
 
   // Threshold management
   void generateThresholdConfig(Sensor* sensor, size_t measurementIdx);

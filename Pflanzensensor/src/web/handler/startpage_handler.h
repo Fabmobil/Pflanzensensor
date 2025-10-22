@@ -28,7 +28,7 @@
  *          - User interaction
  */
 class StartpageHandler : public BaseHandler {
- public:
+public:
   /**
    * @brief Constructor for StartpageHandler
    * @param server Reference to web server instance
@@ -40,8 +40,7 @@ class StartpageHandler : public BaseHandler {
    *          - Prepares CSS handling
    *          - Initializes logging
    */
-  StartpageHandler(ESP8266WebServer& server, WebAuth& auth,
-                   CSSService& cssService)
+  StartpageHandler(ESP8266WebServer& server, WebAuth& auth, CSSService& cssService)
       : BaseHandler(server), _auth(auth), _cssService(cssService) {
     logger.debug(F("StartpageHandler"), F("Initializing StartpageHandler"));
     logger.logMemoryStats(F("StartpageHandler"));
@@ -76,8 +75,7 @@ class StartpageHandler : public BaseHandler {
    *          - Status updates
    *          - Sensor data
    */
-  HandlerResult handleGet(const String& uri,
-                          const std::map<String, String>& query) override;
+  HandlerResult handleGet(const String& uri, const std::map<String, String>& query) override;
 
   /**
    * @brief Handle POST requests
@@ -89,8 +87,7 @@ class StartpageHandler : public BaseHandler {
    *          - Mode changes
    *          - Control commands
    */
-  HandlerResult handlePost(const String& uri,
-                           const std::map<String, String>& params) override;
+  HandlerResult handlePost(const String& uri, const std::map<String, String>& params) override;
 
   /**
    * @brief Handle update mode configuration
@@ -126,14 +123,13 @@ class StartpageHandler : public BaseHandler {
    *          - Shows status
    *          - Handles errors
    */
-  void generateSensorBox(const Sensor* sensor, float value, const String& name,
-                         const String& unit, const char* status,
-                         size_t measurementIndex, size_t sensorIndex);
+  void generateSensorBox(const Sensor* sensor, float value, const String& name, const String& unit,
+                         const char* status, size_t measurementIndex, size_t sensorIndex);
 
- private:
-  friend class WebManager;  // Allow WebManager access to private members
-  WebAuth& _auth;           ///< Reference to authentication service
-  CSSService& _cssService;  ///< Reference to CSS service
+private:
+  friend class WebManager; // Allow WebManager access to private members
+  WebAuth& _auth;          ///< Reference to authentication service
+  CSSService& _cssService; ///< Reference to CSS service
 
   /**
    * @brief Handle root page request
@@ -168,4 +164,4 @@ class StartpageHandler : public BaseHandler {
   void renderWiFiSetupForm();
 };
 
-#endif  // STARTPAGE_HANDLER_H
+#endif // STARTPAGE_HANDLER_H

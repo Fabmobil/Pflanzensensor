@@ -23,7 +23,7 @@
  * status
  */
 class LedTrafficLightManager : public Manager {
- public:
+public:
   /**
    * @brief Constructor for LedTrafficLightManager
    */
@@ -94,7 +94,7 @@ class LedTrafficLightManager : public Manager {
    */
   String getSelectedMeasurement() const;
 
- protected:
+protected:
   /**
    * @brief Initialize the LED traffic light manager
    * @return Result of initialization
@@ -102,11 +102,11 @@ class LedTrafficLightManager : public Manager {
    */
   TypedResult<ResourceError, void> initialize() override;
 
- private:
+private:
 #if USE_LED_TRAFFIC_LIGHT
   std::unique_ptr<LedLights> m_ledLights;
 #endif
-  String m_lastStatus;  ///< Last set status for tracking
+  String m_lastStatus; ///< Last set status for tracking
 };
 
 /**
@@ -114,6 +114,6 @@ class LedTrafficLightManager : public Manager {
  */
 extern std::unique_ptr<LedTrafficLightManager> ledTrafficLightManager;
 
-#endif  // USE_LED_TRAFFIC_LIGHT
+#endif // USE_LED_TRAFFIC_LIGHT
 
-#endif  // MANAGER_LED_TRAFFIC_LIGHT_H
+#endif // MANAGER_LED_TRAFFIC_LIGHT_H

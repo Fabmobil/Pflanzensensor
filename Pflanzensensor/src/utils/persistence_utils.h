@@ -49,8 +49,7 @@ inline size_t getFileSize(const char* path) {
  * @param contents File contents to log
  * @param chunkSize Size of each chunk (default: 100)
  */
-void logFileContents(const String& tag, const String& contents,
-                     size_t chunkSize = 100);
+void logFileContents(const String& tag, const String& contents, size_t chunkSize = 100);
 
 /**
  * @brief Read and deserialize a JSON file
@@ -59,8 +58,7 @@ void logFileContents(const String& tag, const String& contents,
  * @param errorMsg String to receive error message if any
  * @return true if successful, false otherwise
  */
-bool readJsonFile(const char* path, ArduinoJson::JsonDocument& doc,
-                  String& errorMsg);
+bool readJsonFile(const char* path, ArduinoJson::JsonDocument& doc, String& errorMsg);
 
 /**
  * @brief Serialize and write a JSON document to file
@@ -69,9 +67,8 @@ bool readJsonFile(const char* path, ArduinoJson::JsonDocument& doc,
  * @param errorMsg String to receive error message if any
  * @return true if successful, false otherwise
  */
-bool writeJsonFile(const char* path, const ArduinoJson::JsonDocument& doc,
-                   String& errorMsg);
+bool writeJsonFile(const char* path, const ArduinoJson::JsonDocument& doc, String& errorMsg);
 
-}  // namespace PersistenceUtils
+} // namespace PersistenceUtils
 
-#endif  // PERSISTENCE_UTILS_H
+#endif // PERSISTENCE_UTILS_H

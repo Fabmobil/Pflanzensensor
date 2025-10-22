@@ -36,9 +36,8 @@
  *          - Status monitoring
  */
 class SensorHandler : public BaseHandler {
- public:
-  static constexpr size_t MAX_VALUES =
-      10;  // Maximum number of values per sensor
+public:
+  static constexpr size_t MAX_VALUES = 10; // Maximum number of values per sensor
 
   /**
    * @brief Constructor for sensor handler
@@ -54,10 +53,7 @@ class SensorHandler : public BaseHandler {
    */
   SensorHandler(ESP8266WebServer& server, WebAuth& auth, CSSService& cssService,
                 SensorManager& sensorManager)
-      : BaseHandler(server),
-        _auth(auth),
-        _cssService(cssService),
-        _sensorManager(sensorManager) {
+      : BaseHandler(server), _auth(auth), _cssService(cssService), _sensorManager(sensorManager) {
     logger.debug(F("SensorHandler"), F("Initializing SensorHandler"));
   }
 
@@ -80,7 +76,7 @@ class SensorHandler : public BaseHandler {
    */
   RouterResult onRegisterRoutes(WebRouter& router) override;
 
- protected:
+protected:
   /**
    * @brief Handle GET requests
    * @param uri Request URI
@@ -91,8 +87,7 @@ class SensorHandler : public BaseHandler {
    *          - Configuration
    *          - Status information
    */
-  HandlerResult handleGet(const String& uri,
-                          const std::map<String, String>& query) override;
+  HandlerResult handleGet(const String& uri, const std::map<String, String>& query) override;
 
   /**
    * @brief Handle POST requests
@@ -104,14 +99,13 @@ class SensorHandler : public BaseHandler {
    *          - Calibration commands
    *          - Control operations
    */
-  HandlerResult handlePost(const String& uri,
-                           const std::map<String, String>& params) override;
+  HandlerResult handlePost(const String& uri, const std::map<String, String>& params) override;
 
- private:
-  WebAuth& _auth;                 ///< Reference to authentication service
-  CSSService& _cssService;        ///< Reference to CSS service
-  SensorManager& _sensorManager;  ///< Reference to sensor manager
-  String _content;                ///< Cached content storage
+private:
+  WebAuth& _auth;                ///< Reference to authentication service
+  CSSService& _cssService;       ///< Reference to CSS service
+  SensorManager& _sensorManager; ///< Reference to sensor manager
+  String _content;               ///< Cached content storage
 
   /**
    * @brief Handle requests for latest sensor values

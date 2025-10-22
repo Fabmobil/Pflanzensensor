@@ -20,9 +20,9 @@
 #endif
 #include "base_handler.h"
 
-class WebManager;  ///< Forward declaration for web manager
-class WebAuth;     ///< Forward declaration for authentication service
-class CSSService;  ///< Forward declaration for CSS service
+class WebManager; ///< Forward declaration for web manager
+class WebAuth;    ///< Forward declaration for authentication service
+class CSSService; ///< Forward declaration for CSS service
 
 /**
  * @class LogHandler
@@ -35,15 +35,14 @@ class CSSService;  ///< Forward declaration for CSS service
  *          - Interface generation
  */
 class LogHandler : public BaseHandler {
-  friend class WebManager;  // Allow WebManager to access private members
+  friend class WebManager; // Allow WebManager to access private members
 
- public:
+public:
   // Constants
 #if USE_WEBSOCKET
-  static constexpr uint16_t WS_PORT = 81;  ///< WebSocket server port
+  static constexpr uint16_t WS_PORT = 81; ///< WebSocket server port
 #endif
-  static constexpr unsigned long LOG_CLEANUP_INTERVAL =
-      60000;  ///< Cleanup interval (60 seconds)
+  static constexpr unsigned long LOG_CLEANUP_INTERVAL = 60000; ///< Cleanup interval (60 seconds)
 
   /**
    * @brief Constructor
@@ -90,8 +89,7 @@ class LogHandler : public BaseHandler {
    *          - Returns existing instance
    *          - Ensures single point of access
    */
-  static LogHandler* getInstance(ESP8266WebServer& server, WebAuth& auth,
-                                 CSSService& cssService) {
+  static LogHandler* getInstance(ESP8266WebServer& server, WebAuth& auth, CSSService& cssService) {
     if (!s_instance) {
       s_instance = new LogHandler(server, auth, cssService);
       if (s_instance) {
@@ -130,8 +128,7 @@ class LogHandler : public BaseHandler {
    *          - Log download
    *          - Status queries
    */
-  HandlerResult handleGet(const String& uri,
-                          const std::map<String, String>& query) override;
+  HandlerResult handleGet(const String& uri, const std::map<String, String>& query) override;
 
   /**
    * @brief Handle POST requests
@@ -143,8 +140,7 @@ class LogHandler : public BaseHandler {
    *          - Log clearing
    *          - Configuration updates
    */
-  HandlerResult handlePost(const String& uri,
-                           const std::map<String, String>& params) override;
+  HandlerResult handlePost(const String& uri, const std::map<String, String>& params) override;
 
 #if USE_WEBSOCKET
   /**
@@ -191,8 +187,7 @@ class LogHandler : public BaseHandler {
    *          - Error processing
    *          - State updates
    */
-  void handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* payload,
-                            size_t length);
+  void handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* payload, size_t length);
 #endif
 
   /**
@@ -238,8 +233,8 @@ class LogHandler : public BaseHandler {
    *          - Queue management
    */
   struct QueuedMessage {
-    uint8_t clientId;  ///< Identifier of target client
-    String message;    ///< Message content to send
+    uint8_t clientId; ///< Identifier of target client
+    String message;   ///< Message content to send
 
     /**
      * @brief Constructor for QueuedMessage
@@ -250,19 +245,19 @@ class LogHandler : public BaseHandler {
   };
 #endif
 
- private:
-  WebAuth& _auth;           ///< Reference to authentication service
-  CSSService& _cssService;  ///< Reference to CSS service
+private:
+  WebAuth& _auth;          ///< Reference to authentication service
+  CSSService& _cssService; ///< Reference to CSS service
 #if USE_WEBSOCKET
-  std::list<uint8_t> _clients;               ///< List of connected client IDs
-  std::vector<QueuedMessage> _messageQueue;  ///< Queue of pending messages
+  std::list<uint8_t> _clients;              ///< List of connected client IDs
+  std::vector<QueuedMessage> _messageQueue; ///< Queue of pending messages
 #endif
-  unsigned long _lastCleanup;     ///< Timestamp of last cleanup
-  String _content;                ///< Current log content
-  bool _cleaned;                  ///< Cleanup status flag
-  bool _initialized;              ///< Instance initialization flag
-  static LogHandler* s_instance;  ///< Singleton instance pointer
-  static bool s_initialized;      ///< Global initialization flag
+  unsigned long _lastCleanup;    ///< Timestamp of last cleanup
+  String _content;               ///< Current log content
+  bool _cleaned;                 ///< Cleanup status flag
+  bool _initialized;             ///< Instance initialization flag
+  static LogHandler* s_instance; ///< Singleton instance pointer
+  static bool s_initialized;     ///< Global initialization flag
 
 #if USE_WEBSOCKET
   /**
@@ -296,8 +291,7 @@ class LogHandler : public BaseHandler {
    *          - Updates state
    *          - Sends responses
    */
-  void handleClientMessage(uint8_t clientNum, const String& type,
-                           const String& data);
+  void handleClientMessage(uint8_t clientNum, const String& type, const String& data);
 
   /**
    * @brief Send log buffer to client
@@ -330,7 +324,7 @@ class LogHandler : public BaseHandler {
    */
   String getLogLevelColor(LogLevel level) const;
 
- protected:
+protected:
   /**
    * @brief Custom cleanup logic for LogHandler
    * @details Ensures all resources are released and state is reset.

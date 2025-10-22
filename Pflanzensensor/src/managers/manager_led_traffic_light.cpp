@@ -21,35 +21,32 @@ TypedResult<ResourceError, void> LedTrafficLightManager::initialize() {
 
   m_ledLights = std::make_unique<LedLights>();
   if (!m_ledLights) {
-    logger.warning(F("LedTrafficLight"),
-                   F("LED-Ampel Zuweisung fehlgeschlagen"));
-    return TypedResult<ResourceError, void>::fail(
-        ResourceError::OPERATION_FAILED, F("Zuweisung der LED-Ampel fehlgeschlagen"));
+    logger.warning(F("LedTrafficLight"), F("LED-Ampel Zuweisung fehlgeschlagen"));
+    return TypedResult<ResourceError, void>::fail(ResourceError::OPERATION_FAILED,
+                                                  F("Zuweisung der LED-Ampel fehlgeschlagen"));
   }
 
   auto initResult = m_ledLights->init();
   if (!initResult.isSuccess()) {
-  logger.warning(F("LedTrafficLight"),
-           F("Initialisierung der LED-Ampel fehlgeschlagen: ") +
-             initResult.getMessage());
-  return TypedResult<ResourceError, void>::fail(
-    ResourceError::OPERATION_FAILED,
-    F("Initialisierung der LED-Ampel fehlgeschlagen: ") + initResult.getMessage());
+    logger.warning(F("LedTrafficLight"),
+                   F("Initialisierung der LED-Ampel fehlgeschlagen: ") + initResult.getMessage());
+    return TypedResult<ResourceError, void>::fail(
+        ResourceError::OPERATION_FAILED,
+        F("Initialisierung der LED-Ampel fehlgeschlagen: ") + initResult.getMessage());
   }
 
-  logger.info(F("LedTrafficLight"),
-              F("LedTrafficLightManager erfolgreich initialisiert"));
+  logger.info(F("LedTrafficLight"), F("LedTrafficLightManager erfolgreich initialisiert"));
   return TypedResult<ResourceError, void>::success();
 #else
-  logger.debug(F("LedTrafficLight"),
-               F("LED traffic light disabled, skipping initialization"));
+  logger.debug(F("LedTrafficLight"), F("LED traffic light disabled, skipping initialization"));
   return TypedResult<ResourceError, void>::success();
 #endif
 }
 
 void LedTrafficLightManager::setStatus(const String& status) {
 #if USE_LED_TRAFFIC_LIGHT
-  if (!m_ledLights) return;
+  if (!m_ledLights)
+    return;
 
   // Don't update if status hasn't changed
   if (m_lastStatus == status) {
@@ -93,9 +90,7 @@ void LedTrafficLightManager::setMeasurementStatus(const String& measurementId,
 #endif
 }
 
-uint8_t LedTrafficLightManager::getMode() const {
-  return ConfigMgr.getLedTrafficLightMode();
-}
+uint8_t LedTrafficLightManager::getMode() const { return ConfigMgr.getLedTrafficLightMode(); }
 
 String LedTrafficLightManager::getSelectedMeasurement() const {
   return ConfigMgr.getLedTrafficLightSelectedMeasurement();
@@ -103,7 +98,8 @@ String LedTrafficLightManager::getSelectedMeasurement() const {
 
 void LedTrafficLightManager::turnOffAllLeds() {
 #if USE_LED_TRAFFIC_LIGHT
-  if (!m_ledLights) return;
+  if (!m_ledLights)
+    return;
 
   // Turn off all LEDs
   m_ledLights->switchLedOff(LedLights::RED);
@@ -161,4 +157,4 @@ void LedTrafficLightManager::handleDisplayUpdate() {
 #endif
 }
 
-#endif  // USE_LED_TRAFFIC_LIGHT
+#endif // USE_LED_TRAFFIC_LIGHT

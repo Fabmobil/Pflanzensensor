@@ -11,8 +11,7 @@ bool AdminSensorHandler::validateRequest() const {
   logger.debug(F("AdminSensorHandler"), F("validateRequest() called"));
 
   if (!_server.authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
-    logger.debug(F("AdminSensorHandler"),
-                 F("Authentication failed, requesting auth"));
+    logger.debug(F("AdminSensorHandler"), F("Authentication failed, requesting auth"));
     _server.requestAuthentication();
     return false;
   }

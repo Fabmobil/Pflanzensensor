@@ -11,17 +11,16 @@
 
 void AdminSensorHandler::handleAnalogInverted() {
 #if USE_ANALOG
-  if (!requireAjaxRequest()) return;
+  if (!requireAjaxRequest())
+    return;
   if (!validateRequest()) {
-    sendJsonResponse(
-        401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
+    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
   }
 
   if (!_server.hasArg("sensor_id") || !_server.hasArg("measurement_index") ||
       !_server.hasArg("inverted")) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Erforderliche Parameter fehlen\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Erforderliche Parameter fehlen\"}"));
     return;
   }
 
@@ -29,14 +28,13 @@ void AdminSensorHandler::handleAnalogInverted() {
   size_t measurementIndex = _server.arg("measurement_index").toInt();
   bool inverted = _server.arg("inverted") == "true";
 
-  logger.debug(F("AdminSensorHandler"),
-               F("handleAnalogInverted: sensor=") + sensorId +
-                   F(", measurement=") + String(measurementIndex) +
-                   F(", inverted=") + String(inverted));
+  logger.debug(F("AdminSensorHandler"), F("handleAnalogInverted: sensor=") + sensorId +
+                                            F(", measurement=") + String(measurementIndex) +
+                                            F(", inverted=") + String(inverted));
 
   if (!_sensorManager.isHealthy()) {
-    sendJsonResponse(
-        500, F("{\"success\":false,\"error\":\"Sensor-Manager nicht betriebsbereit\"}"));
+    sendJsonResponse(500,
+                     F("{\"success\":false,\"error\":\"Sensor-Manager nicht betriebsbereit\"}"));
     return;
   }
 
@@ -47,25 +45,21 @@ void AdminSensorHandler::handleAnalogInverted() {
   }
 
   if (!sensor->isInitialized()) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Sensor nicht initialisiert\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Sensor nicht initialisiert\"}"));
     return;
   }
 
   if (!isAnalogSensor(sensor)) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Sensor ist nicht analog\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Sensor ist nicht analog\"}"));
     return;
   }
 
   SensorConfig& config = sensor->mutableConfig();
   if (measurementIndex >= config.measurements.size()) {
-    logger.error(F("AdminSensorHandler"),
-                 F("Ungültiger Messindex: ") + String(measurementIndex) +
-                     F(", max erlaubt: ") +
-                     String(config.measurements.size() - 1));
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Ungültiger Messindex\"}"));
+    logger.error(F("AdminSensorHandler"), F("Ungültiger Messindex: ") + String(measurementIndex) +
+                                              F(", max erlaubt: ") +
+                                              String(config.measurements.size() - 1));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messindex\"}"));
     return;
   }
 
@@ -82,42 +76,39 @@ void AdminSensorHandler::handleAnalogInverted() {
   int persistMin = static_cast<int>(roundf(config.measurements[measurementIndex].minValue));
   int persistMax = static_cast<int>(roundf(config.measurements[measurementIndex].maxValue));
   auto result = SensorPersistence::updateAnalogMinMaxInteger(
-    sensorId, measurementIndex, persistMin, persistMax, config.measurements[measurementIndex].inverted);
+      sensorId, measurementIndex, persistMin, persistMax,
+      config.measurements[measurementIndex].inverted);
   if (!result.isSuccess()) {
-    logger.error(
-        F("AdminSensorHandler"),
-        F("Fehler beim Aktualisieren des invertierten Zustands: ") + result.getMessage());
+    logger.error(F("AdminSensorHandler"),
+                 F("Fehler beim Aktualisieren des invertierten Zustands: ") + result.getMessage());
     sendJsonResponse(
         500,
         F("{\"success\":false,\"error\":\"Fehler beim Speichern des invertierten Zustands\"}"));
     return;
   }
 
-  logger.info(F("AdminSensorHandler"),
-              F("Analog invertiert für ") + sensorId + F("[") +
-                  String(measurementIndex) + F("]: invertiert=") +
-                  String(inverted));
+  logger.info(F("AdminSensorHandler"), F("Analog invertiert für ") + sensorId + F("[") +
+                                           String(measurementIndex) + F("]: invertiert=") +
+                                           String(inverted));
 
   sendJsonResponse(200, F("{\"success\":true}"));
 #else
-  sendJsonResponse(
-      400, F("{\"success\":false,\"error\":\"Analog sensors not enabled\"}"));
+  sendJsonResponse(400, F("{\"success\":false,\"error\":\"Analog sensors not enabled\"}"));
 #endif
 }
 
 void AdminSensorHandler::handleAnalogMinMax() {
 #if USE_ANALOG
-  if (!requireAjaxRequest()) return;
+  if (!requireAjaxRequest())
+    return;
   if (!validateRequest()) {
-    sendJsonResponse(
-        401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
+    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
   }
 
   if (!_server.hasArg("sensor_id") || !_server.hasArg("measurement_index") ||
       !_server.hasArg("min") || !_server.hasArg("max")) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Erforderliche Parameter fehlen\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Erforderliche Parameter fehlen\"}"));
     return;
   }
 
@@ -126,20 +117,20 @@ void AdminSensorHandler::handleAnalogMinMax() {
   float newMin = _server.arg("min").toFloat();
   float newMax = _server.arg("max").toFloat();
 
-  logger.debug(F("AdminSensorHandler"),
-               F("handleAnalogMinMax: sensor=") + sensorId +
-                   F(", measurement=") + String(measurementIndex) +
-                   F(", min=") + String(newMin) + F(", max=") + String(newMax));
+  logger.debug(F("AdminSensorHandler"), F("handleAnalogMinMax: sensor=") + sensorId +
+                                            F(", measurement=") + String(measurementIndex) +
+                                            F(", min=") + String(newMin) + F(", max=") +
+                                            String(newMax));
 
   // Debug: print all incoming arguments
   for (int i = 0; i < _server.args(); ++i) {
-    logger.debug(F("AdminSensorHandler"), F("POST arg: ") + _server.argName(i) +
-                                              F(" = ") + _server.arg(i));
+    logger.debug(F("AdminSensorHandler"),
+                 F("POST arg: ") + _server.argName(i) + F(" = ") + _server.arg(i));
   }
 
   if (!_sensorManager.isHealthy()) {
-    sendJsonResponse(
-        500, F("{\"success\":false,\"error\":\"Sensor-Manager nicht betriebsbereit\"}"));
+    sendJsonResponse(500,
+                     F("{\"success\":false,\"error\":\"Sensor-Manager nicht betriebsbereit\"}"));
     return;
   }
 
@@ -150,14 +141,12 @@ void AdminSensorHandler::handleAnalogMinMax() {
   }
 
   if (!sensor->isInitialized()) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Sensor nicht initialisiert\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Sensor nicht initialisiert\"}"));
     return;
   }
 
   if (!isAnalogSensor(sensor)) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Sensor ist nicht analog\"}"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Sensor ist nicht analog\"}"));
     return;
   }
 
@@ -165,19 +154,19 @@ void AdminSensorHandler::handleAnalogMinMax() {
   // Use the config to check measurement count instead of protected method
   SensorConfig& config = sensor->mutableConfig();
   if (measurementIndex >= config.measurements.size()) {
-    logger.error(F("AdminSensorHandler"),
-                 F("Ungültiger Messindex: ") + String(measurementIndex) +
-                     F(", max erlaubt: ") +
-                     String(config.measurements.size() - 1));
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Ungültiger Messindex\"}"));
+    logger.error(F("AdminSensorHandler"), F("Ungültiger Messindex: ") + String(measurementIndex) +
+                                              F(", max erlaubt: ") +
+                                              String(config.measurements.size() - 1));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messindex\"}"));
     return;
   }
 
   // Disallow manual min/max updates while autocalibration is active.
   if (config.measurements[measurementIndex].calibrationMode) {
-    logger.warning(F("AdminSensorHandler"), F("Manuelle Min/Max-Änderung verweigert: Autokalibrierung aktiv"));
-    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Autokalibrierung aktiv - Min/Max nicht manuell änderbar\"}"));
+    logger.warning(F("AdminSensorHandler"),
+                   F("Manuelle Min/Max-Änderung verweigert: Autokalibrierung aktiv"));
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Autokalibrierung aktiv - Min/Max nicht "
+                            "manuell änderbar\"}"));
     return;
   }
 
@@ -194,32 +183,25 @@ void AdminSensorHandler::handleAnalogMinMax() {
     logger.debug(F("AdminSensorHandler"),
                  F("Analog-Min/Max geändert, Konfiguration wird aktualisiert und persistiert"));
     // Persist min/max in config
-    config.measurements[measurementIndex].minValue =
-        analog->getMinValue(measurementIndex);
-    config.measurements[measurementIndex].maxValue =
-        analog->getMaxValue(measurementIndex);
-  // Use atomic update for analog min/max values; persist integer-rounded
-  int persistMin = static_cast<int>(roundf(config.measurements[measurementIndex].minValue));
-  int persistMax = static_cast<int>(roundf(config.measurements[measurementIndex].maxValue));
-  auto result = SensorPersistence::updateAnalogMinMaxInteger(
-    sensorId, measurementIndex,
-    persistMin,
-    persistMax,
-    config.measurements[measurementIndex].inverted);
+    config.measurements[measurementIndex].minValue = analog->getMinValue(measurementIndex);
+    config.measurements[measurementIndex].maxValue = analog->getMaxValue(measurementIndex);
+    // Use atomic update for analog min/max values; persist integer-rounded
+    int persistMin = static_cast<int>(roundf(config.measurements[measurementIndex].minValue));
+    int persistMax = static_cast<int>(roundf(config.measurements[measurementIndex].maxValue));
+    auto result = SensorPersistence::updateAnalogMinMaxInteger(
+        sensorId, measurementIndex, persistMin, persistMax,
+        config.measurements[measurementIndex].inverted);
     if (!result.isSuccess()) {
-      logger.error(
-          F("AdminSensorHandler"),
-          F("Fehler beim Aktualisieren von Analog-Min/Max: ") + result.getMessage());
+      logger.error(F("AdminSensorHandler"),
+                   F("Fehler beim Aktualisieren von Analog-Min/Max: ") + result.getMessage());
       sendJsonResponse(
-          500,
-          F("{\"success\":false,\"error\":\"Fehler beim Speichern der Min/Max-Werte\"}"));
+          500, F("{\"success\":false,\"error\":\"Fehler beim Speichern der Min/Max-Werte\"}"));
       return;
     }
     logger.debug(F("AdminSensorHandler"),
-                 F("Erfolgreich Analog-Min/Max aktualisiert für ") + sensorId +
-                     F("[") + String(measurementIndex) + F("]: min=") +
-                     String(config.measurements[measurementIndex].minValue) +
-                     F(", max=") +
+                 F("Erfolgreich Analog-Min/Max aktualisiert für ") + sensorId + F("[") +
+                     String(measurementIndex) + F("]: min=") +
+                     String(config.measurements[measurementIndex].minValue) + F(", max=") +
                      String(config.measurements[measurementIndex].maxValue));
   } else {
     logger.debug(F("AdminSensorHandler"),
@@ -228,16 +210,17 @@ void AdminSensorHandler::handleAnalogMinMax() {
 
   sendJsonResponse(200, F("{\"success\":true}"));
 #else
-  sendJsonResponse(
-      400, F("{\"success\":false,\"error\":\"Analog sensors not enabled\"}"));
+  sendJsonResponse(400, F("{\"success\":false,\"error\":\"Analog sensors not enabled\"}"));
 #endif
 }
 
 void AdminSensorHandler::handleAnalogAutocal() {
 #if USE_ANALOG
-  if (!requireAjaxRequest()) return;
+  if (!requireAjaxRequest())
+    return;
   if (!validateRequest()) {
-    logger.warning(F("AdminSensorHandler"), F("handleAnalogAutocal: Authentifizierung fehlgeschlagen"));
+    logger.warning(F("AdminSensorHandler"),
+                   F("handleAnalogAutocal: Authentifizierung fehlgeschlagen"));
     sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
     return;
   }
@@ -245,7 +228,8 @@ void AdminSensorHandler::handleAnalogAutocal() {
   // Log at info level so operators can see toggles in the normal log level
   logger.info(F("AdminSensorHandler"), F("handleAnalogAutocal-Aufruf erhalten"));
 
-  if (!_server.hasArg("sensor_id") || !_server.hasArg("measurement_index") || !_server.hasArg("enabled")) {
+  if (!_server.hasArg("sensor_id") || !_server.hasArg("measurement_index") ||
+      !_server.hasArg("enabled")) {
     sendJsonResponse(400, F("{\"success\":false,\"error\":\"Erforderliche Parameter fehlen\"}"));
     return;
   }
@@ -254,10 +238,13 @@ void AdminSensorHandler::handleAnalogAutocal() {
   size_t measurementIndex = _server.arg("measurement_index").toInt();
   bool enabled = _server.arg("enabled") == "true";
 
-  logger.info(F("AdminSensorHandler"), F("handleAnalogAutocal: sensor=") + sensorId + F(", measurement=") + String(measurementIndex) + F(", enabled=") + String(enabled));
+  logger.info(F("AdminSensorHandler"), F("handleAnalogAutocal: sensor=") + sensorId +
+                                           F(", measurement=") + String(measurementIndex) +
+                                           F(", enabled=") + String(enabled));
 
   if (!_sensorManager.isHealthy()) {
-    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Sensor-Manager nicht betriebsbereit\"}"));
+    sendJsonResponse(500,
+                     F("{\"success\":false,\"error\":\"Sensor-Manager nicht betriebsbereit\"}"));
     return;
   }
 
@@ -344,12 +331,12 @@ void AdminSensorHandler::handleAnalogAutocal() {
         initMax = 1023;
       }
     }
-  AutoCal cal;
-  cal.min_value = initMin;
-  cal.max_value = initMax;
-  cal.min_value_f = static_cast<float>(initMin);
-  cal.max_value_f = static_cast<float>(initMax);
-  cal.last_update_time = 0;
+    AutoCal cal;
+    cal.min_value = initMin;
+    cal.max_value = initMax;
+    cal.min_value_f = static_cast<float>(initMin);
+    cal.max_value_f = static_cast<float>(initMax);
+    cal.last_update_time = 0;
     // Update in-memory config and runtime immediately
     config.measurements[measurementIndex].autocal = cal;
     analogSensor->setAutoCalibration(measurementIndex, cal);
@@ -357,35 +344,40 @@ void AdminSensorHandler::handleAnalogAutocal() {
     // clamping while persistence/reload occurs.
     analogSensor->setCalibrationMode(measurementIndex, enabled);
 
-     // Persist calibrationMode first so a reload does not temporarily
-     // reset the runtime flag while we also write initial min/max.
-     config.measurements[measurementIndex].calibrationMode = enabled;
-     auto result = SensorPersistence::updateAnalogCalibrationMode(sensorId, measurementIndex, enabled);
-     if (!result.isSuccess()) {
-       logger.error(F("AdminSensorHandler"), F("Fehler beim Aktivieren des Kalibrierungsmodus: ") + result.getMessage());
-       sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Speichern des Kalibrierungsmodus\"}"));
-       return;
-     }
+    // Persist calibrationMode first so a reload does not temporarily
+    // reset the runtime flag while we also write initial min/max.
+    config.measurements[measurementIndex].calibrationMode = enabled;
+    auto result =
+        SensorPersistence::updateAnalogCalibrationMode(sensorId, measurementIndex, enabled);
+    if (!result.isSuccess()) {
+      logger.error(F("AdminSensorHandler"),
+                   F("Fehler beim Aktivieren des Kalibrierungsmodus: ") + result.getMessage());
+      sendJsonResponse(
+          500, F("{\"success\":false,\"error\":\"Fehler beim Speichern des Kalibrierungsmodus\"}"));
+      return;
+    }
 
     // Now persist calculation limits (if needed). Doing this after
     // calibrationMode ensures reloads keep calibrationMode=true.
     bool needPersist = true;
-    if (cfgValid && initMin == cfgMin && initMax == cfgMax) needPersist = false;
+    if (cfgValid && initMin == cfgMin && initMax == cfgMax)
+      needPersist = false;
     if (needPersist) {
       // Persist rounded integer values to keep sensors.json format stable
       int persistMin = static_cast<int>(roundf(static_cast<float>(initMin)));
       int persistMax = static_cast<int>(roundf(static_cast<float>(initMax)));
-      auto pm = SensorPersistence::updateAnalogMinMaxIntegerNoReload(sensorId, measurementIndex,
-                                                     persistMin,
-                                                     persistMax,
-                                                     config.measurements[measurementIndex].inverted);
+      auto pm = SensorPersistence::updateAnalogMinMaxIntegerNoReload(
+          sensorId, measurementIndex, persistMin, persistMax,
+          config.measurements[measurementIndex].inverted);
       if (!pm.isSuccess()) {
-        logger.warning(F("AdminSensorHandler"), F("Konnte initiale Autocal-Min/Max nicht persistieren: ") + pm.getMessage());
+        logger.warning(F("AdminSensorHandler"),
+                       F("Konnte initiale Autocal-Min/Max nicht persistieren: ") + pm.getMessage());
         // continue — calibrationMode is persisted already and runtime set
       }
     } else {
       if (ConfigMgr.isDebugSensor()) {
-        logger.debug(F("AdminSensorHandler"), F("Initiale Autocal-Min/Max entspricht vorhandener Konfiguration; Persistierung übersprungen"));
+        logger.debug(F("AdminSensorHandler"), F("Initiale Autocal-Min/Max entspricht vorhandener "
+                                                "Konfiguration; Persistierung übersprungen"));
       }
     }
 
@@ -403,25 +395,35 @@ void AdminSensorHandler::handleAnalogAutocal() {
           config.measurements[measurementIndex].absoluteRawMin = lastRaw;
           config.measurements[measurementIndex].absoluteRawMax = lastRaw;
           // Persist atomically and reload so runtime and UI are in sync
-          auto rawPersist = SensorPersistence::updateAnalogRawMinMax(sensorId, measurementIndex, lastRaw, lastRaw);
+          auto rawPersist = SensorPersistence::updateAnalogRawMinMax(sensorId, measurementIndex,
+                                                                     lastRaw, lastRaw);
           if (!rawPersist.isSuccess()) {
-            logger.warning(F("AdminSensorHandler"), F("Konnte initiale absolute Roh-Min/Max nicht persistieren: ") + rawPersist.getMessage());
+            logger.warning(F("AdminSensorHandler"),
+                           F("Konnte initiale absolute Roh-Min/Max nicht persistieren: ") +
+                               rawPersist.getMessage());
           } else {
-            logger.info(F("AdminSensorHandler"), F("Initiale absolute Roh-Min/Max gesetzt für ") + sensorId + F("[") + String(measurementIndex) + F("]: ") + String(lastRaw));
+            logger.info(F("AdminSensorHandler"), F("Initiale absolute Roh-Min/Max gesetzt für ") +
+                                                     sensorId + F("[") + String(measurementIndex) +
+                                                     F("]: ") + String(lastRaw));
           }
         } else {
           if (ConfigMgr.isDebugSensor()) {
-            logger.debug(F("AdminSensorHandler"), F("Kein letzter Rohwert verfügbar, initiale absolute Roh-Extrema nicht gesetzt"));
+            logger.debug(
+                F("AdminSensorHandler"),
+                F("Kein letzter Rohwert verfügbar, initiale absolute Roh-Extrema nicht gesetzt"));
           }
         }
       } else {
         if (ConfigMgr.isDebugSensor()) {
-          logger.debug(F("AdminSensorHandler"), F("Absolute Roh-Extrema bereits vorhanden, seeding uebersprungen"));
+          logger.debug(F("AdminSensorHandler"),
+                       F("Absolute Roh-Extrema bereits vorhanden, seeding uebersprungen"));
         }
       }
     }
 
-    logger.info(F("AdminSensorHandler"), F("Autokalibrierung für ") + sensorId + F("[") + String(measurementIndex) + F("] aktiviert und initialisiert"));
+    logger.info(F("AdminSensorHandler"), F("Autokalibrierung für ") + sensorId + F("[") +
+                                             String(measurementIndex) +
+                                             F("] aktiviert und initialisiert"));
     sendJsonResponse(200, F("{\"success\":true}"));
     return;
   }
@@ -434,15 +436,18 @@ void AdminSensorHandler::handleAnalogAutocal() {
     AnalogSensor* analogSensor = static_cast<AnalogSensor*>(sensor);
     analogSensor->setCalibrationMode(measurementIndex, enabled);
   }
-   auto result = SensorPersistence::updateAnalogCalibrationMode(sensorId, measurementIndex, enabled);
-    if (!result.isSuccess()) {
-      logger.error(F("AdminSensorHandler"), F("Fehler beim Deaktivieren des Kalibrierungsmodus: ") + result.getMessage());
-      sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Speichern des Kalibrierungsmodus\"}"));
-      return;
-    }
-    logger.info(F("AdminSensorHandler"), F("Autokalibrierung für ") + sensorId + F("[") + String(measurementIndex) + F("] deaktiviert"));
-    sendJsonResponse(200, F("{\"success\":true}"));
+  auto result = SensorPersistence::updateAnalogCalibrationMode(sensorId, measurementIndex, enabled);
+  if (!result.isSuccess()) {
+    logger.error(F("AdminSensorHandler"),
+                 F("Fehler beim Deaktivieren des Kalibrierungsmodus: ") + result.getMessage());
+    sendJsonResponse(
+        500, F("{\"success\":false,\"error\":\"Fehler beim Speichern des Kalibrierungsmodus\"}"));
     return;
+  }
+  logger.info(F("AdminSensorHandler"), F("Autokalibrierung für ") + sensorId + F("[") +
+                                           String(measurementIndex) + F("] deaktiviert"));
+  sendJsonResponse(200, F("{\"success\":true}"));
+  return;
 #else
   sendJsonResponse(400, F("{\"success\":false,\"error\":\"Analog sensors not enabled\"}"));
 #endif

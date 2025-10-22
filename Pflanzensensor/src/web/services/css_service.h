@@ -21,7 +21,7 @@
  *          - Custom CSS management
  */
 class CSSService : public BaseHandler {
- public:
+public:
   /**
    * @brief Constructor
    * @param server Reference to web server instance
@@ -50,8 +50,7 @@ class CSSService : public BaseHandler {
    *          - CSS editor page
    *          - Default CSS content
    */
-  HandlerResult handleGet(const String& uri,
-                          const std::map<String, String>& query) override;
+  HandlerResult handleGet(const String& uri, const std::map<String, String>& query) override;
 
   /**
    * @brief Handle POST requests for CSS operations
@@ -63,8 +62,7 @@ class CSSService : public BaseHandler {
    *          - CSS backup creation
    *          - CSS restoration
    */
-  HandlerResult handlePost(const String& uri,
-                           const std::map<String, String>& params) override;
+  HandlerResult handlePost(const String& uri, const std::map<String, String>& params) override;
 
   /**
    * @brief Get custom CSS content
@@ -91,7 +89,7 @@ class CSSService : public BaseHandler {
    */
   String getDefaultCSS();
 
- private:
+private:
   /**
    * @struct CSSModule
    * @brief Represents a CSS module with its properties
@@ -99,9 +97,9 @@ class CSSService : public BaseHandler {
    *          Used to manage different CSS components in the system.
    */
   struct CSSModule {
-    String id;    ///< Unique identifier for the module
-    String name;  ///< Human-readable name of the module
-    String path;  ///< File system path to the CSS file
+    String id;   ///< Unique identifier for the module
+    String name; ///< Human-readable name of the module
+    String path; ///< File system path to the CSS file
 
     /**
      * @brief Constructor for CSSModule
@@ -109,11 +107,10 @@ class CSSService : public BaseHandler {
      * @param n Human-readable name of the module
      * @param p File system path to the CSS file
      */
-    CSSModule(const String& i, const String& n, const String& p)
-        : id(i), name(n), path(p) {}
+    CSSModule(const String& i, const String& n, const String& p) : id(i), name(n), path(p) {}
   };
 
-  std::vector<CSSModule> _modules;  ///< Collection of CSS modules
+  std::vector<CSSModule> _modules; ///< Collection of CSS modules
 
   /**
    * @brief Initialize CSS modules
@@ -174,4 +171,4 @@ class CSSService : public BaseHandler {
   const CSSModule* getModule(const String& id) const;
 };
 
-#endif  // CSS_SERVICE_H
+#endif // CSS_SERVICE_H

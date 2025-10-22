@@ -19,37 +19,34 @@ RouterResult SensorHandler::onRegisterRoutes(WebRouter& router) {
   logger.info(F("SensorHandler"), F("Sensor-Routen werden registriert:"));
 
   // Register Latest Values endpoint
-  auto latestResult = router.addRoute(HTTP_GET, "/getLatestValues",
-                                      [this]() { handleGetLatestValues(); });
-  if (!latestResult.isSuccess()) return latestResult;
+  auto latestResult =
+      router.addRoute(HTTP_GET, "/getLatestValues", [this]() { handleGetLatestValues(); });
+  if (!latestResult.isSuccess())
+    return latestResult;
 
   logger.info(F("SensorHandler"), F("Sensor-Routen erfolgreich registriert"));
   return RouterResult::success();
 }
 
-HandlerResult SensorHandler::handleGet(
-    const String& /*uri*/, const std::map<String, String>& /*query*/) {
+HandlerResult SensorHandler::handleGet(const String& /*uri*/,
+                                       const std::map<String, String>& /*query*/) {
   // Let registerRoutes handle the actual routing
-  return HandlerResult::fail(HandlerError::INVALID_REQUEST,
-                             "Bitte verwenden Sie registerRoutes");
+  return HandlerResult::fail(HandlerError::INVALID_REQUEST, "Bitte verwenden Sie registerRoutes");
 }
 
-HandlerResult SensorHandler::handlePost(
-    const String& /*uri*/, const std::map<String, String>& /*params*/) {
+HandlerResult SensorHandler::handlePost(const String& /*uri*/,
+                                        const std::map<String, String>& /*params*/) {
   // Let registerRoutes handle the actual routing
-  return HandlerResult::fail(HandlerError::INVALID_REQUEST,
-                             "Bitte verwenden Sie registerRoutes");
+  return HandlerResult::fail(HandlerError::INVALID_REQUEST, "Bitte verwenden Sie registerRoutes");
 }
 
 void SensorHandler::handleGetLatestValues() {
   // **CRITICAL FIX 1: Memory check before starting**
   uint32_t freeHeap = ESP.getFreeHeap();
-  if (freeHeap < 4096) {  // Require at least 4KB free
-    logger.warning(
-        F("SensorHandler"),
-        F("Nicht genügend Speicher für JSON-Antwort: ") + String(freeHeap));
-    _server.send(503, F("application/json"),
-                 F("{\"error\":\"Nicht genügend Speicher\"}"));
+  if (freeHeap < 4096) { // Require at least 4KB free
+    logger.warning(F("SensorHandler"),
+                   F("Nicht genügend Speicher für JSON-Antwort: ") + String(freeHeap));
+    _server.send(503, F("application/json"), F("{\"error\":\"Nicht genügend Speicher\"}"));
     return;
   }
 
@@ -69,8 +66,7 @@ void SensorHandler::handleGetLatestValues() {
   auto managerState = _sensorManager.getState();
   if (managerState != ManagerState::INITIALIZED) {
     logger.warning(F("SensorHandler"),
-                   F("Sensormanager nicht initialisiert, Status: ") +
-                       String((int)managerState));
+                   F("Sensormanager nicht initialisiert, Status: ") + String((int)managerState));
     sendChunk(F("},\"error\":\"Sensormanager nicht initialisiert\"}"));
     endChunkedResponse();
     return;
@@ -89,18 +85,15 @@ void SensorHandler::handleGetLatestValues() {
   bool firstMeasurement = true;
   size_t processedSensors = 0;
 
-  for (size_t sensorIndex = 0; sensorIndex < sensorCount && sensorIndex < 20;
-       sensorIndex++) {
+  for (size_t sensorIndex = 0; sensorIndex < sensorCount && sensorIndex < 20; sensorIndex++) {
     if (ESP.getFreeHeap() < 4096) {
-      logger.warning(F("SensorHandler"),
-                     F("Wenig Speicher während der Verarbeitung, Abbruch"));
+      logger.warning(F("SensorHandler"), F("Wenig Speicher während der Verarbeitung, Abbruch"));
       break;
     }
 
     const auto& sensor = sensors[sensorIndex];
     if (!sensor) {
-      logger.warning(F("SensorHandler"),
-                     F("Null-Sensor an Index ") + String(sensorIndex));
+      logger.warning(F("SensorHandler"), F("Null-Sensor an Index ") + String(sensorIndex));
       continue;
     }
 
@@ -122,8 +115,7 @@ void SensorHandler::handleGetLatestValues() {
     }
 
     if (!sensor->isEnabled()) {
-      logger.debug(F("SensorHandler"),
-                   F("Sensor ") + sensorName + F(" ist deaktiviert"));
+      logger.debug(F("SensorHandler"), F("Sensor ") + sensorName + F(" ist deaktiviert"));
       continue;
     }
 
@@ -131,25 +123,21 @@ void SensorHandler::handleGetLatestValues() {
     try {
       measurementData = sensor->getMeasurementData();
     } catch (...) {
-      logger.error(F("SensorHandler"),
-                   F("Fehler beim Abrufen der Messdaten für ") + sensorName);
+      logger.error(F("SensorHandler"), F("Fehler beim Abrufen der Messdaten für ") + sensorName);
       continue;
     }
 
     if (!measurementData.isValid() || measurementData.activeValues == 0) {
-      logger.warning(F("SensorHandler"),
-                     F("Ungültige Messdaten für Sensor ") + sensorName);
+      logger.warning(F("SensorHandler"), F("Ungültige Messdaten für Sensor ") + sensorName);
       continue;
     }
 
     size_t safeActiveValues =
-        min(measurementData.activeValues,
-            static_cast<size_t>(SensorConfig::MAX_MEASUREMENTS));
+        min(measurementData.activeValues, static_cast<size_t>(SensorConfig::MAX_MEASUREMENTS));
     safeActiveValues = min(safeActiveValues, MAX_VALUES);
 
     for (size_t i = 0; i < safeActiveValues; i++) {
-      if (i >= SensorConfig::MAX_MEASUREMENTS ||
-          i >= measurementData.values.size() ||
+      if (i >= SensorConfig::MAX_MEASUREMENTS || i >= measurementData.values.size() ||
           i >= SensorConfig::MAX_MEASUREMENTS) {
         logger.warning(F("SensorHandler"),
                        F("Array-Grenzen überschritten für Sensor ") + sensorName);
@@ -244,36 +232,39 @@ void SensorHandler::handleGetLatestValues() {
           // historical extrema on disk.
           int effectiveRawMin = config.measurements[i].absoluteRawMin;
           int effectiveRawMax = config.measurements[i].absoluteRawMax;
-          if ((effectiveRawMin == INT_MAX || effectiveRawMax == INT_MIN) && config.measurements[i].calibrationMode) {
+          if ((effectiveRawMin == INT_MAX || effectiveRawMax == INT_MIN) &&
+              config.measurements[i].calibrationMode) {
             if (analog) {
               float calcMin = analog->getMinValue(i);
               float calcMax = analog->getMaxValue(i);
-              if (effectiveRawMin == INT_MAX) effectiveRawMin = static_cast<int>(roundf(calcMin));
-              if (effectiveRawMax == INT_MIN) effectiveRawMax = static_cast<int>(roundf(calcMax));
+              if (effectiveRawMin == INT_MAX)
+                effectiveRawMin = static_cast<int>(roundf(calcMin));
+              if (effectiveRawMax == INT_MIN)
+                effectiveRawMax = static_cast<int>(roundf(calcMax));
             }
           }
           sendChunk(F(",\"absoluteRawMin\":"));
           sendChunk(String(effectiveRawMin));
           sendChunk(F(",\"absoluteRawMax\":"));
           sendChunk(String(effectiveRawMax));
-           sendChunk(F(",\"calibrationMode\":"));
-           sendChunk(config.measurements[i].calibrationMode ? F("true") : F("false"));
-           // Also include the active calculation limits (min/max) used for
-           // mapping so the admin UI can reflect autocal changes in real time.
-           AnalogSensor* analogPtr = static_cast<AnalogSensor*>(sensor.get());
-           if (analogPtr) {
-             float calcMin = analogPtr->getMinValue(i);
-             float calcMax = analogPtr->getMaxValue(i);
-             sendChunk(F(",\"minmax\":{"));
-             sendChunk(F("\"min\":"));
-             sendChunk(String(calcMin));
-             sendChunk(F(",\"max\":"));
-             sendChunk(String(calcMax));
-             sendChunk(F("}"));
-           }
-           // Note: autocalization now persists into the calculation limits
-           // (min/max). The historical extremum storage (absoluteRawMin/Max)
-           // remains untouched by autocal and reflects measured history only.
+          sendChunk(F(",\"calibrationMode\":"));
+          sendChunk(config.measurements[i].calibrationMode ? F("true") : F("false"));
+          // Also include the active calculation limits (min/max) used for
+          // mapping so the admin UI can reflect autocal changes in real time.
+          AnalogSensor* analogPtr = static_cast<AnalogSensor*>(sensor.get());
+          if (analogPtr) {
+            float calcMin = analogPtr->getMinValue(i);
+            float calcMax = analogPtr->getMaxValue(i);
+            sendChunk(F(",\"minmax\":{"));
+            sendChunk(F("\"min\":"));
+            sendChunk(String(calcMin));
+            sendChunk(F(",\"max\":"));
+            sendChunk(String(calcMax));
+            sendChunk(F("}"));
+          }
+          // Note: autocalization now persists into the calculation limits
+          // (min/max). The historical extremum storage (absoluteRawMin/Max)
+          // remains untouched by autocal and reflects measured history only.
         }
       }
 #endif
@@ -312,7 +303,7 @@ void SensorHandler::handleGetLatestValues() {
 }
 
 bool SensorHandler::validateRequest() const {
-  return true;  // Sensorendpunkte sind öffentlich
+  return true; // Sensorendpunkte sind öffentlich
 }
 
 void SensorHandler::createSensorListSection() const {
@@ -321,27 +312,24 @@ void SensorHandler::createSensorListSection() const {
   Component::sendChunk(_server, F("    <div>"));
 
   for (const auto& sensor : _sensorManager.getSensors()) {
-    if (!sensor) continue;
+    if (!sensor)
+      continue;
 
     Component::sendChunk(_server, F("<div class='card'>"));
     Component::sendChunk(_server, F("<h3>"));
     Component::sendChunk(_server, sensor->getName());
     Component::sendChunk(_server, F("</h3>"));
 
+    Component::sendChunk(_server, F("<form method='post' action='/admin/sensor'>\n"));
     Component::sendChunk(_server,
-                         F("<form method='post' action='/admin/sensor'>\n"));
-    Component::sendChunk(
-        _server,
-        F("    <input type='hidden' name='action' value='toggle_sensor'>\n"));
-    Component::sendChunk(
-        _server, F("    <input type='hidden' name='sensor_id' value='"));
+                         F("    <input type='hidden' name='action' value='toggle_sensor'>\n"));
+    Component::sendChunk(_server, F("    <input type='hidden' name='sensor_id' value='"));
     Component::sendChunk(_server, sensor->getId());
     Component::sendChunk(_server, F("'>\n"));
 
     Component::sendChunk(_server, F("    <div>\n"));
-    Component::sendChunk(
-        _server, F("        <input type='checkbox' "
-                   "id='enabled' name='enabled'"));
+    Component::sendChunk(_server, F("        <input type='checkbox' "
+                                    "id='enabled' name='enabled'"));
     if (sensor->isEnabled()) {
       Component::sendChunk(_server, F(" checked"));
     }

@@ -20,8 +20,8 @@
 ResourceManager* ResourceManager::instance = nullptr;
 ResourceManager& ResourceMgr = ResourceManager::getInstance();
 
-ResourceResult ResourceManager::executeCritical(
-    const String& operation, std::function<ResourceResult()> func) {
+ResourceResult ResourceManager::executeCritical(const String& operation,
+                                                std::function<ResourceResult()> func) {
   auto status = enterCriticalOperation(operation);
   if (!status.isSuccess()) {
     return status;
@@ -38,12 +38,10 @@ ResourceResult ResourceManager::executeCritical(
   }
 }
 
-ResourceResult ResourceManager::enterCriticalOperation(
-    const String& operation) {
+ResourceResult ResourceManager::enterCriticalOperation(const String& operation) {
   if (m_inCriticalOperation) {
-  return ResourceResult::fail(
-    ResourceError::ALREADY_IN_CRITICAL,
-    F("Bereits in einer kritischen Operation: ") + m_currentOperation);
+    return ResourceResult::fail(ResourceError::ALREADY_IN_CRITICAL,
+                                F("Bereits in einer kritischen Operation: ") + m_currentOperation);
   }
 
   uint32_t freeHeap = ESP.getFreeHeap();
@@ -81,35 +79,32 @@ void ResourceManager::exitCriticalOperation() {
     return;
   }
 
-  logger.info(F("ResourceM"),
-              String(F("Beende kritische Operation: ")) + m_currentOperation);
+  logger.info(F("ResourceM"), String(F("Beende kritische Operation: ")) + m_currentOperation);
 
   // Only recreate sensor manager if we're not doing a firmware upgrade
   if (!ConfigMgr.getDoFirmwareUpgrade()) {
     // Recreate and initialize sensor manager if it was reset
     if (!m_sensorManager) {
-  logger.debug(F("ResourceM"), F("Sensor-Manager neu erstellen"));
+      logger.debug(F("ResourceM"), F("Sensor-Manager neu erstellen"));
       try {
         m_sensorManager = std::make_unique<SensorManager>();
         if (m_sensorManager) {
           // Use the public init() method from Manager base class
           auto initResult = m_sensorManager->init();
           if (initResult.isSuccess()) {
-            logger.info(F("ResourceM"),
-                        F("Sensor-Manager erfolgreich reinitialisiert"));
+            logger.info(F("ResourceM"), F("Sensor-Manager erfolgreich reinitialisiert"));
           } else {
-      logger.error(F("ResourceM"),
-             String(F("Reinitialisierung des Sensor-Managers fehlgeschlagen: ")) +
-               initResult.getMessage());
-            m_sensorManager.reset();  // Clean up on failure
+            logger.error(F("ResourceM"),
+                         String(F("Reinitialisierung des Sensor-Managers fehlgeschlagen: ")) +
+                             initResult.getMessage());
+            m_sensorManager.reset(); // Clean up on failure
           }
         } else {
           logger.error(F("ResourceM"), F("Zuweisung des Sensor-Managers fehlgeschlagen"));
         }
       } catch (const std::exception& e) {
-        logger.error(
-            F("ResourceM"),
-            String(F("Ausnahme bei Erstellung des Sensor-Managers: ")) + e.what());
+        logger.error(F("ResourceM"),
+                     String(F("Ausnahme bei Erstellung des Sensor-Managers: ")) + e.what());
         m_sensorManager.reset();
       }
     }
@@ -135,7 +130,7 @@ ResourceResult ResourceManager::initMinimalSystem() {
   }
 
 #if USE_WEBSERVER
-  WebManager::getInstance().stop();  // Replace server.stop()
+  WebManager::getInstance().stop(); // Replace server.stop()
 #endif
 
   // Clear WiFi connections
@@ -151,7 +146,7 @@ ResourceResult ResourceManager::initMinimalSystem() {
     CriticalSection cs;
     if (!LittleFS.begin()) {
       return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR,
-                                    F("Dateisystem konnte nicht eingehängt werden"));
+                                  F("Dateisystem konnte nicht eingehängt werden"));
     }
   }
 
@@ -167,8 +162,8 @@ ResourceResult ResourceManager::initMinimalSystem() {
   }
 
   if (WiFi.status() != WL_CONNECTED) {
-  return ResourceResult::fail(ResourceError::WIFI_ERROR,
-                F("WLAN-Verbindung konnte nicht hergestellt werden"));
+    return ResourceResult::fail(ResourceError::WIFI_ERROR,
+                                F("WLAN-Verbindung konnte nicht hergestellt werden"));
   }
 
   logger.initNTP();
@@ -177,7 +172,7 @@ ResourceResult ResourceManager::initMinimalSystem() {
 
 #if USE_WEBSERVER
   logger.info(F("ResourceM"), F(".. initialisiere Webserver"));
-  if (!WebManager::getInstance().begin()) {  // Replace setupWebserver()
+  if (!WebManager::getInstance().begin()) { // Replace setupWebserver()
     logger.error(F("ResourceM"), F("WebManager konnte nicht initialisiert werden"));
     return ResourceResult::fail(ResourceError::WEBSERVER_INIT_FAILED);
   }
@@ -195,16 +190,15 @@ ResourceResult ResourceManager::doFirmwareUpgrade() {
   // Set firmware flag first
   auto configResult = ConfigMgr.setDoFirmwareUpgrade(true);
   if (!configResult.isSuccess()) {
-  logger.error(F("ResourceM"),
-         String(F("Setzen des Firmware-Flags fehlgeschlagen: ")) + configResult.getMessage());
-  return ResourceResult::fail(
-    ResourceError::OPERATION_FAILED,
-    String(F("Setzen des Firmware-Flags fehlgeschlagen: ")) + configResult.getMessage());
+    logger.error(F("ResourceM"), String(F("Setzen des Firmware-Flags fehlgeschlagen: ")) +
+                                     configResult.getMessage());
+    return ResourceResult::fail(ResourceError::OPERATION_FAILED,
+                                String(F("Setzen des Firmware-Flags fehlgeschlagen: ")) +
+                                    configResult.getMessage());
   }
 
   // Enter critical operation mode
-  logger.info(F("ResourceM"),
-              F("Betrete kritischen Modus für Firmware-Upgrade"));
+  logger.info(F("ResourceM"), F("Betrete kritischen Modus für Firmware-Upgrade"));
   auto status = enterCriticalOperation(F("Firmware Upgrade"));
   if (!status.isSuccess()) {
     logger.error(F("ResourceM"), F("Konnte kritischen Modus nicht betreten"));
@@ -213,8 +207,7 @@ ResourceResult ResourceManager::doFirmwareUpgrade() {
   }
 
   // Initialize minimal system
-  logger.info(F("ResourceM"),
-              F("Initializing minimal system for firmware upgrade"));
+  logger.info(F("ResourceM"), F("Initializing minimal system for firmware upgrade"));
   auto initStatus = initMinimalSystem();
   if (!initStatus.isSuccess()) {
     logger.error(F("ResourceM"), F("Initialisierung des minimalen Systems fehlgeschlagen"));
@@ -226,31 +219,24 @@ ResourceResult ResourceManager::doFirmwareUpgrade() {
   // Give time for the system to stabilize
   delay(1000);
 
-  logger.info(F("ResourceM"),
-              F("Vorbereitung für Firmware-Upgrade abgeschlossen, Neustart..."));
+  logger.info(F("ResourceM"), F("Vorbereitung für Firmware-Upgrade abgeschlossen, Neustart..."));
   return ResourceResult::success();
 }
 
 void ResourceManager::logMemoryStatus(const String& phase) {
   uint32_t freeHeap = ESP.getFreeHeap();
   uint32_t maxFreeBlock = ESP.getMaxFreeBlockSize();
-  float fragmentation =
-      100.0f - ((float)maxFreeBlock / (float)freeHeap) * 100.0f;
+  float fragmentation = 100.0f - ((float)maxFreeBlock / (float)freeHeap) * 100.0f;
 
   logger.debug(F("ResourceM"), F("Speicherstatistiken [") + phase + F("]:"));
+  logger.debug(F("ResourceM"), F("- Freier Heap: ") + String(freeHeap) + F(" Bytes"));
+  logger.debug(F("ResourceM"), F("- Größter freier Block: ") + String(maxFreeBlock) + F(" Bytes"));
+  logger.debug(F("ResourceM"), F("- Fragmentierung: ") + String(fragmentation, 0) + F("%"));
   logger.debug(F("ResourceM"),
-         F("- Freier Heap: ") + String(freeHeap) + F(" Bytes"));
-  logger.debug(F("ResourceM"),
-         F("- Größter freier Block: ") + String(maxFreeBlock) + F(" Bytes"));
-  logger.debug(F("ResourceM"),
-         F("- Fragmentierung: ") + String(fragmentation, 0) + F("%"));
-  logger.debug(
-    F("ResourceM"),
-    F("- Freier Cont-Stack: ") + String(ESP.getFreeContStack()) + F(" Bytes"));
-  logger.debug(F("ResourceM"),
-         F("- Freier Stack: ") +
-           String(ESP.getFreeHeap() - ESP.getHeapFragmentation()) +
-           F(" Bytes"));
+               F("- Freier Cont-Stack: ") + String(ESP.getFreeContStack()) + F(" Bytes"));
+  logger.debug(F("ResourceM"), F("- Freier Stack: ") +
+                                   String(ESP.getFreeHeap() - ESP.getHeapFragmentation()) +
+                                   F(" Bytes"));
 }
 
 void ResourceManager::cleanup() {

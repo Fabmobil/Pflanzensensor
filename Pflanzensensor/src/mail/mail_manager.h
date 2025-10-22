@@ -23,7 +23,7 @@ class WiFiClientSecure;
 
 // Forward declarations for ReadyMail
 namespace ReadyMailSMTP {
-  class SMTPClient;
+class SMTPClient;
 }
 
 /**
@@ -32,7 +32,7 @@ namespace ReadyMailSMTP {
  * @details Singleton-Manager der das Senden von E-Mails über SMTP ermöglicht
  */
 class MailManager : public Manager {
- public:
+public:
   /**
    * @brief Get singleton instance
    * @return Reference to MailManager instance
@@ -60,17 +60,16 @@ class MailManager : public Manager {
    * @param threshold Grenzwert
    * @return ResourceResult mit Erfolgsstatus
    */
-  ResourceResult sendSensorAlarm(const String& sensorName, float value,
-                                float threshold);
+  ResourceResult sendSensorAlarm(const String& sensorName, float value, float threshold);
 
- protected:
+protected:
   /**
    * @brief Initialize the mail manager
    * @return ResourceResult indicating success or failure
    */
   TypedResult<ResourceError, void> initialize() override;
 
- private:
+private:
   /**
    * @brief Konstruktor (Singleton)
    */
@@ -91,12 +90,12 @@ class MailManager : public Manager {
    * @param useDirectSSL Whether to use direct SSL connection
    * @return ResourceResult indicating success or failure
    */
-  ResourceResult performSMTPOperations(ReadyMailSMTP::SMTPClient& smtp,
-                                      const String& host, uint16_t port,
-                                      const String& username, const String& password,
-                                      const String& senderName, const String& senderEmail,
-                                      const String& recipient, const String& subject,
-                                      const String& message, bool useDirectSSL);
+  ResourceResult performSMTPOperations(ReadyMailSMTP::SMTPClient& smtp, const String& host,
+                                       uint16_t port, const String& username,
+                                       const String& password, const String& senderName,
+                                       const String& senderEmail, const String& recipient,
+                                       const String& subject, const String& message,
+                                       bool useDirectSSL);
 
   static MailManager* s_instance; ///< Singleton instance
   bool m_initialized = false;     ///< Initialisierungsstatus

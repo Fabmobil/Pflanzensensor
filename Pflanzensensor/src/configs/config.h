@@ -6,7 +6,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define VERSION "2.24.0"  // Software version
+#define VERSION "2.24.0" // Software version
 
 #ifdef CONFIG_FILE
 #include CONFIG_FILE
@@ -14,4 +14,4 @@
 #error "No CONFIG_FILE defined. Please define it in your build environment."
 #endif
 
-#endif  // CONFIG_H
+#endif // CONFIG_H

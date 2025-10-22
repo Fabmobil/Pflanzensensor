@@ -38,9 +38,9 @@ using MiddlewareCallback = std::function<bool(HTTPMethod, String)>;
  *          - Handler function
  */
 struct Route {
-  String url;               ///< URL pattern to match
-  HTTPMethod method;        ///< HTTP method to match
-  HandlerCallback handler;  ///< Function to handle the route
+  String url;              ///< URL pattern to match
+  HTTPMethod method;       ///< HTTP method to match
+  HandlerCallback handler; ///< Function to handle the route
 
   /**
    * @brief Constructor for Route
@@ -50,9 +50,7 @@ struct Route {
    * @details Uses move semantics for efficient handler storage
    */
   Route(const String& u, HTTPMethod m, HandlerCallback h)
-      : url(u),
-        method(m),
-        handler(std::move(h)) {}  // Use move semantics for handler
+      : url(u), method(m), handler(std::move(h)) {} // Use move semantics for handler
 };
 
 /**
@@ -66,7 +64,7 @@ struct Route {
  *          - Static file serving
  */
 class WebRouter {
- public:
+public:
   // Configuration constants
   /// Maximum total routes based on enabled sensors
   static constexpr size_t MAX_ROUTES = 50;
@@ -103,8 +101,7 @@ class WebRouter {
    *          - Checks route limits
    *          - Ensures unique routes
    */
-  RouterResult addRoute(HTTPMethod method, const String& url,
-                        HandlerCallback handler);
+  RouterResult addRoute(HTTPMethod method, const String& url, HandlerCallback handler);
 
   /**
    * @brief Add middleware function
@@ -127,8 +124,7 @@ class WebRouter {
    *          - Cache control
    *          - File system integration
    */
-  void serveStatic(const String& urlPrefix, fs::FS& fs, const String& path,
-                   bool cache = true);
+  void serveStatic(const String& urlPrefix, fs::FS& fs, const String& path, bool cache = true);
 
   /**
    * @brief Handle incoming HTTP request
@@ -176,15 +172,13 @@ class WebRouter {
    *          - Ensures system stability
    */
   bool isHealthy() const {
-    return ESP.getFreeHeap() >= MIN_FREE_HEAP &&
-           ESP.getHeapFragmentation() < 70;
+    return ESP.getFreeHeap() >= MIN_FREE_HEAP && ESP.getHeapFragmentation() < 70;
   }
 
- private:
-  ESP8266WebServer& _server;   ///< Reference to web server
-  std::vector<Route> _routes;  ///< Collection of registered routes
-  std::vector<MiddlewareCallback>
-      _middleware;  ///< Registered middleware functions
+private:
+  ESP8266WebServer& _server;                   ///< Reference to web server
+  std::vector<Route> _routes;                  ///< Collection of registered routes
+  std::vector<MiddlewareCallback> _middleware; ///< Registered middleware functions
 
   /**
    * @brief Check if route limit is exceeded
@@ -198,9 +192,7 @@ class WebRouter {
    * @return true if at middleware limit, false otherwise
    * @details Ensures middleware stack stays within limits
    */
-  bool exceedsMiddlewareLimit() const {
-    return _middleware.size() >= MAX_MIDDLEWARE;
-  }
+  bool exceedsMiddlewareLimit() const { return _middleware.size() >= MAX_MIDDLEWARE; }
 
   /**
    * @brief Execute middleware chain
@@ -247,4 +239,4 @@ class WebRouter {
   bool hasEnoughMemory() const { return ESP.getFreeHeap() >= MIN_FREE_HEAP; }
 };
 
-#endif  // WEB_ROUTER_H
+#endif // WEB_ROUTER_H

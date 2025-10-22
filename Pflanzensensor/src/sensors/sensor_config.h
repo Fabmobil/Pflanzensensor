@@ -26,17 +26,16 @@
  * calibration values, thresholds, and operational parameters.
  */
 struct AnalogSensorDefaults {
-  const char* name;       ///< Sensor name for identification
-  const char* fieldName;  ///< Field name used for data storage/display
-  int rawMin;             ///< Minimum raw analog value (typically 0)
-  int rawMax;             ///< Maximum raw analog value (typically 1023)
-  float yellowLow;        ///< Lower yellow warning threshold
-  float greenLow;         ///< Lower green (normal) threshold
-  float greenHigh;        ///< Upper green (normal) threshold
-  float yellowHigh;       ///< Upper yellow warning threshold
-  unsigned long
-      measurementInterval;  ///< Time between measurements in milliseconds
-  bool calibrationMode;     ///< Whether sensor is in calibration mode
+  const char* name;                  ///< Sensor name for identification
+  const char* fieldName;             ///< Field name used for data storage/display
+  int rawMin;                        ///< Minimum raw analog value (typically 0)
+  int rawMax;                        ///< Maximum raw analog value (typically 1023)
+  float yellowLow;                   ///< Lower yellow warning threshold
+  float greenLow;                    ///< Lower green (normal) threshold
+  float greenHigh;                   ///< Upper green (normal) threshold
+  float yellowHigh;                  ///< Upper yellow warning threshold
+  unsigned long measurementInterval; ///< Time between measurements in milliseconds
+  bool calibrationMode;              ///< Whether sensor is in calibration mode
 
   /**
    * @brief Constructor for AnalogSensorDefaults
@@ -51,9 +50,8 @@ struct AnalogSensorDefaults {
    * @param mi Measurement interval in milliseconds
    * @param cal Calibration mode flag
    */
-  AnalogSensorDefaults(const char* n = "", const char* f = "", int rmin = 0,
-                       int rmax = 1023, float yl = 0.0f, float gl = 0.0f,
-                       float gh = 100.0f, float yh = 100.0f,
+  AnalogSensorDefaults(const char* n = "", const char* f = "", int rmin = 0, int rmax = 1023,
+                       float yl = 0.0f, float gl = 0.0f, float gh = 100.0f, float yh = 100.0f,
                        unsigned long mi = 60000, bool cal = false)
       : name(n),
         fieldName(f),
@@ -73,13 +71,13 @@ struct AnalogSensorDefaults {
  * including thresholds and measurement timing.
  */
 struct DS18B20SensorDefaults {
-  const char* name;                   ///< Sensor name
-  const char* fieldName;              ///< Field name for measurements
-  float yellowLow;                    ///< Lower yellow threshold
-  float greenLow;                     ///< Lower green threshold
-  float greenHigh;                    ///< Upper green threshold
-  float yellowHigh;                   ///< Upper yellow threshold
-  unsigned long measurementInterval;  ///< Measurement interval in milliseconds
+  const char* name;                  ///< Sensor name
+  const char* fieldName;             ///< Field name for measurements
+  float yellowLow;                   ///< Lower yellow threshold
+  float greenLow;                    ///< Lower green threshold
+  float greenHigh;                   ///< Upper green threshold
+  float yellowHigh;                  ///< Upper yellow threshold
+  unsigned long measurementInterval; ///< Measurement interval in milliseconds
 };
 
 /**
@@ -89,12 +87,11 @@ struct DS18B20SensorDefaults {
  * @note Requires corresponding configuration defines (ANALOG_N_*) to be set
  * in the config file
  */
-#define ANALOG_SENSOR_DEFAULT(N)                                         \
-  AnalogSensorDefaults(                                                  \
-      ANALOG_##N##_NAME, ANALOG_##N##_FIELD_NAME, ANALOG_##N##_MIN,      \
-      ANALOG_##N##_MAX, ANALOG_##N##_YELLOW_LOW, ANALOG_##N##_GREEN_LOW, \
-      ANALOG_##N##_GREEN_HIGH, ANALOG_##N##_YELLOW_HIGH,                 \
-      MEASUREMENT_INTERVAL * 1000, ANALOG_##N##_CALIBRATION_MODE)
+#define ANALOG_SENSOR_DEFAULT(N)                                                                   \
+  AnalogSensorDefaults(ANALOG_##N##_NAME, ANALOG_##N##_FIELD_NAME, ANALOG_##N##_MIN,               \
+                       ANALOG_##N##_MAX, ANALOG_##N##_YELLOW_LOW, ANALOG_##N##_GREEN_LOW,          \
+                       ANALOG_##N##_GREEN_HIGH, ANALOG_##N##_YELLOW_HIGH,                          \
+                       MEASUREMENT_INTERVAL * 1000, ANALOG_##N##_CALIBRATION_MODE)
 
 /**
  * @brief Helper macro to create DS18B20 sensor defaults from index
@@ -103,11 +100,11 @@ struct DS18B20SensorDefaults {
  * @note Requires corresponding configuration defines (DS18B20_N_*) to be set
  * in the config file
  */
-#define DS18B20_SENSOR_DEFAULT(N)                                            \
-  {                                                                          \
-    DS18B20_##N##_NAME, DS18B20_##N##_FIELD_NAME, DS18B20_##N##_YELLOW_LOW,  \
-        DS18B20_##N##_GREEN_LOW, DS18B20_##N##_GREEN_HIGH,                   \
-        DS18B20_##N##_YELLOW_HIGH, DS18B20_##N##_MEASUREMENT_INTERVAL * 1000 \
+#define DS18B20_SENSOR_DEFAULT(N)                                                                  \
+  {                                                                                                \
+    DS18B20_##N##_NAME, DS18B20_##N##_FIELD_NAME, DS18B20_##N##_YELLOW_LOW,                        \
+        DS18B20_##N##_GREEN_LOW, DS18B20_##N##_GREEN_HIGH, DS18B20_##N##_YELLOW_HIGH,              \
+        DS18B20_##N##_MEASUREMENT_INTERVAL * 1000                                                  \
   }
 
 // Ensure we have the required configuration defines
@@ -159,35 +156,34 @@ const AnalogSensorDefaults ANALOG_SENSOR_DEFAULTS[] = {ANALOG_SENSOR_DEFAULT(1)
 /**
  * @brief Global array of DS18B20 sensor defaults
  */
-const DS18B20SensorDefaults DS18B20_SENSOR_DEFAULTS[] = {
-    DS18B20_SENSOR_DEFAULT(1)
+const DS18B20SensorDefaults DS18B20_SENSOR_DEFAULTS[] = {DS18B20_SENSOR_DEFAULT(1)
 #if DS18B20_SENSOR_COUNT > 1
-        ,
-    DS18B20_SENSOR_DEFAULT(2)
+                                                             ,
+                                                         DS18B20_SENSOR_DEFAULT(2)
 #endif
 #if DS18B20_SENSOR_COUNT > 2
-        ,
-    DS18B20_SENSOR_DEFAULT(3)
+                                                             ,
+                                                         DS18B20_SENSOR_DEFAULT(3)
 #endif
 #if DS18B20_SENSOR_COUNT > 3
-        ,
-    DS18B20_SENSOR_DEFAULT(4)
+                                                             ,
+                                                         DS18B20_SENSOR_DEFAULT(4)
 #endif
 #if DS18B20_SENSOR_COUNT > 4
-        ,
-    DS18B20_SENSOR_DEFAULT(5)
+                                                             ,
+                                                         DS18B20_SENSOR_DEFAULT(5)
 #endif
 #if DS18B20_SENSOR_COUNT > 5
-        ,
-    DS18B20_SENSOR_DEFAULT(6)
+                                                             ,
+                                                         DS18B20_SENSOR_DEFAULT(6)
 #endif
 #if DS18B20_SENSOR_COUNT > 6
-        ,
-    DS18B20_SENSOR_DEFAULT(7)
+                                                             ,
+                                                         DS18B20_SENSOR_DEFAULT(7)
 #endif
 #if DS18B20_SENSOR_COUNT > 7
-        ,
-    DS18B20_SENSOR_DEFAULT(8)
+                                                             ,
+                                                         DS18B20_SENSOR_DEFAULT(8)
 #endif
 };
 #endif
@@ -218,4 +214,4 @@ constexpr size_t getDS18B20SensorCount() {
 #endif
 }
 
-#endif  // SENSOR_CONFIG_H
+#endif // SENSOR_CONFIG_H

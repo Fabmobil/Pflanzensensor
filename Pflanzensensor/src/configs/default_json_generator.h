@@ -11,4 +11,4 @@
  */
 void ensureConfigFilesExist();
 
-#endif  // DEFAULT_JSON_GENERATOR_H
+#endif // DEFAULT_JSON_GENERATOR_H

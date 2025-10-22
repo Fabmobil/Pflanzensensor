@@ -33,7 +33,7 @@
  * compilation for different sensor types.
  */
 class SensorFactory {
- public:
+public:
   /** @typedef SensorResult
    *  @brief Type alias for sensor operation results
    */
@@ -53,11 +53,10 @@ class SensorFactory {
    * @see createMHZ19Sensors()
    * @see createSDS011Sensors()
    */
-  static SensorResult createAllSensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      class SensorManager* sensorManager);
+  static SensorResult createAllSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                       class SensorManager* sensorManager);
 
- private:
+private:
   /**
    * @brief Creates and initializes DHT temperature/humidity sensors
    * @param sensors Vector to store the created DHT sensors
@@ -65,9 +64,8 @@ class SensorFactory {
    * @details Creates DHT sensors based on configuration if USE_DHT is defined.
    *          Handles both DHT11 and DHT22 sensor types.
    */
-  static SensorResult createDHTSensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager);
+  static SensorResult createDHTSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                       SensorManager* sensorManager);
 
   /**
    * @brief Creates and initializes analog sensors
@@ -77,9 +75,8 @@ class SensorFactory {
    *          Supports various analog sensor types with configurable scaling
    *          and calibration.
    */
-  static SensorResult createAnalogSensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager);
+  static SensorResult createAnalogSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                          SensorManager* sensorManager);
 
   /**
    * @brief Initializes a single sensor instance
@@ -112,24 +109,19 @@ class SensorFactory {
 
   // Memory-optimized sensor creation helper functions
 #if USE_DHT
-  static void addDHTSensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager,
-      std::vector<String>& errors);
+  static void addDHTSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                            SensorManager* sensorManager, std::vector<String>& errors);
 #endif
 
 #if USE_ANALOG
-  static void addAnalogSensors(
-      std::vector<std::unique_ptr<Sensor>>& sensors,
-      SensorManager* sensorManager,
-      std::vector<String>& errors);
+  static void addAnalogSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                               SensorManager* sensorManager, std::vector<String>& errors);
 #endif
 
   // Prevent instantiation
-  SensorFactory() = delete;  ///< Default constructor disabled
-  SensorFactory(const SensorFactory&) = delete;  ///< Copy constructor disabled
-  SensorFactory& operator=(const SensorFactory&) =
-      delete;  ///< Assignment operator disabled
+  SensorFactory() = delete;                                ///< Default constructor disabled
+  SensorFactory(const SensorFactory&) = delete;            ///< Copy constructor disabled
+  SensorFactory& operator=(const SensorFactory&) = delete; ///< Assignment operator disabled
 };
 
-#endif  // SENSOR_FACTORY_H
+#endif // SENSOR_FACTORY_H

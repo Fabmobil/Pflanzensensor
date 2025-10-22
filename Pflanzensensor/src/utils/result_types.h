@@ -19,7 +19,7 @@
  *          requiring string conversion functionality.
  */
 class ErrorBase {
- public:
+public:
   /**
    * @brief Returns the error description as a String
    * @return String containing the error description
@@ -33,23 +33,23 @@ class ErrorBase {
  * @brief Enumeration of resource management errors
  */
 enum class ResourceError {
-  SUCCESS,                ///< Operation completed successfully
-  PARTIAL_SUCCESS,        ///< Operation partially succeeded
-  ALREADY_IN_CRITICAL,    ///< Resource is already in critical section
-  INSUFFICIENT_MEMORY,    ///< Not enough memory available
-  FILESYSTEM_ERROR,       ///< Error accessing filesystem
-  OPERATION_FAILED,       ///< Generic operation failure
-  UNKNOWN_ERROR,          ///< Unspecified error
-  INVALID_STATE,          ///< Resource is in invalid state
-  WIFI_ERROR,             ///< WiFi-related error
-  WEBSERVER_INIT_FAILED,  ///< Web server initialization failed
-  CONFIG_ERROR,           ///< Configuration error
-  RESOURCE_ERROR,         ///< Generic resource error
-  TIME_SYNC_ERROR,        ///< Time synchronization failed
-  INFLUXDB_ERROR,         ///< InfluxDB operation failed
-  WEBSERVER_ERROR,        ///< Web server operation failed
-  WEBSOCKET_ERROR,        ///< WebSocket operation failed
-  VALIDATION_ERROR        ///< Invalid parameters or input validation failed
+  SUCCESS,               ///< Operation completed successfully
+  PARTIAL_SUCCESS,       ///< Operation partially succeeded
+  ALREADY_IN_CRITICAL,   ///< Resource is already in critical section
+  INSUFFICIENT_MEMORY,   ///< Not enough memory available
+  FILESYSTEM_ERROR,      ///< Error accessing filesystem
+  OPERATION_FAILED,      ///< Generic operation failure
+  UNKNOWN_ERROR,         ///< Unspecified error
+  INVALID_STATE,         ///< Resource is in invalid state
+  WIFI_ERROR,            ///< WiFi-related error
+  WEBSERVER_INIT_FAILED, ///< Web server initialization failed
+  CONFIG_ERROR,          ///< Configuration error
+  RESOURCE_ERROR,        ///< Generic resource error
+  TIME_SYNC_ERROR,       ///< Time synchronization failed
+  INFLUXDB_ERROR,        ///< InfluxDB operation failed
+  WEBSERVER_ERROR,       ///< Web server operation failed
+  WEBSOCKET_ERROR,       ///< WebSocket operation failed
+  VALIDATION_ERROR       ///< Invalid parameters or input validation failed
 };
 
 /**
@@ -57,17 +57,17 @@ enum class ResourceError {
  * @brief Enumeration of sensor-related errors
  */
 enum class SensorError {
-  SUCCESS,               ///< Operation completed successfully
-  PARTIAL_SUCCESS,       ///< Operation partially succeeded
-  INITIALIZATION_ERROR,  ///< Sensor initialization failed
-  VALIDATION_ERROR,      ///< Invalid sensor parameters
-  MEASUREMENT_ERROR,     ///< Error during measurement
-  RESOURCE_ERROR,        ///< Resource allocation error
-  MEMORY_ERROR,          ///< Memory allocation or corruption error
-  UNKNOWN_ERROR,         ///< Unspecified error
-  CONFIG_ERROR,          ///< Configuration error
-  INVALID_STATE,         ///< Sensor is in invalid state
-  PENDING                ///< Measurement is in progress, not yet complete
+  SUCCESS,              ///< Operation completed successfully
+  PARTIAL_SUCCESS,      ///< Operation partially succeeded
+  INITIALIZATION_ERROR, ///< Sensor initialization failed
+  VALIDATION_ERROR,     ///< Invalid sensor parameters
+  MEASUREMENT_ERROR,    ///< Error during measurement
+  RESOURCE_ERROR,       ///< Resource allocation error
+  MEMORY_ERROR,         ///< Memory allocation or corruption error
+  UNKNOWN_ERROR,        ///< Unspecified error
+  CONFIG_ERROR,         ///< Configuration error
+  INVALID_STATE,        ///< Sensor is in invalid state
+  PENDING               ///< Measurement is in progress, not yet complete
 };
 
 /**
@@ -75,12 +75,12 @@ enum class SensorError {
  * @brief Enumeration of configuration-related errors
  */
 enum class ConfigError {
-  SUCCESS,           ///< Operation completed successfully
-  VALIDATION_ERROR,  ///< Invalid configuration parameters
-  FILE_ERROR,        ///< Error accessing configuration file
-  PARSE_ERROR,       ///< Error parsing configuration file
-  UNKNOWN_ERROR,     ///< Unspecified error
-  SAVE_FAILED        ///< Failed to save configuration
+  SUCCESS,          ///< Operation completed successfully
+  VALIDATION_ERROR, ///< Invalid configuration parameters
+  FILE_ERROR,       ///< Error accessing configuration file
+  PARSE_ERROR,      ///< Error parsing configuration file
+  UNKNOWN_ERROR,    ///< Unspecified error
+  SAVE_FAILED       ///< Failed to save configuration
 };
 
 /**
@@ -88,14 +88,14 @@ enum class ConfigError {
  * @brief Enumeration of display-related errors
  */
 enum class DisplayError {
-  SUCCESS,               ///< Operation completed successfully
-  INITIALIZATION_ERROR,  ///< Display initialization failed
-  VALIDATION_ERROR,      ///< Invalid display parameters
-  FILE_ERROR,            ///< Error accessing display resources
-  DISPLAY_ERROR,         ///< Generic display error
-  UNKNOWN_ERROR,         ///< Unspecified error
-  INVALID_CONFIG,        ///< Invalid display configuration
-  INVALID_STATE          ///< Invalid state for display operation
+  SUCCESS,              ///< Operation completed successfully
+  INITIALIZATION_ERROR, ///< Display initialization failed
+  VALIDATION_ERROR,     ///< Invalid display parameters
+  FILE_ERROR,           ///< Error accessing display resources
+  DISPLAY_ERROR,        ///< Generic display error
+  UNKNOWN_ERROR,        ///< Unspecified error
+  INVALID_CONFIG,       ///< Invalid display configuration
+  INVALID_STATE         ///< Invalid state for display operation
 };
 
 /**
@@ -103,16 +103,16 @@ enum class DisplayError {
  * @brief Enumeration of router-related errors
  */
 enum class RouterError {
-  INVALID_ROUTE,        ///< Route not found or invalid
-  INVALID_HANDLER,      ///< Handler not properly configured
-  DUPLICATE_ROUTE,      ///< Route already exists
-  NOT_FOUND,            ///< Resource not found
-  OPERATION_FAILED,     ///< Generic operation failure
-  REGISTRATION_FAILED,  ///< Failed to register route
-  INVALID_METHOD,       ///< Invalid HTTP method
-  INTERNAL_ERROR,       ///< Internal router error
-  RESOURCE_ERROR,       ///< Resource allocation error
-  INITIALIZATION_ERROR  ///< Initialization failed
+  INVALID_ROUTE,       ///< Route not found or invalid
+  INVALID_HANDLER,     ///< Handler not properly configured
+  DUPLICATE_ROUTE,     ///< Route already exists
+  NOT_FOUND,           ///< Resource not found
+  OPERATION_FAILED,    ///< Generic operation failure
+  REGISTRATION_FAILED, ///< Failed to register route
+  INVALID_METHOD,      ///< Invalid HTTP method
+  INTERNAL_ERROR,      ///< Internal router error
+  RESOURCE_ERROR,      ///< Resource allocation error
+  INITIALIZATION_ERROR ///< Initialization failed
 };
 
 /**
@@ -120,17 +120,16 @@ enum class RouterError {
  * @brief Enumeration of request handler errors
  */
 enum class HandlerError {
-  INVALID_REQUEST,      ///< Invalid request parameters
-  UNAUTHORIZED,         ///< Authentication required
-  NOT_FOUND,            ///< Resource not found
-  INTERNAL_ERROR,       ///< Internal handler error
-  VALIDATION_ERROR,     ///< Invalid input parameters
-  DATABASE_ERROR,       ///< Database operation error
-  INITIALIZATION_ERROR  ///< Handler initialization failed
+  INVALID_REQUEST,     ///< Invalid request parameters
+  UNAUTHORIZED,        ///< Authentication required
+  NOT_FOUND,           ///< Resource not found
+  INTERNAL_ERROR,      ///< Internal handler error
+  VALIDATION_ERROR,    ///< Invalid input parameters
+  DATABASE_ERROR,      ///< Database operation error
+  INITIALIZATION_ERROR ///< Handler initialization failed
 };
 
-template <typename ErrorType, typename T>
-class TypedResult;
+template <typename ErrorType, typename T> class TypedResult;
 
 /**
  * @brief Global operator for result negation
@@ -139,8 +138,7 @@ class TypedResult;
  * @param result Result to check
  * @return true if result is not successful
  */
-template <typename ErrorType, typename T>
-bool operator!(const TypedResult<ErrorType, T>& result) {
+template <typename ErrorType, typename T> bool operator!(const TypedResult<ErrorType, T>& result) {
   return !result.isSuccess();
 }
 
@@ -153,9 +151,8 @@ bool operator!(const TypedResult<ErrorType, T>& result) {
  *          including success/failure status, error information,
  *          and optional result data.
  */
-template <typename ErrorType, typename T>
-class TypedResult {
- public:
+template <typename ErrorType, typename T> class TypedResult {
+public:
   /**
    * @brief Creates a successful result without data
    * @return A successful TypedResult
@@ -214,7 +211,8 @@ class TypedResult {
    * @return String containing error type and message
    */
   String getFullErrorMessage() const {
-    if (!isError()) return "";
+    if (!isError())
+      return "";
     String msg = errorTypeToString(error_.value());
     if (!errorMessage_.isEmpty()) {
       msg += ": " + errorMessage_;
@@ -227,8 +225,7 @@ class TypedResult {
    * @param handler Function to execute if result is error
    * @return Reference to this result
    */
-  template <typename Func>
-  TypedResult& onError(Func&& handler) {
+  template <typename Func> TypedResult& onError(Func&& handler) {
     if (isError()) {
       handler(*this);
     }
@@ -240,18 +237,17 @@ class TypedResult {
    * @param handler Function to execute if result is success
    * @return Reference to this result
    */
-  template <typename Func>
-  TypedResult& onSuccess(Func&& handler) {
+  template <typename Func> TypedResult& onSuccess(Func&& handler) {
     if (isSuccess()) {
       handler(*this);
     }
     return *this;
   }
 
- private:
-  std::optional<ErrorType> error_;  ///< Optional error value
-  String errorMessage_;             ///< Error message if any
-  std::optional<T> data_;           ///< Optional result data
+private:
+  std::optional<ErrorType> error_; ///< Optional error value
+  String errorMessage_;            ///< Error message if any
+  std::optional<T> data_;          ///< Optional result data
 
   TypedResult() : error_(std::nullopt), data_(std::nullopt) {}
   TypedResult(const T& data) : error_(std::nullopt), data_(data) {}
@@ -266,9 +262,8 @@ class TypedResult {
  * @details Handles operations that don't return data,
  *          only success/failure status.
  */
-template <typename ErrorType>
-class TypedResult<ErrorType, void> {
- public:
+template <typename ErrorType> class TypedResult<ErrorType, void> {
+public:
   /**
    * @brief Creates a successful result
    * @return A successful TypedResult
@@ -331,7 +326,8 @@ class TypedResult<ErrorType, void> {
    * @return String containing error type and message
    */
   String getFullErrorMessage() const {
-    if (!isError()) return "";
+    if (!isError())
+      return "";
     String msg = errorTypeToString(error_.value());
     if (!errorMessage_.isEmpty()) {
       msg += ": " + errorMessage_;
@@ -344,8 +340,7 @@ class TypedResult<ErrorType, void> {
    * @param handler Function to execute if result is error
    * @return Reference to this result
    */
-  template <typename Func>
-  TypedResult& onError(Func&& handler) {
+  template <typename Func> TypedResult& onError(Func&& handler) {
     if (isError()) {
       handler(*this);
     }
@@ -357,17 +352,16 @@ class TypedResult<ErrorType, void> {
    * @param handler Function to execute if result is success
    * @return Reference to this result
    */
-  template <typename Func>
-  TypedResult& onSuccess(Func&& handler) {
+  template <typename Func> TypedResult& onSuccess(Func&& handler) {
     if (isSuccess()) {
       handler(*this);
     }
     return *this;
   }
 
- private:
-  std::optional<ErrorType> error_;  ///< Optional error value
-  String errorMessage_;             ///< Error message if any
+private:
+  std::optional<ErrorType> error_; ///< Optional error value
+  String errorMessage_;            ///< Error message if any
 
   TypedResult() : error_(std::nullopt) {}
   TypedResult(ErrorType error, const String& message = "")
@@ -381,90 +375,90 @@ class TypedResult<ErrorType, void> {
  */
 inline String errorTypeToString(HandlerError error) {
   switch (error) {
-    case HandlerError::INVALID_REQUEST:
-      return F("Invalid Request");
-    case HandlerError::UNAUTHORIZED:
-      return F("Unauthorized");
-    case HandlerError::NOT_FOUND:
-      return F("Not Found");
-    case HandlerError::INTERNAL_ERROR:
-      return F("Internal Server Error");
-    case HandlerError::VALIDATION_ERROR:
-      return F("Validation Error");
-    case HandlerError::DATABASE_ERROR:
-      return F("Database Error");
-    case HandlerError::INITIALIZATION_ERROR:
-      return F("Initialization Error");
-    default:
-      return F("Unknown Handler Error");
+  case HandlerError::INVALID_REQUEST:
+    return F("Invalid Request");
+  case HandlerError::UNAUTHORIZED:
+    return F("Unauthorized");
+  case HandlerError::NOT_FOUND:
+    return F("Not Found");
+  case HandlerError::INTERNAL_ERROR:
+    return F("Internal Server Error");
+  case HandlerError::VALIDATION_ERROR:
+    return F("Validation Error");
+  case HandlerError::DATABASE_ERROR:
+    return F("Database Error");
+  case HandlerError::INITIALIZATION_ERROR:
+    return F("Initialization Error");
+  default:
+    return F("Unknown Handler Error");
   }
 }
 
 inline String errorTypeToString(SensorError error) {
   switch (error) {
-    case SensorError::SUCCESS:
-      return F("Success");
-    case SensorError::PARTIAL_SUCCESS:
-      return F("Partial Success");
-    case SensorError::INITIALIZATION_ERROR:
-      return F("Initialization Error");
-    case SensorError::VALIDATION_ERROR:
-      return F("Validation Error");
-    case SensorError::MEASUREMENT_ERROR:
-      return F("Measurement Error");
-    case SensorError::RESOURCE_ERROR:
-      return F("Resource Error");
-    case SensorError::MEMORY_ERROR:
-      return F("Memory Error");
-    case SensorError::CONFIG_ERROR:
-      return F("Configuration Error");
-    case SensorError::INVALID_STATE:
-      return F("Invalid State");
-    case SensorError::PENDING:
-      return F("Pending");
-    default:
-      return F("Unknown Sensor Error");
+  case SensorError::SUCCESS:
+    return F("Success");
+  case SensorError::PARTIAL_SUCCESS:
+    return F("Partial Success");
+  case SensorError::INITIALIZATION_ERROR:
+    return F("Initialization Error");
+  case SensorError::VALIDATION_ERROR:
+    return F("Validation Error");
+  case SensorError::MEASUREMENT_ERROR:
+    return F("Measurement Error");
+  case SensorError::RESOURCE_ERROR:
+    return F("Resource Error");
+  case SensorError::MEMORY_ERROR:
+    return F("Memory Error");
+  case SensorError::CONFIG_ERROR:
+    return F("Configuration Error");
+  case SensorError::INVALID_STATE:
+    return F("Invalid State");
+  case SensorError::PENDING:
+    return F("Pending");
+  default:
+    return F("Unknown Sensor Error");
   }
 }
 
 inline String errorTypeToString(ResourceError error) {
   switch (error) {
-    case ResourceError::SUCCESS:
-      return F("Success");
-    case ResourceError::PARTIAL_SUCCESS:
-      return F("Partial Success");
-    case ResourceError::ALREADY_IN_CRITICAL:
-      return F("Already in Critical Operation");
-    case ResourceError::INSUFFICIENT_MEMORY:
-      return F("Insufficient Memory");
-    case ResourceError::FILESYSTEM_ERROR:
-      return F("Filesystem Error");
-    case ResourceError::OPERATION_FAILED:
-      return F("Operation Failed");
-    case ResourceError::UNKNOWN_ERROR:
-      return F("Unknown Error");
-    case ResourceError::INVALID_STATE:
-      return F("Invalid State");
-    case ResourceError::WIFI_ERROR:
-      return F("WiFi Error");
-    case ResourceError::WEBSERVER_INIT_FAILED:
-      return F("Web Server Init Failed");
-    case ResourceError::CONFIG_ERROR:
-      return F("Configuration Error");
-    case ResourceError::RESOURCE_ERROR:
-      return F("Resource Error");
-    case ResourceError::TIME_SYNC_ERROR:
-      return F("Time Sync Error");
-    case ResourceError::INFLUXDB_ERROR:
-      return F("InfluxDB Error");
-    case ResourceError::WEBSERVER_ERROR:
-      return F("Web Server Error");
-    case ResourceError::WEBSOCKET_ERROR:
-      return F("WebSocket Error");
-    case ResourceError::VALIDATION_ERROR:
-      return F("Validation Error");
-    default:
-      return F("Unknown Resource Error");
+  case ResourceError::SUCCESS:
+    return F("Success");
+  case ResourceError::PARTIAL_SUCCESS:
+    return F("Partial Success");
+  case ResourceError::ALREADY_IN_CRITICAL:
+    return F("Already in Critical Operation");
+  case ResourceError::INSUFFICIENT_MEMORY:
+    return F("Insufficient Memory");
+  case ResourceError::FILESYSTEM_ERROR:
+    return F("Filesystem Error");
+  case ResourceError::OPERATION_FAILED:
+    return F("Operation Failed");
+  case ResourceError::UNKNOWN_ERROR:
+    return F("Unknown Error");
+  case ResourceError::INVALID_STATE:
+    return F("Invalid State");
+  case ResourceError::WIFI_ERROR:
+    return F("WiFi Error");
+  case ResourceError::WEBSERVER_INIT_FAILED:
+    return F("Web Server Init Failed");
+  case ResourceError::CONFIG_ERROR:
+    return F("Configuration Error");
+  case ResourceError::RESOURCE_ERROR:
+    return F("Resource Error");
+  case ResourceError::TIME_SYNC_ERROR:
+    return F("Time Sync Error");
+  case ResourceError::INFLUXDB_ERROR:
+    return F("InfluxDB Error");
+  case ResourceError::WEBSERVER_ERROR:
+    return F("Web Server Error");
+  case ResourceError::WEBSOCKET_ERROR:
+    return F("WebSocket Error");
+  case ResourceError::VALIDATION_ERROR:
+    return F("Validation Error");
+  default:
+    return F("Unknown Resource Error");
   }
 }
 
@@ -475,28 +469,28 @@ inline String errorTypeToString(ResourceError error) {
  */
 inline String errorTypeToString(RouterError error) {
   switch (error) {
-    case RouterError::INVALID_ROUTE:
-      return F("Invalid Route");
-    case RouterError::INVALID_HANDLER:
-      return F("Invalid Handler");
-    case RouterError::DUPLICATE_ROUTE:
-      return F("Duplicate Route");
-    case RouterError::NOT_FOUND:
-      return F("Not Found");
-    case RouterError::OPERATION_FAILED:
-      return F("Operation Failed");
-    case RouterError::REGISTRATION_FAILED:
-      return F("Registration Failed");
-    case RouterError::INVALID_METHOD:
-      return F("Invalid Method");
-    case RouterError::INTERNAL_ERROR:
-      return F("Internal Error");
-    case RouterError::RESOURCE_ERROR:
-      return F("Resource Error");
-    case RouterError::INITIALIZATION_ERROR:
-      return F("Initialization Error");
-    default:
-      return F("Unknown Router Error");
+  case RouterError::INVALID_ROUTE:
+    return F("Invalid Route");
+  case RouterError::INVALID_HANDLER:
+    return F("Invalid Handler");
+  case RouterError::DUPLICATE_ROUTE:
+    return F("Duplicate Route");
+  case RouterError::NOT_FOUND:
+    return F("Not Found");
+  case RouterError::OPERATION_FAILED:
+    return F("Operation Failed");
+  case RouterError::REGISTRATION_FAILED:
+    return F("Registration Failed");
+  case RouterError::INVALID_METHOD:
+    return F("Invalid Method");
+  case RouterError::INTERNAL_ERROR:
+    return F("Internal Error");
+  case RouterError::RESOURCE_ERROR:
+    return F("Resource Error");
+  case RouterError::INITIALIZATION_ERROR:
+    return F("Initialization Error");
+  default:
+    return F("Unknown Router Error");
   }
 }
 
@@ -511,9 +505,8 @@ using DisplayResult = TypedResult<DisplayError, void>;
  * @brief Helper class for collecting multiple errors
  * @tparam ErrorType Type of the error enum
  */
-template <typename ErrorType>
-class ErrorCollector {
- public:
+template <typename ErrorType> class ErrorCollector {
+public:
   /**
    * @brief Adds an error to the collection.
    * @param error The error to be added.
@@ -533,9 +526,7 @@ class ErrorCollector {
    * @brief Returns the collected errors.
    * @return A reference to the collected errors.
    */
-  const std::vector<std::pair<ErrorType, String>>& getErrors() const {
-    return errors_;
-  }
+  const std::vector<std::pair<ErrorType, String>>& getErrors() const { return errors_; }
 
   /**
    * @brief Converts the collected errors into a TypedResult.
@@ -546,10 +537,9 @@ class ErrorCollector {
       return TypedResult<ErrorType, void>::success();
     }
     const auto& firstError = errors_.front();
-    return TypedResult<ErrorType, void>::fail(firstError.first,
-                                              firstError.second);
+    return TypedResult<ErrorType, void>::fail(firstError.first, firstError.second);
   }
 
- private:
+private:
   std::vector<std::pair<ErrorType, String>> errors_;
 };
