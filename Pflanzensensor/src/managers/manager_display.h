@@ -44,6 +44,16 @@ public:
   DisplayResult setClockEnabled(bool enabled);         // New method
   DisplayResult setFlowerImageEnabled(bool enabled);   // New method
   DisplayResult setFabmobilImageEnabled(bool enabled); // New method
+  // Set display-only flag for a specific sensor measurement. This does not
+  // disable the sensor itself, only whether the measurement should be shown
+  // on the display rotation.
+  DisplayResult setSensorMeasurementDisplay(const String& sensorId, size_t measurementIndex,
+                                            bool enabled);
+
+  // Query whether a given sensor measurement should be displayed. This
+  // consults the display config's per-sensor entries; when no entry exists
+  // the function falls back to the sensor's own measurement enabled flag.
+  bool isSensorMeasurementShown(const String& sensorId, size_t measurementIndex) const;
   DisplayResult saveConfig();
 
   /**

@@ -34,6 +34,16 @@ struct DisplayConfig {
   bool showFabmobilImage; // New field for fabmobil image
   unsigned long screenDuration;
   String clockFormat;
+  // Per-sensor display settings: for each sensor id a vector of booleans
+  // indicating whether the individual measurements should be shown on the
+  // display. If a sensor is not present here, the default behaviour is to
+  // show measurements according to the sensor's own measurement enabled
+  // flags.
+  struct SensorDisplayEntry {
+    String sensorId;
+    std::vector<bool> showMeasurements;
+  };
+  std::vector<SensorDisplayEntry> sensorDisplays;
   /**
    * @brief Default constructor
    */
@@ -47,13 +57,15 @@ struct DisplayConfig {
   // Constructor with parameters (not used in practice, but kept for
   // compatibility)
   DisplayConfig(bool showIp, bool showClk, bool showFlower, bool showFabmobil,
-                unsigned long duration, const String& format, const std::vector<String>& sensors)
+                unsigned long duration, const String& format,
+                const std::vector<SensorDisplayEntry>& displays)
       : showIpScreen(showIp),
         showClock(showClk),
         showFlowerImage(showFlower),
         showFabmobilImage(showFabmobil),
         screenDuration(duration),
-        clockFormat(format) {}
+        clockFormat(format),
+        sensorDisplays(displays) {}
 };
 
 // Display defaults

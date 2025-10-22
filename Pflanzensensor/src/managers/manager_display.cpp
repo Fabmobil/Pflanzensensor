@@ -111,6 +111,20 @@ DisplayResult DisplayManager::loadConfig() {
   m_config.showFabmobilImage = doc["show_fabmobil"] | true;
   m_config.screenDuration = doc["duration"] | (DISPLAY_DEFAULT_TIME * 1000);
   m_config.clockFormat = doc["clock_format"] | "24h";
+  // Load per-sensor display entries (optional)
+  if (doc.containsKey("sensor_displays") && doc["sensor_displays"].is<JsonArray>()) {
+    m_config.sensorDisplays.clear();
+    for (JsonObject entry : doc["sensor_displays"].as<JsonArray>()) {
+      DisplayConfig::SensorDisplayEntry e;
+      e.sensorId = entry["sensor_id"].as<String>();
+      if (entry.containsKey("measurements") && entry["measurements"].is<JsonArray>()) {
+        for (JsonVariant v : entry["measurements"].as<JsonArray>()) {
+          e.showMeasurements.push_back((bool)v.as<bool>());
+        }
+      }
+      m_config.sensorDisplays.push_back(e);
+    }
+  }
 
   String configMsg =
       String(F("Geladene Konfiguration - IP-Anzeige: ")) + String(m_config.showIpScreen) +
@@ -152,6 +166,18 @@ DisplayResult DisplayManager::saveConfig() {
   doc["show_fabmobil"] = m_config.showFabmobilImage;
   doc["duration"] = m_config.screenDuration;
   doc["clock_format"] = m_config.clockFormat;
+  // Persist per-sensor display entries
+  if (!m_config.sensorDisplays.empty()) {
+    JsonArray arr = doc.createNestedArray("sensor_displays");
+    for (const auto& e : m_config.sensorDisplays) {
+      JsonObject obj = arr.createNestedObject();
+      obj["sensor_id"] = e.sensorId;
+      JsonArray measurements = obj.createNestedArray("measurements");
+      for (bool b : e.showMeasurements) {
+        measurements.add(b);
+      }
+    }
+  }
 
   File configFile = LittleFS.open("/display_config.json", "w");
   if (!configFile) {
@@ -220,7 +246,10 @@ void DisplayManager::rotateScreen() {
       continue;
     const SensorConfig& config = sensorPtr->config();
     for (size_t i = 0; i < config.activeMeasurements; ++i) {
-      if (config.measurements[i].enabled) {
+      // A measurement is considered for display rotation only when the
+      // sensor's measurement is enabled AND the display configuration
+      // permits showing this measurement (display-only flag).
+      if (config.measurements[i].enabled && isSensorMeasurementShown(sensorPtr->getId(), i)) {
         measurementScreens++;
       }
     }
@@ -313,7 +342,7 @@ void DisplayManager::rotateScreen() {
         continue;
       const SensorConfig& config = sensorPtr->config();
       for (size_t i = 0; i < config.activeMeasurements; ++i) {
-        if (config.measurements[i].enabled) {
+        if (config.measurements[i].enabled && isSensorMeasurementShown(sensorPtr->getId(), i)) {
           if (currentMeasurementIdx == measurementIdx) {
             if (ConfigMgr.isDebugDisplay()) {
               logger.debug(F("DisplayM"), String(F("Zeige Messung ")) + sensorPtr->getId() +
@@ -488,6 +517,52 @@ DisplayResult DisplayManager::setFabmobilImageEnabled(bool enabled) {
   return saveConfig();
 #else
   return DisplayResult::success();
+#endif
+}
+
+DisplayResult DisplayManager::setSensorMeasurementDisplay(const String& sensorId,
+                                                          size_t measurementIndex, bool enabled) {
+#if USE_DISPLAY
+  // Find or create entry for sensorId
+  for (auto& entry : m_config.sensorDisplays) {
+    if (entry.sensorId == sensorId) {
+      if (measurementIndex >= entry.showMeasurements.size()) {
+        // Resize to accommodate index
+        entry.showMeasurements.resize(measurementIndex + 1, true);
+      }
+      entry.showMeasurements[measurementIndex] = enabled;
+      return saveConfig();
+    }
+  }
+
+  // Not found: create new entry. Default unknown measurements to true, then set
+  DisplayConfig::SensorDisplayEntry newEntry;
+  newEntry.sensorId = sensorId;
+  newEntry.showMeasurements.resize(measurementIndex + 1, true);
+  newEntry.showMeasurements[measurementIndex] = enabled;
+  m_config.sensorDisplays.push_back(newEntry);
+  return saveConfig();
+#else
+  return DisplayResult::success();
+#endif
+}
+
+bool DisplayManager::isSensorMeasurementShown(const String& sensorId,
+                                              size_t measurementIndex) const {
+#if USE_DISPLAY
+  // Search for explicit entry
+  for (const auto& entry : m_config.sensorDisplays) {
+    if (entry.sensorId == sensorId) {
+      if (measurementIndex < entry.showMeasurements.size())
+        return entry.showMeasurements[measurementIndex];
+      // If index not present, default to true
+      return true;
+    }
+  }
+  // No explicit entry: caller should fall back to sensor's own config
+  return true;
+#else
+  return true;
 #endif
 }
 

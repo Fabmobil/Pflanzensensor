@@ -126,7 +126,7 @@ void AdminDisplayHandler::handleDisplayConfig() {
                 sendChunk(F("' data-measurement-index='"));
                 sendChunk(String(i));
                 sendChunk(F("'"));
-                if (sensor->config().measurements[i].enabled) {
+                if (displayManager->isSensorMeasurementShown(id, i)) {
                   sendChunk(F(" checked"));
                 }
                 sendChunk(F("> "));
@@ -149,16 +149,23 @@ void AdminDisplayHandler::handleDisplayConfig() {
               sendChunk(id);
               sendChunk(F("'"));
               bool checked = false;
-              // Prefer per-measurement enabled flag when available
-              if (measurementData.isValid() && measurementData.activeValues >= 1) {
-                if (sensor->config().measurements.size() > 0 &&
-                    sensor->config().measurements[0].enabled) {
+              // Prefer display-only flag when available
+              if (displayManager) {
+                if (displayManager->isSensorMeasurementShown(id, 0)) {
                   checked = true;
                 }
               } else {
-                // Fallback (older sensors): use sensor enabled state
-                if (sensor->isEnabled()) {
-                  checked = true;
+                // Prefer per-measurement enabled flag when available
+                if (measurementData.isValid() && measurementData.activeValues >= 1) {
+                  if (sensor->config().measurements.size() > 0 &&
+                      sensor->config().measurements[0].enabled) {
+                    checked = true;
+                  }
+                } else {
+                  // Fallback (older sensors): use sensor enabled state
+                  if (sensor->isEnabled()) {
+                    checked = true;
+                  }
                 }
               }
               if (checked) {
@@ -312,51 +319,47 @@ void AdminDisplayHandler::handleMeasurementDisplayToggle() {
       return;
     }
 
-    // Toggle individual measurement if 'measurement_index' is provided
+    // Toggle only the display state for measurements (do NOT change sensor
+    // sampling enabled flags). Persist in display configuration so the
+    // rotation logic can read it.
     if (_server.hasArg("measurement_index")) {
       int index = _server.arg("measurement_index").toInt();
-      if (index >= 0 && static_cast<size_t>(index) < sensor->config().measurements.size()) {
-        // Persist atomically via SensorPersistence
-        auto res = SensorPersistence::updateMeasurementEnabled(sensorId, static_cast<size_t>(index),
+      if (index < 0) {
+        sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messungsindex\"}"));
+        return;
+      }
+
+      // Ask display manager to persist the display-only flag
+      if (displayManager) {
+        auto res = displayManager->setSensorMeasurementDisplay(sensorId, static_cast<size_t>(index),
                                                                enabled);
         if (!res.isSuccess()) {
           sendJsonResponse(500,
                            String("{\"success\":false,\"error\":\"") + res.getMessage() + "\"}");
           return;
         }
-        // Update in-memory config
-        sensor->mutableConfig().measurements[static_cast<size_t>(index)].enabled = enabled;
       } else {
-        sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messungsindex\"}"));
+        sendJsonResponse(500,
+                         F("{\"success\":false,\"error\":\"Display Manager nicht verfügbar\"}"));
         return;
       }
     } else {
-      // No index provided. If the sensor exposes multiple measurements, toggle
-      // all active measurements' display flags. If it only has a single
-      // measurement, toggle measurements[0].enabled (do NOT disable the
-      // sensor itself).
-      SensorConfig& cfg = sensor->mutableConfig();
-      size_t cnt = cfg.activeMeasurements ? cfg.activeMeasurements : 1;
-      if (cnt > 1) {
-        for (size_t i = 0; i < cnt; ++i) {
-          auto res = SensorPersistence::updateMeasurementEnabled(sensorId, i, enabled);
-          if (!res.isSuccess()) {
-            sendJsonResponse(500,
-                             String("{\"success\":false,\"error\":\"") + res.getMessage() + "\"}");
-            return;
-          }
-          cfg.measurements[i].enabled = enabled;
-        }
-      } else {
-        // Single measurement sensor: update measurement 0 enabled flag
-        auto res = SensorPersistence::updateMeasurementEnabled(sensorId, 0, enabled);
+      // No index provided: apply to all measurements of this sensor. We
+      // don't modify sensor enabled flags; instead set display flags for
+      // each measurement index up to activeMeasurements (or 1 if unknown).
+      size_t cnt = sensor->config().activeMeasurements ? sensor->config().activeMeasurements : 1;
+      if (!displayManager) {
+        sendJsonResponse(500,
+                         F("{\"success\":false,\"error\":\"Display Manager nicht verfügbar\"}"));
+        return;
+      }
+      for (size_t i = 0; i < cnt; ++i) {
+        auto res = displayManager->setSensorMeasurementDisplay(sensorId, i, enabled);
         if (!res.isSuccess()) {
           sendJsonResponse(500,
                            String("{\"success\":false,\"error\":\"") + res.getMessage() + "\"}");
           return;
         }
-        // measurements is a fixed-size array; index 0 is always valid
-        cfg.measurements[0].enabled = enabled;
       }
     }
 
