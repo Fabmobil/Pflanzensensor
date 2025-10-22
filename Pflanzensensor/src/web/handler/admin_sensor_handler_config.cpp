@@ -324,6 +324,13 @@ void AdminSensorHandler::handleGetSensorConfigJson() {
         snprintf(buf, sizeof(buf), ",\"inverted\":%s",
                  config.measurements[i].inverted ? "true" : "false");
         sendChunk(buf);
+        // Autocalibration flag (persisted)
+        snprintf(buf, sizeof(buf), ",\"calibrationMode\":%s",
+                 config.measurements[i].calibrationMode ? "true" : "false");
+        sendChunk(buf);
+        // Note: autocal now persists into the calculation limits (min/max).
+        // The historical extremum storage (absoluteRawMin/Max) remains
+        // dedicated to measured extremes and is not modified by autocal.
       }
 #endif
       sendChunk(F("}"));

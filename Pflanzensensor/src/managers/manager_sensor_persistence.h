@@ -60,6 +60,22 @@ class SensorPersistence {
                                               float minValue, float maxValue,
                                               bool inverted);
 
+  // Variant that expects integer min/max values (for use by autocal) to
+  // make callers explicit about rounding semantics.
+  static PersistenceResult updateAnalogMinMaxInteger(const String& sensorId,
+                                                    size_t measurementIndex,
+                                                    int minValue, int maxValue,
+                                                    bool inverted);
+
+  // Variant that updates integer min/max but does NOT trigger a full
+  // reload of the configuration file. Useful for autocal paths that
+  // persist frequently and must avoid transient reloads that interfere
+  // with runtime state.
+  static PersistenceResult updateAnalogMinMaxIntegerNoReload(const String& sensorId,
+                                                            size_t measurementIndex,
+                                                            int minValue, int maxValue,
+                                                            bool inverted);
+
   /**
    * @brief Update sensor measurement interval atomically
    * @param sensorId Sensor ID to update
@@ -105,6 +121,17 @@ class SensorPersistence {
                                                  size_t measurementIndex,
                                                  int absoluteRawMin,
                                                  int absoluteRawMax);
+
+  /**
+   * @brief Update analog sensor calibration mode flag atomically
+   * @param sensorId Sensor ID to update
+   * @param measurementIndex Measurement index to update
+   * @param enabled New calibration mode flag
+   * @return PersistenceResult indicating success or failure
+   */
+  static PersistenceResult updateAnalogCalibrationMode(const String& sensorId,
+                                                      size_t measurementIndex,
+                                                      bool enabled);
 
   /**
    * @brief Check if sensor configuration file exists

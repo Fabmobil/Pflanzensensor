@@ -213,15 +213,15 @@ void AdminHandler::handleAdminPage() {
         sendChunk(F("<div class='admin-grid'>"));
         generateAndSendSystemSettingsCard();
         generateAndSendSystemActionsCard();
-        generateAndSendDebugSettingsCard();
-#if USE_LED_TRAFFIC_LIGHT
-        generateAndSendLedTrafficLightSettingsCard();
-#endif
         generateAndSendWiFiSettingsCard();
+        #if USE_LED_TRAFFIC_LIGHT
+        generateAndSendLedTrafficLightSettingsCard();
+        #endif
         generateAndSendSystemInfoCard();
-#if USE_MAIL
+        #if USE_MAIL
         generateAndSendMailSettingsCard();
-#endif
+        #endif
+        generateAndSendDebugSettingsCard();
         sendChunk(F("</div>"));
       },
       css, js);

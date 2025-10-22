@@ -87,14 +87,12 @@ SensorFactory::SensorResult SensorFactory::createAllSensors(
 
     std::vector<String> errors;
 
-#if USE_DHT
-    addDHTSensors(sensors, sensorManager, errors);
-#endif
-
-
-#if USE_ANALOG
-    addAnalogSensors(sensors, sensorManager, errors);
-#endif
+    #if USE_ANALOG
+        addAnalogSensors(sensors, sensorManager, errors);
+    #endif
+    #if USE_DHT
+        addDHTSensors(sensors, sensorManager, errors);
+    #endif
 
     logger.logMemoryStats(F("nach_sensor_erstellung"));
 

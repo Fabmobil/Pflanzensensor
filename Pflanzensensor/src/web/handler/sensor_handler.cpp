@@ -237,10 +237,43 @@ void SensorHandler::handleGetLatestValues() {
 
         const auto& config = sensor->config();
         if (i < config.measurements.size()) {
+          // If historical raw extrema are still the sentinel values, and
+          // autocalibration is active, present the active calculation
+          // limits as a UI-friendly fallback so the admin page shows
+          // values instead of "--". This does NOT overwrite persisted
+          // historical extrema on disk.
+          int effectiveRawMin = config.measurements[i].absoluteRawMin;
+          int effectiveRawMax = config.measurements[i].absoluteRawMax;
+          if ((effectiveRawMin == INT_MAX || effectiveRawMax == INT_MIN) && config.measurements[i].calibrationMode) {
+            if (analog) {
+              float calcMin = analog->getMinValue(i);
+              float calcMax = analog->getMaxValue(i);
+              if (effectiveRawMin == INT_MAX) effectiveRawMin = static_cast<int>(roundf(calcMin));
+              if (effectiveRawMax == INT_MIN) effectiveRawMax = static_cast<int>(roundf(calcMax));
+            }
+          }
           sendChunk(F(",\"absoluteRawMin\":"));
-          sendChunk(String(config.measurements[i].absoluteRawMin));
+          sendChunk(String(effectiveRawMin));
           sendChunk(F(",\"absoluteRawMax\":"));
-          sendChunk(String(config.measurements[i].absoluteRawMax));
+          sendChunk(String(effectiveRawMax));
+           sendChunk(F(",\"calibrationMode\":"));
+           sendChunk(config.measurements[i].calibrationMode ? F("true") : F("false"));
+           // Also include the active calculation limits (min/max) used for
+           // mapping so the admin UI can reflect autocal changes in real time.
+           AnalogSensor* analogPtr = static_cast<AnalogSensor*>(sensor.get());
+           if (analogPtr) {
+             float calcMin = analogPtr->getMinValue(i);
+             float calcMax = analogPtr->getMaxValue(i);
+             sendChunk(F(",\"minmax\":{"));
+             sendChunk(F("\"min\":"));
+             sendChunk(String(calcMin));
+             sendChunk(F(",\"max\":"));
+             sendChunk(String(calcMax));
+             sendChunk(F("}"));
+           }
+           // Note: autocalization now persists into the calculation limits
+           // (min/max). The historical extremum storage (absoluteRawMin/Max)
+           // remains untouched by autocal and reflects measured history only.
         }
       }
 #endif

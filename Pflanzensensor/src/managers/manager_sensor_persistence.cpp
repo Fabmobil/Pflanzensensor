@@ -19,10 +19,11 @@ using namespace ArduinoJson;
 #if USE_ANALOG
 #include "sensors/sensor_analog.h"
 #endif
+#include "sensors/sensor_autocalibration.h"
 #include "../utils/persistence_utils.h"
 
 // Static document for sensor operations
-static StaticJsonDocument<1024> sensorDoc;
+static StaticJsonDocument<4096> sensorDoc;
 
 bool SensorPersistence::configFileExists() {
   return PersistenceUtils::fileExists("/sensors.json");
@@ -158,11 +159,14 @@ void SensorPersistence::applySensorSettingsFromJson(
         }
 
 #if USE_ANALOG
+
         // Apply analog-specific settings
-        if (measurement["min"].is<float>() && measurement["max"].is<float>() &&
+        if ((measurement["min"].is<float>() || measurement["min"].is<int>() || measurement["min"].is<unsigned int>()) &&
+            (measurement["max"].is<float>() || measurement["max"].is<int>() || measurement["max"].is<unsigned int>()) &&
             measurement["inverted"].is<bool>()) {
-          config.measurements[index].minValue = measurement["min"] | 0.0f;
-          config.measurements[index].maxValue = measurement["max"] | 0.0f;
+          // Accept numeric types for min/max (int or float) and coerce to float
+          config.measurements[index].minValue = measurement["min"].as<float>();
+          config.measurements[index].maxValue = measurement["max"].as<float>();
           config.measurements[index].inverted = measurement["inverted"] | false;
 
           // Apply to analog sensor if it's an analog sensor
@@ -236,9 +240,9 @@ void SensorPersistence::applySensorSettingsFromJson(
 
           if (ConfigMgr.isDebugSensor()) {
             logger.debug(F("SensorP"), F("Geladener absoluteRawMax: ") +
-                                           String(rawMax) + F(" für Sensor ") +
-                                           sensorId + F(" Messung ") +
-                                           String(index));
+                                            String(rawMax) + F(" für Sensor ") +
+                                            sensorId + F(" Messung ") +
+                                            String(index));
           }
         } else {
           if (ConfigMgr.isDebugSensor()) {
@@ -249,6 +253,72 @@ void SensorPersistence::applySensorSettingsFromJson(
                String(config.measurements[index].absoluteRawMax));
           }
         }
+
+        // Apply persisted autocalibration flag (calibrationMode) so that
+        // autocalibration state survives a reboot.
+        if (measurement.containsKey("calibrationMode")) {
+          // Use boolean coercion; fall back to false if parsing fails
+          bool calMode = false;
+          if (measurement["calibrationMode"].is<bool>()) {
+            calMode = measurement["calibrationMode"] | false;
+          } else if (measurement["calibrationMode"].is<int>()) {
+            calMode = (measurement["calibrationMode"].as<int>() != 0);
+          } else if (measurement["calibrationMode"].is<const char*>()) {
+            String s = String(measurement["calibrationMode"].as<const char*>());
+            s.toLowerCase();
+            calMode = (s == "true" || s == "1");
+          } else {
+            calMode = measurement["calibrationMode"] | false;
+          }
+          config.measurements[index].calibrationMode = calMode;
+          // Also apply to the runtime analog sensor copy so fetchSample
+          // and mapping logic immediately observe the calibration mode.
+#if USE_ANALOG
+          if (config.id.startsWith("ANALOG")) {
+            AnalogSensor* analogSensor = static_cast<AnalogSensor*>(sensor);
+            if (analogSensor) analogSensor->setCalibrationMode(index, calMode);
+          }
+#endif
+           if (ConfigMgr.isDebugSensor()) {
+             logger.debug(F("SensorP"), F("Geladener calibrationMode: ") +
+                                          String(calMode ? "true" : "false") +
+                                          F(" für Sensor ") + sensorId +
+                                          F(" Messung ") + String(index));
+           }
+         }
+
+        // Initialize autocal from absolute raw values (if present) instead of
+        // reading a separate persistent 'autocal' block. This avoids creating
+        // extra persisted fields and uses the existing absoluteRaw storage.
+#if USE_ANALOG
+        if (config.id.startsWith("ANALOG")) {
+          AnalogSensor* analogSensor = static_cast<AnalogSensor*>(sensor);
+          if (analogSensor) {
+            AutoCal temp = config.measurements[index].autocal;
+            // Prefer persisted calculation limits (min/max) for initializing
+            // runtime autocal. This ensures autocal controls the mapping limits
+            // and does not overwrite the historical extremum storage.
+            if (measurement.containsKey("min") && measurement.containsKey("max")) {
+              temp.min_value = static_cast<float>(config.measurements[index].minValue);
+              temp.max_value = static_cast<float>(config.measurements[index].maxValue);
+            } else if (config.measurements[index].absoluteRawMin != INT_MAX ||
+                       config.measurements[index].absoluteRawMax != INT_MIN) {
+              // Legacy fallback: if absolute raw extremes exist in JSON (from
+              // older firmware) use them to initialize autocal.
+              if (config.measurements[index].absoluteRawMin != INT_MAX)
+                temp.min_value = static_cast<float>(config.measurements[index].absoluteRawMin);
+              if (config.measurements[index].absoluteRawMax != INT_MIN)
+                temp.max_value = static_cast<float>(config.measurements[index].absoluteRawMax);
+            } else {
+              // Final fallback: use configured min/max defaults
+              temp.min_value = static_cast<float>(config.measurements[index].minValue);
+              temp.max_value = static_cast<float>(config.measurements[index].maxValue);
+            }
+            config.measurements[index].autocal = temp;
+            analogSensor->setAutoCalibration(index, temp);
+          }
+        }
+#endif
       }
     }
 
@@ -270,7 +340,7 @@ SensorPersistence::PersistenceResult SensorPersistence::loadFromFile() {
   }
 
   String errorMsg;
-  StaticJsonDocument<1024>& doc = sensorDoc;
+  StaticJsonDocument<4096>& doc = sensorDoc;
   doc.clear();
 
   if (!PersistenceUtils::fileExists("/sensors.json")) {
@@ -328,7 +398,7 @@ SensorPersistence::PersistenceResult SensorPersistence::loadFromFile() {
 // keep saveToFileMinimal
 
 SensorPersistence::PersistenceResult SensorPersistence::saveToFileMinimal() {
-  StaticJsonDocument<1024>& doc = sensorDoc;
+  StaticJsonDocument<4096>& doc = sensorDoc;
   doc.clear();
   ArduinoJson::JsonObject docRoot = doc.to<JsonObject>();
   extern std::unique_ptr<SensorManager> sensorManager;
@@ -361,18 +431,17 @@ SensorPersistence::PersistenceResult SensorPersistence::saveToFileMinimal() {
       thresholds["yellowHigh"] = sensorConfig.measurements[i].limits.yellowHigh;
 #if USE_ANALOG
       if (sensorConfig.id.startsWith("ANALOG")) {
-        measurementObj["min"] = sensorConfig.measurements[i].minValue;
-        measurementObj["max"] = sensorConfig.measurements[i].maxValue;
+        // Persist min/max as integer values (rounding) to keep JSON
+        // consistent and reduce wear
+        measurementObj["min"] = static_cast<int>(roundf(sensorConfig.measurements[i].minValue));
+        measurementObj["max"] = static_cast<int>(roundf(sensorConfig.measurements[i].maxValue));
         measurementObj["inverted"] = sensorConfig.measurements[i].inverted;
       }
-      // Always save absolute min/max values to ensure they persist across
-      // reboots
-      measurementObj["absoluteMin"] = sensorConfig.measurements[i].absoluteMin;
-      measurementObj["absoluteMax"] = sensorConfig.measurements[i].absoluteMax;
-      measurementObj["absoluteRawMin"] =
-          sensorConfig.measurements[i].absoluteRawMin;
-      measurementObj["absoluteRawMax"] =
-          sensorConfig.measurements[i].absoluteRawMax;
+      // Persist calibration mode for analog sensors
+      measurementObj["calibrationMode"] = sensorConfig.measurements[i].calibrationMode;
+      // Persist absolute raw min/max values (reuse this storage for autocal)
+      measurementObj["absoluteRawMin"] = sensorConfig.measurements[i].absoluteRawMin;
+      measurementObj["absoluteRawMax"] = sensorConfig.measurements[i].absoluteRawMax;
 #endif
     }
     sensorObj["hasPersistentError"] = sensorConfig.hasPersistentError;
@@ -402,7 +471,7 @@ SensorPersistence::updateSensorThresholdsInternal(
   const String& sensorId, size_t measurementIndex, float yellowLow,
   float greenLow, float greenHigh, float yellowHigh) {
   // Bestehende Konfiguration laden
-  StaticJsonDocument<1024> doc;
+  StaticJsonDocument<4096> doc;
   String errorMsg;
   if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
   return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
@@ -470,57 +539,88 @@ SensorPersistence::PersistenceResult SensorPersistence::updateAnalogMinMax(
   return result;
 }
 
-SensorPersistence::PersistenceResult
-SensorPersistence::updateAnalogMinMaxInternal(const String& sensorId,
-                        size_t measurementIndex,
-                        float minValue, float maxValue,
-                        bool inverted) {
-  // Bestehende Konfiguration laden
-  StaticJsonDocument<1024> doc;
+SensorPersistence::PersistenceResult SensorPersistence::updateAnalogMinMaxInteger(
+  const String& sensorId, size_t measurementIndex, int minValue,
+  int maxValue, bool inverted) {
+  // Perform integer-specific update so the JSON stores integers as before
+  StaticJsonDocument<4096> doc;
   String errorMsg;
   if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-  return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
   }
 
-  // Zum spezifischen Sensor und Messwert navigieren
   JsonObject sensorObj = doc[sensorId.c_str()];
   if (sensorObj.isNull()) {
-  return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                   F("Sensor nicht gefunden: ") + sensorId);
+    return PersistenceResult::fail(ConfigError::PARSE_ERROR, F("Sensor nicht gefunden: ") + sensorId);
   }
-
   JsonObject measurements = sensorObj["measurements"];
   if (measurements.isNull()) {
-  return PersistenceResult::fail(
-    ConfigError::PARSE_ERROR,
-    F("Keine Messungen für Sensor gefunden: ") + sensorId);
+    return PersistenceResult::fail(ConfigError::PARSE_ERROR, F("Keine Messungen für Sensor gefunden: ") + sensorId);
   }
-
   char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u",
-       static_cast<unsigned>(measurementIndex));
+  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
   JsonObject measurementObj = measurements[idxBuf];
   if (measurementObj.isNull()) {
-  return PersistenceResult::fail(
-    ConfigError::PARSE_ERROR,
-    F("Messung nicht gefunden: ") + String(measurementIndex));
+    return PersistenceResult::fail(ConfigError::PARSE_ERROR, F("Messung nicht gefunden: ") + String(measurementIndex));
   }
 
-  // Nur min/max Werte aktualisieren
   measurementObj["min"] = minValue;
   measurementObj["max"] = maxValue;
   measurementObj["inverted"] = inverted;
 
-  // Zurück in die Datei schreiben
   if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-  return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
   }
 
-  logger.info(F("SensorP"),
-        F("Analog min/max atomar aktualisiert für ") + sensorId +
-          F(" Messung ") + String(measurementIndex) +
-          F(", Bytes geschrieben: ") +
-          String(PersistenceUtils::getFileSize("/sensors.json")));
+  logger.info(F("SensorP"), F("Analog min/max (int) atomar aktualisiert für ") + sensorId + F(" Messung ") + String(measurementIndex) + F(", Bytes geschrieben: ") + String(PersistenceUtils::getFileSize("/sensors.json")));
+
+  // Reload configuration to sync in-memory state
+  auto reloadResult = loadFromFile();
+  if (!reloadResult.isSuccess()) {
+    logger.warning(F("SensorP"), F("Neuladen der Sensorkonfiguration nach int min/max Update fehlgeschlagen: ") + reloadResult.getMessage());
+  }
+
+  return PersistenceResult::success();
+}
+
+SensorPersistence::PersistenceResult SensorPersistence::updateAnalogMinMaxIntegerNoReload(
+  const String& sensorId, size_t measurementIndex, int minValue,
+  int maxValue, bool inverted) {
+  // Use a critical section to avoid concurrent writers (autocal + other
+  // config paths) clobbering sensors.json. Also increase the JSON buffer
+  // size to handle larger sensors.json files safely.
+  CriticalSection cs;
+  StaticJsonDocument<4096> doc;
+  String errorMsg;
+  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
+    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  }
+
+  JsonObject sensorObj = doc[sensorId.c_str()];
+  if (sensorObj.isNull()) {
+    return PersistenceResult::fail(ConfigError::PARSE_ERROR, F("Sensor nicht gefunden: ") + sensorId);
+  }
+  JsonObject measurements = sensorObj["measurements"];
+  if (measurements.isNull()) {
+    return PersistenceResult::fail(ConfigError::PARSE_ERROR, F("Keine Messungen für Sensor gefunden: ") + sensorId);
+  }
+  char idxBuf[8];
+  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
+  JsonObject measurementObj = measurements[idxBuf];
+  if (measurementObj.isNull()) {
+    return PersistenceResult::fail(ConfigError::PARSE_ERROR, F("Messung nicht gefunden: ") + String(measurementIndex));
+  }
+
+  // Update only integer min/max/inverted keys to avoid touching other fields
+  measurementObj["min"] = minValue;
+  measurementObj["max"] = maxValue;
+  measurementObj["inverted"] = inverted;
+
+  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
+    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  }
+
+  logger.info(F("SensorP"), F("Analog min/max aktualisiert für ") + sensorId + String(measurementIndex) + F(". Min: ") + String(minValue) + F(", Max: ") + String(maxValue) + F(", Inverted: ") + String(inverted) + F(", Bytes geschrieben: ") + String(PersistenceUtils::getFileSize("/sensors.json")));
 
   return PersistenceResult::success();
 }
@@ -541,7 +641,7 @@ SensorPersistence::PersistenceResult
 SensorPersistence::updateMeasurementIntervalInternal(const String& sensorId,
                            unsigned long interval) {
   // Bestehende Konfiguration laden
-  StaticJsonDocument<1024> doc;
+  StaticJsonDocument<4096> doc;
   String errorMsg;
   if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
   return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
@@ -589,7 +689,7 @@ SensorPersistence::updateMeasurementEnabledInternal(const String& sensorId,
                           size_t measurementIndex,
                           bool enabled) {
   // Bestehende Konfiguration laden
-  StaticJsonDocument<1024> doc;
+  StaticJsonDocument<4096> doc;
   String errorMsg;
   if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
   return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
@@ -640,7 +740,7 @@ SensorPersistence::PersistenceResult SensorPersistence::updateAbsoluteMinMax(
   const String& sensorId, size_t measurementIndex, float absoluteMin,
   float absoluteMax) {
   // Bestehende Konfiguration laden
-  StaticJsonDocument<1024> doc;
+  StaticJsonDocument<4096> doc;
   String errorMsg;
   if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
   return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
@@ -722,7 +822,7 @@ SensorPersistence::updateAnalogRawMinMaxInternal(const String& sensorId,
                          int absoluteRawMin,
                          int absoluteRawMax) {
   // Bestehende Konfiguration laden
-  StaticJsonDocument<1024> doc;
+  StaticJsonDocument<4096> doc;
   String errorMsg;
   if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
   return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
@@ -788,6 +888,52 @@ SensorPersistence::updateAnalogRawMinMaxInternal(const String& sensorId,
                    String(measurementIndex) + F(" - Min: ") +
                    String(absoluteRawMin) + F(", Max: ") +
                    String(absoluteRawMax));
+  }
+
+  return PersistenceResult::success();
+}
+
+SensorPersistence::PersistenceResult
+SensorPersistence::updateAnalogCalibrationMode(const String& sensorId,
+                                               size_t measurementIndex,
+                                               bool enabled) {
+  StaticJsonDocument<2048> doc;
+  String errorMsg;
+  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
+    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  }
+
+  JsonObject sensorObj = doc[sensorId.c_str()];
+  if (sensorObj.isNull()) {
+    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
+                                   F("Sensor nicht gefunden: ") + sensorId);
+  }
+  JsonObject measurements = sensorObj["measurements"];
+  if (measurements.isNull()) {
+    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
+                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
+  }
+
+  char idxBuf[8];
+  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
+  JsonObject measurementObj = measurements[idxBuf];
+  if (measurementObj.isNull()) {
+    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
+                                   F("Messung nicht gefunden: ") + String(measurementIndex));
+  }
+
+  measurementObj["calibrationMode"] = enabled;
+
+  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
+    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  }
+
+  logger.info(F("SensorP"), F("Kalibrierungsmodus atomar aktualisiert für ") + sensorId + F(" Messung ") + String(measurementIndex));
+
+  // Reload configuration to sync in-memory state
+  auto reloadResult = loadFromFile();
+  if (!reloadResult.isSuccess()) {
+    logger.warning(F("SensorP"), F("Neuladen der Sensorkonfiguration nach Kalibrierungsmodus-Update fehlgeschlagen: ") + reloadResult.getMessage());
   }
 
   return PersistenceResult::success();

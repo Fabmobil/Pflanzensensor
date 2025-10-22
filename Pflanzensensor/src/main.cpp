@@ -347,9 +347,6 @@ void setup() {
   });
 #if USE_DISPLAY
   if (displayManager) displayManager->updateLogStatus(F("Sensoren..."), true);
-#endif
-
-#if USE_DISPLAY
   if (displayManager) displayManager->logEnabledSensors();
 #endif
 
@@ -449,13 +446,12 @@ void setup() {
   logger.info(F("main"), F("Setup abgeschlossen"));
 
   // Sensor settings are now applied directly during JSON parsing
-  // Trigger first measurement if sensor manager is ready and WiFi is connected
-  if (sensorManager && sensorManager->getState() == ManagerState::INITIALIZED &&
-      WiFi.status() == WL_CONNECTED) {
+  // Trigger first measurement if sensor manager is ready
+  if (sensorManager && sensorManager->getState() == ManagerState::INITIALIZED) {
     logger.debug(F("main"), F("Starte initialen Messzyklus"));
     sensorManager->updateMeasurements();
   } else {
-    logger.warning(F("main"), F("Überspringe initiale Messung – WiFi nicht verbunden oder Sensor-Manager nicht bereit"));
+    logger.warning(F("main"), F("Überspringe initiale Messung – Sensor-Manager nicht bereit"));
   }
 }
 

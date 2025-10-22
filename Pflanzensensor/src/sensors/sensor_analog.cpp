@@ -1,4 +1,5 @@
 #include "sensors/sensor_analog.h"
+#include "sensors/sensor_autocalibration.h"
 
 #if USE_ANALOG
 #include "managers/manager_config.h"
@@ -210,25 +211,26 @@ float AnalogSensor::mapAnalogValue(int rawValue,
        String(measurementIndex));
   return 0.0f;
   }
-  float minValue = m_analogConfig.measurements[measurementIndex].minValue;
-  float maxValue = m_analogConfig.measurements[measurementIndex].maxValue;
+  // Use accessor helpers so autocal (when active) is taken into account.
+  float minValue = getMinValue(measurementIndex);
+  float maxValue = getMaxValue(measurementIndex);
   bool inverted = m_analogConfig.measurements[measurementIndex].inverted;
 
   if (maxValue == minValue) return 0.0f;
 
   // Wenn invertiert, wird der Rohwert umgekehrt auf den Prozentwert abgebildet
   if (inverted) {
-  float percentage = 100.0f * (maxValue - rawValue) / (maxValue - minValue);
-  logDebug(F("Invertierte Abbildung: roh=") + String(rawValue) + F(", min=") +
-       String(minValue) + F(", max=") + String(maxValue) +
-       F(", Ergebnis=") + String(percentage) + F("%"));
-  return percentage;
+    float percentage = 100.0f * (maxValue - rawValue) / (maxValue - minValue);
+    logDebug(F("Invertierte Abbildung: roh=") + String(rawValue) + F(", min=") +
+         String(minValue) + F(", max=") + String(maxValue) +
+         F(", Ergebnis=") + String(percentage) + F("%"));
+    return percentage;
   } else {
-  float percentage = 100.0f * (rawValue - minValue) / (maxValue - minValue);
-  logDebug(F("Normale Abbildung: roh=") + String(rawValue) + F(", min=") +
-       String(minValue) + F(", max=") + String(maxValue) +
-       F(", Ergebnis=") + String(percentage) + F("%"));
-  return percentage;
+    float percentage = 100.0f * (rawValue - minValue) / (maxValue - minValue);
+    logDebug(F("Normale Abbildung: roh=") + String(rawValue) + F(", min=") +
+         String(minValue) + F(", max=") + String(maxValue) +
+         F(", Ergebnis=") + String(percentage) + F("%"));
+    return percentage;
   }
 }
 
@@ -254,97 +256,213 @@ bool AnalogSensor::fetchSample(float& value, size_t index) {
   int raw = analogRead(m_analogConfig.pin);
   // Speichere letzten Rohwert
   if (index < m_lastRawValues.size()) {
-  m_lastRawValues[index] = raw;
-  }
+     m_lastRawValues[index] = raw;
+   }
 
-  // Absolute Roh-Min/Max-Werte verfolgen
+  // Aktualisiere und persistiere die historischen Roh-Extrema unabhängig
+  // von Autocal. Setze bei der ersten Messung beide Werte auf den aktuellen
+  // Rohwert; bei späteren Messungen persistieren wir nur, wenn ein neuer
+  // Extremwert (kleiner als min oder größer als max) auftritt.
   if (index < m_analogConfig.measurements.size()) {
-  auto& measurement = m_analogConfig.measurements[index];
-  bool minMaxChanged = false;
+    SensorConfig &cfg = this->mutableConfig();
+    int storedRawMin = cfg.measurements[index].absoluteRawMin;
+    int storedRawMax = cfg.measurements[index].absoluteRawMax;
+    int newRawMin = storedRawMin;
+    int newRawMax = storedRawMax;
+    bool needPersistRaw = false;
 
-  int originalMin = measurement.absoluteRawMin;
-  int originalMax = measurement.absoluteRawMax;
-
-  // Nur aktualisieren, wenn wirklich ein neues Minimum oder Maximum gefunden wurde
-  if (raw < measurement.absoluteRawMin) {
-    measurement.absoluteRawMin = raw;
-    minMaxChanged = true;
-    if (ConfigMgr.isDebugSensor()) {
-    logger.debug(getName(), F("Neues Minimum gefunden: ") + String(raw) +
-                  F(" (vorher: ") + String(originalMin) +
-                  F(")"));
-    }
-  }
-  if (raw > measurement.absoluteRawMax) {
-    measurement.absoluteRawMax = raw;
-    minMaxChanged = true;
-    if (ConfigMgr.isDebugSensor()) {
-    logger.debug(getName(), F("Neues Maximum gefunden: ") + String(raw) +
-                  F(" (vorher: ") + String(originalMax) +
-                  F(")"));
-    }
-  }
-
-  // Nur speichern, wenn sich min/max wirklich geändert haben
-  if (minMaxChanged) {
-    if (ConfigMgr.isDebugSensor()) {
-    logger.debug(getName(), F("Roh-Min/Max geändert - Min: ") +
-                  String(measurement.absoluteRawMin) +
-                  F(", Max: ") +
-                  String(measurement.absoluteRawMax) +
-                  F(" für Index ") + String(index));
-    }
-
-    auto result = SensorPersistence::updateAnalogRawMinMax(
-      m_analogConfig.id, index, measurement.absoluteRawMin,
-      measurement.absoluteRawMax);
-
-    if (ConfigMgr.isDebugSensor()) {
-    if (result.isSuccess()) {
-      logger.debug(getName(),
-             F("Roh-Min/Max erfolgreich gespeichert"));
+    if (storedRawMin == INT_MAX && storedRawMax == INT_MIN) {
+      // Erste gültige Messung: seed sowohl Min als auch Max
+      newRawMin = raw;
+      newRawMax = raw;
+      needPersistRaw = true;
     } else {
-      logger.error(getName(), F("Fehler beim Speichern von Roh-Min/Max: ") +
-                    result.getMessage());
+      if (raw < storedRawMin) {
+        newRawMin = raw;
+        needPersistRaw = true;
+      } else if (raw > storedRawMax) {
+        newRawMax = raw;
+        needPersistRaw = true;
+      }
     }
+
+    if (needPersistRaw) {
+      // Aktualisiere Laufzeit-Kopie und zentrale Konfiguration
+      m_analogConfig.measurements[index].absoluteRawMin = newRawMin;
+      m_analogConfig.measurements[index].absoluteRawMax = newRawMax;
+      cfg.measurements[index].absoluteRawMin = newRawMin;
+      cfg.measurements[index].absoluteRawMax = newRawMax;
+
+      if (ConfigMgr.isDebugSensor()) {
+        logger.debug(getName(), F("Neue absolute Roh-Extrema erkannt; persistiere: Min=") + String(newRawMin) + F(", Max=") + String(newRawMax));
+      }
+
+      // Persistiere atomar und lade danach die Konfiguration neu, damit
+      // das Gesamtzustand synchron bleibt.
+      auto pres = SensorPersistence::updateAnalogRawMinMax(this->getId(), index, newRawMin, newRawMax);
+      if (!pres.isSuccess()) {
+        logger.warning(getName(), F("Fehler beim Persistieren der absoluten Roh-Extrema: ") + pres.getMessage());
+      } else {
+        if (ConfigMgr.isDebugSensor()) logger.debug(getName(), F("Absolute Roh-Extrema erfolgreich persistiert"));
+      }
     }
-  }
   }
 
-  // Prüfe, ob Rohwert außerhalb des Bereichs liegt und begrenze ihn ggf.
+  // Debug: print runtime calibration and autocal state so we can see why
+  // clamping or autocal updates happen during measurement cycles.
+  if (ConfigMgr.isDebugSensor()) {
+    bool cfgCal = false;
+    if (index < this->mutableConfig().measurements.size()) cfgCal = this->mutableConfig().measurements[index].calibrationMode;
+    String dbg = F("fetchSample debug: idx=") + String(index) + F(", raw=") + String(raw) +
+                 F(", runtime.calibrationMode=") + String(m_analogConfig.measurements[index].calibrationMode ? "1" : "0") +
+                 F(", cfg.calibrationMode=") + String(cfgCal ? "1" : "0") +
+                 F(", calcMin=") + String(m_analogConfig.measurements[index].minValue) +
+                 F(", calcMax=") + String(m_analogConfig.measurements[index].maxValue) +
+                 F(", autocalIntMin=") + String(m_analogConfig.measurements[index].autocal.min_value) +
+                 F(", autocalIntMax=") + String(m_analogConfig.measurements[index].autocal.max_value) +
+                 F(", autocalMinF=") + String(m_analogConfig.measurements[index].autocal.min_value_f) +
+                 F(", autocalMaxF=") + String(m_analogConfig.measurements[index].autocal.max_value_f);
+    logger.debug(getName(), dbg);
+  }
+
+  // Derive a unified 'calibration mode' flag from both the runtime copy
+  // and the central mutable config. This avoids transient races where one
+  // copy is updated but the other is not yet in sync.
+  bool cfgCalMode = false;
+  if (index < this->mutableConfig().measurements.size()) cfgCalMode = this->mutableConfig().measurements[index].calibrationMode;
+  bool unifiedCalibrationMode = m_analogConfig.measurements[index].calibrationMode || cfgCalMode;
+
+   // Auto-calibration: update exponential moving boundaries if enabled
+  if (index < m_analogConfig.measurements.size()) {
+    auto& measurement = m_analogConfig.measurements[index];
+    if (unifiedCalibrationMode) {
+       uint32_t minutes = millis() / 60000UL;
+
+       // Immediate expansion: if the new raw is outside the current
+       // calculation limits, anchor that side immediately to the raw
+       // reading and persist the integer change. This guarantees no
+       // clamping will occur in the same cycle.
+       int curMinInt = static_cast<int>(roundf(measurement.minValue));
+       int curMaxInt = static_cast<int>(roundf(measurement.maxValue));
+       bool persistedImmediate = false;
+       if (raw < curMinInt) {
+         // Expand lower bound immediately
+         measurement.autocal.min_value_f = static_cast<float>(raw);
+         measurement.autocal.min_value = static_cast<uint16_t>(raw);
+         measurement.minValue = static_cast<float>(measurement.autocal.min_value);
+         int persistMin = static_cast<int>(measurement.autocal.min_value);
+         int persistMax = static_cast<int>(measurement.autocal.max_value);
+         auto pm = SensorPersistence::updateAnalogMinMaxIntegerNoReload(
+           m_analogConfig.id, index, persistMin, persistMax, measurement.inverted);
+         if (!pm.isSuccess()) {
+           logger.error(getName(), F("Fehler beim Persistieren der Autocal-Expansion (min): ") + pm.getMessage());
+         } else {
+           persistedImmediate = true;
+           if (ConfigMgr.isDebugSensor()) logger.debug(getName(), F("Autocal: untere Grenze sofort auf aktuellen Rohwert gesetzt und persistiert: ") + String(persistMin));
+         }
+       } else if (raw > curMaxInt) {
+         // Expand upper bound immediately
+         measurement.autocal.max_value_f = static_cast<float>(raw);
+         measurement.autocal.max_value = static_cast<uint16_t>(raw);
+         measurement.maxValue = static_cast<float>(measurement.autocal.max_value);
+         int persistMin = static_cast<int>(measurement.autocal.min_value);
+         int persistMax = static_cast<int>(measurement.autocal.max_value);
+         auto pm = SensorPersistence::updateAnalogMinMaxIntegerNoReload(
+           m_analogConfig.id, index, persistMin, persistMax, measurement.inverted);
+         if (!pm.isSuccess()) {
+           logger.error(getName(), F("Fehler beim Persistieren der Autocal-Expansion (max): ") + pm.getMessage());
+         } else {
+           persistedImmediate = true;
+           if (ConfigMgr.isDebugSensor()) logger.debug(getName(), F("Autocal: obere Grenze sofort auf aktuellen Rohwert gesetzt und persistiert: ") + String(persistMax));
+         }
+       }
+
+       // If we didn't perform an immediate expansion, run the EMA-based
+       // autocal update to slowly forget old extrema. Persist only when
+       // the integer-rounded bounds change (reduces flash wear).
+       if (!persistedImmediate) {
+         if (ConfigMgr.isDebugSensor()) {
+           logger.debug(getName(), F("AutoCal update aufrufen: roh=") + String(raw) + F(", cal_min=") + String(measurement.autocal.min_value) + F(", cal_max=") + String(measurement.autocal.max_value));
+         }
+         bool autocalChanged = AutoCal_update(measurement.autocal, static_cast<uint16_t>(raw), minutes, 0.0001f);
+         // Guard: if autocal bounds are inverted, anchor to current raw reading
+         if (measurement.autocal.min_value > static_cast<uint16_t>(raw) &&
+             measurement.autocal.max_value < static_cast<uint16_t>(raw)) {
+           measurement.autocal.min_value = static_cast<uint16_t>(raw);
+           measurement.autocal.max_value = static_cast<uint16_t>(raw);
+           measurement.autocal.min_value_f = static_cast<float>(raw);
+           measurement.autocal.max_value_f = static_cast<float>(raw);
+           measurement.autocal.last_update_time = minutes;
+           autocalChanged = true;
+           if (ConfigMgr.isDebugSensor()) {
+             logger.debug(getName(), F("Autocal-Inversion erkannt; min/max auf aktuellen Rohwert gesetzt: ") + String(raw));
+           }
+         }
+         if (ConfigMgr.isDebugSensor() && !autocalChanged) {
+           logger.debug(getName(), F("AutoCal-Aufruf: keine Änderung (roh=") + String(raw) + F(")"));
+         }
+         if (autocalChanged) {
+           if (ConfigMgr.isDebugSensor()) {
+             logger.debug(getName(), F("Autokalibrierung geändert für Index ") + String(index) + F(": min=") + String(measurement.autocal.min_value) + F(", max=") + String(measurement.autocal.max_value));
+           }
+           // Apply autocal result to the calculation limits
+           measurement.minValue = static_cast<float>(measurement.autocal.min_value);
+           measurement.maxValue = static_cast<float>(measurement.autocal.max_value);
+           // Persist integer-rounded min/max only (avoid flash wear)
+           int persistMin = static_cast<int>(measurement.autocal.min_value);
+           int persistMax = static_cast<int>(measurement.autocal.max_value);
+           auto result2 = SensorPersistence::updateAnalogMinMaxIntegerNoReload(
+             m_analogConfig.id, index, persistMin, persistMax, measurement.inverted);
+           if (!result2.isSuccess()) {
+             logger.error(getName(), F("Fehler beim Speichern der Autokalibrierung (int): ") + result2.getMessage());
+           } else {
+             if (ConfigMgr.isDebugSensor()) logger.debug(getName(), F("Autocal int min/max erfolgreich gespeichert für Index ") + String(index));
+           }
+         }
+       }
+     }
+   }
+
+   // Prüfe, ob Rohwert außerhalb des Bereichs liegt und begrenze ihn ggf.
+  // Autokalibrierung schreibt ihre Ergebnisse in minValue/maxValue; die
+  // Abbildung verwendet daher immer die gespeicherten Berechnungslimits.
   float minValue = m_analogConfig.measurements[index].minValue;
   float maxValue = m_analogConfig.measurements[index].maxValue;
   int clampedRaw = raw;
-  bool wasClamped = false;
 
-  if (raw < static_cast<int>(minValue)) {
-  clampedRaw = static_cast<int>(minValue);
-  wasClamped = true;
-  } else if (raw > static_cast<int>(maxValue)) {
-  clampedRaw = static_cast<int>(maxValue);
-  wasClamped = true;
+  // If autocalibration is active, DO NOT clamp the raw value; autocal
+  // should expand/shrink the calculation limits instead so the mapping
+  // window shifts. Only clamp when autocal is disabled.
+  if (!m_analogConfig.measurements[index].calibrationMode) {
+    if (raw < static_cast<int>(roundf(minValue))) {
+      clampedRaw = static_cast<int>(roundf(minValue));
+      logger.warning(getName(), F("Rohwert außerhalb der konfigurierten Grenzen; clamp auf min: ") + String(clampedRaw) + F(" für Index ") + String(index));
+    } else if (raw > static_cast<int>(roundf(maxValue))) {
+      clampedRaw = static_cast<int>(roundf(maxValue));
+      logger.warning(getName(), F("Rohwert außerhalb der konfigurierten Grenzen; clamp auf max: ") + String(clampedRaw) + F(" für Index ") + String(index));
+    }
+  } else {
+    // In autocal mode, allow raw to pass through and let AutoCal expand
+    // the runtime limits. Do not log a warning for these expected cases.
+    clampedRaw = raw;
   }
 
-  // Warnung, falls Wert begrenzt wurde
-  if (wasClamped) {
-  logger.warning(getName(),
-           F(": Rohwert außerhalb des Bereichs: ") + String(raw) + F(" (min=") +
-             String(minValue) + F(", max=") + String(maxValue) +
-             F("), benutze begrenzten Wert: ") + String(clampedRaw));
-  }
-
-  // Begrenzten Wert für die Abbildung verwenden
-  value = mapAnalogValue(clampedRaw,
-             index);  // Auf Prozentwert oder kalibrierten Wert abbilden
+  // Map raw value to percentage USING the (possibly autocal-adjusted)
+  // calculation limits and log the mapped result.
+  value = mapAnalogValue(clampedRaw, index);
 
   // Debug-Log für invertierte Sensoren
   if (index < m_analogConfig.measurements.size() &&
     m_analogConfig.measurements[index].inverted) {
-  logDebug(F("Invertierter Sensor: roh=") + String(clampedRaw) + F(", abgebildet=") +
-       String(value) + F("%"));
+    logDebug(F("Invertierter Sensor: roh=") + String(clampedRaw) + F(", abgebildet=") +
+         String(value) + F("%"));
   }
 
   logDebug(F("Gelesener Wert: ") + String(value));
+
+  // Persist updated calculation limits immediately if autocal changed
+  // (this is done earlier in the autocal update block). No further action
+  // needed here.
   return !isnan(value);
 }
 

@@ -155,17 +155,6 @@ class SensorHandler : public BaseHandler {
   void createSensorListSection() const;
 
   /**
-   * @brief Generate calibration interface HTML
-   * @return HTML string for calibration section
-   * @details Creates calibration interface:
-   *          - Calibration controls
-   *          - Current values
-   *          - Instructions
-   *          - Status feedback
-   */
-  String createCalibrationSection() const;
-
-  /**
    * @brief Convert string to URL-safe format
    * @param str String to convert
    * @return URL-safe version of string

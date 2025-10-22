@@ -89,9 +89,17 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
     handleAnalogInverted();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/analog_inverted fehlgeschlagen: ") +
-                     result.getMessage());
+     logger.error(F("AdminSensorHandler"),
+                  F("Registrieren von POST /admin/analog_inverted fehlgeschlagen: ") + result.getMessage());
+     return result;
+   }
+
+  result = router.addRoute(HTTP_POST, "/admin/analog_autocal", [this]() {
+    logger.debug(F("AdminSensorHandler"), F("POST /admin/analog_autocal aufgerufen"));
+    handleAnalogAutocal();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminSensorHandler"), F("Registrieren von POST /admin/analog_autocal fehlgeschlagen: ") + result.getMessage());
     return result;
   }
 #endif
@@ -135,14 +143,17 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
       router.addRoute(HTTP_POST, "/admin/reset_absolute_raw_minmax", [this]() {
   logger.debug(F("AdminSensorHandler"),
          F("POST /admin/reset_absolute_raw_minmax aufgerufen"));
-        handleResetAbsoluteRawMinMax();
-      });
-  if (!result.isSuccess()) {
-  logger.error(F("AdminSensorHandler"),
-         F("Registrieren von POST /admin/reset_absolute_raw_minmax fehlgeschlagen: ") +
-           result.getMessage());
-    return result;
-  }
+         handleResetAbsoluteRawMinMax();
+       });
+   if (!result.isSuccess()) {
+   logger.error(F("AdminSensorHandler"),
+          F("Registrieren von POST /admin/reset_absolute_raw_minmax fehlgeschlagen: ") +
+            result.getMessage());
+     return result;
+   }
+
+   // /admin/reset_autocal removed: redundant with reset_absolute_raw_minmax/reset_absolute_minmax
+   // Route intentionally not registered to avoid exposing duplicate functionality
 
   result = router.addRoute(HTTP_POST, "/trigger_measurement", [this]() {
   logger.debug(F("AdminSensorHandler"),

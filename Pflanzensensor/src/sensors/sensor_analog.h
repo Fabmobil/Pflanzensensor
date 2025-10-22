@@ -8,6 +8,7 @@
 
 #include "sensor_analog_multiplexer.h"
 #include "sensors/sensors.h"
+#include "sensors/sensor_autocalibration.h"
 
 // Forward declarations
 class SensorPersistence;
@@ -156,9 +157,17 @@ class AnalogSensor : public Sensor {
    * @return Minimum value
    */
   inline float getMinValue(size_t idx) const {
-    return idx < m_analogConfig.measurements.size()
-               ? m_analogConfig.measurements[idx].minValue
-               : 0.0f;
+    if (idx < m_analogConfig.measurements.size()) {
+      const auto &m = m_analogConfig.measurements[idx];
+      // Use runtime autocal if either the sensor's runtime copy or the
+      // persistent config indicates calibrationMode is active. This
+      // prevents transient races between persistence and runtime state.
+      bool cfgCal = false;
+      if (idx < this->config().measurements.size()) cfgCal = this->config().measurements[idx].calibrationMode;
+      if (m.calibrationMode || cfgCal) return static_cast<float>(m.autocal.min_value);
+      return m.minValue;
+    }
+    return 0.0f;
   }
   /**
    * @brief Set the minimum value for a given channel
@@ -175,9 +184,14 @@ class AnalogSensor : public Sensor {
    * @return Maximum value
    */
   inline float getMaxValue(size_t idx) const {
-    return idx < m_analogConfig.measurements.size()
-               ? m_analogConfig.measurements[idx].maxValue
-               : 0.0f;
+    if (idx < m_analogConfig.measurements.size()) {
+      const auto &m = m_analogConfig.measurements[idx];
+      bool cfgCal = false;
+      if (idx < this->config().measurements.size()) cfgCal = this->config().measurements[idx].calibrationMode;
+      if (m.calibrationMode || cfgCal) return static_cast<float>(m.autocal.max_value);
+      return m.maxValue;
+    }
+    return 0.0f;
   }
   /**
    * @brief Set the maximum value for a given channel
@@ -215,6 +229,50 @@ class AnalogSensor : public Sensor {
   inline void setAbsoluteRawMax(size_t idx, int rawMax) {
     if (idx < m_analogConfig.measurements.size())
       m_analogConfig.measurements[idx].absoluteRawMax = rawMax;
+  }
+
+  /**
+   * @brief Set the autocalibration state for a given channel
+   * @param idx Channel index
+   * @param cal AutoCal struct to set
+   */
+  inline void setAutoCalibration(size_t idx, const AutoCal& cal) {
+    if (idx < m_analogConfig.measurements.size())
+      m_analogConfig.measurements[idx].autocal = cal;
+  }
+
+  /**
+   * @brief Set or clear the autocalibration runtime flag for a channel
+   * @details This updates the sensor's internal runtime copy of the
+   * measurement configuration so measurement-time logic (like clamping)
+   * observes the calibration mode immediately.
+   */
+  inline void setCalibrationMode(size_t idx, bool enabled) {
+    if (idx < m_analogConfig.measurements.size())
+      m_analogConfig.measurements[idx].calibrationMode = enabled;
+  }
+
+  /**
+   * @brief Get the autocalibration state for a given channel
+   */
+  inline AutoCal getAutoCalibration(size_t idx) const {
+    if (idx < m_analogConfig.measurements.size())
+      return m_analogConfig.measurements[idx].autocal;
+    return AutoCal();
+  }
+
+  /**
+   * @brief Get autocal min/max quickly (uint16_t)
+   */
+  inline uint16_t getAutoCalMin(size_t idx) const {
+    if (idx < m_analogConfig.measurements.size())
+      return m_analogConfig.measurements[idx].autocal.min_value;
+    return 0;
+  }
+  inline uint16_t getAutoCalMax(size_t idx) const {
+    if (idx < m_analogConfig.measurements.size())
+      return m_analogConfig.measurements[idx].autocal.max_value;
+    return 1023;
   }
 
  protected:

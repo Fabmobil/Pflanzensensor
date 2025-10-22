@@ -36,7 +36,7 @@ void ensureConfigFilesExist() {
 
   // SENSORS
   if (!PersistenceUtils::fileExists("/sensors.json")) {
-    StaticJsonDocument<1048> doc;
+    StaticJsonDocument<2048> doc;
     // DHT sensor (if enabled)
 #if USE_DHT
     {
@@ -149,8 +149,13 @@ void ensureConfigFilesExist() {
       m["min"] = ANALOG_SENSOR_DEFAULTS[i].rawMin;
       m["max"] = ANALOG_SENSOR_DEFAULTS[i].rawMax;
       m["inverted"] = false;  // Default to not inverted
-      m["absoluteRawMin"] = 2147483647;
-      m["absoluteRawMax"] = -2147483648;
+      m["calibrationMode"] = ANALOG_SENSOR_DEFAULTS[i].calibrationMode;
+      // Do NOT pre-populate absolute raw extremum storage with autocal
+      // defaults. The extremum store should reflect measured history only.
+      // Initialize extremum storage with sentinel values so real
+      // measurements populate them later.
+      m["absoluteRawMin"] = 2147483647;  // INT_MAX sentinel
+      m["absoluteRawMax"] = -2147483648; // INT_MIN sentinel
       auto t = m.createNestedObject("thresholds");
       t["yellowLow"] = ANALOG_SENSOR_DEFAULTS[i].yellowLow;
       t["greenLow"] = ANALOG_SENSOR_DEFAULTS[i].greenLow;

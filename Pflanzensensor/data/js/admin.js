@@ -121,19 +121,72 @@ function showErrorMessage(message) {
  * Used by admin pages to provide consistent error notifications.
  */
 function parseJsonResponse(response) {
-  if (response.status === 401) {
+  if (response && response.status === 401) {
     showErrorMessage('Authentifizierung erforderlich');
     throw new Error('Unauthorized');
   }
 
-  const contentType = response.headers.get('content-type') || '';
-  if (!contentType.includes('application/json')) {
-    return response.text().then(text => {
-      throw new Error('Ungültige Server-Antwort: ' + (text || '<leer>'));
+  // Safely retrieve content-type from fetch Response or our XHR-like fallback
+  var contentType = '';
+  try {
+    if (response && response.headers && typeof response.headers.get === 'function') {
+      contentType = (response.headers.get('content-type') || '').toLowerCase();
+    } else if (response && typeof response.getResponseHeader === 'function') {
+      contentType = (response.getResponseHeader('content-type') || '').toLowerCase();
+    }
+  } catch (e) {
+    contentType = '';
+  }
+
+  // If server didn't advertise JSON, try to detect JSON-ish body and fail with the raw body shown
+  if (!contentType || contentType.indexOf('application/json') === -1) {
+    if (typeof response.text === 'function') {
+      return response.text().then(function (text) {
+        var trimmed = (text || '').trim();
+        // If the body appears to be JSON, attempt parse to provide a better error message
+        if (trimmed && (trimmed[0] === '{' || trimmed[0] === '[')) {
+          try {
+            return JSON.parse(text);
+          } catch (err) {
+            console.error('[ADMIN] JSON.parse failed for response with missing/incorrect Content-Type:', err, text);
+            showErrorMessage('Ungültige JSON-Antwort vom Server (siehe Konsole)');
+            throw new Error('Ungültige Server-Antwort: ' + (text || '<leer>'));
+          }
+        }
+        throw new Error('Ungültige Server-Antwort: ' + (text || '<leer>'));
+      });
+    }
+    return Promise.reject(new Error('Ungültige Server-Antwort (keine body reader)'));
+  }
+
+  // Content-Type indicates JSON — parse robustly, but fall back to text and log raw body on parse errors
+  if (typeof response.json === 'function') {
+    return response.json().catch(function (err) {
+      if (typeof response.text === 'function') {
+        return response.text().then(function (text) {
+          console.error('[ADMIN] Failed to parse JSON response:', err, 'raw response:', text);
+          showErrorMessage('Ungültige JSON-Antwort vom Server (siehe Konsole)');
+          throw new Error('JSON parse error: ' + (err && err.message ? err.message : err) + ' | raw: ' + (text || '<leer>'));
+        });
+      }
+      throw err;
     });
   }
 
-  return response.json();
+  // Fallback: read body as text and try JSON.parse
+  if (typeof response.text === 'function') {
+    return response.text().then(function (text) {
+      try {
+        return JSON.parse(text);
+      } catch (err) {
+        console.error('[ADMIN] Failed to parse JSON response (text fallback):', err, 'raw:', text);
+        showErrorMessage('Ungültige JSON-Antwort vom Server (siehe Konsole)');
+        throw err;
+      }
+    });
+  }
+
+  return Promise.reject(new Error('Keine Möglichkeit, Serverantwort zu lesen'));
 }
 
 /**

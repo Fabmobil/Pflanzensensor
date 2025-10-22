@@ -60,7 +60,7 @@ void AdminSensorHandler::handleSensorConfig() {
             sendChunk(F("<div class='card-header'>"));
             sendChunk(F("<h2 class='sensor-id-title'>"));
             sendChunk(id);
-            sendChunk(F("</h2>"));
+            sendChunk(F("-Sensor</h2>"));
             sendChunk(F("</div>"));
 
             // Measurement interval input (sensor-wide)
@@ -133,7 +133,7 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   sendChunk(String(i));
   sendChunk(F("'>Sensorname:</label> "));
   sendChunk(
-      F("<input type='text' size='20' class='measurement-name' id='name_"));
+  F("<input type='text' size='20' class='measurement-name' id='name_"));
   sendChunk(id);
   sendChunk(F("_"));
   sendChunk(String(i));
@@ -145,6 +145,30 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   sendChunk(config.measurements[i].name);
   sendChunk(F("' placeholder='Messwert Name'></div>"));
 
+  // Inverted scale checkbox
+  #if USE_ANALOG
+  if (analog) {
+    sendChunk(F("<div class='card-section inverted-section'>"));
+    sendChunk(F("<label><input type='checkbox' name='inverted_"));
+    sendChunk(id);
+    sendChunk(F("_"));
+    sendChunk(String(i));
+    sendChunk(F("' class='analog-inverted-checkbox' data-sensor-id='"));
+    sendChunk(id);
+    sendChunk(F("' data-measurement-index='"));
+    sendChunk(String(i));
+    sendChunk(F("'"));
+    if (config.measurements[i].inverted) {
+      sendChunk(F(" checked"));
+    }
+    sendChunk(
+        F("> Skala invertieren (hohe Rohwerte = niedrige Prozente)</label>"));
+    sendChunk(F("</div>"));
+  }
+  #endif
+
+  // Absolute min/max values section
+  sendChunk(F("<div class='card-section minmax-section'>"));
   // Last value, error count, and measurement button
   sendChunk(F("<div class='card-section status-row'>"));
   sendChunk(
@@ -166,9 +190,6 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   sendChunk(String(sensor->getErrorCount()));
   sendChunk(F(") "));
   sendChunk(F("</div>"));
-
-  // Absolute min/max values section
-  sendChunk(F("<div class='card-section minmax-section'>"));
   sendChunk(
       F("Min: <input readonly class='readonly-value absolute-min-input' "
         "data-sensor-id='"));
@@ -202,102 +223,9 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   sendChunk(F("' data-measurement-index='"));
   sendChunk(String(i));
   sendChunk(F("' style='margin-left:8px;'>Zurücksetzen</button>"));
-  sendChunk(F("</div>"));
-
-  // Analog min/max and raw value rows
-#if USE_ANALOG
-  if (analog) {
-    AnalogSensor* analogSensor = static_cast<AnalogSensor*>(sensor);
-    sendChunk(F("<div class='sensor-id-title'><h3>Rohwerte</h3></div>"));
-    sendChunk(F("<div class='card-section minmax-section'>"));
-    sendChunk(F("Min: <input type='number' step='any' size='4' name='min_"));
-    sendChunk(id);
-    sendChunk(F("_"));
-    sendChunk(String(i));
-    sendChunk(F("' value='"));
-    sendChunk(String(int(analogSensor->getMinValue(i))));
-    sendChunk(F("' class='analog-min-input' data-sensor-id='"));
-    sendChunk(id);
-    sendChunk(F("' data-measurement-index='"));
-    sendChunk(String(i));
-    sendChunk(
-        F("'> | Letzter: <input readonly class='readonly-value' value='"));
-    int rawValue = analogSensor->getLastRawValue(i);
-    if (rawValue >= 0) {
-      sendChunk(String(rawValue));
-    } else {
-      sendChunk(F("--"));
-    }
-    sendChunk(
-        F("'> | Max: <input type='number' step='any' size='4' name='max_"));
-    sendChunk(id);
-    sendChunk(F("_"));
-    sendChunk(String(i));
-    sendChunk(F("' value='"));
-    sendChunk(String(int(analogSensor->getMaxValue(i))));
-    sendChunk(F("' class='analog-max-input' data-sensor-id='"));
-    sendChunk(id);
-    sendChunk(F("' data-measurement-index='"));
-    sendChunk(String(i));
-    sendChunk(F("'>"));
-    sendChunk(F("</div>"));
-
-    // Raw min/max values section
-    sendChunk(F("<div class='card-section minmax-section'>"));
-    sendChunk(
-        F("Min: <input readonly class='readonly-value absolute-raw-min-input' "
-          "data-sensor-id='"));
-    sendChunk(id);
-    sendChunk(F("' data-measurement-index='"));
-    sendChunk(String(i));
-    sendChunk(F("' value='"));
-    if (config.measurements[i].absoluteRawMin != INT_MAX) {
-      sendChunk(String(config.measurements[i].absoluteRawMin));
-    } else {
-      sendChunk(F("--"));
-    }
-    sendChunk(
-        F("'> | Max: <input readonly class='readonly-value "
-          "absolute-raw-max-input' data-sensor-id='"));
-    sendChunk(id);
-    sendChunk(F("' data-measurement-index='"));
-    sendChunk(String(i));
-    sendChunk(F("' value='"));
-    if (config.measurements[i].absoluteRawMax != INT_MIN) {
-      sendChunk(String(config.measurements[i].absoluteRawMax));
-    } else {
-      sendChunk(F("--"));
-    }
-    sendChunk(
-        F("'> <button type='button' class='button-secondary reset-raw-minmax-button warning' data-sensor-id='"));
-    sendChunk(id);
-  sendChunk(F("' data-measurement-index='"));
-  sendChunk(String(i));
-  sendChunk(F("' style='margin-left:8px;'>Zurücksetzen</button>"));
-    sendChunk(F("</div>"));
-
-    // Inverted scale checkbox
-    sendChunk(F("<div class='card-section inverted-section'>"));
-    sendChunk(F("<label><input type='checkbox' name='inverted_"));
-    sendChunk(id);
-    sendChunk(F("_"));
-    sendChunk(String(i));
-    sendChunk(F("' class='analog-inverted-checkbox' data-sensor-id='"));
-    sendChunk(id);
-    sendChunk(F("' data-measurement-index='"));
-    sendChunk(String(i));
-    sendChunk(F("'"));
-    if (config.measurements[i].inverted) {
-      sendChunk(F(" checked"));
-    }
-    sendChunk(
-        F("> Skala invertieren (hohe Rohwerte = niedrige Prozente)</label>"));
-    sendChunk(F("</div>"));
-  }
-#endif
 
   // Thresholds (per measurement)
-  sendChunk(F("<div class='sensor-id-title'><h3>Schwellwerte</h3></div>"));
+  sendChunk(F("<div class='status-row'><h3>Schwellwerte</h3></div>"));
   sendChunk(F("<div class='card-section threshold-row'>"));
   sendChunk(F("<div class='threshold-inputs'>"));
   sendChunk(
@@ -348,6 +276,124 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i,
   generateThresholdConfig(sensor, i);
   sendChunk(F("</div>"));
   sendChunk(F("</div>"));  // end threshold-row
+
+  sendChunk(F("</div>"));
+
+  // Analog min/max and raw value rows
+#if USE_ANALOG
+  if (analog) {
+    AnalogSensor* analogSensor = static_cast<AnalogSensor*>(sensor);
+    sendChunk(F("<div class='card-section minmax-section'>"));
+    sendChunk(F("<div class='status-row'><h3>Rohwerte Berechnungslimits:</h3></div>"));
+    sendChunk(F("Min: <input type='number' step='any' size='4' name='min_"));
+    sendChunk(id);
+    sendChunk(F("_"));
+    sendChunk(String(i));
+    sendChunk(F("' value='"));
+    sendChunk(String(int(analogSensor->getMinValue(i))));
+    // Add readonly-value class when calibrationMode is active so the field
+    // is visually the same as other readonly fields on initial render
+    if (config.measurements[i].calibrationMode) {
+      sendChunk(F("' class='analog-min-input readonly-value' data-sensor-id='"));
+    } else {
+      sendChunk(F("' class='analog-min-input' data-sensor-id='"));
+    }
+    sendChunk(id);
+    sendChunk(F("' data-measurement-index='"));
+    sendChunk(String(i));
+    // Disable manual editing when autocalibration is enabled for this measurement
+    if (config.measurements[i].calibrationMode) {
+      sendChunk(F("' disabled> | Letzter: <input readonly class='readonly-value' value='"));
+    } else {
+      sendChunk(F("'> | Letzter: <input readonly class='readonly-value' value='"));
+    }
+    int rawValue = analogSensor->getLastRawValue(i);
+    if (rawValue >= 0) {
+      sendChunk(String(rawValue));
+    } else {
+      sendChunk(F("--"));
+    }
+    sendChunk(
+        F("'> | Max: <input type='number' step='any' size='4' name='max_"));
+    sendChunk(id);
+    sendChunk(F("_"));
+    sendChunk(String(i));
+    sendChunk(F("' value='"));
+    sendChunk(String(int(analogSensor->getMaxValue(i))));
+    // Add readonly-value class when calibrationMode is active so the field
+    // is visually the same as other readonly fields on initial render
+    if (config.measurements[i].calibrationMode) {
+      sendChunk(F("' class='analog-max-input readonly-value' data-sensor-id='"));
+    } else {
+      sendChunk(F("' class='analog-max-input' data-sensor-id='"));
+    }
+    sendChunk(id);
+    sendChunk(F("' data-measurement-index='"));
+    sendChunk(String(i));
+    if (config.measurements[i].calibrationMode) {
+      sendChunk(F("' disabled>"));
+    } else {
+      sendChunk(F("'>"));
+    }
+
+    // Autokalibrierung checkbox and reset button (no separate persisted autocal fields)
+    sendChunk(F("<div class='card-section autocal-section'>"));
+    sendChunk(F("<label><input type='checkbox' name='autocal_"));
+    sendChunk(id);
+    sendChunk(F("_"));
+    sendChunk(String(i));
+    sendChunk(F("' class='analog-autocal-checkbox' data-sensor-id='"));
+    sendChunk(id);
+    sendChunk(F("' data-measurement-index='"));
+    sendChunk(String(i));
+    sendChunk(F("'"));
+    if (config.measurements[i].calibrationMode) {
+      sendChunk(F(" checked"));
+    }
+    sendChunk(F("> Autokalibrierung aktivieren<a href=\"https://github.com/Fabmobil/Pflanzensensor/wiki/automatische-Kalibrierung\" target=\"_blank\">❔</a></label>"));
+    sendChunk(F("</div>"));
+
+    sendChunk(F("</div>"));
+
+    // Raw min/max values section
+    sendChunk(F("<div class='card-section minmax-section'>"));
+    sendChunk(F("<div class='status-row'><h3>Rohwerte Extremmesswerte:</h3></div>"));
+    sendChunk(
+        F("Min: <input readonly class='readonly-value absolute-raw-min-input' "
+          "data-sensor-id='"));
+    sendChunk(id);
+    sendChunk(F("' data-measurement-index='"));
+    sendChunk(String(i));
+    sendChunk(F("' value='"));
+    if (config.measurements[i].absoluteRawMin != INT_MAX) {
+      sendChunk(String(config.measurements[i].absoluteRawMin));
+    } else {
+      sendChunk(F("--"));
+    }
+    sendChunk(
+        F("'> | Max: <input readonly class='readonly-value "
+          "absolute-raw-max-input' data-sensor-id='"));
+    sendChunk(id);
+    sendChunk(F("' data-measurement-index='"));
+    sendChunk(String(i));
+    sendChunk(F("' value='"));
+    if (config.measurements[i].absoluteRawMax != INT_MIN) {
+      sendChunk(String(config.measurements[i].absoluteRawMax));
+    } else {
+      sendChunk(F("--"));
+    }
+    sendChunk(
+        F("'> <button type='button' class='button-secondary reset-raw-minmax-button warning' data-sensor-id='"));
+    sendChunk(id);
+  sendChunk(F("' data-measurement-index='"));
+  sendChunk(String(i));
+  sendChunk(F("' style='margin-left:8px;'>Zurücksetzen</button>"));
+  sendChunk(F("</div>"));
+
+
+  }
+ #endif
+
   sendChunk(F("</div>"));  // end measurement-card
   yield();
 }
@@ -356,7 +402,7 @@ void AdminSensorHandler::renderFlowerStatusSensorCard() {
   logger.debug(F("AdminSensorHandler"), F("renderFlowerStatusSensorCard()"));
 
   sendChunk(F("<div class='card'>"));
-  sendChunk(F("<h2>Blumen-Status Sensor</h2>"));
+  sendChunk(F("<h2>Gesicht der Blume</h2>"));
   sendChunk(F("<p>Wähle den Sensor, der das Gesicht der Blume auf der Startseite steuert:</p>"));
 
   sendChunk(F("<div class='form-group'>"));

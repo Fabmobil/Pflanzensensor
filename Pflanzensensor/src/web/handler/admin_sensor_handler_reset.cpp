@@ -186,3 +186,6 @@ void AdminSensorHandler::handleResetAbsoluteRawMinMax() {
 
   sendJsonResponse(200, F("{\"success\":true}"));
 }
+
+// Autocal reset implementation removed — use reset_absolute_raw_minmax or
+// reset_absolute_minmax endpoints to achieve equivalent effects.

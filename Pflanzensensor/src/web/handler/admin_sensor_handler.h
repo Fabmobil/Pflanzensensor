@@ -72,6 +72,8 @@ class AdminSensorHandler : public BaseHandler {
   void handleMeasurementName();
   void handleResetAbsoluteMinMax();
   void handleResetAbsoluteRawMinMax();
+  void handleAnalogAutocal();
+  // NOTE: handleResetAutoCalibration removed — use reset absolute raw/min endpoints instead
 
   // Add this declaration for the new UI row rendering function
   void renderSensorMeasurementRow(Sensor* sensor, size_t i, size_t nRows);

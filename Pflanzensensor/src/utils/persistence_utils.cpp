@@ -54,7 +54,7 @@ bool writeJsonFile(const char* path, const ArduinoJson::JsonDocument& doc,
     errorMsg = F("Öffnen der temporären Datei zum Schreiben fehlgeschlagen: ") + tempPath;
     return false;
   }
-  size_t written = serializeJson(doc, file);
+  size_t written = serializeJsonPretty(doc, file);
   file.close();
   if (written == 0) {
     errorMsg = F("Schreiben des JSON in die temporäre Datei fehlgeschlagen: ") + tempPath;

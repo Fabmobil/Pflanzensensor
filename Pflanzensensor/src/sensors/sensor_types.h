@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "sensor_config.h"  // Ensure configuration macros are defined first
+#include "sensors/sensor_autocalibration.h"
 
 class Sensor;
 
@@ -96,6 +97,17 @@ struct MeasurementConfig {
    */
   int absoluteRawMax{INT_MIN};
 
+  /**
+   * @brief Whether automatic calibration (AutoCal) is enabled for this
+   * measurement (analog sensors only).
+   */
+  bool calibrationMode{false};
+
+  /**
+   * @brief Autocalibration state (only meaningful when calibrationMode==true)
+   */
+  AutoCal autocal;
+
   MeasurementConfig()
       : enabled(true),
         retryDelay(1000),
@@ -107,7 +119,12 @@ struct MeasurementConfig {
   // DO NOT initialize absoluteRawMin/absoluteRawMax here
   // Let JSON loading handle these values to prevent constructor defaults
   // from overriding loaded configuration
-  {}
+  {
+    // Initialize autocal to sensible defaults for 10-bit ADC
+    autocal.min_value = 0;
+    autocal.max_value = 1023;
+    autocal.last_update_time = 0;
+  }
 };
 
 /**
