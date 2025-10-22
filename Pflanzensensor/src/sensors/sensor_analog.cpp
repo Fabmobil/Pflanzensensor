@@ -379,8 +379,14 @@ bool AnalogSensor::fetchSample(float& value, size_t index) {
                                       F(", cal_min=") + String(measurement.autocal.min_value) +
                                       F(", cal_max=") + String(measurement.autocal.max_value));
         }
+        // Compute alpha from configured autocal half-life and current
+        // measurement interval so alpha adapts automatically when interval
+        // changes.
+        unsigned long intervalMs = this->getMeasurementInterval();
+        uint32_t halfLife = measurement.autocalHalfLifeSeconds;
+        float alpha = AutoCal_computeAlphaForHalfLifeSeconds(halfLife, intervalMs);
         bool autocalChanged =
-            AutoCal_update(measurement.autocal, static_cast<uint16_t>(raw), minutes, 0.0001f);
+            AutoCal_update(measurement.autocal, static_cast<uint16_t>(raw), minutes, alpha);
         // Guard: if autocal bounds are inverted, anchor to current raw reading
         if (measurement.autocal.min_value > static_cast<uint16_t>(raw) &&
             measurement.autocal.max_value < static_cast<uint16_t>(raw)) {

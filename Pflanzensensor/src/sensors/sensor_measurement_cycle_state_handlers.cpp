@@ -145,6 +145,10 @@ void SensorMeasurementCycleManager::handleMeasuring() {
     return;
   }
   m_currentResults = m_sensor->getAveragedResults(); // Use DRY base method
+  // Record the completion time immediately so the UI shows the most
+  // accurate 'last measurement' timestamp. This avoids delays introduced
+  // by processing / persistence steps.
+  m_sensor->updateLastMeasurementTime();
   logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Wechsel in Verarbeitungszustand"));
   m_state.setState(MeasurementState::PROCESSING, m_sensor->getName());
 }

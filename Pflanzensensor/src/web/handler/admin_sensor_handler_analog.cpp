@@ -452,3 +452,75 @@ void AdminSensorHandler::handleAnalogAutocal() {
   sendJsonResponse(400, F("{\"success\":false,\"error\":\"Analog sensors not enabled\"}"));
 #endif
 }
+
+void AdminSensorHandler::handleAnalogAutocalDuration() {
+#if USE_ANALOG
+  if (!requireAjaxRequest())
+    return;
+  if (!validateRequest()) {
+    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
+    return;
+  }
+
+  if (!_server.hasArg("sensor_id") || !_server.hasArg("measurement_index") ||
+      !_server.hasArg("duration")) {
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Erforderliche Parameter fehlen\"}"));
+    return;
+  }
+
+  String sensorId = _server.arg("sensor_id");
+  size_t measurementIndex = _server.arg("measurement_index").toInt();
+  unsigned long dur = _server.arg("duration").toInt();
+
+  logger.debug(F("AdminSensorHandler"), F("handleAnalogAutocalDuration: sensor=") + sensorId +
+                                            F(", measurement=") + String(measurementIndex) +
+                                            F(", duration=") + String(dur));
+
+  if (!_sensorManager.isHealthy()) {
+    sendJsonResponse(500,
+                     F("{\"success\":false,\"error\":\"Sensor-Manager nicht betriebsbereit\"}"));
+    return;
+  }
+
+  Sensor* sensor = _sensorManager.getSensor(sensorId);
+  if (!sensor) {
+    sendJsonResponse(404, F("{\"success\":false,\"error\":\"Sensor nicht gefunden\"}"));
+    return;
+  }
+
+  if (!sensor->isInitialized()) {
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Sensor nicht initialisiert\"}"));
+    return;
+  }
+
+  if (!isAnalogSensor(sensor)) {
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Sensor ist nicht analog\"}"));
+    return;
+  }
+
+  SensorConfig& config = sensor->mutableConfig();
+  if (measurementIndex >= config.measurements.size()) {
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messindex\"}"));
+    return;
+  }
+
+  // Update runtime copy immediately
+  config.measurements[measurementIndex].autocalHalfLifeSeconds = static_cast<uint32_t>(dur);
+  // Persist atomically
+  auto pres = SensorPersistence::updateAutocalDuration(sensorId, measurementIndex,
+                                                       static_cast<uint32_t>(dur));
+  if (!pres.isSuccess()) {
+    logger.error(F("AdminSensorHandler"),
+                 F("Fehler beim Persistieren der Autocal-Dauer: ") + pres.getMessage());
+    sendJsonResponse(
+        500, F("{\"success\":false,\"error\":\"Fehler beim Speichern der Autocal-Dauer\"}"));
+    return;
+  }
+
+  logger.info(F("AdminSensorHandler"), F("Autocal-Dauer aktualisiert für ") + sensorId + F("[") +
+                                           String(measurementIndex) + F("] -> ") + String(dur));
+  sendJsonResponse(200, F("{\"success\":true}"));
+#else
+  sendJsonResponse(400, F("{\"success\":false,\"error\":\"Analog sensors not enabled\"}"));
+#endif
+}

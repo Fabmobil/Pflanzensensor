@@ -68,6 +68,7 @@ public:
   void handleResetAbsoluteMinMax();
   void handleResetAbsoluteRawMinMax();
   void handleAnalogAutocal();
+  void handleAnalogAutocalDuration();
   // NOTE: handleResetAutoCalibration removed — use reset absolute raw/min endpoints instead
 
   // Add this declaration for the new UI row rendering function

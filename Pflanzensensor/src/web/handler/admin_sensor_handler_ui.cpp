@@ -344,6 +344,35 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i, si
                 "automatische-Kalibrierung\" target=\"_blank\">❔</a></label>"));
     sendChunk(F("</div>"));
 
+    // Autocal duration select (6h,12h,1d,3d,1w,1M) — only show when autocal active
+    if (config.measurements[i].calibrationMode) {
+      sendChunk(F("<div class='card-section autocal-duration-section'>"));
+      sendChunk(F("<label>Halbwertszeit: "));
+      sendChunk(F("<select class='analog-autocal-duration' data-sensor-id='"));
+      sendChunk(id);
+      sendChunk(F("' data-measurement-index='"));
+      sendChunk(String(i));
+      sendChunk(F("'>"));
+      uint32_t cur = config.measurements[i].autocalHalfLifeSeconds;
+      auto opt = [&](uint32_t v, const char* label) {
+        sendChunk(F("<option value='"));
+        sendChunk(String(v));
+        sendChunk(F("'"));
+        if (cur == v)
+          sendChunk(F(" selected"));
+        sendChunk(F(">"));
+        sendChunk(String(label));
+        sendChunk(F("</option>"));
+      };
+      opt(21600, "6 Stunden");
+      opt(43200, "12 Stunden");
+      opt(86400, "1 Tag");
+      opt(259200, "3 Tage");
+      opt(604800, "1 Woche");
+      opt(2592000, "1 Monat");
+      sendChunk(F("</select></label></div>"));
+    }
+
     sendChunk(F("</div>"));
 
     // Raw min/max values section

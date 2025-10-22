@@ -1,5 +1,6 @@
 #include "sensors/sensor_autocalibration.h"
 
+#include "logger/logger.h"
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <math.h>
@@ -119,4 +120,35 @@ void AutoCal_to_json(const AutoCal& cal, JsonObject& obj) {
   obj["min_value"] = cal.min_value;
   obj["max_value"] = cal.max_value;
   obj["last_update_time"] = cal.last_update_time;
+}
+
+float AutoCal_computeAlphaForHalfLifeSeconds(uint32_t half_life_seconds,
+                                             unsigned long measurementIntervalMs) {
+  // Guard against invalid intervals
+  if (half_life_seconds == 0 || measurementIntervalMs == 0) {
+    // fallback to a very small alpha (slow adaptation)
+    return 0.0001f;
+  }
+
+  // Number of samples contained in the half-life period
+  // n = half_life_seconds / (measurementIntervalMs / 1000.0)
+  float n =
+      (static_cast<float>(half_life_seconds) * 1000.0f) / static_cast<float>(measurementIntervalMs);
+  if (n <= 0.0f) {
+    return 0.0001f;
+  }
+
+  // alpha = 1 - 0.5^(1/n)
+  float invn = 1.0f / n;
+  // Use powf from math.h
+  float base = 0.5f;
+  float p = powf(base, invn);
+  float alpha = 1.0f - p;
+
+  // Clamp alpha to a reasonable range
+  if (alpha <= 0.0f)
+    alpha = 0.0000001f;
+  if (alpha > 1.0f)
+    alpha = 1.0f;
+  return alpha;
 }

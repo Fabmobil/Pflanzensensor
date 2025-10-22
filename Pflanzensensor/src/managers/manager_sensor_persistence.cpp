@@ -263,6 +263,17 @@ void SensorPersistence::applySensorSettingsFromJson(const String& sensorId,
           }
         }
 
+        // Apply autocal half-life duration (seconds) if present
+        if (measurement["autocalDuration"].is<unsigned long>()) {
+          unsigned long dur = measurement["autocalDuration"] | 86400UL;
+          config.measurements[index].autocalHalfLifeSeconds = static_cast<uint32_t>(dur);
+          if (ConfigMgr.isDebugSensor()) {
+            logger.debug(F("SensorP"), F("Geladene autocalDuration: ") + String(dur) +
+                                           F(" s für Sensor ") + sensorId + F(" Messung ") +
+                                           String(index));
+          }
+        }
+
         // Initialize autocal from absolute raw values (if present) instead of
         // reading a separate persistent 'autocal' block. This avoids creating
         // extra persisted fields and uses the existing absoluteRaw storage.
@@ -410,6 +421,8 @@ SensorPersistence::PersistenceResult SensorPersistence::saveToFileMinimal() {
       }
       // Persist calibration mode for analog sensors
       measurementObj["calibrationMode"] = sensorConfig.measurements[i].calibrationMode;
+      // Persist autocal half-life duration (seconds)
+      measurementObj["autocalDuration"] = sensorConfig.measurements[i].autocalHalfLifeSeconds;
       // Persist absolute raw min/max values (reuse this storage for autocal)
       measurementObj["absoluteRawMin"] = sensorConfig.measurements[i].absoluteRawMin;
       measurementObj["absoluteRawMax"] = sensorConfig.measurements[i].absoluteRawMax;
@@ -888,6 +901,61 @@ SensorPersistence::updateAnalogCalibrationMode(const String& sensorId, size_t me
     logger.warning(
         F("SensorP"),
         F("Neuladen der Sensorkonfiguration nach Kalibrierungsmodus-Update fehlgeschlagen: ") +
+            reloadResult.getMessage());
+  }
+
+  return PersistenceResult::success();
+}
+
+SensorPersistence::PersistenceResult
+SensorPersistence::updateAutocalDuration(const String& sensorId, size_t measurementIndex,
+                                         uint32_t halfLifeSeconds) {
+  // Use critical section to avoid concurrent writes
+  CriticalSection cs;
+
+  StaticJsonDocument<4096> doc;
+  String errorMsg;
+  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
+    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  }
+
+  JsonObject sensorObj = doc[sensorId.c_str()];
+  if (sensorObj.isNull()) {
+    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
+                                   F("Sensor nicht gefunden: ") + sensorId);
+  }
+
+  JsonObject measurements = sensorObj["measurements"];
+  if (measurements.isNull()) {
+    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
+                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
+  }
+
+  char idxBuf[8];
+  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
+  JsonObject measurementObj = measurements[idxBuf];
+  if (measurementObj.isNull()) {
+    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
+                                   F("Messung nicht gefunden: ") + String(measurementIndex));
+  }
+
+  measurementObj["autocalDuration"] = static_cast<unsigned long>(halfLifeSeconds);
+
+  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
+    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  }
+
+  logger.info(F("SensorP"), F("Autocal-Dauer atomar aktualisiert für ") + sensorId +
+                                F(" Messung ") + String(measurementIndex) +
+                                F(", Bytes geschrieben: ") +
+                                String(PersistenceUtils::getFileSize("/sensors.json")));
+
+  // Reload configuration to sync in-memory state
+  auto reloadResult = loadFromFile();
+  if (!reloadResult.isSuccess()) {
+    logger.warning(
+        F("SensorP"),
+        F("Neuladen der Sensorkonfiguration nach Autocal-Dauer-Update fehlgeschlagen: ") +
             reloadResult.getMessage());
   }
 

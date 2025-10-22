@@ -151,6 +151,8 @@ void ensureConfigFilesExist() {
       // Use the compiled ANALOG_SENSOR_DEFAULTS to populate inverted flag.
       m["inverted"] = ANALOG_SENSOR_DEFAULTS[i].inverted;
       m["calibrationMode"] = ANALOG_SENSOR_DEFAULTS[i].calibrationMode;
+      // Default autocal half-life: 1 day (86400 seconds)
+      m["autocalDuration"] = 86400;
       // Do NOT pre-populate absolute raw extremum storage with autocal
       // defaults. The extremum store should reflect measured history only.
       // Initialize extremum storage with sentinel values so real

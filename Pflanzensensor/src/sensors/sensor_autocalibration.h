@@ -46,6 +46,15 @@ bool AutoCal_update(AutoCal& cal, uint16_t new_reading, uint32_t current_time_mi
                     float alpha = 0.0001f);
 
 /**
+ * @brief Compute per-sample EMA alpha from desired half-life and measurement interval
+ * @param half_life_seconds Time (in seconds) for the EMA to reach 50% of the change
+ * @param measurementIntervalMs Measurement interval in milliseconds (time between samples)
+ * @return alpha value suitable for AutoCal_update
+ */
+float AutoCal_computeAlphaForHalfLifeSeconds(uint32_t half_life_seconds,
+                                             unsigned long measurementIntervalMs);
+
+/**
  * Deserialize AutoCal from a JsonObject if fields exist. Missing fields
  * are left unchanged. Returns true if any field was updated.
  */

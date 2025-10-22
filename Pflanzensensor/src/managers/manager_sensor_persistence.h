@@ -124,6 +124,16 @@ public:
                                                        size_t measurementIndex, bool enabled);
 
   /**
+   * @brief Update autocal half-life duration (seconds) for an analog measurement
+   * @param sensorId Sensor ID to update
+   * @param measurementIndex Measurement index to update
+   * @param halfLifeSeconds New half-life in seconds
+   * @return PersistenceResult indicating success or failure
+   */
+  static PersistenceResult updateAutocalDuration(const String& sensorId, size_t measurementIndex,
+                                                 uint32_t halfLifeSeconds);
+
+  /**
    * @brief Check if sensor configuration file exists
    * @return True if sensors.json exists, false otherwise
    */

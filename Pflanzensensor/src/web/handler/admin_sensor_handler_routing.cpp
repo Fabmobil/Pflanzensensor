@@ -99,6 +99,17 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
                      result.getMessage());
     return result;
   }
+
+  result = router.addRoute(HTTP_POST, "/admin/analog_autocal_duration", [this]() {
+    logger.debug(F("AdminSensorHandler"), F("POST /admin/analog_autocal_duration aufgerufen"));
+    handleAnalogAutocalDuration();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminSensorHandler"),
+                 F("Registrieren von POST /admin/analog_autocal_duration fehlgeschlagen: ") +
+                     result.getMessage());
+    return result;
+  }
 #endif
 
   result = router.addRoute(HTTP_POST, "/admin/thresholds", [this]() {

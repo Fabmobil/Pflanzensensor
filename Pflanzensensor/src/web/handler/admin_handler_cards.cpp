@@ -15,7 +15,7 @@
 #include "web/handler/admin_handler.h"
 
 void AdminHandler::generateAndSendDebugSettingsCard() {
-  sendChunk(F("<div class='card'><h3>Debug-Einstellungen</h3>"));
+  sendChunk(F("<div class='card'><h3>Log Einstellungen</h3>"));
   sendChunk(F("<form method='post' action='/admin/updateSettings' "
               "class='config-form'>"));
   sendChunk(F("<input type='hidden' name='section' value='debug'>"));

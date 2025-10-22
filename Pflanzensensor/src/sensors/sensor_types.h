@@ -103,6 +103,14 @@ struct MeasurementConfig {
   bool calibrationMode{false};
 
   /**
+   * @brief Autocalibration half-life in seconds
+   * @details The time it should take for the autocal EMA to move 50% from
+   * an old value towards a new value. User-selectable via sensors.json. If
+   * zero the default of 1 day (86400s) is used.
+   */
+  uint32_t autocalHalfLifeSeconds{86400};
+
+  /**
    * @brief Autocalibration state (only meaningful when calibrationMode==true)
    */
   AutoCal autocal;

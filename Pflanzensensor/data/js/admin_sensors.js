@@ -449,6 +449,11 @@ var SensorConfigAPI = (function () {
     return API.request('/admin/analog_autocal', { sensor_id: sensorId, measurement_index: '' + measurementIndex, enabled: enabled ? 'true' : 'false' }, 'Autokalibrierung ' + (enabled ? 'aktiviert' : 'deaktiviert'));
   }
 
+  function updateAnalogAutocalDuration(sensorId, measurementIndex, durationSeconds) {
+    if (typeof showInfoMessage === 'function') showInfoMessage('Autokalibrierungsdauer wird gespeichert...');
+    return API.request('/admin/analog_autocal_duration', { sensor_id: sensorId, measurement_index: '' + measurementIndex, duration: '' + durationSeconds }, 'Autokalibrierungsdauer aktualisiert');
+  }
+
   function updateThresholds(sensorId, measurementIndex, thresholds) {
     // Server expects a single CSV string 'thresholds' with 4 values
     var csv = [thresholds[0], thresholds[1], thresholds[2], thresholds[3]].join(',');
@@ -493,6 +498,7 @@ var SensorConfigAPI = (function () {
     updateAnalogMinMax: updateAnalogMinMax,
     updateAnalogInverted: updateAnalogInverted,
     updateAnalogAutocal: updateAnalogAutocal,
+  updateAnalogAutocalDuration: updateAnalogAutocalDuration,
     updateThresholds: updateThresholds,
     updateMeasurementName: updateMeasurementName,
     resetAbsoluteMinMax: resetAbsoluteMinMax,
@@ -500,6 +506,63 @@ var SensorConfigAPI = (function () {
     triggerMeasurement: triggerMeasurement
   };
 }());
+
+// Hook DOM change for autocal duration selects
+document.addEventListener('change', function (e) {
+  var t = e.target;
+  try {
+    if (t && t.classList && t.classList.contains('analog-autocal-duration')) {
+      var sensorId = t.getAttribute('data-sensor-id');
+      var idx = parseInt(t.getAttribute('data-measurement-index'), 10);
+      var val = parseInt(t.value, 10);
+      if (!isNaN(idx) && sensorId) {
+        SensorConfigAPI.updateAnalogAutocalDuration(sensorId, idx, val).then(function (data) {
+          if (data && data.success) {
+            if (typeof showInfoMessage === 'function') showInfoMessage('Autocal Dauer gespeichert');
+          } else {
+            alert('Fehler beim Speichern der Autocal Dauer');
+          }
+        });
+      }
+    }
+
+    // Live UI update when autocal checkbox toggled
+    if (t && t.classList && t.classList.contains('analog-autocal-checkbox')) {
+      try {
+        var sensorIdCb = t.getAttribute('data-sensor-id');
+        var measurementIndexCb = t.getAttribute('data-measurement-index');
+        var enabled = !!t.checked;
+
+        // Toggle autocal duration section visibility
+        var sel = DOMUtils.querySelector('.analog-autocal-duration[data-sensor-id="' + sensorIdCb + '"][data-measurement-index="' + measurementIndexCb + '"]');
+        if (sel) {
+          // find the nearest container with class 'autocal-duration-section'
+          var container = sel;
+          var depth = 0;
+          while (container && depth < 6 && !(container.classList && container.classList.contains('autocal-duration-section'))) {
+            container = container.parentElement;
+            depth++;
+          }
+          if (container && container.style) container.style.display = enabled ? '' : 'none';
+          try { sel.disabled = !enabled; } catch (e) {}
+        }
+
+        // Enable/disable min/max inputs
+        var minInput = DOMUtils.querySelector('.analog-min-input[data-sensor-id="' + sensorIdCb + '"][data-measurement-index="' + measurementIndexCb + '"]');
+        var maxInput = DOMUtils.querySelector('.analog-max-input[data-sensor-id="' + sensorIdCb + '"][data-measurement-index="' + measurementIndexCb + '"]');
+        if (minInput) {
+          if (enabled) { minInput.classList.remove('readonly-value'); minInput.removeAttribute('disabled'); } else { minInput.classList.add('readonly-value'); minInput.setAttribute('disabled', 'disabled'); }
+        }
+        if (maxInput) {
+          if (enabled) { maxInput.classList.remove('readonly-value'); maxInput.removeAttribute('disabled'); } else { maxInput.classList.add('readonly-value'); maxInput.setAttribute('disabled', 'disabled'); }
+        }
+
+        // Let DisplayUpdater handle other UI synchronization
+        try { if (typeof DisplayUpdater !== 'undefined' && DisplayUpdater.updateCalibrationMode) DisplayUpdater.updateCalibrationMode(sensorIdCb, measurementIndexCb, enabled); } catch (e) {}
+      } catch (err2) { Logger.debug('autocal-checkbox handler failed', err2); }
+    }
+  } catch (err) { Logger.debug('autocal-duration handler failed', err); }
+});
 
 // ------------------------------
 // THRESHOLD SLIDER (constructor/prototype for ES5)
@@ -1008,7 +1071,20 @@ var ConfigLoader = (function () {
     for (var sensorId in sensors) if (sensors.hasOwnProperty(sensorId)) {
       var sensor = sensors[sensorId]; if (!sensor.measurements) continue; for (var k in sensor.measurements) if (sensor.measurements.hasOwnProperty(k)) { var m = sensor.measurements[k]; var measurementIndex = parseInt(k, 10); if (typeof m.calibrationMode !== 'undefined') { var shouldBeChecked = !!m.calibrationMode; var selector = '.analog-autocal-checkbox[data-sensor-id="' + sensorId + '"][data-measurement-index="' + measurementIndex + '"]'; var checkbox = DOMUtils.querySelector(selector); if (checkbox && checkbox.checked !== shouldBeChecked) checkbox.checked = shouldBeChecked; // Ensure UI controls are enabled/disabled accordingly
           // Also update UI controls (disable/enable min/max inputs) to reflect calibrationMode immediately
-          try { if (typeof DisplayUpdater !== 'undefined') DisplayUpdater.updateCalibrationMode(sensorId, measurementIndex, shouldBeChecked); } catch (e) { Logger.debug('Failed to update calibration mode UI during init', e); }
+          try {
+            if (typeof DisplayUpdater !== 'undefined') DisplayUpdater.updateCalibrationMode(sensorId, measurementIndex, shouldBeChecked);
+          } catch (e) { Logger.debug('Failed to update calibration mode UI during init', e); }
+          // Ensure autocal-duration-section visibility matches calibrationMode on initial load
+          try {
+            var selInit = DOMUtils.querySelector('.analog-autocal-duration[data-sensor-id="' + sensorId + '"][data-measurement-index="' + measurementIndex + '"]');
+            if (selInit) {
+              var cont = selInit;
+              var depth2 = 0;
+              while (cont && depth2 < 6 && !(cont.classList && cont.classList.contains('autocal-duration-section'))) { cont = cont.parentElement; depth2++; }
+              if (cont && cont.style) cont.style.display = shouldBeChecked ? '' : 'none';
+              try { selInit.disabled = !shouldBeChecked; } catch (e) {}
+            }
+          } catch (e) { Logger.debug('Failed to set autocal-duration visibility during init', e); }
         }
       }
     }
