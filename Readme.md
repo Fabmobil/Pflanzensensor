@@ -6,7 +6,7 @@ Der Quellcode befindet sich im [Pflanzensensor](https://github.com/Fabmobil/Pfla
 
 ![Pflanzensensor](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Pflanzensensor.jpeg?raw=true)
 ![Pflanzensensor in Blumentopf](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Pflanzensensor_in_Blumentopf.jpeg?raw=true)
-![Pflanzensensor Breadboard](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Pflanzensensor_Breadboard.jpg?raw=true)
+![Pflanzensensor Webinterface](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Webinterface.png?raw=true)
 
 | 💜 [Fabmobil](https://www.fabmobil.org) 💜 [Silicon Saxony](https://silicon-saxony.de) 💜 [Bosch](https://www.bosch.de/) 💜 [GlobalFoundries](https://gf.com/) 💜 [Infineon](https://www.infineon.com/) 💜 [XFab](https://www.xfab.com/) 💜 |
 |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
