@@ -151,7 +151,7 @@ DisplayResult SSD1306Display::showMeasurementValue(const String& measurementName
   int nameX = (DISPLAY_WIDTH - w) / 2;
   if (nameX < 0)
     nameX = 0;
-  m_display.setCursor(nameX, 14);
+  m_display.setCursor(nameX, 16);
   m_display.print(displayName);
 
   // Center the value+unit string
