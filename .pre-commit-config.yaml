@@ -1,0 +1,16 @@
+repos:
+-   repo: https://github.com/pocc/pre-commit-hooks
+    rev: v1.3.5
+    hooks:
+    -   id: clang-format
+        args: [-i]  # -i means in-place modification
+        types_or: [c++, c, cuda]
+-   repo: local
+    hooks:
+    -   id: require-clean-working-tree
+        name: Require Clean Working Tree
+        entry: git diff --exit-code
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
