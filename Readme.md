@@ -8,5 +8,13 @@ Der Quellcode befindet sich im [Pflanzensensor](https://github.com/Fabmobil/Pfla
 ![Pflanzensensor in Blumentopf](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Pflanzensensor_in_Blumentopf.jpeg?raw=true)
 ![Pflanzensensor Webinterface](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Webinterface.png?raw=true)
 
-| 💜 [Fabmobil](https://www.fabmobil.org) 💜 [Silicon Saxony](https://silicon-saxony.de) 💜 [Bosch](https://www.bosch.de/) 💜 [GlobalFoundries](https://gf.com/) 💜 [Infineon](https://www.infineon.com/) 💜 [XFab](https://www.xfab.com/) 💜 |
-|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+[<img height="50" alt="Bosch" src="https://github.com/user-attachments/assets/16b5bcbe-fffa-43eb-bbd5-1f107192353f" />](https://www.fabmobil.org) 
+
+wird gefördert von:
+
+[<img height="100" alt="smk_logo" src="https://github.com/user-attachments/assets/7ffa939d-7818-4493-9b44-f4c17383e565" />](https://www.smk.sachsen.de/)
+
+
+und unterstützt von:
+
+[<img height="50" alt="sisax" src="https://github.com/user-attachments/assets/6c537384-fd33-47a8-a5d2-1312b83e6d65" />](https://silicon-saxony.de) [<img height="50" alt="Bosch" src="https://github.com/user-attachments/assets/1608d210-c723-4fde-8562-5f9e31beae52" />](https://www.bosch.de/) [<img height="50" alt="GlobalFoundries" src="https://github.com/user-attachments/assets/e2cb9d59-d5e6-4c50-9c5f-e5e620ed73a0" />](https://gf.com/) [<img height="50" alt="Bosch" src="https://github.com/user-attachments/assets/1c521a03-35c7-4104-9768-8d68bf8f7880" />](https://www.infineon.com/) [<img height="50" alt="Bosch" src="https://github.com/user-attachments/assets/b8cbed31-5312-494d-bc99-1a30388150f3" />](https://www.xfab.com/)
