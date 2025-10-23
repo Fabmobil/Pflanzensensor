@@ -103,11 +103,11 @@ void AdminHandler::generateAndSendSystemSettingsCard() {
   sendChunk(ConfigMgr.getDeviceName());
   sendChunk(F("' autocomplete='off'></div>"));
   // MD5 verification checkbox
-  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-  sendChunk(F("<input type='checkbox' name='md5_verification'"));
-  if (ConfigMgr.isMD5Verification())
-    sendChunk(F(" checked"));
-  sendChunk(F("> MD5-Überprüfung für Updates aktivieren</label></div>"));
+  // sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+  // sendChunk(F("<input type='checkbox' name='md5_verification'"));
+  // if (ConfigMgr.isMD5Verification())
+  //   sendChunk(F(" checked"));
+  // sendChunk(F("> MD5-Überprüfung für Updates aktivieren</label></div>"));
   // Admin password change (entered twice, saved via explicit button)
   sendChunk(F("<div class='form-group'>"));
   sendChunk(F("<label>Administrator Passwort:</label>"));
