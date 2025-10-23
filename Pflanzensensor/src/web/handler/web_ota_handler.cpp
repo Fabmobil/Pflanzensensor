@@ -86,7 +86,7 @@ void WebOTAHandler::handleUpdatePage() {
       [this]() {
         // System Information Card
         sendChunk(F("<div class='card'>"));
-        sendChunk(F("<h2>System Information</h2>"));
+        sendChunk(F("<h2>Systeminformationen</h2>"));
         sendChunk(F("<table class='info-table'>"));
 
         // System info table content
@@ -94,36 +94,47 @@ void WebOTAHandler::handleUpdatePage() {
         sendChunk(VERSION);
         sendChunk(F("</td></tr>"));
 
-        sendChunk(F("<tr><td>Freier Heap:</td><td>"));
-        sendChunk(String(ESP.getFreeHeap()));
-        sendChunk(F(" bytes</td></tr>"));
-
-        sendChunk(F("<tr><td>Freier Sketch Space:</td><td>"));
-        sendChunk(String(ESP.getFreeSketchSpace()));
-        sendChunk(F(" bytes</td></tr>"));
-
-        sendChunk(F("</table></div>"));
+        sendChunk(F("<tr><td>Build Datum:</td><td>"));
+        sendChunk(__DATE__);
+        sendChunk(F("</td></tr></table>"));
+        sendChunk(F("<div class='button-group'>"));
+        sendChunk(F("<form action='/admin/downloadConfig' method='GET' class='inline'>"));
+        sendChunk(F("<button type='submit' class='button'>Einstellungen herunterladen</button>"));
+        sendChunk(F("</form>"));
+        sendChunk(F("<form action='/admin/downloadSensors' method='GET' class='inline'>"));
+        sendChunk(F("<button type='submit' class='button'>Sensordaten herunterladen</button>"));
+        sendChunk(F("</form>"));
+        sendChunk(F("</div></div>"));
 
         // Update section Card
         sendChunk(F("<div class='card update-section'>"));
 
         // Warning box
         sendChunk(F("<div class='warning-box'>"));
-        sendChunk(F("<h3>⚠️ Wichtige Hinweise</h3><ul>"));
-        sendChunk(F("<li>Stelle sicher, dass die neue Firmware für dieses Gerät "
-                    "geeignet ist. "));
-        sendChunk(F("Du kannst dir die aktuellen Dateien <a "
-                    "href='https://github.com/Fabmobil/Pflanzensensor/releases' "
-                    "target='_blank'>hier</a> herunterladen.</li>"));
-        sendChunk(F("<li>Beim aktualisieren des Betriebssystems (\"firmware.bin\") bleiben deine "
-                    "Einstellungen erhalten. "));
+        sendChunk(F("<h3>⚠️ Wichtige Hinweise ⚠️</h3><ul>"));
+        sendChunk(F("<li>Die aktuelle Firmware für den Gerät kannst du auf der "));
         sendChunk(
-            F("Wenn du das Dateisystem ersetzt (\"littlefs.bin\") werden alle deine Einstellungen "
-              "zurückgesetzt und du musst Namen, WiFi, Grenzwerte usw. neu einstellen.</li>"));
+            F("<a href='https://github.com/Fabmobil/Pflanzensensor/releases' target='_blank'>"));
+        sendChunk(F("Pflanzensensor Github Seite</a> herunterladen.</li>"));
+        sendChunk(
+            F("<li>Beim aktualisieren des Betriebssystems (\"firmware.bin\") bleiben deine "));
+        sendChunk(F("Einstellungen erhalten.</li> "));
+        sendChunk(F("<li>Wenn du das Dateisystem ersetzt (\"littlefs.bin\") werden alle deine "));
+        sendChunk(F("Einstellungen zurückgesetzt und du musst Namen, WiFi, Grenzwerte usw. neu "
+                    "einstellen.</li>"));
         sendChunk(F("<ul>"));
         sendChunk(
-            F("<li>Auf der <a href='/admin'>Einstellungsseite</a> kannst du deine Einstellungen "
-              "und Sensordaten vor dem Update sichern und nach dem Update wieder einspielen</li>"));
+            F("<li>Um das zu vermeiden kannst du vorher hier deine Einstellungen und Sensordaten"));
+        sendChunk(F(" herunterladen und sie nach dem Update über die <a "
+                    "href='/admin'>Einstellungsseite</a> "));
+        sendChunk(F("wieder einspielen.</li>"));
+        sendChunk(
+            F("<li>Eventuell ändert sich dadurch dein Adminpasswort. Bei neu geflashten ESPs "));
+        sendChunk(F("ist das Standardpasswort \"Fabmobil\".</li>"));
+        sendChunk(
+            F("<li>Beim Update des Dateisystems werden auch deine WLAN Zugangsdaten gelöscht. "));
+        sendChunk(F("Dein Gerät startet danach im Access Point Modus und du musst es neu mit "
+                    "deinem WLAN verbinden. </li>"));
         sendChunk(F("</ul>"));
         sendChunk(F("<li>Das Gerät wird nach erfolgreichem Update automatisch neu "
                     "gestartet</li>"));

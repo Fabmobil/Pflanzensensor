@@ -23,6 +23,13 @@ html, body {
   margin-bottom: clamp(0.6em, 1.2vw, 1em);
 }
 
+.button-group {
+  display: flex;
+  gap: 0.5em;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 .form-group label {
   display: block;
   margin-bottom: clamp(0.2em, 0.5vw, 0.4em);

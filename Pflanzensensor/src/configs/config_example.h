@@ -201,5 +201,5 @@
 #define MAX_LOG_FILE_SIZE 50000 // Maximale Logdateigröße in Bytes
 #define USE_MAIL                                                                                   \
   false // E-Mail-Benachrichtigungen verwenden. Wir haben nicht genügend RAM für TLS :/
-#define DHT_TEMPERATURE_FIELD_NAME "air_temperature" // für InfluxDB
-#define DHT_HUMIDITY_FIELD_NAME "air_humidity"       // für InfluxDB
+#define DHT_TEMPERATURE_FIELD_NAME "lufttemperatur" // für InfluxDB
+#define DHT_HUMIDITY_FIELD_NAME "luftfeuchte"       // für InfluxDB

@@ -138,42 +138,34 @@ window.addEventListener('DOMContentLoaded', () => {
 
   // Hilfsfunktionen, um den Inhalt der Fußzeile ohne Neuladen umzuschalten
   function showFooterAdminMenu() {
-    const adminMenu = document.getElementById('footer-admin-menu');
-    const statsLabels = document.getElementById('footer-stats-labels');
-    const statsValues = document.getElementById('footer-stats-values');
-    const adminValues = document.getElementById('footer-admin-values');
-    const navAdmin = document.getElementById('nav-admin');
-    if (!adminMenu || !statsLabels || !statsValues) return;
+  const adminMenu = document.getElementById('footer-admin-menu');
+  const statsTable = document.getElementById('footer-stats-table');
+  const navAdmin = document.getElementById('nav-admin');
+  if (!adminMenu || !statsTable) return;
 
-    // Remove any active marker from admin submenu entries so none is
-    // pre-selected when the menu is opened.
-    const activeSubmenuItems = adminMenu.querySelectorAll('.nav-item.active');
-    activeSubmenuItems.forEach(el => el.classList.remove('active'));
+  // Remove any active marker from admin submenu entries so none is
+  // pre-selected when the menu is opened.
+  const activeSubmenuItems = adminMenu.querySelectorAll('.nav-item.active');
+  activeSubmenuItems.forEach(el => el.classList.remove('active'));
 
-    adminMenu.style.display = 'block';
-    if (adminValues) adminValues.style.display = 'block';
-    statsLabels.style.display = 'none';
-    statsValues.style.display = 'none';
-    if (navAdmin) navAdmin.classList.add('active');
+  adminMenu.style.display = 'block';
+  statsTable.style.display = 'none';
+  if (navAdmin) navAdmin.classList.add('active');
   }
 
   function hideFooterAdminMenu() {
-    const adminMenu = document.getElementById('footer-admin-menu');
-    const statsLabels = document.getElementById('footer-stats-labels');
-    const statsValues = document.getElementById('footer-stats-values');
-    const adminValues = document.getElementById('footer-admin-values');
-    const navAdmin = document.getElementById('nav-admin');
-    if (!adminMenu || !statsLabels || !statsValues) return;
+  const adminMenu = document.getElementById('footer-admin-menu');
+  const statsTable = document.getElementById('footer-stats-table');
+  const navAdmin = document.getElementById('nav-admin');
+  if (!adminMenu || !statsTable) return;
 
-    adminMenu.style.display = 'none';
-    if (adminValues) adminValues.style.display = 'none';
-    statsLabels.style.display = '';
-    statsValues.style.display = '';
-    if (navAdmin) navAdmin.classList.remove('active');
+  adminMenu.style.display = 'none';
+  statsTable.style.display = '';
+  if (navAdmin) navAdmin.classList.remove('active');
 
-    // Entferne aktive Markierung aus Untermenü
-    const activeSub = adminMenu.querySelector('.nav-item.active');
-    if (activeSub) activeSub.classList.remove('active');
+  // Entferne aktive Markierung aus Untermenü
+  const activeSub = adminMenu.querySelector('.nav-item.active');
+  if (activeSub) activeSub.classList.remove('active');
   }
 
   function toggleFooterAdminMenu() {
@@ -203,10 +195,12 @@ window.addEventListener('DOMContentLoaded', () => {
 
     if (navAdmin) {
       navAdmin.addEventListener('click', (e) => {
-        // Only intercept ADMIN clicks when we're on the start page
+        // Always intercept ADMIN clicks on the start page (no navigation)
         if (location.pathname === '/' || location.pathname === '' || location.pathname.endsWith('/index.html')) {
           e.preventDefault();
           toggleFooterAdminMenu();
+        } else {
+          // On other pages, allow normal navigation
         }
       });
     }

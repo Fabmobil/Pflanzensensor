@@ -550,11 +550,10 @@ img {
   line-height: 1.1;
 }
 
-.stats-labels, .stats-values {
+/* Admin menu in footer as stats-table */
+#footer-admin-menu {
   grid-row: 1;
-  list-style: none;
-  margin: 0;
-  padding: 0;
+  grid-column: 2 / span 2;
   display: flex;
   flex-direction: column;
   gap: clamp(0.2em, 0.8vw, 0.5em);
@@ -563,28 +562,63 @@ img {
   min-width: 0;
   overflow: hidden;
 }
-
-.stats-labels {
-  grid-column: 2;
+#footer-admin-menu .stats-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  min-height: 1em;
+}
+#footer-admin-menu .stats-label {
+  flex: 0 0 7.5em;
   text-align: right;
+  margin-right: 1.2em;
+  min-width: 20em;
+}
+#footer-admin-menu .stats-value {
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+
+/* New stats-table for vertically aligned label-value pairs */
+
+.stats-table {
+  grid-row: 1;
+  grid-column: 2 / span 2;
+  display: flex;
+  flex-direction: column;
   align-items: flex-end;
+  font-size: clamp(0.6em, 1.2vw + 0.3em, 0.7em);
+  color: #8e8e8e;
+  min-width: 20em;
+  overflow: hidden;
+  width: auto;
+  max-width: 30em;
+  margin-left: auto;
 }
-
-/* Kleinere Schrift für Labels/Werte auf Startseite */
-.stats-labels .nav-item,
-.stats-values .nav-item {
-  font-size: inherit;
+.stats-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  min-height: 1.8em;
+  width: 100%;
 }
-
-.stats-labels li,
-.stats-values li {
+.stats-label {
+  flex: 0 0 7.5em;
+  text-align: right;
+  margin-right: 1.2em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-
-.stats-values {
-  grid-column: 3;
+.stats-value {
+  flex: 1 1 12em;
+  max-width: 16em;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #f2f2f2;
 }
 
 .footer-logo {

@@ -63,7 +63,8 @@ extern std::unique_ptr<LedTrafficLightManager> ledTrafficLightManager;
 void setup() {
   // Initialize serial communication first
   Serial.begin(115200);
-  delay(1000); // Give sensors time to power up and stabilize
+  Serial.setDebugOutput(true); // Enable debug output to serial
+  delay(1000);                 // Give sensors time to power up and stabilize
 
   logger.beginMemoryTracking(F("managers_init"));
 
@@ -468,6 +469,7 @@ void loop() {
       checkWiFiConnection();
     } else {
       logger.debug(F("main"), F("AP-Modus aktiv, überspringe erneute WiFi-Verbindungsversuche"));
+      yield();
     }
 #endif
     lastWiFiCheck = currentMillis;

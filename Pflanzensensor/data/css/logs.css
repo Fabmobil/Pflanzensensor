@@ -92,13 +92,6 @@
   font-size: 0.95em;
 }
 
-.button-group {
-  display: flex;
-  gap: 0.5em;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
 /* === Button-Styles für Log-Level === */
 .button-debug {
   background: linear-gradient(135deg, #569cd6 0%, #4a8bc2 100%);

@@ -137,7 +137,9 @@ void startAPMode() {
   }
 
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(deviceName.c_str()); // No password
+  WiFi.softAPConfig(IPAddress(192, 168, 4, 1), IPAddress(192, 168, 4, 1),
+                    IPAddress(255, 255, 255, 0));
+  WiFi.softAP(deviceName.c_str(), "", 1, 0, 1); // No password
   IPAddress apIP = WiFi.softAPIP();
 
   apModeActive = true;
