@@ -160,7 +160,7 @@ void AdminHandler::generateAndSendSystemActionsCard() {
               "enctype='multipart/form-data' class='inline' "
               "style='display:inline-block;margin-left:8px;'>"));
   sendChunk(F("<input type='file' name='file' accept='.json' required>"));
-  sendChunk(F("<button type='submit' class='button button-secondary'>Einstellungen oder "
+  sendChunk(F("<button type='submit' class='button button-warning'>Einstellungen oder "
               "Sensordaten hochladen</button>"));
   sendChunk(F("</form>"));
   sendChunk(F("</div></div></div>"));
