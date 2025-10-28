@@ -50,7 +50,7 @@
 
 // Webserver-Einstellungen
 #define LOG_ENTRIES_TO_DISPLAY 20
-#define INITIAL_ADMIN_PASSWORD "Fabmobil" // Initiales Admin-Passwort für Webinterface
+#define ADMIN_PASSWORD "Fabmobil" // Initiales Admin-Passwort für Webinterface
 
 // DHT-Sensor-Einstellungen
 #define DHT_PIN 0 // D3

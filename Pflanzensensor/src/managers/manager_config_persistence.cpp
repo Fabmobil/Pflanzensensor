@@ -63,7 +63,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(ConfigData&
   // No info log for successful load
 
   // Load main configuration values
-  config.adminPassword = doc["admin_password"] | INITIAL_ADMIN_PASSWORD;
+  config.adminPassword = doc["admin_password"] | ADMIN_PASSWORD;
   config.md5Verification = doc["md5_verification"] | false;
   config.fileLoggingEnabled = doc["file_logging_enabled"] | FILE_LOGGING_ENABLED;
   config.deviceName = doc["device_name"] | String(DEVICE_NAME);

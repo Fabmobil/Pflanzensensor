@@ -13,7 +13,7 @@ void ensureConfigFilesExist() {
   // CONFIG
   if (!PersistenceUtils::fileExists("/config.json")) {
     ConfigData config;
-    config.adminPassword = INITIAL_ADMIN_PASSWORD;
+    config.adminPassword = ADMIN_PASSWORD;
     config.md5Verification = false;
     config.fileLoggingEnabled = FILE_LOGGING_ENABLED;
     config.debugRAM = DEBUG_RAM;
