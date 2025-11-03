@@ -672,31 +672,19 @@ SensorPersistence::updateMeasurementInterval(const String& sensorId, unsigned lo
 SensorPersistence::PersistenceResult
 SensorPersistence::updateMeasurementIntervalInternal(const String& sensorId,
                                                      unsigned long interval) {
-  // Bestehende Konfiguration laden
-  StaticJsonDocument<4096> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  // Update measurement interval directly in Preferences
+  String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  Preferences prefs;
+  if (!prefs.begin(ns.c_str(), false)) {
+    logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
+    return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
+  
+  PreferencesManager::putUInt(prefs, "meas_int", interval);
+  prefs.end();
 
-  // Zum spezifischen Sensor navigieren
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
-  }
-
-  // Messintervall aktualisieren
-  sensorObj["measurementInterval"] = interval;
-
-  // Zurück in die Datei schreiben
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  logger.info(F("SensorP"), F("Messintervall atomar aktualisiert für ") + sensorId +
-                                F(", Intervall: ") + String(interval) + F(", Bytes geschrieben: ") +
-                                String(PersistenceUtils::getFileSize("/sensors.json")));
+  logger.info(F("SensorP"), F("Messintervall aktualisiert für ") + sensorId +
+                                F(", Intervall: ") + String(interval));
 
   return PersistenceResult::success();
 }
@@ -715,46 +703,21 @@ SensorPersistence::updateMeasurementEnabled(const String& sensorId, size_t measu
 SensorPersistence::PersistenceResult
 SensorPersistence::updateMeasurementEnabledInternal(const String& sensorId, size_t measurementIndex,
                                                     bool enabled) {
-  // Bestehende Konfiguration laden
-  StaticJsonDocument<4096> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  // Update enabled flag directly in Preferences
+  String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  Preferences prefs;
+  if (!prefs.begin(ns.c_str(), false)) {
+    logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
+    return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
+  
+  String prefix = "m" + String(measurementIndex) + "_";
+  PreferencesManager::putBool(prefs, (prefix + "en").c_str(), enabled);
+  prefs.end();
 
-  // Zum spezifischen Sensor und Messwert navigieren
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
-  }
-
-  JsonObject measurements = sensorObj["measurements"];
-  if (measurements.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
-  }
-
-  char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
-  JsonObject measurementObj = measurements[idxBuf];
-  if (measurementObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Messung nicht gefunden: ") + String(measurementIndex));
-  }
-
-  // Aktivierungsstatus aktualisieren
-  measurementObj["enabled"] = enabled;
-
-  // Zurück in die Datei schreiben
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  logger.info(F("SensorP"), F("Messung aktiviert/deaktiviert atomar für ") + sensorId +
+  logger.info(F("SensorP"), F("Messung aktiviert/deaktiviert für ") + sensorId +
                                 F(" Messung ") + String(measurementIndex) + F(", aktiviert: ") +
-                                String(enabled) + F(", Bytes geschrieben: ") +
-                                String(PersistenceUtils::getFileSize("/sensors.json")));
+                                String(enabled));
 
   return PersistenceResult::success();
 }
@@ -835,47 +798,21 @@ SensorPersistence::updateAnalogRawMinMax(const String& sensorId, size_t measurem
 SensorPersistence::PersistenceResult
 SensorPersistence::updateAnalogRawMinMaxInternal(const String& sensorId, size_t measurementIndex,
                                                  int absoluteRawMin, int absoluteRawMax) {
-  // Bestehende Konfiguration laden
-  StaticJsonDocument<4096> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  // Update raw min/max directly in Preferences
+  String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  Preferences prefs;
+  if (!prefs.begin(ns.c_str(), false)) {
+    logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
+    return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
+  
+  String prefix = "m" + String(measurementIndex) + "_";
+  PreferencesManager::putInt(prefs, (prefix + "rmin").c_str(), absoluteRawMin);
+  PreferencesManager::putInt(prefs, (prefix + "rmax").c_str(), absoluteRawMax);
+  prefs.end();
 
-  // Zum spezifischen Sensor und Messwert navigieren
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
-  }
-
-  JsonObject measurements = sensorObj["measurements"];
-  if (measurements.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
-  }
-
-  char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
-  JsonObject measurementObj = measurements[idxBuf];
-  if (measurementObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Messung nicht gefunden: ") + String(measurementIndex));
-  }
-
-  // Absolute raw min/max Werte immer speichern, damit sie nach Neustart erhalten bleiben
-  measurementObj["absoluteRawMin"] = absoluteRawMin;
-  measurementObj["absoluteRawMax"] = absoluteRawMax;
-
-  // Zurück in die Datei schreiben
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  logger.info(F("SensorP"), F("Analog raw min/max atomar aktualisiert für ") + sensorId +
-                                F(" Messung ") + String(measurementIndex) +
-                                F(", Bytes geschrieben: ") +
-                                String(PersistenceUtils::getFileSize("/sensors.json")));
+  logger.info(F("SensorP"), F("Analog raw min/max aktualisiert für ") + sensorId +
+                                F(" Messung ") + String(measurementIndex));
 
   // Nach dem Update Konfiguration neu laden, damit In-Memory-Config synchron bleibt
   auto reloadResult = loadFromFile();
@@ -902,38 +839,19 @@ SensorPersistence::updateAnalogRawMinMaxInternal(const String& sensorId, size_t 
 SensorPersistence::PersistenceResult
 SensorPersistence::updateAnalogCalibrationMode(const String& sensorId, size_t measurementIndex,
                                                bool enabled) {
-  StaticJsonDocument<2048> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  // Update calibration mode directly in Preferences
+  String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  Preferences prefs;
+  if (!prefs.begin(ns.c_str(), false)) {
+    logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
+    return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
+  
+  String prefix = "m" + String(measurementIndex) + "_";
+  PreferencesManager::putBool(prefs, (prefix + "cal").c_str(), enabled);
+  prefs.end();
 
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
-  }
-  JsonObject measurements = sensorObj["measurements"];
-  if (measurements.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
-  }
-
-  char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
-  JsonObject measurementObj = measurements[idxBuf];
-  if (measurementObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Messung nicht gefunden: ") + String(measurementIndex));
-  }
-
-  measurementObj["calibrationMode"] = enabled;
-
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  logger.info(F("SensorP"), F("Kalibrierungsmodus atomar aktualisiert für ") + sensorId +
+  logger.info(F("SensorP"), F("Kalibrierungsmodus aktualisiert für ") + sensorId +
                                 F(" Messung ") + String(measurementIndex));
 
   // Reload configuration to sync in-memory state
@@ -954,42 +872,20 @@ SensorPersistence::updateAutocalDuration(const String& sensorId, size_t measurem
   // Use critical section to avoid concurrent writes
   CriticalSection cs;
 
-  StaticJsonDocument<4096> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  // Update autocal duration directly in Preferences
+  String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  Preferences prefs;
+  if (!prefs.begin(ns.c_str(), false)) {
+    logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
+    return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
+  
+  String prefix = "m" + String(measurementIndex) + "_";
+  PreferencesManager::putUInt(prefs, (prefix + "acd").c_str(), halfLifeSeconds);
+  prefs.end();
 
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
-  }
-
-  JsonObject measurements = sensorObj["measurements"];
-  if (measurements.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
-  }
-
-  char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
-  JsonObject measurementObj = measurements[idxBuf];
-  if (measurementObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Messung nicht gefunden: ") + String(measurementIndex));
-  }
-
-  measurementObj["autocalDuration"] = static_cast<unsigned long>(halfLifeSeconds);
-
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  logger.info(F("SensorP"), F("Autocal-Dauer atomar aktualisiert für ") + sensorId +
-                                F(" Messung ") + String(measurementIndex) +
-                                F(", Bytes geschrieben: ") +
-                                String(PersistenceUtils::getFileSize("/sensors.json")));
+  logger.info(F("SensorP"), F("Autocal-Dauer aktualisiert für ") + sensorId +
+                                F(" Messung ") + String(measurementIndex));
 
   // Reload configuration to sync in-memory state
   auto reloadResult = loadFromFile();
