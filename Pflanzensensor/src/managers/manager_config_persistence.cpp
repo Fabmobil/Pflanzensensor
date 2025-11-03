@@ -13,6 +13,7 @@ using namespace ArduinoJson;
 #include "../logger/logger.h"
 #include "../utils/critical_section.h"
 #include "../utils/persistence_utils.h"
+#include "../utils/preferences_manager.h"
 #include "managers/manager_resource.h"
 #include "managers/manager_sensor.h"
 
@@ -41,26 +42,115 @@ size_t ConfigPersistence::getConfigFileSize() {
 
 ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(ConfigData& config) {
   logger.logMemoryStats(F("ConfigP_load_before"));
+  
+  // Try to load from Preferences first
+  bool preferencesLoaded = false;
+  if (PreferencesManager::namespaceExists(PreferencesNamespaces::GENERAL)) {
+    logger.info(F("ConfigP"), F("Lade Konfiguration aus Preferences..."));
+    
+    // Load general settings
+    auto generalResult = PreferencesManager::loadGeneralSettings(
+      config.deviceName, config.adminPassword, 
+      config.md5Verification, config.fileLoggingEnabled);
+    
+    // Load WiFi settings
+    auto wifiResult = PreferencesManager::loadWiFiSettings(
+      config.wifiSSID1, config.wifiPassword1,
+      config.wifiSSID2, config.wifiPassword2,
+      config.wifiSSID3, config.wifiPassword3);
+    
+    // Load debug settings
+    auto debugResult = PreferencesManager::loadDebugSettings(
+      config.debugRAM, config.debugMeasurementCycle,
+      config.debugSensor, config.debugDisplay, config.debugWebSocket);
+    
+    // Load LED traffic light settings
+    auto ledResult = PreferencesManager::loadLedTrafficSettings(
+      config.ledTrafficLightMode, config.ledTrafficLightSelectedMeasurement);
+    
+    // Load flower status sensor
+    auto flowerResult = PreferencesManager::loadFlowerStatusSensor(config.flowerStatusSensor);
+    
+    if (generalResult.isSuccess() && wifiResult.isSuccess() && 
+        debugResult.isSuccess() && ledResult.isSuccess()) {
+      preferencesLoaded = true;
+      logger.info(F("ConfigP"), F("Konfiguration erfolgreich aus Preferences geladen"));
+    }
+  }
+  
+  // If Preferences not found, try to migrate from JSON
+  if (!preferencesLoaded) {
+    if (PersistenceUtils::fileExists("/config.json")) {
+      logger.info(F("ConfigP"), F("Preferences nicht gefunden, migriere von JSON..."));
+      auto jsonResult = loadFromJSON(config);
+      if (jsonResult.isSuccess()) {
+        // Migration successful, save to Preferences
+        logger.info(F("ConfigP"), F("Migriere Konfiguration zu Preferences..."));
+        auto saveResult = saveToPreferences(config);
+        if (saveResult.isSuccess()) {
+          logger.info(F("ConfigP"), F("Migration zu Preferences erfolgreich"));
+          // Optionally, backup JSON file
+          if (LittleFS.exists("/config.json")) {
+            if (LittleFS.rename("/config.json", "/config.json.bak")) {
+              logger.info(F("ConfigP"), F("JSON-Backup erstellt: /config.json.bak"));
+            }
+          }
+        } else {
+          logger.warning(F("ConfigP"), F("Fehler beim Migrieren zu Preferences: ") + saveResult.getMessage());
+        }
+      } else {
+        logger.error(F("ConfigP"), F("Fehler beim Laden der JSON-Konfiguration: ") + jsonResult.getMessage());
+        logger.logMemoryStats(F("ConfigP_load_after"));
+        return jsonResult;
+      }
+    } else {
+      // Neither Preferences nor JSON exist, initialize with defaults
+      logger.info(F("ConfigP"), F("Keine Konfiguration gefunden, initialisiere mit Standardwerten..."));
+      auto initResult = PreferencesManager::initializeAllNamespaces();
+      if (!initResult.isSuccess()) {
+        logger.error(F("ConfigP"), F("Fehler beim Initialisieren der Preferences: ") + initResult.getMessage());
+        auto result = resetToDefaults(config);
+        logger.logMemoryStats(F("ConfigP_load_after"));
+        return result;
+      }
+      
+      // Load the defaults we just wrote
+      auto generalResult = PreferencesManager::loadGeneralSettings(
+        config.deviceName, config.adminPassword, 
+        config.md5Verification, config.fileLoggingEnabled);
+      
+      auto wifiResult = PreferencesManager::loadWiFiSettings(
+        config.wifiSSID1, config.wifiPassword1,
+        config.wifiSSID2, config.wifiPassword2,
+        config.wifiSSID3, config.wifiPassword3);
+      
+      auto debugResult = PreferencesManager::loadDebugSettings(
+        config.debugRAM, config.debugMeasurementCycle,
+        config.debugSensor, config.debugDisplay, config.debugWebSocket);
+      
+      auto ledResult = PreferencesManager::loadLedTrafficSettings(
+        config.ledTrafficLightMode, config.ledTrafficLightSelectedMeasurement);
+      
+      auto flowerResult = PreferencesManager::loadFlowerStatusSensor(config.flowerStatusSensor);
+      
+      logger.info(F("ConfigP"), F("Standardwerte aus Preferences geladen"));
+    }
+  }
+  
+  logger.logMemoryStats(F("ConfigP_load_after"));
+  return PersistenceResult::success();
+}
+
+// Helper function to load from JSON (for migration)
+ConfigPersistence::PersistenceResult ConfigPersistence::loadFromJSON(ConfigData& config) {
   String errorMsg;
   StaticJsonDocument<512> doc;
   doc.clear();
 
-  if (!PersistenceUtils::fileExists("/config.json")) {
-    // Datei existiert nicht: Standardwerte verwenden, nicht als Fehler behandeln
-    logger.info(F("ConfigP"), F("Konfigurationsdatei nicht gefunden, verwende Standardwerte."));
-    auto result = resetToDefaults(config);
-    logger.logMemoryStats(F("ConfigP_load_after"));
-    return result;
-  }
-
   if (!PersistenceUtils::readJsonFile("/config.json", doc, errorMsg)) {
     logger.error(F("ConfigP"), F("Konfiguration konnte nicht geladen werden: ") + errorMsg);
-    logger.logMemoryStats(F("ConfigP_load_after"));
     return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
   }
-
-  // Only log file contents if there is a parse error (handled in utility)
-  // No info log for successful load
 
   // Load main configuration values
   config.adminPassword = doc["admin_password"] | ADMIN_PASSWORD;
@@ -76,8 +166,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(ConfigData&
   config.wifiSSID3 = doc["wifi_ssid_3"] | "";
   config.wifiPassword3 = doc["wifi_password_3"] | "";
 
-  // Load debug flags - use runtime values, fallback to compile-time defaults
-  // only if not present
+  // Load debug flags
   config.debugRAM = doc.containsKey("debug_ram") ? doc["debug_ram"] : DEBUG_RAM;
   config.debugMeasurementCycle = doc.containsKey("debug_measurement_cycle")
                                      ? doc["debug_measurement_cycle"]
@@ -88,16 +177,120 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(ConfigData&
       doc.containsKey("debug_websocket") ? doc["debug_websocket"] : DEBUG_WEBSOCKET;
 
   // LED Traffic Light settings
-  // Default to mode 2 (single measurement) as initial default for new devices
   config.ledTrafficLightMode = doc.containsKey("led_traffic_light_mode")
                                    ? doc["led_traffic_light_mode"]
-                                   : 2; // Default to mode 2 (single measurement)
-  // If the selected measurement is missing or empty, default to ANALOG_1 so
-  // the UI shows a meaningful selection on first boot.
+                                   : 2;
   config.ledTrafficLightSelectedMeasurement =
       (doc.containsKey("led_traffic_light_selected_measurement") &&
        doc["led_traffic_light_selected_measurement"].as<String>() != "")
           ? doc["led_traffic_light_selected_measurement"].as<String>()
+          : String("ANALOG_1");
+
+  // Flower Status settings
+  config.flowerStatusSensor =
+      (doc.containsKey("flower_status_sensor") && doc["flower_status_sensor"].as<String>() != "")
+          ? doc["flower_status_sensor"].as<String>()
+          : String("ANALOG_1");
+
+  return PersistenceResult::success();
+}
+
+// Helper function to save to Preferences
+ConfigPersistence::PersistenceResult ConfigPersistence::saveToPreferences(const ConfigData& config) {
+  // Save general settings
+  auto generalResult = PreferencesManager::saveGeneralSettings(
+    config.deviceName, config.adminPassword,
+    config.md5Verification, config.fileLoggingEnabled);
+  
+  if (!generalResult.isSuccess()) {
+    return generalResult;
+  }
+  
+  // Save WiFi settings
+  auto wifiResult = PreferencesManager::saveWiFiSettings(
+    config.wifiSSID1, config.wifiPassword1,
+    config.wifiSSID2, config.wifiPassword2,
+    config.wifiSSID3, config.wifiPassword3);
+  
+  if (!wifiResult.isSuccess()) {
+    return wifiResult;
+  }
+  
+  // Save debug settings
+  auto debugResult = PreferencesManager::saveDebugSettings(
+    config.debugRAM, config.debugMeasurementCycle,
+    config.debugSensor, config.debugDisplay, config.debugWebSocket);
+  
+  if (!debugResult.isSuccess()) {
+    return debugResult;
+  }
+  
+  // Save LED traffic light settings
+  auto ledResult = PreferencesManager::saveLedTrafficSettings(
+    config.ledTrafficLightMode, config.ledTrafficLightSelectedMeasurement);
+  
+  if (!ledResult.isSuccess()) {
+    return ledResult;
+  }
+  
+  // Save flower status sensor
+  auto flowerResult = PreferencesManager::saveFlowerStatusSensor(config.flowerStatusSensor);
+  
+  if (!flowerResult.isSuccess()) {
+    return flowerResult;
+  }
+  
+  return PersistenceResult::success();
+}
+}
+
+// Helper function to save to Preferences
+ConfigPersistence::PersistenceResult ConfigPersistence::saveToPreferences(const ConfigData& config) {
+  // Save general settings
+  auto generalResult = PreferencesManager::saveGeneralSettings(
+    config.deviceName, config.adminPassword,
+    config.md5Verification, config.fileLoggingEnabled);
+  
+  if (!generalResult.isSuccess()) {
+    return generalResult;
+  }
+  
+  // Save WiFi settings
+  auto wifiResult = PreferencesManager::saveWiFiSettings(
+    config.wifiSSID1, config.wifiPassword1,
+    config.wifiSSID2, config.wifiPassword2,
+    config.wifiSSID3, config.wifiPassword3);
+  
+  if (!wifiResult.isSuccess()) {
+    return wifiResult;
+  }
+  
+  // Save debug settings
+  auto debugResult = PreferencesManager::saveDebugSettings(
+    config.debugRAM, config.debugMeasurementCycle,
+    config.debugSensor, config.debugDisplay, config.debugWebSocket);
+  
+  if (!debugResult.isSuccess()) {
+    return debugResult;
+  }
+  
+  // Save LED traffic light settings
+  auto ledResult = PreferencesManager::saveLedTrafficSettings(
+    config.ledTrafficLightMode, config.ledTrafficLightSelectedMeasurement);
+  
+  if (!ledResult.isSuccess()) {
+    return ledResult;
+  }
+  
+  // Save flower status sensor
+  auto flowerResult = PreferencesManager::saveFlowerStatusSensor(config.flowerStatusSensor);
+  
+  if (!flowerResult.isSuccess()) {
+    return flowerResult;
+  }
+  
+  return PersistenceResult::success();
+}
           : String("ANALOG_1"); // Default to ANALOG_1
 
   // Flower Status settings
@@ -189,78 +382,56 @@ ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(ConfigData&
 }
 
 ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(ConfigData& config) {
-  // Simplified reset: remove stored config and sensors files and reboot.
-  logger.info(F("ConfigP"),
-              F("ResetToDefaults requested: deleting /config.json and /sensors.json"));
+  // Clear Preferences and remove JSON backup files
+  logger.info(F("ConfigP"), F("ResetToDefaults: Lösche alle Preferences und Dateien"));
 
-  // Attempt to remove config and sensors files; ignore errors but log them
+  // Clear all Preferences namespaces
+  auto clearResult = PreferencesManager::clearAll();
+  if (!clearResult.isSuccess()) {
+    logger.warning(F("ConfigP"), F("Fehler beim Löschen der Preferences: ") + clearResult.getMessage());
+  }
+
+  // Also remove legacy JSON files if they exist
   if (LittleFS.exists("/config.json")) {
     if (LittleFS.remove("/config.json")) {
-      logger.info(F("ConfigP"), F("/config.json deleted"));
+      logger.info(F("ConfigP"), F("/config.json gelöscht"));
     } else {
-      logger.warning(F("ConfigP"), F("Failed to delete /config.json"));
+      logger.warning(F("ConfigP"), F("Fehler beim Löschen von /config.json"));
     }
-  } else {
-    logger.info(F("ConfigP"), F("/config.json not present"));
+  }
+  
+  if (LittleFS.exists("/config.json.bak")) {
+    LittleFS.remove("/config.json.bak");
   }
 
   if (LittleFS.exists("/sensors.json")) {
     if (LittleFS.remove("/sensors.json")) {
-      logger.info(F("ConfigP"), F("/sensors.json deleted"));
+      logger.info(F("ConfigP"), F("/sensors.json gelöscht"));
     } else {
-      logger.warning(F("ConfigP"), F("Failed to delete /sensors.json"));
+      logger.warning(F("ConfigP"), F("Fehler beim Löschen von /sensors.json"));
     }
-  } else {
-    logger.info(F("ConfigP"), F("/sensors.json not present"));
+  }
+  
+  if (LittleFS.exists("/sensors.json.bak")) {
+    LittleFS.remove("/sensors.json.bak");
   }
 
-  // Done: files removed. Return success; caller (UI) will handle reboot so the
-  // admin page can be rendered and the user sees confirmation.
+  logger.info(F("ConfigP"), F("Factory Reset abgeschlossen"));
+  // Return success; caller (UI) will handle reboot
   return PersistenceResult::success();
 }
 
 ConfigPersistence::PersistenceResult
 ConfigPersistence::saveToFileMinimal(const ConfigData& config) {
-  StaticJsonDocument<512> doc;
-  doc[F("admin_password")] = config.adminPassword;
-  doc[F("md5_verification")] = config.md5Verification;
-  doc[F("collectd_enabled")] = config.collectdEnabled;
-  doc[F("file_logging_enabled")] = config.fileLoggingEnabled;
-  doc[F("device_name")] = config.deviceName;
-  doc[F("debug_ram")] = config.debugRAM;
-  doc[F("debug_measurement_cycle")] = config.debugMeasurementCycle;
-  doc[F("debug_sensor")] = config.debugSensor;
-  doc[F("debug_display")] = config.debugDisplay;
-  doc[F("debug_websocket")] = config.debugWebSocket;
-  doc[F("wifi_ssid_1")] = config.wifiSSID1;
-  doc[F("wifi_password_1")] = config.wifiPassword1;
-  doc[F("wifi_ssid_2")] = config.wifiSSID2;
-  doc[F("wifi_password_2")] = config.wifiPassword2;
-  doc[F("wifi_ssid_3")] = config.wifiSSID3;
-  doc[F("wifi_password_3")] = config.wifiPassword3;
-  doc[F("led_traffic_light_mode")] = config.ledTrafficLightMode;
-  doc[F("led_traffic_light_selected_measurement")] = config.ledTrafficLightSelectedMeasurement;
-  doc[F("flower_status_sensor")] = config.flowerStatusSensor;
-
-#if USE_MAIL
-  saveMailConfigToJson(doc, config);
-#endif
-
-  String errorMsg;
-  if (!PersistenceUtils::writeJsonFile("/config.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  // Save to Preferences instead of JSON
+  logger.info(F("ConfigP"), F("Speichere Konfiguration in Preferences..."));
+  auto result = saveToPreferences(config);
+  if (result.isSuccess()) {
+    logger.info(F("ConfigP"), F("Konfiguration erfolgreich in Preferences gespeichert"));
+  } else {
+    logger.error(F("ConfigP"), F("Fehler beim Speichern in Preferences: ") + result.getMessage());
   }
-
-  // Log key debug flags and other safe-to-log settings for auditing
-  logger.info(F("ConfigP"),
-              String(F("Konfiguration gespeichert: debug_ram=")) +
-                  (config.debugRAM ? F("true") : F("false")) + F(", debug_measurement_cycle=") +
-                  (config.debugMeasurementCycle ? F("true") : F("false")) + F(", debug_sensor=") +
-                  (config.debugSensor ? F("true") : F("false")) + F(", debug_display=") +
-                  (config.debugDisplay ? F("true") : F("false")) + F(", debug_websocket=") +
-                  (config.debugWebSocket ? F("true") : F("false")));
-
-  return PersistenceResult::success();
+  return result;
 }
 
 void ConfigPersistence::writeUpdateFlagsToFile(bool fs, bool fw) {
