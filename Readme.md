@@ -4,6 +4,16 @@ Dies ist das Repository mit dem Quellcode und allen Informationen zum Fabmobil P
 
 Der Quellcode befindet sich im [Pflanzensensor](https://github.com/Fabmobil/Pflanzensensor/tree/main/Pflanzensensor)-Verzeichnis. Das [Dokumentation](https://github.com/Fabmobil/Pflanzensensor/tree/main/Dokumentation)-Verzeichnis enthält Datenblätter, Schaltpläne und Pinouts der verwendeten Bauteile sowie 3D Modelle für Zubehörteile, die gedruckt werden können. Im [Wiki](https://github.com/Fabmobil/Pflanzensensor/wiki) gibt es weiterführende Informationen und Anleitungen.
 
+## Konfigurationsverwaltung
+
+Das Projekt verwendet eine Preferences-basierte Konfigurationsverwaltung für eine robuste und effiziente Speicherung von Einstellungen. Weitere Details finden Sie in der [Preferences-Dokumentation](PREFERENCES_DOCUMENTATION.md).
+
+**Neue Features:**
+- Automatische Migration von bestehenden JSON-Konfigurationen zu Preferences
+- Organisierte Namespace-Struktur für verschiedene Einstellungsbereiche
+- Rückwärtskompatibilität mit Legacy-Konfigurationen
+- Umfassende deutsche Logger-Ausgaben
+
 ![Pflanzensensor](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Pflanzensensor.jpeg?raw=true)
 ![Pflanzensensor in Blumentopf](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Pflanzensensor_in_Blumentopf.jpeg?raw=true)
 ![Pflanzensensor Webinterface](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Webinterface.png?raw=true)
