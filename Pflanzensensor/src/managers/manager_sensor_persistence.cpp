@@ -516,48 +516,29 @@ SensorPersistence::PersistenceResult
 SensorPersistence::updateSensorThresholdsInternal(const String& sensorId, size_t measurementIndex,
                                                   float yellowLow, float greenLow, float greenHigh,
                                                   float yellowHigh) {
-  // Bestehende Konfiguration laden
-  StaticJsonDocument<4096> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  // Update thresholds directly in Preferences
+  String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  Preferences prefs;
+  if (!prefs.begin(ns.c_str(), false)) {
+    logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
+    return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
-
-  // Zum spezifischen Sensor und Messwert navigieren
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
-  }
-
-  JsonObject measurements = sensorObj["measurements"];
-  if (measurements.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
-  }
-
-  char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
-  JsonObject measurementObj = measurements[idxBuf];
-  if (measurementObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Messung nicht gefunden: ") + String(measurementIndex));
-  }
-
-  JsonObject thresholds = measurementObj["thresholds"];
-  if (thresholds.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR, F("Kein thresholds-Objekt gefunden"));
-  }
-
-  // Nur die Schwellwerte aktualisieren
-  thresholds["yellowLow"] = yellowLow;
-  thresholds["greenLow"] = greenLow;
-  thresholds["greenHigh"] = greenHigh;
-  thresholds["yellowHigh"] = yellowHigh;
-
-  // Zurück in die Datei schreiben
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  
+  String prefix = "m" + String(measurementIndex) + "_";
+  PreferencesManager::putFloat(prefs, (prefix + "yl").c_str(), yellowLow);
+  PreferencesManager::putFloat(prefs, (prefix + "gl").c_str(), greenLow);
+  PreferencesManager::putFloat(prefs, (prefix + "gh").c_str(), greenHigh);
+  PreferencesManager::putFloat(prefs, (prefix + "yh").c_str(), yellowHigh);
+  
+  prefs.end();
+  
+  logger.info(F("SensorP"), String(F("Schwellenwerte aktualisiert für ")) + sensorId + 
+              F(" Messung ") + String(measurementIndex));
+  
+  // Reload configuration
+  auto reloadResult = loadFromFile();
+  return reloadResult;
+}
   }
 
   logger.info(F("SensorP"), F("Schwellwerte atomar aktualisiert für ") + sensorId + F(" Messung ") +
@@ -681,7 +662,6 @@ SensorPersistence::PersistenceResult SensorPersistence::updateAnalogMinMaxIntege
 
 SensorPersistence::PersistenceResult
 SensorPersistence::updateMeasurementInterval(const String& sensorId, unsigned long interval) {
-  // Kritischen Abschnitt nutzen, um Speicherfehler zu vermeiden
   CriticalSection cs;
 
   PersistenceResult result = updateMeasurementIntervalInternal(sensorId, interval);
