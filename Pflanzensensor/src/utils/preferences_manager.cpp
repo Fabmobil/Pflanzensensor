@@ -39,6 +39,10 @@ uint32_t PreferencesManager::getUInt(Preferences& prefs, const char* key, uint32
   return prefs.getUInt(key, defaultValue);
 }
 
+int PreferencesManager::getInt(Preferences& prefs, const char* key, int defaultValue) {
+  return prefs.getInt(key, defaultValue);
+}
+
 float PreferencesManager::getFloat(Preferences& prefs, const char* key, float defaultValue) {
   return prefs.getFloat(key, defaultValue);
 }
@@ -57,6 +61,10 @@ bool PreferencesManager::putUChar(Preferences& prefs, const char* key, uint8_t v
 
 bool PreferencesManager::putUInt(Preferences& prefs, const char* key, uint32_t value) {
   return prefs.putUInt(key, value) > 0;
+}
+
+bool PreferencesManager::putInt(Preferences& prefs, const char* key, int value) {
+  return prefs.putInt(key, value) > 0;
 }
 
 bool PreferencesManager::putFloat(Preferences& prefs, const char* key, float value) {
@@ -522,7 +530,8 @@ PreferencesManager::PrefResult PreferencesManager::loadDebugSettings(
 
 // Sensor settings
 PreferencesManager::PrefResult PreferencesManager::saveSensorSettings(
-    const String& sensorId, const String& name, unsigned long measurementInterval) {
+    const String& sensorId, const String& name, unsigned long measurementInterval,
+    bool hasPersistentError) {
   
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
@@ -534,6 +543,7 @@ PreferencesManager::PrefResult PreferencesManager::saveSensorSettings(
   putBool(prefs, "initialized", true);
   putString(prefs, "name", name);
   putUInt(prefs, "meas_int", measurementInterval);
+  putBool(prefs, "has_err", hasPersistentError);
   
   prefs.end();
   logger.info(F("PrefMgr"), String(F("Sensor-Einstellungen gespeichert für ")) + sensorId);
@@ -541,7 +551,8 @@ PreferencesManager::PrefResult PreferencesManager::saveSensorSettings(
 }
 
 PreferencesManager::PrefResult PreferencesManager::loadSensorSettings(
-    const String& sensorId, String& name, unsigned long& measurementInterval) {
+    const String& sensorId, String& name, unsigned long& measurementInterval,
+    bool& hasPersistentError) {
   
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
@@ -552,6 +563,7 @@ PreferencesManager::PrefResult PreferencesManager::loadSensorSettings(
   
   name = getString(prefs, "name", "");
   measurementInterval = getUInt(prefs, "meas_int", MEASUREMENT_INTERVAL * 1000);
+  hasPersistentError = getBool(prefs, "has_err", false);
   
   prefs.end();
   logger.info(F("PrefMgr"), String(F("Sensor-Einstellungen geladen für ")) + sensorId);
@@ -561,9 +573,11 @@ PreferencesManager::PrefResult PreferencesManager::loadSensorSettings(
 // Sensor measurement settings
 PreferencesManager::PrefResult PreferencesManager::saveSensorMeasurement(
     const String& sensorId, uint8_t measurementIndex,
-    bool enabled, float min, float max,
+    bool enabled, const String& name, const String& fieldName, const String& unit,
+    float minValue, float maxValue,
     float yellowLow, float greenLow, float greenHigh, float yellowHigh,
-    const String& name) {
+    bool inverted, bool calibrationMode, uint32_t autocalDuration,
+    int absoluteRawMin, int absoluteRawMax) {
   
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
@@ -574,13 +588,20 @@ PreferencesManager::PrefResult PreferencesManager::saveSensorMeasurement(
   
   String prefix = "m" + String(measurementIndex) + "_";
   putBool(prefs, (prefix + "en").c_str(), enabled);
-  putFloat(prefs, (prefix + "min").c_str(), min);
-  putFloat(prefs, (prefix + "max").c_str(), max);
+  putString(prefs, (prefix + "nm").c_str(), name);
+  putString(prefs, (prefix + "fn").c_str(), fieldName);
+  putString(prefs, (prefix + "un").c_str(), unit);
+  putFloat(prefs, (prefix + "min").c_str(), minValue);
+  putFloat(prefs, (prefix + "max").c_str(), maxValue);
   putFloat(prefs, (prefix + "yl").c_str(), yellowLow);
   putFloat(prefs, (prefix + "gl").c_str(), greenLow);
   putFloat(prefs, (prefix + "gh").c_str(), greenHigh);
   putFloat(prefs, (prefix + "yh").c_str(), yellowHigh);
-  putString(prefs, (prefix + "nm").c_str(), name);
+  putBool(prefs, (prefix + "inv").c_str(), inverted);
+  putBool(prefs, (prefix + "cal").c_str(), calibrationMode);
+  putUInt(prefs, (prefix + "acd").c_str(), autocalDuration);
+  putInt(prefs, (prefix + "rmin").c_str(), absoluteRawMin);
+  putInt(prefs, (prefix + "rmax").c_str(), absoluteRawMax);
   
   prefs.end();
   logger.info(F("PrefMgr"), String(F("Messwert-Einstellungen gespeichert für ")) + sensorId + 
@@ -590,9 +611,11 @@ PreferencesManager::PrefResult PreferencesManager::saveSensorMeasurement(
 
 PreferencesManager::PrefResult PreferencesManager::loadSensorMeasurement(
     const String& sensorId, uint8_t measurementIndex,
-    bool& enabled, float& min, float& max,
+    bool& enabled, String& name, String& fieldName, String& unit,
+    float& minValue, float& maxValue,
     float& yellowLow, float& greenLow, float& greenHigh, float& yellowHigh,
-    String& name) {
+    bool& inverted, bool& calibrationMode, uint32_t& autocalDuration,
+    int& absoluteRawMin, int& absoluteRawMax) {
   
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
@@ -603,17 +626,42 @@ PreferencesManager::PrefResult PreferencesManager::loadSensorMeasurement(
   
   String prefix = "m" + String(measurementIndex) + "_";
   enabled = getBool(prefs, (prefix + "en").c_str(), true);
-  min = getFloat(prefs, (prefix + "min").c_str(), 0.0f);
-  max = getFloat(prefs, (prefix + "max").c_str(), 100.0f);
+  name = getString(prefs, (prefix + "nm").c_str(), "");
+  fieldName = getString(prefs, (prefix + "fn").c_str(), "");
+  unit = getString(prefs, (prefix + "un").c_str(), "");
+  minValue = getFloat(prefs, (prefix + "min").c_str(), 0.0f);
+  maxValue = getFloat(prefs, (prefix + "max").c_str(), 100.0f);
   yellowLow = getFloat(prefs, (prefix + "yl").c_str(), 10.0f);
   greenLow = getFloat(prefs, (prefix + "gl").c_str(), 20.0f);
   greenHigh = getFloat(prefs, (prefix + "gh").c_str(), 80.0f);
   yellowHigh = getFloat(prefs, (prefix + "yh").c_str(), 90.0f);
-  name = getString(prefs, (prefix + "nm").c_str(), "");
+  inverted = getBool(prefs, (prefix + "inv").c_str(), false);
+  calibrationMode = getBool(prefs, (prefix + "cal").c_str(), false);
+  autocalDuration = getUInt(prefs, (prefix + "acd").c_str(), 86400);
+  absoluteRawMin = getInt(prefs, (prefix + "rmin").c_str(), INT_MAX);
+  absoluteRawMax = getInt(prefs, (prefix + "rmax").c_str(), INT_MIN);
   
   prefs.end();
   logger.info(F("PrefMgr"), String(F("Messwert-Einstellungen geladen für ")) + sensorId + 
               String(F(" Messung ")) + String(measurementIndex));
+  return PrefResult::success();
+}
+
+// Check if sensor namespace exists
+bool PreferencesManager::sensorNamespaceExists(const String& sensorId) {
+  String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  return namespaceExists(ns.c_str());
+}
+
+// Clear sensor namespace
+PreferencesManager::PrefResult PreferencesManager::clearSensorNamespace(const String& sensorId) {
+  String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  Preferences prefs;
+  if (prefs.begin(ns.c_str(), false)) {
+    prefs.clear();
+    prefs.end();
+    logger.info(F("PrefMgr"), String(F("Sensor-Namespace gelöscht: ")) + sensorId);
+  }
   return PrefResult::success();
 }
 

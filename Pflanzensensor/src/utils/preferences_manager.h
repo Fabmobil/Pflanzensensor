@@ -108,26 +108,48 @@ public:
   // Sensor settings - per sensor
   static PrefResult saveSensorSettings(const String& sensorId, 
                                        const String& name,
-                                       unsigned long measurementInterval);
+                                       unsigned long measurementInterval,
+                                       bool hasPersistentError);
   static PrefResult loadSensorSettings(const String& sensorId,
                                        String& name,
-                                       unsigned long& measurementInterval);
+                                       unsigned long& measurementInterval,
+                                       bool& hasPersistentError);
   
   // Sensor measurement settings - per measurement
   static PrefResult saveSensorMeasurement(const String& sensorId,
                                          uint8_t measurementIndex,
                                          bool enabled,
-                                         float min, float max,
+                                         const String& name,
+                                         const String& fieldName,
+                                         const String& unit,
+                                         float minValue, float maxValue,
                                          float yellowLow, float greenLow,
                                          float greenHigh, float yellowHigh,
-                                         const String& name);
+                                         bool inverted,
+                                         bool calibrationMode,
+                                         uint32_t autocalDuration,
+                                         int absoluteRawMin,
+                                         int absoluteRawMax);
   static PrefResult loadSensorMeasurement(const String& sensorId,
                                          uint8_t measurementIndex,
                                          bool& enabled,
-                                         float& min, float& max,
+                                         String& name,
+                                         String& fieldName,
+                                         String& unit,
+                                         float& minValue, float& maxValue,
                                          float& yellowLow, float& greenLow,
                                          float& greenHigh, float& yellowHigh,
-                                         String& name);
+                                         bool& inverted,
+                                         bool& calibrationMode,
+                                         uint32_t& autocalDuration,
+                                         int& absoluteRawMin,
+                                         int& absoluteRawMax);
+  
+  // Check if sensor namespace exists
+  static bool sensorNamespaceExists(const String& sensorId);
+  
+  // Clear sensor namespace
+  static PrefResult clearSensorNamespace(const String& sensorId);
   
   // Flower status sensor setting
   static PrefResult saveFlowerStatusSensor(const String& sensorId);
@@ -138,12 +160,14 @@ public:
   static bool getBool(Preferences& prefs, const char* key, bool defaultValue = false);
   static uint8_t getUChar(Preferences& prefs, const char* key, uint8_t defaultValue = 0);
   static uint32_t getUInt(Preferences& prefs, const char* key, uint32_t defaultValue = 0);
+  static int getInt(Preferences& prefs, const char* key, int defaultValue = 0);
   static float getFloat(Preferences& prefs, const char* key, float defaultValue = 0.0f);
   
   static bool putString(Preferences& prefs, const char* key, const String& value);
   static bool putBool(Preferences& prefs, const char* key, bool value);
   static bool putUChar(Preferences& prefs, const char* key, uint8_t value);
   static bool putUInt(Preferences& prefs, const char* key, uint32_t value);
+  static bool putInt(Preferences& prefs, const char* key, int value);
   static bool putFloat(Preferences& prefs, const char* key, float value);
 
   // Public initialization functions for individual namespaces

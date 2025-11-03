@@ -12,6 +12,7 @@ using namespace ArduinoJson;
 
 #include "../logger/logger.h"
 #include "../utils/critical_section.h"
+#include "../utils/preferences_manager.h"
 #include "managers/manager_config.h"
 #include "managers/manager_resource.h"
 #include "managers/manager_sensor.h"
@@ -22,10 +23,23 @@ using namespace ArduinoJson;
 #include "../utils/persistence_utils.h"
 #include "sensors/sensor_autocalibration.h"
 
-// Static document for sensor operations
+// Static document for sensor operations (for JSON fallback)
 static StaticJsonDocument<4096> sensorDoc;
 
-bool SensorPersistence::configFileExists() { return PersistenceUtils::fileExists("/sensors.json"); }
+bool SensorPersistence::configFileExists() { 
+  // Check if any sensor has Preferences data
+  extern std::unique_ptr<SensorManager> sensorManager;
+  if (sensorManager && sensorManager->getState() == ManagerState::INITIALIZED) {
+    const auto& allSensors = sensorManager->getSensors();
+    for (const auto& sensorPtr : allSensors) {
+      if (sensorPtr && PreferencesManager::sensorNamespaceExists(sensorPtr->config().id)) {
+        return true;
+      }
+    }
+  }
+  // Fallback to JSON
+  return PersistenceUtils::fileExists("/sensors.json"); 
+}
 
 size_t SensorPersistence::getConfigFileSize() {
   if (!configFileExists()) {
@@ -322,58 +336,106 @@ void SensorPersistence::applySensorSettingsFromJson(const String& sensorId,
 
 SensorPersistence::PersistenceResult SensorPersistence::loadFromFile() {
   if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("Beginne Laden der Sensorkonfiguration aus Datei"));
+    logger.debug(F("SensorP"), F("Beginne Laden der Sensorkonfiguration aus Preferences"));
   }
 
-  String errorMsg;
-  StaticJsonDocument<4096>& doc = sensorDoc;
-  doc.clear();
-
-  if (!PersistenceUtils::fileExists("/sensors.json")) {
-    // File does not exist: use defaults, do not treat as error
-    if (ConfigMgr.isDebugSensor()) {
-      logger.debug(F("SensorP"),
-                   F("Sensorkonfigurationsdatei nicht gefunden, verwende Standardwerte."));
-    }
-    logger.info(F("SensorP"),
-                F("Sensorkonfigurationsdatei nicht gefunden, verwende Standardwerte."));
+  extern std::unique_ptr<SensorManager> sensorManager;
+  
+  // Early exit if sensor manager is not available
+  if (!sensorManager || sensorManager->getState() != ManagerState::INITIALIZED) {
+    logger.warning(F("SensorP"), F("Sensor-Manager nicht bereit, überspringe Laden"));
     return PersistenceResult::success();
   }
 
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    if (ConfigMgr.isDebugSensor()) {
-      logger.debug(F("SensorP"), F("Fehler beim Lesen von sensors.json: ") + errorMsg);
-    }
-    logger.error(F("SensorP"), F("Sensorkonfiguration konnte nicht geladen werden: ") + errorMsg);
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("sensors.json erfolgreich gelesen"));
-  }
-
-  // Load sensor configuration
-  if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("Beginne Verarbeitung der Sensoren aus JSON"));
-  }
-
-  for (JsonPair sensorPair : doc.as<JsonObject>()) {
-    if (!sensorPair.key().c_str() || strlen(sensorPair.key().c_str()) == 0) {
-      logger.warning(F("SensorP"), F("Überspringe Sensor mit leerem Schlüssel"));
+  const auto& allSensors = sensorManager->getSensors();
+  
+  // Load each sensor from Preferences
+  for (const auto& sensorPtr : allSensors) {
+    if (!sensorPtr) continue;
+    
+    String sensorId = sensorPtr->config().id;
+    
+    // Check if this sensor has Preferences data
+    if (!PreferencesManager::sensorNamespaceExists(sensorId)) {
+      if (ConfigMgr.isDebugSensor()) {
+        logger.debug(F("SensorP"), String(F("Keine Preferences für Sensor: ")) + sensorId);
+      }
       continue;
     }
-    String sensorId = String(sensorPair.key().c_str());
-    JsonObject sensorConfig = sensorPair.value();
-
+    
     if (ConfigMgr.isDebugSensor()) {
-      logger.debug(F("SensorP"), F("Verarbeite Sensor: ") + sensorId);
+      logger.debug(F("SensorP"), String(F("Lade Sensor aus Preferences: ")) + sensorId);
     }
-
-    applySensorSettingsFromJson(sensorId, sensorConfig);
+    
+    // Load sensor settings
+    String name;
+    unsigned long measurementInterval;
+    bool hasPersistentError;
+    
+    auto sensorResult = PreferencesManager::loadSensorSettings(
+      sensorId, name, measurementInterval, hasPersistentError);
+    
+    if (!sensorResult.isSuccess()) {
+      logger.warning(F("SensorP"), String(F("Fehler beim Laden der Sensor-Einstellungen für ")) + sensorId);
+      continue;
+    }
+    
+    // Apply sensor-level settings
+    SensorConfig& config = sensorPtr->mutableConfig();
+    if (!name.isEmpty()) {
+      config.name = name;
+    }
+    config.measurementInterval = measurementInterval;
+    config.hasPersistentError = hasPersistentError;
+    sensorPtr->setMeasurementInterval(measurementInterval);
+    
+    // Load measurement settings
+    for (size_t i = 0; i < config.activeMeasurements; ++i) {
+      bool enabled;
+      String measName, fieldName, unit;
+      float minValue, maxValue;
+      float yellowLow, greenLow, greenHigh, yellowHigh;
+      bool inverted, calibrationMode;
+      uint32_t autocalDuration;
+      int absoluteRawMin, absoluteRawMax;
+      
+      auto measResult = PreferencesManager::loadSensorMeasurement(
+        sensorId, i, enabled, measName, fieldName, unit,
+        minValue, maxValue, yellowLow, greenLow, greenHigh, yellowHigh,
+        inverted, calibrationMode, autocalDuration, absoluteRawMin, absoluteRawMax);
+      
+      if (!measResult.isSuccess()) {
+        if (ConfigMgr.isDebugSensor()) {
+          logger.debug(F("SensorP"), String(F("Keine Messung ")) + String(i) + F(" für ") + sensorId);
+        }
+        continue;
+      }
+      
+      // Apply measurement settings
+      config.measurements[i].enabled = enabled;
+      if (!measName.isEmpty()) config.measurements[i].name = measName;
+      if (!fieldName.isEmpty()) config.measurements[i].fieldName = fieldName;
+      if (!unit.isEmpty()) config.measurements[i].unit = unit;
+      config.measurements[i].minValue = minValue;
+      config.measurements[i].maxValue = maxValue;
+      config.measurements[i].limits.yellowLow = yellowLow;
+      config.measurements[i].limits.greenLow = greenLow;
+      config.measurements[i].limits.greenHigh = greenHigh;
+      config.measurements[i].limits.yellowHigh = yellowHigh;
+      config.measurements[i].inverted = inverted;
+      config.measurements[i].calibrationMode = calibrationMode;
+      config.measurements[i].autocalHalfLifeSeconds = autocalDuration;
+      config.measurements[i].absoluteRawMin = absoluteRawMin;
+      config.measurements[i].absoluteRawMax = absoluteRawMax;
+      
+      if (ConfigMgr.isDebugSensor()) {
+        logger.debug(F("SensorP"), String(F("Messung ")) + String(i) + F(" geladen für ") + sensorId);
+      }
+    }
   }
 
   if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("Verarbeitung aller Sensoren aus JSON beendet"));
+    logger.debug(F("SensorP"), F("Laden aller Sensoren aus Preferences beendet"));
   }
   return PersistenceResult::success();
 }
@@ -383,57 +445,56 @@ SensorPersistence::PersistenceResult SensorPersistence::loadFromFile() {
 // keep saveToFileMinimal
 
 SensorPersistence::PersistenceResult SensorPersistence::saveToFileMinimal() {
-  StaticJsonDocument<4096>& doc = sensorDoc;
-  doc.clear();
-  ArduinoJson::JsonObject docRoot = doc.to<JsonObject>();
   extern std::unique_ptr<SensorManager> sensorManager;
   if (!sensorManager) {
     return PersistenceResult::success();
   }
+  
   const auto& allSensors = sensorManager->getSensors();
+  
   for (const auto& sensorPtr : allSensors) {
-    if (!sensorPtr)
-      continue;
+    if (!sensorPtr) continue;
+    
     const SensorConfig& sensorConfig = sensorPtr->config();
-    ArduinoJson::JsonObject sensorObj = docRoot[sensorConfig.id.c_str()].to<JsonObject>();
-    sensorObj["measurementInterval"] = sensorConfig.measurementInterval;
-    ArduinoJson::JsonObject measurements = sensorObj["measurements"].to<JsonObject>();
-    for (size_t i = 0; i < sensorConfig.activeMeasurements; ++i) {
-      char idxBuf[8];
-      snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(i));
-      ArduinoJson::JsonObject measurementObj = measurements[idxBuf].to<JsonObject>();
-      measurementObj["enabled"] = sensorConfig.measurements[i].enabled;
-      measurementObj["name"] = sensorConfig.measurements[i].name;
-      measurementObj["fieldName"] = sensorConfig.measurements[i].fieldName;
-      measurementObj["unit"] = sensorConfig.measurements[i].unit;
-      ArduinoJson::JsonObject thresholds = measurementObj["thresholds"].to<JsonObject>();
-      thresholds["yellowLow"] = sensorConfig.measurements[i].limits.yellowLow;
-      thresholds["greenLow"] = sensorConfig.measurements[i].limits.greenLow;
-      thresholds["greenHigh"] = sensorConfig.measurements[i].limits.greenHigh;
-      thresholds["yellowHigh"] = sensorConfig.measurements[i].limits.yellowHigh;
-#if USE_ANALOG
-      if (sensorConfig.id.startsWith("ANALOG")) {
-        // Persist min/max as integer values (rounding) to keep JSON
-        // consistent and reduce wear
-        measurementObj["min"] = static_cast<int>(roundf(sensorConfig.measurements[i].minValue));
-        measurementObj["max"] = static_cast<int>(roundf(sensorConfig.measurements[i].maxValue));
-        measurementObj["inverted"] = sensorConfig.measurements[i].inverted;
-      }
-      // Persist calibration mode for analog sensors
-      measurementObj["calibrationMode"] = sensorConfig.measurements[i].calibrationMode;
-      // Persist autocal half-life duration (seconds)
-      measurementObj["autocalDuration"] = sensorConfig.measurements[i].autocalHalfLifeSeconds;
-      // Persist absolute raw min/max values (reuse this storage for autocal)
-      measurementObj["absoluteRawMin"] = sensorConfig.measurements[i].absoluteRawMin;
-      measurementObj["absoluteRawMax"] = sensorConfig.measurements[i].absoluteRawMax;
-#endif
+    String sensorId = sensorConfig.id;
+    
+    if (ConfigMgr.isDebugSensor()) {
+      logger.debug(F("SensorP"), String(F("Speichere Sensor: ")) + sensorId);
     }
-    sensorObj["hasPersistentError"] = sensorConfig.hasPersistentError;
+    
+    // Save sensor-level settings
+    auto sensorResult = PreferencesManager::saveSensorSettings(
+      sensorId, sensorConfig.name, sensorConfig.measurementInterval,
+      sensorConfig.hasPersistentError);
+    
+    if (!sensorResult.isSuccess()) {
+      logger.error(F("SensorP"), String(F("Fehler beim Speichern von Sensor ")) + sensorId);
+      return sensorResult;
+    }
+    
+    // Save each measurement
+    for (size_t i = 0; i < sensorConfig.activeMeasurements; ++i) {
+      const auto& meas = sensorConfig.measurements[i];
+      
+      auto measResult = PreferencesManager::saveSensorMeasurement(
+        sensorId, i,
+        meas.enabled, meas.name, meas.fieldName, meas.unit,
+        meas.minValue, meas.maxValue,
+        meas.limits.yellowLow, meas.limits.greenLow,
+        meas.limits.greenHigh, meas.limits.yellowHigh,
+        meas.inverted, meas.calibrationMode,
+        meas.autocalHalfLifeSeconds,
+        meas.absoluteRawMin, meas.absoluteRawMax);
+      
+      if (!measResult.isSuccess()) {
+        logger.error(F("SensorP"), String(F("Fehler beim Speichern von Messung ")) + 
+                     String(i) + F(" für ") + sensorId);
+        return measResult;
+      }
+    }
   }
-  // Remove unused variable 'errorMsg'
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, *(new String()))) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR);
-  }
+  
+  logger.info(F("SensorP"), F("Alle Sensoren in Preferences gespeichert"));
   return PersistenceResult::success();
 }
 
