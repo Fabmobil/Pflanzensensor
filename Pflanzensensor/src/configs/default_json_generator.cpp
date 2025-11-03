@@ -17,9 +17,6 @@ void ensureConfigFilesExist() {
     auto initResult = PreferencesManager::initializeAllNamespaces();
     if (!initResult.isSuccess()) {
       logger.error(F("main"), F("Fehler beim Initialisieren der Preferences: ") + initResult.getMessage());
-      // Fallback to creating JSON files
-      logger.info(F("main"), F("Fallback: Erstelle JSON-Dateien"));
-      createLegacyConfigFiles();
       return;
     }
     logger.info(F("main"), F("Preferences erfolgreich initialisiert"));
@@ -27,44 +24,9 @@ void ensureConfigFilesExist() {
     logger.info(F("main"), F("Preferences bereits vorhanden"));
   }
   
-  // Still ensure sensors.json exists for sensor persistence
-  // (Sensors will be migrated to Preferences in a later step)
+  // Ensure sensors.json exists for sensor persistence
+  // (Sensors still use JSON for now, will be migrated to Preferences later)
   ensureSensorsJsonExists();
-}
-
-void createLegacyConfigFiles() {
-  // Legacy JSON creation for fallback - should rarely be used
-  logger.warning(F("main"), F("Erstelle Legacy-JSON-Konfiguration (Fallback-Modus)"));
-  
-  if (!PersistenceUtils::fileExists("/config.json")) {
-    // Create a minimal JSON config file
-    StaticJsonDocument<512> doc;
-    doc["admin_password"] = ADMIN_PASSWORD;
-    doc["md5_verification"] = false;
-    doc["file_logging_enabled"] = FILE_LOGGING_ENABLED;
-    doc["device_name"] = DEVICE_NAME;
-    doc["debug_ram"] = DEBUG_RAM;
-    doc["debug_measurement_cycle"] = DEBUG_MEASUREMENT_CYCLE;
-    doc["debug_sensor"] = DEBUG_SENSOR;
-    doc["debug_display"] = DEBUG_DISPLAY;
-    doc["debug_websocket"] = DEBUG_WEBSOCKET;
-    doc["wifi_ssid_1"] = WIFI_SSID_1;
-    doc["wifi_password_1"] = WIFI_PASSWORD_1;
-    doc["wifi_ssid_2"] = WIFI_SSID_2;
-    doc["wifi_password_2"] = WIFI_PASSWORD_2;
-    doc["wifi_ssid_3"] = WIFI_SSID_3;
-    doc["wifi_password_3"] = WIFI_PASSWORD_3;
-    doc["led_traffic_light_mode"] = 2;
-    doc["led_traffic_light_selected_measurement"] = "ANALOG_1";
-    doc["flower_status_sensor"] = "ANALOG_1";
-    
-    String err;
-    if (PersistenceUtils::writeJsonFile("/config.json", doc, err)) {
-      logger.info(F("main"), F("/config.json erstellt"));
-    } else {
-      logger.error(F("main"), F("Fehler beim Erstellen von /config.json: ") + err);
-    }
-  }
 }
 
 void ensureSensorsJsonExists() {

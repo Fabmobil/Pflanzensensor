@@ -146,15 +146,16 @@ public:
   static bool putUInt(Preferences& prefs, const char* key, uint32_t value);
   static bool putFloat(Preferences& prefs, const char* key, float value);
 
-private:
-  PreferencesManager() = default;
-  
+  // Public initialization functions for individual namespaces
   static PrefResult initGeneralNamespace();
   static PrefResult initWiFiNamespace();
   static PrefResult initDisplayNamespace();
   static PrefResult initLogNamespace();
   static PrefResult initLedTrafficNamespace();
   static PrefResult initDebugNamespace();
+
+private:
+  PreferencesManager() = default;
 };
 
 #endif // PREFERENCES_MANAGER_H

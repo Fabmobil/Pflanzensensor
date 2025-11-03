@@ -85,86 +85,28 @@ DisplayResult DisplayManager::loadConfig() {
 #if USE_DISPLAY
   CriticalSection cs;
 
-  // Try to load from Preferences first
-  if (PreferencesManager::namespaceExists(PreferencesNamespaces::DISPLAY)) {
-    logger.debug(F("DisplayM"), F("Lade Display-Konfiguration aus Preferences..."));
-    
-    auto result = PreferencesManager::loadDisplaySettings(
-      m_config.showIpScreen, m_config.showClock,
-      m_config.showFlowerImage, m_config.showFabmobilImage,
-      m_config.screenDuration, m_config.clockFormat);
-    
-    if (result.isSuccess()) {
-      logger.info(F("DisplayM"), F("Display-Konfiguration aus Preferences geladen"));
-      
-      String configMsg =
-          String(F("Geladene Konfiguration - IP-Anzeige: ")) + String(m_config.showIpScreen) +
-          String(F(", Uhr: ")) + String(m_config.showClock) + String(F(", Blume: ")) +
-          String(m_config.showFlowerImage) + String(F(", Fabmobil: ")) +
-          String(m_config.showFabmobilImage) + String(F(", Dauer: ")) +
-          String(m_config.screenDuration) + String(F(", Format: ")) + m_config.clockFormat;
-      logger.debug(F("DisplayM"), configMsg);
-      
+  // Check if Preferences exist, if not initialize with defaults
+  if (!PreferencesManager::namespaceExists(PreferencesNamespaces::DISPLAY)) {
+    logger.info(F("DisplayM"), F("Keine Display-Konfiguration gefunden, initialisiere mit Standardwerten..."));
+    auto initResult = PreferencesManager::initDisplayNamespace();
+    if (!initResult.isSuccess()) {
+      logger.warning(F("DisplayM"), F("Fehler beim Initialisieren der Display-Preferences"));
+      // Use defaults from constructor
       return DisplayResult::success();
     }
   }
 
-  // Fallback: Try to load from JSON and migrate to Preferences
-  if (LittleFS.exists("/display_config.json")) {
-    logger.info(F("DisplayM"), F("Migriere Display-Konfiguration von JSON zu Preferences..."));
+  // Load from Preferences
+  logger.debug(F("DisplayM"), F("Lade Display-Konfiguration aus Preferences..."));
+  
+  auto result = PreferencesManager::loadDisplaySettings(
+    m_config.showIpScreen, m_config.showClock,
+    m_config.showFlowerImage, m_config.showFabmobilImage,
+    m_config.screenDuration, m_config.clockFormat);
+  
+  if (result.isSuccess()) {
+    logger.info(F("DisplayM"), F("Display-Konfiguration aus Preferences geladen"));
     
-    File configFile = LittleFS.open("/display_config.json", "r");
-    if (!configFile) {
-      return DisplayResult::fail(DisplayError::FILE_ERROR,
-                                 F("Öffnen der Display-Konfigurationsdatei fehlgeschlagen"));
-    }
-
-    StaticJsonDocument<512> doc;
-    DeserializationError error = deserializeJson(doc, configFile);
-    configFile.close();
-
-    if (error) {
-      return DisplayResult::fail(DisplayError::INVALID_CONFIG,
-                                 String(F("Parsen der Display-Konfiguration fehlgeschlagen: ")) +
-                                     String(error.c_str()));
-    }
-
-    m_config.showIpScreen = doc["show_ip"] | true;
-    m_config.showClock = doc["show_clock"] | true;
-    m_config.showFlowerImage = doc["show_flower"] | true;
-    m_config.showFabmobilImage = doc["show_fabmobil"] | true;
-    m_config.screenDuration = doc["duration"] | (DISPLAY_DEFAULT_TIME * 1000);
-    m_config.clockFormat = doc["clock_format"] | "24h";
-    
-    // Load per-sensor display entries (optional)
-    if (doc.containsKey("sensor_displays") && doc["sensor_displays"].is<JsonArray>()) {
-      m_config.sensorDisplays.clear();
-      for (JsonObject entry : doc["sensor_displays"].as<JsonArray>()) {
-        DisplayConfig::SensorDisplayEntry e;
-        e.sensorId = entry["sensor_id"].as<String>();
-        if (entry.containsKey("measurements") && entry["measurements"].is<JsonArray>()) {
-          for (JsonVariant v : entry["measurements"].as<JsonArray>()) {
-            e.showMeasurements.push_back((bool)v.as<bool>());
-          }
-        }
-        m_config.sensorDisplays.push_back(e);
-      }
-    }
-
-    // Save to Preferences
-    auto saveResult = PreferencesManager::saveDisplaySettings(
-      m_config.showIpScreen, m_config.showClock,
-      m_config.showFlowerImage, m_config.showFabmobilImage,
-      m_config.screenDuration, m_config.clockFormat);
-    
-    if (saveResult.isSuccess()) {
-      logger.info(F("DisplayM"), F("Display-Konfiguration zu Preferences migriert"));
-      // Backup JSON file
-      if (LittleFS.rename("/display_config.json", "/display_config.json.bak")) {
-        logger.info(F("DisplayM"), F("JSON-Backup erstellt: /display_config.json.bak"));
-      }
-    }
-
     String configMsg =
         String(F("Geladene Konfiguration - IP-Anzeige: ")) + String(m_config.showIpScreen) +
         String(F(", Uhr: ")) + String(m_config.showClock) + String(F(", Blume: ")) +
@@ -172,14 +114,10 @@ DisplayResult DisplayManager::loadConfig() {
         String(m_config.showFabmobilImage) + String(F(", Dauer: ")) +
         String(m_config.screenDuration) + String(F(", Format: ")) + m_config.clockFormat;
     logger.debug(F("DisplayM"), configMsg);
-    
-    return DisplayResult::success();
+  } else {
+    logger.warning(F("DisplayM"), F("Fehler beim Laden der Display-Konfiguration, verwende Standardwerte"));
   }
 
-  // No configuration found - use defaults (already initialized in Preferences)
-  logger.info(F("DisplayM"), F("Keine Display-Konfiguration gefunden, verwende Standardwerte"));
-  return DisplayResult::fail(DisplayError::FILE_ERROR,
-                             F("Display-Konfigurationsdatei nicht gefunden"));
 #endif
   return DisplayResult::success();
 }

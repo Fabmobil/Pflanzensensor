@@ -67,20 +67,6 @@ private:
   ConfigPersistence() = default;
 
   /**
-   * @brief Load configuration from JSON file (for migration)
-   * @param config Configuration data structure to populate
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult loadFromJSON(ConfigData& config);
-
-  /**
-   * @brief Save configuration to Preferences
-   * @param config Configuration data to save
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult saveToPreferences(const ConfigData& config);
-
-  /**
    * @brief Load sensor error flags from JSON
    * @param sensorErrors JSON document containing sensor errors
    * @param config Configuration data to populate
