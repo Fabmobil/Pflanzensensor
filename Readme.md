@@ -9,10 +9,14 @@ Der Quellcode befindet sich im [Pflanzensensor](https://github.com/Fabmobil/Pfla
 Das Projekt verwendet eine Preferences-basierte Konfigurationsverwaltung für eine robuste und effiziente Speicherung von Einstellungen. Weitere Details finden Sie in der [Preferences-Dokumentation](PREFERENCES_DOCUMENTATION.md).
 
 **Neue Features:**
-- Automatische Migration von bestehenden JSON-Konfigurationen zu Preferences
+- EEPROM-basierte Speicherung (überlebt Filesystem-Flashes)
 - Organisierte Namespace-Struktur für verschiedene Einstellungsbereiche
-- Rückwärtskompatibilität mit Legacy-Konfigurationen
+- Direktes Laden/Speichern in Preferences (keine JSON-Migration)
 - Umfassende deutsche Logger-Ausgaben
+
+**Aktueller Stand:**
+- ✅ General, WiFi, Display, Log, LED Traffic Light und Debug-Einstellungen in Preferences
+- ⏳ Sensor-Einstellungen noch in sensors.json (zukünftige Erweiterung)
 
 ![Pflanzensensor](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Pflanzensensor.jpeg?raw=true)
 ![Pflanzensensor in Blumentopf](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Pflanzensensor_in_Blumentopf.jpeg?raw=true)
