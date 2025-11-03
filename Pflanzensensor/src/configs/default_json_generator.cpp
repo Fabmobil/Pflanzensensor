@@ -8,32 +8,66 @@
 #include "managers/manager_config_persistence.h"
 #include "sensors/sensor_config.h"
 #include "utils/persistence_utils.h"
+#include "utils/preferences_manager.h"
 
 void ensureConfigFilesExist() {
-  // CONFIG
-  if (!PersistenceUtils::fileExists("/config.json")) {
-    ConfigData config;
-    config.adminPassword = ADMIN_PASSWORD;
-    config.md5Verification = false;
-    config.fileLoggingEnabled = FILE_LOGGING_ENABLED;
-    config.debugRAM = DEBUG_RAM;
-    config.debugMeasurementCycle = DEBUG_MEASUREMENT_CYCLE;
-    config.debugSensor = DEBUG_SENSOR;
-    config.debugDisplay = DEBUG_DISPLAY;
-    config.debugWebSocket = DEBUG_WEBSOCKET;
-    // Add WiFi credentials from config macros
-    config.wifiSSID1 = WIFI_SSID_1;
-    config.wifiPassword1 = WIFI_PASSWORD_1;
-    config.wifiSSID2 = WIFI_SSID_2;
-    config.wifiPassword2 = WIFI_PASSWORD_2;
-    config.wifiSSID3 = WIFI_SSID_3;
-    config.wifiPassword3 = WIFI_PASSWORD_3;
-    // Add device name from macro
-    config.deviceName = String(DEVICE_NAME);
-    ConfigPersistence::saveToFileMinimal(config);
-    logger.info(F("main"), F("/config.json mit Standardwerten beim Start erstellt."));
+  // Initialize Preferences-based configuration if not present
+  if (!PreferencesManager::namespaceExists(PreferencesNamespaces::GENERAL)) {
+    logger.info(F("main"), F("Preferences nicht gefunden, initialisiere mit Standardwerten..."));
+    auto initResult = PreferencesManager::initializeAllNamespaces();
+    if (!initResult.isSuccess()) {
+      logger.error(F("main"), F("Fehler beim Initialisieren der Preferences: ") + initResult.getMessage());
+      // Fallback to creating JSON files
+      logger.info(F("main"), F("Fallback: Erstelle JSON-Dateien"));
+      createLegacyConfigFiles();
+      return;
+    }
+    logger.info(F("main"), F("Preferences erfolgreich initialisiert"));
+  } else {
+    logger.info(F("main"), F("Preferences bereits vorhanden"));
   }
+  
+  // Still ensure sensors.json exists for sensor persistence
+  // (Sensors will be migrated to Preferences in a later step)
+  ensureSensorsJsonExists();
+}
 
+void createLegacyConfigFiles() {
+  // Legacy JSON creation for fallback - should rarely be used
+  logger.warning(F("main"), F("Erstelle Legacy-JSON-Konfiguration (Fallback-Modus)"));
+  
+  if (!PersistenceUtils::fileExists("/config.json")) {
+    // Create a minimal JSON config file
+    StaticJsonDocument<512> doc;
+    doc["admin_password"] = ADMIN_PASSWORD;
+    doc["md5_verification"] = false;
+    doc["file_logging_enabled"] = FILE_LOGGING_ENABLED;
+    doc["device_name"] = DEVICE_NAME;
+    doc["debug_ram"] = DEBUG_RAM;
+    doc["debug_measurement_cycle"] = DEBUG_MEASUREMENT_CYCLE;
+    doc["debug_sensor"] = DEBUG_SENSOR;
+    doc["debug_display"] = DEBUG_DISPLAY;
+    doc["debug_websocket"] = DEBUG_WEBSOCKET;
+    doc["wifi_ssid_1"] = WIFI_SSID_1;
+    doc["wifi_password_1"] = WIFI_PASSWORD_1;
+    doc["wifi_ssid_2"] = WIFI_SSID_2;
+    doc["wifi_password_2"] = WIFI_PASSWORD_2;
+    doc["wifi_ssid_3"] = WIFI_SSID_3;
+    doc["wifi_password_3"] = WIFI_PASSWORD_3;
+    doc["led_traffic_light_mode"] = 2;
+    doc["led_traffic_light_selected_measurement"] = "ANALOG_1";
+    doc["flower_status_sensor"] = "ANALOG_1";
+    
+    String err;
+    if (PersistenceUtils::writeJsonFile("/config.json", doc, err)) {
+      logger.info(F("main"), F("/config.json erstellt"));
+    } else {
+      logger.error(F("main"), F("Fehler beim Erstellen von /config.json: ") + err);
+    }
+  }
+}
+
+void ensureSensorsJsonExists() {
   // SENSORS
   if (!PersistenceUtils::fileExists("/sensors.json")) {
     StaticJsonDocument<2048> doc;

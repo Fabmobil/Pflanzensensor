@@ -6,9 +6,19 @@
 #define DEFAULT_JSON_GENERATOR_H
 
 /**
- * @brief Ensure /config.json and /sensors.json exist, creating them with macro
- * defaults if missing.
+ * @brief Ensure configuration exists, creating it with defaults if missing.
+ * Initializes Preferences-based storage with compile-time defaults.
  */
 void ensureConfigFilesExist();
+
+/**
+ * @brief Ensure sensors.json exists with default sensor configurations
+ */
+void ensureSensorsJsonExists();
+
+/**
+ * @brief Create legacy JSON config file (fallback only)
+ */
+void createLegacyConfigFiles();
 
 #endif // DEFAULT_JSON_GENERATOR_H
