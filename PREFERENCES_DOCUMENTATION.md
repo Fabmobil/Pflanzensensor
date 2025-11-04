@@ -65,12 +65,16 @@ Die Konfiguration ist in logische Namespaces unterteilt:
 
 #### 7. Sensor Settings (pro Sensor-Namespace: `s_<sensorId>`)
 
-**Gespeicherte Daten:**
+**Sensor-Ebene:**
+- Sensorname (`name`)
 - Messintervall (`meas_int`)
 - Fehler-Status (`has_err`)
 - Initialisiert-Flag (`initialized`)
 
 **Pro Messung (Präfix: `m0_`, `m1_`, etc.):**
+- Name (`m0_nm`, `m1_nm`, ...)
+- Feldname (`m0_fn`, `m1_fn`, ...)
+- Einheit (`m0_un`, `m1_un`, ...)
 - Aktiviert (`m0_en`, `m1_en`, ...)
 - Min/Max-Werte (`m0_min`, `m0_max`, ...)
 - Schwellenwerte:
@@ -85,27 +89,25 @@ Die Konfiguration ist in logische Namespaces unterteilt:
 - Autocal-Dauer (`m0_acd`, `m1_acd`, ...)
 - Raw Min/Max (`m0_rmin`, `m0_rmax`, ...)
 
-**Nicht gespeichert (im Code definiert):**
-- Sensorname (basiert auf Sensor-ID/Typ)
-- Messwertnamen (pro Sensortyp vordefiniert)
-- Einheiten (pro Sensortyp vordefiniert)
-- Feldnamen (verwenden Sensornamen)
-
 ### Beispiel: Sensor-Namespace für ANALOG_1
 
 ```
 Namespace: s_ANALOG_1
 Keys:
   - initialized: true
+  - name: "Bodenfeuchtigkeit"
   - meas_int: 60000 (Messintervall in ms)
   - has_err: false
   - m0_en: true
+  - m0_nm: "Feuchtigkeit"
+  - m0_fn: "moisture"
+  - m0_un: "%"
   - m0_min: 0.0
-  - m0_max: 1023.0
-  - m0_yl: 200.0
-  - m0_gl: 300.0
-  - m0_gh: 800.0
-  - m0_yh: 900.0
+  - m0_max: 100.0
+  - m0_yl: 20.0
+  - m0_gl: 30.0
+  - m0_gh: 80.0
+  - m0_yh: 90.0
   - m0_inv: false
   - m0_cal: false
   - m0_acd: 86400
@@ -114,16 +116,32 @@ Keys:
   ... (m1_, m2_, etc. für weitere Messungen)
 ```
 
+**Hinweis:** Mit 16KB EEPROM können alle Sensor-Metadaten (Namen, Einheiten, feldNames) zusammen mit den Runtime-Werten gespeichert werden. Es werden keine separaten JSON-Dateien mehr benötigt.
+
 ## Speicherort und Filesystem-Sicherheit
 
 ### EEPROM vs. LittleFS
 
 Die `vshymanskyy/Preferences` Bibliothek für ESP8266 speichert Daten im **EEPROM-Bereich** des Flash-Speichers:
 
-- **EEPROM-Bereich:** `0x405FB000` (4KB) - Hier werden Preferences gespeichert
-- **LittleFS-Bereich:** `0x40512000 - 0x405FA000` (~1MB) - Hier werden Dateien gespeichert
+- **EEPROM-Bereich:** `0x405F7000` (16KB) - Preferences-Speicher (erweitert von 4KB)
+- **LittleFS-Bereich:** `0x40512000 - 0x405F7000` (~916KB) - Dateisystem (reduziert von 928KB)
 
 **Wichtig:** Da Preferences im EEPROM-Bereich gespeichert werden, bleiben sie bei einem Filesystem-Flash (der nur den LittleFS-Bereich betrifft) **erhalten**. Dies macht die Konfiguration robuster gegenüber Dateisystem-Updates.
+
+### EEPROM-Erweiterung
+
+Die EEPROM-Partition wurde von 4KB auf 16KB erweitert, um alle Sensorkonfigurationsdaten einschließlich Metadaten (Namen, Einheiten, fieldNames) zu speichern:
+
+**Speicherbedarf:**
+- Allgemeine Namespaces (general, wifi, display, log, LED, debug): ~570 bytes
+- 8 Analog-Sensoren (8 Messungen je, mit allen Feldern): ~7.920 bytes  
+- 4 Andere Sensoren (2 Messungen je, ohne Analog-Felder): ~928 bytes
+- **Gesamt: ~9.4KB**
+
+**Verfügbar: 16KB** → 6.6KB Puffer (41% Reserve) ✓
+
+Durch Anpassung der Linker-Datei (`eagle.flash.4mmore.ld`) wurde LittleFS um 12KB reduziert, um EEPROM zu erweitern. Dies ermöglicht die vollständige Speicherung aller Konfigurationsdaten (einschließlich Sensor-/Messwertnamen und Einheiten) in Preferences ohne externe JSON-Dateien.
 
 ## Boot-Prozess
 

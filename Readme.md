@@ -9,14 +9,16 @@ Der Quellcode befindet sich im [Pflanzensensor](https://github.com/Fabmobil/Pfla
 Das Projekt verwendet eine Preferences-basierte Konfigurationsverwaltung für eine robuste und effiziente Speicherung von Einstellungen. Weitere Details finden Sie in der [Preferences-Dokumentation](PREFERENCES_DOCUMENTATION.md).
 
 **Neue Features:**
-- EEPROM-basierte Speicherung (überlebt Filesystem-Flashes)
+- **EEPROM-basierte Speicherung (16KB)** - Überlebt Filesystem-Flashes
+- **Erweiterte EEPROM-Partition** - Von 4KB auf 16KB erhöht für vollständige Sensordatenspeicherung
 - Organisierte Namespace-Struktur für verschiedene Einstellungsbereiche
-- Direktes Laden/Speichern in Preferences (keine JSON-Migration)
+- Direktes Laden/Speichern in Preferences (keine JSON-Dateien)
 - Umfassende deutsche Logger-Ausgaben
 
 **Aktueller Stand:**
 - ✅ General, WiFi, Display, Log, LED Traffic Light und Debug-Einstellungen in Preferences
-- ⏳ Sensor-Einstellungen noch in sensors.json (zukünftige Erweiterung)
+- ✅ Alle Sensor-Einstellungen (einschließlich Namen, Einheiten, fieldNames) in Preferences
+- ✅ Linker-Script angepasst: LittleFS 916KB, EEPROM 16KB
 
 ![Pflanzensensor](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Pflanzensensor.jpeg?raw=true)
 ![Pflanzensensor in Blumentopf](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Pflanzensensor_in_Blumentopf.jpeg?raw=true)
