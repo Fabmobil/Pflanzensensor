@@ -146,23 +146,8 @@ void AdminHandler::generateAndSendSystemActionsCard() {
                 "herunterladen</button>"));
     sendChunk(F("</form>"));
   }
-  // Add download/upload for settings and sensors JSON
-  sendChunk(F("<form action='/admin/downloadConfig' method='GET' class='inline'>"));
-  sendChunk(F("<button type='submit' class='button'>Einstellungen herunterladen</button>"));
-  sendChunk(F("</form>"));
-  sendChunk(F("<form action='/admin/downloadSensors' method='GET' class='inline'>"));
-  sendChunk(F("<button type='submit' class='button'>Sensordaten herunterladen</button>"));
-  sendChunk(F("</form>"));
-
-  // Upload forms
-  sendChunk(F("<div class='measurement-card'>"));
-  sendChunk(F("<form id='upload-config-form' action='/admin/uploadConfig' method='POST' "
-              "enctype='multipart/form-data' class='inline' "
-              "style='display:inline-block;margin-left:8px;'>"));
-  sendChunk(F("<input type='file' name='file' accept='.json' required>"));
-  sendChunk(F("<button type='submit' class='button button-warning'>Einstellungen oder "
-              "Sensordaten hochladen</button>"));
-  sendChunk(F("</form>"));
+  // NOTE: Download/upload buttons removed - configuration now in Preferences (EEPROM)
+  // Users can edit configuration through the web interface at /admin and /admin/sensors
   sendChunk(F("</div></div></div>"));
 }
 

@@ -105,56 +105,8 @@ window.addEventListener('load', () => {
   });
 });
 
-// Intercept the single upload form for settings/sensors and show notifications
-window.addEventListener('load', () => {
-  const uploadForm = document.getElementById('upload-config-form');
-  if (!uploadForm) return;
-
-  uploadForm.addEventListener('submit', function(evt) {
-    evt.preventDefault();
-    const input = uploadForm.querySelector('input[type="file"]');
-    if (!input || !input.files || input.files.length === 0) {
-      showErrorMessage('Bitte wählen Sie eine JSON-Datei zum Hochladen aus.');
-      return;
-    }
-
-    const file = input.files[0];
-  const formData = new FormData();
-  formData.append('file', file, file.name);
-  // mark as AJAX so the server returns JSON instead of redirecting
-  formData.append('ajax', '1');
-
-    // Show a temporary message
-    showSuccessMessage('Hochladen gestartet...');
-
-    fetch(uploadForm.action, {
-      method: 'POST',
-      body: formData,
-      credentials: 'include',
-      headers: {
-        'X-Requested-With': 'XMLHttpRequest',
-        'Accept': 'application/json'
-      }
-    })
-    .then(response => {
-      // Try to parse JSON; if not JSON, treat as text error
-      const ct = response.headers.get('content-type') || '';
-      if (ct.includes('application/json')) return response.json();
-      return response.text().then(t => { throw new Error(t || 'Ungültige Serverantwort'); });
-    })
-    .then(data => {
-      if (data.success) {
-        showSuccessMessage(data.message || 'Datei erfolgreich hochgeladen');
-      } else {
-        showErrorMessage(data.error || data.message || 'Fehler beim Hochladen');
-      }
-    })
-    .catch(err => {
-      console.error('[admin.js] Upload error:', err);
-      showErrorMessage('Fehler beim Hochladen: ' + (err.message || err));
-    });
-  });
-});
+// NOTE: Upload form handling removed - configuration now in Preferences (EEPROM)
+// OLD REMOVED: Upload form event listener for upload-config-form
 
 // --- Global AJAX Message Functions (shared across admin pages) ---
 function showSuccessMessage(message) {

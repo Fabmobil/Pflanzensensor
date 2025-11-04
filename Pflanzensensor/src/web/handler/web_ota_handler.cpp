@@ -98,12 +98,7 @@ void WebOTAHandler::handleUpdatePage() {
         sendChunk(__DATE__);
         sendChunk(F("</td></tr></table>"));
         sendChunk(F("<div class='button-group'>"));
-        sendChunk(F("<form action='/admin/downloadConfig' method='GET' class='inline'>"));
-        sendChunk(F("<button type='submit' class='button'>Einstellungen herunterladen</button>"));
-        sendChunk(F("</form>"));
-        sendChunk(F("<form action='/admin/downloadSensors' method='GET' class='inline'>"));
-        sendChunk(F("<button type='submit' class='button'>Sensordaten herunterladen</button>"));
-        sendChunk(F("</form>"));
+        // NOTE: Download buttons removed - configuration now in Preferences (EEPROM)
         sendChunk(F("</div></div>"));
 
         // Update section Card

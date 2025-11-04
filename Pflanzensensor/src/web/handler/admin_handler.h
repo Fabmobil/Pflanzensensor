@@ -193,20 +193,10 @@ private:
    */
   void handleReboot();
 
-  /**
-   * @brief Stream config.json to client for download
-   */
-  void handleDownloadConfig();
-
-  /**
-   * @brief Stream sensors.json to client for download
-   */
-  void handleDownloadSensors();
-
-  /**
-   * @brief Handle uploaded config.json (replace after validation)
-   */
-  void handleUploadConfig();
+  // NOTE: JSON download/upload methods removed - configuration now in Preferences (EEPROM)
+  // OLD REMOVED: handleDownloadConfig()
+  // OLD REMOVED: handleDownloadSensors()
+  // OLD REMOVED: handleUploadConfig()
 
   // Utility methods - implemented in admin_handler_utils.cpp
   /**

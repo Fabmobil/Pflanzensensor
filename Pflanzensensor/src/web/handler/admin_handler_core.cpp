@@ -97,56 +97,10 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadLog-Route"));
 
-  // Register download/upload routes for settings and sensors
-  result = router.addRoute(HTTP_GET, "/admin/downloadConfig", [this]() {
-    if (!validateRequest()) {
-      _server.requestAuthentication();
-      return;
-    }
-    handleDownloadConfig();
-  });
-  if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"),
-                 F("Registrieren der /admin/downloadConfig-Route fehlgeschlagen"));
-    return result;
-  }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadConfig-Route"));
-
-  result = router.addRoute(HTTP_GET, "/admin/downloadSensors", [this]() {
-    if (!validateRequest()) {
-      _server.requestAuthentication();
-      return;
-    }
-    handleDownloadSensors();
-  });
-  if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"),
-                 F("Registrieren der /admin/downloadSensors-Route fehlgeschlagen"));
-    return result;
-  }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadSensors-Route"));
-
-  // Register upload endpoint (single field). The upload handler will detect
-  // whether the uploaded JSON is config or sensors and act accordingly.
-  _server.on(
-      "/admin/uploadConfig", HTTP_POST,
-      [this]() {
-        const char* resPath = "/upload_result.json";
-        String body = "{\"success\":true}";
-        if (LittleFS.exists(resPath)) {
-          File rf = LittleFS.open(resPath, "r");
-          if (rf) {
-            body = rf.readString();
-            rf.close();
-            LittleFS.remove(resPath);
-          }
-        }
-
-        // Always return JSON for uploads (AJAX-only API).
-        _server.send(200, "application/json", body);
-      },
-      [this]() { handleUploadConfig(); });
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/uploadConfig-Route (multipart)"));
+  // NOTE: Download/upload routes removed - configuration now in Preferences (EEPROM)
+  // OLD REMOVED: /admin/downloadConfig (GET)
+  // OLD REMOVED: /admin/downloadSensors (GET)
+  // OLD REMOVED: /admin/uploadConfig (POST)
 
   // Register WiFi settings update route
   result = router.addRoute(HTTP_POST, "/admin/updateWiFi", [this]() {
