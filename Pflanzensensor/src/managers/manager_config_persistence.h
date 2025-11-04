@@ -74,7 +74,4 @@ private:
   static void loadSensorErrors(const ArduinoJson::JsonObject& sensorErrors, ConfigData& config);
 };
 
-// Function to apply sensor settings directly from JSON
-void applySensorSettingsFromJson(const String& sensorId, const JsonObject& sensorConfig);
-
 #endif

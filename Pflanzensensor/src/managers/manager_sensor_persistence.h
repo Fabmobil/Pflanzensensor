@@ -6,8 +6,6 @@
 #ifndef MANAGER_SENSOR_PERSISTENCE_H
 #define MANAGER_SENSOR_PERSISTENCE_H
 
-#include <ArduinoJson.h>
-
 #include "../utils/result_types.h"
 #include "manager_config_types.h"
 
@@ -224,13 +222,6 @@ private:
   static PersistenceResult updateAnalogRawMinMaxInternal(const String& sensorId,
                                                          size_t measurementIndex,
                                                          int absoluteRawMin, int absoluteRawMax);
-
-  /**
-   * @brief Apply sensor settings from JSON to sensor manager
-   * @param sensorId Sensor ID
-   * @param sensorConfig JSON object containing sensor configuration
-   */
-  static void applySensorSettingsFromJson(const String& sensorId, const JsonObject& sensorConfig);
 };
 
 #endif
