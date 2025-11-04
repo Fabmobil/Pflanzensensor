@@ -4,11 +4,30 @@
 
 Das Pflanzensensor-Projekt verwendet die Preferences-Bibliothek zur Speicherung der Konfiguration im EEPROM. Dies bietet eine robustere und effizientere Alternative zu JSON-Dateien und **überlebt Filesystem-Flashes**, da die Preferences im EEPROM-Bereich (0x405FB000) gespeichert werden, der getrennt vom LittleFS-Bereich (0x40512000-0x405FA000) ist.
 
+## EEPROM-Speicherplatz
+
+**Verfügbarer EEPROM:** 4.096 Bytes (4KB)
+
+**Speicher-Optimierung:**
+Aufgrund der 4KB-Begrenzung werden nur laufzeitveränderbare Daten im EEPROM gespeichert. Statische Metadaten (Sensornamen, Messnamen, Einheiten) werden im Code definiert.
+
+**Gespeichert in Preferences (~3,3KB):**
+- Allgemeine Einstellungen, WiFi, Display, Log, LED, Debug (~570 Bytes)
+- Sensor-Messintervalle und Fehlerzustände
+- Messwert-Schwellenwerte und Aktivierungszustände
+- Analog-spezifisch: Min/Max, Kalibrierung, Raw-Werte
+
+**Nicht gespeichert (im Code definiert):**
+- Sensornamen (basierend auf Sensortyp/ID)
+- Messwertnamen (pro Sensortyp definiert)
+- Einheiten (pro Sensortyp definiert)
+- Feldnamen (verwenden Sensornamen)
+
 ## Namespace-Organisation
 
 Die Konfiguration ist in logische Namespaces unterteilt:
 
-### Derzeit in Preferences gespeichert
+### In Preferences gespeichert
 
 #### 1. General Settings (`general`)
 - Gerätename (`device_name`)
@@ -44,23 +63,56 @@ Die Konfiguration ist in logische Namespaces unterteilt:
 - Display-Debug (`display`)
 - WebSocket-Debug (`websocket`)
 
-### Noch in JSON gespeichert (sensors.json)
+#### 7. Sensor Settings (pro Sensor-Namespace: `s_<sensorId>`)
 
-#### 7. Sensor Settings
-Die folgenden Sensor-Einstellungen werden derzeit noch in `sensors.json` gespeichert:
-- Sensor-Name und Messintervall
-- Pro Messung:
-  - Aktiviert/Deaktiviert
-  - Absolute Min/Max-Werte
-  - Schwellenwerte (yellowLow, greenLow, greenHigh, yellowHigh)
-  - **Analog-spezifische Einstellungen:**
-    - Raw Min/Max-Werte (`absoluteRawMin`, `absoluteRawMax`)
-    - Kalibrierungsmodus (`calibrationMode`)
-    - Autocal-Dauer (`autocalDuration`)
-    - Autocal-Status (`min_value`, `max_value`, `last_update_time`)
-    - Invertierung (`inverted`)
+**Gespeicherte Daten:**
+- Messintervall (`meas_int`)
+- Fehler-Status (`has_err`)
+- Initialisiert-Flag (`initialized`)
 
-**Hinweis:** Die Sensor-Einstellungen werden in einer zukünftigen Version zu Preferences migriert.
+**Pro Messung (Präfix: `m0_`, `m1_`, etc.):**
+- Aktiviert (`m0_en`, `m1_en`, ...)
+- Min/Max-Werte (`m0_min`, `m0_max`, ...)
+- Schwellenwerte:
+  - `m0_yl` (yellowLow)
+  - `m0_gl` (greenLow)
+  - `m0_gh` (greenHigh)
+  - `m0_yh` (yellowHigh)
+
+**Analog-spezifisch (nur für ANALOG-Sensoren):**
+- Invertierung (`m0_inv`, `m1_inv`, ...)
+- Kalibrierungsmodus (`m0_cal`, `m1_cal`, ...)
+- Autocal-Dauer (`m0_acd`, `m1_acd`, ...)
+- Raw Min/Max (`m0_rmin`, `m0_rmax`, ...)
+
+**Nicht gespeichert (im Code definiert):**
+- Sensorname (basiert auf Sensor-ID/Typ)
+- Messwertnamen (pro Sensortyp vordefiniert)
+- Einheiten (pro Sensortyp vordefiniert)
+- Feldnamen (verwenden Sensornamen)
+
+### Beispiel: Sensor-Namespace für ANALOG_1
+
+```
+Namespace: s_ANALOG_1
+Keys:
+  - initialized: true
+  - meas_int: 60000 (Messintervall in ms)
+  - has_err: false
+  - m0_en: true
+  - m0_min: 0.0
+  - m0_max: 1023.0
+  - m0_yl: 200.0
+  - m0_gl: 300.0
+  - m0_gh: 800.0
+  - m0_yh: 900.0
+  - m0_inv: false
+  - m0_cal: false
+  - m0_acd: 86400
+  - m0_rmin: 0
+  - m0_rmax: 1023
+  ... (m1_, m2_, etc. für weitere Messungen)
+```
 
 ## Speicherort und Filesystem-Sicherheit
 
@@ -80,9 +132,9 @@ Die `vshymanskyy/Preferences` Bibliothek für ESP8266 speichert Daten im **EEPRO
    - Werden Preferences mit Standardwerten aus `config_example.h` initialisiert
 3. Wenn vorhanden:
    - Werden die gespeicherten Werte geladen
-4. Sensor-Einstellungen werden aus `sensors.json` geladen (falls vorhanden)
+4. Statische Metadaten (Sensornamen, Einheiten) werden im Code definiert
 
-**Keine automatische Migration:** Es gibt keine automatische Migration von JSON zu Preferences mehr. Die Preferences werden beim ersten Boot mit Standardwerten initialisiert.
+**Keine automatische Migration:** Es gibt keine automatische Migration von JSON zu Preferences. Die Preferences werden beim ersten Boot mit Standardwerten initialisiert.
 
 ## Verwendung in Code
 
