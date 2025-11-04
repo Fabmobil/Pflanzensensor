@@ -19,7 +19,7 @@
 #endif
 #include "sensors/sensor_autocalibration.h"
 
-bool SensorPersistence::configExists() { 
+bool SensorPersistence::configExists() {
   // Check if any sensor has Preferences data
   extern std::unique_ptr<SensorManager> sensorManager;
   if (sensorManager && sensorManager->getState() == ManagerState::INITIALIZED) {
@@ -38,13 +38,13 @@ size_t SensorPersistence::getConfigSize() {
   if (!configExists()) {
     return 0;
   }
-  
+
   // Estimate based on number of sensors with Preferences data
   extern std::unique_ptr<SensorManager> sensorManager;
   if (!sensorManager || sensorManager->getState() != ManagerState::INITIALIZED) {
     return 0;
   }
-  
+
   size_t estimatedSize = 0;
   const auto& allSensors = sensorManager->getSensors();
   for (const auto& sensorPtr : allSensors) {
@@ -53,10 +53,9 @@ size_t SensorPersistence::getConfigSize() {
       estimatedSize += 1024;
     }
   }
-  
+
   return estimatedSize;
 }
-
 
 SensorPersistence::PersistenceResult SensorPersistence::load() {
   if (ConfigMgr.isDebugSensor()) {
@@ -64,7 +63,7 @@ SensorPersistence::PersistenceResult SensorPersistence::load() {
   }
 
   extern std::unique_ptr<SensorManager> sensorManager;
-  
+
   // Early exit if sensor manager is not available
   if (!sensorManager || sensorManager->getState() != ManagerState::INITIALIZED) {
     logger.warning(F("SensorP"), F("Sensor-Manager nicht bereit, überspringe Laden"));
@@ -72,13 +71,14 @@ SensorPersistence::PersistenceResult SensorPersistence::load() {
   }
 
   const auto& allSensors = sensorManager->getSensors();
-  
+
   // Load each sensor from Preferences
   for (const auto& sensorPtr : allSensors) {
-    if (!sensorPtr) continue;
-    
+    if (!sensorPtr)
+      continue;
+
     String sensorId = sensorPtr->config().id;
-    
+
     // Check if this sensor has Preferences data
     if (!PreferencesManager::sensorNamespaceExists(sensorId)) {
       if (ConfigMgr.isDebugSensor()) {
@@ -86,24 +86,25 @@ SensorPersistence::PersistenceResult SensorPersistence::load() {
       }
       continue;
     }
-    
+
     if (ConfigMgr.isDebugSensor()) {
       logger.debug(F("SensorP"), String(F("Lade Sensor aus Preferences: ")) + sensorId);
     }
-    
+
     // Load sensor settings
     String name;
     unsigned long measurementInterval;
     bool hasPersistentError;
-    
-    auto sensorResult = PreferencesManager::loadSensorSettings(
-      sensorId, name, measurementInterval, hasPersistentError);
-    
+
+    auto sensorResult = PreferencesManager::loadSensorSettings(sensorId, name, measurementInterval,
+                                                               hasPersistentError);
+
     if (!sensorResult.isSuccess()) {
-      logger.warning(F("SensorP"), String(F("Fehler beim Laden der Sensor-Einstellungen für ")) + sensorId);
+      logger.warning(F("SensorP"),
+                     String(F("Fehler beim Laden der Sensor-Einstellungen für ")) + sensorId);
       continue;
     }
-    
+
     // Apply sensor-level settings
     SensorConfig& config = sensorPtr->mutableConfig();
     if (!name.isEmpty()) {
@@ -112,7 +113,7 @@ SensorPersistence::PersistenceResult SensorPersistence::load() {
     config.measurementInterval = measurementInterval;
     config.hasPersistentError = hasPersistentError;
     sensorPtr->setMeasurementInterval(measurementInterval);
-    
+
     // Load measurement settings
     for (size_t i = 0; i < config.activeMeasurements; ++i) {
       bool enabled;
@@ -122,24 +123,28 @@ SensorPersistence::PersistenceResult SensorPersistence::load() {
       bool inverted, calibrationMode;
       uint32_t autocalDuration;
       int absoluteRawMin, absoluteRawMax;
-      
+
       auto measResult = PreferencesManager::loadSensorMeasurement(
-        sensorId, i, enabled, measName, fieldName, unit,
-        minValue, maxValue, yellowLow, greenLow, greenHigh, yellowHigh,
-        inverted, calibrationMode, autocalDuration, absoluteRawMin, absoluteRawMax);
-      
+          sensorId, i, enabled, measName, fieldName, unit, minValue, maxValue, yellowLow, greenLow,
+          greenHigh, yellowHigh, inverted, calibrationMode, autocalDuration, absoluteRawMin,
+          absoluteRawMax);
+
       if (!measResult.isSuccess()) {
         if (ConfigMgr.isDebugSensor()) {
-          logger.debug(F("SensorP"), String(F("Keine Messung ")) + String(i) + F(" für ") + sensorId);
+          logger.debug(F("SensorP"),
+                       String(F("Keine Messung ")) + String(i) + F(" für ") + sensorId);
         }
         continue;
       }
-      
+
       // Apply measurement settings
       config.measurements[i].enabled = enabled;
-      if (!measName.isEmpty()) config.measurements[i].name = measName;
-      if (!fieldName.isEmpty()) config.measurements[i].fieldName = fieldName;
-      if (!unit.isEmpty()) config.measurements[i].unit = unit;
+      if (!measName.isEmpty())
+        config.measurements[i].name = measName;
+      if (!fieldName.isEmpty())
+        config.measurements[i].fieldName = fieldName;
+      if (!unit.isEmpty())
+        config.measurements[i].unit = unit;
       config.measurements[i].minValue = minValue;
       config.measurements[i].maxValue = maxValue;
       config.measurements[i].limits.yellowLow = yellowLow;
@@ -151,9 +156,10 @@ SensorPersistence::PersistenceResult SensorPersistence::load() {
       config.measurements[i].autocalHalfLifeSeconds = autocalDuration;
       config.measurements[i].absoluteRawMin = absoluteRawMin;
       config.measurements[i].absoluteRawMax = absoluteRawMax;
-      
+
       if (ConfigMgr.isDebugSensor()) {
-        logger.debug(F("SensorP"), String(F("Messung ")) + String(i) + F(" geladen für ") + sensorId);
+        logger.debug(F("SensorP"),
+                     String(F("Messung ")) + String(i) + F(" geladen für ") + sensorId);
       }
     }
   }
@@ -173,51 +179,48 @@ SensorPersistence::PersistenceResult SensorPersistence::save() {
   if (!sensorManager) {
     return PersistenceResult::success();
   }
-  
+
   const auto& allSensors = sensorManager->getSensors();
-  
+
   for (const auto& sensorPtr : allSensors) {
-    if (!sensorPtr) continue;
-    
+    if (!sensorPtr)
+      continue;
+
     const SensorConfig& sensorConfig = sensorPtr->config();
     String sensorId = sensorConfig.id;
-    
+
     if (ConfigMgr.isDebugSensor()) {
       logger.debug(F("SensorP"), String(F("Speichere Sensor: ")) + sensorId);
     }
-    
+
     // Save sensor-level settings
-    auto sensorResult = PreferencesManager::saveSensorSettings(
-      sensorId, sensorConfig.name, sensorConfig.measurementInterval,
-      sensorConfig.hasPersistentError);
-    
+    auto sensorResult = PreferencesManager::saveSensorSettings(sensorId, sensorConfig.name,
+                                                               sensorConfig.measurementInterval,
+                                                               sensorConfig.hasPersistentError);
+
     if (!sensorResult.isSuccess()) {
       logger.error(F("SensorP"), String(F("Fehler beim Speichern von Sensor ")) + sensorId);
       return sensorResult;
     }
-    
+
     // Save each measurement
     for (size_t i = 0; i < sensorConfig.activeMeasurements; ++i) {
       const auto& meas = sensorConfig.measurements[i];
-      
+
       auto measResult = PreferencesManager::saveSensorMeasurement(
-        sensorId, i,
-        meas.enabled, meas.name, meas.fieldName, meas.unit,
-        meas.minValue, meas.maxValue,
-        meas.limits.yellowLow, meas.limits.greenLow,
-        meas.limits.greenHigh, meas.limits.yellowHigh,
-        meas.inverted, meas.calibrationMode,
-        meas.autocalHalfLifeSeconds,
-        meas.absoluteRawMin, meas.absoluteRawMax);
-      
+          sensorId, i, meas.enabled, meas.name, meas.fieldName, meas.unit, meas.minValue,
+          meas.maxValue, meas.limits.yellowLow, meas.limits.greenLow, meas.limits.greenHigh,
+          meas.limits.yellowHigh, meas.inverted, meas.calibrationMode, meas.autocalHalfLifeSeconds,
+          meas.absoluteRawMin, meas.absoluteRawMax);
+
       if (!measResult.isSuccess()) {
-        logger.error(F("SensorP"), String(F("Fehler beim Speichern von Messung ")) + 
-                     String(i) + F(" für ") + sensorId);
+        logger.error(F("SensorP"), String(F("Fehler beim Speichern von Messung ")) + String(i) +
+                                       F(" für ") + sensorId);
         return measResult;
       }
     }
   }
-  
+
   logger.info(F("SensorP"), F("Alle Sensoren in Preferences gespeichert"));
   return PersistenceResult::success();
 }
@@ -247,23 +250,21 @@ SensorPersistence::updateSensorThresholdsInternal(const String& sensorId, size_t
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
-  
+
   String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putFloat(prefs, (prefix + "yl").c_str(), yellowLow);
   PreferencesManager::putFloat(prefs, (prefix + "gl").c_str(), greenLow);
   PreferencesManager::putFloat(prefs, (prefix + "gh").c_str(), greenHigh);
   PreferencesManager::putFloat(prefs, (prefix + "yh").c_str(), yellowHigh);
-  
+
   prefs.end();
-  
-  logger.info(F("SensorP"), String(F("Schwellenwerte aktualisiert für ")) + sensorId + 
-              F(" Messung ") + String(measurementIndex));
-  
+
+  logger.info(F("SensorP"), String(F("Schwellenwerte aktualisiert für ")) + sensorId +
+                                F(" Messung ") + String(measurementIndex));
+
   // Reload configuration
   auto reloadResult = load();
   return reloadResult;
-}
-  }
 
   logger.info(F("SensorP"), F("Schwellwerte atomar aktualisiert für ") + sensorId + F(" Messung ") +
                                 String(measurementIndex) + F(", geschätzte Größe: ") +
@@ -294,14 +295,14 @@ SensorPersistence::updateAnalogMinMaxInteger(const String& sensorId, size_t meas
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
-  
+
   String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putFloat(prefs, (prefix + "min").c_str(), static_cast<float>(minValue));
   PreferencesManager::putFloat(prefs, (prefix + "max").c_str(), static_cast<float>(maxValue));
   PreferencesManager::putBool(prefs, (prefix + "inv").c_str(), inverted);
-  
+
   prefs.end();
-  
+
   logger.info(F("SensorP"), F("Analog min/max (int) atomar aktualisiert für ") + sensorId +
                                 F(" Messung ") + String(measurementIndex));
 
@@ -320,19 +321,19 @@ SensorPersistence::PersistenceResult SensorPersistence::updateAnalogMinMaxIntege
     const String& sensorId, size_t measurementIndex, int minValue, int maxValue, bool inverted) {
   // Update min/max/inverted directly in Preferences without reload
   CriticalSection cs;
-  
+
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
-  
+
   String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putFloat(prefs, (prefix + "min").c_str(), static_cast<float>(minValue));
   PreferencesManager::putFloat(prefs, (prefix + "max").c_str(), static_cast<float>(maxValue));
   PreferencesManager::putBool(prefs, (prefix + "inv").c_str(), inverted);
-  
+
   prefs.end();
 
   logger.info(F("SensorP"), F("Analog min/max aktualisiert für ") + sensorId +
@@ -362,12 +363,12 @@ SensorPersistence::updateMeasurementIntervalInternal(const String& sensorId,
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
-  
+
   PreferencesManager::putUInt(prefs, "meas_int", interval);
   prefs.end();
 
-  logger.info(F("SensorP"), F("Messintervall aktualisiert für ") + sensorId +
-                                F(", Intervall: ") + String(interval));
+  logger.info(F("SensorP"), F("Messintervall aktualisiert für ") + sensorId + F(", Intervall: ") +
+                                String(interval));
 
   return PersistenceResult::success();
 }
@@ -393,14 +394,13 @@ SensorPersistence::updateMeasurementEnabledInternal(const String& sensorId, size
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
-  
+
   String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putBool(prefs, (prefix + "en").c_str(), enabled);
   prefs.end();
 
-  logger.info(F("SensorP"), F("Messung aktiviert/deaktiviert für ") + sensorId +
-                                F(" Messung ") + String(measurementIndex) + F(", aktiviert: ") +
-                                String(enabled));
+  logger.info(F("SensorP"), F("Messung aktiviert/deaktiviert für ") + sensorId + F(" Messung ") +
+                                String(measurementIndex) + F(", aktiviert: ") + String(enabled));
 
   return PersistenceResult::success();
 }
@@ -415,11 +415,11 @@ SensorPersistence::updateAbsoluteMinMax(const String& sensorId, size_t measureme
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
-  
+
   String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putFloat(prefs, (prefix + "absMin").c_str(), absoluteMin);
   PreferencesManager::putFloat(prefs, (prefix + "absMax").c_str(), absoluteMax);
-  
+
   prefs.end();
 
   logger.info(F("SensorP"), F("Absolute min/max atomar aktualisiert für ") + sensorId +
@@ -463,14 +463,14 @@ SensorPersistence::updateAnalogRawMinMaxInternal(const String& sensorId, size_t 
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
-  
+
   String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putInt(prefs, (prefix + "rmin").c_str(), absoluteRawMin);
   PreferencesManager::putInt(prefs, (prefix + "rmax").c_str(), absoluteRawMax);
   prefs.end();
 
-  logger.info(F("SensorP"), F("Analog raw min/max aktualisiert für ") + sensorId +
-                                F(" Messung ") + String(measurementIndex));
+  logger.info(F("SensorP"), F("Analog raw min/max aktualisiert für ") + sensorId + F(" Messung ") +
+                                String(measurementIndex));
 
   // Nach dem Update Konfiguration neu laden, damit In-Memory-Config synchron bleibt
   auto reloadResult = load();
@@ -504,13 +504,13 @@ SensorPersistence::updateAnalogCalibrationMode(const String& sensorId, size_t me
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
-  
+
   String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putBool(prefs, (prefix + "cal").c_str(), enabled);
   prefs.end();
 
-  logger.info(F("SensorP"), F("Kalibrierungsmodus aktualisiert für ") + sensorId +
-                                F(" Messung ") + String(measurementIndex));
+  logger.info(F("SensorP"), F("Kalibrierungsmodus aktualisiert für ") + sensorId + F(" Messung ") +
+                                String(measurementIndex));
 
   // Reload configuration to sync in-memory state
   auto reloadResult = load();
@@ -537,13 +537,13 @@ SensorPersistence::updateAutocalDuration(const String& sensorId, size_t measurem
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
-  
+
   String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putUInt(prefs, (prefix + "acd").c_str(), halfLifeSeconds);
   prefs.end();
 
-  logger.info(F("SensorP"), F("Autocal-Dauer aktualisiert für ") + sensorId +
-                                F(" Messung ") + String(measurementIndex));
+  logger.info(F("SensorP"), F("Autocal-Dauer aktualisiert für ") + sensorId + F(" Messung ") +
+                                String(measurementIndex));
 
   // Reload configuration to sync in-memory state
   auto reloadResult = load();

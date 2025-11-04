@@ -17,14 +17,14 @@ using namespace ArduinoJson;
 #include "managers/manager_resource.h"
 #include "managers/manager_sensor.h"
 
-bool ConfigPersistence::configExists() { 
+bool ConfigPersistence::configExists() {
   // Check if any core Preferences namespace exists
   return PreferencesManager::namespaceExists(PreferencesNamespaces::GENERAL);
 }
 
 size_t ConfigPersistence::getConfigSize() {
   // Estimate configuration size in Preferences (approximate)
-  // General: ~150 bytes, WiFi: ~200 bytes, Display: ~100 bytes, 
+  // General: ~150 bytes, WiFi: ~200 bytes, Display: ~100 bytes,
   // Log: ~50 bytes, LED: ~50 bytes, Debug: ~20 bytes
   return 570; // Total estimated size
 }
@@ -37,52 +37,53 @@ size_t ConfigPersistence::getConfigSize() {
 
 ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config) {
   logger.logMemoryStats(F("ConfigP_load_before"));
-  
+
   // Check if Preferences exist, if not initialize with defaults
   if (!PreferencesManager::namespaceExists(PreferencesNamespaces::GENERAL)) {
-    logger.info(F("ConfigP"), F("Keine Konfiguration gefunden, initialisiere mit Standardwerten..."));
+    logger.info(F("ConfigP"),
+                F("Keine Konfiguration gefunden, initialisiere mit Standardwerten..."));
     auto initResult = PreferencesManager::initializeAllNamespaces();
     if (!initResult.isSuccess()) {
-      logger.error(F("ConfigP"), F("Fehler beim Initialisieren der Preferences: ") + initResult.getMessage());
+      logger.error(F("ConfigP"),
+                   F("Fehler beim Initialisieren der Preferences: ") + initResult.getMessage());
       auto result = resetToDefaults(config);
       logger.logMemoryStats(F("ConfigP_load_after"));
       return result;
     }
   }
-  
+
   // Load from Preferences
   logger.info(F("ConfigP"), F("Lade Konfiguration aus Preferences..."));
-  
+
   // Load general settings
   auto generalResult = PreferencesManager::loadGeneralSettings(
-    config.deviceName, config.adminPassword, 
-    config.md5Verification, config.fileLoggingEnabled);
-  
+      config.deviceName, config.adminPassword, config.md5Verification, config.fileLoggingEnabled);
+
   // Load WiFi settings
-  auto wifiResult = PreferencesManager::loadWiFiSettings(
-    config.wifiSSID1, config.wifiPassword1,
-    config.wifiSSID2, config.wifiPassword2,
-    config.wifiSSID3, config.wifiPassword3);
-  
+  auto wifiResult = PreferencesManager::loadWiFiSettings(config.wifiSSID1, config.wifiPassword1,
+                                                         config.wifiSSID2, config.wifiPassword2,
+                                                         config.wifiSSID3, config.wifiPassword3);
+
   // Load debug settings
   auto debugResult = PreferencesManager::loadDebugSettings(
-    config.debugRAM, config.debugMeasurementCycle,
-    config.debugSensor, config.debugDisplay, config.debugWebSocket);
-  
+      config.debugRAM, config.debugMeasurementCycle, config.debugSensor, config.debugDisplay,
+      config.debugWebSocket);
+
   // Load LED traffic light settings
   auto ledResult = PreferencesManager::loadLedTrafficSettings(
-    config.ledTrafficLightMode, config.ledTrafficLightSelectedMeasurement);
-  
+      config.ledTrafficLightMode, config.ledTrafficLightSelectedMeasurement);
+
   // Load flower status sensor
   auto flowerResult = PreferencesManager::loadFlowerStatusSensor(config.flowerStatusSensor);
-  
-  if (generalResult.isSuccess() && wifiResult.isSuccess() && 
-      debugResult.isSuccess() && ledResult.isSuccess()) {
+
+  if (generalResult.isSuccess() && wifiResult.isSuccess() && debugResult.isSuccess() &&
+      ledResult.isSuccess()) {
     logger.info(F("ConfigP"), F("Konfiguration erfolgreich aus Preferences geladen"));
   } else {
-    logger.warning(F("ConfigP"), F("Fehler beim Laden einiger Einstellungen, verwende Standardwerte"));
+    logger.warning(F("ConfigP"),
+                   F("Fehler beim Laden einiger Einstellungen, verwende Standardwerte"));
   }
-  
+
   logger.logMemoryStats(F("ConfigP_load_after"));
   return PersistenceResult::success();
 }
@@ -94,7 +95,8 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(ConfigDa
   // Clear all Preferences namespaces
   auto clearResult = PreferencesManager::clearAll();
   if (!clearResult.isSuccess()) {
-    logger.warning(F("ConfigP"), F("Fehler beim Löschen der Preferences: ") + clearResult.getMessage());
+    logger.warning(F("ConfigP"),
+                   F("Fehler beim Löschen der Preferences: ") + clearResult.getMessage());
   }
 
   logger.info(F("ConfigP"), F("Factory Reset abgeschlossen"));
@@ -102,63 +104,58 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(ConfigDa
   return PersistenceResult::success();
 }
 
-ConfigPersistence::PersistenceResult
-ConfigPersistence::save(const ConfigData& config) {
+ConfigPersistence::PersistenceResult ConfigPersistence::save(const ConfigData& config) {
   // Save to Preferences
   logger.info(F("ConfigP"), F("Speichere Konfiguration in Preferences..."));
-  
+
   // Save general settings
   auto generalResult = PreferencesManager::saveGeneralSettings(
-    config.deviceName, config.adminPassword,
-    config.md5Verification, config.fileLoggingEnabled);
-  
+      config.deviceName, config.adminPassword, config.md5Verification, config.fileLoggingEnabled);
+
   if (!generalResult.isSuccess()) {
     logger.error(F("ConfigP"), F("Fehler beim Speichern der General-Einstellungen"));
     return generalResult;
   }
-  
+
   // Save WiFi settings
-  auto wifiResult = PreferencesManager::saveWiFiSettings(
-    config.wifiSSID1, config.wifiPassword1,
-    config.wifiSSID2, config.wifiPassword2,
-    config.wifiSSID3, config.wifiPassword3);
-  
+  auto wifiResult = PreferencesManager::saveWiFiSettings(config.wifiSSID1, config.wifiPassword1,
+                                                         config.wifiSSID2, config.wifiPassword2,
+                                                         config.wifiSSID3, config.wifiPassword3);
+
   if (!wifiResult.isSuccess()) {
     logger.error(F("ConfigP"), F("Fehler beim Speichern der WiFi-Einstellungen"));
     return wifiResult;
   }
-  
+
   // Save debug settings
   auto debugResult = PreferencesManager::saveDebugSettings(
-    config.debugRAM, config.debugMeasurementCycle,
-    config.debugSensor, config.debugDisplay, config.debugWebSocket);
-  
+      config.debugRAM, config.debugMeasurementCycle, config.debugSensor, config.debugDisplay,
+      config.debugWebSocket);
+
   if (!debugResult.isSuccess()) {
     logger.error(F("ConfigP"), F("Fehler beim Speichern der Debug-Einstellungen"));
     return debugResult;
   }
-  
+
   // Save LED traffic light settings
   auto ledResult = PreferencesManager::saveLedTrafficSettings(
-    config.ledTrafficLightMode, config.ledTrafficLightSelectedMeasurement);
-  
+      config.ledTrafficLightMode, config.ledTrafficLightSelectedMeasurement);
+
   if (!ledResult.isSuccess()) {
     logger.error(F("ConfigP"), F("Fehler beim Speichern der LED-Einstellungen"));
     return ledResult;
   }
-  
+
   // Save flower status sensor
   auto flowerResult = PreferencesManager::saveFlowerStatusSensor(config.flowerStatusSensor);
-  
+
   if (!flowerResult.isSuccess()) {
     logger.error(F("ConfigP"), F("Fehler beim Speichern des Flower-Status-Sensors"));
     return flowerResult;
   }
-  
+
   logger.info(F("ConfigP"), F("Konfiguration erfolgreich in Preferences gespeichert"));
   return PersistenceResult::success();
-}
-  return result;
 }
 
 void ConfigPersistence::writeUpdateFlagsToFile(bool fs, bool fw) {
