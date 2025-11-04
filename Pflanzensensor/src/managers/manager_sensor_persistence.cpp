@@ -266,8 +266,8 @@ SensorPersistence::updateSensorThresholdsInternal(const String& sensorId, size_t
   }
 
   logger.info(F("SensorP"), F("Schwellwerte atomar aktualisiert für ") + sensorId + F(" Messung ") +
-                                String(measurementIndex) + F(", Bytes geschrieben: ") +
-                                String(PersistenceUtils::getFileSize("/sensors.json")));
+                                String(measurementIndex) + F(", geschätzte Größe: ") +
+                                String(getConfigSize()) + F(" Bytes"));
 
   return PersistenceResult::success();
 }
