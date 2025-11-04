@@ -17,21 +17,16 @@ using namespace ArduinoJson;
 #include "managers/manager_resource.h"
 #include "managers/manager_sensor.h"
 
-bool ConfigPersistence::configFileExists() { return LittleFS.exists("/config.json"); }
+bool ConfigPersistence::configExists() { 
+  // Check if any core Preferences namespace exists
+  return PreferencesManager::namespaceExists(PreferencesNamespaces::GENERAL);
+}
 
-size_t ConfigPersistence::getConfigFileSize() {
-  if (!configFileExists()) {
-    return 0;
-  }
-
-  File f = LittleFS.open("/config.json", "r");
-  if (!f) {
-    return 0;
-  }
-
-  size_t size = f.size();
-  f.close();
-  return size;
+size_t ConfigPersistence::getConfigSize() {
+  // Estimate configuration size in Preferences (approximate)
+  // General: ~150 bytes, WiFi: ~200 bytes, Display: ~100 bytes, 
+  // Log: ~50 bytes, LED: ~50 bytes, Debug: ~20 bytes
+  return 570; // Total estimated size
 }
 
 // --- Thresholds persistence helpers ---
@@ -40,7 +35,7 @@ size_t ConfigPersistence::getConfigFileSize() {
 // Sensor settings are now handled by SensorPersistence
 // This function has been moved to manager_sensor_persistence.cpp
 
-ConfigPersistence::PersistenceResult ConfigPersistence::loadFromFile(ConfigData& config) {
+ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config) {
   logger.logMemoryStats(F("ConfigP_load_before"));
   
   // Check if Preferences exist, if not initialize with defaults
@@ -108,7 +103,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(ConfigDa
 }
 
 ConfigPersistence::PersistenceResult
-ConfigPersistence::saveToFileMinimal(const ConfigData& config) {
+ConfigPersistence::save(const ConfigData& config) {
   // Save to Preferences
   logger.info(F("ConfigP"), F("Speichere Konfiguration in Preferences..."));
   

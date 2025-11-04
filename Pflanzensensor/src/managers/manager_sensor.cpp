@@ -19,7 +19,7 @@ void SensorManager::applySensorSettingsFromConfig() {
   logger.info(F("SensorM"), F("Sensoreinstellungen aus der Konfiguration werden angewendet"));
 
   // Load sensor configuration from file
-  auto result = SensorPersistence::loadFromFile();
+  auto result = SensorPersistence::load();
   if (!result.isSuccess()) {
     logger.warning(F("SensorM"),
                    F("Sensor-Konfiguration konnte nicht geladen werden: ") + result.getMessage());

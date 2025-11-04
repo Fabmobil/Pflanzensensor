@@ -100,9 +100,9 @@ void AdminSensorHandler::handleSensorUpdate() {
       }
     }
     if (changesOccurred) {
-      auto saveResult = SensorPersistence::saveToFileMinimal();
+      auto saveResult = SensorPersistence::save();
       logger.info(F("AdminSensorHandler"),
-                  F("SensorPersistence::saveToFile() called, result: ") + saveResult.getMessage());
+                  F("SensorPersistence::save() called, result: ") + saveResult.getMessage());
       if (!saveResult.isSuccess()) {
         return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR,
                                     F("Fehler beim Speichern der Sensor-Konfiguration: ") +

@@ -17,18 +17,18 @@ public:
   using PersistenceResult = TypedResult<ConfigError, void>;
 
   /**
-   * @brief Load configuration from file
+   * @brief Load configuration from Preferences
    * @param config Configuration data structure to populate
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult loadFromFile(ConfigData& config);
+  static PersistenceResult load(ConfigData& config);
 
   /**
-   * @brief Save configuration to file (minimal, no String or logger)
+   * @brief Save configuration to Preferences
    * @param config Configuration data to save
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult saveToFileMinimal(const ConfigData& config);
+  static PersistenceResult save(const ConfigData& config);
 
   /**
    * @brief Reset configuration to default values
@@ -38,16 +38,16 @@ public:
   static PersistenceResult resetToDefaults(ConfigData& config);
 
   /**
-   * @brief Check if configuration file exists
-   * @return True if config file exists, false otherwise
+   * @brief Check if configuration exists in Preferences
+   * @return True if config exists, false otherwise
    */
-  static bool configFileExists();
+  static bool configExists();
 
   /**
-   * @brief Get configuration file size
-   * @return Size of config file in bytes, 0 if file doesn't exist
+   * @brief Get estimated configuration size in Preferences
+   * @return Estimated size in bytes
    */
-  static size_t getConfigFileSize();
+  static size_t getConfigSize();
 
   /**
    * @brief Write update flags to a simple text file (not JSON config)

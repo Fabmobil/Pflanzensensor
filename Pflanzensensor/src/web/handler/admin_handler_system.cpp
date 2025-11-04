@@ -314,7 +314,7 @@ void AdminHandler::handleUploadConfig() {
         payload = F("{\"success\":false,\"error\":\"Umbenennen der Sensorkonfigurationsdatei "
                     "fehlgeschlagen\"}");
       } else {
-        auto reloadResult = SensorPersistence::loadFromFile();
+        auto reloadResult = SensorPersistence::load();
         if (reloadResult.isSuccess()) {
           logger.info(F("AdminHandler"), F("Sensorkonfiguration erfolgreich importiert von ") +
                                              clientIp + F(" (") + String(upload_written) +

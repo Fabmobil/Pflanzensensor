@@ -19,7 +19,7 @@
 #endif
 #include "sensors/sensor_autocalibration.h"
 
-bool SensorPersistence::configFileExists() { 
+bool SensorPersistence::configExists() { 
   // Check if any sensor has Preferences data
   extern std::unique_ptr<SensorManager> sensorManager;
   if (sensorManager && sensorManager->getState() == ManagerState::INITIALIZED) {
@@ -33,9 +33,9 @@ bool SensorPersistence::configFileExists() {
   return false;
 }
 
-size_t SensorPersistence::getConfigFileSize() {
+size_t SensorPersistence::getConfigSize() {
   // Preferences don't have a direct "file size", return estimated size
-  if (!configFileExists()) {
+  if (!configExists()) {
     return 0;
   }
   
@@ -58,7 +58,7 @@ size_t SensorPersistence::getConfigFileSize() {
 }
 
 
-SensorPersistence::PersistenceResult SensorPersistence::loadFromFile() {
+SensorPersistence::PersistenceResult SensorPersistence::load() {
   if (ConfigMgr.isDebugSensor()) {
     logger.debug(F("SensorP"), F("Beginne Laden der Sensorkonfiguration aus Preferences"));
   }
@@ -168,7 +168,7 @@ SensorPersistence::PersistenceResult SensorPersistence::loadFromFile() {
 // saveToFileMinimal Remove saveToFile and saveToFileInternal implementations,
 // keep saveToFileMinimal
 
-SensorPersistence::PersistenceResult SensorPersistence::saveToFileMinimal() {
+SensorPersistence::PersistenceResult SensorPersistence::save() {
   extern std::unique_ptr<SensorManager> sensorManager;
   if (!sensorManager) {
     return PersistenceResult::success();
@@ -260,7 +260,7 @@ SensorPersistence::updateSensorThresholdsInternal(const String& sensorId, size_t
               F(" Messung ") + String(measurementIndex));
   
   // Reload configuration
-  auto reloadResult = loadFromFile();
+  auto reloadResult = load();
   return reloadResult;
 }
   }
@@ -306,7 +306,7 @@ SensorPersistence::updateAnalogMinMaxInteger(const String& sensorId, size_t meas
                                 F(" Messung ") + String(measurementIndex));
 
   // Reload configuration to sync in-memory state
-  auto reloadResult = loadFromFile();
+  auto reloadResult = load();
   if (!reloadResult.isSuccess()) {
     logger.warning(F("SensorP"),
                    F("Neuladen der Sensorkonfiguration nach int min/max Update fehlgeschlagen: ") +
@@ -473,7 +473,7 @@ SensorPersistence::updateAnalogRawMinMaxInternal(const String& sensorId, size_t 
                                 F(" Messung ") + String(measurementIndex));
 
   // Nach dem Update Konfiguration neu laden, damit In-Memory-Config synchron bleibt
-  auto reloadResult = loadFromFile();
+  auto reloadResult = load();
   if (!reloadResult.isSuccess()) {
     logger.warning(F("SensorP"),
                    F("Neuladen der Sensorkonfiguration nach raw min/max Update fehlgeschlagen: ") +
@@ -513,7 +513,7 @@ SensorPersistence::updateAnalogCalibrationMode(const String& sensorId, size_t me
                                 F(" Messung ") + String(measurementIndex));
 
   // Reload configuration to sync in-memory state
-  auto reloadResult = loadFromFile();
+  auto reloadResult = load();
   if (!reloadResult.isSuccess()) {
     logger.warning(
         F("SensorP"),
@@ -546,7 +546,7 @@ SensorPersistence::updateAutocalDuration(const String& sensorId, size_t measurem
                                 F(" Messung ") + String(measurementIndex));
 
   // Reload configuration to sync in-memory state
-  auto reloadResult = loadFromFile();
+  auto reloadResult = load();
   if (!reloadResult.isSuccess()) {
     logger.warning(
         F("SensorP"),

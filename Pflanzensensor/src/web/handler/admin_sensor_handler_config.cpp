@@ -145,9 +145,9 @@ void AdminSensorHandler::handleSingleSensorUpdate() {
   // Save config if changed
   if (changesOccurred) {
     // Use atomic sensor updates instead of full config save
-    auto saveResult = SensorPersistence::saveToFileMinimal();
+    auto saveResult = SensorPersistence::save();
     logger.info(F("AdminSensorHandler"),
-                F("SensorPersistence::saveToFile() called, result: ") + saveResult.getMessage());
+                F("SensorPersistence::save() called, result: ") + saveResult.getMessage());
     if (!saveResult.isSuccess()) {
       sendJsonResponse(
           500,
@@ -212,7 +212,7 @@ void AdminSensorHandler::handleMeasurementName() {
     config.measurements[measurementIndex].name = newName;
 
     // Save the change
-    auto saveResult = SensorPersistence::saveToFileMinimal();
+    auto saveResult = SensorPersistence::save();
     if (!saveResult.isSuccess()) {
       sendJsonResponse(500, F("{\"success\":false,\"error\":\"Failed to save sensor config\"}"));
       return;

@@ -25,7 +25,7 @@ ConfigManager::ConfigResult ConfigManager::loadConfig() {
   ScopedLock lock;
 
   // Load main configuration
-  auto result = ConfigPersistence::loadFromFile(m_configData);
+  auto result = ConfigPersistence::load(m_configData);
   if (!result.isSuccess()) {
     return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
                               result.getMessage());
@@ -59,14 +59,14 @@ ConfigManager::ConfigResult ConfigManager::saveConfig() {
   }
 
   // Save main configuration
-  auto result = ConfigPersistence::saveToFileMinimal(m_configData);
+  auto result = ConfigPersistence::save(m_configData);
   if (!result.isSuccess()) {
     return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
                               result.getMessage());
   }
 
   // Save sensor configuration
-  auto sensorResult = SensorPersistence::saveToFileMinimal();
+  auto sensorResult = SensorPersistence::save();
   if (!sensorResult.isSuccess()) {
     logger.warning(F("ConfigM"), F("Speichern der Sensorkonfiguration fehlgeschlagen: ") +
                                      sensorResult.getMessage());

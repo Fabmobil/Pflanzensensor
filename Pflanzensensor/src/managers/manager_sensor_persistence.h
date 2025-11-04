@@ -19,16 +19,16 @@ public:
   using PersistenceResult = TypedResult<ConfigError, void>;
 
   /**
-   * @brief Load sensor configuration from file
+   * @brief Load sensor configuration from Preferences
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult loadFromFile();
+  static PersistenceResult load();
 
   /**
-   * @brief Save sensor configuration to file (minimal, no String or logger)
+   * @brief Save sensor configuration to Preferences
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult saveToFileMinimal();
+  static PersistenceResult save();
 
   /**
    * @brief Update a specific sensor threshold atomically
@@ -132,16 +132,16 @@ public:
                                                  uint32_t halfLifeSeconds);
 
   /**
-   * @brief Check if sensor configuration file exists
-   * @return True if sensors.json exists, false otherwise
+   * @brief Check if sensor configuration exists in Preferences
+   * @return True if sensor config exists, false otherwise
    */
-  static bool configFileExists();
+  static bool configExists();
 
   /**
-   * @brief Get sensor configuration file size
-   * @return Size of sensors.json in bytes, 0 if file doesn't exist
+   * @brief Get estimated sensor configuration size in Preferences
+   * @return Estimated size in bytes
    */
-  static size_t getConfigFileSize();
+  static size_t getConfigSize();
 
 private:
   SensorPersistence() = default;
@@ -150,7 +150,7 @@ private:
    * @brief Internal save method
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult saveToFileInternal();
+  static PersistenceResult saveInternal();
 
   /**
    * @brief Internal method for updating sensor thresholds
