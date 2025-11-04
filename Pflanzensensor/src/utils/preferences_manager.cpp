@@ -130,7 +130,7 @@ PreferencesManager::PrefResult PreferencesManager::initWiFiNamespace() {
 // Initialize Display namespace with defaults
 PreferencesManager::PrefResult PreferencesManager::initDisplayNamespace() {
   Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DISPLAY, false)) {
+  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Display-Namespace"));
     return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open display namespace");
   }
@@ -221,7 +221,7 @@ PreferencesManager::PrefResult PreferencesManager::initializeAllNamespaces() {
     logger.info(F("PrefMgr"), F("WiFi-Namespace bereits vorhanden"));
   }
   
-  if (!namespaceExists(PreferencesNamespaces::DISPLAY)) {
+  if (!namespaceExists(PreferencesNamespaces::DISP)) {
     auto result = initDisplayNamespace();
     if (!result.isSuccess()) return result;
   } else {
@@ -261,7 +261,7 @@ PreferencesManager::PrefResult PreferencesManager::clearAll() {
   const char* namespaces[] = {
     PreferencesNamespaces::GENERAL,
     PreferencesNamespaces::WIFI,
-    PreferencesNamespaces::DISPLAY,
+    PreferencesNamespaces::DISP,
     PreferencesNamespaces::LOG,
     PreferencesNamespaces::LED_TRAFFIC,
     PreferencesNamespaces::DEBUG
@@ -375,7 +375,7 @@ PreferencesManager::PrefResult PreferencesManager::saveDisplaySettings(
     const String& clockFormat) {
   
   Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DISPLAY, false)) {
+  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
     logger.error(F("PrefMgr"), F("Fehler beim Speichern der Display-Einstellungen"));
     return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open display namespace");
   }
@@ -398,7 +398,7 @@ PreferencesManager::PrefResult PreferencesManager::loadDisplaySettings(
     String& clockFormat) {
   
   Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DISPLAY, true)) {
+  if (!prefs.begin(PreferencesNamespaces::DISP, true)) {
     logger.warning(F("PrefMgr"), F("Display-Namespace nicht gefunden, verwende Standardwerte"));
     return PrefResult::fail(ConfigError::FILE_ERROR, "Display namespace not found");
   }

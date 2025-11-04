@@ -86,7 +86,7 @@ DisplayResult DisplayManager::loadConfig() {
   CriticalSection cs;
 
   // Check if Preferences exist, if not initialize with defaults
-  if (!PreferencesManager::namespaceExists(PreferencesNamespaces::DISPLAY)) {
+  if (!PreferencesManager::namespaceExists(PreferencesNamespaces::DISP)) {
     logger.info(F("DisplayM"), F("Keine Display-Konfiguration gefunden, initialisiere mit Standardwerten..."));
     auto initResult = PreferencesManager::initDisplayNamespace();
     if (!initResult.isSuccess()) {

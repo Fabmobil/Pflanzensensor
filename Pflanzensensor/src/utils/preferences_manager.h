@@ -18,7 +18,7 @@
 namespace PreferencesNamespaces {
   constexpr const char* GENERAL = "general";      // General settings (device name, passwords, etc.)
   constexpr const char* WIFI = "wifi";           // WiFi credentials and network settings
-  constexpr const char* DISPLAY = "display";     // Display configuration
+  constexpr const char* DISP = "display";        // Display configuration (renamed from DISPLAY to avoid Arduino.h macro conflict)
   constexpr const char* LOG = "log";             // Logging settings
   constexpr const char* LED_TRAFFIC = "led_traf"; // LED traffic light settings (max 15 chars)
   constexpr const char* DEBUG = "debug";         // Debug flags
