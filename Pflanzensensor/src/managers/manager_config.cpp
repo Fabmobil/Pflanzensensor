@@ -406,20 +406,44 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
   // Handle general namespace - route through existing setters for validation
   if (namespaceName == "general") {
     if (key == "device_name") {
-      return setDeviceName(value);
+      auto result = setDeviceName(value);
+      if (result.isSuccess()) {
+        logger.info(F("ConfigM"), String(F("Einstellung geändert: device_name = ")) + value);
+      }
+      return result;
     } else if (key == "admin_pwd") {
-      return setAdminPassword(value);
+      auto result = setAdminPassword(value);
+      if (result.isSuccess()) {
+        logger.info(F("ConfigM"), F("Einstellung geändert: admin_pwd = ***"));
+      }
+      return result;
     } else if (key == "md5_verify") {
       bool enabled = (value == "true" || value == "1");
-      return setMD5Verification(enabled);
+      auto result = setMD5Verification(enabled);
+      if (result.isSuccess()) {
+        logger.info(F("ConfigM"), String(F("Einstellung geändert: md5_verify = ")) + (enabled ? F("true") : F("false")));
+      }
+      return result;
     } else if (key == "file_log") {
       bool enabled = (value == "true" || value == "1");
-      return setFileLoggingEnabled(enabled);
+      auto result = setFileLoggingEnabled(enabled);
+      if (result.isSuccess()) {
+        logger.info(F("ConfigM"), String(F("Einstellung geändert: file_log = ")) + (enabled ? F("true") : F("false")));
+      }
+      return result;
     } else if (key == "collectd_enabled") {
       bool enabled = (value == "true" || value == "1");
-      return setCollectdEnabled(enabled);
+      auto result = setCollectdEnabled(enabled);
+      if (result.isSuccess()) {
+        logger.info(F("ConfigM"), String(F("Einstellung geändert: collectd_enabled = ")) + (enabled ? F("true") : F("false")));
+      }
+      return result;
     } else if (key == "flower_sens") {
-      return setFlowerStatusSensor(value);
+      auto result = setFlowerStatusSensor(value);
+      if (result.isSuccess()) {
+        logger.info(F("ConfigM"), String(F("Einstellung geändert: flower_sens = ")) + value);
+      }
+      return result;
     }
   }
   
@@ -431,30 +455,35 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
     }
     
     bool success = false;
+    String displayValue = value;
     if (key == "ssid1") {
       success = PreferencesManager::putString(prefs, "ssid1", value);
       if (success) setWiFiSSID1(value);
     } else if (key == "pwd1") {
       success = PreferencesManager::putString(prefs, "pwd1", value);
       if (success) setWiFiPassword1(value);
+      displayValue = "***";
     } else if (key == "ssid2") {
       success = PreferencesManager::putString(prefs, "ssid2", value);
       if (success) setWiFiSSID2(value);
     } else if (key == "pwd2") {
       success = PreferencesManager::putString(prefs, "pwd2", value);
       if (success) setWiFiPassword2(value);
+      displayValue = "***";
     } else if (key == "ssid3") {
       success = PreferencesManager::putString(prefs, "ssid3", value);
       if (success) setWiFiSSID3(value);
     } else if (key == "pwd3") {
       success = PreferencesManager::putString(prefs, "pwd3", value);
       if (success) setWiFiPassword3(value);
+      displayValue = "***";
     }
     
     prefs.end();
     if (!success) {
       return ConfigResult::fail(ConfigError::SAVE_FAILED, F("Failed to save WiFi setting"));
     }
+    logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + key + F(" = ") + displayValue);
     return ConfigResult::success();
   }
   
@@ -466,26 +495,31 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
     }
     
     bool success = false;
+    String displayValue = value;
     if (key == "show_ip") {
       bool enabled = (value == "true" || value == "1");
       success = PreferencesManager::putBool(prefs, "show_ip", enabled);
       auto result = PreferencesManager::updateIpScreenEnabled(enabled);
       if (!result.isSuccess()) success = false;
+      displayValue = enabled ? F("true") : F("false");
     } else if (key == "show_clock") {
       bool enabled = (value == "true" || value == "1");
       success = PreferencesManager::putBool(prefs, "show_clock", enabled);
       auto result = PreferencesManager::updateClockEnabled(enabled);
       if (!result.isSuccess()) success = false;
+      displayValue = enabled ? F("true") : F("false");
     } else if (key == "show_flower") {
       bool enabled = (value == "true" || value == "1");
       success = PreferencesManager::putBool(prefs, "show_flower", enabled);
       auto result = PreferencesManager::updateFlowerImageEnabled(enabled);
       if (!result.isSuccess()) success = false;
+      displayValue = enabled ? F("true") : F("false");
     } else if (key == "show_fabmobil") {
       bool enabled = (value == "true" || value == "1");
       success = PreferencesManager::putBool(prefs, "show_fabmobil", enabled);
       auto result = PreferencesManager::updateFabmobilImageEnabled(enabled);
       if (!result.isSuccess()) success = false;
+      displayValue = enabled ? F("true") : F("false");
     } else if (key == "screen_dur") {
       unsigned int duration = value.toInt();
       success = PreferencesManager::putUInt(prefs, "screen_dur", duration);
@@ -501,47 +535,67 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
     if (!success) {
       return ConfigResult::fail(ConfigError::SAVE_FAILED, F("Failed to save display setting"));
     }
+    logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + key + F(" = ") + displayValue);
     notifyConfigChange(key, value, false);
     return ConfigResult::success();
   }
   
   // Handle debug namespace
   else if (namespaceName == "debug") {
+    bool enabled = (value == "true" || value == "1");
+    ConfigResult result;
     if (key == "ram") {
-      bool enabled = (value == "true" || value == "1");
-      return setDebugRAM(enabled);
+      result = setDebugRAM(enabled);
     } else if (key == "meas_cycle") {
-      bool enabled = (value == "true" || value == "1");
-      return setDebugMeasurementCycle(enabled);
+      result = setDebugMeasurementCycle(enabled);
     } else if (key == "sensor") {
-      bool enabled = (value == "true" || value == "1");
-      return setDebugSensor(enabled);
+      result = setDebugSensor(enabled);
     } else if (key == "display") {
-      bool enabled = (value == "true" || value == "1");
-      return setDebugDisplay(enabled);
+      result = setDebugDisplay(enabled);
     } else if (key == "websocket") {
-      bool enabled = (value == "true" || value == "1");
-      return setDebugWebSocket(enabled);
+      result = setDebugWebSocket(enabled);
     }
+    if (result.isSuccess()) {
+      logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + key + F(" = ") + (enabled ? F("true") : F("false")));
+    }
+    return result;
   }
   
   // Handle log namespace
   else if (namespaceName == "log") {
+    ConfigResult result;
     if (key == "level") {
-      return setLogLevel(value);
+      result = setLogLevel(value);
+      if (result.isSuccess()) {
+        logger.info(F("ConfigM"), String(F("Einstellung geändert: log_level = ")) + value);
+      }
+      return result;
     } else if (key == "file_enabled") {
       bool enabled = (value == "true" || value == "1");
-      return setFileLoggingEnabled(enabled);
+      result = setFileLoggingEnabled(enabled);
+      if (result.isSuccess()) {
+        logger.info(F("ConfigM"), String(F("Einstellung geändert: file_enabled = ")) + (enabled ? F("true") : F("false")));
+      }
+      return result;
     }
   }
   
   // Handle LED traffic light namespace
   else if (namespaceName == "led_traf") {
+    ConfigResult result;
     if (key == "mode") {
       uint8_t mode = value.toInt();
-      return setLedTrafficLightMode(mode);
+      result = setLedTrafficLightMode(mode);
+      if (result.isSuccess()) {
+        logger.info(F("ConfigM"), String(F("Einstellung geändert: led_mode = ")) + String(mode));
+      }
+      return result;
     } else if (key == "sel_meas") {
-      return setLedTrafficLightSelectedMeasurement(value);
+      result = setLedTrafficLightSelectedMeasurement(value);
+      if (result.isSuccess()) {
+        logger.info(F("ConfigM"), String(F("Einstellung geändert: led_sel_meas = ")) + value);
+      }
+      return result;
     }
   }
   
@@ -554,12 +608,14 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
     }
     
     bool success = false;
+    String displayValue = value;
     
     // Write the value based on type
     switch (type) {
       case ConfigValueType::BOOL: {
         bool boolValue = (value == "true" || value == "1");
         success = PreferencesManager::putBool(prefs, key.c_str(), boolValue);
+        displayValue = boolValue ? F("true") : F("false");
         break;
       }
       case ConfigValueType::INT: {
@@ -590,6 +646,7 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
                                F("Failed to save sensor setting: ") + key);
     }
     
+    logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + namespaceName + F(".") + key + F(" = ") + displayValue);
     notifyConfigChange(key, value, true);
     return ConfigResult::success();
   }

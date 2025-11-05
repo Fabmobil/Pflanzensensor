@@ -14,6 +14,12 @@ function setConfigValue(namespace, key, value, type) {
   // Convert value to string
   const valueStr = String(value);
   
+  // Create display value for toast message (mask passwords)
+  let displayValue = valueStr;
+  if (key.includes('pwd') || key.includes('password')) {
+    displayValue = '***';
+  }
+  
   const params = new URLSearchParams({
     namespace: namespace,
     key: key,
@@ -34,7 +40,9 @@ function setConfigValue(namespace, key, value, type) {
   .then(parseJsonResponse)
   .then(data => {
     if (data && data.success) {
-      showSuccessMessage(data.message || 'Einstellung gespeichert');
+      // Show detailed message with key and value
+      const message = data.message || `Einstellung ${key} geändert zu ${displayValue}`;
+      showSuccessMessage(message);
       return data;
     } else {
       const errorMsg = (data && (data.error || data.message)) || 'Unbekannter Fehler';
