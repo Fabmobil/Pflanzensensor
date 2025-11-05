@@ -62,7 +62,7 @@ public:
   void handleGetSensorConfigJson();
   void handleMeasurementInterval();
   void handleAnalogMinMax();
-  void handleAnalogInverted();
+  // NOTE: handleAnalogInverted removed — use unified setConfigValue with namespace=s_<sensorId>, key=m<idx>_inv
   void handleThresholds();
   void handleMeasurementName();
   void handleResetAbsoluteMinMax();

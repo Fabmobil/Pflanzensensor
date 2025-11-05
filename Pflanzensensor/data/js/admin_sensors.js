@@ -441,7 +441,10 @@ var SensorConfigAPI = (function () {
   }
 
   function updateAnalogInverted(sensorId, measurementIndex, inverted) {
-    return API.request('/admin/analog_inverted', { sensor_id: sensorId, measurement_index: '' + measurementIndex, inverted: inverted ? 'true' : 'false' }, 'Invertierung erfolgreich ' + (inverted ? 'aktiviert' : 'deaktiviert'));
+    // Use unified setConfigValue method
+    var namespace = 's_' + sensorId;
+    var key = 'm' + measurementIndex + '_inv';
+    return setConfigValue(namespace, key, inverted ? 'true' : 'false', 'bool');
   }
 
   function updateAnalogAutocal(sensorId, measurementIndex, enabled) {

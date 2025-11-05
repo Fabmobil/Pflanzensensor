@@ -66,17 +66,6 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
     return result;
   }
 
-  result = router.addRoute(HTTP_POST, "/admin/analog_inverted", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /admin/analog_inverted aufgerufen"));
-    handleAnalogInverted();
-  });
-  if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/analog_inverted fehlgeschlagen: ") +
-                     result.getMessage());
-    return result;
-  }
-
   result = router.addRoute(HTTP_POST, "/admin/analog_autocal", [this]() {
     logger.debug(F("AdminSensorHandler"), F("POST /admin/analog_autocal aufgerufen"));
     handleAnalogAutocal();
