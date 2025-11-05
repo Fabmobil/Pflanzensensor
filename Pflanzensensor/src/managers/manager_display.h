@@ -159,6 +159,15 @@ public:
     m_logLineCount = 0;
   }
 
+  /**
+   * @brief Public wrapper to reload display configuration from Preferences.
+   *
+   * This calls the internal (private) loadConfig() implementation. Providing
+   * a public wrapper preserves encapsulation while allowing other managers to
+   * request a reload when settings change.
+   */
+  DisplayResult reloadConfig();
+
 protected:
   TypedResult<ResourceError, void> initialize() override;
 

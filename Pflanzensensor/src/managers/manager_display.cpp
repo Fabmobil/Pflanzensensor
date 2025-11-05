@@ -12,12 +12,12 @@
 #include "display/display_images.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
+#include "managers/manager_config_preferences.h"
 #include "managers/manager_led_traffic_light.h"
 #include "managers/manager_sensor.h"
 #include "utils/critical_section.h"
 #include "utils/helper.h"
 #include "utils/persistence_utils.h"
-#include "managers/manager_config_preferences.h"
 #include "utils/result_types.h"
 
 extern std::unique_ptr<SensorManager> sensorManager;
@@ -87,7 +87,8 @@ DisplayResult DisplayManager::loadConfig() {
 
   // Check if Preferences exist, if not initialize with defaults
   if (!PreferencesManager::namespaceExists(PreferencesNamespaces::DISP)) {
-    logger.info(F("DisplayM"), F("Keine Display-Konfiguration gefunden, initialisiere mit Standardwerten..."));
+    logger.info(F("DisplayM"),
+                F("Keine Display-Konfiguration gefunden, initialisiere mit Standardwerten..."));
     auto initResult = PreferencesManager::initDisplayNamespace();
     if (!initResult.isSuccess()) {
       logger.warning(F("DisplayM"), F("Fehler beim Initialisieren der Display-Preferences"));
@@ -98,18 +99,22 @@ DisplayResult DisplayManager::loadConfig() {
 
   // Load from Preferences
   logger.debug(F("DisplayM"), F("Lade Display-Konfiguration aus Preferences..."));
-  
+
   // Load each setting using generic getters
   m_config.showIpScreen = PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_ip", true);
   m_config.showClock = PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_clock", true);
-  m_config.showFlowerImage = PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_flower", true);
-  m_config.showFabmobilImage = PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_fabmobil", true);
-  m_config.screenDuration = PreferencesManager::getUInt(PreferencesNamespaces::DISP, "screen_dur", 5);
-  m_config.clockFormat = PreferencesManager::getString(PreferencesNamespaces::DISP, "clock_fmt", "24h");
-  
+  m_config.showFlowerImage =
+      PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_flower", true);
+  m_config.showFabmobilImage =
+      PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_fabmobil", true);
+  m_config.screenDuration =
+      PreferencesManager::getUInt(PreferencesNamespaces::DISP, "screen_dur", 5);
+  m_config.clockFormat =
+      PreferencesManager::getString(PreferencesNamespaces::DISP, "clock_fmt", "24h");
+
   logger.info(F("DisplayM"), F("Display-Konfiguration aus Preferences geladen"));
   {
-    
+
     String configMsg =
         String(F("Geladene Konfiguration - IP-Anzeige: ")) + String(m_config.showIpScreen) +
         String(F(", Uhr: ")) + String(m_config.showClock) + String(F(", Blume: ")) +
@@ -121,6 +126,11 @@ DisplayResult DisplayManager::loadConfig() {
 
 #endif
   return DisplayResult::success();
+}
+
+DisplayResult DisplayManager::reloadConfig() {
+  // Forward to private implementation - keeps loadConfig() encapsulated
+  return loadConfig();
 }
 
 DisplayResult DisplayManager::validateConfig() {
@@ -147,25 +157,33 @@ DisplayResult DisplayManager::saveConfig() {
 
   // Save to Preferences using atomic update helpers
   logger.debug(F("DisplayM"), F("Speichere Display-Konfiguration in Preferences..."));
-  
-  auto r1 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_ip", m_config.showIpScreen);
-  auto r2 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_clock", m_config.showClock);
-  auto r3 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_flower", m_config.showFlowerImage);
-  auto r4 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_fabmobil", m_config.showFabmobilImage);
-  auto r5 = PreferencesManager::updateUIntValue(PreferencesNamespaces::DISP, "screen_dur", m_config.screenDuration);
-  auto r6 = PreferencesManager::updateStringValue(PreferencesNamespaces::DISP, "clock_fmt", m_config.clockFormat);
-  
-  if (!r1.isSuccess() || !r2.isSuccess() || !r3.isSuccess() || !r4.isSuccess() || !r5.isSuccess() || !r6.isSuccess()) {
+
+  auto r1 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_ip",
+                                                m_config.showIpScreen);
+  auto r2 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_clock",
+                                                m_config.showClock);
+  auto r3 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_flower",
+                                                m_config.showFlowerImage);
+  auto r4 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_fabmobil",
+                                                m_config.showFabmobilImage);
+  auto r5 = PreferencesManager::updateUIntValue(PreferencesNamespaces::DISP, "screen_dur",
+                                                m_config.screenDuration);
+  auto r6 = PreferencesManager::updateStringValue(PreferencesNamespaces::DISP, "clock_fmt",
+                                                  m_config.clockFormat);
+
+  if (!r1.isSuccess() || !r2.isSuccess() || !r3.isSuccess() || !r4.isSuccess() || !r5.isSuccess() ||
+      !r6.isSuccess()) {
     logger.error(F("DisplayM"), F("Fehler beim Speichern der Display-Konfiguration"));
-    return DisplayResult::fail(DisplayError::FILE_ERROR,
-                               F("Speichern der Display-Konfiguration in Preferences fehlgeschlagen"));
+    return DisplayResult::fail(
+        DisplayError::FILE_ERROR,
+        F("Speichern der Display-Konfiguration in Preferences fehlgeschlagen"));
   }
 
   logger.info(F("DisplayM"), F("Display-Konfiguration erfolgreich in Preferences gespeichert"));
-  
+
   // Note: Sensor-specific display settings (sensorDisplays) are managed separately
   // through the admin interface and saved atomically when changed
-  
+
 #endif
   return DisplayResult::success();
 }
@@ -433,13 +451,14 @@ DisplayResult DisplayManager::setScreenDuration(unsigned long duration) {
   }
 
   m_config.screenDuration = duration;
-  
+
   // Use unified config manager method
-  auto result = ConfigMgr.setConfigValue("display", "screen_dur", String(duration), ConfigValueType::UINT);
+  auto result =
+      ConfigMgr.setConfigValue("display", "screen_dur", String(duration), ConfigValueType::UINT);
   if (!result.isSuccess()) {
     return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save screen duration");
   }
-  
+
   return DisplayResult::success();
 #else
   return DisplayResult::success();
@@ -453,13 +472,13 @@ DisplayResult DisplayManager::setClockFormat(const String& format) {
   }
 
   m_config.clockFormat = format;
-  
+
   // Use unified config manager method
   auto result = ConfigMgr.setConfigValue("display", "clock_fmt", format, ConfigValueType::STRING);
   if (!result.isSuccess()) {
     return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save clock format");
   }
-  
+
   return DisplayResult::success();
 #else
   return DisplayResult::success();
@@ -469,13 +488,14 @@ DisplayResult DisplayManager::setClockFormat(const String& format) {
 DisplayResult DisplayManager::setClockEnabled(bool enabled) {
 #if USE_DISPLAY
   m_config.showClock = enabled;
-  
+
   // Use unified config manager method
-  auto result = ConfigMgr.setConfigValue("display", "show_clock", enabled ? "true" : "false", ConfigValueType::BOOL);
+  auto result = ConfigMgr.setConfigValue("display", "show_clock", enabled ? "true" : "false",
+                                         ConfigValueType::BOOL);
   if (!result.isSuccess()) {
     return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save clock enabled");
   }
-  
+
   return DisplayResult::success();
 #else
   return DisplayResult::success();
@@ -485,13 +505,14 @@ DisplayResult DisplayManager::setClockEnabled(bool enabled) {
 DisplayResult DisplayManager::setIpScreenEnabled(bool enabled) {
 #if USE_DISPLAY
   m_config.showIpScreen = enabled;
-  
+
   // Use unified config manager method
-  auto result = ConfigMgr.setConfigValue("display", "show_ip", enabled ? "true" : "false", ConfigValueType::BOOL);
+  auto result = ConfigMgr.setConfigValue("display", "show_ip", enabled ? "true" : "false",
+                                         ConfigValueType::BOOL);
   if (!result.isSuccess()) {
     return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save IP screen enabled");
   }
-  
+
   return DisplayResult::success();
 #else
   return DisplayResult::success();
@@ -501,13 +522,14 @@ DisplayResult DisplayManager::setIpScreenEnabled(bool enabled) {
 DisplayResult DisplayManager::setFlowerImageEnabled(bool enabled) {
 #if USE_DISPLAY
   m_config.showFlowerImage = enabled;
-  
+
   // Use unified config manager method
-  auto result = ConfigMgr.setConfigValue("display", "show_flower", enabled ? "true" : "false", ConfigValueType::BOOL);
+  auto result = ConfigMgr.setConfigValue("display", "show_flower", enabled ? "true" : "false",
+                                         ConfigValueType::BOOL);
   if (!result.isSuccess()) {
     return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save flower image enabled");
   }
-  
+
   return DisplayResult::success();
 #else
   return DisplayResult::success();
@@ -517,13 +539,14 @@ DisplayResult DisplayManager::setFlowerImageEnabled(bool enabled) {
 DisplayResult DisplayManager::setFabmobilImageEnabled(bool enabled) {
 #if USE_DISPLAY
   m_config.showFabmobilImage = enabled;
-  
+
   // Use unified config manager method
-  auto result = ConfigMgr.setConfigValue("display", "show_fabmobil", enabled ? "true" : "false", ConfigValueType::BOOL);
+  auto result = ConfigMgr.setConfigValue("display", "show_fabmobil", enabled ? "true" : "false",
+                                         ConfigValueType::BOOL);
   if (!result.isSuccess()) {
     return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save fabmobil image enabled");
   }
-  
+
   return DisplayResult::success();
 #else
   return DisplayResult::success();
