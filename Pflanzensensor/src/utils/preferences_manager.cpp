@@ -764,7 +764,7 @@ PreferencesManager::PrefResult PreferencesManager::updateFileLoggingEnabled(bool
 
 PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t setIndex, const String& ssid, const String& password) {
   if (setIndex < 1 || setIndex > 3) {
-    return PrefResult::fail(ConfigError::INVALID_INPUT, "Invalid WiFi set index (must be 1-3)");
+    return PrefResult::fail(ConfigError::VALIDATION_ERROR, "Invalid WiFi set index (must be 1-3)");
   }
   
   Preferences prefs;

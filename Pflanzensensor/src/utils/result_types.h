@@ -95,7 +95,8 @@ enum class DisplayError {
   DISPLAY_ERROR,        ///< Generic display error
   UNKNOWN_ERROR,        ///< Unspecified error
   INVALID_CONFIG,       ///< Invalid display configuration
-  INVALID_STATE         ///< Invalid state for display operation
+  INVALID_STATE,        ///< Invalid state for display operation
+  SAVE_FAILED           ///< Failed to save display configuration
 };
 
 /**
