@@ -25,6 +25,12 @@ ConfigManager& ConfigManager::getInstance() {
 ConfigManager::ConfigResult ConfigManager::loadConfig() {
   ScopedLock lock;
 
+  // Load and apply log level from Preferences FIRST, before loading other config
+  // This ensures the correct log level is active for all subsequent log messages
+  String logLevel = PreferencesManager::getString(PreferencesNamespaces::LOG, "level", String(LOG_LEVEL));
+  logger.setLogLevel(Logger::stringToLogLevel(logLevel));
+  logger.debug(F("ConfigM"), String(F("Log-Level geladen: ")) + logLevel);
+
   // Load main configuration
   auto result = ConfigPersistence::load(m_configData);
   if (!result.isSuccess()) {
@@ -40,11 +46,6 @@ ConfigManager::ConfigResult ConfigManager::loadConfig() {
 
   // Apply logging settings
   logger.enableFileLogging(m_configData.fileLoggingEnabled);
-  
-  // Load and apply log level from Preferences
-  String logLevel = PreferencesManager::getString(PreferencesNamespaces::LOG, "level", String(LOG_LEVEL));
-  logger.setLogLevel(Logger::stringToLogLevel(logLevel));
-  logger.info(F("ConfigM"), String(F("Log-Level geladen: ")) + logLevel);
 
   return ConfigResult::success();
 }
