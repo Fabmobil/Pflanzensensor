@@ -51,6 +51,9 @@ bool AdminHandler::validateRequest() const {
   return true;
 }
 
+// DEPRECATED: This function is being phased out in favor of the unified
+// setConfigValue method. New code should use /admin/config/setConfigValue
+// with namespace, key, value, and type parameters instead.
 bool AdminHandler::processConfigUpdates(String& changes, String* error) {
   bool updated = false;
 
