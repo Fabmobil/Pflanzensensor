@@ -33,6 +33,17 @@ inline String errorTypeToString(ConfigError error) {
 }
 
 /**
+ * @brief Enum for configuration value types
+ */
+enum class ConfigValueType {
+  BOOL,   ///< Boolean value
+  INT,    ///< Integer value
+  UINT,   ///< Unsigned integer value
+  FLOAT,  ///< Float value
+  STRING  ///< String value
+};
+
+/**
  * @brief Struct for storing threshold values for a measurement
  */
 struct Thresholds {

@@ -394,6 +394,210 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const char* key, const
   return ConfigResult::success();
 }
 
+ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespaceName, 
+                                                          const String& key, 
+                                                          const String& value, 
+                                                          ConfigValueType type) {
+  ScopedLock lock;
+  
+  logger.debug(F("ConfigM"), String(F("setConfigValue: namespace=")) + namespaceName + 
+               F(", key=") + key + F(", value=") + value);
+  
+  // Handle general namespace - route through existing setters for validation
+  if (namespaceName == "general") {
+    if (key == "device_name") {
+      return setDeviceName(value);
+    } else if (key == "admin_pwd") {
+      return setAdminPassword(value);
+    } else if (key == "md5_verify") {
+      bool enabled = (value == "true" || value == "1");
+      return setMD5Verification(enabled);
+    } else if (key == "file_log") {
+      bool enabled = (value == "true" || value == "1");
+      return setFileLoggingEnabled(enabled);
+    } else if (key == "collectd_enabled") {
+      bool enabled = (value == "true" || value == "1");
+      return setCollectdEnabled(enabled);
+    } else if (key == "flower_sens") {
+      return setFlowerStatusSensor(value);
+    }
+  }
+  
+  // Handle WiFi namespace
+  else if (namespaceName == "wifi") {
+    Preferences prefs;
+    if (!prefs.begin(PreferencesNamespaces::WIFI, false)) {
+      return ConfigResult::fail(ConfigError::FILE_ERROR, F("Failed to open WiFi namespace"));
+    }
+    
+    bool success = false;
+    if (key == "ssid1") {
+      success = PreferencesManager::putString(prefs, "ssid1", value);
+      if (success) setWiFiSSID1(value);
+    } else if (key == "pwd1") {
+      success = PreferencesManager::putString(prefs, "pwd1", value);
+      if (success) setWiFiPassword1(value);
+    } else if (key == "ssid2") {
+      success = PreferencesManager::putString(prefs, "ssid2", value);
+      if (success) setWiFiSSID2(value);
+    } else if (key == "pwd2") {
+      success = PreferencesManager::putString(prefs, "pwd2", value);
+      if (success) setWiFiPassword2(value);
+    } else if (key == "ssid3") {
+      success = PreferencesManager::putString(prefs, "ssid3", value);
+      if (success) setWiFiSSID3(value);
+    } else if (key == "pwd3") {
+      success = PreferencesManager::putString(prefs, "pwd3", value);
+      if (success) setWiFiPassword3(value);
+    }
+    
+    prefs.end();
+    if (!success) {
+      return ConfigResult::fail(ConfigError::SAVE_FAILED, F("Failed to save WiFi setting"));
+    }
+    return ConfigResult::success();
+  }
+  
+  // Handle display namespace
+  else if (namespaceName == "display") {
+    Preferences prefs;
+    if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
+      return ConfigResult::fail(ConfigError::FILE_ERROR, F("Failed to open display namespace"));
+    }
+    
+    bool success = false;
+    if (key == "show_ip") {
+      bool enabled = (value == "true" || value == "1");
+      success = PreferencesManager::putBool(prefs, "show_ip", enabled);
+      auto result = PreferencesManager::updateIpScreenEnabled(enabled);
+      if (!result.isSuccess()) success = false;
+    } else if (key == "show_clock") {
+      bool enabled = (value == "true" || value == "1");
+      success = PreferencesManager::putBool(prefs, "show_clock", enabled);
+      auto result = PreferencesManager::updateClockEnabled(enabled);
+      if (!result.isSuccess()) success = false;
+    } else if (key == "show_flower") {
+      bool enabled = (value == "true" || value == "1");
+      success = PreferencesManager::putBool(prefs, "show_flower", enabled);
+      auto result = PreferencesManager::updateFlowerImageEnabled(enabled);
+      if (!result.isSuccess()) success = false;
+    } else if (key == "show_fabmobil") {
+      bool enabled = (value == "true" || value == "1");
+      success = PreferencesManager::putBool(prefs, "show_fabmobil", enabled);
+      auto result = PreferencesManager::updateFabmobilImageEnabled(enabled);
+      if (!result.isSuccess()) success = false;
+    } else if (key == "screen_dur") {
+      unsigned int duration = value.toInt();
+      success = PreferencesManager::putUInt(prefs, "screen_dur", duration);
+      auto result = PreferencesManager::updateScreenDuration(duration);
+      if (!result.isSuccess()) success = false;
+    } else if (key == "clock_fmt") {
+      success = PreferencesManager::putString(prefs, "clock_fmt", value);
+      auto result = PreferencesManager::updateClockFormat(value);
+      if (!result.isSuccess()) success = false;
+    }
+    
+    prefs.end();
+    if (!success) {
+      return ConfigResult::fail(ConfigError::SAVE_FAILED, F("Failed to save display setting"));
+    }
+    notifyConfigChange(key, value, false);
+    return ConfigResult::success();
+  }
+  
+  // Handle debug namespace
+  else if (namespaceName == "debug") {
+    if (key == "ram") {
+      bool enabled = (value == "true" || value == "1");
+      return setDebugRAM(enabled);
+    } else if (key == "meas_cycle") {
+      bool enabled = (value == "true" || value == "1");
+      return setDebugMeasurementCycle(enabled);
+    } else if (key == "sensor") {
+      bool enabled = (value == "true" || value == "1");
+      return setDebugSensor(enabled);
+    } else if (key == "display") {
+      bool enabled = (value == "true" || value == "1");
+      return setDebugDisplay(enabled);
+    } else if (key == "websocket") {
+      bool enabled = (value == "true" || value == "1");
+      return setDebugWebSocket(enabled);
+    }
+  }
+  
+  // Handle log namespace
+  else if (namespaceName == "log") {
+    if (key == "level") {
+      return setLogLevel(value);
+    } else if (key == "file_enabled") {
+      bool enabled = (value == "true" || value == "1");
+      return setFileLoggingEnabled(enabled);
+    }
+  }
+  
+  // Handle LED traffic light namespace
+  else if (namespaceName == "led_traf") {
+    if (key == "mode") {
+      uint8_t mode = value.toInt();
+      return setLedTrafficLightMode(mode);
+    } else if (key == "sel_meas") {
+      return setLedTrafficLightSelectedMeasurement(value);
+    }
+  }
+  
+  // Handle sensor namespaces (format: s_SENSORID)
+  else if (namespaceName.startsWith("s_")) {
+    Preferences prefs;
+    if (!prefs.begin(namespaceName.c_str(), false)) {
+      return ConfigResult::fail(ConfigError::FILE_ERROR, 
+                               F("Failed to open sensor namespace: ") + namespaceName);
+    }
+    
+    bool success = false;
+    
+    // Write the value based on type
+    switch (type) {
+      case ConfigValueType::BOOL: {
+        bool boolValue = (value == "true" || value == "1");
+        success = PreferencesManager::putBool(prefs, key.c_str(), boolValue);
+        break;
+      }
+      case ConfigValueType::INT: {
+        int intValue = value.toInt();
+        success = PreferencesManager::putInt(prefs, key.c_str(), intValue);
+        break;
+      }
+      case ConfigValueType::UINT: {
+        unsigned int uintValue = value.toInt();
+        success = PreferencesManager::putUInt(prefs, key.c_str(), uintValue);
+        break;
+      }
+      case ConfigValueType::FLOAT: {
+        float floatValue = value.toFloat();
+        success = PreferencesManager::putFloat(prefs, key.c_str(), floatValue);
+        break;
+      }
+      case ConfigValueType::STRING: {
+        success = PreferencesManager::putString(prefs, key.c_str(), value);
+        break;
+      }
+    }
+    
+    prefs.end();
+    
+    if (!success) {
+      return ConfigResult::fail(ConfigError::SAVE_FAILED, 
+                               F("Failed to save sensor setting: ") + key);
+    }
+    
+    notifyConfigChange(key, value, true);
+    return ConfigResult::success();
+  }
+  
+  return ConfigResult::fail(ConfigError::VALIDATION_ERROR, 
+                           F("Unknown namespace or key: ") + namespaceName + F(".") + key);
+}
+
 ConfigManager::ConfigResult ConfigManager::setDeviceName(const String& name) {
   if (m_configData.deviceName != name) {
     m_configData.deviceName = name;

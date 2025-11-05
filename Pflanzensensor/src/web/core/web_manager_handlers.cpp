@@ -102,53 +102,107 @@ void WebManager::handleSetConfigValue() {
     return;
   }
 
-  // Get request body
-  String json = _server->arg("plain");
-  logger.debug(F("WebManager"), "Received config update request: " + json);
+  String namespaceName, key, value, typeStr;
+  
+  // Check if request is form-encoded (new unified method) or JSON (legacy)
+  String contentType = _server->header("Content-Type");
+  bool isFormEncoded = contentType.indexOf("application/x-www-form-urlencoded") >= 0;
+  
+  if (isFormEncoded || _server->hasArg("namespace")) {
+    // New unified method with namespace and type
+    namespaceName = _server->arg("namespace");
+    key = _server->arg("key");
+    value = _server->arg("value");
+    typeStr = _server->arg("type");
+    
+    if (namespaceName.isEmpty() || key.isEmpty()) {
+      logger.error(F("WebManager"), F("Missing namespace or key parameter"));
+      sendErrorResponse(400, F("Missing namespace or key parameter"));
+      return;
+    }
+    
+    // Parse type parameter
+    ConfigValueType type = ConfigValueType::STRING; // default
+    if (typeStr == "bool") {
+      type = ConfigValueType::BOOL;
+    } else if (typeStr == "int") {
+      type = ConfigValueType::INT;
+    } else if (typeStr == "uint") {
+      type = ConfigValueType::UINT;
+    } else if (typeStr == "float") {
+      type = ConfigValueType::FLOAT;
+    } else if (typeStr == "string") {
+      type = ConfigValueType::STRING;
+    }
+    
+    logger.debug(F("WebManager"), String(F("Setting config: ")) + namespaceName + 
+                 F(".") + key + F(" = ") + value + F(" (type: ") + typeStr + F(")"));
+    
+    // Update config value using new method
+    auto result = ConfigMgr.setConfigValue(namespaceName, key, value, type);
+    if (!result.isSuccess()) {
+      logger.error(F("WebManager"), "Failed to set config value: " + result.getMessage());
+      sendErrorResponse(400, result.getMessage());
+      return;
+    }
+    
+    // Send success response
+    StaticJsonDocument<200> response;
+    response["success"] = true;
+    response["message"] = "Einstellung gespeichert";
+    String jsonResponse;
+    serializeJson(response, jsonResponse);
+    _server->send(200, F("application/json"), jsonResponse);
+    
+  } else {
+    // Legacy JSON method - kept for backward compatibility during transition
+    String json = _server->arg("plain");
+    logger.debug(F("WebManager"), "Received legacy config update request: " + json);
 
-  // Parse JSON
-  StaticJsonDocument<512> doc;
-  DeserializationError error = deserializeJson(doc, json);
+    // Parse JSON
+    StaticJsonDocument<512> doc;
+    DeserializationError error = deserializeJson(doc, json);
 
-  if (error) {
-    String errorMsg = String(F("JSON parse error: ")) + error.c_str();
-    logger.error(F("WebManager"), errorMsg);
-    sendErrorResponse(400, errorMsg);
-    return;
+    if (error) {
+      String errorMsg = String(F("JSON parse error: ")) + error.c_str();
+      logger.error(F("WebManager"), errorMsg);
+      sendErrorResponse(400, errorMsg);
+      return;
+    }
+
+    // Extract key and value
+    const char* keyPtr = doc["key"] | "";
+    const char* valuePtr = doc["value"] | "";
+
+    if (!keyPtr[0]) {
+      logger.error(F("WebManager"), F("Missing key in request"));
+      sendErrorResponse(400, F("Missing key parameter"));
+      return;
+    }
+
+    // Update config value using legacy method
+    auto result = ConfigMgr.setConfigValue(keyPtr, valuePtr);
+    if (!result.isSuccess()) {
+      logger.error(F("WebManager"), "Failed to set config value: " + result.getMessage());
+      sendErrorResponse(400, result.getMessage());
+      return;
+    }
+
+    // Save config
+    auto saveResult = ConfigMgr.saveConfig();
+    if (!saveResult.isSuccess()) {
+      logger.error(F("WebManager"), "Failed to save config: " + saveResult.getMessage());
+      sendErrorResponse(500, F("Failed to save configuration"));
+      return;
+    }
+
+    // Send success response
+    StaticJsonDocument<200> response;
+    response["status"] = "OK";
+    String jsonResponse;
+    serializeJson(response, jsonResponse);
+    _server->send(200, F("application/json"), jsonResponse);
   }
-
-  // Extract key and value
-  const char* key = doc["key"] | "";
-  const char* value = doc["value"] | "";
-
-  if (!key[0]) {
-    logger.error(F("WebManager"), F("Missing key in request"));
-    sendErrorResponse(400, F("Missing key parameter"));
-    return;
-  }
-
-  // Update config value
-  auto result = ConfigMgr.setConfigValue(key, value);
-  if (!result.isSuccess()) {
-    logger.error(F("WebManager"), "Failed to set config value: " + result.getMessage());
-    sendErrorResponse(400, result.getMessage());
-    return;
-  }
-
-  // Save config
-  auto saveResult = ConfigMgr.saveConfig();
-  if (!saveResult.isSuccess()) {
-    logger.error(F("WebManager"), "Failed to save config: " + saveResult.getMessage());
-    sendErrorResponse(500, F("Failed to save configuration"));
-    return;
-  }
-
-  // Send success response
-  StaticJsonDocument<200> response;
-  response["status"] = "OK";
-  String jsonResponse;
-  serializeJson(response, jsonResponse);
-  _server->send(200, F("application/json"), jsonResponse);
 }
 
 ResourceResult WebManager::validateUpdateRequest(const String& json, bool& fileSystemUpdate,

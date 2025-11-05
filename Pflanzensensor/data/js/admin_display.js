@@ -59,27 +59,13 @@ function initScreenDurationHandler() {
  * Update screen duration via AJAX
  */
 function updateScreenDuration(duration) {
-  const formData = new FormData();
-  formData.append('duration', duration.toString());
-
-  fetch('/admin/display/screen_duration', {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    credentials: 'include',
-    body: new URLSearchParams({ screen_duration: duration, ajax: '1' })
-  })
-  .then(parseJsonResponse)
-  .then(data => {
-    if (data.success) {
-      showSuccessMessage('Anzeigedauer erfolgreich aktualisiert');
-    } else {
-      showErrorMessage('Fehler beim Aktualisieren: ' + (data.error || 'Unbekannter Fehler'));
-    }
-  })
-  .catch(error => {
-    console.error('[admin_display.js] Error updating screen duration:', error);
-    showErrorMessage('Fehler beim Aktualisieren: ' + error.message);
-  });
+  setConfigValue('display', 'screen_dur', duration, 'uint')
+    .then(() => {
+      console.log('[admin_display.js] Screen duration updated');
+    })
+    .catch(error => {
+      console.error('[admin_display.js] Error updating screen duration:', error);
+    });
 }
 
 /**
@@ -99,27 +85,13 @@ function initClockFormatHandler() {
  * Update clock format via AJAX
  */
 function updateClockFormat(format) {
-  const formData = new FormData();
-  formData.append('format', format);
-
-  fetch('/admin/display/clock_format', {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    credentials: 'include',
-    body: new URLSearchParams({ clock_format: format, ajax: '1' })
-  })
-  .then(parseJsonResponse)
-  .then(data => {
-    if (data.success) {
-      showSuccessMessage('Uhrzeitformat erfolgreich aktualisiert');
-    } else {
-      showErrorMessage('Fehler beim Aktualisieren: ' + (data.error || 'Unbekannter Fehler'));
-    }
-  })
-  .catch(error => {
-    console.error('[admin_display.js] Error updating clock format:', error);
-    showErrorMessage('Fehler beim Aktualisieren: ' + error.message);
-  });
+  setConfigValue('display', 'clock_fmt', format, 'string')
+    .then(() => {
+      console.log('[admin_display.js] Clock format updated');
+    })
+    .catch(error => {
+      console.error('[admin_display.js] Error updating clock format:', error);
+    });
 }
 
 /**
@@ -148,28 +120,27 @@ function initDisplayToggleHandlers() {
  * Update display toggle setting via AJAX
  */
 function updateDisplayToggle(setting, enabled) {
-  const formData = new FormData();
-  formData.append('setting', setting);
-  formData.append('enabled', enabled.toString());
-
-  fetch('/admin/display/toggle', {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    credentials: 'include',
-    body: new URLSearchParams({ display: setting, enabled: enabled, ajax: '1' })
-  })
-  .then(parseJsonResponse)
-  .then(data => {
-    if (data.success) {
-      showSuccessMessage('Einstellung erfolgreich aktualisiert');
-    } else {
-      showErrorMessage('Fehler beim Aktualisieren: ' + (data.error || 'Unbekannter Fehler'));
-    }
-  })
-  .catch(error => {
-    console.error('[admin_display.js] Error updating display toggle:', error);
-    showErrorMessage('Fehler beim Aktualisieren: ' + error.message);
-  });
+  // Map setting names to config keys
+  const keyMap = {
+    'show_ip': 'show_ip',
+    'show_clock': 'show_clock',
+    'show_flower': 'show_flower',
+    'show_fabmobil': 'show_fabmobil'
+  };
+  
+  const key = keyMap[setting];
+  if (!key) {
+    console.error('[admin_display.js] Unknown setting:', setting);
+    return;
+  }
+  
+  setConfigValue('display', key, enabled, 'bool')
+    .then(() => {
+      console.log('[admin_display.js] Display toggle updated:', setting, enabled);
+    })
+    .catch(error => {
+      console.error('[admin_display.js] Error updating display toggle:', error);
+    });
 }
 
 /**

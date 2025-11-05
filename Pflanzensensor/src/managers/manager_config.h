@@ -110,12 +110,22 @@ public:
   ConfigResult setCollectdSendSingleMeasurement(bool enable);
 
   /**
-   * @brief Set a configuration value by key
+   * @brief Set a configuration value by key (legacy method)
    * @param key The configuration key to set
    * @param value The value to set
    * @return Result of the set operation
    */
   ConfigResult setConfigValue(const char* key, const char* value);
+
+  /**
+   * @brief Set a configuration value with namespace and type
+   * @param namespaceName The namespace (e.g., "general", "wifi", "display", "debug", "s_ANALOG_1")
+   * @param key The configuration key to set
+   * @param value The value to set as string
+   * @param type The type of the value (BOOL, INT, UINT, FLOAT, STRING)
+   * @return Result of the set operation
+   */
+  ConfigResult setConfigValue(const String& namespaceName, const String& key, const String& value, ConfigValueType type);
 
   // Main configuration getters
   /**

@@ -1,6 +1,56 @@
 /**
  * @fileoverview Admin panel functionality
  */
+
+/**
+ * Unified function to set a configuration value
+ * @param {string} namespace - The namespace (e.g., "general", "wifi", "display", "debug", "s_ANALOG_1")
+ * @param {string} key - The configuration key
+ * @param {string|boolean|number} value - The value to set
+ * @param {string} type - The type of value ("bool", "int", "uint", "float", "string")
+ * @returns {Promise} Promise that resolves when the config is saved
+ */
+function setConfigValue(namespace, key, value, type) {
+  // Convert value to string
+  const valueStr = String(value);
+  
+  const params = new URLSearchParams({
+    namespace: namespace,
+    key: key,
+    value: valueStr,
+    type: type || 'string',
+    ajax: '1'
+  });
+  
+  return fetch('/admin/config/setConfigValue', {
+    method: 'POST',
+    body: params,
+    credentials: 'include',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Requested-With': 'XMLHttpRequest'
+    }
+  })
+  .then(parseJsonResponse)
+  .then(data => {
+    if (data && data.success) {
+      showSuccessMessage(data.message || 'Einstellung gespeichert');
+      return data;
+    } else {
+      const errorMsg = (data && (data.error || data.message)) || 'Unbekannter Fehler';
+      showErrorMessage('Fehler beim Speichern: ' + errorMsg);
+      throw new Error(errorMsg);
+    }
+  })
+  .catch(err => {
+    console.error('[admin.js] setConfigValue error:', err);
+    if (!err.message.includes('Fehler beim Speichern')) {
+      showErrorMessage('Fehler beim Speichern: ' + err.message);
+    }
+    throw err;
+  });
+}
+
 function confirmReboot() {
   if(confirm('Gerät wirklich neu starten?')) {
     window.location.href = '/admin/reboot';
@@ -209,10 +259,52 @@ function parseJsonResponse(response) {
 }
 
 /**
+ * Map form field names to config namespace, key, and type
+ * @param {string} fieldName - The HTML form field name
+ * @param {string} section - The section from the form (e.g., "debug", "system", "led_traffic_light")
+ * @returns {object} Object with namespace, key, and type properties
+ */
+function mapFieldToConfig(fieldName, section) {
+  // Debug section maps to "debug" namespace
+  if (section === 'debug') {
+    const mapping = {
+      'debug_ram': { namespace: 'debug', key: 'ram', type: 'bool' },
+      'debug_measurement_cycle': { namespace: 'debug', key: 'meas_cycle', type: 'bool' },
+      'debug_sensor': { namespace: 'debug', key: 'sensor', type: 'bool' },
+      'debug_display': { namespace: 'debug', key: 'display', type: 'bool' },
+      'debug_websocket': { namespace: 'debug', key: 'websocket', type: 'bool' },
+      'log_level': { namespace: 'log', key: 'level', type: 'string' },
+      'file_logging_enabled': { namespace: 'log', key: 'file_enabled', type: 'bool' }
+    };
+    return mapping[fieldName] || null;
+  }
+  
+  // System section maps to "general" namespace
+  if (section === 'system') {
+    const mapping = {
+      'device_name': { namespace: 'general', key: 'device_name', type: 'string' },
+      'md5_verification': { namespace: 'general', key: 'md5_verify', type: 'bool' },
+      'collectd_enabled': { namespace: 'general', key: 'collectd_enabled', type: 'bool' },
+      'admin_password': { namespace: 'general', key: 'admin_pwd', type: 'string' }
+    };
+    return mapping[fieldName] || null;
+  }
+  
+  // LED traffic light section maps to "led_traf" namespace
+  if (section === 'led_traffic_light') {
+    const mapping = {
+      'led_traffic_light_mode': { namespace: 'led_traf', key: 'mode', type: 'uint' },
+      'led_traffic_light_measurement': { namespace: 'led_traf', key: 'sel_meas', type: 'string' }
+    };
+    return mapping[fieldName] || null;
+  }
+  
+  return null;
+}
+
+/**
  * Auto-save config forms on change (debounced).
- * Submits the whole form as application/x-www-form-urlencoded so the server
- * receives the same parameters as a normal form POST (unchecked checkboxes are
- * omitted).
+ * Uses the unified setConfigValue method for all updates.
  */
 function initConfigAutoSave() {
   document.querySelectorAll('form.config-form').forEach(form => {
@@ -229,65 +321,38 @@ function initConfigAutoSave() {
 
     let timer = null;
     const debounceMs = 1000; // 1s debounce
-    // Keep track of the last changed field so we can do atomic updates when possible
-    let lastChanged = null; // { name, value }
-
-    // We perform small urlencoded partial updates for any changed field
-    // (section + single field) so the server can handle them uniformly.
+    // Keep track of the last changed field so we can do atomic updates
+    let lastChanged = null; // { name, value, type }
 
     function submitForm() {
-      // If lastChanged is set, submit a small urlencoded partial update for
-      // the changed field. This unifies the save path for atomic and
-      // non-atomic settings and keeps payloads tiny.
-      if (lastChanged) {
-        // Determine the appropriate partial update endpoint based on form action
-        if (actionAttr.includes('/admin/updateSettings')) {
-          // submit section + changed field to updateSettings endpoint
-          const sectionInput = form.querySelector('input[name="section"]');
-          if (sectionInput) {
-            const params = new URLSearchParams();
-            params.append('section', sectionInput.value);
-            params.append(lastChanged.name, lastChanged.value);
-            // Mark as AJAX partial update so the server accepts the request even if custom headers are stripped
-            params.append('ajax', '1');
-
-            fetch('/admin/updateSettings', {
-              method: 'POST',
-              body: params,
-              credentials: 'include',
-              headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(parseJsonResponse)
-            .then(data => {
-              if (data.success) {
-                if (data.changes) {
-                  // Strip HTML tags for the toast and show a compact summary
-                  const summary = data.changes.replace(/<[^>]+>/g, '').trim();
-                  showSuccessMessage('Gespeichert: ' + (summary || 'Änderungen übernommen'));
-                } else if (data.message) {
-                  showSuccessMessage(data.message);
-                } else {
-                  showSuccessMessage('Einstellung gespeichert');
-                }
-              } else {
-                showErrorMessage('Fehler beim Speichern: ' + (data.error || data.message || 'Unbekannter Fehler'));
-              }
-            })
-            .catch(err => {
-              console.error('[admin.js] Partial update error:', err);
-              showErrorMessage('Fehler beim Speichern: ' + err.message);
-            });
-
-            lastChanged = null;
-            return;
-          }
-        }
+      if (!lastChanged) return;
+      
+      const sectionInput = form.querySelector('input[name="section"]');
+      if (!sectionInput) {
+        console.warn('[admin.js] No section input found in form');
+        lastChanged = null;
+        return;
       }
-      // Fallback: do nothing — partial updates only
-      // Previously we submitted the whole form here; that behavior is removed
-      // to enforce partial updates via AJAX from the UI.
+      
+      const section = sectionInput.value;
+      const configMapping = mapFieldToConfig(lastChanged.name, section);
+      
+      if (!configMapping) {
+        console.warn('[admin.js] No config mapping for field:', lastChanged.name, 'in section:', section);
+        lastChanged = null;
+        return;
+      }
+      
+      // Use unified setConfigValue method
+      setConfigValue(configMapping.namespace, configMapping.key, lastChanged.value, configMapping.type)
+        .then(() => {
+          // Success message already shown by setConfigValue
+        })
+        .catch(err => {
+          // Error already logged and shown by setConfigValue
+        });
+      
       lastChanged = null;
-      return;
     }
 
     function scheduleSubmit() {
@@ -303,7 +368,11 @@ function initConfigAutoSave() {
       // For text/number inputs use debounce
       const target = evt.target;
       if (target && target.name) {
-        lastChanged = { name: target.name, value: target.value };
+        lastChanged = { 
+          name: target.name, 
+          value: target.value,
+          type: target.type
+        };
       }
       scheduleSubmit();
     });
