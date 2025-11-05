@@ -3,6 +3,50 @@
  */
 
 /**
+ * Map technical config keys to user-friendly German names
+ */
+const CONFIG_KEY_NAMES = {
+  // Display settings
+  'screen_dur': 'Anzeigedauer pro Bildschirm',
+  'clock_fmt': 'Uhrzeitformat',
+  'show_ip': 'IP-Adresse anzeigen',
+  'show_clock': 'Uhrzeit anzeigen',
+  'show_flower': 'Blumen-Bild anzeigen',
+  'show_fabmobil': 'Fabmobil-Logo anzeigen',
+  
+  // General settings
+  'device_name': 'Gerätename',
+  'admin_pwd': 'Administrator-Passwort',
+  'md5_verify': 'MD5-Überprüfung',
+  'collectd_enabled': 'InfluxDB/Collectd',
+  'file_log': 'Datei-Logging',
+  'flower_sens': 'Flower-Status Sensor',
+  
+  // WiFi settings
+  'ssid1': 'WLAN SSID 1',
+  'pwd1': 'WLAN Passwort 1',
+  'ssid2': 'WLAN SSID 2',
+  'pwd2': 'WLAN Passwort 2',
+  'ssid3': 'WLAN SSID 3',
+  'pwd3': 'WLAN Passwort 3',
+  
+  // Debug settings
+  'ram': 'Debug RAM',
+  'meas_cycle': 'Debug Messzyklus',
+  'sensor': 'Debug Sensor',
+  'display': 'Debug Display',
+  'websocket': 'Debug WebSocket',
+  
+  // Log settings
+  'level': 'Log-Level',
+  'file_enabled': 'Datei-Logging',
+  
+  // LED traffic light
+  'mode': 'LED-Ampel Modus',
+  'sel_meas': 'LED-Ampel Messung'
+};
+
+/**
  * Unified function to set a configuration value
  * @param {string} namespace - The namespace (e.g., "general", "wifi", "display", "debug", "s_ANALOG_1")
  * @param {string} key - The configuration key
@@ -19,6 +63,21 @@ function setConfigValue(namespace, key, value, type) {
   if (key.includes('pwd') || key.includes('password')) {
     displayValue = '***';
   }
+  
+  // Format boolean values in German
+  else if (type === 'bool') {
+    displayValue = (value === true || value === 'true' || value === '1') ? 'aktiviert' : 'deaktiviert';
+  }
+  
+  // Format special values with units
+  else if (key === 'screen_dur') {
+    displayValue = valueStr + ' Sekunden';
+  } else if (key === 'clock_fmt') {
+    displayValue = valueStr === '24h' ? '24-Stunden' : '12-Stunden';
+  }
+  
+  // Get user-friendly name for the key
+  const friendlyName = CONFIG_KEY_NAMES[key] || key;
   
   const params = new URLSearchParams({
     namespace: namespace,
@@ -40,8 +99,8 @@ function setConfigValue(namespace, key, value, type) {
   .then(parseJsonResponse)
   .then(data => {
     if (data && data.success) {
-      // Show detailed message with key and value
-      const message = data.message || `Einstellung ${key} geändert zu ${displayValue}`;
+      // Show detailed message with friendly name and value
+      const message = data.message || `${friendlyName} geändert zu ${displayValue}`;
       showSuccessMessage(message);
       return data;
     } else {
