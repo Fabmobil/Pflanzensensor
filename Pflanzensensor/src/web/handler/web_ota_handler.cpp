@@ -12,6 +12,7 @@
 #include "configs/config.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
+#include "managers/manager_config_preferences.h"
 #if USE_DISPLAY
 #include "managers/manager_display.h"
 #endif
@@ -311,6 +312,14 @@ void WebOTAHandler::handleUpdateUpload() {
     logger.debug(F("WebOTAHandler"), F("Update-Befehl: ") + String(command) + F(", Inhaltlänge: ") +
                                          String(contentLength) + F(", verfügbarer Speicher: ") +
                                          String(freeSpace));
+    
+    // Backup Preferences before filesystem update (they're stored in LittleFS)
+    if (isFilesystem) {
+      if (!backupAllPreferences()) {
+        logger.warn(F("WebOTAHandler"), F("Preferences-Sicherung fehlgeschlagen - Fortfahren trotzdem"));
+      }
+    }
+    
     if (!Update.begin(contentLength, command)) {
       String error = F("Start des Updates fehlgeschlagen: ") + String(Update.getError());
       logger.error(F("WebOTAHandler"), error);
@@ -395,6 +404,13 @@ void WebOTAHandler::handleUpdateUpload() {
         displayManager->endUpdateMode();
       }
 #endif
+
+      // Restore Preferences after successful filesystem update
+      if (upload.cmd == U_FS && _prefsBackup.hasBackup) {
+        logger.info(F("WebOTAHandler"), F("Filesystem-Update erfolgreich, stelle Preferences wieder her..."));
+        delay(100); // Brief delay to let filesystem stabilize
+        restoreAllPreferences();
+      }
 
       // Send success response to deploy script IMMEDIATELY after update
       // succeeds Do this BEFORE any JSON operations that might cause crashes
@@ -507,4 +523,146 @@ size_t WebOTAHandler::calculateRequiredSpace(bool isFilesystem) const {
   } else {
     return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
   }
+}
+
+bool WebOTAHandler::backupAllPreferences() {
+  logger.info(F("WebOTAHandler"), F("Sichere Preferences vor Dateisystem-Update..."));
+  
+  Preferences prefs;
+  _prefsBackup.hasBackup = false;
+  
+  // Backup general namespace
+  if (!prefs.begin(PreferencesNamespaces::GENERAL, true)) {
+    logger.error(F("WebOTAHandler"), F("Fehler beim Öffnen von General-Preferences"));
+    return false;
+  }
+  _prefsBackup.device_name = PreferencesManager::getString(prefs, "device_name", "Pflanzensensor");
+  _prefsBackup.admin_pwd = PreferencesManager::getString(prefs, "admin_pwd", "admin");
+  _prefsBackup.md5_verify = PreferencesManager::getBool(prefs, "md5_verify", true);
+  _prefsBackup.collectd_en = PreferencesManager::getBool(prefs, "collectd_en", false);
+  _prefsBackup.file_log = PreferencesManager::getBool(prefs, "file_log", false);
+  _prefsBackup.flower_sens = PreferencesManager::getString(prefs, "flower_sens", "");
+  prefs.end();
+  
+  // Backup WiFi namespace
+  if (!prefs.begin(PreferencesNamespaces::WIFI, true)) {
+    logger.error(F("WebOTAHandler"), F("Fehler beim Öffnen von WiFi-Preferences"));
+    return false;
+  }
+  _prefsBackup.wifi_ssid1 = PreferencesManager::getString(prefs, "ssid1", "");
+  _prefsBackup.wifi_ssid2 = PreferencesManager::getString(prefs, "ssid2", "");
+  _prefsBackup.wifi_ssid3 = PreferencesManager::getString(prefs, "ssid3", "");
+  _prefsBackup.wifi_pwd1 = PreferencesManager::getString(prefs, "pwd1", "");
+  _prefsBackup.wifi_pwd2 = PreferencesManager::getString(prefs, "pwd2", "");
+  _prefsBackup.wifi_pwd3 = PreferencesManager::getString(prefs, "pwd3", "");
+  prefs.end();
+  
+  // Backup display namespace
+  if (!prefs.begin(PreferencesNamespaces::DISP, true)) {
+    logger.error(F("WebOTAHandler"), F("Fehler beim Öffnen von Display-Preferences"));
+    return false;
+  }
+  _prefsBackup.show_ip = PreferencesManager::getBool(prefs, "show_ip", true);
+  _prefsBackup.show_clock = PreferencesManager::getBool(prefs, "show_clock", true);
+  _prefsBackup.show_flower = PreferencesManager::getBool(prefs, "show_flower", true);
+  _prefsBackup.show_fabmobil = PreferencesManager::getBool(prefs, "show_fabmobil", true);
+  _prefsBackup.screen_dur = PreferencesManager::getUInt(prefs, "screen_dur", 5);
+  _prefsBackup.clock_fmt = PreferencesManager::getString(prefs, "clock_fmt", "24h");
+  prefs.end();
+  
+  // Backup debug namespace
+  if (!prefs.begin(PreferencesNamespaces::DEBUG, true)) {
+    logger.error(F("WebOTAHandler"), F("Fehler beim Öffnen von Debug-Preferences"));
+    return false;
+  }
+  _prefsBackup.debug_ram = PreferencesManager::getBool(prefs, "ram", false);
+  _prefsBackup.debug_meas_cycle = PreferencesManager::getBool(prefs, "meas_cycle", false);
+  _prefsBackup.debug_sensor = PreferencesManager::getBool(prefs, "sensor", false);
+  _prefsBackup.debug_display = PreferencesManager::getBool(prefs, "display", false);
+  _prefsBackup.debug_websocket = PreferencesManager::getBool(prefs, "websocket", false);
+  prefs.end();
+  
+  // Backup log namespace
+  if (!prefs.begin(PreferencesNamespaces::LOG, true)) {
+    logger.error(F("WebOTAHandler"), F("Fehler beim Öffnen von Log-Preferences"));
+    return false;
+  }
+  _prefsBackup.log_level = PreferencesManager::getUChar(prefs, "level", 3);
+  _prefsBackup.log_file_en = PreferencesManager::getBool(prefs, "file_enabled", false);
+  prefs.end();
+  
+  // Backup LED traffic namespace
+  if (!prefs.begin(PreferencesNamespaces::LED_TRAFFIC, true)) {
+    logger.error(F("WebOTAHandler"), F("Fehler beim Öffnen von LED-Traffic-Preferences"));
+    return false;
+  }
+  _prefsBackup.led_mode = PreferencesManager::getUChar(prefs, "mode", 0);
+  _prefsBackup.led_sel_meas = PreferencesManager::getString(prefs, "sel_meas", "");
+  prefs.end();
+  
+  _prefsBackup.hasBackup = true;
+  logger.info(F("WebOTAHandler"), F("Preferences erfolgreich gesichert"));
+  return true;
+}
+
+bool WebOTAHandler::restoreAllPreferences() {
+  if (!_prefsBackup.hasBackup) {
+    logger.warn(F("WebOTAHandler"), F("Keine Preferences-Sicherung zum Wiederherstellen vorhanden"));
+    return false;
+  }
+  
+  logger.info(F("WebOTAHandler"), F("Stelle Preferences nach Dateisystem-Update wieder her..."));
+  
+  // Restore general namespace
+  auto r1 = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "device_name", _prefsBackup.device_name);
+  auto r2 = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "admin_pwd", _prefsBackup.admin_pwd);
+  auto r3 = PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "md5_verify", _prefsBackup.md5_verify);
+  auto r4 = PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "collectd_en", _prefsBackup.collectd_en);
+  auto r5 = PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "file_log", _prefsBackup.file_log);
+  auto r6 = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "flower_sens", _prefsBackup.flower_sens);
+  
+  // Restore WiFi credentials
+  auto r7 = PreferencesManager::updateWiFiCredentials(1, _prefsBackup.wifi_ssid1, _prefsBackup.wifi_pwd1);
+  auto r8 = PreferencesManager::updateWiFiCredentials(2, _prefsBackup.wifi_ssid2, _prefsBackup.wifi_pwd2);
+  auto r9 = PreferencesManager::updateWiFiCredentials(3, _prefsBackup.wifi_ssid3, _prefsBackup.wifi_pwd3);
+  
+  // Restore display settings
+  auto r10 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_ip", _prefsBackup.show_ip);
+  auto r11 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_clock", _prefsBackup.show_clock);
+  auto r12 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_flower", _prefsBackup.show_flower);
+  auto r13 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_fabmobil", _prefsBackup.show_fabmobil);
+  auto r14 = PreferencesManager::updateUIntValue(PreferencesNamespaces::DISP, "screen_dur", _prefsBackup.screen_dur);
+  auto r15 = PreferencesManager::updateStringValue(PreferencesNamespaces::DISP, "clock_fmt", _prefsBackup.clock_fmt);
+  
+  // Restore debug settings
+  auto r16 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "ram", _prefsBackup.debug_ram);
+  auto r17 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "meas_cycle", _prefsBackup.debug_meas_cycle);
+  auto r18 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "sensor", _prefsBackup.debug_sensor);
+  auto r19 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "display", _prefsBackup.debug_display);
+  auto r20 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "websocket", _prefsBackup.debug_websocket);
+  
+  // Restore log settings
+  auto r21 = PreferencesManager::updateUInt8Value(PreferencesNamespaces::LOG, "level", _prefsBackup.log_level);
+  auto r22 = PreferencesManager::updateBoolValue(PreferencesNamespaces::LOG, "file_enabled", _prefsBackup.log_file_en);
+  
+  // Restore LED traffic settings
+  auto r23 = PreferencesManager::updateUInt8Value(PreferencesNamespaces::LED_TRAFFIC, "mode", _prefsBackup.led_mode);
+  auto r24 = PreferencesManager::updateStringValue(PreferencesNamespaces::LED_TRAFFIC, "sel_meas", _prefsBackup.led_sel_meas);
+  
+  // Check if any restore failed
+  bool allSuccess = r1.isSuccess() && r2.isSuccess() && r3.isSuccess() && r4.isSuccess() &&
+                    r5.isSuccess() && r6.isSuccess() && r7.isSuccess() && r8.isSuccess() &&
+                    r9.isSuccess() && r10.isSuccess() && r11.isSuccess() && r12.isSuccess() &&
+                    r13.isSuccess() && r14.isSuccess() && r15.isSuccess() && r16.isSuccess() &&
+                    r17.isSuccess() && r18.isSuccess() && r19.isSuccess() && r20.isSuccess() &&
+                    r21.isSuccess() && r22.isSuccess() && r23.isSuccess() && r24.isSuccess();
+  
+  if (allSuccess) {
+    logger.info(F("WebOTAHandler"), F("Preferences erfolgreich wiederhergestellt"));
+  } else {
+    logger.warn(F("WebOTAHandler"), F("Einige Preferences konnten nicht wiederhergestellt werden"));
+  }
+  
+  _prefsBackup.hasBackup = false;
+  return allSuccess;
 }
