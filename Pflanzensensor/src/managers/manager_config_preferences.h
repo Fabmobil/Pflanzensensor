@@ -202,6 +202,12 @@ public:
   static bool putInt(Preferences& prefs, const char* key, int value);
   static bool putFloat(Preferences& prefs, const char* key, float value);
 
+  // DRY Generic update helpers (private - used by atomic update methods)
+  static PrefResult updateBoolValue(const char* namespaceKey, const char* key, bool value);
+  static PrefResult updateStringValue(const char* namespaceKey, const char* key, const String& value);
+  static PrefResult updateUInt8Value(const char* namespaceKey, const char* key, uint8_t value);
+  static PrefResult updateUIntValue(const char* namespaceKey, const char* key, unsigned int value);
+
   // Public initialization functions for individual namespaces
   static PrefResult initGeneralNamespace();
   static PrefResult initWiFiNamespace();

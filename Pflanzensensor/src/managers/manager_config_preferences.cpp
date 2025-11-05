@@ -693,71 +693,33 @@ PreferencesManager::PrefResult PreferencesManager::loadFlowerStatusSensor(String
 }
 
 // ====== Atomic Update Functions (DRY) ======
+// All now use generic helpers for type-safe atomic updates
 
 PreferencesManager::PrefResult PreferencesManager::updateDeviceName(const String& deviceName) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::GENERAL, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des General-Namespace"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open general namespace");
-  }
-  
-  if (!putString(prefs, "device_name", deviceName)) {
-    prefs.end();
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save device name");
-  }
-  
-  prefs.end();
-  return PrefResult::success();
+  return updateStringValue(PreferencesNamespaces::GENERAL, "device_name", deviceName);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateAdminPassword(const String& adminPassword) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::GENERAL, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des General-Namespace"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open general namespace");
-  }
-  
-  if (!putString(prefs, "admin_pwd", adminPassword)) {
-    prefs.end();
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save admin password");
-  }
-  
-  prefs.end();
-  return PrefResult::success();
+  return updateStringValue(PreferencesNamespaces::GENERAL, "admin_pwd", adminPassword);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateMD5Verification(bool enabled) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::GENERAL, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des General-Namespace"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open general namespace");
-  }
-  
-  if (!putBool(prefs, "md5_verify", enabled)) {
-    prefs.end();
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save MD5 verification");
-  }
-  
-  prefs.end();
-  return PrefResult::success();
+  return updateBoolValue(PreferencesNamespaces::GENERAL, "md5_verify", enabled);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateFileLoggingEnabled(bool enabled) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::GENERAL, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des General-Namespace"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open general namespace");
-  }
-  
-  if (!putBool(prefs, "file_log", enabled)) {
-    prefs.end();
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save file logging");
-  }
-  
-  prefs.end();
-  return PrefResult::success();
+  return updateBoolValue(PreferencesNamespaces::GENERAL, "file_log", enabled);
 }
 
+PreferencesManager::PrefResult PreferencesManager::updateCollectdEnabled(bool enabled) {
+  return updateBoolValue(PreferencesNamespaces::GENERAL, "collectd_en", enabled);
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateFlowerStatusSensor(const String& sensorId) {
+  return updateStringValue(PreferencesNamespaces::GENERAL, "flower_sens", sensorId);
+}
+
+// WiFi credentials require special handling (validates index and updates two keys)
 PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t setIndex, const String& ssid, const String& password) {
   if (setIndex < 1 || setIndex > 3) {
     return PrefResult::fail(ConfigError::VALIDATION_ERROR, "Invalid WiFi set index (must be 1-3)");
@@ -782,231 +744,123 @@ PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateLedTrafficMode(uint8_t mode) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::LED_TRAFFIC, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des LED-Namespace"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open LED namespace");
-  }
-  
-  if (!putUChar(prefs, "mode", mode)) {
-    prefs.end();
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save LED mode");
-  }
-  
-  prefs.end();
-  return PrefResult::success();
+  return updateUInt8Value(PreferencesNamespaces::LED_TRAFFIC, "mode", mode);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateLedTrafficMeasurement(const String& measurement) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::LED_TRAFFIC, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des LED-Namespace"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open LED namespace");
-  }
-  
-  if (!putString(prefs, "sel_meas", measurement)) {
-    prefs.end();
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save LED measurement");
-  }
-  
-  prefs.end();
-  return PrefResult::success();
+  return updateStringValue(PreferencesNamespaces::LED_TRAFFIC, "sel_meas", measurement);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateDebugRAM(bool enabled) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DEBUG, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Debug-Namespace"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open debug namespace");
-  }
-  
-  if (!putBool(prefs, "ram", enabled)) {
-    prefs.end();
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save debug RAM");
-  }
-  
-  prefs.end();
-  return PrefResult::success();
+  return updateBoolValue(PreferencesNamespaces::DEBUG, "ram", enabled);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateDebugMeasurementCycle(bool enabled) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DEBUG, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Debug-Namespace"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open debug namespace");
-  }
-  
-  if (!putBool(prefs, "meas_cycle", enabled)) {
-    prefs.end();
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save debug measurement cycle");
-  }
-  
-  prefs.end();
-  return PrefResult::success();
+  return updateBoolValue(PreferencesNamespaces::DEBUG, "meas_cycle", enabled);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateDebugSensor(bool enabled) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DEBUG, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Debug-Namespace"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open debug namespace");
-  }
-  
-  if (!putBool(prefs, "sensor", enabled)) {
-    prefs.end();
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save debug sensor");
-  }
-  
-  prefs.end();
-  return PrefResult::success();
+  return updateBoolValue(PreferencesNamespaces::DEBUG, "sensor", enabled);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateDebugDisplay(bool enabled) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DEBUG, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Debug-Namespace"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open debug namespace");
-  }
-  
-  if (!putBool(prefs, "display", enabled)) {
-    prefs.end();
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save debug display");
-  }
-  
-  prefs.end();
-  return PrefResult::success();
+  return updateBoolValue(PreferencesNamespaces::DEBUG, "display", enabled);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateDebugWebSocket(bool enabled) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DEBUG, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Debug-Namespace"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open debug namespace");
-  }
-  
-  if (!putBool(prefs, "websocket", enabled)) {
-    prefs.end();
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save debug websocket");
-  }
-  
-  prefs.end();
-  return PrefResult::success();
+  return updateBoolValue(PreferencesNamespaces::DEBUG, "websocket", enabled);
 }
 
-// Atomic update methods for display settings
 PreferencesManager::PrefResult PreferencesManager::updateScreenDuration(unsigned int duration) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Display-Preferences"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open display namespace");
-  }
-
-  prefs.putUInt("scr_dur", duration);
-  prefs.end();
-
-  return PrefResult::success();
+  return updateUIntValue(PreferencesNamespaces::DISP, "screen_dur", duration);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateClockFormat(const String& format) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Display-Preferences"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open display namespace");
-  }
-
-  putString(prefs, "clk_fmt", format);
-  prefs.end();
-
-  return PrefResult::success();
+  return updateStringValue(PreferencesNamespaces::DISP, "clock_fmt", format);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateClockEnabled(bool enabled) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Display-Preferences"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open display namespace");
-  }
-
-  prefs.putBool("show_clk", enabled);
-  prefs.end();
-
-  return PrefResult::success();
+  return updateBoolValue(PreferencesNamespaces::DISP, "show_clock", enabled);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateIpScreenEnabled(bool enabled) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Display-Preferences"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open display namespace");
-  }
-
-  prefs.putBool("show_ip", enabled);
-  prefs.end();
-
-  return PrefResult::success();
+  return updateBoolValue(PreferencesNamespaces::DISP, "show_ip", enabled);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateFlowerImageEnabled(bool enabled) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Display-Preferences"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open display namespace");
-  }
-
-  prefs.putBool("show_flwr", enabled);
-  prefs.end();
-
-  return PrefResult::success();
+  return updateBoolValue(PreferencesNamespaces::DISP, "show_flower", enabled);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateFabmobilImageEnabled(bool enabled) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Display-Preferences"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open display namespace");
-  }
-
-  prefs.putBool("show_fab", enabled);
-  prefs.end();
-
-  return PrefResult::success();
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateCollectdEnabled(bool enabled) {
-  Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::GENERAL, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von General-Preferences"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open general namespace");
-  }
-
-  putBool(prefs, "collectd_en", enabled);
-  prefs.end();
-
-  return PrefResult::success();
+  return updateBoolValue(PreferencesNamespaces::DISP, "show_fabmobil", enabled);
 }
 
 PreferencesManager::PrefResult PreferencesManager::updateLogLevel(const String& level) {
+  return updateStringValue(PreferencesNamespaces::LOG, "level", level);
+}
+
+// ========== DRY Generic Update Helpers ==========
+
+PreferencesManager::PrefResult PreferencesManager::updateBoolValue(const char* namespaceKey, const char* key, bool value) {
   Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::LOG, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Log-Preferences"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open log namespace");
+  if (!prefs.begin(namespaceKey, false)) {
+    logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des Namespace: ")) + namespaceKey);
+    return PrefResult::fail(ConfigError::SAVE_FAILED, String("Cannot open namespace: ") + namespaceKey);
   }
-
-  putString(prefs, "level", level);
+  
+  if (!putBool(prefs, key, value)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, String("Failed to save ") + key);
+  }
+  
   prefs.end();
-
   return PrefResult::success();
 }
 
-PreferencesManager::PrefResult PreferencesManager::updateFlowerStatusSensor(const String& sensorId) {
+PreferencesManager::PrefResult PreferencesManager::updateStringValue(const char* namespaceKey, const char* key, const String& value) {
   Preferences prefs;
-  if (!prefs.begin(PreferencesNamespaces::GENERAL, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von General-Preferences"));
-    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open general namespace");
+  if (!prefs.begin(namespaceKey, false)) {
+    logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des Namespace: ")) + namespaceKey);
+    return PrefResult::fail(ConfigError::SAVE_FAILED, String("Cannot open namespace: ") + namespaceKey);
   }
-
-  putString(prefs, "flower_sens", sensorId);
+  
+  if (!putString(prefs, key, value)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, String("Failed to save ") + key);
+  }
+  
   prefs.end();
+  return PrefResult::success();
+}
 
+PreferencesManager::PrefResult PreferencesManager::updateUInt8Value(const char* namespaceKey, const char* key, uint8_t value) {
+  Preferences prefs;
+  if (!prefs.begin(namespaceKey, false)) {
+    logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des Namespace: ")) + namespaceKey);
+    return PrefResult::fail(ConfigError::SAVE_FAILED, String("Cannot open namespace: ") + namespaceKey);
+  }
+  
+  if (!putUChar(prefs, key, value)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, String("Failed to save ") + key);
+  }
+  
+  prefs.end();
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateUIntValue(const char* namespaceKey, const char* key, unsigned int value) {
+  Preferences prefs;
+  if (!prefs.begin(namespaceKey, false)) {
+    logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des Namespace: ")) + namespaceKey);
+    return PrefResult::fail(ConfigError::SAVE_FAILED, String("Cannot open namespace: ") + namespaceKey);
+  }
+  
+  if (!putUInt(prefs, key, value)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, String("Failed to save ") + key);
+  }
+  
+  prefs.end();
   return PrefResult::success();
 }
