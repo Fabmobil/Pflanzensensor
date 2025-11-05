@@ -644,7 +644,7 @@ void WebOTAHandler::backupOneSensor(const char* sensorId) {
     backupNs = backupNs.substring(0, 15);
   }
   
-  Preferences backupPrefs;
+  PreferencesEEPROM backupPrefs;
   if (!backupPrefs.begin(backupNs.c_str(), false)) {
     logger.warning(F("WebOTAHandler"),
                    String(F("Konnte Backup für Sensor ")) + sensorId + F(" nicht erstellen"));
@@ -822,7 +822,7 @@ void WebOTAHandler::restoreOneSensor(const char* sensorId) {
     backupNs = backupNs.substring(0, 15);
   }
   
-  Preferences backupPrefs;
+  PreferencesEEPROM backupPrefs;
   if (!backupPrefs.begin(backupNs.c_str(), true)) {
     // No backup exists for this sensor - skip silently
     return;
@@ -882,7 +882,7 @@ void WebOTAHandler::restoreOneSensor(const char* sensorId) {
   logger.info(F("WebOTAHandler"), String(F("Sensor ")) + sensorId + F(" wiederhergestellt"));
   
   // Clean up backup namespace after successful restore
-  Preferences cleanupPrefs;
+  PreferencesEEPROM cleanupPrefs;
   if (cleanupPrefs.begin(backupNs.c_str(), false)) {
     cleanupPrefs.clear();
     cleanupPrefs.end();

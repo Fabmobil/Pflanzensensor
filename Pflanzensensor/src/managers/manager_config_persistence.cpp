@@ -56,7 +56,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
   logger.info(F("ConfigP"), F("Lade Konfiguration aus Preferences..."));
 
   // Load general settings directly using generic getters
-  Preferences generalPrefs;
+  PreferencesEEPROM generalPrefs;
   if (generalPrefs.begin(PreferencesNamespaces::GENERAL, true)) {
     config.deviceName = PreferencesManager::getString(generalPrefs, "device_name", DEVICE_NAME);
     config.adminPassword = PreferencesManager::getString(generalPrefs, "admin_pwd", ADMIN_PASSWORD);
@@ -66,7 +66,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
   }
 
   // Load WiFi settings directly
-  Preferences wifiPrefs;
+  PreferencesEEPROM wifiPrefs;
   if (wifiPrefs.begin(PreferencesNamespaces::WIFI, true)) {
     config.wifiSSID1 = PreferencesManager::getString(wifiPrefs, "ssid1", "");
     config.wifiPassword1 = PreferencesManager::getString(wifiPrefs, "pwd1", "");
@@ -78,7 +78,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
   }
 
   // Load debug settings directly
-  Preferences debugPrefs;
+  PreferencesEEPROM debugPrefs;
   if (debugPrefs.begin(PreferencesNamespaces::DEBUG, true)) {
     config.debugRAM = PreferencesManager::getBool(debugPrefs, "ram", false);
     config.debugMeasurementCycle = PreferencesManager::getBool(debugPrefs, "meas_cycle", false);
@@ -89,7 +89,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
   }
 
   // Load LED traffic light settings directly
-  Preferences ledPrefs;
+  PreferencesEEPROM ledPrefs;
   if (ledPrefs.begin(PreferencesNamespaces::LED_TRAFFIC, true)) {
     config.ledTrafficLightMode = PreferencesManager::getUChar(ledPrefs, "mode", 0);
     config.ledTrafficLightSelectedMeasurement = PreferencesManager::getString(ledPrefs, "sel_meas", "");
@@ -97,7 +97,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
   }
 
   // Load flower status sensor directly
-  Preferences flowerPrefs;
+  PreferencesEEPROM flowerPrefs;
   if (flowerPrefs.begin(PreferencesNamespaces::GENERAL, true)) {
     config.flowerStatusSensor = PreferencesManager::getString(flowerPrefs, "flower_sens", "ANALOG_1");
     flowerPrefs.end();
