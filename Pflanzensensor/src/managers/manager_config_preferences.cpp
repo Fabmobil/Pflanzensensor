@@ -707,7 +707,6 @@ PreferencesManager::PrefResult PreferencesManager::updateDeviceName(const String
   }
   
   prefs.end();
-  logger.info(F("PrefMgr"), F("Gerätename aktualisiert"));
   return PrefResult::success();
 }
 
@@ -724,7 +723,6 @@ PreferencesManager::PrefResult PreferencesManager::updateAdminPassword(const Str
   }
   
   prefs.end();
-  logger.info(F("PrefMgr"), F("Admin-Passwort aktualisiert"));
   return PrefResult::success();
 }
 
@@ -741,7 +739,6 @@ PreferencesManager::PrefResult PreferencesManager::updateMD5Verification(bool en
   }
   
   prefs.end();
-  logger.info(F("PrefMgr"), F("MD5-Verifizierung aktualisiert"));
   return PrefResult::success();
 }
 
@@ -758,7 +755,6 @@ PreferencesManager::PrefResult PreferencesManager::updateFileLoggingEnabled(bool
   }
   
   prefs.end();
-  logger.info(F("PrefMgr"), F("Datei-Logging aktualisiert"));
   return PrefResult::success();
 }
 
@@ -782,7 +778,6 @@ PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t
   }
   
   prefs.end();
-  logger.info(F("PrefMgr"), String(F("WiFi-Zugangsdaten Set ")) + String(setIndex) + F(" aktualisiert"));
   return PrefResult::success();
 }
 
@@ -799,7 +794,6 @@ PreferencesManager::PrefResult PreferencesManager::updateLedTrafficMode(uint8_t 
   }
   
   prefs.end();
-  logger.info(F("PrefMgr"), F("LED-Traffic-Mode aktualisiert"));
   return PrefResult::success();
 }
 
@@ -816,7 +810,6 @@ PreferencesManager::PrefResult PreferencesManager::updateLedTrafficMeasurement(c
   }
   
   prefs.end();
-  logger.info(F("PrefMgr"), F("LED-Traffic-Messung aktualisiert"));
   return PrefResult::success();
 }
 
@@ -833,7 +826,6 @@ PreferencesManager::PrefResult PreferencesManager::updateDebugRAM(bool enabled) 
   }
   
   prefs.end();
-  logger.info(F("PrefMgr"), F("Debug-RAM aktualisiert"));
   return PrefResult::success();
 }
 
@@ -850,7 +842,6 @@ PreferencesManager::PrefResult PreferencesManager::updateDebugMeasurementCycle(b
   }
   
   prefs.end();
-  logger.info(F("PrefMgr"), F("Debug-Messzyklus aktualisiert"));
   return PrefResult::success();
 }
 
@@ -867,7 +858,6 @@ PreferencesManager::PrefResult PreferencesManager::updateDebugSensor(bool enable
   }
   
   prefs.end();
-  logger.info(F("PrefMgr"), F("Debug-Sensor aktualisiert"));
   return PrefResult::success();
 }
 
@@ -884,7 +874,6 @@ PreferencesManager::PrefResult PreferencesManager::updateDebugDisplay(bool enabl
   }
   
   prefs.end();
-  logger.info(F("PrefMgr"), F("Debug-Display aktualisiert"));
   return PrefResult::success();
 }
 
@@ -901,7 +890,6 @@ PreferencesManager::PrefResult PreferencesManager::updateDebugWebSocket(bool ena
   }
   
   prefs.end();
-  logger.info(F("PrefMgr"), F("Debug-WebSocket aktualisiert"));
   return PrefResult::success();
 }
 
@@ -916,7 +904,6 @@ PreferencesManager::PrefResult PreferencesManager::updateScreenDuration(unsigned
   prefs.putUInt("scr_dur", duration);
   prefs.end();
 
-  logger.info(F("PrefMgr"), F("Screen-Duration aktualisiert"));
   return PrefResult::success();
 }
 
@@ -930,7 +917,6 @@ PreferencesManager::PrefResult PreferencesManager::updateClockFormat(const Strin
   putString(prefs, "clk_fmt", format);
   prefs.end();
 
-  logger.info(F("PrefMgr"), F("Clock-Format aktualisiert"));
   return PrefResult::success();
 }
 
@@ -944,7 +930,6 @@ PreferencesManager::PrefResult PreferencesManager::updateClockEnabled(bool enabl
   prefs.putBool("show_clk", enabled);
   prefs.end();
 
-  logger.info(F("PrefMgr"), F("Clock-Enabled aktualisiert"));
   return PrefResult::success();
 }
 
@@ -958,7 +943,6 @@ PreferencesManager::PrefResult PreferencesManager::updateIpScreenEnabled(bool en
   prefs.putBool("show_ip", enabled);
   prefs.end();
 
-  logger.info(F("PrefMgr"), F("IP-Screen-Enabled aktualisiert"));
   return PrefResult::success();
 }
 
@@ -972,7 +956,6 @@ PreferencesManager::PrefResult PreferencesManager::updateFlowerImageEnabled(bool
   prefs.putBool("show_flwr", enabled);
   prefs.end();
 
-  logger.info(F("PrefMgr"), F("Flower-Image-Enabled aktualisiert"));
   return PrefResult::success();
 }
 
@@ -986,6 +969,5 @@ PreferencesManager::PrefResult PreferencesManager::updateFabmobilImageEnabled(bo
   prefs.putBool("show_fab", enabled);
   prefs.end();
 
-  logger.info(F("PrefMgr"), F("Fabmobil-Image-Enabled aktualisiert"));
   return PrefResult::success();
 }

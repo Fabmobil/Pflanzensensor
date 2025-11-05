@@ -146,10 +146,9 @@ void WebManager::handleSetConfigValue() {
       return;
     }
     
-    // Send success response
+    // Send success response (no message - let frontend format it)
     StaticJsonDocument<200> response;
     response["success"] = true;
-    response["message"] = "Einstellung gespeichert";
     String jsonResponse;
     serializeJson(response, jsonResponse);
     _server->send(200, F("application/json"), jsonResponse);
