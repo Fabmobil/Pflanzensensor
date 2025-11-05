@@ -270,6 +270,32 @@ private:
    */
   bool restoreAllPreferences();
 
+  /**
+   * @brief Back up sensor settings to backup namespaces
+   * @details Backs up all known sensor configurations before filesystem update
+   */
+  void backupSensorSettings();
+
+  /**
+   * @brief Back up one sensor's settings to backup namespace
+   * @param sensorId The sensor ID to backup
+   * @details Copies sensor settings to s_bak_<sensorId> namespace
+   */
+  void backupOneSensor(const char* sensorId);
+
+  /**
+   * @brief Restore sensor settings from backup namespaces
+   * @details Restores all known sensor configurations after filesystem update
+   */
+  void restoreSensorSettings();
+
+  /**
+   * @brief Restore one sensor's settings from backup namespace
+   * @param sensorId The sensor ID to restore
+   * @details Copies sensor settings from s_bak_<sensorId> back to s_<sensorId>
+   */
+  void restoreOneSensor(const char* sensorId);
+
   WebAuth& _auth;    ///< Reference to authentication manager
   OTAStatus _status; ///< Current update status
   

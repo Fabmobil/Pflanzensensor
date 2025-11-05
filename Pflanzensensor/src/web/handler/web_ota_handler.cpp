@@ -300,14 +300,6 @@ void WebOTAHandler::handleUpdateUpload() {
                                          String(contentLength) + F(", verfügbarer Speicher: ") +
                                          String(freeSpace));
 
-    // Backup Preferences before filesystem update (they're stored in LittleFS)
-    if (isFilesystem) {
-      if (!backupAllPreferences()) {
-        logger.warning(F("WebOTAHandler"),
-                       F("Preferences-Sicherung fehlgeschlagen - Fortfahren trotzdem"));
-      }
-    }
-
     if (!Update.begin(contentLength, command)) {
       String error = F("Start des Updates fehlgeschlagen: ") + String(Update.getError());
       logger.error(F("WebOTAHandler"), error);
@@ -644,8 +636,9 @@ void WebOTAHandler::backupOneSensor(const char* sensorId) {
   backupPrefs.putUInt("meas_int", prefs.getUInt("meas_int", 30000));
   backupPrefs.putBool("has_err", prefs.getBool("has_err", false));
   
-  // Copy measurements (assume max 2 measurements per sensor)
-  for (uint8_t i = 0; i < 2; i++) {
+  // Copy measurements (support up to 8 measurements for ANALOG sensors, 2 for DHT)
+  uint8_t maxMeasurements = (String(sensorId) == "ANALOG") ? 8 : 2;
+  for (uint8_t i = 0; i < maxMeasurements; i++) {
     String prefix = "m" + String(i) + "_";
     
     // Check if measurement exists
@@ -772,20 +765,81 @@ void WebOTAHandler::restoreSensorSettings() {
   const char* sensorIds[] = {"ANALOG", "DHT"};
   
   for (const char* sensorId : sensorIds) {
-    String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+    restoreOneSensor(sensorId);
+  }
+}
+
+void WebOTAHandler::restoreOneSensor(const char* sensorId) {
+  // Read from backup namespace (s_bak_SENSOR) and write to main namespace (s_SENSOR)
+  String backupNs = "s_bak_" + String(sensorId);
+  if (backupNs.length() > 15) {
+    backupNs = backupNs.substring(0, 15);
+  }
+  
+  Preferences backupPrefs;
+  if (!backupPrefs.begin(backupNs.c_str(), true)) {
+    // No backup exists for this sensor - skip silently
+    return;
+  }
+  
+  // Check if backup is initialized
+  if (!backupPrefs.getBool("initialized", false)) {
+    backupPrefs.end();
+    return;
+  }
+  
+  // Open main sensor namespace for writing
+  String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  Preferences prefs;
+  if (!prefs.begin(ns.c_str(), false)) {
+    logger.warning(F("WebOTAHandler"),
+                   String(F("Konnte Sensor-Namespace nicht öffnen für ")) + sensorId);
+    backupPrefs.end();
+    return;
+  }
+  
+  // Restore sensor base settings
+  prefs.putBool("initialized", true);
+  prefs.putString("name", backupPrefs.getString("name", "").c_str());
+  prefs.putUInt("meas_int", backupPrefs.getUInt("meas_int", 30000));
+  prefs.putBool("has_err", backupPrefs.getBool("has_err", false));
+  
+  // Restore measurements (support up to 8 measurements for ANALOG sensors, 2 for DHT)
+  uint8_t maxMeasurements = (String(sensorId) == "ANALOG") ? 8 : 2;
+  for (uint8_t i = 0; i < maxMeasurements; i++) {
+    String prefix = "m" + String(i) + "_";
     
-    // Backup sensor namespace from old filesystem (before it was overwritten)
-    // Since we're called AFTER filesystem restore, we need to read from the BACKUP
-    // which was created BEFORE the filesystem update
-    
-    // Actually, we can't backup sensor settings this way because:
-    // 1. Sensors aren't initialized in minimal mode
-    // 2. We don't know the structure of each sensor's settings
-    // 3. Settings vary by sensor type
-    
-    // Better approach: Let sensors re-initialize with defaults
-    // User data is minimal and can be re-entered if needed
-    logger.info(F("WebOTAHandler"), 
-                String(F("Sensor ")) + sensorId + F(" settings will use defaults"));
+    // Check if measurement exists in backup
+    String nameKey = prefix + "nm";
+    if (backupPrefs.isKey(nameKey.c_str())) {
+      prefs.putBool((prefix + "en").c_str(), backupPrefs.getBool((prefix + "en").c_str(), true));
+      prefs.putString((prefix + "nm").c_str(), backupPrefs.getString((prefix + "nm").c_str(), "").c_str());
+      prefs.putString((prefix + "fn").c_str(), backupPrefs.getString((prefix + "fn").c_str(), "").c_str());
+      prefs.putString((prefix + "un").c_str(), backupPrefs.getString((prefix + "un").c_str(), "").c_str());
+      prefs.putFloat((prefix + "min").c_str(), backupPrefs.getFloat((prefix + "min").c_str(), 0.0));
+      prefs.putFloat((prefix + "max").c_str(), backupPrefs.getFloat((prefix + "max").c_str(), 100.0));
+      prefs.putFloat((prefix + "yl").c_str(), backupPrefs.getFloat((prefix + "yl").c_str(), 0.0));
+      prefs.putFloat((prefix + "gl").c_str(), backupPrefs.getFloat((prefix + "gl").c_str(), 0.0));
+      prefs.putFloat((prefix + "gh").c_str(), backupPrefs.getFloat((prefix + "gh").c_str(), 100.0));
+      prefs.putFloat((prefix + "yh").c_str(), backupPrefs.getFloat((prefix + "yh").c_str(), 100.0));
+      prefs.putBool((prefix + "inv").c_str(), backupPrefs.getBool((prefix + "inv").c_str(), false));
+      prefs.putBool((prefix + "cal").c_str(), backupPrefs.getBool((prefix + "cal").c_str(), false));
+      prefs.putUInt((prefix + "acd").c_str(), backupPrefs.getUInt((prefix + "acd").c_str(), 0));
+      prefs.putInt((prefix + "rmin").c_str(), backupPrefs.getInt((prefix + "rmin").c_str(), 0));
+      prefs.putInt((prefix + "rmax").c_str(), backupPrefs.getInt((prefix + "rmax").c_str(), 1023));
+    }
+  }
+  
+  prefs.end();
+  backupPrefs.end();
+  
+  logger.info(F("WebOTAHandler"), String(F("Sensor ")) + sensorId + F(" wiederhergestellt"));
+  
+  // Clean up backup namespace after successful restore
+  Preferences cleanupPrefs;
+  if (cleanupPrefs.begin(backupNs.c_str(), false)) {
+    cleanupPrefs.clear();
+    cleanupPrefs.end();
+    logger.info(F("WebOTAHandler"), String(F("Backup-Namespace gelöscht: ")) + backupNs);
   }
 }
