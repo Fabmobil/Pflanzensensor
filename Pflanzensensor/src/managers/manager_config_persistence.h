@@ -63,6 +63,20 @@ public:
    */
   static void readUpdateFlagsFromFile(bool& fs, bool& fw);
 
+  /**
+   * @brief Backup all Preferences to a JSON file before filesystem update
+   * @return True if backup successful, false otherwise
+   * @details Creates /prefs_backup.json with all settings (WiFi, sensors, display, etc.)
+   */
+  static bool backupPreferencesToFile();
+
+  /**
+   * @brief Restore all Preferences from backup JSON file after filesystem update
+   * @return True if restore successful, false otherwise
+   * @details Reads /prefs_backup.json and restores all settings to Preferences
+   */
+  static bool restorePreferencesFromFile();
+
 private:
   ConfigPersistence() = default;
 

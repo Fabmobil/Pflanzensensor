@@ -6,6 +6,7 @@
 #include "manager_config.h"
 
 #include "../logger/logger.h"
+#include "../managers/manager_config_persistence.h"
 #include "../managers/manager_resource.h"
 #include "../managers/manager_sensor.h"
 #include "../managers/manager_sensor_persistence.h"
@@ -162,6 +163,16 @@ ConfigManager::ConfigResult ConfigManager::setUpdateFlags(bool fileSystem, bool 
 
   logger.info(F("ConfigM"), F("Setze Update-Flags - Dateisystem: ") + String(fileSystem) +
                                 F(", Firmware: ") + String(firmware));
+
+  // If setting filesystem update flag, backup Preferences to file BEFORE reboot
+  if (fileSystem) {
+    logger.info(F("ConfigM"), F("Sichere Preferences vor Dateisystem-Update..."));
+    if (!ConfigPersistence::backupPreferencesToFile()) {
+      logger.warning(F("ConfigM"), F("Preferences-Sicherung fehlgeschlagen - Fortsetzen trotzdem"));
+    } else {
+      logger.info(F("ConfigM"), F("Preferences erfolgreich in Datei gesichert"));
+    }
+  }
 
   ConfigPersistence::writeUpdateFlagsToFile(fileSystem, firmware);
 

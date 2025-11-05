@@ -12,6 +12,7 @@
 #include "configs/config.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
+#include "managers/manager_config_persistence.h"
 #include "managers/manager_config_preferences.h"
 #if USE_DISPLAY
 #include "managers/manager_display.h"
@@ -247,10 +248,21 @@ void WebOTAHandler::handleUpdateUpload() {
                                         F(")"));
     logger.debug(F("WebOTAHandler"), F("Inhaltlänge: ") + String(contentLength) + F(" Bytes"));
     
-    // Backup Preferences to RAM before filesystem update
+    // Backup Preferences before filesystem update
     if (isFilesystem) {
+      // During minimal mode, check if backup file exists from before first reboot
+      if (LittleFS.exists("/prefs_backup.json")) {
+        logger.info(F("WebOTAHandler"), F("Backup-Datei gefunden, lade in RAM..."));
+        // Load backup file into RAM - this also restores to Preferences temporarily
+        // But we need to backup to RAM struct since Preferences will be wiped
+        if (ConfigPersistence::restorePreferencesFromFile()) {
+          logger.info(F("WebOTAHandler"), F("Preferences aus Datei geladen, kopiere in RAM..."));
+        }
+      }
+      // Always backup current Preferences state to RAM (either freshly restored from file or existing)
       backupAllPreferences();
       backupSensorSettings();
+      logger.info(F("WebOTAHandler"), F("Preferences in RAM gesichert"));
     }
 
     size_t freeSpace;
