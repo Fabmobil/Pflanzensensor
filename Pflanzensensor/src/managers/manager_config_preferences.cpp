@@ -23,28 +23,28 @@ String getSensorMeasurementKey(uint8_t measurementIndex, const char* suffix) {
 } // namespace PreferencesNamespaces
 
 // Helper functions for type-safe access
-String PreferencesManager::getString(Preferences& prefs, const char* key,
+String PreferencesManager::getString(PreferencesEEPROM& prefs, const char* key,
                                      const String& defaultValue) {
   return prefs.getString(key, defaultValue);
 }
 
-bool PreferencesManager::getBool(Preferences& prefs, const char* key, bool defaultValue) {
+bool PreferencesManager::getBool(PreferencesEEPROM& prefs, const char* key, bool defaultValue) {
   return prefs.getBool(key, defaultValue);
 }
 
-uint8_t PreferencesManager::getUChar(Preferences& prefs, const char* key, uint8_t defaultValue) {
+uint8_t PreferencesManager::getUChar(PreferencesEEPROM& prefs, const char* key, uint8_t defaultValue) {
   return prefs.getUChar(key, defaultValue);
 }
 
-uint32_t PreferencesManager::getUInt(Preferences& prefs, const char* key, uint32_t defaultValue) {
+uint32_t PreferencesManager::getUInt(PreferencesEEPROM& prefs, const char* key, uint32_t defaultValue) {
   return prefs.getUInt(key, defaultValue);
 }
 
-int PreferencesManager::getInt(Preferences& prefs, const char* key, int defaultValue) {
+int PreferencesManager::getInt(PreferencesEEPROM& prefs, const char* key, int defaultValue) {
   return prefs.getInt(key, defaultValue);
 }
 
-float PreferencesManager::getFloat(Preferences& prefs, const char* key, float defaultValue) {
+float PreferencesManager::getFloat(PreferencesEEPROM& prefs, const char* key, float defaultValue) {
   return prefs.getFloat(key, defaultValue);
 }
 
@@ -82,27 +82,27 @@ uint32_t PreferencesManager::getUInt(const char* namespaceKey, const char* key,
   return val;
 }
 
-bool PreferencesManager::putString(Preferences& prefs, const char* key, const String& value) {
+bool PreferencesManager::putString(PreferencesEEPROM& prefs, const char* key, const String& value) {
   return prefs.putString(key, value) > 0;
 }
 
-bool PreferencesManager::putBool(Preferences& prefs, const char* key, bool value) {
+bool PreferencesManager::putBool(PreferencesEEPROM& prefs, const char* key, bool value) {
   return prefs.putBool(key, value) > 0;
 }
 
-bool PreferencesManager::putUChar(Preferences& prefs, const char* key, uint8_t value) {
+bool PreferencesManager::putUChar(PreferencesEEPROM& prefs, const char* key, uint8_t value) {
   return prefs.putUChar(key, value) > 0;
 }
 
-bool PreferencesManager::putUInt(Preferences& prefs, const char* key, uint32_t value) {
+bool PreferencesManager::putUInt(PreferencesEEPROM& prefs, const char* key, uint32_t value) {
   return prefs.putUInt(key, value) > 0;
 }
 
-bool PreferencesManager::putInt(Preferences& prefs, const char* key, int value) {
+bool PreferencesManager::putInt(PreferencesEEPROM& prefs, const char* key, int value) {
   return prefs.putInt(key, value) > 0;
 }
 
-bool PreferencesManager::putFloat(Preferences& prefs, const char* key, float value) {
+bool PreferencesManager::putFloat(PreferencesEEPROM& prefs, const char* key, float value) {
   return prefs.putFloat(key, value) > 0;
 }
 
