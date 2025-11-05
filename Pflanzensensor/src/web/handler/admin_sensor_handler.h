@@ -55,7 +55,7 @@ public:
   void handleSensorConfig();
   void handleSensorUpdate();
   void handleTriggerMeasurement();
-  void handleFlowerStatusUpdate(const std::map<String, String>& params);
+  // Note: handleFlowerStatusUpdate removed - use unified /admin/config/setConfigValue
 
   // AJAX handlers
   void handleSingleSensorUpdate();
