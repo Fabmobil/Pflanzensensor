@@ -156,15 +156,7 @@ void AdminHandler::handleWiFiUpdate() {
     }
   }
 
-  // Save changes if any were made
-  if (changed) {
-    auto result = ConfigMgr.saveConfig();
-    if (!result.isSuccess()) {
-      String payload = String("{\"success\":false,\"error\":\"") + result.getMessage() + "\"}";
-      sendJsonResponse(500, payload);
-      return;
-    }
-  }
+  // No need to call saveConfig() - WiFi setters already save atomically to Preferences
 
   // Always respond with JSON
   if (changed) {
