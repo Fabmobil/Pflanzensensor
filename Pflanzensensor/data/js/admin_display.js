@@ -187,6 +187,10 @@ function updateMeasurementDisplay(sensorId, enabled, measurementIndex) {
     bodyParams.measurement_index = measurementIndex;
   }
 
+  // Prepare user-friendly message
+  const state = enabled ? 'aktiviert' : 'deaktiviert';
+  const successMsg = `Displayanzeige von ${sensorId} ${state}`;
+
   fetch('/admin/display/measurement_toggle', {
     method: 'POST',
     headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -196,7 +200,7 @@ function updateMeasurementDisplay(sensorId, enabled, measurementIndex) {
   .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
-      showSuccessMessage('Messungsanzeige erfolgreich aktualisiert');
+      showSuccessMessage(successMsg);
     } else {
       showErrorMessage('Fehler beim Aktualisieren: ' + (data.error || 'Unbekannter Fehler'));
     }

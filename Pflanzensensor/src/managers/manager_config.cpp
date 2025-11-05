@@ -146,8 +146,18 @@ ConfigManager::ConfigResult ConfigManager::setMD5Verification(bool enabled) {
 
 ConfigManager::ConfigResult ConfigManager::setCollectdEnabled(bool enabled) {
   ScopedLock lock;
-  m_configData.collectdEnabled = enabled;
-  notifyConfigChange("collectd_enabled", enabled ? "true" : "false", true);
+  if (m_configData.collectdEnabled != enabled) {
+    m_configData.collectdEnabled = enabled;
+    
+    // Persist to Preferences
+    auto result = PreferencesManager::updateCollectdEnabled(enabled);
+    if (!result.isSuccess()) {
+      logger.error(F("ConfigM"), F("Failed to persist collectd_enabled: ") + result.getMessage());
+      return ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
+    }
+    
+    notifyConfigChange("collectd_enabled", enabled ? "true" : "false", true);
+  }
   return ConfigResult::success();
 }
 
@@ -237,9 +247,16 @@ ConfigManager::ConfigResult ConfigManager::setLogLevel(const String& level) {
   }
 
   logger.setLogLevel(Logger::stringToLogLevel(level));
+  
+  // Persist to Preferences
+  auto result = PreferencesManager::updateLogLevel(level);
+  if (!result.isSuccess()) {
+    logger.error(F("ConfigM"), F("Failed to persist log_level: ") + result.getMessage());
+    return ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
+  }
+  
   notifyConfigChange("log_level", level, true);
 
-  // Persist intentionally left to the caller to batch writes
   return ConfigResult::success();
 }
 
@@ -675,6 +692,14 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
 ConfigManager::ConfigResult ConfigManager::setDeviceName(const String& name) {
   if (m_configData.deviceName != name) {
     m_configData.deviceName = name;
+    
+    // Persist to Preferences
+    auto result = PreferencesManager::updateDeviceName(name);
+    if (!result.isSuccess()) {
+      logger.error(F("ConfigM"), F("Failed to persist device name: ") + result.getMessage());
+      return ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
+    }
+    
     notifyConfigChange("device_name", name, false);
     return ConfigResult::success();
   }
@@ -729,6 +754,14 @@ ConfigManager::setLedTrafficLightSelectedMeasurement(const String& measurementId
 ConfigManager::ConfigResult ConfigManager::setFlowerStatusSensor(const String& sensorId) {
   if (m_configData.flowerStatusSensor != sensorId) {
     m_configData.flowerStatusSensor = sensorId;
+    
+    // Persist to Preferences
+    auto result = PreferencesManager::updateFlowerStatusSensor(sensorId);
+    if (!result.isSuccess()) {
+      logger.error(F("ConfigM"), F("Failed to persist flower_sens: ") + result.getMessage());
+      return ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
+    }
+    
     notifyConfigChange("flower_status_sensor", sensorId, false);
     return ConfigResult::success();
   }

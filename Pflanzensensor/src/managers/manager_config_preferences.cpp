@@ -971,3 +971,42 @@ PreferencesManager::PrefResult PreferencesManager::updateFabmobilImageEnabled(bo
 
   return PrefResult::success();
 }
+
+PreferencesManager::PrefResult PreferencesManager::updateCollectdEnabled(bool enabled) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::GENERAL, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von General-Preferences"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open general namespace");
+  }
+
+  putBool(prefs, "collectd_en", enabled);
+  prefs.end();
+
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateLogLevel(const String& level) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::LOG, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Log-Preferences"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open log namespace");
+  }
+
+  putString(prefs, "level", level);
+  prefs.end();
+
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateFlowerStatusSensor(const String& sensorId) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::GENERAL, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von General-Preferences"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open general namespace");
+  }
+
+  putString(prefs, "flower_sens", sensorId);
+  prefs.end();
+
+  return PrefResult::success();
+}

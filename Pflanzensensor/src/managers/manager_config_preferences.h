@@ -180,6 +180,13 @@ public:
   static PrefResult updateFlowerImageEnabled(bool enabled);
   static PrefResult updateFabmobilImageEnabled(bool enabled);
   
+  // Atomic update methods for general settings
+  static PrefResult updateCollectdEnabled(bool enabled);
+  static PrefResult updateFlowerStatusSensor(const String& sensorId);
+  
+  // Atomic update methods for log settings
+  static PrefResult updateLogLevel(const String& level);
+  
   // Helper functions for type-safe access
   static String getString(Preferences& prefs, const char* key, const String& defaultValue = "");
   static bool getBool(Preferences& prefs, const char* key, bool defaultValue = false);
