@@ -99,13 +99,16 @@ DisplayResult DisplayManager::loadConfig() {
   // Load from Preferences
   logger.debug(F("DisplayM"), F("Lade Display-Konfiguration aus Preferences..."));
   
-  auto result = PreferencesManager::loadDisplaySettings(
-    m_config.showIpScreen, m_config.showClock,
-    m_config.showFlowerImage, m_config.showFabmobilImage,
-    m_config.screenDuration, m_config.clockFormat);
+  // Load each setting using generic getters
+  m_config.showIpScreen = PreferencesManager::getBool(PreferencesNamespaces::DISPLAY, "show_ip", true);
+  m_config.showClock = PreferencesManager::getBool(PreferencesNamespaces::DISPLAY, "show_clock", true);
+  m_config.showFlowerImage = PreferencesManager::getBool(PreferencesNamespaces::DISPLAY, "show_flower", true);
+  m_config.showFabmobilImage = PreferencesManager::getBool(PreferencesNamespaces::DISPLAY, "show_fabmobil", true);
+  m_config.screenDuration = PreferencesManager::getUInt(PreferencesNamespaces::DISPLAY, "screen_dur", 5);
+  m_config.clockFormat = PreferencesManager::getString(PreferencesNamespaces::DISPLAY, "clock_fmt", "24h");
   
-  if (result.isSuccess()) {
-    logger.info(F("DisplayM"), F("Display-Konfiguration aus Preferences geladen"));
+  logger.info(F("DisplayM"), F("Display-Konfiguration aus Preferences geladen"));
+  {
     
     String configMsg =
         String(F("Geladene Konfiguration - IP-Anzeige: ")) + String(m_config.showIpScreen) +
@@ -114,8 +117,6 @@ DisplayResult DisplayManager::loadConfig() {
         String(m_config.showFabmobilImage) + String(F(", Dauer: ")) +
         String(m_config.screenDuration) + String(F(", Format: ")) + m_config.clockFormat;
     logger.debug(F("DisplayM"), configMsg);
-  } else {
-    logger.warning(F("DisplayM"), F("Fehler beim Laden der Display-Konfiguration, verwende Standardwerte"));
   }
 
 #endif
@@ -144,16 +145,18 @@ DisplayResult DisplayManager::saveConfig() {
 
   CriticalSection cs;
 
-  // Save to Preferences
+  // Save to Preferences using atomic update helpers
   logger.debug(F("DisplayM"), F("Speichere Display-Konfiguration in Preferences..."));
   
-  auto result = PreferencesManager::saveDisplaySettings(
-    m_config.showIpScreen, m_config.showClock,
-    m_config.showFlowerImage, m_config.showFabmobilImage,
-    m_config.screenDuration, m_config.clockFormat);
+  auto r1 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISPLAY, "show_ip", m_config.showIpScreen);
+  auto r2 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISPLAY, "show_clock", m_config.showClock);
+  auto r3 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISPLAY, "show_flower", m_config.showFlowerImage);
+  auto r4 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISPLAY, "show_fabmobil", m_config.showFabmobilImage);
+  auto r5 = PreferencesManager::updateUIntValue(PreferencesNamespaces::DISPLAY, "screen_dur", m_config.screenDuration);
+  auto r6 = PreferencesManager::updateStringValue(PreferencesNamespaces::DISPLAY, "clock_fmt", m_config.clockFormat);
   
-  if (!result.isSuccess()) {
-    logger.error(F("DisplayM"), F("Fehler beim Speichern der Display-Konfiguration: ") + result.getMessage());
+  if (!r1.isSuccess() || !r2.isSuccess() || !r3.isSuccess() || !r4.isSuccess() || !r5.isSuccess() || !r6.isSuccess()) {
+    logger.error(F("DisplayM"), F("Fehler beim Speichern der Display-Konfiguration"));
     return DisplayResult::fail(DisplayError::FILE_ERROR,
                                F("Speichern der Display-Konfiguration in Preferences fehlgeschlagen"));
   }

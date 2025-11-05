@@ -583,11 +583,7 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
                             F("Unknown namespace or key: ") + namespaceName + F(".") + key);
 }
 
-ConfigManager::ConfigResult ConfigManager::setDeviceName(const String& name) {
-  return updateStringConfig(m_configData.deviceName, name,
-                           PreferencesManager::updateDeviceName,
-                           "device_name", false);
-}
+
 
 void ConfigManager::addChangeCallback(ConfigNotifier::ChangeCallback callback) {
   m_notifier.addChangeCallback(callback);
