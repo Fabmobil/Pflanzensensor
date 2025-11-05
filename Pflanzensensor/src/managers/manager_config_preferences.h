@@ -61,50 +61,6 @@ public:
    */
   static PrefResult clearAll();
   
-  // General settings
-  static PrefResult saveGeneralSettings(const String& deviceName, 
-                                       const String& adminPassword,
-                                       bool md5Verification,
-                                       bool fileLoggingEnabled);
-  static PrefResult loadGeneralSettings(String& deviceName, 
-                                       String& adminPassword,
-                                       bool& md5Verification,
-                                       bool& fileLoggingEnabled);
-  
-  // WiFi settings
-  static PrefResult saveWiFiSettings(const String& ssid1, const String& pwd1,
-                                     const String& ssid2, const String& pwd2,
-                                     const String& ssid3, const String& pwd3);
-  static PrefResult loadWiFiSettings(String& ssid1, String& pwd1,
-                                     String& ssid2, String& pwd2,
-                                     String& ssid3, String& pwd3);
-  
-  // Display settings
-  static PrefResult saveDisplaySettings(bool showIpScreen, bool showClock,
-                                        bool showFlowerImage, bool showFabmobilImage,
-                                        unsigned long screenDuration,
-                                        const String& clockFormat);
-  static PrefResult loadDisplaySettings(bool& showIpScreen, bool& showClock,
-                                        bool& showFlowerImage, bool& showFabmobilImage,
-                                        unsigned long& screenDuration,
-                                        String& clockFormat);
-  
-  // Log settings
-  static PrefResult saveLogSettings(const String& logLevel, bool fileLogging);
-  static PrefResult loadLogSettings(String& logLevel, bool& fileLogging);
-  
-  // LED Traffic Light settings
-  static PrefResult saveLedTrafficSettings(uint8_t mode, const String& selectedMeasurement);
-  static PrefResult loadLedTrafficSettings(uint8_t& mode, String& selectedMeasurement);
-  
-  // Debug settings
-  static PrefResult saveDebugSettings(bool debugRAM, bool debugMeasurementCycle,
-                                      bool debugSensor, bool debugDisplay,
-                                      bool debugWebSocket);
-  static PrefResult loadDebugSettings(bool& debugRAM, bool& debugMeasurementCycle,
-                                      bool& debugSensor, bool& debugDisplay,
-                                      bool& debugWebSocket);
-  
   // Sensor settings - per sensor
   static PrefResult saveSensorSettings(const String& sensorId, 
                                        const String& name,
@@ -150,10 +106,6 @@ public:
   
   // Clear sensor namespace
   static PrefResult clearSensorNamespace(const String& sensorId);
-  
-  // Flower status sensor setting
-  static PrefResult saveFlowerStatusSensor(const String& sensorId);
-  static PrefResult loadFlowerStatusSensor(String& sensorId);
   
   // Specialized WiFi update (validates index + updates 2 keys atomically)
   static PrefResult updateWiFiCredentials(uint8_t setIndex, const String& ssid, const String& password);

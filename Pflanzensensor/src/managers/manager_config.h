@@ -18,6 +18,7 @@
 #include "manager_config_debug.h"
 #include "manager_config_notifier.h"
 #include "manager_config_persistence.h"
+#include "manager_config_preferences.h"
 #include "manager_config_sensor_tracker.h"
 #include "manager_config_types.h"
 #include "manager_config_validator.h"
