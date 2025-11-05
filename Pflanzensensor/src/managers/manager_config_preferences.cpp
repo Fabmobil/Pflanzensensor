@@ -143,25 +143,44 @@ PreferencesManager::PrefResult PreferencesManager::initGeneralNamespace() {
   return PrefResult::success();
 }
 
-// Initialize WiFi namespace with defaults
+// Initialize WiFi namespaces with defaults - now uses separate namespace for each WiFi set
 PreferencesManager::PrefResult PreferencesManager::initWiFiNamespace() {
-  PreferencesEEPROM prefs;
-  if (!prefs.begin(PreferencesNamespaces::WIFI, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi-Namespace"));
-    return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open WiFi namespace");
+  // Initialize WiFi1
+  PreferencesEEPROM prefs1;
+  if (!prefs1.begin(PreferencesNamespaces::WIFI1, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi1-Namespace"));
+    return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open WiFi1 namespace");
   }
+  putBool(prefs1, "initialized", true);
+  putString(prefs1, "ssid", String(WIFI_SSID_1));
+  putString(prefs1, "pwd", String(WIFI_PASSWORD_1));
+  prefs1.end();
+  logger.info(F("PrefMgr"), F("WiFi1-Namespace initialisiert"));
 
-  putBool(prefs, "initialized", true);
-  putString(prefs, "ssid1", String(WIFI_SSID_1));
-  putString(prefs, "pwd1", String(WIFI_PASSWORD_1));
-  putString(prefs, "ssid2", String(WIFI_SSID_2));
-  putString(prefs, "pwd2", String(WIFI_PASSWORD_2));
-  putString(prefs, "ssid3", String(WIFI_SSID_3));
-  putString(prefs, "pwd3", String(WIFI_PASSWORD_3));
-  // Writes done; no diagnostic dump in normal operation
+  // Initialize WiFi2
+  PreferencesEEPROM prefs2;
+  if (!prefs2.begin(PreferencesNamespaces::WIFI2, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi2-Namespace"));
+    return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open WiFi2 namespace");
+  }
+  putBool(prefs2, "initialized", true);
+  putString(prefs2, "ssid", String(WIFI_SSID_2));
+  putString(prefs2, "pwd", String(WIFI_PASSWORD_2));
+  prefs2.end();
+  logger.info(F("PrefMgr"), F("WiFi2-Namespace initialisiert"));
 
-  prefs.end();
-  logger.info(F("PrefMgr"), F("WiFi-Namespace mit Standardwerten initialisiert"));
+  // Initialize WiFi3
+  PreferencesEEPROM prefs3;
+  if (!prefs3.begin(PreferencesNamespaces::WIFI3, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi3-Namespace"));
+    return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open WiFi3 namespace");
+  }
+  putBool(prefs3, "initialized", true);
+  putString(prefs3, "ssid", String(WIFI_SSID_3));
+  putString(prefs3, "pwd", String(WIFI_PASSWORD_3));
+  prefs3.end();
+  logger.info(F("PrefMgr"), F("WiFi3-Namespace initialisiert"));
+
   return PrefResult::success();
 }
 
@@ -253,12 +272,15 @@ PreferencesManager::PrefResult PreferencesManager::initializeAllNamespaces() {
     logger.info(F("PrefMgr"), F("General-Namespace bereits vorhanden"));
   }
 
-  if (!namespaceExists(PreferencesNamespaces::WIFI)) {
+  // Check and initialize WiFi namespaces (wifi1, wifi2, wifi3)
+  if (!namespaceExists(PreferencesNamespaces::WIFI1) || 
+      !namespaceExists(PreferencesNamespaces::WIFI2) || 
+      !namespaceExists(PreferencesNamespaces::WIFI3)) {
     auto result = initWiFiNamespace();
     if (!result.isSuccess())
       return result;
   } else {
-    logger.info(F("PrefMgr"), F("WiFi-Namespace bereits vorhanden"));
+    logger.info(F("PrefMgr"), F("WiFi-Namespaces bereits vorhanden"));
   }
 
   if (!namespaceExists(PreferencesNamespaces::DISP)) {
@@ -465,21 +487,27 @@ PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t
     return PrefResult::fail(ConfigError::VALIDATION_ERROR, "Invalid WiFi set index (must be 1-3)");
   }
 
+  // Use separate namespace for each WiFi set
+  const char* wifiNamespace = nullptr;
+  if (setIndex == 1) wifiNamespace = PreferencesNamespaces::WIFI1;
+  else if (setIndex == 2) wifiNamespace = PreferencesNamespaces::WIFI2;
+  else if (setIndex == 3) wifiNamespace = PreferencesNamespaces::WIFI3;
+
   PreferencesEEPROM prefs;
-  if (!prefs.begin(PreferencesNamespaces::WIFI, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi-Namespace"));
+  if (!prefs.begin(wifiNamespace, false)) {
+    logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des WiFi-Namespace: ")) + wifiNamespace);
     return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open WiFi namespace");
   }
 
-  String ssidKey = "ssid" + String(setIndex);
-  String pwdKey = "pwd" + String(setIndex);
-
-  if (!putString(prefs, ssidKey.c_str(), ssid) || !putString(prefs, pwdKey.c_str(), password)) {
+  // Use simple keys "ssid" and "pwd" since each WiFi set has its own namespace
+  if (!putString(prefs, "ssid", ssid) || !putString(prefs, "pwd", password)) {
     prefs.end();
+    logger.error(F("PrefMgr"), String(F("Failed to save WiFi credentials to ")) + wifiNamespace);
     return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save WiFi credentials");
   }
 
   prefs.end();
+  logger.debug(F("PrefMgr"), String(F("WiFi credentials saved to ")) + wifiNamespace);
   return PrefResult::success();
 }
 

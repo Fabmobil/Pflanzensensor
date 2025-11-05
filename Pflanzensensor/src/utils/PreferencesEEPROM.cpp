@@ -168,6 +168,7 @@ uint16_t PreferencesEEPROM::makeKey(const char* key) {
 
 bool PreferencesEEPROM::writeValue(const char* key, const void* value, size_t len) {
   if (_namespaceIndex < 0 || _readOnly) {
+    logger.error(F("PrefsEEPROM"), String(F("writeValue failed: ns=")) + _namespaceIndex + F(" readOnly=") + _readOnly);
     return false;
   }
   uint16_t keyHash = makeKey(key);
@@ -183,6 +184,9 @@ bool PreferencesEEPROM::writeValue(const char* key, const void* value, size_t le
   size_t remaining = len;
   // calculate how many slots are needed (5 bytes payload per slot)
   size_t neededSlots = (len + 4) / 5; // ceil(len/5)
+
+  logger.debug(F("PrefsEEPROM"), String(F("writeValue: ns=")) + _namespace + 
+               F(" key=") + key + F(" len=") + len + F(" needSlots=") + neededSlots + F(" totalSlots=") + slots);
 
   // Search for contiguous region of neededSlots where each slot is free or matches keyHash
   bool allocated = false;
@@ -214,8 +218,12 @@ bool PreferencesEEPROM::writeValue(const char* key, const void* value, size_t le
 
   if (!allocated) {
     // No contiguous region found
+    logger.error(F("PrefsEEPROM"), String(F("writeValue FAILED - no contiguous space: ns=")) + 
+                 _namespace + F(" key=") + key + F(" needSlots=") + neededSlots);
     return false;
   }
+
+  logger.debug(F("PrefsEEPROM"), String(F("writeValue allocated at slot ")) + allocStart);
 
   // Now write into the allocated contiguous region
   uint16_t slotIndex = allocStart;

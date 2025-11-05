@@ -66,16 +66,26 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
     generalPrefs.end();
   }
 
-  // Load WiFi settings directly
-  PreferencesEEPROM wifiPrefs;
-  if (wifiPrefs.begin(PreferencesNamespaces::WIFI, true)) {
-    config.wifiSSID1 = PreferencesManager::getString(wifiPrefs, "ssid1", "");
-    config.wifiPassword1 = PreferencesManager::getString(wifiPrefs, "pwd1", "");
-    config.wifiSSID2 = PreferencesManager::getString(wifiPrefs, "ssid2", "");
-    config.wifiPassword2 = PreferencesManager::getString(wifiPrefs, "pwd2", "");
-    config.wifiSSID3 = PreferencesManager::getString(wifiPrefs, "ssid3", "");
-    config.wifiPassword3 = PreferencesManager::getString(wifiPrefs, "pwd3", "");
-    wifiPrefs.end();
+  // Load WiFi settings from separate namespaces
+  PreferencesEEPROM wifi1Prefs;
+  if (wifi1Prefs.begin(PreferencesNamespaces::WIFI1, true)) {
+    config.wifiSSID1 = PreferencesManager::getString(wifi1Prefs, "ssid", "");
+    config.wifiPassword1 = PreferencesManager::getString(wifi1Prefs, "pwd", "");
+    wifi1Prefs.end();
+  }
+  
+  PreferencesEEPROM wifi2Prefs;
+  if (wifi2Prefs.begin(PreferencesNamespaces::WIFI2, true)) {
+    config.wifiSSID2 = PreferencesManager::getString(wifi2Prefs, "ssid", "");
+    config.wifiPassword2 = PreferencesManager::getString(wifi2Prefs, "pwd", "");
+    wifi2Prefs.end();
+  }
+  
+  PreferencesEEPROM wifi3Prefs;
+  if (wifi3Prefs.begin(PreferencesNamespaces::WIFI3, true)) {
+    config.wifiSSID3 = PreferencesManager::getString(wifi3Prefs, "ssid", "");
+    config.wifiPassword3 = PreferencesManager::getString(wifi3Prefs, "pwd", "");
+    wifi3Prefs.end();
   }
 
   // Load debug settings directly
