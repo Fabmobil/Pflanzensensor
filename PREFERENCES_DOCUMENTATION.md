@@ -2,14 +2,20 @@
 
 ## Überblick
 
-Das Pflanzensensor-Projekt verwendet die Preferences-Bibliothek zur Speicherung der Konfiguration im EEPROM. Dies bietet eine robustere und effizientere Alternative zu JSON-Dateien und **überlebt Filesystem-Flashes**, da die Preferences im EEPROM-Bereich (0x405FB000) gespeichert werden, der getrennt vom LittleFS-Bereich (0x40512000-0x405FA000) ist.
+Das Pflanzensensor-Projekt verwendet eine EEPROM-basierte Konfigurationsspeicherung zur Speicherung aller Einstellungen. Dies bietet eine robustere Lösung als JSON-Dateien und **überlebt Filesystem-Flashes**, da die Konfiguration im EEPROM-Bereich (0x405F7000-0x405FB000, 16KB) gespeichert wird, der getrennt vom LittleFS-Bereich (0x40512000-0x405F7000) ist.
+
+## Implementation
+
+Wir verwenden eine eigene `PreferencesEEPROM` Klasse, die die gleiche API wie die vshymanskyy/Preferences Bibliothek bietet, aber Daten direkt im EEPROM speichert. Die Original-Preferences-Bibliothek verwendet LittleFS und würde bei Filesystem-Updates gelöscht werden.
 
 ## EEPROM-Speicherplatz
 
-**Verfügbarer EEPROM:** 4.096 Bytes (4KB)
+**Verfügbarer EEPROM:** 16.384 Bytes (16KB)
+**Genutzt für Preferences:** 4.096 Bytes (4KB)
+**Reserviert für zukünftige Nutzung:** 12.288 Bytes (12KB)
 
 **Speicher-Optimierung:**
-Aufgrund der 4KB-Begrenzung werden nur laufzeitveränderbare Daten im EEPROM gespeichert. Statische Metadaten (Sensornamen, Messnamen, Einheiten) werden im Code definiert.
+Aufgrund der Platzbeschränkungen werden nur laufzeitveränderbare Daten im EEPROM gespeichert. Statische Metadaten (Sensornamen, Messnamen, Einheiten) werden im Code definiert.
 
 **Gespeichert in Preferences (~3,3KB):**
 - Allgemeine Einstellungen, WiFi, Display, Log, LED, Debug (~570 Bytes)

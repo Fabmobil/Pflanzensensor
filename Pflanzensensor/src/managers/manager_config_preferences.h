@@ -3,8 +3,13 @@
  * @brief Preferences-based persistence layer for configuration management
  *
  * This module provides a centralized interface for storing and retrieving
- * configuration values using the ESP Preferences library on LittleFS.
+ * configuration values using EEPROM storage (PreferencesEEPROM wrapper).
  * It organizes settings into logical namespaces for better organization.
+ * 
+ * NOTE: We use PreferencesEEPROM instead of the vshymanskyy/Preferences library
+ * because the latter uses LittleFS which gets wiped during OTA filesystem updates.
+ * Our PreferencesEEPROM stores data directly in ESP8266 EEPROM (0x405F7000, 16KB)
+ * which survives filesystem updates.
  */
 
 #ifndef MANAGER_CONFIG_PREFERENCES_H
@@ -12,7 +17,8 @@
 
 #include "../utils/result_types.h"
 #include <Arduino.h>
-#include <Preferences.h>
+// Use EEPROM-based Preferences instead of LittleFS-based one
+#include "../utils/PreferencesEEPROM.h"
 
 // Namespace constants
 namespace PreferencesNamespaces {

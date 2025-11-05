@@ -247,10 +247,10 @@ void WebOTAHandler::handleUpdateUpload() {
                                         F(")"));
     logger.debug(F("WebOTAHandler"), F("Inhaltlänge: ") + String(contentLength) + F(" Bytes"));
     
-    // Backup Preferences to RAM before filesystem update
+    // NOTE: No backup needed! Settings are stored in EEPROM which survives filesystem updates
+    // EEPROM is at 0x405F7000-0x405FB000, separate from LittleFS at 0x40512000-0x405F7000
     if (isFilesystem) {
-      backupAllPreferences();
-      backupSensorSettings();
+      logger.info(F("WebOTAHandler"), F("Filesystem update - Settings in EEPROM werden überleben"));
     }
 
     size_t freeSpace;
@@ -385,13 +385,13 @@ void WebOTAHandler::handleUpdateUpload() {
       }
 #endif
 
-      // Restore Preferences after successful filesystem update
-      if (isFilesystem && _prefsBackup.hasBackup) {
+      // Verify that settings survived filesystem update (they should - they're in EEPROM!)
+      if (isFilesystem) {
         logger.info(F("WebOTAHandler"),
-                    F("Filesystem-Update erfolgreich, prüfe Preferences..."));
+                    F("Filesystem-Update erfolgreich, verifiziere EEPROM-Einstellungen..."));
         delay(100); // Brief delay to let filesystem stabilize
         
-        // Check if general settings survived (they should if in EEPROM)
+        // Check if settings survived (they MUST - they're in EEPROM)
         Preferences testPrefs;
         bool settingsSurvived = false;
         if (testPrefs.begin(PreferencesNamespaces::GENERAL, true)) {
@@ -401,17 +401,12 @@ void WebOTAHandler::handleUpdateUpload() {
         
         if (settingsSurvived) {
           logger.info(F("WebOTAHandler"),
-                      F("Preferences haben Filesystem-Update überlebt (EEPROM funktioniert korrekt)!"));
-          // Clear the backup since it's not needed
-          _prefsBackup.hasBackup = false;
+                      F("✓ Einstellungen haben Filesystem-Update überlebt (EEPROM funktioniert!)"));
         } else {
-          logger.warning(F("WebOTAHandler"),
-                         F("Preferences wurden gelöscht, stelle aus Backup wieder her..."));
-          restoreAllPreferences();
+          logger.error(F("WebOTAHandler"),
+                       F("✗ WARNUNG: Einstellungen wurden gelöscht! EEPROM-Problem?"));
+          // This should never happen - if it does, there's a serious problem
         }
-        
-        // Always check/restore sensor settings
-        restoreSensorSettings();
       }
 
       // Send success response to deploy script IMMEDIATELY after update
