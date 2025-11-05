@@ -388,9 +388,29 @@ void WebOTAHandler::handleUpdateUpload() {
       // Restore Preferences after successful filesystem update
       if (isFilesystem && _prefsBackup.hasBackup) {
         logger.info(F("WebOTAHandler"),
-                    F("Filesystem-Update erfolgreich, stelle Preferences wieder her..."));
+                    F("Filesystem-Update erfolgreich, prüfe Preferences..."));
         delay(100); // Brief delay to let filesystem stabilize
-        restoreAllPreferences();
+        
+        // Check if general settings survived (they should if in EEPROM)
+        Preferences testPrefs;
+        bool settingsSurvived = false;
+        if (testPrefs.begin(PreferencesNamespaces::GENERAL, true)) {
+          settingsSurvived = testPrefs.isKey("device_name");
+          testPrefs.end();
+        }
+        
+        if (settingsSurvived) {
+          logger.info(F("WebOTAHandler"),
+                      F("Preferences haben Filesystem-Update überlebt (EEPROM funktioniert korrekt)!"));
+          // Clear the backup since it's not needed
+          _prefsBackup.hasBackup = false;
+        } else {
+          logger.warning(F("WebOTAHandler"),
+                         F("Preferences wurden gelöscht, stelle aus Backup wieder her..."));
+          restoreAllPreferences();
+        }
+        
+        // Always check/restore sensor settings
         restoreSensorSettings();
       }
 
@@ -591,6 +611,14 @@ bool WebOTAHandler::backupAllPreferences() {
 }
 
 void WebOTAHandler::backupSensorSettings() {
+  // NOTE: This backup creates duplicate namespaces in EEPROM as a safety measure.
+  // In theory, sensor settings should survive filesystem updates because
+  // Preferences are stored in EEPROM (0x405F7000-0x405FB000) which is separate
+  // from LittleFS (0x40512000-0x405F7000). However, this backup provides
+  // additional protection in case of issues.
+  
+  logger.info(F("WebOTAHandler"), F("Sichere Sensor-Einstellungen..."));
+  
   // Backup each known sensor one at a time to minimize RAM usage
   const char* sensorIds[] = {"ANALOG", "DHT"};
   
@@ -760,12 +788,35 @@ bool WebOTAHandler::restoreAllPreferences() {
 }
 
 void WebOTAHandler::restoreSensorSettings() {
-  // Restore sensor settings one at a time to minimize RAM usage
-  // Read sensor namespaces dynamically from Preferences backup
+  // Try to restore sensor settings from backup namespaces
+  // If Preferences correctly use EEPROM (as per flash layout), the original
+  // settings should still exist and this restore may not be necessary.
+  // However, we attempt restore as a safety measure.
+  
+  logger.info(F("WebOTAHandler"), F("Prüfe und stelle Sensor-Einstellungen wieder her..."));
+  
+  // Restore sensor settings one at a time to minimize RAM usage  
   const char* sensorIds[] = {"ANALOG", "DHT"};
   
   for (const char* sensorId : sensorIds) {
-    restoreOneSensor(sensorId);
+    // First check if main namespace still exists (survived filesystem update)
+    String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+    Preferences testPrefs;
+    bool mainExists = false;
+    
+    if (testPrefs.begin(ns.c_str(), true)) {
+      mainExists = testPrefs.getBool("initialized", false);
+      testPrefs.end();
+    }
+    
+    if (mainExists) {
+      logger.info(F("WebOTAHandler"), 
+                  String(F("Sensor ")) + sensorId + F(" Einstellungen haben Filesystem-Update überlebt (EEPROM funktioniert korrekt)"));
+    } else {
+      logger.warning(F("WebOTAHandler"), 
+                     String(F("Sensor ")) + sensorId + F(" Einstellungen nicht gefunden, versuche Wiederherstellung..."));
+      restoreOneSensor(sensorId);
+    }
   }
 }
 
