@@ -65,16 +65,26 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
     generalPrefs.end();
   }
 
-  // Load WiFi settings directly
-  Preferences wifiPrefs;
-  if (wifiPrefs.begin(PreferencesNamespaces::WIFI, true)) {
-    config.wifiSSID1 = PreferencesManager::getString(wifiPrefs, "ssid1", "");
-    config.wifiPassword1 = PreferencesManager::getString(wifiPrefs, "pwd1", "");
-    config.wifiSSID2 = PreferencesManager::getString(wifiPrefs, "ssid2", "");
-    config.wifiPassword2 = PreferencesManager::getString(wifiPrefs, "pwd2", "");
-    config.wifiSSID3 = PreferencesManager::getString(wifiPrefs, "ssid3", "");
-    config.wifiPassword3 = PreferencesManager::getString(wifiPrefs, "pwd3", "");
-    wifiPrefs.end();
+  // Load WiFi settings from separate namespaces
+  Preferences wifi1Prefs;
+  if (wifi1Prefs.begin(PreferencesNamespaces::WIFI1, true)) {
+    config.wifiSSID1 = PreferencesManager::getString(wifi1Prefs, "ssid", "");
+    config.wifiPassword1 = PreferencesManager::getString(wifi1Prefs, "pwd", "");
+    wifi1Prefs.end();
+  }
+
+  Preferences wifi2Prefs;
+  if (wifi2Prefs.begin(PreferencesNamespaces::WIFI2, true)) {
+    config.wifiSSID2 = PreferencesManager::getString(wifi2Prefs, "ssid", "");
+    config.wifiPassword2 = PreferencesManager::getString(wifi2Prefs, "pwd", "");
+    wifi2Prefs.end();
+  }
+
+  Preferences wifi3Prefs;
+  if (wifi3Prefs.begin(PreferencesNamespaces::WIFI3, true)) {
+    config.wifiSSID3 = PreferencesManager::getString(wifi3Prefs, "ssid", "");
+    config.wifiPassword3 = PreferencesManager::getString(wifi3Prefs, "pwd", "");
+    wifi3Prefs.end();
   }
 
   // Load debug settings directly
@@ -223,15 +233,21 @@ bool ConfigPersistence::backupPreferencesToFile() {
     prefs.end();
   }
   
-  // Backup WiFi namespace
-  if (prefs.begin(PreferencesNamespaces::WIFI, true)) {
-    JsonObject wifi = doc.createNestedObject("wifi");
-    wifi["ssid1"] = prefs.getString("ssid1", "");
-    wifi["ssid2"] = prefs.getString("ssid2", "");
-    wifi["ssid3"] = prefs.getString("ssid3", "");
-    wifi["pwd1"] = prefs.getString("pwd1", "");
-    wifi["pwd2"] = prefs.getString("pwd2", "");
-    wifi["pwd3"] = prefs.getString("pwd3", "");
+  // Backup WiFi namespaces (3 separate namespaces)
+  JsonObject wifi = doc.createNestedObject("wifi");
+  if (prefs.begin(PreferencesNamespaces::WIFI1, true)) {
+    wifi["ssid1"] = prefs.getString("ssid", "");
+    wifi["pwd1"] = prefs.getString("pwd", "");
+    prefs.end();
+  }
+  if (prefs.begin(PreferencesNamespaces::WIFI2, true)) {
+    wifi["ssid2"] = prefs.getString("ssid", "");
+    wifi["pwd2"] = prefs.getString("pwd", "");
+    prefs.end();
+  }
+  if (prefs.begin(PreferencesNamespaces::WIFI3, true)) {
+    wifi["ssid3"] = prefs.getString("ssid", "");
+    wifi["pwd3"] = prefs.getString("pwd", "");
     prefs.end();
   }
   
@@ -374,16 +390,30 @@ bool ConfigPersistence::restorePreferencesFromFile() {
     }
   }
   
-  // Restore WiFi namespace
+  // Restore WiFi namespaces (3 separate namespaces)
   if (doc.containsKey("wifi")) {
     JsonObject wifi = doc["wifi"];
-    if (prefs.begin(PreferencesNamespaces::WIFI, false)) {
-      if (wifi.containsKey("ssid1")) prefs.putString("ssid1", wifi["ssid1"].as<String>().c_str());
-      if (wifi.containsKey("ssid2")) prefs.putString("ssid2", wifi["ssid2"].as<String>().c_str());
-      if (wifi.containsKey("ssid3")) prefs.putString("ssid3", wifi["ssid3"].as<String>().c_str());
-      if (wifi.containsKey("pwd1")) prefs.putString("pwd1", wifi["pwd1"].as<String>().c_str());
-      if (wifi.containsKey("pwd2")) prefs.putString("pwd2", wifi["pwd2"].as<String>().c_str());
-      if (wifi.containsKey("pwd3")) prefs.putString("pwd3", wifi["pwd3"].as<String>().c_str());
+    
+    // Restore WiFi 1
+    if (prefs.begin(PreferencesNamespaces::WIFI1, false)) {
+      if (wifi.containsKey("ssid1")) prefs.putString("ssid", wifi["ssid1"].as<String>().c_str());
+      if (wifi.containsKey("pwd1")) prefs.putString("pwd", wifi["pwd1"].as<String>().c_str());
+      prefs.putBool("initialized", true);
+      prefs.end();
+    }
+    
+    // Restore WiFi 2
+    if (prefs.begin(PreferencesNamespaces::WIFI2, false)) {
+      if (wifi.containsKey("ssid2")) prefs.putString("ssid", wifi["ssid2"].as<String>().c_str());
+      if (wifi.containsKey("pwd2")) prefs.putString("pwd", wifi["pwd2"].as<String>().c_str());
+      prefs.putBool("initialized", true);
+      prefs.end();
+    }
+    
+    // Restore WiFi 3
+    if (prefs.begin(PreferencesNamespaces::WIFI3, false)) {
+      if (wifi.containsKey("ssid3")) prefs.putString("ssid", wifi["ssid3"].as<String>().c_str());
+      if (wifi.containsKey("pwd3")) prefs.putString("pwd", wifi["pwd3"].as<String>().c_str());
       prefs.putBool("initialized", true);
       prefs.end();
     }

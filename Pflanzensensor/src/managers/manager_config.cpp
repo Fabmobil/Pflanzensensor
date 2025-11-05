@@ -390,42 +390,36 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
     }
   }
 
-  // Handle WiFi namespace
+  // Handle WiFi namespace - use separate namespaces for each WiFi set
   else if (namespaceName == "wifi") {
-    Preferences prefs;
-    if (!prefs.begin(PreferencesNamespaces::WIFI, false)) {
-      return ConfigResult::fail(ConfigError::FILE_ERROR, F("Failed to open WiFi namespace"));
+    // Determine which WiFi namespace to use based on key
+    const char* wifiNamespace = nullptr;
+    String prefKey;
+    
+    if (key == "ssid1" || key == "pwd1") {
+      wifiNamespace = PreferencesNamespaces::WIFI1;
+      prefKey = (key == "ssid1") ? "ssid" : "pwd";
+    } else if (key == "ssid2" || key == "pwd2") {
+      wifiNamespace = PreferencesNamespaces::WIFI2;
+      prefKey = (key == "ssid2") ? "ssid" : "pwd";
+    } else if (key == "ssid3" || key == "pwd3") {
+      wifiNamespace = PreferencesNamespaces::WIFI3;
+      prefKey = (key == "ssid3") ? "ssid" : "pwd";
+    } else {
+      return ConfigResult::fail(ConfigError::VALIDATION_ERROR, F("Unknown WiFi key: ") + key);
     }
 
-    bool success = false;
-    String displayValue = value;
-    if (key == "ssid1") {
-      success = PreferencesManager::putString(prefs, "ssid1", value);
-      if (success)
-        setWiFiSSID1(value);
-    } else if (key == "pwd1") {
-      success = PreferencesManager::putString(prefs, "pwd1", value);
-      if (success)
-        setWiFiPassword1(value);
-      displayValue = "***";
-    } else if (key == "ssid2") {
-      success = PreferencesManager::putString(prefs, "ssid2", value);
-      if (success)
-        setWiFiSSID2(value);
-    } else if (key == "pwd2") {
-      success = PreferencesManager::putString(prefs, "pwd2", value);
-      if (success)
-        setWiFiPassword2(value);
-      displayValue = "***";
-    } else if (key == "ssid3") {
-      success = PreferencesManager::putString(prefs, "ssid3", value);
-      if (success)
-        setWiFiSSID3(value);
-    } else if (key == "pwd3") {
-      success = PreferencesManager::putString(prefs, "pwd3", value);
-      if (success)
-        setWiFiPassword3(value);
-      displayValue = "***";
+    Preferences prefs;
+    if (!prefs.begin(wifiNamespace, false)) {
+      return ConfigResult::fail(ConfigError::FILE_ERROR, 
+                                F("Failed to open WiFi namespace: ") + String(wifiNamespace));
+    }
+
+    bool success = PreferencesManager::putString(prefs, prefKey.c_str(), value);
+    prefs.end();
+
+    if (!success) {
+      return ConfigResult::fail(ConfigError::SAVE_FAILED, F("Failed to save WiFi setting"));
     }
 
     // Update RAM config
@@ -443,7 +437,7 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
       setWiFiPassword3(value);
 
     String displayValue = key.indexOf("pwd") >= 0 ? "***" : value;
-    logger.info(F("ConfigM"), String(F("WiFi ")) + key + F(" gespeichert in ") + wifiNamespace +
+    logger.info(F("ConfigM"), String(F("WiFi ")) + key + F(" gespeichert in ") + String(wifiNamespace) +
                                   F(": ") + displayValue);
     return ConfigResult::success();
   }

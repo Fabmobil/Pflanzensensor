@@ -71,13 +71,14 @@ void AdminSensorHandler::handleAnalogInverted() {
     return;
   }
 
-  // Update in-memory config and persist (store ints in JSON)
+  // Update in-memory config
   config.measurements[measurementIndex].inverted = inverted;
-  int persistMin = static_cast<int>(roundf(config.measurements[measurementIndex].minValue));
-  int persistMax = static_cast<int>(roundf(config.measurements[measurementIndex].maxValue));
-  auto result = SensorPersistence::updateAnalogMinMaxInteger(
-      sensorId, measurementIndex, persistMin, persistMax,
-      config.measurements[measurementIndex].inverted);
+  
+  // Persist using unified setConfigValue approach
+  String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  String key = PreferencesNamespaces::getSensorMeasurementKey(measurementIndex, "inv");
+  auto result = ConfigMgr.setConfigValue(ns, key, inverted ? "true" : "false", ConfigValueType::BOOL);
+  
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
                  F("Fehler beim Aktualisieren des invertierten Zustands: ") + result.getMessage());
