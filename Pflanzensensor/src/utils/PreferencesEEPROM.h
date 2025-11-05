@@ -14,16 +14,16 @@
 #include <EEPROM.h>
 
 // EEPROM configuration  
-#define PREFS_EEPROM_SIZE 4096  // Use 4KB of 16KB available EEPROM
+#define PREFS_EEPROM_SIZE 8192  // Use 8KB of 16KB available EEPROM (increased from 4KB)
 #define PREFS_MAGIC 0x5052      // "PR" for Preferences
 #define PREFS_VERSION 1
 
 // Maximum sizes
-#define MAX_NAMESPACES 32
+#define MAX_NAMESPACES 12        // 12 namespaces should be enough (general, wifi, display, debug, log, led, 2 sensors, etc.)
 #define MAX_KEY_LENGTH 15
 #define MAX_STRING_LENGTH 64
 #define NAMESPACE_NAME_LENGTH 15
-#define NAMESPACE_DATA_SIZE 128  // Bytes per namespace
+#define NAMESPACE_DATA_SIZE 512  // 512 bytes per namespace for sensor data with multiple measurements
 
 // EEPROM layout offsets
 #define EEPROM_HEADER_OFFSET 0
