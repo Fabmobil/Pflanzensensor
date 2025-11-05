@@ -32,11 +32,13 @@ bool PreferencesManager::getBool(PreferencesEEPROM& prefs, const char* key, bool
   return prefs.getBool(key, defaultValue);
 }
 
-uint8_t PreferencesManager::getUChar(PreferencesEEPROM& prefs, const char* key, uint8_t defaultValue) {
+uint8_t PreferencesManager::getUChar(PreferencesEEPROM& prefs, const char* key,
+                                     uint8_t defaultValue) {
   return prefs.getUChar(key, defaultValue);
 }
 
-uint32_t PreferencesManager::getUInt(PreferencesEEPROM& prefs, const char* key, uint32_t defaultValue) {
+uint32_t PreferencesManager::getUInt(PreferencesEEPROM& prefs, const char* key,
+                                     uint32_t defaultValue) {
   return prefs.getUInt(key, defaultValue);
 }
 
@@ -156,6 +158,7 @@ PreferencesManager::PrefResult PreferencesManager::initWiFiNamespace() {
   putString(prefs, "pwd2", String(WIFI_PASSWORD_2));
   putString(prefs, "ssid3", String(WIFI_SSID_3));
   putString(prefs, "pwd3", String(WIFI_PASSWORD_3));
+  // Writes done; no diagnostic dump in normal operation
 
   prefs.end();
   logger.info(F("PrefMgr"), F("WiFi-Namespace mit Standardwerten initialisiert"));

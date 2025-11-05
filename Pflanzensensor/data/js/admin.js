@@ -13,7 +13,7 @@ const CONFIG_KEY_NAMES = {
   'show_clock': 'Uhrzeit anzeigen',
   'show_flower': 'Blumen-Bild anzeigen',
   'show_fabmobil': 'Fabmobil-Logo anzeigen',
-  
+
   // General settings
   'device_name': 'Gerätename',
   'admin_pwd': 'Administrator-Passwort',
@@ -21,7 +21,7 @@ const CONFIG_KEY_NAMES = {
   'collectd_enabled': 'InfluxDB/Collectd',
   'file_log': 'Datei-Logging',
   'flower_sens': 'Flower-Status Sensor',
-  
+
   // WiFi settings
   'ssid1': 'WLAN SSID 1',
   'pwd1': 'WLAN Passwort 1',
@@ -29,18 +29,18 @@ const CONFIG_KEY_NAMES = {
   'pwd2': 'WLAN Passwort 2',
   'ssid3': 'WLAN SSID 3',
   'pwd3': 'WLAN Passwort 3',
-  
+
   // Debug settings
   'ram': 'Debug RAM',
   'meas_cycle': 'Debug Messzyklus',
   'sensor': 'Debug Sensor',
   'display': 'Debug Display',
   'websocket': 'Debug WebSocket',
-  
+
   // Log settings
   'level': 'Log-Level',
   'file_enabled': 'Datei-Logging',
-  
+
   // LED traffic light
   'mode': 'LED-Ampel Modus',
   'sel_meas': 'LED-Ampel Messung'
@@ -57,28 +57,35 @@ const CONFIG_KEY_NAMES = {
 function setConfigValue(namespace, key, value, type) {
   // Convert value to string
   const valueStr = String(value);
-  
+
   // Create display value for toast message (mask passwords)
   let displayValue = valueStr;
   if (key.includes('pwd') || key.includes('password')) {
     displayValue = '***';
   }
-  
+
   // Format boolean values in German
   else if (type === 'bool') {
     displayValue = (value === true || value === 'true' || value === '1') ? 'aktiviert' : 'deaktiviert';
   }
-  
+
   // Format special values with units
   else if (key === 'screen_dur') {
-    displayValue = valueStr + ' Sekunden';
+    // The firmware stores screen_dur in milliseconds, but the UI input is in seconds.
+    // If value looks like milliseconds (>=1000) convert to seconds for the message.
+    const asNumber = Number(value);
+    if (!isNaN(asNumber) && asNumber >= 1000) {
+      displayValue = (asNumber / 1000) + ' Sekunden';
+    } else {
+      displayValue = valueStr + ' Sekunden';
+    }
   } else if (key === 'clock_fmt') {
     displayValue = valueStr === '24h' ? '24-Stunden' : '12-Stunden';
   }
-  
+
   // Get user-friendly name for the key
   const friendlyName = CONFIG_KEY_NAMES[key] || key;
-  
+
   const params = new URLSearchParams({
     namespace: namespace,
     key: key,
@@ -86,7 +93,7 @@ function setConfigValue(namespace, key, value, type) {
     type: type || 'string',
     ajax: '1'
   });
-  
+
   return fetch('/admin/config/setConfigValue', {
     method: 'POST',
     body: params,
@@ -330,7 +337,7 @@ function mapFieldToConfig(fieldName, section) {
     };
     return mapping[fieldName] || null;
   }
-  
+
   // System section maps to "general" namespace
   if (section === 'system') {
     const mapping = {
@@ -341,7 +348,7 @@ function mapFieldToConfig(fieldName, section) {
     };
     return mapping[fieldName] || null;
   }
-  
+
   // LED traffic light section maps to "led_traf" namespace
   if (section === 'led_traffic_light') {
     const mapping = {
@@ -350,7 +357,7 @@ function mapFieldToConfig(fieldName, section) {
     };
     return mapping[fieldName] || null;
   }
-  
+
   return null;
 }
 
@@ -378,23 +385,23 @@ function initConfigAutoSave() {
 
     function submitForm() {
       if (!lastChanged) return;
-      
+
       const sectionInput = form.querySelector('input[name="section"]');
       if (!sectionInput) {
         console.warn('[admin.js] No section input found in form');
         lastChanged = null;
         return;
       }
-      
+
       const section = sectionInput.value;
       const configMapping = mapFieldToConfig(lastChanged.name, section);
-      
+
       if (!configMapping) {
         console.warn('[admin.js] No config mapping for field:', lastChanged.name, 'in section:', section);
         lastChanged = null;
         return;
       }
-      
+
       // Use unified setConfigValue method
       setConfigValue(configMapping.namespace, configMapping.key, lastChanged.value, configMapping.type)
         .then(() => {
@@ -403,7 +410,7 @@ function initConfigAutoSave() {
         .catch(err => {
           // Error already logged and shown by setConfigValue
         });
-      
+
       lastChanged = null;
     }
 
@@ -420,8 +427,8 @@ function initConfigAutoSave() {
       // For text/number inputs use debounce
       const target = evt.target;
       if (target && target.name) {
-        lastChanged = { 
-          name: target.name, 
+        lastChanged = {
+          name: target.name,
           value: target.value,
           type: target.type
         };

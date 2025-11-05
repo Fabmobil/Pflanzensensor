@@ -61,7 +61,8 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
     config.deviceName = PreferencesManager::getString(generalPrefs, "device_name", DEVICE_NAME);
     config.adminPassword = PreferencesManager::getString(generalPrefs, "admin_pwd", ADMIN_PASSWORD);
     config.md5Verification = PreferencesManager::getBool(generalPrefs, "md5_verify", false);
-    config.fileLoggingEnabled = PreferencesManager::getBool(generalPrefs, "file_log", FILE_LOGGING_ENABLED);
+    config.fileLoggingEnabled =
+        PreferencesManager::getBool(generalPrefs, "file_log", FILE_LOGGING_ENABLED);
     generalPrefs.end();
   }
 
@@ -92,14 +93,16 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
   PreferencesEEPROM ledPrefs;
   if (ledPrefs.begin(PreferencesNamespaces::LED_TRAFFIC, true)) {
     config.ledTrafficLightMode = PreferencesManager::getUChar(ledPrefs, "mode", 0);
-    config.ledTrafficLightSelectedMeasurement = PreferencesManager::getString(ledPrefs, "sel_meas", "");
+    config.ledTrafficLightSelectedMeasurement =
+        PreferencesManager::getString(ledPrefs, "sel_meas", "");
     ledPrefs.end();
   }
 
   // Load flower status sensor directly
   PreferencesEEPROM flowerPrefs;
   if (flowerPrefs.begin(PreferencesNamespaces::GENERAL, true)) {
-    config.flowerStatusSensor = PreferencesManager::getString(flowerPrefs, "flower_sens", "ANALOG_1");
+    config.flowerStatusSensor =
+        PreferencesManager::getString(flowerPrefs, "flower_sens", "ANALOG_1");
     flowerPrefs.end();
   }
 
@@ -130,54 +133,81 @@ ConfigPersistence::PersistenceResult ConfigPersistence::save(const ConfigData& c
   logger.info(F("ConfigP"), F("Speichere Konfiguration in Preferences..."));
 
   // Save general settings using atomic updates
-  auto result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "device_name", config.deviceName);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "admin_pwd", config.adminPassword);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "md5_verify", config.md5Verification);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "file_log", config.fileLoggingEnabled);
-  if (!result.isSuccess()) return result;
+  auto result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "device_name",
+                                                      config.deviceName);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "admin_pwd",
+                                                 config.adminPassword);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "md5_verify",
+                                               config.md5Verification);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "file_log",
+                                               config.fileLoggingEnabled);
+  if (!result.isSuccess())
+    return result;
 
   // Save WiFi settings using specialized method
   result = PreferencesManager::updateWiFiCredentials(1, config.wifiSSID1, config.wifiPassword1);
-  if (!result.isSuccess()) return result;
-  
+  if (!result.isSuccess())
+    return result;
+
   result = PreferencesManager::updateWiFiCredentials(2, config.wifiSSID2, config.wifiPassword2);
-  if (!result.isSuccess()) return result;
-  
+  if (!result.isSuccess())
+    return result;
+
   result = PreferencesManager::updateWiFiCredentials(3, config.wifiSSID3, config.wifiPassword3);
-  if (!result.isSuccess()) return result;
+  if (!result.isSuccess())
+    return result;
 
   // Save debug settings using atomic updates
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "ram", config.debugRAM);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "meas_cycle", config.debugMeasurementCycle);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "sensor", config.debugSensor);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "display", config.debugDisplay);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "websocket", config.debugWebSocket);
-  if (!result.isSuccess()) return result;
+  result =
+      PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "ram", config.debugRAM);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "meas_cycle",
+                                               config.debugMeasurementCycle);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "sensor",
+                                               config.debugSensor);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "display",
+                                               config.debugDisplay);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "websocket",
+                                               config.debugWebSocket);
+  if (!result.isSuccess())
+    return result;
 
   // Save LED traffic light settings using atomic updates
-  result = PreferencesManager::updateUInt8Value(PreferencesNamespaces::LED_TRAFFIC, "mode", config.ledTrafficLightMode);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateStringValue(PreferencesNamespaces::LED_TRAFFIC, "sel_meas", config.ledTrafficLightSelectedMeasurement);
-  if (!result.isSuccess()) return result;
+  result = PreferencesManager::updateUInt8Value(PreferencesNamespaces::LED_TRAFFIC, "mode",
+                                                config.ledTrafficLightMode);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateStringValue(PreferencesNamespaces::LED_TRAFFIC, "sel_meas",
+                                                 config.ledTrafficLightSelectedMeasurement);
+  if (!result.isSuccess())
+    return result;
 
   // Save flower status sensor using atomic update
-  result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "flower_sens", config.flowerStatusSensor);
-  if (!result.isSuccess()) return result;
+  result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "flower_sens",
+                                                 config.flowerStatusSensor);
+  if (!result.isSuccess())
+    return result;
 
   logger.info(F("ConfigP"), F("Konfiguration erfolgreich in Preferences gespeichert"));
   return PersistenceResult::success();

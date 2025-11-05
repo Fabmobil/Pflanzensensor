@@ -47,8 +47,11 @@ function initScreenDurationHandler() {
     clearTimeout(timeout);
     timeout = setTimeout(() => {
       const duration = parseInt(this.value);
+      // User-facing input is in seconds. Convert to milliseconds before storing
+      // because the firmware expects screen_dur in milliseconds.
       if (duration >= 1 && duration <= 60) {
-        updateScreenDuration(duration);
+        const durationMs = duration * 1000;
+        updateScreenDuration(durationMs);
       }
     }, 1000); // 1 second debounce
   });
@@ -59,6 +62,7 @@ function initScreenDurationHandler() {
  * Update screen duration via AJAX
  */
 function updateScreenDuration(duration) {
+  // duration passed in is milliseconds
   setConfigValue('display', 'screen_dur', duration, 'uint')
     .then(() => {
       console.log('[admin_display.js] Screen duration updated');
@@ -127,13 +131,13 @@ function updateDisplayToggle(setting, enabled) {
     'show_flower': 'show_flower',
     'show_fabmobil': 'show_fabmobil'
   };
-  
+
   const key = keyMap[setting];
   if (!key) {
     console.error('[admin_display.js] Unknown setting:', setting);
     return;
   }
-  
+
   setConfigValue('display', key, enabled, 'bool')
     .then(() => {
       console.log('[admin_display.js] Display toggle updated:', setting, enabled);
