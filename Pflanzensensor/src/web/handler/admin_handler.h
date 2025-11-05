@@ -161,19 +161,6 @@ private:
 
   // System action methods - implemented in admin_handler_system.cpp
   /**
-   * @brief Handle configuration update requests
-   * @details Processes configuration changes:
-   *          - Validates input
-   *          - Applies changes
-   *          - Updates storage
-   *          - Logs modifications
-   *
-   * This single endpoint supports only AJAX partial updates
-   * (indicated by X-Requested-With or ajax=1) and always returns JSON.
-   */
-  void handleAdminUpdate();
-
-  /**
    * @brief Handle configuration reset requests
    * @details Manages configuration reset:
    *          - Validates authorization
@@ -210,8 +197,6 @@ private:
    *          - Measurement intervals
    *          - System settings
    */
-  bool processConfigUpdates(String& changes, String* error = nullptr);
-
   /**
    * @brief Format memory size in human readable format
    * @param bytes Size in bytes
@@ -242,19 +227,6 @@ private:
    *          - Logs attempts
    */
   bool validateRequest() const;
-
-  /**
-   * @brief Validate and apply a configuration value
-   * @param key Name of the setting
-   * @param value New value to set
-   * @return true if setting was successfully applied
-   * @details Processes configuration changes:
-   *          - Validates key exists
-   *          - Checks value format
-   *          - Applies change
-   *          - Updates storage
-   */
-  bool applyConfigValue(const String& key, const String& value);
 
   /**
    * @brief Custom cleanup logic for AdminHandler

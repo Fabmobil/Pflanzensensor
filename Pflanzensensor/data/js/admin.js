@@ -122,36 +122,21 @@ window.addEventListener('load', () => {
       return;
     }
 
-    // Prepare urlencoded body for AJAX partial update
-    const params = new URLSearchParams();
-    params.append('section', 'system');
-    params.append('admin_password', v1);
-    params.append('ajax', '1');
-
     // Visual feedback
     showSuccessMessage('Speichere Passwort...');
 
-    fetch('/admin/updateSettings', {
-      method: 'POST',
-      body: params,
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' }
-    })
-    .then(parseJsonResponse)
-    .then(data => {
-      if (data && data.success) {
+    // Use unified setConfigValue method
+    setConfigValue('general', 'admin_pwd', v1, 'string')
+      .then(() => {
         showSuccessMessage('Passwort erfolgreich geändert');
         // Clear fields after success
         pw.value = '';
         pw2.value = '';
-      } else {
-        showErrorMessage('Fehler beim Speichern: ' + (data && (data.error || data.message) ? (data.error || data.message) : 'Unbekannt'));
-      }
-    })
-    .catch(err => {
-      console.error('[admin.js] Password save error:', err);
-      showErrorMessage('Fehler beim Speichern: ' + (err.message || err));
-    });
+      })
+      .catch(err => {
+        console.error('[admin.js] Password save error:', err);
+        // Error message already shown by setConfigValue
+      });
   });
 });
 

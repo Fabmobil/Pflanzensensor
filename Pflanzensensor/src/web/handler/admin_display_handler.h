@@ -105,21 +105,6 @@ private:
   void handleDisplayConfig();
 
   /**
-   * @brief Handle screen duration update via AJAX
-   */
-  void handleScreenDurationUpdate();
-
-  /**
-   * @brief Handle clock format update via AJAX
-   */
-  void handleClockFormatUpdate();
-
-  /**
-   * @brief Handle display toggle settings (IP, clock, images) via AJAX
-   */
-  void handleDisplayToggle();
-
-  /**
    * @brief Handle measurement display toggle via AJAX
    */
   void handleMeasurementDisplayToggle();

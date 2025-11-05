@@ -97,19 +97,7 @@ void WebManager::setupRoutes() {
     _adminHandler->handleAdminPage();
   });
 
-  // Direct route for admin update settings
-  _router->addRoute(HTTP_POST, "/admin/updateSettings", [this]() {
-    if (!_adminHandler) {
-      logger.debug(F("WebManager"), F("AdminHandler für Update nachladen"));
-      _adminHandler = std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
-      auto result = _adminHandler->registerRoutes(*_router);
-      if (!result.isSuccess()) {
-        logger.error(F("WebManager"),
-                     F("Registrieren der Admin-Routen fehlgeschlagen: ") + result.getMessage());
-      }
-    }
-    _adminHandler->handleAdminUpdate();
-  });
+  // Note: /admin/updateSettings route removed - use unified /admin/config/setConfigValue
 
   // Direct route for admin reset
   _router->addRoute(HTTP_POST, "/admin/reset", [this]() {

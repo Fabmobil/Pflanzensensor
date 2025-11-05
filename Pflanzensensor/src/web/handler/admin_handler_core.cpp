@@ -32,25 +32,8 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin-Route"));
 
-  // Register admin update route
-  result = router.addRoute(HTTP_POST, "/admin/updateSettings", [this]() {
-    if (!validateRequest()) {
-      _server.requestAuthentication();
-      return;
-    }
-    logger.debug(F("AdminHandler"), F("Handling admin update request"));
-    handleAdminUpdate();
-  });
-  if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"),
-                 F("Registrieren der /admin/updateSettings-Route fehlgeschlagen"));
-    return result;
-  }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/updateSettings-Route"));
-
-  // Note: AJAX/partial updates are handled by the single /admin/updateSettings
-  // endpoint which expects AJAX and returns JSON responses. Duplicate JSON
-  // routes were removed to keep a single consistent code path.
+  // Note: Config updates are now handled by unified /admin/config/setConfigValue
+  // Old /admin/updateSettings route has been removed.
 
   // Register config reset route
   result = router.addRoute(HTTP_POST, "/admin/reset", [this]() {

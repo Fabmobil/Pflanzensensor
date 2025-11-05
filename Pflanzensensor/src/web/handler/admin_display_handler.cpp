@@ -183,27 +183,6 @@ void AdminDisplayHandler::handleDisplayConfig() {
       css, js);
 }
 
-void AdminDisplayHandler::handleScreenDurationUpdate() {
-  // DEPRECATED: This route is no longer registered.
-  // Screen duration updates are now handled by /admin/config/setConfigValue
-  // with namespace="display", key="screen_dur", type="uint"
-  sendJsonResponse(410, F("{\"success\":false,\"error\":\"Route deprecated. Use /admin/config/setConfigValue\"}"));
-}
-
-void AdminDisplayHandler::handleClockFormatUpdate() {
-  // DEPRECATED: This route is no longer registered.
-  // Clock format updates are now handled by /admin/config/setConfigValue
-  // with namespace="display", key="clock_fmt", type="string"
-  sendJsonResponse(410, F("{\"success\":false,\"error\":\"Route deprecated. Use /admin/config/setConfigValue\"}"));
-}
-
-void AdminDisplayHandler::handleDisplayToggle() {
-  // DEPRECATED: This route is no longer registered.
-  // Display toggles are now handled by /admin/config/setConfigValue
-  // with namespace="display", key="show_ip|show_clock|show_flower|show_fabmobil", type="bool"
-  sendJsonResponse(410, F("{\"success\":false,\"error\":\"Route deprecated. Use /admin/config/setConfigValue\"}"));
-}
-
 void AdminDisplayHandler::handleMeasurementDisplayToggle() {
   if (!requireAjaxRequest())
     return;

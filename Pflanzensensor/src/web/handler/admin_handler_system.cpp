@@ -19,56 +19,6 @@
 // NOTE: ArduinoJson and PersistenceUtils includes removed - no longer needed
 // Configuration now stored in Preferences (EEPROM), not JSON files
 
-void AdminHandler::handleAdminUpdate() {
-  String changes;
-  String error;
-
-  // Require AJAX partial updates only (centralized check)
-  if (!requireAjaxRequest())
-    return;
-
-  bool updated = processConfigUpdates(changes, &error);
-
-  if (!error.isEmpty()) {
-    String payload = F("{\"success\":false,\"error\":\"");
-    String escaped = error;
-    escaped.replace("\"", "\\\"");
-    escaped.replace('\n', ' ');
-    payload += escaped;
-    payload += F("\"}");
-    sendJsonResponse(400, payload);
-    return;
-  }
-
-  if (!updated) {
-    sendJsonResponse(200, F("{\"success\":true,\"message\":\"Keine Änderungen\"}"));
-    return;
-  }
-
-  // Save changes and return JSON
-  auto result = ConfigMgr.saveConfig();
-  if (!result.isSuccess()) {
-    String payload = F("{\"success\":false,\"error\":\"");
-    String escaped = result.getMessage();
-    escaped.replace("\"", "\\\"");
-    escaped.replace('\n', ' ');
-    payload += escaped;
-    payload += F("\"}");
-    sendJsonResponse(500, payload);
-    return;
-  }
-
-  // Success - include a short change summary
-  logger.info(F("AdminHandler"), String(F("Konfiguration gespeichert, Änderungen: ")) + changes);
-  String payload = F("{\"success\":true,\"changes\":\"");
-  String escaped = changes;
-  escaped.replace("\"", "\\\"");
-  escaped.replace('\n', ' ');
-  payload += escaped;
-  payload += F("\"}");
-  sendJsonResponse(200, payload);
-}
-
 void AdminHandler::handleConfigReset() {
   auto result = ConfigMgr.resetToDefaults();
   std::vector<String> css = {"admin"};
