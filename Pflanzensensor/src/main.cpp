@@ -46,7 +46,6 @@
 #endif
 
 // helper methods
-#include "configs/default_json_generator.h"
 #include "utils/helper.h"
 
 // Global objects
@@ -106,9 +105,6 @@ void setup() {
     displayManager->showLogScreen(F("Filesystem..."), true);
   }
 #endif
-
-  // Ensure config and sensors JSON files exist
-  ensureConfigFilesExist();
 
   // Initialize configuration
   if (!Helper::initializeComponent(F("configuration"), []() -> ResourceResult {

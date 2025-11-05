@@ -8,22 +8,23 @@
 #include "../logger/logger.h"
 
 namespace PreferencesNamespaces {
-  String getSensorNamespace(const String& sensorId) {
-    // Namespace max length is 15 chars, so we need to truncate sensor IDs
-    String ns = "s_" + sensorId;
-    if (ns.length() > 15) {
-      ns = ns.substring(0, 15);
-    }
-    return ns;
+String getSensorNamespace(const String& sensorId) {
+  // Namespace max length is 15 chars, so we need to truncate sensor IDs
+  String ns = "s_" + sensorId;
+  if (ns.length() > 15) {
+    ns = ns.substring(0, 15);
   }
-  
-  String getSensorMeasurementKey(uint8_t measurementIndex, const char* suffix) {
-    return "m" + String(measurementIndex) + "_" + String(suffix);
-  }
+  return ns;
 }
 
+String getSensorMeasurementKey(uint8_t measurementIndex, const char* suffix) {
+  return "m" + String(measurementIndex) + "_" + String(suffix);
+}
+} // namespace PreferencesNamespaces
+
 // Helper functions for type-safe access
-String PreferencesManager::getString(Preferences& prefs, const char* key, const String& defaultValue) {
+String PreferencesManager::getString(Preferences& prefs, const char* key,
+                                     const String& defaultValue) {
   return prefs.getString(key, defaultValue);
 }
 
@@ -45,6 +46,40 @@ int PreferencesManager::getInt(Preferences& prefs, const char* key, int defaultV
 
 float PreferencesManager::getFloat(Preferences& prefs, const char* key, float defaultValue) {
   return prefs.getFloat(key, defaultValue);
+}
+
+// Convenience getters that accept a namespace key
+String PreferencesManager::getString(const char* namespaceKey, const char* key,
+                                     const String& defaultValue) {
+  Preferences prefs;
+  if (!prefs.begin(namespaceKey, true)) {
+    // If cannot open, return default
+    return defaultValue;
+  }
+  String val = getString(prefs, key, defaultValue);
+  prefs.end();
+  return val;
+}
+
+bool PreferencesManager::getBool(const char* namespaceKey, const char* key, bool defaultValue) {
+  Preferences prefs;
+  if (!prefs.begin(namespaceKey, true)) {
+    return defaultValue;
+  }
+  bool val = getBool(prefs, key, defaultValue);
+  prefs.end();
+  return val;
+}
+
+uint32_t PreferencesManager::getUInt(const char* namespaceKey, const char* key,
+                                     uint32_t defaultValue) {
+  Preferences prefs;
+  if (!prefs.begin(namespaceKey, true)) {
+    return defaultValue;
+  }
+  uint32_t val = getUInt(prefs, key, defaultValue);
+  prefs.end();
+  return val;
 }
 
 bool PreferencesManager::putString(Preferences& prefs, const char* key, const String& value) {
@@ -91,16 +126,16 @@ PreferencesManager::PrefResult PreferencesManager::initGeneralNamespace() {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des General-Namespace"));
     return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open general namespace");
   }
-  
+
   // Mark as initialized
   putBool(prefs, "initialized", true);
-  
+
   // Set defaults from config_example.h
   putString(prefs, "device_name", String(DEVICE_NAME));
   putString(prefs, "admin_pwd", String(ADMIN_PASSWORD));
   putBool(prefs, "md5_verify", false);
   putBool(prefs, "file_log", FILE_LOGGING_ENABLED);
-  
+
   prefs.end();
   logger.info(F("PrefMgr"), F("General-Namespace mit Standardwerten initialisiert"));
   return PrefResult::success();
@@ -113,7 +148,7 @@ PreferencesManager::PrefResult PreferencesManager::initWiFiNamespace() {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi-Namespace"));
     return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open WiFi namespace");
   }
-  
+
   putBool(prefs, "initialized", true);
   putString(prefs, "ssid1", String(WIFI_SSID_1));
   putString(prefs, "pwd1", String(WIFI_PASSWORD_1));
@@ -121,7 +156,7 @@ PreferencesManager::PrefResult PreferencesManager::initWiFiNamespace() {
   putString(prefs, "pwd2", String(WIFI_PASSWORD_2));
   putString(prefs, "ssid3", String(WIFI_SSID_3));
   putString(prefs, "pwd3", String(WIFI_PASSWORD_3));
-  
+
   prefs.end();
   logger.info(F("PrefMgr"), F("WiFi-Namespace mit Standardwerten initialisiert"));
   return PrefResult::success();
@@ -134,7 +169,7 @@ PreferencesManager::PrefResult PreferencesManager::initDisplayNamespace() {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Display-Namespace"));
     return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open display namespace");
   }
-  
+
   putBool(prefs, "initialized", true);
   putBool(prefs, "show_ip", true);
   putBool(prefs, "show_clock", true);
@@ -142,7 +177,7 @@ PreferencesManager::PrefResult PreferencesManager::initDisplayNamespace() {
   putBool(prefs, "show_fabmobil", true);
   putUInt(prefs, "screen_dur", DISPLAY_DEFAULT_TIME * 1000);
   putString(prefs, "clock_fmt", "24h");
-  
+
   prefs.end();
   logger.info(F("PrefMgr"), F("Display-Namespace mit Standardwerten initialisiert"));
   return PrefResult::success();
@@ -155,11 +190,11 @@ PreferencesManager::PrefResult PreferencesManager::initLogNamespace() {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Log-Namespace"));
     return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open log namespace");
   }
-  
+
   putBool(prefs, "initialized", true);
   putString(prefs, "level", String(LOG_LEVEL));
   putBool(prefs, "file_enabled", FILE_LOGGING_ENABLED);
-  
+
   prefs.end();
   logger.info(F("PrefMgr"), F("Log-Namespace mit Standardwerten initialisiert"));
   return PrefResult::success();
@@ -172,11 +207,11 @@ PreferencesManager::PrefResult PreferencesManager::initLedTrafficNamespace() {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des LED-Traffic-Namespace"));
     return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open LED traffic namespace");
   }
-  
+
   putBool(prefs, "initialized", true);
   putUChar(prefs, "mode", 2); // Default to mode 2 (single measurement)
   putString(prefs, "sel_meas", "ANALOG_1");
-  
+
   prefs.end();
   logger.info(F("PrefMgr"), F("LED-Traffic-Namespace mit Standardwerten initialisiert"));
   return PrefResult::success();
@@ -189,14 +224,14 @@ PreferencesManager::PrefResult PreferencesManager::initDebugNamespace() {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Debug-Namespace"));
     return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open debug namespace");
   }
-  
+
   putBool(prefs, "initialized", true);
   putBool(prefs, "ram", DEBUG_RAM);
   putBool(prefs, "meas_cycle", DEBUG_MEASUREMENT_CYCLE);
   putBool(prefs, "sensor", DEBUG_SENSOR);
   putBool(prefs, "display", DEBUG_DISPLAY);
   putBool(prefs, "websocket", DEBUG_WEBSOCKET);
-  
+
   prefs.end();
   logger.info(F("PrefMgr"), F("Debug-Namespace mit Standardwerten initialisiert"));
   return PrefResult::success();
@@ -205,50 +240,56 @@ PreferencesManager::PrefResult PreferencesManager::initDebugNamespace() {
 // Initialize all namespaces
 PreferencesManager::PrefResult PreferencesManager::initializeAllNamespaces() {
   logger.info(F("PrefMgr"), F("Initialisiere Preferences-Namespaces..."));
-  
+
   // Initialize each namespace if it doesn't exist
   if (!namespaceExists(PreferencesNamespaces::GENERAL)) {
     auto result = initGeneralNamespace();
-    if (!result.isSuccess()) return result;
+    if (!result.isSuccess())
+      return result;
   } else {
     logger.info(F("PrefMgr"), F("General-Namespace bereits vorhanden"));
   }
-  
+
   if (!namespaceExists(PreferencesNamespaces::WIFI)) {
     auto result = initWiFiNamespace();
-    if (!result.isSuccess()) return result;
+    if (!result.isSuccess())
+      return result;
   } else {
     logger.info(F("PrefMgr"), F("WiFi-Namespace bereits vorhanden"));
   }
-  
+
   if (!namespaceExists(PreferencesNamespaces::DISP)) {
     auto result = initDisplayNamespace();
-    if (!result.isSuccess()) return result;
+    if (!result.isSuccess())
+      return result;
   } else {
     logger.info(F("PrefMgr"), F("Display-Namespace bereits vorhanden"));
   }
-  
+
   if (!namespaceExists(PreferencesNamespaces::LOG)) {
     auto result = initLogNamespace();
-    if (!result.isSuccess()) return result;
+    if (!result.isSuccess())
+      return result;
   } else {
     logger.info(F("PrefMgr"), F("Log-Namespace bereits vorhanden"));
   }
-  
+
   if (!namespaceExists(PreferencesNamespaces::LED_TRAFFIC)) {
     auto result = initLedTrafficNamespace();
-    if (!result.isSuccess()) return result;
+    if (!result.isSuccess())
+      return result;
   } else {
     logger.info(F("PrefMgr"), F("LED-Traffic-Namespace bereits vorhanden"));
   }
-  
+
   if (!namespaceExists(PreferencesNamespaces::DEBUG)) {
     auto result = initDebugNamespace();
-    if (!result.isSuccess()) return result;
+    if (!result.isSuccess())
+      return result;
   } else {
     logger.info(F("PrefMgr"), F("Debug-Namespace bereits vorhanden"));
   }
-  
+
   logger.info(F("PrefMgr"), F("Alle Namespaces erfolgreich initialisiert"));
   return PrefResult::success();
 }
@@ -256,17 +297,12 @@ PreferencesManager::PrefResult PreferencesManager::initializeAllNamespaces() {
 // Clear all preferences
 PreferencesManager::PrefResult PreferencesManager::clearAll() {
   logger.info(F("PrefMgr"), F("Lösche alle Preferences (Factory Reset)..."));
-  
+
   // Clear each namespace
-  const char* namespaces[] = {
-    PreferencesNamespaces::GENERAL,
-    PreferencesNamespaces::WIFI,
-    PreferencesNamespaces::DISP,
-    PreferencesNamespaces::LOG,
-    PreferencesNamespaces::LED_TRAFFIC,
-    PreferencesNamespaces::DEBUG
-  };
-  
+  const char* namespaces[] = {PreferencesNamespaces::GENERAL,     PreferencesNamespaces::WIFI,
+                              PreferencesNamespaces::DISP,        PreferencesNamespaces::LOG,
+                              PreferencesNamespaces::LED_TRAFFIC, PreferencesNamespaces::DEBUG};
+
   for (const char* ns : namespaces) {
     Preferences prefs;
     if (prefs.begin(ns, false)) {
@@ -275,49 +311,51 @@ PreferencesManager::PrefResult PreferencesManager::clearAll() {
       logger.info(F("PrefMgr"), String(F("Namespace gelöscht: ")) + String(ns));
     }
   }
-  
+
   logger.info(F("PrefMgr"), F("Factory Reset abgeschlossen"));
   return PrefResult::success();
 }
 
 // Sensor settings
 // Sensor settings
-PreferencesManager::PrefResult PreferencesManager::saveSensorSettings(
-    const String& sensorId, const String& name, unsigned long measurementInterval,
-    bool hasPersistentError) {
-  
+PreferencesManager::PrefResult
+PreferencesManager::saveSensorSettings(const String& sensorId, const String& name,
+                                       unsigned long measurementInterval, bool hasPersistentError) {
+
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
-    logger.error(F("PrefMgr"), String(F("Fehler beim Speichern der Sensor-Einstellungen für ")) + sensorId);
+    logger.error(F("PrefMgr"),
+                 String(F("Fehler beim Speichern der Sensor-Einstellungen für ")) + sensorId);
     return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
-  
+
   putBool(prefs, "initialized", true);
   putString(prefs, "name", name);
   putUInt(prefs, "meas_int", measurementInterval);
   putBool(prefs, "has_err", hasPersistentError);
-  
+
   prefs.end();
   logger.info(F("PrefMgr"), String(F("Sensor-Einstellungen gespeichert für ")) + sensorId);
   return PrefResult::success();
 }
 
-PreferencesManager::PrefResult PreferencesManager::loadSensorSettings(
-    const String& sensorId, String& name, unsigned long& measurementInterval,
-    bool& hasPersistentError) {
-  
+PreferencesManager::PrefResult
+PreferencesManager::loadSensorSettings(const String& sensorId, String& name,
+                                       unsigned long& measurementInterval,
+                                       bool& hasPersistentError) {
+
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
   if (!prefs.begin(ns.c_str(), true)) {
     logger.warning(F("PrefMgr"), String(F("Sensor-Namespace nicht gefunden für ")) + sensorId);
     return PrefResult::fail(ConfigError::FILE_ERROR, "Sensor namespace not found");
   }
-  
+
   name = getString(prefs, "name", "");
   measurementInterval = getUInt(prefs, "meas_int", MEASUREMENT_INTERVAL * 1000);
   hasPersistentError = getBool(prefs, "has_err", false);
-  
+
   prefs.end();
   logger.info(F("PrefMgr"), String(F("Sensor-Einstellungen geladen für ")) + sensorId);
   return PrefResult::success();
@@ -325,20 +363,18 @@ PreferencesManager::PrefResult PreferencesManager::loadSensorSettings(
 
 // Sensor measurement settings
 PreferencesManager::PrefResult PreferencesManager::saveSensorMeasurement(
-    const String& sensorId, uint8_t measurementIndex,
-    bool enabled, const String& name, const String& fieldName, const String& unit,
-    float minValue, float maxValue,
-    float yellowLow, float greenLow, float greenHigh, float yellowHigh,
-    bool inverted, bool calibrationMode, uint32_t autocalDuration,
-    int absoluteRawMin, int absoluteRawMax) {
-  
+    const String& sensorId, uint8_t measurementIndex, bool enabled, const String& name,
+    const String& fieldName, const String& unit, float minValue, float maxValue, float yellowLow,
+    float greenLow, float greenHigh, float yellowHigh, bool inverted, bool calibrationMode,
+    uint32_t autocalDuration, int absoluteRawMin, int absoluteRawMax) {
+
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.error(F("PrefMgr"), String(F("Fehler beim Speichern der Messwerte für ")) + sensorId);
     return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
-  
+
   String prefix = "m" + String(measurementIndex) + "_";
   putBool(prefs, (prefix + "en").c_str(), enabled);
   putString(prefs, (prefix + "nm").c_str(), name);
@@ -355,28 +391,26 @@ PreferencesManager::PrefResult PreferencesManager::saveSensorMeasurement(
   putUInt(prefs, (prefix + "acd").c_str(), autocalDuration);
   putInt(prefs, (prefix + "rmin").c_str(), absoluteRawMin);
   putInt(prefs, (prefix + "rmax").c_str(), absoluteRawMax);
-  
+
   prefs.end();
-  logger.info(F("PrefMgr"), String(F("Messwert-Einstellungen gespeichert für ")) + sensorId + 
-              String(F(" Messung ")) + String(measurementIndex));
+  logger.info(F("PrefMgr"), String(F("Messwert-Einstellungen gespeichert für ")) + sensorId +
+                                String(F(" Messung ")) + String(measurementIndex));
   return PrefResult::success();
 }
 
 PreferencesManager::PrefResult PreferencesManager::loadSensorMeasurement(
-    const String& sensorId, uint8_t measurementIndex,
-    bool& enabled, String& name, String& fieldName, String& unit,
-    float& minValue, float& maxValue,
-    float& yellowLow, float& greenLow, float& greenHigh, float& yellowHigh,
-    bool& inverted, bool& calibrationMode, uint32_t& autocalDuration,
-    int& absoluteRawMin, int& absoluteRawMax) {
-  
+    const String& sensorId, uint8_t measurementIndex, bool& enabled, String& name,
+    String& fieldName, String& unit, float& minValue, float& maxValue, float& yellowLow,
+    float& greenLow, float& greenHigh, float& yellowHigh, bool& inverted, bool& calibrationMode,
+    uint32_t& autocalDuration, int& absoluteRawMin, int& absoluteRawMax) {
+
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
   if (!prefs.begin(ns.c_str(), true)) {
     logger.warning(F("PrefMgr"), String(F("Sensor-Namespace nicht gefunden für ")) + sensorId);
     return PrefResult::fail(ConfigError::FILE_ERROR, "Sensor namespace not found");
   }
-  
+
   String prefix = "m" + String(measurementIndex) + "_";
   enabled = getBool(prefs, (prefix + "en").c_str(), true);
   name = getString(prefs, (prefix + "nm").c_str(), "");
@@ -393,10 +427,10 @@ PreferencesManager::PrefResult PreferencesManager::loadSensorMeasurement(
   autocalDuration = getUInt(prefs, (prefix + "acd").c_str(), 86400);
   absoluteRawMin = getInt(prefs, (prefix + "rmin").c_str(), INT_MAX);
   absoluteRawMax = getInt(prefs, (prefix + "rmax").c_str(), INT_MIN);
-  
+
   prefs.end();
-  logger.info(F("PrefMgr"), String(F("Messwert-Einstellungen geladen für ")) + sensorId + 
-              String(F(" Messung ")) + String(measurementIndex));
+  logger.info(F("PrefMgr"), String(F("Messwert-Einstellungen geladen für ")) + sensorId +
+                                String(F(" Messung ")) + String(measurementIndex));
   return PrefResult::success();
 }
 
@@ -421,91 +455,102 @@ PreferencesManager::PrefResult PreferencesManager::clearSensorNamespace(const St
 // ====== Atomic Update Functions (DRY) ======
 
 // WiFi credentials require special handling (validates index and updates two keys)
-PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t setIndex, const String& ssid, const String& password) {
+PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t setIndex,
+                                                                         const String& ssid,
+                                                                         const String& password) {
   if (setIndex < 1 || setIndex > 3) {
     return PrefResult::fail(ConfigError::VALIDATION_ERROR, "Invalid WiFi set index (must be 1-3)");
   }
-  
+
   Preferences prefs;
   if (!prefs.begin(PreferencesNamespaces::WIFI, false)) {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi-Namespace"));
     return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open WiFi namespace");
   }
-  
+
   String ssidKey = "ssid" + String(setIndex);
   String pwdKey = "pwd" + String(setIndex);
-  
+
   if (!putString(prefs, ssidKey.c_str(), ssid) || !putString(prefs, pwdKey.c_str(), password)) {
     prefs.end();
     return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save WiFi credentials");
   }
-  
+
   prefs.end();
   return PrefResult::success();
 }
 
 // ========== DRY Generic Update Helpers ==========
 
-PreferencesManager::PrefResult PreferencesManager::updateBoolValue(const char* namespaceKey, const char* key, bool value) {
+PreferencesManager::PrefResult PreferencesManager::updateBoolValue(const char* namespaceKey,
+                                                                   const char* key, bool value) {
   Preferences prefs;
   if (!prefs.begin(namespaceKey, false)) {
     logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des Namespace: ")) + namespaceKey);
-    return PrefResult::fail(ConfigError::SAVE_FAILED, String("Cannot open namespace: ") + namespaceKey);
+    return PrefResult::fail(ConfigError::SAVE_FAILED,
+                            String("Cannot open namespace: ") + namespaceKey);
   }
-  
+
   if (!putBool(prefs, key, value)) {
     prefs.end();
     return PrefResult::fail(ConfigError::SAVE_FAILED, String("Failed to save ") + key);
   }
-  
+
   prefs.end();
   return PrefResult::success();
 }
 
-PreferencesManager::PrefResult PreferencesManager::updateStringValue(const char* namespaceKey, const char* key, const String& value) {
+PreferencesManager::PrefResult PreferencesManager::updateStringValue(const char* namespaceKey,
+                                                                     const char* key,
+                                                                     const String& value) {
   Preferences prefs;
   if (!prefs.begin(namespaceKey, false)) {
     logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des Namespace: ")) + namespaceKey);
-    return PrefResult::fail(ConfigError::SAVE_FAILED, String("Cannot open namespace: ") + namespaceKey);
+    return PrefResult::fail(ConfigError::SAVE_FAILED,
+                            String("Cannot open namespace: ") + namespaceKey);
   }
-  
+
   if (!putString(prefs, key, value)) {
     prefs.end();
     return PrefResult::fail(ConfigError::SAVE_FAILED, String("Failed to save ") + key);
   }
-  
+
   prefs.end();
   return PrefResult::success();
 }
 
-PreferencesManager::PrefResult PreferencesManager::updateUInt8Value(const char* namespaceKey, const char* key, uint8_t value) {
+PreferencesManager::PrefResult
+PreferencesManager::updateUInt8Value(const char* namespaceKey, const char* key, uint8_t value) {
   Preferences prefs;
   if (!prefs.begin(namespaceKey, false)) {
     logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des Namespace: ")) + namespaceKey);
-    return PrefResult::fail(ConfigError::SAVE_FAILED, String("Cannot open namespace: ") + namespaceKey);
+    return PrefResult::fail(ConfigError::SAVE_FAILED,
+                            String("Cannot open namespace: ") + namespaceKey);
   }
-  
+
   if (!putUChar(prefs, key, value)) {
     prefs.end();
     return PrefResult::fail(ConfigError::SAVE_FAILED, String("Failed to save ") + key);
   }
-  
+
   prefs.end();
   return PrefResult::success();
 }
 
-PreferencesManager::PrefResult PreferencesManager::updateUIntValue(const char* namespaceKey, const char* key, unsigned int value) {
+PreferencesManager::PrefResult
+PreferencesManager::updateUIntValue(const char* namespaceKey, const char* key, unsigned int value) {
   Preferences prefs;
   if (!prefs.begin(namespaceKey, false)) {
     logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des Namespace: ")) + namespaceKey);
-    return PrefResult::fail(ConfigError::SAVE_FAILED, String("Cannot open namespace: ") + namespaceKey);
+    return PrefResult::fail(ConfigError::SAVE_FAILED,
+                            String("Cannot open namespace: ") + namespaceKey);
   }
-  
+
   if (!putUInt(prefs, key, value)) {
     prefs.end();
     return PrefResult::fail(ConfigError::SAVE_FAILED, String("Failed to save ") + key);
   }
-  
+
   prefs.end();
   return PrefResult::success();
 }
