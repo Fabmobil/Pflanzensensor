@@ -546,17 +546,29 @@ bool WebOTAHandler::backupAllPreferences() {
   _prefsBackup.flower_sens = PreferencesManager::getString(prefs, "flower_sens", "");
   prefs.end();
 
-  // Backup WiFi namespace
-  if (!prefs.begin(PreferencesNamespaces::WIFI, true)) {
-    logger.error(F("WebOTAHandler"), F("Fehler beim Öffnen von WiFi-Preferences"));
+  // Backup WiFi namespaces (wifi1, wifi2, wifi3)
+  if (!prefs.begin(PreferencesNamespaces::WIFI1, true)) {
+    logger.error(F("WebOTAHandler"), F("Fehler beim Öffnen von WiFi1-Preferences"));
     return false;
   }
-  _prefsBackup.wifi_ssid1 = PreferencesManager::getString(prefs, "ssid1", "");
-  _prefsBackup.wifi_ssid2 = PreferencesManager::getString(prefs, "ssid2", "");
-  _prefsBackup.wifi_ssid3 = PreferencesManager::getString(prefs, "ssid3", "");
-  _prefsBackup.wifi_pwd1 = PreferencesManager::getString(prefs, "pwd1", "");
-  _prefsBackup.wifi_pwd2 = PreferencesManager::getString(prefs, "pwd2", "");
-  _prefsBackup.wifi_pwd3 = PreferencesManager::getString(prefs, "pwd3", "");
+  _prefsBackup.wifi_ssid1 = PreferencesManager::getString(prefs, "ssid", "");
+  _prefsBackup.wifi_pwd1 = PreferencesManager::getString(prefs, "pwd", "");
+  prefs.end();
+
+  if (!prefs.begin(PreferencesNamespaces::WIFI2, true)) {
+    logger.error(F("WebOTAHandler"), F("Fehler beim Öffnen von WiFi2-Preferences"));
+    return false;
+  }
+  _prefsBackup.wifi_ssid2 = PreferencesManager::getString(prefs, "ssid", "");
+  _prefsBackup.wifi_pwd2 = PreferencesManager::getString(prefs, "pwd", "");
+  prefs.end();
+
+  if (!prefs.begin(PreferencesNamespaces::WIFI3, true)) {
+    logger.error(F("WebOTAHandler"), F("Fehler beim Öffnen von WiFi3-Preferences"));
+    return false;
+  }
+  _prefsBackup.wifi_ssid3 = PreferencesManager::getString(prefs, "ssid", "");
+  _prefsBackup.wifi_pwd3 = PreferencesManager::getString(prefs, "pwd", "");
   prefs.end();
 
   // Backup display namespace
