@@ -693,31 +693,6 @@ PreferencesManager::PrefResult PreferencesManager::loadFlowerStatusSensor(String
 }
 
 // ====== Atomic Update Functions (DRY) ======
-// All now use generic helpers for type-safe atomic updates
-
-PreferencesManager::PrefResult PreferencesManager::updateDeviceName(const String& deviceName) {
-  return updateStringValue(PreferencesNamespaces::GENERAL, "device_name", deviceName);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateAdminPassword(const String& adminPassword) {
-  return updateStringValue(PreferencesNamespaces::GENERAL, "admin_pwd", adminPassword);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateMD5Verification(bool enabled) {
-  return updateBoolValue(PreferencesNamespaces::GENERAL, "md5_verify", enabled);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateFileLoggingEnabled(bool enabled) {
-  return updateBoolValue(PreferencesNamespaces::GENERAL, "file_log", enabled);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateCollectdEnabled(bool enabled) {
-  return updateBoolValue(PreferencesNamespaces::GENERAL, "collectd_en", enabled);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateFlowerStatusSensor(const String& sensorId) {
-  return updateStringValue(PreferencesNamespaces::GENERAL, "flower_sens", sensorId);
-}
 
 // WiFi credentials require special handling (validates index and updates two keys)
 PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t setIndex, const String& ssid, const String& password) {
@@ -741,62 +716,6 @@ PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t
   
   prefs.end();
   return PrefResult::success();
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateLedTrafficMode(uint8_t mode) {
-  return updateUInt8Value(PreferencesNamespaces::LED_TRAFFIC, "mode", mode);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateLedTrafficMeasurement(const String& measurement) {
-  return updateStringValue(PreferencesNamespaces::LED_TRAFFIC, "sel_meas", measurement);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateDebugRAM(bool enabled) {
-  return updateBoolValue(PreferencesNamespaces::DEBUG, "ram", enabled);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateDebugMeasurementCycle(bool enabled) {
-  return updateBoolValue(PreferencesNamespaces::DEBUG, "meas_cycle", enabled);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateDebugSensor(bool enabled) {
-  return updateBoolValue(PreferencesNamespaces::DEBUG, "sensor", enabled);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateDebugDisplay(bool enabled) {
-  return updateBoolValue(PreferencesNamespaces::DEBUG, "display", enabled);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateDebugWebSocket(bool enabled) {
-  return updateBoolValue(PreferencesNamespaces::DEBUG, "websocket", enabled);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateScreenDuration(unsigned int duration) {
-  return updateUIntValue(PreferencesNamespaces::DISP, "screen_dur", duration);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateClockFormat(const String& format) {
-  return updateStringValue(PreferencesNamespaces::DISP, "clock_fmt", format);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateClockEnabled(bool enabled) {
-  return updateBoolValue(PreferencesNamespaces::DISP, "show_clock", enabled);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateIpScreenEnabled(bool enabled) {
-  return updateBoolValue(PreferencesNamespaces::DISP, "show_ip", enabled);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateFlowerImageEnabled(bool enabled) {
-  return updateBoolValue(PreferencesNamespaces::DISP, "show_flower", enabled);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateFabmobilImageEnabled(bool enabled) {
-  return updateBoolValue(PreferencesNamespaces::DISP, "show_fabmobil", enabled);
-}
-
-PreferencesManager::PrefResult PreferencesManager::updateLogLevel(const String& level) {
-  return updateStringValue(PreferencesNamespaces::LOG, "level", level);
 }
 
 // ========== DRY Generic Update Helpers ==========

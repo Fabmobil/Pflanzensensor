@@ -120,7 +120,7 @@ ConfigManager::ConfigResult ConfigManager::setAdminPassword(const String& passwo
 
   if (m_configData.adminPassword != password) {
     m_configData.adminPassword = password;
-    auto saveResult = PreferencesManager::updateAdminPassword(password);
+    auto saveResult = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "admin_pwd", password);
     if (!saveResult.isSuccess()) {
       return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
                                 saveResult.getMessage());
@@ -133,21 +133,21 @@ ConfigManager::ConfigResult ConfigManager::setAdminPassword(const String& passwo
 ConfigManager::ConfigResult ConfigManager::setMD5Verification(bool enabled) {
   ScopedLock lock;
   return updateBoolConfig(m_configData.md5Verification, enabled, 
-                         PreferencesManager::updateMD5Verification, 
+                         [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "md5_verify", val); },
                          "md5_verification", true);
 }
 
 ConfigManager::ConfigResult ConfigManager::setCollectdEnabled(bool enabled) {
   ScopedLock lock;
   return updateBoolConfig(m_configData.collectdEnabled, enabled,
-                         PreferencesManager::updateCollectdEnabled,
+                         [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "collectd_en", val); },
                          "collectd_enabled", true);
 }
 
 ConfigManager::ConfigResult ConfigManager::setFileLoggingEnabled(bool enabled) {
   ScopedLock lock;
   return updateBoolConfig(m_configData.fileLoggingEnabled, enabled,
-                         PreferencesManager::updateFileLoggingEnabled,
+                         [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "file_log", val); },
                          "file_logging_enabled", true);
 }
 
@@ -225,7 +225,7 @@ ConfigManager::ConfigResult ConfigManager::setLogLevel(const String& level) {
   logger.setLogLevel(Logger::stringToLogLevel(level));
   
   // Persist to Preferences
-  auto result = PreferencesManager::updateLogLevel(level);
+  auto result = PreferencesManager::updateStringValue(PreferencesNamespaces::LOG, "level", level);
   if (!result.isSuccess()) {
     logger.error(F("ConfigM"), F("Failed to persist log_level: ") + result.getMessage());
     return ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
@@ -429,43 +429,31 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
     String displayValue = value;
     if (key == "show_ip") {
       bool enabled = (value == "true" || value == "1");
-      success = PreferencesManager::putBool(prefs, "show_ip", enabled);
-      auto result = PreferencesManager::updateIpScreenEnabled(enabled);
-      if (!result.isSuccess())
-        success = false;
+      auto result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_ip", enabled);
+      success = result.isSuccess();
       displayValue = enabled ? F("true") : F("false");
     } else if (key == "show_clock") {
       bool enabled = (value == "true" || value == "1");
-      success = PreferencesManager::putBool(prefs, "show_clock", enabled);
-      auto result = PreferencesManager::updateClockEnabled(enabled);
-      if (!result.isSuccess())
-        success = false;
+      auto result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_clock", enabled);
+      success = result.isSuccess();
       displayValue = enabled ? F("true") : F("false");
     } else if (key == "show_flower") {
       bool enabled = (value == "true" || value == "1");
-      success = PreferencesManager::putBool(prefs, "show_flower", enabled);
-      auto result = PreferencesManager::updateFlowerImageEnabled(enabled);
-      if (!result.isSuccess())
-        success = false;
+      auto result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_flower", enabled);
+      success = result.isSuccess();
       displayValue = enabled ? F("true") : F("false");
     } else if (key == "show_fabmobil") {
       bool enabled = (value == "true" || value == "1");
-      success = PreferencesManager::putBool(prefs, "show_fabmobil", enabled);
-      auto result = PreferencesManager::updateFabmobilImageEnabled(enabled);
-      if (!result.isSuccess())
-        success = false;
+      auto result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_fabmobil", enabled);
+      success = result.isSuccess();
       displayValue = enabled ? F("true") : F("false");
     } else if (key == "screen_dur") {
       unsigned int duration = value.toInt();
-      success = PreferencesManager::putUInt(prefs, "screen_dur", duration);
-      auto result = PreferencesManager::updateScreenDuration(duration);
-      if (!result.isSuccess())
-        success = false;
+      auto result = PreferencesManager::updateUIntValue(PreferencesNamespaces::DISP, "screen_dur", duration);
+      success = result.isSuccess();
     } else if (key == "clock_fmt") {
-      success = PreferencesManager::putString(prefs, "clock_fmt", value);
-      auto result = PreferencesManager::updateClockFormat(value);
-      if (!result.isSuccess())
-        success = false;
+      auto result = PreferencesManager::updateStringValue(PreferencesNamespaces::DISP, "clock_fmt", value);
+      success = result.isSuccess();
     }
 
     prefs.end();
@@ -700,70 +688,51 @@ void ConfigManager::syncSubsystemData() {
 
 ConfigManager::ConfigResult ConfigManager::setDebugRAM(bool enabled) {
   return updateDebugConfig(enabled, &DebugConfig::setRAMDebug, 
-                          PreferencesManager::updateDebugRAM);
+                          [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "ram", val); });
 }
 
 ConfigManager::ConfigResult ConfigManager::setDebugMeasurementCycle(bool enabled) {
   return updateDebugConfig(enabled, &DebugConfig::setMeasurementCycleDebug,
-                          PreferencesManager::updateDebugMeasurementCycle);
+                          [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "meas_cycle", val); });
 }
 
 ConfigManager::ConfigResult ConfigManager::setDebugSensor(bool enabled) {
   return updateDebugConfig(enabled, &DebugConfig::setSensorDebug,
-                          PreferencesManager::updateDebugSensor);
+                          [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "sensor", val); });
 }
 
 ConfigManager::ConfigResult ConfigManager::setDebugDisplay(bool enabled) {
   return updateDebugConfig(enabled, &DebugConfig::setDisplayDebug,
-                          PreferencesManager::updateDebugDisplay);
+                          [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "display", val); });
 }
 
 ConfigManager::ConfigResult ConfigManager::setDebugWebSocket(bool enabled) {
   return updateDebugConfig(enabled, &DebugConfig::setWebSocketDebug,
-                          PreferencesManager::updateDebugWebSocket);
+                          [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "websocket", val); });
 }
 
 ConfigManager::ConfigResult ConfigManager::setDeviceName(const String& name) {
   return updateStringConfig(m_configData.deviceName, name,
-                           PreferencesManager::updateDeviceName,
+                           [](const String& val) { return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "device_name", val); },
                            "device_name", false);
 }
 
 ConfigManager::ConfigResult ConfigManager::setFlowerStatusSensor(const String& sensorId) {
   return updateStringConfig(m_configData.flowerStatusSensor, sensorId,
-                           PreferencesManager::updateFlowerStatusSensor,
+                           [](const String& val) { return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "flower_sens", val); },
                            "flower_status_sensor", false);
 }
 
 ConfigManager::ConfigResult ConfigManager::setLedTrafficLightMode(uint8_t mode) {
   return updateUInt8Config(m_configData.ledTrafficLightMode, mode,
-                          PreferencesManager::updateLedTrafficMode,
+                          [](uint8_t val) { return PreferencesManager::updateUInt8Value(PreferencesNamespaces::LED_TRAFFIC, "mode", val); },
                           "led_traffic_light_mode", false);
 }
 
 ConfigManager::ConfigResult ConfigManager::setLedTrafficLightSelectedMeasurement(const String& measurementId) {
   return updateStringConfig(m_configData.ledTrafficLightSelectedMeasurement, measurementId,
-                           PreferencesManager::updateLedTrafficMeasurement,
+                           [](const String& val) { return PreferencesManager::updateStringValue(PreferencesNamespaces::LED_TRAFFIC, "sel_meas", val); },
                            "led_traffic_light_selected_measurement", false);
-}
-
-ConfigManager::ConfigResult ConfigManager::setLedTrafficLightMode(uint8_t mode) {
-  return updateUInt8Config(m_configData.ledTrafficLightMode, mode,
-                          PreferencesManager::updateLedTrafficMode,
-                          "led_traffic_light_mode", false);
-}
-
-ConfigManager::ConfigResult
-ConfigManager::setLedTrafficLightSelectedMeasurement(const String& measurementId) {
-  return updateStringConfig(m_configData.ledTrafficLightSelectedMeasurement, measurementId,
-                           PreferencesManager::updateLedTrafficMeasurement,
-                           "led_traffic_light_selected_measurement", false);
-}
-
-ConfigManager::ConfigResult ConfigManager::setFlowerStatusSensor(const String& sensorId) {
-  return updateStringConfig(m_configData.flowerStatusSensor, sensorId,
-                           PreferencesManager::updateFlowerStatusSensor,
-                           "flower_status_sensor", false);
 }
 
 // ====== Simplified Setters Using DRY Helpers (defined at end of file) ======

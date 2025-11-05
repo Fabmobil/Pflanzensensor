@@ -155,37 +155,8 @@ public:
   static PrefResult saveFlowerStatusSensor(const String& sensorId);
   static PrefResult loadFlowerStatusSensor(String& sensorId);
   
-  // Atomic update functions (DRY - only save what changed)
-  static PrefResult updateDeviceName(const String& deviceName);
-  static PrefResult updateAdminPassword(const String& adminPassword);
-  static PrefResult updateMD5Verification(bool enabled);
-  static PrefResult updateFileLoggingEnabled(bool enabled);
-  
+  // Specialized WiFi update (validates index + updates 2 keys atomically)
   static PrefResult updateWiFiCredentials(uint8_t setIndex, const String& ssid, const String& password);
-  
-  static PrefResult updateLedTrafficMode(uint8_t mode);
-  static PrefResult updateLedTrafficMeasurement(const String& measurement);
-  
-  static PrefResult updateDebugRAM(bool enabled);
-  static PrefResult updateDebugMeasurementCycle(bool enabled);
-  static PrefResult updateDebugSensor(bool enabled);
-  static PrefResult updateDebugDisplay(bool enabled);
-  static PrefResult updateDebugWebSocket(bool enabled);
-  
-  // Atomic update methods for display settings
-  static PrefResult updateScreenDuration(unsigned int duration);
-  static PrefResult updateClockFormat(const String& format);
-  static PrefResult updateClockEnabled(bool enabled);
-  static PrefResult updateIpScreenEnabled(bool enabled);
-  static PrefResult updateFlowerImageEnabled(bool enabled);
-  static PrefResult updateFabmobilImageEnabled(bool enabled);
-  
-  // Atomic update methods for general settings
-  static PrefResult updateCollectdEnabled(bool enabled);
-  static PrefResult updateFlowerStatusSensor(const String& sensorId);
-  
-  // Atomic update methods for log settings
-  static PrefResult updateLogLevel(const String& level);
   
   // Helper functions for type-safe access
   static String getString(Preferences& prefs, const char* key, const String& defaultValue = "");
@@ -202,7 +173,7 @@ public:
   static bool putInt(Preferences& prefs, const char* key, int value);
   static bool putFloat(Preferences& prefs, const char* key, float value);
 
-  // DRY Generic update helpers (private - used by atomic update methods)
+  // DRY Generic update helpers - use these directly instead of wrapper methods
   static PrefResult updateBoolValue(const char* namespaceKey, const char* key, bool value);
   static PrefResult updateStringValue(const char* namespaceKey, const char* key, const String& value);
   static PrefResult updateUInt8Value(const char* namespaceKey, const char* key, uint8_t value);
