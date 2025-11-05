@@ -26,6 +26,13 @@ ConfigManager& ConfigManager::getInstance() {
 ConfigManager::ConfigResult ConfigManager::loadConfig() {
   ScopedLock lock;
 
+  // Load and apply log level from Preferences FIRST, before loading other config
+  // This ensures the correct log level is active for all subsequent log messages
+  String logLevel =
+      PreferencesManager::getString(PreferencesNamespaces::LOG, "level", String(LOG_LEVEL));
+  logger.setLogLevel(Logger::stringToLogLevel(logLevel));
+  logger.debug(F("ConfigM"), String(F("Log-Level geladen: ")) + logLevel);
+
   // Load main configuration
   auto result = ConfigPersistence::load(m_configData);
   if (!result.isSuccess()) {
@@ -133,7 +140,7 @@ ConfigManager::ConfigResult ConfigManager::setAdminPassword(const String& passwo
 
 ConfigManager::ConfigResult ConfigManager::setMD5Verification(bool enabled) {
   ScopedLock lock;
-  return updateBoolConfig(m_configData.md5Verification, enabled, 
+  return updateBoolConfig(m_configData.md5Verification, enabled,
                          [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "md5_verify", val); },
                          "md5_verification", true);
 }
@@ -234,14 +241,14 @@ ConfigManager::ConfigResult ConfigManager::setLogLevel(const String& level) {
   }
 
   logger.setLogLevel(Logger::stringToLogLevel(level));
-  
+
   // Persist to Preferences
   auto result = PreferencesManager::updateStringValue(PreferencesNamespaces::LOG, "level", level);
   if (!result.isSuccess()) {
     logger.error(F("ConfigM"), F("Failed to persist log_level: ") + result.getMessage());
     return ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
   }
-  
+
   notifyConfigChange("log_level", level, true);
 
   return ConfigResult::success();
@@ -421,11 +428,23 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
       displayValue = "***";
     }
 
-    prefs.end();
-    if (!success) {
-      return ConfigResult::fail(ConfigError::SAVE_FAILED, F("Failed to save WiFi setting"));
-    }
-    logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + key + F(" = ") + displayValue);
+    // Update RAM config
+    if (key == "ssid1")
+      setWiFiSSID1(value);
+    else if (key == "pwd1")
+      setWiFiPassword1(value);
+    else if (key == "ssid2")
+      setWiFiSSID2(value);
+    else if (key == "pwd2")
+      setWiFiPassword2(value);
+    else if (key == "ssid3")
+      setWiFiSSID3(value);
+    else if (key == "pwd3")
+      setWiFiPassword3(value);
+
+    String displayValue = key.indexOf("pwd") >= 0 ? "***" : value;
+    logger.info(F("ConfigM"), String(F("WiFi ")) + key + F(" gespeichert in ") + wifiNamespace +
+                                  F(": ") + displayValue);
     return ConfigResult::success();
   }
 
@@ -613,17 +632,17 @@ void ConfigManager::notifyConfigChange(const String& key, const String& value, b
 ConfigManager::ConfigResult ConfigManager::updateBoolConfig(
     bool& currentValue, bool newValue, BoolUpdateFunc updateFunc,
     const String& notifyKey, bool updateSensors) {
-  
+
   if (currentValue != newValue) {
     currentValue = newValue;
-    
+
     // Persist atomically to Preferences
     auto saveResult = updateFunc(newValue);
     if (!saveResult.isSuccess()) {
       logger.error(F("ConfigM"), String(F("Failed to persist ")) + notifyKey + F(": ") + saveResult.getMessage());
       return ConfigResult::fail(ConfigError::SAVE_FAILED, saveResult.getMessage());
     }
-    
+
     notifyConfigChange(notifyKey, newValue ? "true" : "false", updateSensors);
   }
   return ConfigResult::success();
@@ -632,17 +651,17 @@ ConfigManager::ConfigResult ConfigManager::updateBoolConfig(
 ConfigManager::ConfigResult ConfigManager::updateStringConfig(
     String& currentValue, const String& newValue, StringUpdateFunc updateFunc,
     const String& notifyKey, bool updateSensors) {
-  
+
   if (currentValue != newValue) {
     currentValue = newValue;
-    
+
     // Persist atomically to Preferences
     auto saveResult = updateFunc(newValue);
     if (!saveResult.isSuccess()) {
       logger.error(F("ConfigM"), String(F("Failed to persist ")) + notifyKey + F(": ") + saveResult.getMessage());
       return ConfigResult::fail(ConfigError::SAVE_FAILED, saveResult.getMessage());
     }
-    
+
     notifyConfigChange(notifyKey, newValue, updateSensors);
   }
   return ConfigResult::success();
@@ -651,17 +670,17 @@ ConfigManager::ConfigResult ConfigManager::updateStringConfig(
 ConfigManager::ConfigResult ConfigManager::updateUInt8Config(
     uint8_t& currentValue, uint8_t newValue, UInt8UpdateFunc updateFunc,
     const String& notifyKey, bool updateSensors) {
-  
+
   if (currentValue != newValue) {
     currentValue = newValue;
-    
+
     // Persist atomically to Preferences
     auto saveResult = updateFunc(newValue);
     if (!saveResult.isSuccess()) {
       logger.error(F("ConfigM"), String(F("Failed to persist ")) + notifyKey + F(": ") + saveResult.getMessage());
       return ConfigResult::fail(ConfigError::SAVE_FAILED, saveResult.getMessage());
     }
-    
+
     notifyConfigChange(notifyKey, String(newValue), updateSensors);
   }
   return ConfigResult::success();
@@ -669,20 +688,20 @@ ConfigManager::ConfigResult ConfigManager::updateUInt8Config(
 
 ConfigManager::ConfigResult ConfigManager::updateDebugConfig(
     bool enabled, DebugSetFunc debugSetFunc, BoolUpdateFunc updateFunc) {
-  
+
   auto result = (m_debugConfig.*debugSetFunc)(enabled);
   if (!result.isSuccess()) {
     return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
                              result.getMessage());
   }
-  
+
   // Persist atomically to Preferences
   auto saveResult = updateFunc(enabled);
   if (!saveResult.isSuccess()) {
     return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
                              saveResult.getMessage());
   }
-  
+
   return ConfigResult::success();
 }
 
@@ -694,7 +713,7 @@ void ConfigManager::syncSubsystemData() {
 // ====== Simplified Setters Using DRY Helpers ======
 
 ConfigManager::ConfigResult ConfigManager::setDebugRAM(bool enabled) {
-  return updateDebugConfig(enabled, &DebugConfig::setRAMDebug, 
+  return updateDebugConfig(enabled, &DebugConfig::setRAMDebug,
                           [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "ram", val); });
 }
 
