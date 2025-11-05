@@ -245,7 +245,7 @@ SensorPersistence::updateSensorThresholdsInternal(const String& sensorId, size_t
                                                   float yellowHigh) {
   // Update thresholds directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
@@ -282,7 +282,7 @@ SensorPersistence::updateAnalogMinMaxInteger(const String& sensorId, size_t meas
                                              int minValue, int maxValue, bool inverted) {
   // Update min/max/inverted directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
@@ -311,7 +311,7 @@ SensorPersistence::PersistenceResult SensorPersistence::updateAnalogMinMaxIntege
   CriticalSection cs;
 
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
@@ -346,7 +346,7 @@ SensorPersistence::updateMeasurementIntervalInternal(const String& sensorId,
                                                      unsigned long interval) {
   // Update measurement interval directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
@@ -377,7 +377,7 @@ SensorPersistence::updateMeasurementEnabledInternal(const String& sensorId, size
                                                     bool enabled) {
   // Update enabled flag directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
@@ -398,7 +398,7 @@ SensorPersistence::updateAbsoluteMinMax(const String& sensorId, size_t measureme
                                         float absoluteMin, float absoluteMax) {
   // Update absolute min/max directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
@@ -446,7 +446,7 @@ SensorPersistence::updateAnalogRawMinMaxInternal(const String& sensorId, size_t 
                                                  int absoluteRawMin, int absoluteRawMax) {
   // Update raw min/max directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
@@ -473,7 +473,7 @@ SensorPersistence::updateAnalogCalibrationMode(const String& sensorId, size_t me
                                                bool enabled) {
   // Update calibration mode directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
@@ -501,7 +501,7 @@ SensorPersistence::updateAutocalDuration(const String& sensorId, size_t measurem
 
   // Update autocal duration directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");

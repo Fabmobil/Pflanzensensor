@@ -3,13 +3,8 @@
  * @brief Preferences-based persistence layer for configuration management
  *
  * This module provides a centralized interface for storing and retrieving
- * configuration values using EEPROM storage (PreferencesEEPROM wrapper).
+ * configuration values using the ESP Preferences library on LittleFS.
  * It organizes settings into logical namespaces for better organization.
- * 
- * NOTE: We use PreferencesEEPROM instead of the vshymanskyy/Preferences library
- * because the latter uses LittleFS which gets wiped during OTA filesystem updates.
- * Our PreferencesEEPROM stores data directly in ESP8266 EEPROM (0x405F7000, 16KB)
- * which survives filesystem updates.
  */
 
 #ifndef MANAGER_CONFIG_PREFERENCES_H
@@ -17,16 +12,12 @@
 
 #include "../utils/result_types.h"
 #include <Arduino.h>
-// Use EEPROM-based Preferences instead of LittleFS-based one
-#include "../utils/PreferencesEEPROM.h"
+#include <Preferences.h>
 
 // Namespace constants
 namespace PreferencesNamespaces {
 constexpr const char* GENERAL = "general"; // General settings (device name, passwords, etc.)
-constexpr const char* WIFI = "wifi";       // WiFi credentials and network settings (deprecated, kept for migration)
-constexpr const char* WIFI1 = "wifi1";     // WiFi set 1 (SSID + password)
-constexpr const char* WIFI2 = "wifi2";     // WiFi set 2 (SSID + password)
-constexpr const char* WIFI3 = "wifi3";     // WiFi set 3 (SSID + password)
+constexpr const char* WIFI = "wifi";       // WiFi credentials and network settings
 constexpr const char* DISP =
     "display"; // Display configuration (renamed from DISPLAY to avoid Arduino.h macro conflict)
 constexpr const char* LOG = "log";              // Logging settings
@@ -105,12 +96,12 @@ public:
                                           const String& password);
 
   // Helper functions for type-safe access
-  static String getString(PreferencesEEPROM& prefs, const char* key, const String& defaultValue = "");
-  static bool getBool(PreferencesEEPROM& prefs, const char* key, bool defaultValue = false);
-  static uint8_t getUChar(PreferencesEEPROM& prefs, const char* key, uint8_t defaultValue = 0);
-  static uint32_t getUInt(PreferencesEEPROM& prefs, const char* key, uint32_t defaultValue = 0);
-  static int getInt(PreferencesEEPROM& prefs, const char* key, int defaultValue = 0);
-  static float getFloat(PreferencesEEPROM& prefs, const char* key, float defaultValue = 0.0f);
+  static String getString(Preferences& prefs, const char* key, const String& defaultValue = "");
+  static bool getBool(Preferences& prefs, const char* key, bool defaultValue = false);
+  static uint8_t getUChar(Preferences& prefs, const char* key, uint8_t defaultValue = 0);
+  static uint32_t getUInt(Preferences& prefs, const char* key, uint32_t defaultValue = 0);
+  static int getInt(Preferences& prefs, const char* key, int defaultValue = 0);
+  static float getFloat(Preferences& prefs, const char* key, float defaultValue = 0.0f);
 
   // Convenience getters that accept a namespace key (open/close Preferences internally)
   static String getString(const char* namespaceKey, const char* key,
@@ -118,12 +109,12 @@ public:
   static bool getBool(const char* namespaceKey, const char* key, bool defaultValue = false);
   static uint32_t getUInt(const char* namespaceKey, const char* key, uint32_t defaultValue = 0);
 
-  static bool putString(PreferencesEEPROM& prefs, const char* key, const String& value);
-  static bool putBool(PreferencesEEPROM& prefs, const char* key, bool value);
-  static bool putUChar(PreferencesEEPROM& prefs, const char* key, uint8_t value);
-  static bool putUInt(PreferencesEEPROM& prefs, const char* key, uint32_t value);
-  static bool putInt(PreferencesEEPROM& prefs, const char* key, int value);
-  static bool putFloat(PreferencesEEPROM& prefs, const char* key, float value);
+  static bool putString(Preferences& prefs, const char* key, const String& value);
+  static bool putBool(Preferences& prefs, const char* key, bool value);
+  static bool putUChar(Preferences& prefs, const char* key, uint8_t value);
+  static bool putUInt(Preferences& prefs, const char* key, uint32_t value);
+  static bool putInt(Preferences& prefs, const char* key, int value);
+  static bool putFloat(Preferences& prefs, const char* key, float value);
 
   // DRY Generic update helpers - use these directly instead of wrapper methods
   static PrefResult updateBoolValue(const char* namespaceKey, const char* key, bool value);

@@ -23,37 +23,35 @@ String getSensorMeasurementKey(uint8_t measurementIndex, const char* suffix) {
 } // namespace PreferencesNamespaces
 
 // Helper functions for type-safe access
-String PreferencesManager::getString(PreferencesEEPROM& prefs, const char* key,
+String PreferencesManager::getString(Preferences& prefs, const char* key,
                                      const String& defaultValue) {
   return prefs.getString(key, defaultValue);
 }
 
-bool PreferencesManager::getBool(PreferencesEEPROM& prefs, const char* key, bool defaultValue) {
+bool PreferencesManager::getBool(Preferences& prefs, const char* key, bool defaultValue) {
   return prefs.getBool(key, defaultValue);
 }
 
-uint8_t PreferencesManager::getUChar(PreferencesEEPROM& prefs, const char* key,
-                                     uint8_t defaultValue) {
+uint8_t PreferencesManager::getUChar(Preferences& prefs, const char* key, uint8_t defaultValue) {
   return prefs.getUChar(key, defaultValue);
 }
 
-uint32_t PreferencesManager::getUInt(PreferencesEEPROM& prefs, const char* key,
-                                     uint32_t defaultValue) {
+uint32_t PreferencesManager::getUInt(Preferences& prefs, const char* key, uint32_t defaultValue) {
   return prefs.getUInt(key, defaultValue);
 }
 
-int PreferencesManager::getInt(PreferencesEEPROM& prefs, const char* key, int defaultValue) {
+int PreferencesManager::getInt(Preferences& prefs, const char* key, int defaultValue) {
   return prefs.getInt(key, defaultValue);
 }
 
-float PreferencesManager::getFloat(PreferencesEEPROM& prefs, const char* key, float defaultValue) {
+float PreferencesManager::getFloat(Preferences& prefs, const char* key, float defaultValue) {
   return prefs.getFloat(key, defaultValue);
 }
 
 // Convenience getters that accept a namespace key
 String PreferencesManager::getString(const char* namespaceKey, const char* key,
                                      const String& defaultValue) {
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(namespaceKey, true)) {
     // If cannot open, return default
     return defaultValue;
@@ -64,7 +62,7 @@ String PreferencesManager::getString(const char* namespaceKey, const char* key,
 }
 
 bool PreferencesManager::getBool(const char* namespaceKey, const char* key, bool defaultValue) {
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(namespaceKey, true)) {
     return defaultValue;
   }
@@ -75,7 +73,7 @@ bool PreferencesManager::getBool(const char* namespaceKey, const char* key, bool
 
 uint32_t PreferencesManager::getUInt(const char* namespaceKey, const char* key,
                                      uint32_t defaultValue) {
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(namespaceKey, true)) {
     return defaultValue;
   }
@@ -84,33 +82,33 @@ uint32_t PreferencesManager::getUInt(const char* namespaceKey, const char* key,
   return val;
 }
 
-bool PreferencesManager::putString(PreferencesEEPROM& prefs, const char* key, const String& value) {
+bool PreferencesManager::putString(Preferences& prefs, const char* key, const String& value) {
   return prefs.putString(key, value) > 0;
 }
 
-bool PreferencesManager::putBool(PreferencesEEPROM& prefs, const char* key, bool value) {
+bool PreferencesManager::putBool(Preferences& prefs, const char* key, bool value) {
   return prefs.putBool(key, value) > 0;
 }
 
-bool PreferencesManager::putUChar(PreferencesEEPROM& prefs, const char* key, uint8_t value) {
+bool PreferencesManager::putUChar(Preferences& prefs, const char* key, uint8_t value) {
   return prefs.putUChar(key, value) > 0;
 }
 
-bool PreferencesManager::putUInt(PreferencesEEPROM& prefs, const char* key, uint32_t value) {
+bool PreferencesManager::putUInt(Preferences& prefs, const char* key, uint32_t value) {
   return prefs.putUInt(key, value) > 0;
 }
 
-bool PreferencesManager::putInt(PreferencesEEPROM& prefs, const char* key, int value) {
+bool PreferencesManager::putInt(Preferences& prefs, const char* key, int value) {
   return prefs.putInt(key, value) > 0;
 }
 
-bool PreferencesManager::putFloat(PreferencesEEPROM& prefs, const char* key, float value) {
+bool PreferencesManager::putFloat(Preferences& prefs, const char* key, float value) {
   return prefs.putFloat(key, value) > 0;
 }
 
 // Check if namespace exists
 bool PreferencesManager::namespaceExists(const char* namespaceName) {
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   bool opened = prefs.begin(namespaceName, true); // Read-only
   if (opened) {
     // Check if there's at least one key
@@ -123,7 +121,7 @@ bool PreferencesManager::namespaceExists(const char* namespaceName) {
 
 // Initialize general namespace with defaults
 PreferencesManager::PrefResult PreferencesManager::initGeneralNamespace() {
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(PreferencesNamespaces::GENERAL, false)) {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des General-Namespace"));
     return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open general namespace");
@@ -143,50 +141,30 @@ PreferencesManager::PrefResult PreferencesManager::initGeneralNamespace() {
   return PrefResult::success();
 }
 
-// Initialize WiFi namespaces with defaults - now uses separate namespace for each WiFi set
+// Initialize WiFi namespace with defaults
 PreferencesManager::PrefResult PreferencesManager::initWiFiNamespace() {
-  // Initialize WiFi1
-  PreferencesEEPROM prefs1;
-  if (!prefs1.begin(PreferencesNamespaces::WIFI1, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi1-Namespace"));
-    return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open WiFi1 namespace");
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::WIFI, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi-Namespace"));
+    return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open WiFi namespace");
   }
-  putBool(prefs1, "initialized", true);
-  putString(prefs1, "ssid", String(WIFI_SSID_1));
-  putString(prefs1, "pwd", String(WIFI_PASSWORD_1));
-  prefs1.end();
-  logger.info(F("PrefMgr"), F("WiFi1-Namespace initialisiert"));
 
-  // Initialize WiFi2
-  PreferencesEEPROM prefs2;
-  if (!prefs2.begin(PreferencesNamespaces::WIFI2, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi2-Namespace"));
-    return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open WiFi2 namespace");
-  }
-  putBool(prefs2, "initialized", true);
-  putString(prefs2, "ssid", String(WIFI_SSID_2));
-  putString(prefs2, "pwd", String(WIFI_PASSWORD_2));
-  prefs2.end();
-  logger.info(F("PrefMgr"), F("WiFi2-Namespace initialisiert"));
+  putBool(prefs, "initialized", true);
+  putString(prefs, "ssid1", String(WIFI_SSID_1));
+  putString(prefs, "pwd1", String(WIFI_PASSWORD_1));
+  putString(prefs, "ssid2", String(WIFI_SSID_2));
+  putString(prefs, "pwd2", String(WIFI_PASSWORD_2));
+  putString(prefs, "ssid3", String(WIFI_SSID_3));
+  putString(prefs, "pwd3", String(WIFI_PASSWORD_3));
 
-  // Initialize WiFi3
-  PreferencesEEPROM prefs3;
-  if (!prefs3.begin(PreferencesNamespaces::WIFI3, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi3-Namespace"));
-    return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open WiFi3 namespace");
-  }
-  putBool(prefs3, "initialized", true);
-  putString(prefs3, "ssid", String(WIFI_SSID_3));
-  putString(prefs3, "pwd", String(WIFI_PASSWORD_3));
-  prefs3.end();
-  logger.info(F("PrefMgr"), F("WiFi3-Namespace initialisiert"));
-
+  prefs.end();
+  logger.info(F("PrefMgr"), F("WiFi-Namespace mit Standardwerten initialisiert"));
   return PrefResult::success();
 }
 
 // Initialize Display namespace with defaults
 PreferencesManager::PrefResult PreferencesManager::initDisplayNamespace() {
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Display-Namespace"));
     return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open display namespace");
@@ -207,7 +185,7 @@ PreferencesManager::PrefResult PreferencesManager::initDisplayNamespace() {
 
 // Initialize Log namespace with defaults
 PreferencesManager::PrefResult PreferencesManager::initLogNamespace() {
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(PreferencesNamespaces::LOG, false)) {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Log-Namespace"));
     return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open log namespace");
@@ -224,7 +202,7 @@ PreferencesManager::PrefResult PreferencesManager::initLogNamespace() {
 
 // Initialize LED Traffic Light namespace with defaults
 PreferencesManager::PrefResult PreferencesManager::initLedTrafficNamespace() {
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(PreferencesNamespaces::LED_TRAFFIC, false)) {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des LED-Traffic-Namespace"));
     return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open LED traffic namespace");
@@ -241,7 +219,7 @@ PreferencesManager::PrefResult PreferencesManager::initLedTrafficNamespace() {
 
 // Initialize Debug namespace with defaults
 PreferencesManager::PrefResult PreferencesManager::initDebugNamespace() {
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(PreferencesNamespaces::DEBUG, false)) {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Debug-Namespace"));
     return PrefResult::fail(ConfigError::FILE_ERROR, "Cannot open debug namespace");
@@ -272,15 +250,12 @@ PreferencesManager::PrefResult PreferencesManager::initializeAllNamespaces() {
     logger.info(F("PrefMgr"), F("General-Namespace bereits vorhanden"));
   }
 
-  // Check and initialize WiFi namespaces (wifi1, wifi2, wifi3)
-  if (!namespaceExists(PreferencesNamespaces::WIFI1) || 
-      !namespaceExists(PreferencesNamespaces::WIFI2) || 
-      !namespaceExists(PreferencesNamespaces::WIFI3)) {
+  if (!namespaceExists(PreferencesNamespaces::WIFI)) {
     auto result = initWiFiNamespace();
     if (!result.isSuccess())
       return result;
   } else {
-    logger.info(F("PrefMgr"), F("WiFi-Namespaces bereits vorhanden"));
+    logger.info(F("PrefMgr"), F("WiFi-Namespace bereits vorhanden"));
   }
 
   if (!namespaceExists(PreferencesNamespaces::DISP)) {
@@ -329,7 +304,7 @@ PreferencesManager::PrefResult PreferencesManager::clearAll() {
                               PreferencesNamespaces::LED_TRAFFIC, PreferencesNamespaces::DEBUG};
 
   for (const char* ns : namespaces) {
-    PreferencesEEPROM prefs;
+    Preferences prefs;
     if (prefs.begin(ns, false)) {
       prefs.clear();
       prefs.end();
@@ -348,7 +323,7 @@ PreferencesManager::saveSensorSettings(const String& sensorId, const String& nam
                                        unsigned long measurementInterval, bool hasPersistentError) {
 
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.error(F("PrefMgr"),
                  String(F("Fehler beim Speichern der Sensor-Einstellungen für ")) + sensorId);
@@ -371,7 +346,7 @@ PreferencesManager::loadSensorSettings(const String& sensorId, String& name,
                                        bool& hasPersistentError) {
 
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(ns.c_str(), true)) {
     logger.warning(F("PrefMgr"), String(F("Sensor-Namespace nicht gefunden für ")) + sensorId);
     return PrefResult::fail(ConfigError::FILE_ERROR, "Sensor namespace not found");
@@ -394,7 +369,7 @@ PreferencesManager::PrefResult PreferencesManager::saveSensorMeasurement(
     uint32_t autocalDuration, int absoluteRawMin, int absoluteRawMax) {
 
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.error(F("PrefMgr"), String(F("Fehler beim Speichern der Messwerte für ")) + sensorId);
     return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
@@ -430,7 +405,7 @@ PreferencesManager::PrefResult PreferencesManager::loadSensorMeasurement(
     uint32_t& autocalDuration, int& absoluteRawMin, int& absoluteRawMax) {
 
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(ns.c_str(), true)) {
     logger.warning(F("PrefMgr"), String(F("Sensor-Namespace nicht gefunden für ")) + sensorId);
     return PrefResult::fail(ConfigError::FILE_ERROR, "Sensor namespace not found");
@@ -468,7 +443,7 @@ bool PreferencesManager::sensorNamespaceExists(const String& sensorId) {
 // Clear sensor namespace
 PreferencesManager::PrefResult PreferencesManager::clearSensorNamespace(const String& sensorId) {
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (prefs.begin(ns.c_str(), false)) {
     prefs.clear();
     prefs.end();
@@ -487,27 +462,21 @@ PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t
     return PrefResult::fail(ConfigError::VALIDATION_ERROR, "Invalid WiFi set index (must be 1-3)");
   }
 
-  // Use separate namespace for each WiFi set
-  const char* wifiNamespace = nullptr;
-  if (setIndex == 1) wifiNamespace = PreferencesNamespaces::WIFI1;
-  else if (setIndex == 2) wifiNamespace = PreferencesNamespaces::WIFI2;
-  else if (setIndex == 3) wifiNamespace = PreferencesNamespaces::WIFI3;
-
-  PreferencesEEPROM prefs;
-  if (!prefs.begin(wifiNamespace, false)) {
-    logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des WiFi-Namespace: ")) + wifiNamespace);
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::WIFI, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi-Namespace"));
     return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open WiFi namespace");
   }
 
-  // Use simple keys "ssid" and "pwd" since each WiFi set has its own namespace
-  if (!putString(prefs, "ssid", ssid) || !putString(prefs, "pwd", password)) {
+  String ssidKey = "ssid" + String(setIndex);
+  String pwdKey = "pwd" + String(setIndex);
+
+  if (!putString(prefs, ssidKey.c_str(), ssid) || !putString(prefs, pwdKey.c_str(), password)) {
     prefs.end();
-    logger.error(F("PrefMgr"), String(F("Failed to save WiFi credentials to ")) + wifiNamespace);
     return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save WiFi credentials");
   }
 
   prefs.end();
-  logger.debug(F("PrefMgr"), String(F("WiFi credentials saved to ")) + wifiNamespace);
   return PrefResult::success();
 }
 
@@ -515,7 +484,7 @@ PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t
 
 PreferencesManager::PrefResult PreferencesManager::updateBoolValue(const char* namespaceKey,
                                                                    const char* key, bool value) {
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(namespaceKey, false)) {
     logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des Namespace: ")) + namespaceKey);
     return PrefResult::fail(ConfigError::SAVE_FAILED,
@@ -534,7 +503,7 @@ PreferencesManager::PrefResult PreferencesManager::updateBoolValue(const char* n
 PreferencesManager::PrefResult PreferencesManager::updateStringValue(const char* namespaceKey,
                                                                      const char* key,
                                                                      const String& value) {
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(namespaceKey, false)) {
     logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des Namespace: ")) + namespaceKey);
     return PrefResult::fail(ConfigError::SAVE_FAILED,
@@ -552,7 +521,7 @@ PreferencesManager::PrefResult PreferencesManager::updateStringValue(const char*
 
 PreferencesManager::PrefResult
 PreferencesManager::updateUInt8Value(const char* namespaceKey, const char* key, uint8_t value) {
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(namespaceKey, false)) {
     logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des Namespace: ")) + namespaceKey);
     return PrefResult::fail(ConfigError::SAVE_FAILED,
@@ -570,7 +539,7 @@ PreferencesManager::updateUInt8Value(const char* namespaceKey, const char* key, 
 
 PreferencesManager::PrefResult
 PreferencesManager::updateUIntValue(const char* namespaceKey, const char* key, unsigned int value) {
-  PreferencesEEPROM prefs;
+  Preferences prefs;
   if (!prefs.begin(namespaceKey, false)) {
     logger.error(F("PrefMgr"), String(F("Fehler beim Öffnen des Namespace: ")) + namespaceKey);
     return PrefResult::fail(ConfigError::SAVE_FAILED,

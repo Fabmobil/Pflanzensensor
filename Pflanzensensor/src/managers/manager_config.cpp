@@ -13,11 +13,6 @@
 #include "../web/handler/admin_handler.h"
 #include "../web/handler/web_ota_handler.h"
 #include "managers/manager_config_preferences.h"
-// Include display manager when display is enabled so we have the full
-// definition of DisplayManager (needed where we call displayManager->loadConfig()).
-#if USE_DISPLAY
-#include "managers/manager_display.h"
-#endif
 
 ConfigManager::ConfigManager()
     : m_webHandler(*this), m_debugConfig(m_notifier), m_sensorErrorTracker(m_notifier) {}
@@ -29,12 +24,6 @@ ConfigManager& ConfigManager::getInstance() {
 
 ConfigManager::ConfigResult ConfigManager::loadConfig() {
   ScopedLock lock;
-
-  // Load and apply log level from Preferences FIRST, before loading other config
-  // This ensures the correct log level is active for all subsequent log messages
-  String logLevel = PreferencesManager::getString(PreferencesNamespaces::LOG, "level", String(LOG_LEVEL));
-  logger.setLogLevel(Logger::stringToLogLevel(logLevel));
-  logger.debug(F("ConfigM"), String(F("Log-Level geladen: ")) + logLevel);
 
   // Load main configuration
   auto result = ConfigPersistence::load(m_configData);
@@ -51,12 +40,6 @@ ConfigManager::ConfigResult ConfigManager::loadConfig() {
 
   // Apply logging settings
   logger.enableFileLogging(m_configData.fileLoggingEnabled);
-
-  // Load and apply log level from Preferences
-  String logLevel =
-      PreferencesManager::getString(PreferencesNamespaces::LOG, "level", String(LOG_LEVEL));
-  logger.setLogLevel(Logger::stringToLogLevel(logLevel));
-  logger.info(F("ConfigM"), String(F("Log-Level geladen: ")) + logLevel);
 
   return ConfigResult::success();
 }
@@ -137,8 +120,7 @@ ConfigManager::ConfigResult ConfigManager::setAdminPassword(const String& passwo
 
   if (m_configData.adminPassword != password) {
     m_configData.adminPassword = password;
-    auto saveResult = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL,
-                                                            "admin_pwd", password);
+    auto saveResult = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "admin_pwd", password);
     if (!saveResult.isSuccess()) {
       return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
                                 saveResult.getMessage());
@@ -150,34 +132,23 @@ ConfigManager::ConfigResult ConfigManager::setAdminPassword(const String& passwo
 
 ConfigManager::ConfigResult ConfigManager::setMD5Verification(bool enabled) {
   ScopedLock lock;
-  return updateBoolConfig(
-      m_configData.md5Verification, enabled,
-      [](bool val) {
-        return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "md5_verify",
-                                                   val);
-      },
-      "md5_verification", true);
+  return updateBoolConfig(m_configData.md5Verification, enabled, 
+                         [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "md5_verify", val); },
+                         "md5_verification", true);
 }
 
 ConfigManager::ConfigResult ConfigManager::setCollectdEnabled(bool enabled) {
   ScopedLock lock;
-  return updateBoolConfig(
-      m_configData.collectdEnabled, enabled,
-      [](bool val) {
-        return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "collectd_en",
-                                                   val);
-      },
-      "collectd_enabled", true);
+  return updateBoolConfig(m_configData.collectdEnabled, enabled,
+                         [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "collectd_en", val); },
+                         "collectd_enabled", true);
 }
 
 ConfigManager::ConfigResult ConfigManager::setFileLoggingEnabled(bool enabled) {
   ScopedLock lock;
-  return updateBoolConfig(
-      m_configData.fileLoggingEnabled, enabled,
-      [](bool val) {
-        return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "file_log", val);
-      },
-      "file_logging_enabled", true);
+  return updateBoolConfig(m_configData.fileLoggingEnabled, enabled,
+                         [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "file_log", val); },
+                         "file_logging_enabled", true);
 }
 
 ConfigManager::ConfigResult ConfigManager::setUpdateFlags(bool fileSystem, bool firmware) {
@@ -252,14 +223,14 @@ ConfigManager::ConfigResult ConfigManager::setLogLevel(const String& level) {
   }
 
   logger.setLogLevel(Logger::stringToLogLevel(level));
-
+  
   // Persist to Preferences
   auto result = PreferencesManager::updateStringValue(PreferencesNamespaces::LOG, "level", level);
   if (!result.isSuccess()) {
     logger.error(F("ConfigM"), F("Failed to persist log_level: ") + result.getMessage());
     return ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
   }
-
+  
   notifyConfigChange("log_level", level, true);
 
   return ConfigResult::success();
@@ -401,57 +372,55 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
     }
   }
 
-  // Handle WiFi namespace - now using separate namespaces for each WiFi set
+  // Handle WiFi namespace
   else if (namespaceName == "wifi") {
-    // Determine which WiFi set and namespace to use
-    const char* wifiNamespace = nullptr;
-    const char* keyName = nullptr;
-
-    if (key == "ssid1" || key == "pwd1") {
-      wifiNamespace = PreferencesNamespaces::WIFI1;
-      keyName = (key == "ssid1") ? "ssid" : "pwd";
-    } else if (key == "ssid2" || key == "pwd2") {
-      wifiNamespace = PreferencesNamespaces::WIFI2;
-      keyName = (key == "ssid2") ? "ssid" : "pwd";
-    } else if (key == "ssid3" || key == "pwd3") {
-      wifiNamespace = PreferencesNamespaces::WIFI3;
-      keyName = (key == "ssid3") ? "ssid" : "pwd";
-    }
-
-    if (!wifiNamespace) {
-      return ConfigResult::fail(ConfigError::VALIDATION_ERROR, F("Unknown WiFi key"));
-    }
-
-    PreferencesEEPROM prefs;
-    if (!prefs.begin(wifiNamespace, false)) {
-      logger.error(F("ConfigM"), String(F("Failed to open WiFi namespace: ")) + wifiNamespace);
+    Preferences prefs;
+    if (!prefs.begin(PreferencesNamespaces::WIFI, false)) {
       return ConfigResult::fail(ConfigError::FILE_ERROR, F("Failed to open WiFi namespace"));
     }
 
-    bool success = PreferencesManager::putString(prefs, keyName, value);
-    prefs.end();
-
-    if (!success) {
-      logger.error(F("ConfigM"), String(F("Failed to save ")) + key);
-      return ConfigResult::fail(ConfigError::SAVE_FAILED, F("Failed to save WiFi setting"));
+    bool success = false;
+    String displayValue = value;
+    if (key == "ssid1") {
+      success = PreferencesManager::putString(prefs, "ssid1", value);
+      if (success)
+        setWiFiSSID1(value);
+    } else if (key == "pwd1") {
+      success = PreferencesManager::putString(prefs, "pwd1", value);
+      if (success)
+        setWiFiPassword1(value);
+      displayValue = "***";
+    } else if (key == "ssid2") {
+      success = PreferencesManager::putString(prefs, "ssid2", value);
+      if (success)
+        setWiFiSSID2(value);
+    } else if (key == "pwd2") {
+      success = PreferencesManager::putString(prefs, "pwd2", value);
+      if (success)
+        setWiFiPassword2(value);
+      displayValue = "***";
+    } else if (key == "ssid3") {
+      success = PreferencesManager::putString(prefs, "ssid3", value);
+      if (success)
+        setWiFiSSID3(value);
+    } else if (key == "pwd3") {
+      success = PreferencesManager::putString(prefs, "pwd3", value);
+      if (success)
+        setWiFiPassword3(value);
+      displayValue = "***";
     }
 
-    // Update RAM config
-    if (key == "ssid1") setWiFiSSID1(value);
-    else if (key == "pwd1") setWiFiPassword1(value);
-    else if (key == "ssid2") setWiFiSSID2(value);
-    else if (key == "pwd2") setWiFiPassword2(value);
-    else if (key == "ssid3") setWiFiSSID3(value);
-    else if (key == "pwd3") setWiFiPassword3(value);
-
-    String displayValue = key.indexOf("pwd") >= 0 ? "***" : value;
-    logger.info(F("ConfigM"), String(F("WiFi ")) + key + F(" gespeichert in ") + wifiNamespace + F(": ") + displayValue);
+    prefs.end();
+    if (!success) {
+      return ConfigResult::fail(ConfigError::SAVE_FAILED, F("Failed to save WiFi setting"));
+    }
+    logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + key + F(" = ") + displayValue);
     return ConfigResult::success();
   }
 
   // Handle display namespace
   else if (namespaceName == "display") {
-    PreferencesEEPROM prefs;
+    Preferences prefs;
     if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
       return ConfigResult::fail(ConfigError::FILE_ERROR, F("Failed to open display namespace"));
     }
@@ -460,36 +429,30 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
     String displayValue = value;
     if (key == "show_ip") {
       bool enabled = (value == "true" || value == "1");
-      auto result =
-          PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_ip", enabled);
+      auto result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_ip", enabled);
       success = result.isSuccess();
       displayValue = enabled ? F("true") : F("false");
     } else if (key == "show_clock") {
       bool enabled = (value == "true" || value == "1");
-      auto result =
-          PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_clock", enabled);
+      auto result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_clock", enabled);
       success = result.isSuccess();
       displayValue = enabled ? F("true") : F("false");
     } else if (key == "show_flower") {
       bool enabled = (value == "true" || value == "1");
-      auto result =
-          PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_flower", enabled);
+      auto result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_flower", enabled);
       success = result.isSuccess();
       displayValue = enabled ? F("true") : F("false");
     } else if (key == "show_fabmobil") {
       bool enabled = (value == "true" || value == "1");
-      auto result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP,
-                                                        "show_fabmobil", enabled);
+      auto result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_fabmobil", enabled);
       success = result.isSuccess();
       displayValue = enabled ? F("true") : F("false");
     } else if (key == "screen_dur") {
       unsigned int duration = value.toInt();
-      auto result =
-          PreferencesManager::updateUIntValue(PreferencesNamespaces::DISP, "screen_dur", duration);
+      auto result = PreferencesManager::updateUIntValue(PreferencesNamespaces::DISP, "screen_dur", duration);
       success = result.isSuccess();
     } else if (key == "clock_fmt") {
-      auto result =
-          PreferencesManager::updateStringValue(PreferencesNamespaces::DISP, "clock_fmt", value);
+      auto result = PreferencesManager::updateStringValue(PreferencesNamespaces::DISP, "clock_fmt", value);
       success = result.isSuccess();
     }
 
@@ -498,16 +461,6 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
       return ConfigResult::fail(ConfigError::SAVE_FAILED, F("Failed to save display setting"));
     }
     logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + key + F(" = ") + displayValue);
-
-    // Reload display manager configuration to apply changes immediately
-#if USE_DISPLAY
-    // manager_display.h defines: extern std::unique_ptr<DisplayManager> displayManager;
-    if (displayManager) {
-      displayManager->reloadConfig();
-      logger.debug(F("ConfigM"), F("Display-Konfiguration neu geladen"));
-    }
-#endif
-
     notifyConfigChange(key, value, false);
     return ConfigResult::success();
   }
@@ -575,7 +528,7 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
 
   // Handle sensor namespaces (format: s_SENSORID)
   else if (namespaceName.startsWith("s_")) {
-    PreferencesEEPROM prefs;
+    Preferences prefs;
     if (!prefs.begin(namespaceName.c_str(), false)) {
       return ConfigResult::fail(ConfigError::FILE_ERROR,
                                 F("Failed to open sensor namespace: ") + namespaceName);
@@ -630,6 +583,8 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
                             F("Unknown namespace or key: ") + namespaceName + F(".") + key);
 }
 
+
+
 void ConfigManager::addChangeCallback(ConfigNotifier::ChangeCallback callback) {
   m_notifier.addChangeCallback(callback);
 }
@@ -644,88 +599,79 @@ void ConfigManager::notifyConfigChange(const String& key, const String& value, b
 
 // ====== Generic DRY Helper Methods ======
 
-ConfigManager::ConfigResult ConfigManager::updateBoolConfig(bool& currentValue, bool newValue,
-                                                            BoolUpdateFunc updateFunc,
-                                                            const String& notifyKey,
-                                                            bool updateSensors) {
-
+ConfigManager::ConfigResult ConfigManager::updateBoolConfig(
+    bool& currentValue, bool newValue, BoolUpdateFunc updateFunc,
+    const String& notifyKey, bool updateSensors) {
+  
   if (currentValue != newValue) {
     currentValue = newValue;
-
+    
     // Persist atomically to Preferences
     auto saveResult = updateFunc(newValue);
     if (!saveResult.isSuccess()) {
-      logger.error(F("ConfigM"),
-                   String(F("Failed to persist ")) + notifyKey + F(": ") + saveResult.getMessage());
+      logger.error(F("ConfigM"), String(F("Failed to persist ")) + notifyKey + F(": ") + saveResult.getMessage());
       return ConfigResult::fail(ConfigError::SAVE_FAILED, saveResult.getMessage());
     }
-
+    
     notifyConfigChange(notifyKey, newValue ? "true" : "false", updateSensors);
   }
   return ConfigResult::success();
 }
 
-ConfigManager::ConfigResult ConfigManager::updateStringConfig(String& currentValue,
-                                                              const String& newValue,
-                                                              StringUpdateFunc updateFunc,
-                                                              const String& notifyKey,
-                                                              bool updateSensors) {
-
+ConfigManager::ConfigResult ConfigManager::updateStringConfig(
+    String& currentValue, const String& newValue, StringUpdateFunc updateFunc,
+    const String& notifyKey, bool updateSensors) {
+  
   if (currentValue != newValue) {
     currentValue = newValue;
-
+    
     // Persist atomically to Preferences
     auto saveResult = updateFunc(newValue);
     if (!saveResult.isSuccess()) {
-      logger.error(F("ConfigM"),
-                   String(F("Failed to persist ")) + notifyKey + F(": ") + saveResult.getMessage());
+      logger.error(F("ConfigM"), String(F("Failed to persist ")) + notifyKey + F(": ") + saveResult.getMessage());
       return ConfigResult::fail(ConfigError::SAVE_FAILED, saveResult.getMessage());
     }
-
+    
     notifyConfigChange(notifyKey, newValue, updateSensors);
   }
   return ConfigResult::success();
 }
 
-ConfigManager::ConfigResult ConfigManager::updateUInt8Config(uint8_t& currentValue,
-                                                             uint8_t newValue,
-                                                             UInt8UpdateFunc updateFunc,
-                                                             const String& notifyKey,
-                                                             bool updateSensors) {
-
+ConfigManager::ConfigResult ConfigManager::updateUInt8Config(
+    uint8_t& currentValue, uint8_t newValue, UInt8UpdateFunc updateFunc,
+    const String& notifyKey, bool updateSensors) {
+  
   if (currentValue != newValue) {
     currentValue = newValue;
-
+    
     // Persist atomically to Preferences
     auto saveResult = updateFunc(newValue);
     if (!saveResult.isSuccess()) {
-      logger.error(F("ConfigM"),
-                   String(F("Failed to persist ")) + notifyKey + F(": ") + saveResult.getMessage());
+      logger.error(F("ConfigM"), String(F("Failed to persist ")) + notifyKey + F(": ") + saveResult.getMessage());
       return ConfigResult::fail(ConfigError::SAVE_FAILED, saveResult.getMessage());
     }
-
+    
     notifyConfigChange(notifyKey, String(newValue), updateSensors);
   }
   return ConfigResult::success();
 }
 
-ConfigManager::ConfigResult ConfigManager::updateDebugConfig(bool enabled,
-                                                             DebugSetFunc debugSetFunc,
-                                                             BoolUpdateFunc updateFunc) {
-
+ConfigManager::ConfigResult ConfigManager::updateDebugConfig(
+    bool enabled, DebugSetFunc debugSetFunc, BoolUpdateFunc updateFunc) {
+  
   auto result = (m_debugConfig.*debugSetFunc)(enabled);
   if (!result.isSuccess()) {
     return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
-                              result.getMessage());
+                             result.getMessage());
   }
-
+  
   // Persist atomically to Preferences
   auto saveResult = updateFunc(enabled);
   if (!saveResult.isSuccess()) {
     return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
-                              saveResult.getMessage());
+                             saveResult.getMessage());
   }
-
+  
   return ConfigResult::success();
 }
 
@@ -737,74 +683,52 @@ void ConfigManager::syncSubsystemData() {
 // ====== Simplified Setters Using DRY Helpers ======
 
 ConfigManager::ConfigResult ConfigManager::setDebugRAM(bool enabled) {
-  return updateDebugConfig(enabled, &DebugConfig::setRAMDebug, [](bool val) {
-    return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "ram", val);
-  });
+  return updateDebugConfig(enabled, &DebugConfig::setRAMDebug, 
+                          [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "ram", val); });
 }
 
 ConfigManager::ConfigResult ConfigManager::setDebugMeasurementCycle(bool enabled) {
-  return updateDebugConfig(enabled, &DebugConfig::setMeasurementCycleDebug, [](bool val) {
-    return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "meas_cycle", val);
-  });
+  return updateDebugConfig(enabled, &DebugConfig::setMeasurementCycleDebug,
+                          [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "meas_cycle", val); });
 }
 
 ConfigManager::ConfigResult ConfigManager::setDebugSensor(bool enabled) {
-  return updateDebugConfig(enabled, &DebugConfig::setSensorDebug, [](bool val) {
-    return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "sensor", val);
-  });
+  return updateDebugConfig(enabled, &DebugConfig::setSensorDebug,
+                          [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "sensor", val); });
 }
 
 ConfigManager::ConfigResult ConfigManager::setDebugDisplay(bool enabled) {
-  return updateDebugConfig(enabled, &DebugConfig::setDisplayDebug, [](bool val) {
-    return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "display", val);
-  });
+  return updateDebugConfig(enabled, &DebugConfig::setDisplayDebug,
+                          [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "display", val); });
 }
 
 ConfigManager::ConfigResult ConfigManager::setDebugWebSocket(bool enabled) {
-  return updateDebugConfig(enabled, &DebugConfig::setWebSocketDebug, [](bool val) {
-    return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "websocket", val);
-  });
+  return updateDebugConfig(enabled, &DebugConfig::setWebSocketDebug,
+                          [](bool val) { return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "websocket", val); });
 }
 
 ConfigManager::ConfigResult ConfigManager::setDeviceName(const String& name) {
-  return updateStringConfig(
-      m_configData.deviceName, name,
-      [](const String& val) {
-        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "device_name",
-                                                     val);
-      },
-      "device_name", false);
+  return updateStringConfig(m_configData.deviceName, name,
+                           [](const String& val) { return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "device_name", val); },
+                           "device_name", false);
 }
 
 ConfigManager::ConfigResult ConfigManager::setFlowerStatusSensor(const String& sensorId) {
-  return updateStringConfig(
-      m_configData.flowerStatusSensor, sensorId,
-      [](const String& val) {
-        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "flower_sens",
-                                                     val);
-      },
-      "flower_status_sensor", false);
+  return updateStringConfig(m_configData.flowerStatusSensor, sensorId,
+                           [](const String& val) { return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "flower_sens", val); },
+                           "flower_status_sensor", false);
 }
 
 ConfigManager::ConfigResult ConfigManager::setLedTrafficLightMode(uint8_t mode) {
-  return updateUInt8Config(
-      m_configData.ledTrafficLightMode, mode,
-      [](uint8_t val) {
-        return PreferencesManager::updateUInt8Value(PreferencesNamespaces::LED_TRAFFIC, "mode",
-                                                    val);
-      },
-      "led_traffic_light_mode", false);
+  return updateUInt8Config(m_configData.ledTrafficLightMode, mode,
+                          [](uint8_t val) { return PreferencesManager::updateUInt8Value(PreferencesNamespaces::LED_TRAFFIC, "mode", val); },
+                          "led_traffic_light_mode", false);
 }
 
-ConfigManager::ConfigResult
-ConfigManager::setLedTrafficLightSelectedMeasurement(const String& measurementId) {
-  return updateStringConfig(
-      m_configData.ledTrafficLightSelectedMeasurement, measurementId,
-      [](const String& val) {
-        return PreferencesManager::updateStringValue(PreferencesNamespaces::LED_TRAFFIC, "sel_meas",
-                                                     val);
-      },
-      "led_traffic_light_selected_measurement", false);
+ConfigManager::ConfigResult ConfigManager::setLedTrafficLightSelectedMeasurement(const String& measurementId) {
+  return updateStringConfig(m_configData.ledTrafficLightSelectedMeasurement, measurementId,
+                           [](const String& val) { return PreferencesManager::updateStringValue(PreferencesNamespaces::LED_TRAFFIC, "sel_meas", val); },
+                           "led_traffic_light_selected_measurement", false);
 }
 
 // ====== Simplified Setters Using DRY Helpers (defined at end of file) ======
