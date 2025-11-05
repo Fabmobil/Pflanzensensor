@@ -392,7 +392,7 @@ void WebOTAHandler::handleUpdateUpload() {
         delay(100); // Brief delay to let filesystem stabilize
         
         // Check if settings survived (they MUST - they're in EEPROM)
-        Preferences testPrefs;
+        PreferencesEEPROM testPrefs;
         bool settingsSurvived = false;
         if (testPrefs.begin(PreferencesNamespaces::GENERAL, true)) {
           settingsSurvived = testPrefs.isKey("device_name");
@@ -525,7 +525,7 @@ size_t WebOTAHandler::calculateRequiredSpace(bool isFilesystem) const {
 bool WebOTAHandler::backupAllPreferences() {
   logger.info(F("WebOTAHandler"), F("Sichere Preferences vor Dateisystem-Update..."));
 
-  Preferences prefs;
+  PreferencesEEPROM prefs;
   _prefsBackup.hasBackup = false;
 
   // Backup general namespace
@@ -624,7 +624,7 @@ void WebOTAHandler::backupSensorSettings() {
 
 void WebOTAHandler::backupOneSensor(const char* sensorId) {
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  Preferences prefs;
+  PreferencesEEPROM prefs;
   
   if (!prefs.begin(ns.c_str(), true)) {
     // Sensor namespace doesn't exist - skip silently
@@ -796,7 +796,7 @@ void WebOTAHandler::restoreSensorSettings() {
   for (const char* sensorId : sensorIds) {
     // First check if main namespace still exists (survived filesystem update)
     String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-    Preferences testPrefs;
+    PreferencesEEPROM testPrefs;
     bool mainExists = false;
     
     if (testPrefs.begin(ns.c_str(), true)) {
@@ -836,7 +836,7 @@ void WebOTAHandler::restoreOneSensor(const char* sensorId) {
   
   // Open main sensor namespace for writing
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-  Preferences prefs;
+  PreferencesEEPROM prefs;
   if (!prefs.begin(ns.c_str(), false)) {
     logger.warning(F("WebOTAHandler"),
                    String(F("Konnte Sensor-Namespace nicht öffnen für ")) + sensorId);

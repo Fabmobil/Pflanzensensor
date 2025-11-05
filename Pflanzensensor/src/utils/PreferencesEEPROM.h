@@ -128,6 +128,3 @@ private:
 
   static bool _initialized;
 };
-
-// Type alias for compatibility
-using Preferences = PreferencesEEPROM;

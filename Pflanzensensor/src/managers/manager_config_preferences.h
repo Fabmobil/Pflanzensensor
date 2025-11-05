@@ -102,12 +102,12 @@ public:
                                           const String& password);
 
   // Helper functions for type-safe access
-  static String getString(Preferences& prefs, const char* key, const String& defaultValue = "");
-  static bool getBool(Preferences& prefs, const char* key, bool defaultValue = false);
-  static uint8_t getUChar(Preferences& prefs, const char* key, uint8_t defaultValue = 0);
-  static uint32_t getUInt(Preferences& prefs, const char* key, uint32_t defaultValue = 0);
-  static int getInt(Preferences& prefs, const char* key, int defaultValue = 0);
-  static float getFloat(Preferences& prefs, const char* key, float defaultValue = 0.0f);
+  static String getString(PreferencesEEPROM& prefs, const char* key, const String& defaultValue = "");
+  static bool getBool(PreferencesEEPROM& prefs, const char* key, bool defaultValue = false);
+  static uint8_t getUChar(PreferencesEEPROM& prefs, const char* key, uint8_t defaultValue = 0);
+  static uint32_t getUInt(PreferencesEEPROM& prefs, const char* key, uint32_t defaultValue = 0);
+  static int getInt(PreferencesEEPROM& prefs, const char* key, int defaultValue = 0);
+  static float getFloat(PreferencesEEPROM& prefs, const char* key, float defaultValue = 0.0f);
 
   // Convenience getters that accept a namespace key (open/close Preferences internally)
   static String getString(const char* namespaceKey, const char* key,
@@ -115,12 +115,12 @@ public:
   static bool getBool(const char* namespaceKey, const char* key, bool defaultValue = false);
   static uint32_t getUInt(const char* namespaceKey, const char* key, uint32_t defaultValue = 0);
 
-  static bool putString(Preferences& prefs, const char* key, const String& value);
-  static bool putBool(Preferences& prefs, const char* key, bool value);
-  static bool putUChar(Preferences& prefs, const char* key, uint8_t value);
-  static bool putUInt(Preferences& prefs, const char* key, uint32_t value);
-  static bool putInt(Preferences& prefs, const char* key, int value);
-  static bool putFloat(Preferences& prefs, const char* key, float value);
+  static bool putString(PreferencesEEPROM& prefs, const char* key, const String& value);
+  static bool putBool(PreferencesEEPROM& prefs, const char* key, bool value);
+  static bool putUChar(PreferencesEEPROM& prefs, const char* key, uint8_t value);
+  static bool putUInt(PreferencesEEPROM& prefs, const char* key, uint32_t value);
+  static bool putInt(PreferencesEEPROM& prefs, const char* key, int value);
+  static bool putFloat(PreferencesEEPROM& prefs, const char* key, float value);
 
   // DRY Generic update helpers - use these directly instead of wrapper methods
   static PrefResult updateBoolValue(const char* namespaceKey, const char* key, bool value);

@@ -374,7 +374,7 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
 
   // Handle WiFi namespace
   else if (namespaceName == "wifi") {
-    Preferences prefs;
+    PreferencesEEPROM prefs;
     if (!prefs.begin(PreferencesNamespaces::WIFI, false)) {
       return ConfigResult::fail(ConfigError::FILE_ERROR, F("Failed to open WiFi namespace"));
     }
@@ -420,7 +420,7 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
 
   // Handle display namespace
   else if (namespaceName == "display") {
-    Preferences prefs;
+    PreferencesEEPROM prefs;
     if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
       return ConfigResult::fail(ConfigError::FILE_ERROR, F("Failed to open display namespace"));
     }
@@ -528,7 +528,7 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
 
   // Handle sensor namespaces (format: s_SENSORID)
   else if (namespaceName.startsWith("s_")) {
-    Preferences prefs;
+    PreferencesEEPROM prefs;
     if (!prefs.begin(namespaceName.c_str(), false)) {
       return ConfigResult::fail(ConfigError::FILE_ERROR,
                                 F("Failed to open sensor namespace: ") + namespaceName);
