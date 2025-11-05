@@ -467,6 +467,58 @@ private:
   bool m_configLoaded = false;
 
   /**
+   * @brief Generic helper to update a boolean config value atomically
+   * @param currentValue Reference to the current value in RAM
+   * @param newValue The new value to set
+   * @param updateFunc Pointer to PreferencesManager update function
+   * @param notifyKey Key for change notification
+   * @param updateSensors Whether to trigger sensor updates
+   * @return Result of the operation
+   */
+  using BoolUpdateFunc = PreferencesManager::PrefResult (*)(bool);
+  ConfigResult updateBoolConfig(bool& currentValue, bool newValue, 
+                                BoolUpdateFunc updateFunc,
+                                const String& notifyKey, bool updateSensors = false);
+
+  /**
+   * @brief Generic helper to update a string config value atomically
+   * @param currentValue Reference to the current value in RAM
+   * @param newValue The new value to set
+   * @param updateFunc Pointer to PreferencesManager update function
+   * @param notifyKey Key for change notification
+   * @param updateSensors Whether to trigger sensor updates
+   * @return Result of the operation
+   */
+  using StringUpdateFunc = PreferencesManager::PrefResult (*)(const String&);
+  ConfigResult updateStringConfig(String& currentValue, const String& newValue,
+                                  StringUpdateFunc updateFunc,
+                                  const String& notifyKey, bool updateSensors = false);
+
+  /**
+   * @brief Generic helper to update a uint8_t config value atomically
+   * @param currentValue Reference to the current value in RAM
+   * @param newValue The new value to set
+   * @param updateFunc Pointer to PreferencesManager update function
+   * @param notifyKey Key for change notification
+   * @param updateSensors Whether to trigger sensor updates
+   * @return Result of the operation
+   */
+  using UInt8UpdateFunc = PreferencesManager::PrefResult (*)(uint8_t);
+  ConfigResult updateUInt8Config(uint8_t& currentValue, uint8_t newValue,
+                                 UInt8UpdateFunc updateFunc,
+                                 const String& notifyKey, bool updateSensors = false);
+
+  /**
+   * @brief Generic helper to update a debug config value atomically
+   * @param debugSetFunc Function to set value in DebugConfig
+   * @param updateFunc Pointer to PreferencesManager update function
+   * @return Result of the operation
+   */
+  using DebugSetFunc = ConfigResult (DebugConfig::*)(bool);
+  ConfigResult updateDebugConfig(bool enabled, DebugSetFunc debugSetFunc,
+                                 BoolUpdateFunc updateFunc);
+
+  /**
    * @brief Notify listeners of a configuration change
    * @param key The key of the changed configuration
    * @param value The new value of the configuration

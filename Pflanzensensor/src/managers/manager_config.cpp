@@ -132,47 +132,23 @@ ConfigManager::ConfigResult ConfigManager::setAdminPassword(const String& passwo
 
 ConfigManager::ConfigResult ConfigManager::setMD5Verification(bool enabled) {
   ScopedLock lock;
-  if (m_configData.md5Verification != enabled) {
-    m_configData.md5Verification = enabled;
-    auto saveResult = PreferencesManager::updateMD5Verification(enabled);
-    if (!saveResult.isSuccess()) {
-      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
-                                saveResult.getMessage());
-    }
-    notifyConfigChange("md5_verification", enabled ? "true" : "false", true);
-  }
-  return ConfigResult::success();
+  return updateBoolConfig(m_configData.md5Verification, enabled, 
+                         PreferencesManager::updateMD5Verification, 
+                         "md5_verification", true);
 }
 
 ConfigManager::ConfigResult ConfigManager::setCollectdEnabled(bool enabled) {
   ScopedLock lock;
-  if (m_configData.collectdEnabled != enabled) {
-    m_configData.collectdEnabled = enabled;
-    
-    // Persist to Preferences
-    auto result = PreferencesManager::updateCollectdEnabled(enabled);
-    if (!result.isSuccess()) {
-      logger.error(F("ConfigM"), F("Failed to persist collectd_enabled: ") + result.getMessage());
-      return ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
-    }
-    
-    notifyConfigChange("collectd_enabled", enabled ? "true" : "false", true);
-  }
-  return ConfigResult::success();
+  return updateBoolConfig(m_configData.collectdEnabled, enabled,
+                         PreferencesManager::updateCollectdEnabled,
+                         "collectd_enabled", true);
 }
 
 ConfigManager::ConfigResult ConfigManager::setFileLoggingEnabled(bool enabled) {
   ScopedLock lock;
-  if (m_configData.fileLoggingEnabled != enabled) {
-    m_configData.fileLoggingEnabled = enabled;
-    auto saveResult = PreferencesManager::updateFileLoggingEnabled(enabled);
-    if (!saveResult.isSuccess()) {
-      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
-                                saveResult.getMessage());
-    }
-    notifyConfigChange("file_logging_enabled", enabled ? "true" : "false", true);
-  }
-  return ConfigResult::success();
+  return updateBoolConfig(m_configData.fileLoggingEnabled, enabled,
+                         PreferencesManager::updateFileLoggingEnabled,
+                         "file_logging_enabled", true);
 }
 
 ConfigManager::ConfigResult ConfigManager::setUpdateFlags(bool fileSystem, bool firmware) {
@@ -262,77 +238,7 @@ ConfigManager::ConfigResult ConfigManager::setLogLevel(const String& level) {
 
 String ConfigManager::getLogLevel() const { return logger.logLevelToString(logger.getLogLevel()); }
 
-// Debug configuration convenience methods
-ConfigManager::ConfigResult ConfigManager::setDebugRAM(bool enabled) {
-  auto result = m_debugConfig.setRAMDebug(enabled);
-  if (result.isSuccess()) {
-    // Save atomically to Preferences
-    auto saveResult = PreferencesManager::updateDebugRAM(enabled);
-    if (!saveResult.isSuccess()) {
-      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
-                                saveResult.getMessage());
-    }
-    return ConfigResult::success();
-  }
-  return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
-                            result.getMessage());
-}
-
-ConfigManager::ConfigResult ConfigManager::setDebugMeasurementCycle(bool enabled) {
-  auto result = m_debugConfig.setMeasurementCycleDebug(enabled);
-  if (result.isSuccess()) {
-    auto saveResult = PreferencesManager::updateDebugMeasurementCycle(enabled);
-    if (!saveResult.isSuccess()) {
-      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
-                                saveResult.getMessage());
-    }
-    return ConfigResult::success();
-  }
-  return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
-                            result.getMessage());
-}
-
-ConfigManager::ConfigResult ConfigManager::setDebugSensor(bool enabled) {
-  auto result = m_debugConfig.setSensorDebug(enabled);
-  if (result.isSuccess()) {
-    auto saveResult = PreferencesManager::updateDebugSensor(enabled);
-    if (!saveResult.isSuccess()) {
-      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
-                                saveResult.getMessage());
-    }
-    return ConfigResult::success();
-  }
-  return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
-                            result.getMessage());
-}
-
-ConfigManager::ConfigResult ConfigManager::setDebugDisplay(bool enabled) {
-  auto result = m_debugConfig.setDisplayDebug(enabled);
-  if (result.isSuccess()) {
-    auto saveResult = PreferencesManager::updateDebugDisplay(enabled);
-    if (!saveResult.isSuccess()) {
-      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
-                                saveResult.getMessage());
-    }
-    return ConfigResult::success();
-  }
-  return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
-                            result.getMessage());
-}
-
-ConfigManager::ConfigResult ConfigManager::setDebugWebSocket(bool enabled) {
-  auto result = m_debugConfig.setWebSocketDebug(enabled);
-  if (result.isSuccess()) {
-    auto saveResult = PreferencesManager::updateDebugWebSocket(enabled);
-    if (!saveResult.isSuccess()) {
-      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
-                                saveResult.getMessage());
-    }
-    return ConfigResult::success();
-  }
-  return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
-                            result.getMessage());
-}
+// Note: Debug setters moved to end of file with DRY helpers
 
 ConfigManager::ConfigResult ConfigManager::setConfigValue(const char* key, const char* value) {
   ScopedLock lock;
@@ -690,20 +596,9 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
 }
 
 ConfigManager::ConfigResult ConfigManager::setDeviceName(const String& name) {
-  if (m_configData.deviceName != name) {
-    m_configData.deviceName = name;
-    
-    // Persist to Preferences
-    auto result = PreferencesManager::updateDeviceName(name);
-    if (!result.isSuccess()) {
-      logger.error(F("ConfigM"), F("Failed to persist device name: ") + result.getMessage());
-      return ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
-    }
-    
-    notifyConfigChange("device_name", name, false);
-    return ConfigResult::success();
-  }
-  return ConfigResult::success();
+  return updateStringConfig(m_configData.deviceName, name,
+                           PreferencesManager::updateDeviceName,
+                           "device_name", false);
 }
 
 void ConfigManager::addChangeCallback(ConfigNotifier::ChangeCallback callback) {
@@ -718,52 +613,157 @@ void ConfigManager::notifyConfigChange(const String& key, const String& value, b
   m_notifier.notifyChange(key, value, updateSensors);
 }
 
+// ====== Generic DRY Helper Methods ======
+
+ConfigManager::ConfigResult ConfigManager::updateBoolConfig(
+    bool& currentValue, bool newValue, BoolUpdateFunc updateFunc,
+    const String& notifyKey, bool updateSensors) {
+  
+  if (currentValue != newValue) {
+    currentValue = newValue;
+    
+    // Persist atomically to Preferences
+    auto saveResult = updateFunc(newValue);
+    if (!saveResult.isSuccess()) {
+      logger.error(F("ConfigM"), String(F("Failed to persist ")) + notifyKey + F(": ") + saveResult.getMessage());
+      return ConfigResult::fail(ConfigError::SAVE_FAILED, saveResult.getMessage());
+    }
+    
+    notifyConfigChange(notifyKey, newValue ? "true" : "false", updateSensors);
+  }
+  return ConfigResult::success();
+}
+
+ConfigManager::ConfigResult ConfigManager::updateStringConfig(
+    String& currentValue, const String& newValue, StringUpdateFunc updateFunc,
+    const String& notifyKey, bool updateSensors) {
+  
+  if (currentValue != newValue) {
+    currentValue = newValue;
+    
+    // Persist atomically to Preferences
+    auto saveResult = updateFunc(newValue);
+    if (!saveResult.isSuccess()) {
+      logger.error(F("ConfigM"), String(F("Failed to persist ")) + notifyKey + F(": ") + saveResult.getMessage());
+      return ConfigResult::fail(ConfigError::SAVE_FAILED, saveResult.getMessage());
+    }
+    
+    notifyConfigChange(notifyKey, newValue, updateSensors);
+  }
+  return ConfigResult::success();
+}
+
+ConfigManager::ConfigResult ConfigManager::updateUInt8Config(
+    uint8_t& currentValue, uint8_t newValue, UInt8UpdateFunc updateFunc,
+    const String& notifyKey, bool updateSensors) {
+  
+  if (currentValue != newValue) {
+    currentValue = newValue;
+    
+    // Persist atomically to Preferences
+    auto saveResult = updateFunc(newValue);
+    if (!saveResult.isSuccess()) {
+      logger.error(F("ConfigM"), String(F("Failed to persist ")) + notifyKey + F(": ") + saveResult.getMessage());
+      return ConfigResult::fail(ConfigError::SAVE_FAILED, saveResult.getMessage());
+    }
+    
+    notifyConfigChange(notifyKey, String(newValue), updateSensors);
+  }
+  return ConfigResult::success();
+}
+
+ConfigManager::ConfigResult ConfigManager::updateDebugConfig(
+    bool enabled, DebugSetFunc debugSetFunc, BoolUpdateFunc updateFunc) {
+  
+  auto result = (m_debugConfig.*debugSetFunc)(enabled);
+  if (!result.isSuccess()) {
+    return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
+                             result.getMessage());
+  }
+  
+  // Persist atomically to Preferences
+  auto saveResult = updateFunc(enabled);
+  if (!saveResult.isSuccess()) {
+    return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
+                             saveResult.getMessage());
+  }
+  
+  return ConfigResult::success();
+}
+
 void ConfigManager::syncSubsystemData() {
   // Load data into subsystems
   m_debugConfig.loadFromConfigData(m_configData);
 }
 
+// ====== Simplified Setters Using DRY Helpers ======
+
+ConfigManager::ConfigResult ConfigManager::setDebugRAM(bool enabled) {
+  return updateDebugConfig(enabled, &DebugConfig::setRAMDebug, 
+                          PreferencesManager::updateDebugRAM);
+}
+
+ConfigManager::ConfigResult ConfigManager::setDebugMeasurementCycle(bool enabled) {
+  return updateDebugConfig(enabled, &DebugConfig::setMeasurementCycleDebug,
+                          PreferencesManager::updateDebugMeasurementCycle);
+}
+
+ConfigManager::ConfigResult ConfigManager::setDebugSensor(bool enabled) {
+  return updateDebugConfig(enabled, &DebugConfig::setSensorDebug,
+                          PreferencesManager::updateDebugSensor);
+}
+
+ConfigManager::ConfigResult ConfigManager::setDebugDisplay(bool enabled) {
+  return updateDebugConfig(enabled, &DebugConfig::setDisplayDebug,
+                          PreferencesManager::updateDebugDisplay);
+}
+
+ConfigManager::ConfigResult ConfigManager::setDebugWebSocket(bool enabled) {
+  return updateDebugConfig(enabled, &DebugConfig::setWebSocketDebug,
+                          PreferencesManager::updateDebugWebSocket);
+}
+
+ConfigManager::ConfigResult ConfigManager::setDeviceName(const String& name) {
+  return updateStringConfig(m_configData.deviceName, name,
+                           PreferencesManager::updateDeviceName,
+                           "device_name", false);
+}
+
+ConfigManager::ConfigResult ConfigManager::setFlowerStatusSensor(const String& sensorId) {
+  return updateStringConfig(m_configData.flowerStatusSensor, sensorId,
+                           PreferencesManager::updateFlowerStatusSensor,
+                           "flower_status_sensor", false);
+}
+
 ConfigManager::ConfigResult ConfigManager::setLedTrafficLightMode(uint8_t mode) {
-  if (m_configData.ledTrafficLightMode != mode) {
-    m_configData.ledTrafficLightMode = mode;
-    auto saveResult = PreferencesManager::updateLedTrafficMode(mode);
-    if (!saveResult.isSuccess()) {
-      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
-                                saveResult.getMessage());
-    }
-    String modeStr = String(mode);
-    notifyConfigChange("led_traffic_light_mode", modeStr, false);
-  }
-  return ConfigResult::success();
+  return updateUInt8Config(m_configData.ledTrafficLightMode, mode,
+                          PreferencesManager::updateLedTrafficMode,
+                          "led_traffic_light_mode", false);
+}
+
+ConfigManager::ConfigResult ConfigManager::setLedTrafficLightSelectedMeasurement(const String& measurementId) {
+  return updateStringConfig(m_configData.ledTrafficLightSelectedMeasurement, measurementId,
+                           PreferencesManager::updateLedTrafficMeasurement,
+                           "led_traffic_light_selected_measurement", false);
+}
+
+ConfigManager::ConfigResult ConfigManager::setLedTrafficLightMode(uint8_t mode) {
+  return updateUInt8Config(m_configData.ledTrafficLightMode, mode,
+                          PreferencesManager::updateLedTrafficMode,
+                          "led_traffic_light_mode", false);
 }
 
 ConfigManager::ConfigResult
 ConfigManager::setLedTrafficLightSelectedMeasurement(const String& measurementId) {
-  if (m_configData.ledTrafficLightSelectedMeasurement != measurementId) {
-    m_configData.ledTrafficLightSelectedMeasurement = measurementId;
-    auto saveResult = PreferencesManager::updateLedTrafficMeasurement(measurementId);
-    if (!saveResult.isSuccess()) {
-      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
-                                saveResult.getMessage());
-    }
-    notifyConfigChange("led_traffic_light_selected_measurement", measurementId, false);
-  }
-  return ConfigResult::success();
+  return updateStringConfig(m_configData.ledTrafficLightSelectedMeasurement, measurementId,
+                           PreferencesManager::updateLedTrafficMeasurement,
+                           "led_traffic_light_selected_measurement", false);
 }
 
 ConfigManager::ConfigResult ConfigManager::setFlowerStatusSensor(const String& sensorId) {
-  if (m_configData.flowerStatusSensor != sensorId) {
-    m_configData.flowerStatusSensor = sensorId;
-    
-    // Persist to Preferences
-    auto result = PreferencesManager::updateFlowerStatusSensor(sensorId);
-    if (!result.isSuccess()) {
-      logger.error(F("ConfigM"), F("Failed to persist flower_sens: ") + result.getMessage());
-      return ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
-    }
-    
-    notifyConfigChange("flower_status_sensor", sensorId, false);
-    return ConfigResult::success();
-  }
-  return ConfigResult::success();
+  return updateStringConfig(m_configData.flowerStatusSensor, sensorId,
+                           PreferencesManager::updateFlowerStatusSensor,
+                           "flower_status_sensor", false);
 }
+
+// ====== Simplified Setters Using DRY Helpers (defined at end of file) ======
