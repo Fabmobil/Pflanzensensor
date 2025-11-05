@@ -40,6 +40,11 @@ ConfigManager::ConfigResult ConfigManager::loadConfig() {
 
   // Apply logging settings
   logger.enableFileLogging(m_configData.fileLoggingEnabled);
+  
+  // Load and apply log level from Preferences
+  String logLevel = PreferencesManager::getString(PreferencesNamespaces::LOG, "level", String(LOG_LEVEL));
+  logger.setLogLevel(Logger::stringToLogLevel(logLevel));
+  logger.info(F("ConfigM"), String(F("Log-Level geladen: ")) + logLevel);
 
   return ConfigResult::success();
 }
@@ -461,6 +466,16 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
       return ConfigResult::fail(ConfigError::SAVE_FAILED, F("Failed to save display setting"));
     }
     logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + key + F(" = ") + displayValue);
+    
+    // Reload display manager configuration to apply changes immediately
+#if USE_DISPLAY
+    extern DisplayManager* displayManager;
+    if (displayManager) {
+      displayManager->loadConfig();
+      logger.debug(F("ConfigM"), F("Display-Konfiguration neu geladen"));
+    }
+#endif
+    
     notifyConfigChange(key, value, false);
     return ConfigResult::success();
   }
