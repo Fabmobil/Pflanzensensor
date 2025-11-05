@@ -172,6 +172,14 @@ public:
   static PrefResult updateDebugDisplay(bool enabled);
   static PrefResult updateDebugWebSocket(bool enabled);
   
+  // Atomic update methods for display settings
+  static PrefResult updateScreenDuration(unsigned int duration);
+  static PrefResult updateClockFormat(const String& format);
+  static PrefResult updateClockEnabled(bool enabled);
+  static PrefResult updateIpScreenEnabled(bool enabled);
+  static PrefResult updateFlowerImageEnabled(bool enabled);
+  static PrefResult updateFabmobilImageEnabled(bool enabled);
+  
   // Helper functions for type-safe access
   static String getString(Preferences& prefs, const char* key, const String& defaultValue = "");
   static bool getBool(Preferences& prefs, const char* key, bool defaultValue = false);

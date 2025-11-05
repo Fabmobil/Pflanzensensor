@@ -262,14 +262,6 @@ SensorPersistence::updateSensorThresholdsInternal(const String& sensorId, size_t
   logger.info(F("SensorP"), String(F("Schwellenwerte aktualisiert für ")) + sensorId +
                                 F(" Messung ") + String(measurementIndex));
 
-  // Reload configuration
-  auto reloadResult = load();
-  return reloadResult;
-
-  logger.info(F("SensorP"), F("Schwellwerte atomar aktualisiert für ") + sensorId + F(" Messung ") +
-                                String(measurementIndex) + F(", geschätzte Größe: ") +
-                                String(getConfigSize()) + F(" Bytes"));
-
   return PersistenceResult::success();
 }
 
@@ -307,12 +299,8 @@ SensorPersistence::updateAnalogMinMaxInteger(const String& sensorId, size_t meas
                                 F(" Messung ") + String(measurementIndex));
 
   // Reload configuration to sync in-memory state
-  auto reloadResult = load();
-  if (!reloadResult.isSuccess()) {
-    logger.warning(F("SensorP"),
-                   F("Neuladen der Sensorkonfiguration nach int min/max Update fehlgeschlagen: ") +
-                       reloadResult.getMessage());
-  }
+  logger.info(F("SensorP"), String(F("Min/Max aktualisiert für ")) + sensorId +
+                                F(" Messung ") + String(measurementIndex));
 
   return PersistenceResult::success();
 }
@@ -473,23 +461,9 @@ SensorPersistence::updateAnalogRawMinMaxInternal(const String& sensorId, size_t 
                                 String(measurementIndex));
 
   // Nach dem Update Konfiguration neu laden, damit In-Memory-Config synchron bleibt
-  auto reloadResult = load();
-  if (!reloadResult.isSuccess()) {
-    logger.warning(F("SensorP"),
-                   F("Neuladen der Sensorkonfiguration nach raw min/max Update fehlgeschlagen: ") +
-                       reloadResult.getMessage());
-  } else {
-    if (ConfigMgr.isDebugSensor()) {
-      logger.debug(F("SensorP"),
-                   F("Sensorkonfiguration nach raw min/max Update erfolgreich neu geladen"));
-    }
-  }
-
-  if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("Konfiguration aktualisiert für Sensor ") + sensorId +
-                                   F(" Messung ") + String(measurementIndex) + F(" - Min: ") +
-                                   String(absoluteRawMin) + F(", Max: ") + String(absoluteRawMax));
-  }
+  logger.info(F("SensorP"), String(F("Raw Min/Max aktualisiert für ")) + sensorId +
+                                F(" Messung ") + String(measurementIndex) +
+                                F(" - Min: ") + String(absoluteRawMin) + F(", Max: ") + String(absoluteRawMax));
 
   return PersistenceResult::success();
 }
@@ -513,13 +487,8 @@ SensorPersistence::updateAnalogCalibrationMode(const String& sensorId, size_t me
                                 String(measurementIndex));
 
   // Reload configuration to sync in-memory state
-  auto reloadResult = load();
-  if (!reloadResult.isSuccess()) {
-    logger.warning(
-        F("SensorP"),
-        F("Neuladen der Sensorkonfiguration nach Kalibrierungsmodus-Update fehlgeschlagen: ") +
-            reloadResult.getMessage());
-  }
+  logger.info(F("SensorP"), String(F("Kalibrierungsmodus aktualisiert für ")) + sensorId +
+                                F(" Messung ") + String(measurementIndex));
 
   return PersistenceResult::success();
 }
@@ -546,13 +515,8 @@ SensorPersistence::updateAutocalDuration(const String& sensorId, size_t measurem
                                 String(measurementIndex));
 
   // Reload configuration to sync in-memory state
-  auto reloadResult = load();
-  if (!reloadResult.isSuccess()) {
-    logger.warning(
-        F("SensorP"),
-        F("Neuladen der Sensorkonfiguration nach Autocal-Dauer-Update fehlgeschlagen: ") +
-            reloadResult.getMessage());
-  }
+  logger.info(F("SensorP"), String(F("Autocal-Dauer aktualisiert für ")) + sensorId +
+                                F(" Messung ") + String(measurementIndex));
 
   return PersistenceResult::success();
 }

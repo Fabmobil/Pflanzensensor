@@ -904,3 +904,88 @@ PreferencesManager::PrefResult PreferencesManager::updateDebugWebSocket(bool ena
   logger.info(F("PrefMgr"), F("Debug-WebSocket aktualisiert"));
   return PrefResult::success();
 }
+
+// Atomic update methods for display settings
+PreferencesManager::PrefResult PreferencesManager::updateScreenDuration(unsigned int duration) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Display-Preferences"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open display namespace");
+  }
+
+  prefs.putUInt("scr_dur", duration);
+  prefs.end();
+
+  logger.info(F("PrefMgr"), F("Screen-Duration aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateClockFormat(const String& format) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Display-Preferences"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open display namespace");
+  }
+
+  putString(prefs, "clk_fmt", format);
+  prefs.end();
+
+  logger.info(F("PrefMgr"), F("Clock-Format aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateClockEnabled(bool enabled) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Display-Preferences"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open display namespace");
+  }
+
+  prefs.putBool("show_clk", enabled);
+  prefs.end();
+
+  logger.info(F("PrefMgr"), F("Clock-Enabled aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateIpScreenEnabled(bool enabled) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Display-Preferences"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open display namespace");
+  }
+
+  prefs.putBool("show_ip", enabled);
+  prefs.end();
+
+  logger.info(F("PrefMgr"), F("IP-Screen-Enabled aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateFlowerImageEnabled(bool enabled) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Display-Preferences"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open display namespace");
+  }
+
+  prefs.putBool("show_flwr", enabled);
+  prefs.end();
+
+  logger.info(F("PrefMgr"), F("Flower-Image-Enabled aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateFabmobilImageEnabled(bool enabled) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::DISP, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen von Display-Preferences"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open display namespace");
+  }
+
+  prefs.putBool("show_fab", enabled);
+  prefs.end();
+
+  logger.info(F("PrefMgr"), F("Fabmobil-Image-Enabled aktualisiert"));
+  return PrefResult::success();
+}
