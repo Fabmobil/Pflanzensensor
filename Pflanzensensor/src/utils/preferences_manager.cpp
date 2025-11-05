@@ -691,3 +691,216 @@ PreferencesManager::PrefResult PreferencesManager::loadFlowerStatusSensor(String
   logger.info(F("PrefMgr"), F("Flower-Status-Sensor geladen"));
   return PrefResult::success();
 }
+
+// ====== Atomic Update Functions (DRY) ======
+
+PreferencesManager::PrefResult PreferencesManager::updateDeviceName(const String& deviceName) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::GENERAL, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des General-Namespace"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open general namespace");
+  }
+  
+  if (!putString(prefs, "device_name", deviceName)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save device name");
+  }
+  
+  prefs.end();
+  logger.info(F("PrefMgr"), F("Gerätename aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateAdminPassword(const String& adminPassword) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::GENERAL, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des General-Namespace"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open general namespace");
+  }
+  
+  if (!putString(prefs, "admin_pwd", adminPassword)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save admin password");
+  }
+  
+  prefs.end();
+  logger.info(F("PrefMgr"), F("Admin-Passwort aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateMD5Verification(bool enabled) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::GENERAL, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des General-Namespace"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open general namespace");
+  }
+  
+  if (!putBool(prefs, "md5_verify", enabled)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save MD5 verification");
+  }
+  
+  prefs.end();
+  logger.info(F("PrefMgr"), F("MD5-Verifizierung aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateFileLoggingEnabled(bool enabled) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::GENERAL, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des General-Namespace"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open general namespace");
+  }
+  
+  if (!putBool(prefs, "file_log", enabled)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save file logging");
+  }
+  
+  prefs.end();
+  logger.info(F("PrefMgr"), F("Datei-Logging aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t setIndex, const String& ssid, const String& password) {
+  if (setIndex < 1 || setIndex > 3) {
+    return PrefResult::fail(ConfigError::INVALID_INPUT, "Invalid WiFi set index (must be 1-3)");
+  }
+  
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::WIFI, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi-Namespace"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open WiFi namespace");
+  }
+  
+  String ssidKey = "ssid" + String(setIndex);
+  String pwdKey = "pwd" + String(setIndex);
+  
+  if (!putString(prefs, ssidKey.c_str(), ssid) || !putString(prefs, pwdKey.c_str(), password)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save WiFi credentials");
+  }
+  
+  prefs.end();
+  logger.info(F("PrefMgr"), String(F("WiFi-Zugangsdaten Set ")) + String(setIndex) + F(" aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateLedTrafficMode(uint8_t mode) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::LED_TRAFFIC, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des LED-Namespace"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open LED namespace");
+  }
+  
+  if (!putUChar(prefs, "mode", mode)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save LED mode");
+  }
+  
+  prefs.end();
+  logger.info(F("PrefMgr"), F("LED-Traffic-Mode aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateLedTrafficMeasurement(const String& measurement) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::LED_TRAFFIC, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des LED-Namespace"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open LED namespace");
+  }
+  
+  if (!putString(prefs, "sel_meas", measurement)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save LED measurement");
+  }
+  
+  prefs.end();
+  logger.info(F("PrefMgr"), F("LED-Traffic-Messung aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateDebugRAM(bool enabled) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::DEBUG, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Debug-Namespace"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open debug namespace");
+  }
+  
+  if (!putBool(prefs, "ram", enabled)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save debug RAM");
+  }
+  
+  prefs.end();
+  logger.info(F("PrefMgr"), F("Debug-RAM aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateDebugMeasurementCycle(bool enabled) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::DEBUG, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Debug-Namespace"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open debug namespace");
+  }
+  
+  if (!putBool(prefs, "meas_cycle", enabled)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save debug measurement cycle");
+  }
+  
+  prefs.end();
+  logger.info(F("PrefMgr"), F("Debug-Messzyklus aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateDebugSensor(bool enabled) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::DEBUG, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Debug-Namespace"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open debug namespace");
+  }
+  
+  if (!putBool(prefs, "sensor", enabled)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save debug sensor");
+  }
+  
+  prefs.end();
+  logger.info(F("PrefMgr"), F("Debug-Sensor aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateDebugDisplay(bool enabled) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::DEBUG, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Debug-Namespace"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open debug namespace");
+  }
+  
+  if (!putBool(prefs, "display", enabled)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save debug display");
+  }
+  
+  prefs.end();
+  logger.info(F("PrefMgr"), F("Debug-Display aktualisiert"));
+  return PrefResult::success();
+}
+
+PreferencesManager::PrefResult PreferencesManager::updateDebugWebSocket(bool enabled) {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::DEBUG, false)) {
+    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des Debug-Namespace"));
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open debug namespace");
+  }
+  
+  if (!putBool(prefs, "websocket", enabled)) {
+    prefs.end();
+    return PrefResult::fail(ConfigError::SAVE_FAILED, "Failed to save debug websocket");
+  }
+  
+  prefs.end();
+  logger.info(F("PrefMgr"), F("Debug-WebSocket aktualisiert"));
+  return PrefResult::success();
+}

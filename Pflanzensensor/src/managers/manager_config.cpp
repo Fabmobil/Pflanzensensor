@@ -10,6 +10,7 @@
 #include "../managers/manager_sensor.h"
 #include "../managers/manager_sensor_persistence.h"
 #include "../utils/critical_section.h"
+#include "../utils/preferences_manager.h"
 #include "../web/handler/admin_handler.h"
 #include "../web/handler/web_ota_handler.h"
 
@@ -117,16 +118,29 @@ ConfigManager::ConfigResult ConfigManager::setAdminPassword(const String& passwo
                               validation.getMessage());
   }
 
-  m_configData.adminPassword = password;
-  notifyConfigChange("admin_password", "updated", true);
-  // Persist once by the caller (e.g. web handler) to avoid multiple writes
+  if (m_configData.adminPassword != password) {
+    m_configData.adminPassword = password;
+    auto saveResult = PreferencesManager::updateAdminPassword(password);
+    if (!saveResult.isSuccess()) {
+      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
+                               saveResult.getMessage());
+    }
+    notifyConfigChange("admin_password", "updated", true);
+  }
   return ConfigResult::success();
 }
 
 ConfigManager::ConfigResult ConfigManager::setMD5Verification(bool enabled) {
   ScopedLock lock;
-  m_configData.md5Verification = enabled;
-  notifyConfigChange("md5_verification", enabled ? "true" : "false", true);
+  if (m_configData.md5Verification != enabled) {
+    m_configData.md5Verification = enabled;
+    auto saveResult = PreferencesManager::updateMD5Verification(enabled);
+    if (!saveResult.isSuccess()) {
+      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
+                               saveResult.getMessage());
+    }
+    notifyConfigChange("md5_verification", enabled ? "true" : "false", true);
+  }
   return ConfigResult::success();
 }
 
@@ -139,8 +153,15 @@ ConfigManager::ConfigResult ConfigManager::setCollectdEnabled(bool enabled) {
 
 ConfigManager::ConfigResult ConfigManager::setFileLoggingEnabled(bool enabled) {
   ScopedLock lock;
-  m_configData.fileLoggingEnabled = enabled;
-  notifyConfigChange("file_logging_enabled", enabled ? "true" : "false", true);
+  if (m_configData.fileLoggingEnabled != enabled) {
+    m_configData.fileLoggingEnabled = enabled;
+    auto saveResult = PreferencesManager::updateFileLoggingEnabled(enabled);
+    if (!saveResult.isSuccess()) {
+      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
+                               saveResult.getMessage());
+    }
+    notifyConfigChange("file_logging_enabled", enabled ? "true" : "false", true);
+  }
   return ConfigResult::success();
 }
 
@@ -228,7 +249,12 @@ String ConfigManager::getLogLevel() const { return logger.logLevelToString(logge
 ConfigManager::ConfigResult ConfigManager::setDebugRAM(bool enabled) {
   auto result = m_debugConfig.setRAMDebug(enabled);
   if (result.isSuccess()) {
-    // DebugConfig already notifies; do not persist here. Caller should save.
+    // Save atomically to Preferences
+    auto saveResult = PreferencesManager::updateDebugRAM(enabled);
+    if (!saveResult.isSuccess()) {
+      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
+                               saveResult.getMessage());
+    }
     return ConfigResult::success();
   }
   return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
@@ -238,6 +264,11 @@ ConfigManager::ConfigResult ConfigManager::setDebugRAM(bool enabled) {
 ConfigManager::ConfigResult ConfigManager::setDebugMeasurementCycle(bool enabled) {
   auto result = m_debugConfig.setMeasurementCycleDebug(enabled);
   if (result.isSuccess()) {
+    auto saveResult = PreferencesManager::updateDebugMeasurementCycle(enabled);
+    if (!saveResult.isSuccess()) {
+      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
+                               saveResult.getMessage());
+    }
     return ConfigResult::success();
   }
   return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
@@ -247,6 +278,11 @@ ConfigManager::ConfigResult ConfigManager::setDebugMeasurementCycle(bool enabled
 ConfigManager::ConfigResult ConfigManager::setDebugSensor(bool enabled) {
   auto result = m_debugConfig.setSensorDebug(enabled);
   if (result.isSuccess()) {
+    auto saveResult = PreferencesManager::updateDebugSensor(enabled);
+    if (!saveResult.isSuccess()) {
+      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
+                               saveResult.getMessage());
+    }
     return ConfigResult::success();
   }
   return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
@@ -256,6 +292,11 @@ ConfigManager::ConfigResult ConfigManager::setDebugSensor(bool enabled) {
 ConfigManager::ConfigResult ConfigManager::setDebugDisplay(bool enabled) {
   auto result = m_debugConfig.setDisplayDebug(enabled);
   if (result.isSuccess()) {
+    auto saveResult = PreferencesManager::updateDebugDisplay(enabled);
+    if (!saveResult.isSuccess()) {
+      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
+                               saveResult.getMessage());
+    }
     return ConfigResult::success();
   }
   return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
@@ -265,6 +306,11 @@ ConfigManager::ConfigResult ConfigManager::setDebugDisplay(bool enabled) {
 ConfigManager::ConfigResult ConfigManager::setDebugWebSocket(bool enabled) {
   auto result = m_debugConfig.setWebSocketDebug(enabled);
   if (result.isSuccess()) {
+    auto saveResult = PreferencesManager::updateDebugWebSocket(enabled);
+    if (!saveResult.isSuccess()) {
+      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
+                               saveResult.getMessage());
+    }
     return ConfigResult::success();
   }
   return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
@@ -377,9 +423,13 @@ void ConfigManager::syncSubsystemData() {
 ConfigManager::ConfigResult ConfigManager::setLedTrafficLightMode(uint8_t mode) {
   if (m_configData.ledTrafficLightMode != mode) {
     m_configData.ledTrafficLightMode = mode;
+    auto saveResult = PreferencesManager::updateLedTrafficMode(mode);
+    if (!saveResult.isSuccess()) {
+      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
+                               saveResult.getMessage());
+    }
     String modeStr = String(mode);
     notifyConfigChange("led_traffic_light_mode", modeStr, false);
-    return ConfigResult::success();
   }
   return ConfigResult::success();
 }
@@ -388,8 +438,12 @@ ConfigManager::ConfigResult
 ConfigManager::setLedTrafficLightSelectedMeasurement(const String& measurementId) {
   if (m_configData.ledTrafficLightSelectedMeasurement != measurementId) {
     m_configData.ledTrafficLightSelectedMeasurement = measurementId;
+    auto saveResult = PreferencesManager::updateLedTrafficMeasurement(measurementId);
+    if (!saveResult.isSuccess()) {
+      return ConfigResult::fail(saveResult.error().value_or(ConfigError::SAVE_FAILED),
+                               saveResult.getMessage());
+    }
     notifyConfigChange("led_traffic_light_selected_measurement", measurementId, false);
-    return ConfigResult::success();
   }
   return ConfigResult::success();
 }

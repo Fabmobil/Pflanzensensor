@@ -155,6 +155,23 @@ public:
   static PrefResult saveFlowerStatusSensor(const String& sensorId);
   static PrefResult loadFlowerStatusSensor(String& sensorId);
   
+  // Atomic update functions (DRY - only save what changed)
+  static PrefResult updateDeviceName(const String& deviceName);
+  static PrefResult updateAdminPassword(const String& adminPassword);
+  static PrefResult updateMD5Verification(bool enabled);
+  static PrefResult updateFileLoggingEnabled(bool enabled);
+  
+  static PrefResult updateWiFiCredentials(uint8_t setIndex, const String& ssid, const String& password);
+  
+  static PrefResult updateLedTrafficMode(uint8_t mode);
+  static PrefResult updateLedTrafficMeasurement(const String& measurement);
+  
+  static PrefResult updateDebugRAM(bool enabled);
+  static PrefResult updateDebugMeasurementCycle(bool enabled);
+  static PrefResult updateDebugSensor(bool enabled);
+  static PrefResult updateDebugDisplay(bool enabled);
+  static PrefResult updateDebugWebSocket(bool enabled);
+  
   // Helper functions for type-safe access
   static String getString(Preferences& prefs, const char* key, const String& defaultValue = "");
   static bool getBool(Preferences& prefs, const char* key, bool defaultValue = false);
