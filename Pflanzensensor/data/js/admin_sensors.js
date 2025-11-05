@@ -428,8 +428,8 @@ var DisplayUpdater = (function () {
 // ------------------------------
 var SensorConfigAPI = (function () {
   function updateFlowerStatus(sensor) {
-    var fd = new FormData(); fd.append('sensor', sensor);
-    return API.request('/admin/sensors/flower_status', fd, 'Blumen-Status Sensor erfolgreich aktualisiert');
+    // Use unified setConfigValue method
+    return setConfigValue('general', 'flower_sens', sensor, 'string');
   }
 
   function updateMeasurementInterval(sensorId, interval) {

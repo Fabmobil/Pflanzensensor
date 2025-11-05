@@ -160,27 +160,9 @@ DisplayResult DisplayManager::saveConfig() {
 
   logger.info(F("DisplayM"), F("Display-Konfiguration erfolgreich in Preferences gespeichert"));
   
-  // Note: Sensor-specific display settings are kept in JSON for now
-  // They can be migrated to a separate Preferences namespace in the future if needed
-  if (!m_config.sensorDisplays.empty()) {
-    StaticJsonDocument<512> doc;
-    JsonArray arr = doc.createNestedArray("sensor_displays");
-    for (const auto& e : m_config.sensorDisplays) {
-      JsonObject obj = arr.createNestedObject();
-      obj["sensor_id"] = e.sensorId;
-      JsonArray measurements = obj.createNestedArray("measurements");
-      for (bool b : e.showMeasurements) {
-        measurements.add(b);
-      }
-    }
-
-    File configFile = LittleFS.open("/display_sensor_config.json", "w");
-    if (configFile) {
-      serializeJson(doc, configFile);
-      configFile.close();
-      logger.debug(F("DisplayM"), F("Sensor-spezifische Display-Einstellungen in JSON gespeichert"));
-    }
-  }
+  // Note: Sensor-specific display settings (sensorDisplays) are managed separately
+  // through the admin interface and saved atomically when changed
+  
 #endif
   return DisplayResult::success();
 }
