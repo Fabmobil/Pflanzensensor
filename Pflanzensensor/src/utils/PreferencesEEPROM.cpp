@@ -20,13 +20,16 @@ bool PreferencesEEPROM::initializeStorage() {
   }
 
   EEPROM.begin(PREFS_EEPROM_SIZE);
+  logger.info(F("PrefsEEPROM"), String(F("EEPROM.begin() called with size: ")) + PREFS_EEPROM_SIZE);
 
   // Check if EEPROM is already initialized
   uint16_t magic = 0;
   EEPROM.get(EEPROM_HEADER_OFFSET, magic);
+  logger.info(F("PrefsEEPROM"), String(F("Read magic number: 0x")) + String(magic, HEX) + F(" (expected: 0x") + String(PREFS_MAGIC, HEX) + F(")"));
 
   if (magic != PREFS_MAGIC) {
     // Initialize EEPROM header
+    logger.info(F("PrefsEEPROM"), F("Magic number mismatch - initializing EEPROM from scratch"));
     EEPROM.put(EEPROM_HEADER_OFFSET, PREFS_MAGIC);
     uint8_t version = PREFS_VERSION;
     EEPROM.put(EEPROM_HEADER_OFFSET + 2, version);
@@ -37,8 +40,13 @@ bool PreferencesEEPROM::initializeStorage() {
       EEPROM.put(EEPROM_DIR_OFFSET + i * sizeof(NamespaceEntry), entry);
     }
 
-    EEPROM.commit();
-    logger.info(F("PrefsEEPROM"), F("EEPROM storage initialized"));
+    if (!EEPROM.commit()) {
+      logger.error(F("PrefsEEPROM"), F("EEPROM.commit() FAILED during initialization!"));
+      return false;
+    }
+    logger.info(F("PrefsEEPROM"), F("EEPROM storage initialized and committed"));
+  } else {
+    logger.info(F("PrefsEEPROM"), F("EEPROM already initialized - using existing data"));
   }
 
   _initialized = true;
@@ -72,9 +80,12 @@ int PreferencesEEPROM::createNamespace(const char* name) {
       entry.initialized = 1;
 
       EEPROM.put(EEPROM_DIR_OFFSET + i * sizeof(NamespaceEntry), entry);
-      EEPROM.commit();
+      if (!EEPROM.commit()) {
+        logger.error(F("PrefsEEPROM"), String(F("EEPROM.commit() FAILED when creating namespace: ")) + name);
+        return -1;
+      }
 
-      logger.info(F("PrefsEEPROM"), String(F("Created namespace: ")) + name);
+      logger.info(F("PrefsEEPROM"), String(F("Created namespace: ")) + name + F(" at index ") + i + F(" offset ") + entry.offset);
       return i;
     }
   }
@@ -249,7 +260,11 @@ bool PreferencesEEPROM::writeValue(const char* key, const void* value, size_t le
     slotIndex = (slotIndex + 1) % slots;
   }
 
-  EEPROM.commit();
+  if (!EEPROM.commit()) {
+    logger.error(F("PrefsEEPROM"), String(F("EEPROM.commit() FAILED for ns=")) + _namespace + F(" key=") + key);
+    return false;
+  }
+  logger.info(F("PrefsEEPROM"), String(F("writeValue SUCCESS: ns=")) + _namespace + F(" key=") + key + F(" committed to EEPROM"));
   return true;
 }
 
