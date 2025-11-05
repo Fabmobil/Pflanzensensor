@@ -449,8 +449,8 @@ DisplayResult DisplayManager::setScreenDuration(unsigned long duration) {
 
   m_config.screenDuration = duration;
   
-  // Atomic update - only save this setting
-  auto result = PreferencesManager::updateScreenDuration(duration);
+  // Use unified config manager method
+  auto result = ConfigMgr.setConfigValue("display", "screen_dur", String(duration), ConfigValueType::UINT);
   if (!result.isSuccess()) {
     return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save screen duration");
   }
@@ -469,8 +469,8 @@ DisplayResult DisplayManager::setClockFormat(const String& format) {
 
   m_config.clockFormat = format;
   
-  // Atomic update - only save this setting
-  auto result = PreferencesManager::updateClockFormat(format);
+  // Use unified config manager method
+  auto result = ConfigMgr.setConfigValue("display", "clock_fmt", format, ConfigValueType::STRING);
   if (!result.isSuccess()) {
     return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save clock format");
   }
@@ -485,8 +485,8 @@ DisplayResult DisplayManager::setClockEnabled(bool enabled) {
 #if USE_DISPLAY
   m_config.showClock = enabled;
   
-  // Atomic update - only save this setting
-  auto result = PreferencesManager::updateClockEnabled(enabled);
+  // Use unified config manager method
+  auto result = ConfigMgr.setConfigValue("display", "show_clock", enabled ? "true" : "false", ConfigValueType::BOOL);
   if (!result.isSuccess()) {
     return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save clock enabled");
   }
@@ -501,8 +501,8 @@ DisplayResult DisplayManager::setIpScreenEnabled(bool enabled) {
 #if USE_DISPLAY
   m_config.showIpScreen = enabled;
   
-  // Atomic update - only save this setting
-  auto result = PreferencesManager::updateIpScreenEnabled(enabled);
+  // Use unified config manager method
+  auto result = ConfigMgr.setConfigValue("display", "show_ip", enabled ? "true" : "false", ConfigValueType::BOOL);
   if (!result.isSuccess()) {
     return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save IP screen enabled");
   }
@@ -517,8 +517,8 @@ DisplayResult DisplayManager::setFlowerImageEnabled(bool enabled) {
 #if USE_DISPLAY
   m_config.showFlowerImage = enabled;
   
-  // Atomic update - only save this setting
-  auto result = PreferencesManager::updateFlowerImageEnabled(enabled);
+  // Use unified config manager method
+  auto result = ConfigMgr.setConfigValue("display", "show_flower", enabled ? "true" : "false", ConfigValueType::BOOL);
   if (!result.isSuccess()) {
     return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save flower image enabled");
   }
@@ -533,8 +533,8 @@ DisplayResult DisplayManager::setFabmobilImageEnabled(bool enabled) {
 #if USE_DISPLAY
   m_config.showFabmobilImage = enabled;
   
-  // Atomic update - only save this setting
-  auto result = PreferencesManager::updateFabmobilImageEnabled(enabled);
+  // Use unified config manager method
+  auto result = ConfigMgr.setConfigValue("display", "show_fabmobil", enabled ? "true" : "false", ConfigValueType::BOOL);
   if (!result.isSuccess()) {
     return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save fabmobil image enabled");
   }
