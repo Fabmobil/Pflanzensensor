@@ -13,7 +13,7 @@ using namespace ArduinoJson;
 #include "../logger/logger.h"
 #include "../utils/critical_section.h"
 #include "../utils/persistence_utils.h"
-#include "../utils/preferences_manager.h"
+#include "managers/manager_config_preferences.h"
 #include "managers/manager_resource.h"
 #include "managers/manager_sensor.h"
 

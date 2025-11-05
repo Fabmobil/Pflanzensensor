@@ -10,7 +10,7 @@
 #include "../managers/manager_sensor.h"
 #include "../managers/manager_sensor_persistence.h"
 #include "../utils/critical_section.h"
-#include "../utils/preferences_manager.h"
+#include "managers/manager_config_preferences.h"
 #include "../web/handler/admin_handler.h"
 #include "../web/handler/web_ota_handler.h"
 

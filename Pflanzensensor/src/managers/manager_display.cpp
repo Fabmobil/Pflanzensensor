@@ -17,7 +17,7 @@
 #include "utils/critical_section.h"
 #include "utils/helper.h"
 #include "utils/persistence_utils.h"
-#include "utils/preferences_manager.h"
+#include "managers/manager_config_preferences.h"
 #include "utils/result_types.h"
 
 extern std::unique_ptr<SensorManager> sensorManager;

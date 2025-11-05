@@ -1,9 +1,9 @@
 /**
- * @file preferences_manager.cpp
+ * @file manager_config_preferences.cpp
  * @brief Implementation of PreferencesManager class
  */
 
-#include "preferences_manager.h"
+#include "managers/manager_config_preferences.h"
 #include "../configs/config_pflanzensensor.h"
 #include "../logger/logger.h"
 

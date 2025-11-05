@@ -8,7 +8,7 @@
 #include "managers/manager_config_persistence.h"
 #include "sensors/sensor_config.h"
 #include "utils/persistence_utils.h"
-#include "utils/preferences_manager.h"
+#include "managers/manager_config_preferences.h"
 
 void ensureConfigFilesExist() {
   // Initialize Preferences-based configuration if not present

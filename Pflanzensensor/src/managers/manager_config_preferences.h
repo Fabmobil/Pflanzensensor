@@ -1,5 +1,5 @@
 /**
- * @file preferences_manager.h
+ * @file manager_config_preferences.h
  * @brief Preferences-based persistence layer for configuration management
  * 
  * This module provides a centralized interface for storing and retrieving
@@ -7,8 +7,8 @@
  * It organizes settings into logical namespaces for better organization.
  */
 
-#ifndef PREFERENCES_MANAGER_H
-#define PREFERENCES_MANAGER_H
+#ifndef MANAGER_CONFIG_PREFERENCES_H
+#define MANAGER_CONFIG_PREFERENCES_H
 
 #include <Arduino.h>
 #include <Preferences.h>
@@ -207,4 +207,4 @@ private:
   PreferencesManager() = default;
 };
 
-#endif // PREFERENCES_MANAGER_H
+#endif // MANAGER_CONFIG_PREFERENCES_H
