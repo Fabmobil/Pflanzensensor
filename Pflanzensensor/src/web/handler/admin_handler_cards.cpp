@@ -148,7 +148,9 @@ void AdminHandler::generateAndSendSystemActionsCard() {
   }
   // NOTE: Download/upload buttons removed - configuration now in Preferences (EEPROM)
   // Users can edit configuration through the web interface at /admin and /admin/sensors
-  sendChunk(F("</div></div></div>"));
+  // Close button-group and card (was closing one extra parent div which
+  // unbalanced the page layout and caused the footer to float right).
+  sendChunk(F("</div></div>"));
 }
 
 void AdminHandler::generateAndSendSystemInfoCard() {
