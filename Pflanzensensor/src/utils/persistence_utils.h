@@ -4,6 +4,9 @@
  *
  * Provides helper functions for checking file existence, getting file size,
  * logging file contents in chunks, and reading/writing JSON files.
+ * 
+ * Note: These utilities access MAIN_FS partition (for logs, temporary files, etc.)
+ * Config data uses Preferences which are stored on CONFIG partition automatically.
  */
 #ifndef PERSISTENCE_UTILS_H
 #define PERSISTENCE_UTILS_H
@@ -12,6 +15,8 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 
+#include "../filesystem/config_fs.h"
+
 /**
  * @namespace PersistenceUtils
  * @brief Utility functions for persistence operations
@@ -19,14 +24,14 @@
 namespace PersistenceUtils {
 
 /**
- * @brief Check if a file exists
+ * @brief Check if a file exists on MAIN_FS
  * @param path Path to the file
  * @return true if file exists, false otherwise
  */
-inline bool fileExists(const char* path) { return LittleFS.exists(path); }
+inline bool fileExists(const char* path) { return MainFS.exists(path); }
 
 /**
- * @brief Get the size of a file
+ * @brief Get the size of a file on MAIN_FS
  * @param path Path to the file
  * @return Size in bytes, or 0 if file does not exist or cannot be opened
  */
@@ -34,7 +39,7 @@ inline size_t getFileSize(const char* path) {
   if (!fileExists(path)) {
     return 0;
   }
-  File f = LittleFS.open(path, "r");
+  File f = MainFS.open(path, "r");
   if (!f) {
     return 0;
   }

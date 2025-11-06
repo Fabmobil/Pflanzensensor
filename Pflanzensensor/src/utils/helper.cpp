@@ -3,6 +3,7 @@
 
 #include <LittleFS.h>
 
+#include "../filesystem/config_fs.h"
 #include "logger/logger.h"
 #include "utils/critical_section.h"
 
@@ -50,11 +51,12 @@ time_t Helper::getCurrentTime() {
 uint32_t Helper::getRebootCount() {
   CriticalSection cs;
 
-  if (!LittleFS.exists(REBOOT_COUNT_FILE)) {
+  // Reboot count stored on MAIN_FS
+  if (!MainFS.exists(REBOOT_COUNT_FILE)) {
     return 0;
   }
 
-  File file = LittleFS.open(REBOOT_COUNT_FILE, "r");
+  File file = MainFS.open(REBOOT_COUNT_FILE, "r");
   if (!file) {
     return 0;
   }
@@ -83,13 +85,9 @@ String Helper::getFormattedUptime() {
 ResourceResult Helper::incrementRebootCount() {
   CriticalSection cs;
 
-  if (!LittleFS.begin()) {
-    logger.error(F("Helper"),
-                 F("Dateisystem konnte zum Lesen des Neustartzählers nicht eingehängt werden"));
-    return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR);
-  }
-
-  File file = LittleFS.open(F("/reboot_count.txt"), "r");
+  // MAIN_FS is already mounted by DualFS init
+  // Reboot count stored on MAIN_FS (not critical data)
+  File file = MainFS.open(F("/reboot_count.txt"), "r");
   int count = 0;
   if (file) {
     count = file.parseInt();
@@ -97,7 +95,7 @@ ResourceResult Helper::incrementRebootCount() {
   }
   count++;
 
-  file = LittleFS.open(F("/reboot_count.txt"), "w");
+  file = MainFS.open(F("/reboot_count.txt"), "w");
   if (!file) {
     return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR,
                                 F("Fehler beim Öffnen der Neustartzähler-Datei zum Schreiben"));

@@ -7,6 +7,7 @@
 
 #include <LittleFS.h>
 
+#include "../filesystem/config_fs.h"
 #include "logger/logger.h"
 
 namespace PersistenceUtils {
@@ -20,15 +21,12 @@ void logFileContents(const String& tag, const String& contents, size_t chunkSize
 }
 
 bool readJsonFile(const char* path, ArduinoJson::JsonDocument& doc, String& errorMsg) {
-  if (!LittleFS.begin()) {
-    errorMsg = F("Einbinden des Dateisystems fehlgeschlagen");
-    return false;
-  }
+  // Note: MAIN_FS is already mounted by DualFS init
   if (!fileExists(path)) {
     errorMsg = F("Datei existiert nicht: ") + String(path);
     return false;
   }
-  File file = LittleFS.open(path, "r");
+  File file = MainFS.open(path, "r");
   if (!file) {
     errorMsg = F("Öffnen der Datei zum Lesen fehlgeschlagen: ") + String(path);
     return false;
@@ -46,7 +44,7 @@ bool readJsonFile(const char* path, ArduinoJson::JsonDocument& doc, String& erro
 bool writeJsonFile(const char* path, const ArduinoJson::JsonDocument& doc, String& errorMsg) {
   // Write to a temporary file first for atomicity
   String tempPath = String(path) + F(".tmp");
-  File file = LittleFS.open(tempPath.c_str(), "w");
+  File file = MainFS.open(tempPath.c_str(), "w");
   if (!file) {
     errorMsg = F("Öffnen der temporären Datei zum Schreiben fehlgeschlagen: ") + tempPath;
     return false;
@@ -55,18 +53,18 @@ bool writeJsonFile(const char* path, const ArduinoJson::JsonDocument& doc, Strin
   file.close();
   if (written == 0) {
     errorMsg = F("Schreiben des JSON in die temporäre Datei fehlgeschlagen: ") + tempPath;
-    LittleFS.remove(tempPath.c_str());
+    MainFS.remove(tempPath.c_str());
     return false;
   }
   // Remove the original file before renaming (if it exists)
-  if (LittleFS.exists(path)) {
-    LittleFS.remove(path);
+  if (MainFS.exists(path)) {
+    MainFS.remove(path);
   }
   // Rename temp file to final path
-  if (!LittleFS.rename(tempPath.c_str(), path)) {
+  if (!MainFS.rename(tempPath.c_str(), path)) {
     errorMsg = F("Umbenennen der temporären Datei in den endgültigen Pfad fehlgeschlagen: ") +
                String(path);
-    LittleFS.remove(tempPath.c_str());
+    MainFS.remove(tempPath.c_str());
     return false;
   }
   return true;

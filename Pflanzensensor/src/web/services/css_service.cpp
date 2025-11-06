@@ -3,6 +3,7 @@
 
 #include <LittleFS.h>
 
+#include "filesystem/config_fs.h"
 #include "logger/logger.h"
 #include "managers/manager_resource.h"
 #include "utils/critical_section.h"
@@ -36,17 +37,18 @@ HandlerResult CSSService::handlePost(const String& uri, const std::map<String, S
 bool CSSService::createBackup(const String& path) const {
   CriticalSection cs;
 
-  if (!LittleFS.exists(path)) {
+  // Web assets are on MAIN_FS partition
+  if (!MainFS.exists(path)) {
     return true; // Nothing to backup
   }
 
   String backupPath = path + ".bak";
-  if (LittleFS.exists(backupPath)) {
-    LittleFS.remove(backupPath);
+  if (MainFS.exists(backupPath)) {
+    MainFS.remove(backupPath);
   }
 
-  File currentFile = LittleFS.open(path, "r");
-  File backupFile = LittleFS.open(backupPath, "w");
+  File currentFile = MainFS.open(path, "r");
+  File backupFile = MainFS.open(backupPath, "w");
 
   if (!currentFile || !backupFile) {
     return false;
@@ -77,12 +79,13 @@ bool CSSService::createBackup(const String& path) const {
 String CSSService::loadCSS(const String& path) const {
   CriticalSection cs;
 
-  if (!LittleFS.exists(path)) {
+  // Web assets are on MAIN_FS partition
+  if (!MainFS.exists(path)) {
     logger.warning(F("CSSService"), String(F("CSS-Datei nicht gefunden: ")) + path);
     return "";
   }
 
-  File file = LittleFS.open(path, "r");
+  File file = MainFS.open(path, "r");
   if (!file) {
     logger.error(F("CSSService"), String(F("Öffnen der CSS-Datei fehlgeschlagen: ")) + path);
     return "";
@@ -96,7 +99,8 @@ String CSSService::loadCSS(const String& path) const {
 bool CSSService::saveCSS(const String& path, const String& content) const {
   CriticalSection cs;
 
-  File file = LittleFS.open(path, "w");
+  // Web assets are on MAIN_FS partition
+  File file = MainFS.open(path, "w");
   if (!file) {
     logger.error(F("CSSService"),
                  String(F("Öffnen der CSS-Datei zum Schreiben fehlgeschlagen: ")) + path);
