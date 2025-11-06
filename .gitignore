@@ -3,6 +3,7 @@ Dokumentation/Workshop\ Unterlagen/2\ Tage/*
 Dokumentation/Workshop\ Unterlagen/3\ Tage/*
 logs/*
 .github/*
+!.github/copilot-instructions.md
 
 # Prerequisites
 *.d
