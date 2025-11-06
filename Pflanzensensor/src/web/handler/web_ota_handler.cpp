@@ -305,6 +305,7 @@ void WebOTAHandler::handleUpdateUpload() {
       return;
     }
 
+    uint8_t command = isFilesystem ? U_FS : U_FLASH;
     logger.debug(F("WebOTAHandler"), F("Update-Befehl: ") + String(command) + F(", Inhaltslänge: ") +
                                          String(contentLength) + F(", verfügbarer Speicher: ") +
                                          String(freeSpace));
