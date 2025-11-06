@@ -513,8 +513,8 @@ bool ConfigPersistence::restorePreferencesFromFile() {
     }
   }
   
-  // Delete backup file after successful restore
-  LittleFS.remove("/prefs_backup.json");
+  // Don't delete backup file here - it will be wiped during filesystem update anyway
+  // If we delete it now, we lose the backup before it can be used for RAM backup
   
   logger.info(F("ConfigP"), F("Preferences erfolgreich wiederhergestellt"));
   return true;
