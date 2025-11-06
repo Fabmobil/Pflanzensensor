@@ -248,17 +248,20 @@ void WebOTAHandler::handleUpdateUpload() {
                                         F(")"));
     logger.debug(F("WebOTAHandler"), F("Inhaltlänge: ") + String(contentLength) + F(" Bytes"));
     
-    // Restore Preferences from backup file before filesystem update
+    // Load backup file into RAM buffer before filesystem update
     if (isFilesystem) {
       // During minimal mode, check if backup file exists from before first reboot
       if (LittleFS.exists("/prefs_backup.json")) {
-        logger.info(F("WebOTAHandler"), F("Backup-Datei gefunden, stelle Preferences wieder her..."));
-        // Load backup file and restore to Preferences
-        // This must happen BEFORE the filesystem update
-        if (ConfigPersistence::restorePreferencesFromFile()) {
-          logger.info(F("WebOTAHandler"), F("Preferences aus Datei wiederhergestellt"));
+        logger.info(F("WebOTAHandler"), F("Backup-Datei gefunden, lade in RAM-Puffer..."));
+        // Load backup file content into RAM String
+        File backupFile = LittleFS.open("/prefs_backup.json", "r");
+        if (backupFile) {
+          _backupFileContent = backupFile.readString();
+          backupFile.close();
+          logger.info(F("WebOTAHandler"), 
+                     F("Backup-Datei in RAM geladen (") + String(_backupFileContent.length()) + F(" Bytes)"));
         } else {
-          logger.warning(F("WebOTAHandler"), F("Wiederherstellen aus Datei fehlgeschlagen"));
+          logger.error(F("WebOTAHandler"), F("Fehler beim Lesen der Backup-Datei"));
         }
       }
     }
@@ -399,9 +402,31 @@ void WebOTAHandler::handleUpdateUpload() {
       }
 #endif
 
-      // Preferences were already restored from backup file before filesystem update
-      // No additional restore needed - settings are already in place
       logger.info(F("WebOTAHandler"), F("Filesystem-Update erfolgreich"));
+      
+      // Restore preferences from RAM buffer after filesystem update
+      if (_backupFileContent.length() > 0) {
+        logger.info(F("WebOTAHandler"), F("Schreibe Backup-Datei zurück auf neues Filesystem..."));
+        // Write RAM buffer back to new filesystem
+        File backupFile = LittleFS.open("/prefs_backup.json", "w");
+        if (backupFile) {
+          backupFile.print(_backupFileContent);
+          backupFile.close();
+          logger.info(F("WebOTAHandler"), F("Backup-Datei wiederhergestellt"));
+          
+          // Now restore Preferences from the file
+          logger.info(F("WebOTAHandler"), F("Stelle Preferences aus Backup wieder her..."));
+          if (ConfigPersistence::restorePreferencesFromFile()) {
+            logger.info(F("WebOTAHandler"), F("Preferences erfolgreich wiederhergestellt"));
+          } else {
+            logger.warning(F("WebOTAHandler"), F("Wiederherstellen fehlgeschlagen"));
+          }
+        } else {
+          logger.error(F("WebOTAHandler"), F("Fehler beim Schreiben der Backup-Datei"));
+        }
+        // Clear RAM buffer
+        _backupFileContent = "";
+      }
 
       // Send success response to deploy script IMMEDIATELY after update
       // succeeds Do this BEFORE any JSON operations that might cause crashes
