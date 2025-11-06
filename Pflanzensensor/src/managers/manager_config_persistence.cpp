@@ -16,6 +16,8 @@ using namespace ArduinoJson;
 #include "managers/manager_config_preferences.h"
 #include "managers/manager_resource.h"
 #include "managers/manager_sensor.h"
+// Flash persistence is used to store prefs across FS updates
+#include "../utils/flash_persistence.h"
 
 bool ConfigPersistence::configExists() {
   // Check if any core Preferences namespace exists
@@ -61,7 +63,8 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
     config.deviceName = PreferencesManager::getString(generalPrefs, "device_name", DEVICE_NAME);
     config.adminPassword = PreferencesManager::getString(generalPrefs, "admin_pwd", ADMIN_PASSWORD);
     config.md5Verification = PreferencesManager::getBool(generalPrefs, "md5_verify", false);
-    config.fileLoggingEnabled = PreferencesManager::getBool(generalPrefs, "file_log", FILE_LOGGING_ENABLED);
+    config.fileLoggingEnabled =
+        PreferencesManager::getBool(generalPrefs, "file_log", FILE_LOGGING_ENABLED);
     generalPrefs.end();
   }
 
@@ -102,14 +105,16 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
   Preferences ledPrefs;
   if (ledPrefs.begin(PreferencesNamespaces::LED_TRAFFIC, true)) {
     config.ledTrafficLightMode = PreferencesManager::getUChar(ledPrefs, "mode", 0);
-    config.ledTrafficLightSelectedMeasurement = PreferencesManager::getString(ledPrefs, "sel_meas", "");
+    config.ledTrafficLightSelectedMeasurement =
+        PreferencesManager::getString(ledPrefs, "sel_meas", "");
     ledPrefs.end();
   }
 
   // Load flower status sensor directly
   Preferences flowerPrefs;
   if (flowerPrefs.begin(PreferencesNamespaces::GENERAL, true)) {
-    config.flowerStatusSensor = PreferencesManager::getString(flowerPrefs, "flower_sens", "ANALOG_1");
+    config.flowerStatusSensor =
+        PreferencesManager::getString(flowerPrefs, "flower_sens", "ANALOG_1");
     flowerPrefs.end();
   }
 
@@ -140,54 +145,81 @@ ConfigPersistence::PersistenceResult ConfigPersistence::save(const ConfigData& c
   logger.info(F("ConfigP"), F("Speichere Konfiguration in Preferences..."));
 
   // Save general settings using atomic updates
-  auto result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "device_name", config.deviceName);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "admin_pwd", config.adminPassword);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "md5_verify", config.md5Verification);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "file_log", config.fileLoggingEnabled);
-  if (!result.isSuccess()) return result;
+  auto result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "device_name",
+                                                      config.deviceName);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "admin_pwd",
+                                                 config.adminPassword);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "md5_verify",
+                                               config.md5Verification);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "file_log",
+                                               config.fileLoggingEnabled);
+  if (!result.isSuccess())
+    return result;
 
   // Save WiFi settings using specialized method
   result = PreferencesManager::updateWiFiCredentials(1, config.wifiSSID1, config.wifiPassword1);
-  if (!result.isSuccess()) return result;
-  
+  if (!result.isSuccess())
+    return result;
+
   result = PreferencesManager::updateWiFiCredentials(2, config.wifiSSID2, config.wifiPassword2);
-  if (!result.isSuccess()) return result;
-  
+  if (!result.isSuccess())
+    return result;
+
   result = PreferencesManager::updateWiFiCredentials(3, config.wifiSSID3, config.wifiPassword3);
-  if (!result.isSuccess()) return result;
+  if (!result.isSuccess())
+    return result;
 
   // Save debug settings using atomic updates
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "ram", config.debugRAM);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "meas_cycle", config.debugMeasurementCycle);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "sensor", config.debugSensor);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "display", config.debugDisplay);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "websocket", config.debugWebSocket);
-  if (!result.isSuccess()) return result;
+  result =
+      PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "ram", config.debugRAM);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "meas_cycle",
+                                               config.debugMeasurementCycle);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "sensor",
+                                               config.debugSensor);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "display",
+                                               config.debugDisplay);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "websocket",
+                                               config.debugWebSocket);
+  if (!result.isSuccess())
+    return result;
 
   // Save LED traffic light settings using atomic updates
-  result = PreferencesManager::updateUInt8Value(PreferencesNamespaces::LED_TRAFFIC, "mode", config.ledTrafficLightMode);
-  if (!result.isSuccess()) return result;
-  
-  result = PreferencesManager::updateStringValue(PreferencesNamespaces::LED_TRAFFIC, "sel_meas", config.ledTrafficLightSelectedMeasurement);
-  if (!result.isSuccess()) return result;
+  result = PreferencesManager::updateUInt8Value(PreferencesNamespaces::LED_TRAFFIC, "mode",
+                                                config.ledTrafficLightMode);
+  if (!result.isSuccess())
+    return result;
+
+  result = PreferencesManager::updateStringValue(PreferencesNamespaces::LED_TRAFFIC, "sel_meas",
+                                                 config.ledTrafficLightSelectedMeasurement);
+  if (!result.isSuccess())
+    return result;
 
   // Save flower status sensor using atomic update
-  result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "flower_sens", config.flowerStatusSensor);
-  if (!result.isSuccess()) return result;
+  result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "flower_sens",
+                                                 config.flowerStatusSensor);
+  if (!result.isSuccess())
+    return result;
 
   logger.info(F("ConfigP"), F("Konfiguration erfolgreich in Preferences gespeichert"));
   return PersistenceResult::success();
@@ -216,85 +248,83 @@ void ConfigPersistence::readUpdateFlagsFromFile(bool& fs, bool& fw) {
 
 bool ConfigPersistence::savePreferencesToFlash() {
   logger.info(F("ConfigP"), F("Sichere Preferences in Flash..."));
-  
+
   // First, backup to JSON file (reuse existing function)
   if (!backupPreferencesToFile()) {
     logger.error(F("ConfigP"), F("Konnte JSON-Backup nicht erstellen"));
     return false;
   }
-  
+
   // Read the JSON file
   File f = LittleFS.open("/prefs_backup.json", "r");
   if (!f) {
     logger.error(F("ConfigP"), F("Konnte Backup-Datei nicht öffnen"));
     return false;
   }
-  
+
   String jsonData = f.readString();
   f.close();
-  
+
   // Delete the file from LittleFS (will be wiped anyway)
   LittleFS.remove("/prefs_backup.json");
-  
+
   // Save to flash using FlashPersistence
-  #include "../utils/flash_persistence.h"
   auto result = FlashPersistence::saveToFlash(jsonData);
   if (!result.isSuccess()) {
     logger.error(F("ConfigP"), F("Flash-Speicherung fehlgeschlagen: ") + result.getMessage());
     return false;
   }
-  
+
   logger.info(F("ConfigP"), F("Preferences erfolgreich in Flash gesichert"));
   return true;
 }
 
 bool ConfigPersistence::restorePreferencesFromFlash() {
   logger.info(F("ConfigP"), F("Stelle Preferences aus Flash wieder her..."));
-  
+
   // Load JSON from flash
-  #include "../utils/flash_persistence.h"
   String jsonData;
   auto result = FlashPersistence::loadFromFlash(jsonData);
   if (!result.isSuccess()) {
     logger.error(F("ConfigP"), F("Flash-Lesen fehlgeschlagen: ") + result.getMessage());
     return false;
   }
-  
+
   // Write to temporary file for restoration
   File f = LittleFS.open("/prefs_backup.json", "w");
   if (!f) {
     logger.error(F("ConfigP"), F("Konnte temporäre Datei nicht erstellen"));
     return false;
   }
-  
+
   f.print(jsonData);
   f.close();
-  
+
   // Restore using existing function
   bool success = restorePreferencesFromFile();
-  
+
   // Clean up
   LittleFS.remove("/prefs_backup.json");
-  
+
   // Clear flash storage
   FlashPersistence::clearFlash();
-  
+
   if (success) {
     logger.info(F("ConfigP"), F("Preferences erfolgreich aus Flash wiederhergestellt"));
   } else {
     logger.error(F("ConfigP"), F("Wiederherstellen aus Flash fehlgeschlagen"));
   }
-  
+
   return success;
 }
 
 bool ConfigPersistence::backupPreferencesToFile() {
   logger.info(F("ConfigP"), F("Sichere Preferences in Datei..."));
-  
+
   // Create JSON document for backup (allocate enough space)
   DynamicJsonDocument doc(8192);
   Preferences prefs;
-  
+
   // Backup general namespace
   if (prefs.begin(PreferencesNamespaces::GENERAL, true)) {
     JsonObject general = doc.createNestedObject("general");
@@ -306,7 +336,7 @@ bool ConfigPersistence::backupPreferencesToFile() {
     general["flower_sens"] = prefs.getString("flower_sens", "");
     prefs.end();
   }
-  
+
   // Backup WiFi namespaces (3 separate namespaces)
   JsonObject wifi = doc.createNestedObject("wifi");
   if (prefs.begin(PreferencesNamespaces::WIFI1, true)) {
@@ -324,7 +354,7 @@ bool ConfigPersistence::backupPreferencesToFile() {
     wifi["pwd3"] = prefs.getString("pwd", "");
     prefs.end();
   }
-  
+
   // Backup display namespace
   if (prefs.begin(PreferencesNamespaces::DISP, true)) {
     JsonObject disp = doc.createNestedObject("display");
@@ -336,7 +366,7 @@ bool ConfigPersistence::backupPreferencesToFile() {
     disp["clock_fmt"] = prefs.getString("clock_fmt", "24h");
     prefs.end();
   }
-  
+
   // Backup debug namespace
   if (prefs.begin(PreferencesNamespaces::DEBUG, true)) {
     JsonObject debug = doc.createNestedObject("debug");
@@ -347,7 +377,7 @@ bool ConfigPersistence::backupPreferencesToFile() {
     debug["websocket"] = prefs.getBool("websocket", false);
     prefs.end();
   }
-  
+
   // Backup log namespace
   if (prefs.begin(PreferencesNamespaces::LOG, true)) {
     JsonObject log = doc.createNestedObject("log");
@@ -355,7 +385,7 @@ bool ConfigPersistence::backupPreferencesToFile() {
     log["file_enabled"] = prefs.getBool("file_enabled", false);
     prefs.end();
   }
-  
+
   // Backup LED traffic namespace
   if (prefs.begin(PreferencesNamespaces::LED_TRAFFIC, true)) {
     JsonObject led = doc.createNestedObject("led_traffic");
@@ -363,11 +393,11 @@ bool ConfigPersistence::backupPreferencesToFile() {
     led["sel_meas"] = prefs.getString("sel_meas", "");
     prefs.end();
   }
-  
-  // Backup sensor namespaces  
+
+  // Backup sensor namespaces
   const char* sensorIds[] = {"ANALOG", "DHT"};
   JsonArray sensors = doc.createNestedArray("sensors");
-  
+
   for (const char* sensorId : sensorIds) {
     String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
     if (prefs.begin(ns.c_str(), true)) {
@@ -377,15 +407,15 @@ bool ConfigPersistence::backupPreferencesToFile() {
         sensor["name"] = prefs.getString("name", "");
         sensor["meas_int"] = prefs.getUInt("meas_int", 30000);
         sensor["has_err"] = prefs.getBool("has_err", false);
-        
+
         // Backup measurements (max 8 for ANALOG, 2 for DHT)
         uint8_t maxMeas = (String(sensorId) == "ANALOG") ? 8 : 2;
         JsonArray measurements = sensor.createNestedArray("measurements");
-        
+
         for (uint8_t i = 0; i < maxMeas; i++) {
           String prefix = "m" + String(i) + "_";
           String nameKey = prefix + "nm";
-          
+
           if (prefs.isKey(nameKey.c_str())) {
             JsonObject meas = measurements.createNestedObject();
             meas["idx"] = i;
@@ -410,20 +440,20 @@ bool ConfigPersistence::backupPreferencesToFile() {
       prefs.end();
     }
   }
-  
+
   // Write to file
   File f = LittleFS.open("/prefs_backup.json", "w");
   if (!f) {
     logger.error(F("ConfigP"), F("Konnte Backup-Datei nicht erstellen"));
     return false;
   }
-  
+
   if (serializeJson(doc, f) == 0) {
     logger.error(F("ConfigP"), F("Fehler beim Schreiben der Backup-Datei"));
     f.close();
     return false;
   }
-  
+
   f.close();
   logger.info(F("ConfigP"), F("Preferences erfolgreich in /prefs_backup.json gesichert"));
   return true;
@@ -431,164 +461,209 @@ bool ConfigPersistence::backupPreferencesToFile() {
 
 bool ConfigPersistence::restorePreferencesFromFile() {
   logger.info(F("ConfigP"), F("Stelle Preferences aus Datei wieder her..."));
-  
+
   File f = LittleFS.open("/prefs_backup.json", "r");
   if (!f) {
     logger.warning(F("ConfigP"), F("Keine Backup-Datei gefunden"));
     return false;
   }
-  
+
   DynamicJsonDocument doc(8192);
   DeserializationError error = deserializeJson(doc, f);
   f.close();
-  
+
   if (error) {
     logger.error(F("ConfigP"), F("Fehler beim Lesen der Backup-Datei: ") + String(error.c_str()));
     return false;
   }
-  
+
   Preferences prefs;
-  
+
   // Restore general namespace
   if (doc.containsKey("general")) {
     JsonObject general = doc["general"];
     if (prefs.begin(PreferencesNamespaces::GENERAL, false)) {
-      if (general.containsKey("device_name")) prefs.putString("device_name", general["device_name"].as<String>().c_str());
-      if (general.containsKey("admin_pwd")) prefs.putString("admin_pwd", general["admin_pwd"].as<String>().c_str());
-      if (general.containsKey("md5_verify")) prefs.putBool("md5_verify", general["md5_verify"]);
-      if (general.containsKey("collectd_en")) prefs.putBool("collectd_en", general["collectd_en"]);
-      if (general.containsKey("file_log")) prefs.putBool("file_log", general["file_log"]);
-      if (general.containsKey("flower_sens")) prefs.putString("flower_sens", general["flower_sens"].as<String>().c_str());
+      if (general.containsKey("device_name"))
+        prefs.putString("device_name", general["device_name"].as<String>().c_str());
+      if (general.containsKey("admin_pwd"))
+        prefs.putString("admin_pwd", general["admin_pwd"].as<String>().c_str());
+      if (general.containsKey("md5_verify"))
+        prefs.putBool("md5_verify", general["md5_verify"]);
+      if (general.containsKey("collectd_en"))
+        prefs.putBool("collectd_en", general["collectd_en"]);
+      if (general.containsKey("file_log"))
+        prefs.putBool("file_log", general["file_log"]);
+      if (general.containsKey("flower_sens"))
+        prefs.putString("flower_sens", general["flower_sens"].as<String>().c_str());
       prefs.putBool("initialized", true);
       prefs.end();
     }
   }
-  
+
   // Restore WiFi namespaces (3 separate namespaces)
   if (doc.containsKey("wifi")) {
     JsonObject wifi = doc["wifi"];
-    
+
     // Restore WiFi 1
     if (prefs.begin(PreferencesNamespaces::WIFI1, false)) {
-      if (wifi.containsKey("ssid1")) prefs.putString("ssid", wifi["ssid1"].as<String>().c_str());
-      if (wifi.containsKey("pwd1")) prefs.putString("pwd", wifi["pwd1"].as<String>().c_str());
+      if (wifi.containsKey("ssid1"))
+        prefs.putString("ssid", wifi["ssid1"].as<String>().c_str());
+      if (wifi.containsKey("pwd1"))
+        prefs.putString("pwd", wifi["pwd1"].as<String>().c_str());
       prefs.putBool("initialized", true);
       prefs.end();
     }
-    
+
     // Restore WiFi 2
     if (prefs.begin(PreferencesNamespaces::WIFI2, false)) {
-      if (wifi.containsKey("ssid2")) prefs.putString("ssid", wifi["ssid2"].as<String>().c_str());
-      if (wifi.containsKey("pwd2")) prefs.putString("pwd", wifi["pwd2"].as<String>().c_str());
+      if (wifi.containsKey("ssid2"))
+        prefs.putString("ssid", wifi["ssid2"].as<String>().c_str());
+      if (wifi.containsKey("pwd2"))
+        prefs.putString("pwd", wifi["pwd2"].as<String>().c_str());
       prefs.putBool("initialized", true);
       prefs.end();
     }
-    
+
     // Restore WiFi 3
     if (prefs.begin(PreferencesNamespaces::WIFI3, false)) {
-      if (wifi.containsKey("ssid3")) prefs.putString("ssid", wifi["ssid3"].as<String>().c_str());
-      if (wifi.containsKey("pwd3")) prefs.putString("pwd", wifi["pwd3"].as<String>().c_str());
+      if (wifi.containsKey("ssid3"))
+        prefs.putString("ssid", wifi["ssid3"].as<String>().c_str());
+      if (wifi.containsKey("pwd3"))
+        prefs.putString("pwd", wifi["pwd3"].as<String>().c_str());
       prefs.putBool("initialized", true);
       prefs.end();
     }
   }
-  
+
   // Restore display namespace
   if (doc.containsKey("display")) {
     JsonObject disp = doc["display"];
     if (prefs.begin(PreferencesNamespaces::DISP, false)) {
-      if (disp.containsKey("show_ip")) prefs.putBool("show_ip", disp["show_ip"]);
-      if (disp.containsKey("show_clock")) prefs.putBool("show_clock", disp["show_clock"]);
-      if (disp.containsKey("show_flower")) prefs.putBool("show_flower", disp["show_flower"]);
-      if (disp.containsKey("show_fabmobil")) prefs.putBool("show_fabmobil", disp["show_fabmobil"]);
-      if (disp.containsKey("screen_dur")) prefs.putUInt("screen_dur", disp["screen_dur"]);
-      if (disp.containsKey("clock_fmt")) prefs.putString("clock_fmt", disp["clock_fmt"].as<String>().c_str());
+      if (disp.containsKey("show_ip"))
+        prefs.putBool("show_ip", disp["show_ip"]);
+      if (disp.containsKey("show_clock"))
+        prefs.putBool("show_clock", disp["show_clock"]);
+      if (disp.containsKey("show_flower"))
+        prefs.putBool("show_flower", disp["show_flower"]);
+      if (disp.containsKey("show_fabmobil"))
+        prefs.putBool("show_fabmobil", disp["show_fabmobil"]);
+      if (disp.containsKey("screen_dur"))
+        prefs.putUInt("screen_dur", disp["screen_dur"]);
+      if (disp.containsKey("clock_fmt"))
+        prefs.putString("clock_fmt", disp["clock_fmt"].as<String>().c_str());
       prefs.putBool("initialized", true);
       prefs.end();
     }
   }
-  
+
   // Restore debug namespace
   if (doc.containsKey("debug")) {
     JsonObject debug = doc["debug"];
     if (prefs.begin(PreferencesNamespaces::DEBUG, false)) {
-      if (debug.containsKey("ram")) prefs.putBool("ram", debug["ram"]);
-      if (debug.containsKey("meas_cycle")) prefs.putBool("meas_cycle", debug["meas_cycle"]);
-      if (debug.containsKey("sensor")) prefs.putBool("sensor", debug["sensor"]);
-      if (debug.containsKey("display")) prefs.putBool("display", debug["display"]);
-      if (debug.containsKey("websocket")) prefs.putBool("websocket", debug["websocket"]);
+      if (debug.containsKey("ram"))
+        prefs.putBool("ram", debug["ram"]);
+      if (debug.containsKey("meas_cycle"))
+        prefs.putBool("meas_cycle", debug["meas_cycle"]);
+      if (debug.containsKey("sensor"))
+        prefs.putBool("sensor", debug["sensor"]);
+      if (debug.containsKey("display"))
+        prefs.putBool("display", debug["display"]);
+      if (debug.containsKey("websocket"))
+        prefs.putBool("websocket", debug["websocket"]);
       prefs.putBool("initialized", true);
       prefs.end();
     }
   }
-  
+
   // Restore log namespace
   if (doc.containsKey("log")) {
     JsonObject log = doc["log"];
     if (prefs.begin(PreferencesNamespaces::LOG, false)) {
-      if (log.containsKey("level")) prefs.putUChar("level", log["level"]);
-      if (log.containsKey("file_enabled")) prefs.putBool("file_enabled", log["file_enabled"]);
+      if (log.containsKey("level"))
+        prefs.putUChar("level", log["level"]);
+      if (log.containsKey("file_enabled"))
+        prefs.putBool("file_enabled", log["file_enabled"]);
       prefs.putBool("initialized", true);
       prefs.end();
     }
   }
-  
+
   // Restore LED traffic namespace
   if (doc.containsKey("led_traffic")) {
     JsonObject led = doc["led_traffic"];
     if (prefs.begin(PreferencesNamespaces::LED_TRAFFIC, false)) {
-      if (led.containsKey("mode")) prefs.putUChar("mode", led["mode"]);
-      if (led.containsKey("sel_meas")) prefs.putString("sel_meas", led["sel_meas"].as<String>().c_str());
+      if (led.containsKey("mode"))
+        prefs.putUChar("mode", led["mode"]);
+      if (led.containsKey("sel_meas"))
+        prefs.putString("sel_meas", led["sel_meas"].as<String>().c_str());
       prefs.putBool("initialized", true);
       prefs.end();
     }
   }
-  
+
   // Restore sensor namespaces
   if (doc.containsKey("sensors")) {
     JsonArray sensors = doc["sensors"];
     for (JsonObject sensor : sensors) {
       String sensorId = sensor["id"].as<String>();
       String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-      
+
       if (prefs.begin(ns.c_str(), false)) {
-        if (sensor.containsKey("name")) prefs.putString("name", sensor["name"].as<String>().c_str());
-        if (sensor.containsKey("meas_int")) prefs.putUInt("meas_int", sensor["meas_int"]);
-        if (sensor.containsKey("has_err")) prefs.putBool("has_err", sensor["has_err"]);
+        if (sensor.containsKey("name"))
+          prefs.putString("name", sensor["name"].as<String>().c_str());
+        if (sensor.containsKey("meas_int"))
+          prefs.putUInt("meas_int", sensor["meas_int"]);
+        if (sensor.containsKey("has_err"))
+          prefs.putBool("has_err", sensor["has_err"]);
         prefs.putBool("initialized", true);
-        
+
         // Restore measurements
         if (sensor.containsKey("measurements")) {
           JsonArray measurements = sensor["measurements"];
           for (JsonObject meas : measurements) {
             uint8_t idx = meas["idx"];
             String prefix = "m" + String(idx) + "_";
-            
-            if (meas.containsKey("en")) prefs.putBool((prefix + "en").c_str(), meas["en"]);
-            if (meas.containsKey("nm")) prefs.putString((prefix + "nm").c_str(), meas["nm"].as<String>().c_str());
-            if (meas.containsKey("fn")) prefs.putString((prefix + "fn").c_str(), meas["fn"].as<String>().c_str());
-            if (meas.containsKey("un")) prefs.putString((prefix + "un").c_str(), meas["un"].as<String>().c_str());
-            if (meas.containsKey("min")) prefs.putFloat((prefix + "min").c_str(), meas["min"]);
-            if (meas.containsKey("max")) prefs.putFloat((prefix + "max").c_str(), meas["max"]);
-            if (meas.containsKey("yl")) prefs.putFloat((prefix + "yl").c_str(), meas["yl"]);
-            if (meas.containsKey("gl")) prefs.putFloat((prefix + "gl").c_str(), meas["gl"]);
-            if (meas.containsKey("gh")) prefs.putFloat((prefix + "gh").c_str(), meas["gh"]);
-            if (meas.containsKey("yh")) prefs.putFloat((prefix + "yh").c_str(), meas["yh"]);
-            if (meas.containsKey("inv")) prefs.putBool((prefix + "inv").c_str(), meas["inv"]);
-            if (meas.containsKey("cal")) prefs.putBool((prefix + "cal").c_str(), meas["cal"]);
-            if (meas.containsKey("acd")) prefs.putUInt((prefix + "acd").c_str(), meas["acd"]);
-            if (meas.containsKey("rmin")) prefs.putInt((prefix + "rmin").c_str(), meas["rmin"]);
-            if (meas.containsKey("rmax")) prefs.putInt((prefix + "rmax").c_str(), meas["rmax"]);
+
+            if (meas.containsKey("en"))
+              prefs.putBool((prefix + "en").c_str(), meas["en"]);
+            if (meas.containsKey("nm"))
+              prefs.putString((prefix + "nm").c_str(), meas["nm"].as<String>().c_str());
+            if (meas.containsKey("fn"))
+              prefs.putString((prefix + "fn").c_str(), meas["fn"].as<String>().c_str());
+            if (meas.containsKey("un"))
+              prefs.putString((prefix + "un").c_str(), meas["un"].as<String>().c_str());
+            if (meas.containsKey("min"))
+              prefs.putFloat((prefix + "min").c_str(), meas["min"]);
+            if (meas.containsKey("max"))
+              prefs.putFloat((prefix + "max").c_str(), meas["max"]);
+            if (meas.containsKey("yl"))
+              prefs.putFloat((prefix + "yl").c_str(), meas["yl"]);
+            if (meas.containsKey("gl"))
+              prefs.putFloat((prefix + "gl").c_str(), meas["gl"]);
+            if (meas.containsKey("gh"))
+              prefs.putFloat((prefix + "gh").c_str(), meas["gh"]);
+            if (meas.containsKey("yh"))
+              prefs.putFloat((prefix + "yh").c_str(), meas["yh"]);
+            if (meas.containsKey("inv"))
+              prefs.putBool((prefix + "inv").c_str(), meas["inv"]);
+            if (meas.containsKey("cal"))
+              prefs.putBool((prefix + "cal").c_str(), meas["cal"]);
+            if (meas.containsKey("acd"))
+              prefs.putUInt((prefix + "acd").c_str(), meas["acd"]);
+            if (meas.containsKey("rmin"))
+              prefs.putInt((prefix + "rmin").c_str(), meas["rmin"]);
+            if (meas.containsKey("rmax"))
+              prefs.putInt((prefix + "rmax").c_str(), meas["rmax"]);
           }
         }
-        
+
         prefs.end();
       }
     }
   }
-  
+
   // Backup file cleaned up by caller (flash restore or config upload handler)
-  
+
   logger.info(F("ConfigP"), F("Preferences erfolgreich wiederhergestellt"));
   return true;
 }

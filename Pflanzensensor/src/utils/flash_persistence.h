@@ -1,10 +1,10 @@
 /**
  * @file flash_persistence.h
  * @brief Flash-based configuration persistence for OTA filesystem updates
- * 
+ *
  * This module stores configuration data in unused firmware flash space,
  * allowing settings to survive filesystem OTA updates on ESP8266.
- * 
+ *
  * Strategy:
  * - Store config JSON in sketch partition beyond compiled code
  * - Calculate safe offset dynamically using ESP.getSketchSize()
@@ -15,13 +15,13 @@
 #ifndef FLASH_PERSISTENCE_H
 #define FLASH_PERSISTENCE_H
 
-#include <Arduino.h>
 #include "../utils/result_types.h"
+#include <Arduino.h>
 
 /**
  * @class FlashPersistence
  * @brief Manages configuration storage in firmware flash area
- * 
+ *
  * Uses unused space in the sketch partition to store configuration
  * as JSON during filesystem OTA updates. The data survives because
  * filesystem OTA only updates the LittleFS partition, not the sketch.
@@ -70,19 +70,19 @@ private:
   FlashPersistence() = default;
 
   // Magic number to identify valid stored data
-  static constexpr uint32_t MAGIC_NUMBER = 0x50464C54; // "PFLT" (Pflanzensensor)
-  
+  static constexpr uint32_t FP_MAGIC_NUMBER = 0x50464C54; // "PFLT" (Pflanzensensor)
+
   // Version number for compatibility checking
-  static constexpr uint8_t VERSION = 1;
+  static constexpr uint8_t FP_VERSION = 1;
 
   // Safety margin beyond sketch size (in sectors, 1 sector = 4KB)
-  static constexpr uint32_t SAFETY_MARGIN_SECTORS = 10;
+  static constexpr uint32_t FP_SAFETY_MARGIN_SECTORS = 10;
 
   // Maximum size for config storage (64KB should be plenty)
-  static constexpr uint32_t MAX_CONFIG_SIZE = 64 * 1024;
+  static constexpr uint32_t FP_MAX_CONFIG_SIZE = 64 * 1024;
 
   // Flash sector size on ESP8266
-  static constexpr uint32_t FLASH_SECTOR_SIZE = 4096;
+  static constexpr uint32_t FP_FLASH_SECTOR_SIZE = 4096;
 
   /**
    * @brief Calculate CRC32 checksum for data integrity

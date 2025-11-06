@@ -36,7 +36,9 @@ enum class ResourceError {
   SUCCESS,               ///< Operation completed successfully
   PARTIAL_SUCCESS,       ///< Operation partially succeeded
   ALREADY_IN_CRITICAL,   ///< Resource is already in critical section
+  DATA_CORRUPTION,       ///< Data integrity check failed
   INSUFFICIENT_MEMORY,   ///< Not enough memory available
+  INSUFFICIENT_SPACE,    ///< Not enough storage space available
   FILESYSTEM_ERROR,      ///< Error accessing filesystem
   OPERATION_FAILED,      ///< Generic operation failure
   UNKNOWN_ERROR,         ///< Unspecified error
@@ -49,7 +51,8 @@ enum class ResourceError {
   INFLUXDB_ERROR,        ///< InfluxDB operation failed
   WEBSERVER_ERROR,       ///< Web server operation failed
   WEBSOCKET_ERROR,       ///< WebSocket operation failed
-  VALIDATION_ERROR       ///< Invalid parameters or input validation failed
+  VALIDATION_ERROR,      ///< Invalid parameters or input validation failed
+  VERSION_MISMATCH       ///< Version incompatibility detected
 };
 
 /**

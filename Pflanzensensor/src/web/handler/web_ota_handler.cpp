@@ -18,6 +18,8 @@
 #include "managers/manager_display.h"
 #endif
 #include "utils/critical_section.h"
+// Flash persistence used to keep Preferences across FS updates
+#include "../../utils/flash_persistence.h"
 
 extern std::unique_ptr<SensorManager> sensorManager;
 #if USE_DISPLAY
@@ -247,10 +249,9 @@ void WebOTAHandler::handleUpdateUpload() {
                                         String(isFilesystem ? F("Dateisystem") : F("Firmware")) +
                                         F(")"));
     logger.debug(F("WebOTAHandler"), F("Inhaltlänge: ") + String(contentLength) + F(" Bytes"));
-    
+
     // FLASH-BASED PERSISTENCE: Check if config was saved to flash before FS update
     // Flash storage survives filesystem updates (stored in firmware partition)
-    #include "../../utils/flash_persistence.h"
     if (isFilesystem && FlashPersistence::hasValidConfig()) {
       logger.info(F("WebOTAHandler"), F("Flash-Backup gefunden, stelle Preferences wieder her..."));
       if (ConfigPersistence::restorePreferencesFromFlash()) {
@@ -303,9 +304,9 @@ void WebOTAHandler::handleUpdateUpload() {
     }
 
     uint8_t command = isFilesystem ? U_FS : U_FLASH;
-    logger.debug(F("WebOTAHandler"), F("Update-Befehl: ") + String(command) + F(", Inhaltslänge: ") +
-                                         String(contentLength) + F(", verfügbarer Speicher: ") +
-                                         String(freeSpace));
+    logger.debug(F("WebOTAHandler"), F("Update-Befehl: ") + String(command) +
+                                         F(", Inhaltslänge: ") + String(contentLength) +
+                                         F(", verfügbarer Speicher: ") + String(freeSpace));
 
     // Note: Preferences backup/restore happens BEFORE Update.begin()
     // The backup file was created before first reboot and already restored above
@@ -510,4 +511,3 @@ size_t WebOTAHandler::calculateRequiredSpace(bool isFilesystem) const {
     return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
   }
 }
-
