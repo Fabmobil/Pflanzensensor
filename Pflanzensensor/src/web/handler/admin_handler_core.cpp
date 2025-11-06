@@ -1,11 +1,12 @@
 /**
+#include "filesystem/config_fs.h"
  * @file admin_handler_core.cpp
  * @brief Core implementation of admin handler functionality
  * @details Provides route registration and main page handling
  */
 
 #include <ArduinoJson.h>
-#include <LittleFS.h>
+#include <MainFS.h>
 
 #include "configs/config.h"
 #include "logger/logger.h"
@@ -148,12 +149,12 @@ void AdminHandler::handleDownloadLog() {
   }
 
   const char* LOG_FILE = "/log.txt";
-  if (!LittleFS.exists(LOG_FILE)) {
+  if (!MainFS.exists(LOG_FILE)) {
     this->sendError(404, F("Keine Log-Datei gefunden"));
     return;
   }
 
-  File logFile = LittleFS.open(LOG_FILE, "r");
+  File logFile = MainFS.open(LOG_FILE, "r");
   if (!logFile) {
     this->sendError(500, F("Öffnen der Log-Datei fehlgeschlagen"));
     return;

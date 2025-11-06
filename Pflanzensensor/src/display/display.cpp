@@ -1,7 +1,7 @@
 #include "display.h"
 
 #include <ESP8266WiFi.h>
-#include <LittleFS.h>
+#include <MainFS.h>
 // #include <qrcodegen.h>  // QR code generation (commented out)
 
 #include "configs/config.h"
@@ -82,13 +82,13 @@ DisplayResult SSD1306Display::showImage(const String& imagePath) {
 
   {
     CriticalSection cs;
-    if (!LittleFS.exists(imagePath)) {
+    if (!MainFS.exists(imagePath)) {
       logger.error(F("Display"), String(F("Bilddatei nicht gefunden: ")) + imagePath);
       return DisplayResult::fail(DisplayError::FILE_ERROR,
                                  String(F("Bilddatei nicht gefunden: ")) + imagePath);
     }
 
-    File imageFile = LittleFS.open(imagePath, "r");
+    File imageFile = MainFS.open(imagePath, "r");
     if (!imageFile) {
       logger.error(F("Display"), String(F("Öffnen der Bilddatei fehlgeschlagen: ")) + imagePath);
       return DisplayResult::fail(DisplayError::FILE_ERROR,
