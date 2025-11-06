@@ -405,7 +405,7 @@ void WebOTAHandler::handleUpdateUpload() {
       logger.info(F("WebOTAHandler"), F("Filesystem-Update erfolgreich"));
       
       // Restore preferences from RAM buffer after filesystem update
-      if (_backupFileContent.length() > 0) {
+      if (!_backupFileContent.isEmpty()) {
         logger.info(F("WebOTAHandler"), F("Schreibe Backup-Datei zurück auf neues Filesystem..."));
         // Write RAM buffer back to new filesystem
         File backupFile = LittleFS.open("/prefs_backup.json", "w");

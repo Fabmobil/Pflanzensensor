@@ -265,6 +265,7 @@ private:
   // Removed obsolete RAM-based backup/restore methods and PreferencesBackup struct.
   // Now using file-based backup exclusively (see ConfigPersistence::backupPreferencesToFile).
 
+  String _backupFileContent; ///< RAM buffer for backup file during FS update
   WebAuth& _auth;    ///< Reference to authentication manager
   OTAStatus _status; ///< Current update status
 };
