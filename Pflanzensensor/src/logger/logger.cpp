@@ -7,7 +7,7 @@
 #include "logger.h"
 
 #include <ArduinoJson.h>
-#include <MainFS.h>
+#include <LittleFS.h>
 #include <time.h> // For timezone support
 #include <umm_malloc/umm_malloc.h>
 

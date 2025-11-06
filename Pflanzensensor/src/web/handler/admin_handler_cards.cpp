@@ -1,5 +1,4 @@
 /**
-#include "filesystem/config_fs.h"
  * @file admin_handler_cards.cpp
  * @brief HTML card generation for admin interface
  * @details Generates various admin interface cards including debug settings,
@@ -7,9 +6,10 @@
  */
 
 #include <ArduinoJson.h>
-#include <MainFS.h>
+#include <LittleFS.h>
 
 #include "configs/config.h"
+#include "filesystem/config_fs.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"

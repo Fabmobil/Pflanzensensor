@@ -1,11 +1,12 @@
 #include "display.h"
 
 #include <ESP8266WiFi.h>
-#include <MainFS.h>
+#include <LittleFS.h>
 // #include <qrcodegen.h>  // QR code generation (commented out)
 
 #include "configs/config.h"
 #include "display_qrcode.h" // microqrcode
+#include "filesystem/config_fs.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "utils/critical_section.h"
