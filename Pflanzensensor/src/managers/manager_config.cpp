@@ -171,14 +171,12 @@ ConfigManager::ConfigResult ConfigManager::setUpdateFlags(bool fileSystem, bool 
   logger.info(F("ConfigM"), F("Setze Update-Flags - Dateisystem: ") + String(fileSystem) +
                                 F(", Firmware: ") + String(firmware));
 
-  // If setting filesystem update flag, backup Preferences to file BEFORE reboot
+  // DUAL PARTITION PROTECTION:
+  // No backup needed - Preferences are on separate CONFIG partition
+  // that survives filesystem OTA updates
   if (fileSystem) {
-    logger.info(F("ConfigM"), F("Sichere Preferences vor Dateisystem-Update..."));
-    if (!ConfigPersistence::backupPreferencesToFile()) {
-      logger.warning(F("ConfigM"), F("Preferences-Sicherung fehlgeschlagen - Fortsetzen trotzdem"));
-    } else {
-      logger.info(F("ConfigM"), F("Preferences erfolgreich in Datei gesichert"));
-    }
+    logger.info(F("ConfigM"), F("Dateisystem-Update: CONFIG Partition bleibt geschützt"));
+    logger.info(F("ConfigM"), F("Einstellungen überleben automatisch das Update"));
   }
 
   ConfigPersistence::writeUpdateFlagsToFile(fileSystem, firmware);

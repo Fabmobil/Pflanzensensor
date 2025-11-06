@@ -10,6 +10,7 @@ using namespace ArduinoJson;
 
 #include <LittleFS.h>
 
+#include "../filesystem/config_fs.h"
 #include "../logger/logger.h"
 #include "../utils/critical_section.h"
 #include "../utils/persistence_utils.h"
@@ -194,7 +195,8 @@ ConfigPersistence::PersistenceResult ConfigPersistence::save(const ConfigData& c
 }
 
 void ConfigPersistence::writeUpdateFlagsToFile(bool fs, bool fw) {
-  File f = LittleFS.open("/update_flags.txt", "w");
+  // Store update flags on MAIN_FS (temporary, doesn't need CONFIG protection)
+  File f = MainFS.open("/update_flags.txt", "w");
   if (f) {
     f.printf("fs:%d,fw:%d\n", fs ? 1 : 0, fw ? 1 : 0);
     f.close();
@@ -202,7 +204,8 @@ void ConfigPersistence::writeUpdateFlagsToFile(bool fs, bool fw) {
 }
 
 void ConfigPersistence::readUpdateFlagsFromFile(bool& fs, bool& fw) {
-  File f = LittleFS.open("/update_flags.txt", "r");
+  // Read update flags from MAIN_FS
+  File f = MainFS.open("/update_flags.txt", "r");
   if (f) {
     String line = f.readStringUntil('\n');
     fs = line.indexOf("fs:1") != -1;
