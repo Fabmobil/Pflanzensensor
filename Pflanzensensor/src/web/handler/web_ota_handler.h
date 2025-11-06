@@ -261,8 +261,7 @@ private:
    * @return true if backup successful
    * @details Saves all config data to RAM before LittleFS update
    */
-};
-
+  
   // Removed obsolete RAM-based backup/restore methods and PreferencesBackup struct.
   // Now using file-based backup exclusively (see ConfigPersistence::backupPreferencesToFile).
 
