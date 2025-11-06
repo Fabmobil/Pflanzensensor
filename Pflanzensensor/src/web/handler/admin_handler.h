@@ -78,6 +78,18 @@ public:
    */
   void handleDownloadLog();
 
+  /**
+   * @brief Download configuration as JSON file
+   * @details Exports all Preferences settings to config.json
+   */
+  void handleDownloadConfig();
+
+  /**
+   * @brief Upload and restore configuration from JSON file
+   * @details Imports settings from config.json and restores to Preferences
+   */
+  void handleUploadConfig();
+
   // Card generation methods - implemented in admin_handler_cards.cpp
 
 #if USE_MAIL
@@ -179,11 +191,6 @@ private:
    *          - Provides feedback
    */
   void handleReboot();
-
-  // NOTE: JSON download/upload methods removed - configuration now in Preferences (EEPROM)
-  // OLD REMOVED: handleDownloadConfig()
-  // OLD REMOVED: handleDownloadSensors()
-  // OLD REMOVED: handleUploadConfig()
 
   // Utility methods - implemented in admin_handler_utils.cpp
   /**

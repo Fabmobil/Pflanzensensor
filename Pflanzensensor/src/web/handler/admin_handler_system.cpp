@@ -16,8 +16,8 @@
 #include "utils/critical_section.h"
 #include "web/handler/admin_handler.h"
 
-// NOTE: ArduinoJson and PersistenceUtils includes removed - no longer needed
-// Configuration now stored in Preferences (EEPROM), not JSON files
+// Configuration storage: Preferences library (flash-based key-value store)
+// All settings stored in Preferences namespaces, not JSON files
 
 void AdminHandler::handleConfigReset() {
   auto result = ConfigMgr.resetToDefaults();
@@ -72,10 +72,8 @@ void AdminHandler::handleReboot() {
   ESP.restart();
 }
 
-// NOTE: JSON download/upload handlers removed - configuration now stored in Preferences (EEPROM)
-// Users can edit configuration through the web interface at /admin and /admin/sensors
-// All changes are saved directly to Preferences
+// Configuration download/upload: See admin_handler_config.cpp
+// - handleDownloadConfig() exports Preferences to JSON
+// - handleUploadConfig() imports JSON to Preferences
 
-// OLD REMOVED: handleDownloadConfig()
-// OLD REMOVED: handleDownloadSensors()
 // OLD REMOVED: handleUploadConfig()

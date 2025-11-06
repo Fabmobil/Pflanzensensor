@@ -587,8 +587,7 @@ bool ConfigPersistence::restorePreferencesFromFile() {
     }
   }
   
-  // Don't delete backup file here - it will be wiped during filesystem update anyway
-  // If we delete it now, we lose the backup before it can be used for RAM backup
+  // Backup file cleaned up by caller (flash restore or config upload handler)
   
   logger.info(F("ConfigP"), F("Preferences erfolgreich wiederhergestellt"));
   return true;

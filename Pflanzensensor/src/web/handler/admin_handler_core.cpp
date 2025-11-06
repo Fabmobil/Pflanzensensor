@@ -80,10 +80,33 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadLog-Route"));
 
-  // NOTE: Download/upload routes removed - configuration now in Preferences (EEPROM)
-  // OLD REMOVED: /admin/downloadConfig (GET)
-  // OLD REMOVED: /admin/downloadSensors (GET)
-  // OLD REMOVED: /admin/uploadConfig (POST)
+  // Register config download route
+  result = router.addRoute(HTTP_GET, "/admin/downloadConfig", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    handleDownloadConfig();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"), F("Registrieren der /admin/downloadConfig-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadConfig-Route"));
+
+  // Register config upload route
+  result = router.addRoute(HTTP_POST, "/admin/uploadConfig", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    handleUploadConfig();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"), F("Registrieren der /admin/uploadConfig-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/uploadConfig-Route"));
 
   // Register WiFi settings update route
   result = router.addRoute(HTTP_POST, "/admin/updateWiFi", [this]() {
