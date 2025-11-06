@@ -261,62 +261,12 @@ private:
    * @return true if backup successful
    * @details Saves all config data to RAM before LittleFS update
    */
-  bool backupAllPreferences();
+};
 
-  /**
-   * @brief Restore all Preferences after filesystem update
-   * @return true if restore successful
-   * @details Writes backed up config data back to Preferences
-   */
-  bool restoreAllPreferences();
-
-  /**
-   * @brief Back up sensor settings to backup namespaces
-   * @details Backs up all known sensor configurations before filesystem update
-   */
-  void backupSensorSettings();
-
-  /**
-   * @brief Back up one sensor's settings to backup namespace
-   * @param sensorId The sensor ID to backup
-   * @details Copies sensor settings to s_bak_<sensorId> namespace
-   */
-  void backupOneSensor(const char* sensorId);
-
-  /**
-   * @brief Restore sensor settings from backup namespaces
-   * @details Restores all known sensor configurations after filesystem update
-   */
-  void restoreSensorSettings();
-
-  /**
-   * @brief Restore one sensor's settings from backup namespace
-   * @param sensorId The sensor ID to restore
-   * @details Copies sensor settings from s_bak_<sensorId> back to s_<sensorId>
-   */
-  void restoreOneSensor(const char* sensorId);
+  // Removed obsolete RAM-based backup/restore methods and PreferencesBackup struct.
+  // Now using file-based backup exclusively (see ConfigPersistence::backupPreferencesToFile).
 
   WebAuth& _auth;    ///< Reference to authentication manager
   OTAStatus _status; ///< Current update status
-  
-  // Preferences backup storage (used during filesystem updates)
-  struct PreferencesBackup {
-    String device_name;
-    String admin_pwd;
-    bool md5_verify;
-    bool collectd_en;
-    bool file_log;
-    String flower_sens;
-    String wifi_ssid1, wifi_ssid2, wifi_ssid3;
-    String wifi_pwd1, wifi_pwd2, wifi_pwd3;
-    bool show_ip, show_clock, show_flower, show_fabmobil;
-    unsigned int screen_dur;
-    String clock_fmt;
-    bool debug_ram, debug_meas_cycle, debug_sensor, debug_display, debug_websocket;
-    unsigned char log_level;
-    bool log_file_en;
-    unsigned char led_mode;
-    String led_sel_meas;
-    bool hasBackup = false;
-  } _prefsBackup;
 };
+
