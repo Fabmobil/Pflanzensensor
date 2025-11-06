@@ -9,7 +9,6 @@
 #include <LittleFS.h>
 
 #include "configs/config.h"
-#include "filesystem/config_fs.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
@@ -183,7 +182,7 @@ void AdminHandler::generateAndSendSystemInfoCard() {
   yield();
   {
     FSInfo fs_info;
-    if (MainFS.info(fs_info)) {
+    if (LittleFS.info(fs_info)) {
       sendChunk(F("<tr><td>Dateisystem Gesamt</td><td>"));
       sendChunk(formatMemorySize(fs_info.totalBytes));
       sendChunk(F("</td></tr><tr><td>Dateisystem Belegt</td><td>"));
@@ -191,8 +190,8 @@ void AdminHandler::generateAndSendSystemInfoCard() {
       sendChunk(F("</td></tr><tr><td>Dateisystem Frei</td><td>"));
       sendChunk(formatMemorySize(fs_info.totalBytes - fs_info.usedBytes));
       sendChunk(F("</td></tr>"));
-      if (ConfigMgr.isFileLoggingEnabled() && MainFS.exists("/log.txt")) {
-        File logFile = MainFS.open("/log.txt", "r");
+      if (ConfigMgr.isFileLoggingEnabled() && LittleFS.exists("/log.txt")) {
+        File logFile = LittleFS.open("/log.txt", "r");
         if (logFile) {
           size_t logSize = logFile.size();
           logFile.close();

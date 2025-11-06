@@ -12,7 +12,6 @@
 #include <umm_malloc/umm_malloc.h>
 
 #include "configs/config.h"
-#include "filesystem/config_fs.h"
 #include "managers/manager_config.h"
 #include "utils/critical_section.h"
 #if USE_WEBSOCKET
@@ -75,7 +74,7 @@ Logger::Logger(LogLevel logLevel, bool useSerial, bool fileLoggingEnabled)
     // Mount filesystem first with critical section
     {
       CriticalSection cs;
-      if (!MainFS.begin()) {
+      if (!LittleFS.begin()) {
         if (m_useSerial) {
           Serial.println(F("Dateisystem für Logging konnte nicht eingehängt werden"));
         }
@@ -83,8 +82,8 @@ Logger::Logger(LogLevel logLevel, bool useSerial, bool fileLoggingEnabled)
       }
 
       // Create log file if it doesn't exist
-      if (!MainFS.exists(m_logFileName)) {
-        File file = MainFS.open(m_logFileName, "w");
+      if (!LittleFS.exists(m_logFileName)) {
+        File file = LittleFS.open(m_logFileName, "w");
         if (file) {
           file.println(F("Logdatei erstellt"));
           file.close();
@@ -290,8 +289,8 @@ void Logger::endMemoryTracking(const String& sectionName) {
 void Logger::enableFileLogging(bool enable) {
   if (enable && !m_fileLoggingEnabled) {
     // Mount filesystem if needed
-    if (!MainFS.exists("/")) {
-      if (!MainFS.begin()) {
+    if (!LittleFS.exists("/")) {
+      if (!LittleFS.begin()) {
         if (m_useSerial) {
           Serial.println(
               F("Dateisystem konnte beim Aktivieren des Loggings nicht eingehängt werden"));
@@ -301,8 +300,8 @@ void Logger::enableFileLogging(bool enable) {
     }
 
     // Create log file if it doesn't exist
-    if (!MainFS.exists(m_logFileName)) {
-      File file = MainFS.open(m_logFileName, "w");
+    if (!LittleFS.exists(m_logFileName)) {
+      File file = LittleFS.open(m_logFileName, "w");
       if (!file || !file.println(F("Logdatei erstellt"))) {
         if (m_useSerial) {
           Serial.println(F("Logdatei konnte nicht erstellt werden"));
@@ -334,8 +333,8 @@ void Logger::writeToFile(const String& logMessage) {
   // Check if filesystem is mounted with critical section
   {
     CriticalSection cs;
-    if (!MainFS.exists("/")) {
-      if (!MainFS.begin()) {
+    if (!LittleFS.exists("/")) {
+      if (!LittleFS.begin()) {
         m_fileLoggingEnabled = false;
         if (m_useSerial) {
           Serial.println(F("Dateisystem für Logging konnte nicht eingehängt werden"));
@@ -345,7 +344,7 @@ void Logger::writeToFile(const String& logMessage) {
       }
     }
 
-    File file = MainFS.open(m_logFileName, "a");
+    File file = LittleFS.open(m_logFileName, "a");
     if (!file) {
       m_fileLoggingEnabled = false;
       if (m_useSerial) {
@@ -375,7 +374,7 @@ void Logger::truncateLogFileIfNeeded() {
 
   CriticalSection cs;
 
-  File file = MainFS.open(m_logFileName, "r");
+  File file = LittleFS.open(m_logFileName, "r");
   if (!file)
     return;
 
@@ -397,14 +396,14 @@ void Logger::truncateLogFileIfNeeded() {
   size_t startPos = (fileSize > keepSize) ? (fileSize - keepSize) : 0;
 
   String tmpName = String(m_logFileName) + ".tmp";
-  File tmp = MainFS.open(tmpName.c_str(), "w");
+  File tmp = LittleFS.open(tmpName.c_str(), "w");
   if (!tmp) {
     // If temp file can't be created, fallback to simple truncation
     warning(F("Logger"), F("Temporäre Logdatei konnte nicht erstellt werden, falle auf "
                            "vollständige Kürzung zurück"));
     file.close();
-    MainFS.remove(m_logFileName);
-    File nf = MainFS.open(m_logFileName, "w");
+    LittleFS.remove(m_logFileName);
+    File nf = LittleFS.open(m_logFileName, "w");
     if (nf) {
       nf.println(F("Logdatei aufgrund Größenlimit gekürzt"));
       nf.close();
@@ -440,14 +439,14 @@ void Logger::truncateLogFileIfNeeded() {
   // Replace original file with temp file. Try to be atomic when possible.
   // Remove original first to ensure rename succeeds on platforms that don't
   // support overwrite-rename.
-  MainFS.remove(m_logFileName);
-  if (MainFS.rename(tmpName.c_str(), m_logFileName)) {
+  LittleFS.remove(m_logFileName);
+  if (LittleFS.rename(tmpName.c_str(), m_logFileName)) {
     info(F("Logger"), F("Logdatei erfolgreich gekürzt; ältere Einträge entfernt"));
   } else {
     // Rename failed — try fallback: create a fresh file with header only
     warning(F("Logger"), F("Umbenennen der temporären Logdatei fehlgeschlagen, fallback aktiv"));
-    MainFS.remove(tmpName.c_str());
-    File nf = MainFS.open(m_logFileName, "w");
+    LittleFS.remove(tmpName.c_str());
+    File nf = LittleFS.open(m_logFileName, "w");
     if (nf) {
       nf.println(F("Logdatei aufgrund Größenlimit gekürzt"));
       nf.close();

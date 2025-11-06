@@ -6,7 +6,6 @@
 
 #include "configs/config.h"
 #include "display_qrcode.h" // microqrcode
-#include "filesystem/config_fs.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "utils/critical_section.h"
@@ -83,13 +82,13 @@ DisplayResult SSD1306Display::showImage(const String& imagePath) {
 
   {
     CriticalSection cs;
-    if (!MainFS.exists(imagePath)) {
+    if (!LittleFS.exists(imagePath)) {
       logger.error(F("Display"), String(F("Bilddatei nicht gefunden: ")) + imagePath);
       return DisplayResult::fail(DisplayError::FILE_ERROR,
                                  String(F("Bilddatei nicht gefunden: ")) + imagePath);
     }
 
-    File imageFile = MainFS.open(imagePath, "r");
+    File imageFile = LittleFS.open(imagePath, "r");
     if (!imageFile) {
       logger.error(F("Display"), String(F("Öffnen der Bilddatei fehlgeschlagen: ")) + imagePath);
       return DisplayResult::fail(DisplayError::FILE_ERROR,

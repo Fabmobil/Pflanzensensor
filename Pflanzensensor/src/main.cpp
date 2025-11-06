@@ -10,9 +10,6 @@
 #include <LittleFS.h>
 #include <Wire.h>
 
-// Dual filesystem support (must be included early)
-#include "filesystem/config_fs.h"
-
 // System Components
 #include "configs/config.h"
 #include "utils/critical_section.h"
@@ -70,18 +67,14 @@ void setup() {
 
   logger.beginMemoryTracking(F("managers_init"));
 
-  // Initialize dual filesystem (CONFIG + MAIN_FS)
-  // CRITICAL: CONFIG partition must be mounted FIRST as global LittleFS
-  // This ensures Preferences library stores data on CONFIG partition
-  if (!Helper::initializeComponent(F("dual filesystem"), []() -> ResourceResult {
-        auto result = DualFSInstance.init();
-        if (!result.isSuccess()) {
-          logger.error(F("main"), F("Dual-Filesystem konnte nicht initialisiert werden: ") + 
-                                  result.getMessage());
-          return result;
+  // Initialize filesystem
+  if (!Helper::initializeComponent(F("filesystem"), []() -> ResourceResult {
+        CriticalSection cs;
+        if (!LittleFS.begin()) {
+          logger.error(F("main"), F("Dateisystem konnte nicht eingehängt werden"));
+          return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR,
+                                      F("Dateisystem konnte nicht eingehängt werden"));
         }
-        logger.info(F("main"), F("CONFIG Partition: Für Preferences (überlebt OTA)"));
-        logger.info(F("main"), F("MAIN_FS Partition: Für Web-Assets (wird bei OTA aktualisiert)"));
         return ResourceResult::success();
       })) {
     return;

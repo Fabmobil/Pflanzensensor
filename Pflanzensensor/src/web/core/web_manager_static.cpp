@@ -5,20 +5,18 @@
 
 #include <LittleFS.h>
 
-#include "filesystem/config_fs.h"
 #include "logger/logger.h"
 #include "web/core/web_manager.h"
 
 void WebManager::serveStaticFile(const String& path, const String& contentType,
                                  const String& cacheControl) {
-  // Static files (web assets) are on MAIN_FS partition
-  if (!MainFS.exists(path)) {
+  if (!LittleFS.exists(path)) {
     logger.warning(F("WebManager"), "Static file not found: " + path);
     _server->send(404, "text/plain", "File not found");
     return;
   }
 
-  File file = MainFS.open(path, "r");
+  File file = LittleFS.open(path, "r");
   if (!file) {
     logger.error(F("WebManager"), "Failed to open static file: " + path);
     _server->send(500, "text/plain", "Internal server error");

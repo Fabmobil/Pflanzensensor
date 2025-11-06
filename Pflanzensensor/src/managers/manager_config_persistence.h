@@ -63,8 +63,35 @@ public:
    */
   static void readUpdateFlagsFromFile(bool& fs, bool& fw);
 
-  // NOTE: Backup/restore functions removed - no longer needed with dual partition system
-  // Preferences are stored on CONFIG partition which survives OTA updates
+  /**
+   * @brief Save all Preferences to flash before filesystem update
+   * @return True if save successful, false otherwise
+   * @details Creates JSON with all settings and stores in firmware flash area
+   */
+  static bool savePreferencesToFlash();
+
+  /**
+   * @brief Restore all Preferences from flash after filesystem update  
+   * @return True if restore successful, false otherwise
+   * @details Reads JSON from flash and restores all settings to Preferences
+   */
+  static bool restorePreferencesFromFlash();
+
+  /**
+   * @brief Backup all Preferences to a JSON file before filesystem update
+   * @return True if backup successful, false otherwise
+   * @details Creates /prefs_backup.json with all settings (WiFi, sensors, display, etc.)
+   * @deprecated Use savePreferencesToFlash() instead - this backs up to LittleFS which gets wiped
+   */
+  static bool backupPreferencesToFile();
+
+  /**
+   * @brief Restore all Preferences from backup JSON file after filesystem update
+   * @return True if restore successful, false otherwise
+   * @details Reads /prefs_backup.json and restores all settings to Preferences
+   * @deprecated Use restorePreferencesFromFlash() instead
+   */
+  static bool restorePreferencesFromFile();
 
 private:
   ConfigPersistence() = default;

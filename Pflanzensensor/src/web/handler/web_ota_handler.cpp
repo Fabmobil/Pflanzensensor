@@ -10,7 +10,6 @@
 #include <MD5Builder.h>
 
 #include "configs/config.h"
-#include "filesystem/config_fs.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "managers/manager_config_persistence.h"
@@ -249,13 +248,16 @@ void WebOTAHandler::handleUpdateUpload() {
                                         F(")"));
     logger.debug(F("WebOTAHandler"), F("Inhaltlänge: ") + String(contentLength) + F(" Bytes"));
     
-    // DUAL PARTITION PROTECTION:
-    // - Filesystem OTA updates ONLY update MAIN_FS partition (web assets)
-    // - CONFIG partition (Preferences) is NEVER touched by OTA updates
-    // - No backup/restore needed - settings automatically survive!
-    if (isFilesystem) {
-      logger.info(F("WebOTAHandler"), F("Filesystem-Update: Nur MAIN_FS wird aktualisiert"));
-      logger.info(F("WebOTAHandler"), F("CONFIG Partition (Preferences) bleibt geschützt"));
+    // FLASH-BASED PERSISTENCE: Check if config was saved to flash before FS update
+    // Flash storage survives filesystem updates (stored in firmware partition)
+    #include "../../utils/flash_persistence.h"
+    if (isFilesystem && FlashPersistence::hasValidConfig()) {
+      logger.info(F("WebOTAHandler"), F("Flash-Backup gefunden, stelle Preferences wieder her..."));
+      if (ConfigPersistence::restorePreferencesFromFlash()) {
+        logger.info(F("WebOTAHandler"), F("Preferences erfolgreich aus Flash wiederhergestellt"));
+      } else {
+        logger.warning(F("WebOTAHandler"), F("Wiederherstellen aus Flash fehlgeschlagen"));
+      }
     }
 
     size_t freeSpace;
@@ -263,21 +265,20 @@ void WebOTAHandler::handleUpdateUpload() {
       {
         CriticalSection cs;
         FSInfo fs_info;
-        // Get MAIN_FS partition info (this is what gets updated)
-        if (DualFSInstance.getMainInfo(fs_info)) {
+        if (LittleFS.info(fs_info)) {
           logger.debug(F("WebOTAHandler"),
-                       F("MAIN_FS gesamt: ") + String(fs_info.totalBytes) + F(" Bytes"));
+                       F("Dateisystem gesamt: ") + String(fs_info.totalBytes) + F(" Bytes"));
           logger.debug(F("WebOTAHandler"),
-                       F("MAIN_FS belegt: ") + String(fs_info.usedBytes) + F(" Bytes"));
+                       F("Dateisystem belegt: ") + String(fs_info.usedBytes) + F(" Bytes"));
           freeSpace = fs_info.totalBytes;
 
           if (contentLength > fs_info.totalBytes) {
-            logger.debug(F("WebOTAHandler"), F("Inhaltslänge an MAIN_FS-Größe angepasst"));
+            logger.debug(F("WebOTAHandler"), F("Inhaltslänge an Dateisystemgröße angepasst"));
             contentLength = fs_info.totalBytes;
           }
         } else {
-          logger.error(F("WebOTAHandler"), F("Fehler beim Lesen der MAIN_FS-Informationen"));
-          _status.lastError = F("Fehler beim Lesen der MAIN_FS-Informationen");
+          logger.error(F("WebOTAHandler"), F("Fehler beim Lesen der Dateisysteminformationen"));
+          _status.lastError = F("Fehler beim Lesen der Dateisysteminformationen");
           return;
         }
       }
@@ -306,10 +307,10 @@ void WebOTAHandler::handleUpdateUpload() {
                                          String(contentLength) + F(", verfügbarer Speicher: ") +
                                          String(freeSpace));
 
-    // CRITICAL: For filesystem updates, Update.begin() with U_FS will update
-    // the partition defined by _FS_start and _FS_end in the linker script.
-    // Our linker script defines _FS_start = MAIN_FS_START, so Update.begin()
-    // will correctly update ONLY the MAIN_FS partition, never CONFIG.
+    // Note: Preferences backup/restore happens BEFORE Update.begin()
+    // The backup file was created before first reboot and already restored above
+    // After filesystem update, Preferences will be intact from the restore
+
     if (!Update.begin(contentLength, command)) {
       String error = F("Start des Updates fehlgeschlagen: ") + String(Update.getError());
       logger.error(F("WebOTAHandler"), error);
@@ -395,12 +396,7 @@ void WebOTAHandler::handleUpdateUpload() {
       }
 #endif
 
-      if (isFilesystem) {
-        logger.info(F("WebOTAHandler"), F("Filesystem-Update erfolgreich"));
-        logger.info(F("WebOTAHandler"), F("CONFIG Partition geschützt - Einstellungen bleiben erhalten"));
-      } else {
-        logger.info(F("WebOTAHandler"), F("Firmware-Update erfolgreich"));
-      }
+      logger.info(F("WebOTAHandler"), F("Filesystem-Update erfolgreich"));
 
       // Send success response to deploy script IMMEDIATELY after update
       // succeeds Do this BEFORE any JSON operations that might cause crashes
@@ -506,8 +502,7 @@ size_t WebOTAHandler::calculateRequiredSpace(bool isFilesystem) const {
   if (isFilesystem) {
     CriticalSection cs;
     FSInfo fs_info;
-    // Use MAIN_FS partition info for filesystem updates
-    if (DualFSInstance.getMainInfo(fs_info)) {
+    if (LittleFS.info(fs_info)) {
       return fs_info.totalBytes;
     }
     return 0;

@@ -8,7 +8,6 @@
 #include <LittleFS.h>
 
 #include "configs/config.h"
-#include "filesystem/config_fs.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
@@ -149,12 +148,12 @@ void AdminHandler::handleDownloadLog() {
   }
 
   const char* LOG_FILE = "/log.txt";
-  if (!MainFS.exists(LOG_FILE)) {
+  if (!LittleFS.exists(LOG_FILE)) {
     this->sendError(404, F("Keine Log-Datei gefunden"));
     return;
   }
 
-  File logFile = MainFS.open(LOG_FILE, "r");
+  File logFile = LittleFS.open(LOG_FILE, "r");
   if (!logFile) {
     this->sendError(500, F("Öffnen der Log-Datei fehlgeschlagen"));
     return;
