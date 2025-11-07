@@ -100,13 +100,16 @@ void SensorMeasurementCycleManager::handleProcessing() {
     m_sensor->updateStatus(i);
   }
   logMeasurementResults();
+
+  // NOTE: Slot will be released in handleDeinitializing() AFTER all cleanup
+  // to prevent other sensors from interfering while we're still cleaning up
+
 #if USE_INFLUXDB
   m_state.setState(MeasurementState::SENDING_INFLUX, m_sensor->getName());
 #else
   m_state.setState(MeasurementState::DEINITIALIZING, m_sensor->getName());
 #endif
 }
-
 void SensorMeasurementCycleManager::handleSendingInflux() {
 #if USE_INFLUXDB
 
@@ -124,11 +127,16 @@ void SensorMeasurementCycleManager::handleSendingInflux() {
 }
 
 void SensorMeasurementCycleManager::handleDeinitializing() {
-  // Release the measurement slot
+  // CRITICAL: Flush pending updates for THIS sensor immediately after measurement cycle
+  // This ensures data is persisted right away instead of waiting for periodic flush
   if (ConfigMgr.isDebugMeasurementCycle()) {
-    logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Messslot freigeben"));
+    logger.debug(F("MeasurementCycle"),
+                 m_sensor->getName() + F(": Starte Flush der ausstehenden Updates"));
   }
-  SensorManagerLimiter::getInstance().releaseSlot(m_sensor->getId());
+  SensorPersistence::flushPendingUpdatesForSensor(m_sensor->getId());
+  if (ConfigMgr.isDebugMeasurementCycle()) {
+    logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Flush abgeschlossen"));
+  }
 
   // Check if this sensor needs deinitialization
   bool shouldDeinit = m_sensor->shouldDeinitializeAfterMeasurement();
@@ -138,6 +146,15 @@ void SensorMeasurementCycleManager::handleDeinitializing() {
       logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Sensor deinitialisieren"));
     }
     m_sensor->deinitialize();
+  }
+
+  // CRITICAL: Release measurement slot AFTER all cleanup is done
+  // This prevents other sensors from starting measurement while we're still
+  // flushing data or deinitializing
+  SensorManagerLimiter::getInstance().releaseSlot(m_sensor->getId());
+  if (ConfigMgr.isDebugMeasurementCycle()) {
+    logger.debug(F("MeasurementCycle"),
+                 m_sensor->getName() + F(": Messslot nach Cleanup freigegeben"));
   }
 
   // Calculate next measurement time safely

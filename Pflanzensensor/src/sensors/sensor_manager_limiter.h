@@ -24,7 +24,13 @@
 class SensorManagerLimiter {
 public:
   /// Maximum time a sensor can hold a measurement slot before forced release
-  static constexpr unsigned long SLOT_TIMEOUT_MS = 20000; // 20 second timeout
+  /// NOTE: Increased to 45s to accommodate:
+  /// - Multiplexer sensors with 8 channels (~2s per channel = ~16s measurement)
+  /// - Processing and validation (~2-3s)
+  /// - Data persistence/flush operations (~5-10s)
+  /// - Sensor deinitialization (~2s)
+  /// Total: ~25-31s, so 45s provides safe margin
+  static constexpr unsigned long SLOT_TIMEOUT_MS = 45000; // 45 second timeout
 
   /**
    * @brief Gets the singleton instance of the limiter

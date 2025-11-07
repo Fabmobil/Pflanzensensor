@@ -144,7 +144,7 @@ PreferencesManager::PrefResult PreferencesManager::initGeneralNamespace() {
 // Initialize WiFi namespace with defaults
 PreferencesManager::PrefResult PreferencesManager::initWiFiNamespace() {
   Preferences prefs;
-  
+
   // Initialize WiFi 1 namespace
   if (!prefs.begin(PreferencesNamespaces::WIFI1, false)) {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi1-Namespace"));
@@ -155,7 +155,7 @@ PreferencesManager::PrefResult PreferencesManager::initWiFiNamespace() {
   putString(prefs, "pwd", String(WIFI_PASSWORD_1));
   prefs.end();
   logger.info(F("PrefMgr"), F("WiFi1-Namespace initialisiert"));
-  
+
   // Initialize WiFi 2 namespace
   if (!prefs.begin(PreferencesNamespaces::WIFI2, false)) {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi2-Namespace"));
@@ -166,7 +166,7 @@ PreferencesManager::PrefResult PreferencesManager::initWiFiNamespace() {
   putString(prefs, "pwd", String(WIFI_PASSWORD_2));
   prefs.end();
   logger.info(F("PrefMgr"), F("WiFi2-Namespace initialisiert"));
-  
+
   // Initialize WiFi 3 namespace
   if (!prefs.begin(PreferencesNamespaces::WIFI3, false)) {
     logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi3-Namespace"));
@@ -177,7 +177,7 @@ PreferencesManager::PrefResult PreferencesManager::initWiFiNamespace() {
   putString(prefs, "pwd", String(WIFI_PASSWORD_3));
   prefs.end();
   logger.info(F("PrefMgr"), F("WiFi3-Namespace initialisiert"));
-  
+
   return PrefResult::success();
 }
 
@@ -194,8 +194,10 @@ PreferencesManager::PrefResult PreferencesManager::initDisplayNamespace() {
   putBool(prefs, "show_clock", true);
   putBool(prefs, "show_flower", true);
   putBool(prefs, "show_fabmobil", true);
+  putBool(prefs, "show_qr", false);
   putUInt(prefs, "screen_dur", DISPLAY_DEFAULT_TIME * 1000);
   putString(prefs, "clock_fmt", "24h");
+  putString(prefs, "sensor_disp", ""); // Sensor display settings (empty = all sensors shown)
 
   prefs.end();
   logger.info(F("PrefMgr"), F("Display-Namespace mit Standardwerten initialisiert"));
@@ -269,8 +271,8 @@ PreferencesManager::PrefResult PreferencesManager::initializeAllNamespaces() {
     logger.info(F("PrefMgr"), F("General-Namespace bereits vorhanden"));
   }
 
-  if (!namespaceExists(PreferencesNamespaces::WIFI1) || 
-      !namespaceExists(PreferencesNamespaces::WIFI2) || 
+  if (!namespaceExists(PreferencesNamespaces::WIFI1) ||
+      !namespaceExists(PreferencesNamespaces::WIFI2) ||
       !namespaceExists(PreferencesNamespaces::WIFI3)) {
     auto result = initWiFiNamespace();
     if (!result.isSuccess())
@@ -334,6 +336,23 @@ PreferencesManager::PrefResult PreferencesManager::clearAll() {
     }
   }
 
+  // Clear sensor namespaces
+  // Known sensor IDs that may have persistent data
+  const char* sensorIds[] = {
+      "DHT",   // DHT temperature/humidity sensor
+      "ANALOG" // Analog sensor(s)
+  };
+
+  for (const char* sensorId : sensorIds) {
+    String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+    Preferences prefs;
+    if (prefs.begin(ns.c_str(), false)) {
+      prefs.clear();
+      prefs.end();
+      logger.info(F("PrefMgr"), String(F("Sensor-Namespace gelöscht: ")) + String(sensorId));
+    }
+  }
+
   logger.info(F("PrefMgr"), F("Factory Reset abgeschlossen"));
   return PrefResult::success();
 }
@@ -388,7 +407,8 @@ PreferencesManager::PrefResult PreferencesManager::saveSensorMeasurement(
     const String& sensorId, uint8_t measurementIndex, bool enabled, const String& name,
     const String& fieldName, const String& unit, float minValue, float maxValue, float yellowLow,
     float greenLow, float greenHigh, float yellowHigh, bool inverted, bool calibrationMode,
-    uint32_t autocalDuration, int absoluteRawMin, int absoluteRawMax) {
+    uint32_t autocalDuration, int absoluteRawMin, int absoluteRawMax, float absoluteMin,
+    float absoluteMax) {
 
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
@@ -413,6 +433,8 @@ PreferencesManager::PrefResult PreferencesManager::saveSensorMeasurement(
   putUInt(prefs, (prefix + "acd").c_str(), autocalDuration);
   putInt(prefs, (prefix + "rmin").c_str(), absoluteRawMin);
   putInt(prefs, (prefix + "rmax").c_str(), absoluteRawMax);
+  putFloat(prefs, (prefix + "absMin").c_str(), absoluteMin);
+  putFloat(prefs, (prefix + "absMax").c_str(), absoluteMax);
 
   prefs.end();
   logger.info(F("PrefMgr"), String(F("Messwert-Einstellungen gespeichert für ")) + sensorId +
@@ -424,7 +446,8 @@ PreferencesManager::PrefResult PreferencesManager::loadSensorMeasurement(
     const String& sensorId, uint8_t measurementIndex, bool& enabled, String& name,
     String& fieldName, String& unit, float& minValue, float& maxValue, float& yellowLow,
     float& greenLow, float& greenHigh, float& yellowHigh, bool& inverted, bool& calibrationMode,
-    uint32_t& autocalDuration, int& absoluteRawMin, int& absoluteRawMax) {
+    uint32_t& autocalDuration, int& absoluteRawMin, int& absoluteRawMax, float& absoluteMin,
+    float& absoluteMax) {
 
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
@@ -449,6 +472,8 @@ PreferencesManager::PrefResult PreferencesManager::loadSensorMeasurement(
   autocalDuration = getUInt(prefs, (prefix + "acd").c_str(), 86400);
   absoluteRawMin = getInt(prefs, (prefix + "rmin").c_str(), INT_MAX);
   absoluteRawMax = getInt(prefs, (prefix + "rmax").c_str(), INT_MIN);
+  absoluteMin = getFloat(prefs, (prefix + "absMin").c_str(), INFINITY);
+  absoluteMax = getFloat(prefs, (prefix + "absMax").c_str(), -INFINITY);
 
   prefs.end();
   logger.info(F("PrefMgr"), String(F("Messwert-Einstellungen geladen für ")) + sensorId +
@@ -496,7 +521,8 @@ PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t
 
   Preferences prefs;
   if (!prefs.begin(wifiNamespace, false)) {
-    logger.error(F("PrefMgr"), F("Fehler beim Öffnen des WiFi-Namespace: ") + String(wifiNamespace));
+    logger.error(F("PrefMgr"),
+                 F("Fehler beim Öffnen des WiFi-Namespace: ") + String(wifiNamespace));
     return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open WiFi namespace");
   }
 

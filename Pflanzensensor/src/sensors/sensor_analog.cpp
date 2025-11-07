@@ -226,7 +226,8 @@ bool AnalogSensor::fetchSample(float& value, size_t index) {
       value = NAN;
       return false;
     }
-    delay(5); // Kleine Wartezeit für Multiplexer
+    // Sehr kurzes Delay für ADC-Stabilisierung nach Multiplexer-Umschaltung
+    delayMicroseconds(500); // 0.5ms statt 2ms
   }
 #endif
   if (index >= m_analogConfig.measurements.size()) {
@@ -473,13 +474,11 @@ bool AnalogSensor::fetchSample(float& value, size_t index) {
 }
 
 bool AnalogSensor::canAccessHardware() const {
-  static unsigned long lastAccess = 0;
-  unsigned long now = millis();
-  if (now - lastAccess >= m_analogConfig.minimumDelay) {
-    lastAccess = now;
-    return true;
-  }
-  return false;
+  // Für Analog-Sensoren mit Multiplexer ist kein Delay zwischen Kanälen nötig,
+  // da der Multiplexer bereits ein kurzes Stabilisierungs-Delay (2ms) hat.
+  // Das minimumDelay wird stattdessen über das SensorMeasurementCycleManager
+  // auf Zyklus-Ebene durchgesetzt.
+  return true;
 }
 
 #endif // USE_ANALOG

@@ -24,7 +24,41 @@ void WebManager::setupRoutes() {
   _server->on(
       "/admin/uploadConfig", HTTP_POST,
       [this]() {
-        // Called after upload completes - response is sent in upload handler
+        // POST handler - called after upload completes
+        // Send response and trigger reboot here
+        BaseHandler* handler = getCachedHandler("admin");
+        if (handler) {
+          // Check if upload was successful by checking if temp file exists
+          if (LittleFS.exists("/prefs_upload_done.flag")) {
+            logger.info(F("WebManager"), F("Config-Upload erfolgreich, sende Antwort"));
+
+            // Send success response
+            _server->send(
+                200, "application/json",
+                "{\"success\":true,\"message\":\"Die Konfiguration wird wiederhergestellt. "
+                "Dies kann bis zu 60 Sekunden dauern. Bitte warten "
+                "Sie...\",\"rebootPending\":true}");
+
+            // Give response time to reach client
+            delay(500);
+            _server->handleClient();
+            delay(100);
+
+            // Now restore and reboot (called from AdminHandler)
+            static_cast<AdminHandler*>(handler)->handleUploadConfigRestore();
+          } else if (LittleFS.exists("/prefs_upload_error.flag")) {
+            logger.error(F("WebManager"), F("Config-Upload fehlgeschlagen"));
+            _server->send(500, "application/json",
+                          "{\"success\":false,\"error\":\"Upload fehlgeschlagen\"}");
+            LittleFS.remove("/prefs_upload_error.flag");
+          } else {
+            logger.error(F("WebManager"), F("Kein Upload-Status gefunden"));
+            _server->send(500, "application/json",
+                          "{\"success\":false,\"error\":\"Unbekannter Fehler\"}");
+          }
+        } else {
+          _server->send(500, F("text/plain"), F("Handler nicht gefunden"));
+        }
       },
       [this]() {
         // Upload handler - called during file upload
@@ -124,6 +158,22 @@ void WebManager::setupMinimalRoutes() {
                      result.getMessage());
     return;
   }
+
+  // CRITICAL: Catch-all handler to forward requests to router in minimal mode
+  _server->onNotFound([this]() {
+    String uri = _server->uri();
+    HTTPMethod method = _server->method();
+
+    // Let router handle the request
+    if (_router && _router->handleRequest(method, uri)) {
+      // Request was handled by router
+      return;
+    }
+
+    // No route found
+    logger.warning(F("WebManager"), F("404: Nicht gefunden: ") + uri);
+    _server->send(404, "text/plain", "404: Not Found");
+  });
 
   logger.info(F("WebManager"), F("Minimal-Routen registriert - Handler werden bei Bedarf geladen"));
 }

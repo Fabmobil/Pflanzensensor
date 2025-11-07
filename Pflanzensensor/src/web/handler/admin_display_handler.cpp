@@ -90,6 +90,14 @@ void AdminDisplayHandler::handleDisplayConfig() {
         }
         sendChunk(F("> Fabmobil-Logo anzeigen</label></div>"));
 
+        // Show QR code screen
+        sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+        sendChunk(F("<input type='checkbox' class='show-qr-checkbox'"));
+        if (displayManager && displayManager->isQrCodeEnabled()) {
+          sendChunk(F(" checked"));
+        }
+        sendChunk(F("> QR-Code-Seite anzeigen</label></div>"));
+
         sendChunk(F("</div>")); // Close first card
 
         // Sensor and measurement selection in separate card

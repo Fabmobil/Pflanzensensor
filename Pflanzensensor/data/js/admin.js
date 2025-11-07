@@ -532,7 +532,7 @@ window.addEventListener('load', () => {
 });
 
 // --- Reboot modal for config upload ---
-function showRebootModal(seconds, message) {
+function showRebootModal(seconds, message, redirectTo = '/admin') {
     // Create modal elements if not present
     let modal = document.getElementById('reboot-modal');
     if (!modal) {
@@ -560,7 +560,7 @@ function showRebootModal(seconds, message) {
         box.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)';
 
         const h = document.createElement('h3');
-        h.textContent = 'Konfiguration wird angewendet';
+        h.id = 'reboot-title';
         h.style.marginTop = '0';
         box.appendChild(h);
 
@@ -581,22 +581,30 @@ function showRebootModal(seconds, message) {
         document.body.appendChild(modal);
     }
 
+    // Update title based on redirect target
+    const titleEl = document.getElementById('reboot-title');
+    if (redirectTo === '/') {
+        titleEl.textContent = 'System wird neu gestartet...';
+    } else {
+        titleEl.textContent = 'Konfiguration wird angewendet';
+    }
+
     document.getElementById('reboot-message').textContent = message;
     let remaining = seconds;
     const counterEl = document.getElementById('reboot-counter');
-    counterEl.textContent = `Neustart in ${remaining} Sekunden...`;
+    counterEl.textContent = `Weiterleitung in ${remaining} Sekunden...`;
 
     const interval = setInterval(() => {
         remaining--;
         if (remaining <= 0) {
             clearInterval(interval);
-            // Remove modal and reload admin page
+            // Remove modal and redirect
             const m = document.getElementById('reboot-modal');
             if (m) m.parentNode.removeChild(m);
-            window.location.href = '/admin';
+            window.location.href = redirectTo;
             return;
         }
-        counterEl.textContent = `Neustart in ${remaining} Sekunden...`;
+        counterEl.textContent = `Weiterleitung in ${remaining} Sekunden...`;
     }, 1000);
 }
 
@@ -618,7 +626,7 @@ function showRebootModal(seconds, message) {
                     })
                     .then(data => {
                         if (data.success && data.rebootPending) {
-                            showRebootModal(20, data.message || 'Konfiguration wird angewendet...');
+                            showRebootModal(60, data.message || 'Konfiguration wird wiederhergestellt...', '/');
                         } else {
                             alert('Fehler: ' + (data.message || 'Unbekannter Fehler'));
                         }

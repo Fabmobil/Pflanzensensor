@@ -128,7 +128,7 @@ bool Multiplexer::switchToSensor(int sensorIndex) {
   digitalWrite(MUX_C, pinCState);
   interrupts(); // Re-enable interrupts
 
-  delay(10); // Short delay for pins to settle
+  delayMicroseconds(500); // Sehr kurzes Delay für Pin-Stabilisierung (0.5ms)
 
   // Verify pin states
   if (!verifyPinStates(sensorIndex)) {
@@ -142,7 +142,7 @@ bool Multiplexer::switchToSensor(int sensorIndex) {
     digitalWrite(MUX_C, pinCState);
     interrupts();
 
-    delay(10);
+    delayMicroseconds(500);
 
     if (!verifyPinStates(sensorIndex)) {
       logger.error(F("Multiplexer"),

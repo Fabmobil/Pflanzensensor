@@ -86,6 +86,12 @@ public:
   DisplayResult showInfoScreen(const String& ipAddress);
 
   /**
+   * @brief Displays a dedicated QR code screen with title and QR code in 2x scale.
+   * @return DisplayResult indicating success or failure with error details.
+   */
+  DisplayResult showQrCodeScreen();
+
+  /**
    * @brief Displays the current time and date on the screen.
    * @param dateStr The date string to display.
    * @param timeStr The time string to display.

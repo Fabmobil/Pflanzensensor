@@ -57,121 +57,125 @@ void AdminHandler::handleDownloadConfig() {
 }
 
 void AdminHandler::handleUploadConfig() {
-  logger.info(F("AdminHandler"), F("Config-Upload angefordert"));
-
-  // Check if file was uploaded
+  // This is the UPLOAD handler - receives file chunks
+  // Does NOT send HTTP response - that's done in POST handler
   HTTPUpload& upload = _server.upload();
 
   if (upload.status == UPLOAD_FILE_START) {
     String filename = upload.filename;
-    logger.debug(F("AdminHandler"), F("Upload gestartet: ") + filename);
+    logger.info(F("AdminHandler"), F("Config-Upload gestartet: ") + filename);
 
-    // Remove old upload file if exists
-    if (LittleFS.exists("/prefs_upload.json")) {
-      LittleFS.remove("/prefs_upload.json");
-    }
+    // Remove old upload file and flags if they exist
+    LittleFS.remove("/prefs_upload.json");
+    LittleFS.remove("/prefs_upload_done.flag");
+    LittleFS.remove("/prefs_upload_error.flag");
 
     // Open file for writing
     File uploadFile = LittleFS.open("/prefs_upload.json", "w");
     if (!uploadFile) {
       logger.error(F("AdminHandler"), F("Konnte Upload-Datei nicht erstellen"));
+      // Set error flag for POST handler
+      File errorFlag = LittleFS.open("/prefs_upload_error.flag", "w");
+      if (errorFlag) {
+        errorFlag.println("Could not create upload file");
+        errorFlag.close();
+      }
       return;
     }
     uploadFile.close();
-    logger.debug(F("AdminHandler"), F("Upload-Datei erstellt"));
   } else if (upload.status == UPLOAD_FILE_WRITE) {
-    // Write uploaded data to file
+    // Write uploaded data to file (no logging per chunk to avoid spam)
     File uploadFile = LittleFS.open("/prefs_upload.json", "a");
     if (uploadFile) {
-      size_t written = uploadFile.write(upload.buf, upload.currentSize);
+      uploadFile.write(upload.buf, upload.currentSize);
       uploadFile.close();
-      logger.debug(F("AdminHandler"), F("Schreibe ") + String(upload.currentSize) +
-                                          F(" bytes (geschrieben: ") + String(written) + F(")"));
     } else {
       logger.error(F("AdminHandler"), F("Konnte Upload-Datei nicht im Append-Modus öffnen"));
+      // Set error flag
+      File errorFlag = LittleFS.open("/prefs_upload_error.flag", "w");
+      if (errorFlag) {
+        errorFlag.println("Could not append to upload file");
+        errorFlag.close();
+      }
     }
   } else if (upload.status == UPLOAD_FILE_END) {
-    logger.debug(F("AdminHandler"),
-                 F("Upload abgeschlossen: ") + String(upload.totalSize) + F(" bytes"));
+    logger.info(F("AdminHandler"),
+                F("Upload abgeschlossen: ") + String(upload.totalSize) + F(" bytes"));
 
     // Check if file exists
     if (!LittleFS.exists("/prefs_upload.json")) {
       logger.error(F("AdminHandler"), F("Upload-Datei existiert nicht!"));
-      _server.send(500, "text/plain", "Upload-Datei wurde nicht gefunden");
+      // Set error flag
+      File errorFlag = LittleFS.open("/prefs_upload_error.flag", "w");
+      if (errorFlag) {
+        errorFlag.println("Upload file not found");
+        errorFlag.close();
+      }
       return;
     }
 
-    logger.info(F("AdminHandler"),
-                F("Upload erfolgreich, sende JSON-Antwort und starte Verarbeitung..."));
-
-    // Send JSON success response FIRST before doing any heavy processing
-    _server.send(200, "application/json",
-                 "{\"success\":true,\"message\":\"Konfiguration wird angewendet. Der ESP startet "
-                 "neu...\",\"rebootPending\":true}");
-
-    // Give response time to be sent
-    delay(200);
-
-    // Now do heavy processing with maximum RAM
-    logger.info(F("AdminHandler"), F("Führe Emergency Cleanup für maximalen RAM durch..."));
-    // memory stats suppressed to avoid verbose output during uploads
-
-    // Stop webserver and free resources
-    ResourceMgr.performEmergencyCleanup();
-
-    logger.logMemoryStats(F("after_emergency_cleanup"));
-    // memory stats suppressed to avoid verbose output during uploads
-
-    // Validate and process JSON
-    logger.info(F("AdminHandler"), F("Öffne und validiere JSON..."));
-    File uploadFile = LittleFS.open("/prefs_upload.json", "r");
-    if (!uploadFile) {
-      logger.error(F("AdminHandler"), F("Konnte Upload-Datei nicht öffnen nach Cleanup"));
-      LittleFS.remove("/prefs_upload.json");
-      ESP.restart();
-      return;
+    // Set success flag for POST handler
+    File doneFlag = LittleFS.open("/prefs_upload_done.flag", "w");
+    if (doneFlag) {
+      doneFlag.println("Upload complete");
+      doneFlag.close();
+      logger.info(F("AdminHandler"), F("Upload-Flag gesetzt"));
     }
-
-    size_t fileSize = uploadFile.size();
-    logger.info(F("AdminHandler"), F("Upload-Datei: ") + String(fileSize) + F(" bytes"));
-    // memory stats suppressed before JSON parse
-
-    DynamicJsonDocument doc(8192);
-    DeserializationError error = deserializeJson(doc, uploadFile);
-    uploadFile.close();
-
-    // memory stats suppressed after JSON parse
-
-    if (error) {
-      logger.error(F("AdminHandler"), F("Ungültige JSON-Datei: ") + String(error.c_str()));
-      LittleFS.remove("/prefs_upload.json");
-      ESP.restart();
-      return;
-    }
-
-    logger.info(F("AdminHandler"), F("JSON validiert, stelle Preferences wieder her..."));
-    // memory stats suppressed before restore
-
-    // Restore from parsed JSON document
-    bool success = ConfigPersistence::restorePreferencesFromJson(doc);
-
-    // memory stats suppressed after restore
-
-    // Clean up
-    LittleFS.remove("/prefs_upload.json");
-
-    if (success) {
-      logger.info(F("AdminHandler"), F("Config erfolgreich wiederhergestellt, starte neu..."));
-    } else {
-      logger.error(F("AdminHandler"),
-                   F("Config-Wiederherstellung fehlgeschlagen, starte trotzdem neu..."));
-    }
-
-    // Reboot to apply settings
-    delay(500);
-    ESP.restart();
   } else if (upload.status == UPLOAD_FILE_ABORTED) {
     logger.warning(F("AdminHandler"), F("Upload abgebrochen"));
     LittleFS.remove("/prefs_upload.json");
+    LittleFS.remove("/prefs_upload_done.flag");
+    LittleFS.remove("/prefs_upload_error.flag");
   }
+}
+
+void AdminHandler::handleUploadConfigRestore() {
+  // This is called from POST handler AFTER upload completes
+  // HTTP response has already been sent
+  logger.info(F("AdminHandler"), F("Verarbeite hochgeladene Konfiguration..."));
+
+  // Remove the done flag
+  LittleFS.remove("/prefs_upload_done.flag");
+
+  File uploadFile = LittleFS.open("/prefs_upload.json", "r");
+  if (!uploadFile) {
+    logger.error(F("AdminHandler"), F("Konnte Upload-Datei nicht öffnen"));
+    LittleFS.remove("/prefs_upload.json");
+    delay(1000);
+    ESP.restart();
+    return;
+  }
+
+  size_t fileSize = uploadFile.size();
+  logger.info(F("AdminHandler"), F("Verarbeite Datei: ") + String(fileSize) + F(" bytes"));
+
+  DynamicJsonDocument doc(8192);
+  DeserializationError error = deserializeJson(doc, uploadFile);
+  uploadFile.close();
+
+  if (error) {
+    logger.error(F("AdminHandler"), F("Ungültige JSON-Datei: ") + String(error.c_str()));
+    LittleFS.remove("/prefs_upload.json");
+    delay(1000);
+    ESP.restart();
+    return;
+  }
+
+  logger.info(F("AdminHandler"), F("Stelle Preferences wieder her..."));
+
+  // Restore from parsed JSON document (this takes several seconds!)
+  bool success = ConfigPersistence::restorePreferencesFromJson(doc);
+
+  // Clean up
+  LittleFS.remove("/prefs_upload.json");
+
+  if (success) {
+    logger.info(F("AdminHandler"), F("Wiederherstellung erfolgreich, starte neu..."));
+  } else {
+    logger.error(F("AdminHandler"), F("Wiederherstellung fehlgeschlagen, starte trotzdem neu..."));
+  }
+
+  // Reboot to apply settings
+  delay(500);
+  ESP.restart();
 }

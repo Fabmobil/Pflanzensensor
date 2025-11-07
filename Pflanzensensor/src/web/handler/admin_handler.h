@@ -85,10 +85,18 @@ public:
   void handleDownloadConfig();
 
   /**
-   * @brief Upload and restore configuration from JSON file
-   * @details Imports settings from config.json and restores to Preferences
+   * @brief Upload handler for configuration file
+   * @details Receives uploaded config.json file and saves to temp location
+   * Sets flag for POST handler to process
    */
   void handleUploadConfig();
+
+  /**
+   * @brief Process uploaded configuration and reboot
+   * @details Validates JSON, restores preferences, and reboots ESP
+   * Called by POST handler after upload completes
+   */
+  void handleUploadConfigRestore();
 
   // Card generation methods - implemented in admin_handler_cards.cpp
 

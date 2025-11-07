@@ -15,6 +15,12 @@
 #include "../web/handler/web_ota_handler.h"
 #include "managers/manager_config_preferences.h"
 
+#if USE_DISPLAY
+#include "managers/manager_display.h"
+// Forward declaration
+extern std::unique_ptr<DisplayManager> displayManager;
+#endif
+
 ConfigManager::ConfigManager()
     : m_webHandler(*this), m_debugConfig(m_notifier), m_sensorErrorTracker(m_notifier) {}
 
@@ -489,6 +495,12 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
                                                         "show_fabmobil", enabled);
       success = result.isSuccess();
       displayValue = enabled ? F("true") : F("false");
+    } else if (key == "show_qr") {
+      bool enabled = (value == "true" || value == "1");
+      auto result =
+          PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_qr", enabled);
+      success = result.isSuccess();
+      displayValue = enabled ? F("true") : F("false");
     } else if (key == "screen_dur") {
       unsigned int duration = value.toInt();
       auto result =
@@ -504,6 +516,14 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
     if (!success) {
       return ConfigResult::fail(ConfigError::SAVE_FAILED, F("Failed to save display setting"));
     }
+
+    // Reload display manager config so it picks up the new values
+#if USE_DISPLAY
+    if (displayManager) {
+      displayManager->reloadConfig();
+    }
+#endif
+
     logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + key + F(" = ") + displayValue);
     notifyConfigChange(key, value, false);
     return ConfigResult::success();

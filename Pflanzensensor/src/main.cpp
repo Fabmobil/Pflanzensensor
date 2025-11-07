@@ -427,7 +427,6 @@ void setup() {
 
 void loop() {
   static unsigned long lastMemoryCheck = 0;
-  static unsigned long lastMaintenanceCheck = 0;
   static unsigned long lastWiFiCheck = 0;
   static unsigned long lastMeasurementUpdate = 0;
   static unsigned long lastUpdateModeLog = 0;
@@ -459,8 +458,7 @@ void loop() {
       lastUpdateModeLog = currentMillis;
     }
     WebManager::getInstance().handleClient();
-    ESP.wdtFeed();
-    delay(10);
+    yield(); // Allow background tasks without blocking upload
     return;
   }
 
@@ -500,20 +498,6 @@ void loop() {
     lastWiFiCheck = currentMillis;
   }
 
-  // System maintenance tasks
-  if (currentMillis - lastMaintenanceCheck >= 600000) { // Every 10 minutes
-    logger.debug(F("main"), F("Führe Wartungsaufgaben aus"));
-
-#if USE_WIFI
-    logger.updateNTP();
-#endif
-
-    // Force flush of any pending persistence updates during maintenance
-    SensorPersistence::flushPendingUpdates();
-
-    lastMaintenanceCheck = currentMillis;
-  }
-
 // Handle web server requests
 #if USE_WEBSERVER
   WebManager::getInstance().handleClient();
@@ -537,8 +521,8 @@ void loop() {
       currentMillis - lastMeasurementUpdate >= MEASUREMENT_UPDATE_INTERVAL) {
     sensorManager->updateMeasurements();
 
-    // Process a small number of deferred persistence updates (non-blocking)
-    SensorPersistence::processPendingUpdates();
+    // Note: Sensor persistence is now handled per-sensor in handleDeinitializing()
+    // No need for periodic processPendingUpdates() anymore
 
     // Update LED traffic light status for mode 2
 #if USE_LED_TRAFFIC_LIGHT

@@ -110,7 +110,7 @@ async function startUpdate() {
             // Device will reboot twice - first to restore config, then normal boot
             setTimeout(() => {
                 updateProgress(70);
-                showRestoreCountdown(25, result.message || 'Einstellungen werden nach Neustart wiederhergestellt.');
+                showRestoreCountdown(45, result.message || 'Einstellungen werden nach Neustart wiederhergestellt.');
             }, 500);
         } else {
             // Standard success handling

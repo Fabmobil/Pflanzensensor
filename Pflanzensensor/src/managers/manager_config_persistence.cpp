@@ -320,8 +320,10 @@ bool ConfigPersistence::backupPreferencesToFile() {
     disp["show_clock"] = prefs.getBool("show_clock", true);
     disp["show_flower"] = prefs.getBool("show_flower", true);
     disp["show_fabmobil"] = prefs.getBool("show_fabmobil", true);
+    disp["show_qr"] = prefs.getBool("show_qr", false);
     disp["screen_dur"] = prefs.getUInt("screen_dur", 5);
     disp["clock_fmt"] = prefs.getString("clock_fmt", "24h");
+    disp["sensor_disp"] = prefs.getString("sensor_disp", "");
     prefs.end();
   }
 
@@ -339,7 +341,9 @@ bool ConfigPersistence::backupPreferencesToFile() {
   // Backup log namespace
   if (prefs.begin(PreferencesNamespaces::LOG, true)) {
     JsonObject log = doc.createNestedObject("log");
-    log["level"] = prefs.getUChar("level", 3);
+    // Log level is stored as string (e.g., "DEBUG", "INFO", "WARNING", "ERROR")
+    String logLevelStr = prefs.getString("level", "INFO");
+    log["level"] = logLevelStr;
     log["file_enabled"] = prefs.getBool("file_enabled", false);
     prefs.end();
   }
@@ -367,7 +371,8 @@ bool ConfigPersistence::backupPreferencesToFile() {
         sensor["has_err"] = prefs.getBool("has_err", false);
 
         // Backup measurements (max 8 for ANALOG, 2 for DHT)
-        uint8_t maxMeas = (String(sensorId) == "ANALOG") ? 8 : 2;
+        bool isAnalog = (String(sensorId) == "ANALOG");
+        uint8_t maxMeas = isAnalog ? 8 : 2;
         JsonArray measurements = sensor.createNestedArray("measurements");
 
         for (uint8_t i = 0; i < maxMeas; i++) {
@@ -387,11 +392,17 @@ bool ConfigPersistence::backupPreferencesToFile() {
             meas["gl"] = prefs.getFloat((prefix + "gl").c_str(), 0.0);
             meas["gh"] = prefs.getFloat((prefix + "gh").c_str(), 100.0);
             meas["yh"] = prefs.getFloat((prefix + "yh").c_str(), 100.0);
-            meas["inv"] = prefs.getBool((prefix + "inv").c_str(), false);
-            meas["cal"] = prefs.getBool((prefix + "cal").c_str(), false);
-            meas["acd"] = prefs.getUInt((prefix + "acd").c_str(), 0);
-            meas["rmin"] = prefs.getInt((prefix + "rmin").c_str(), 0);
-            meas["rmax"] = prefs.getInt((prefix + "rmax").c_str(), 1023);
+
+            // Analog-spezifische Felder nur für ANALOG-Sensoren
+            if (isAnalog) {
+              meas["inv"] = prefs.getBool((prefix + "inv").c_str(), false);
+              meas["cal"] = prefs.getBool((prefix + "cal").c_str(), false);
+              meas["acd"] = prefs.getUInt((prefix + "acd").c_str(), 0);
+              meas["rmin"] = prefs.getInt((prefix + "rmin").c_str(), 0);
+              meas["rmax"] = prefs.getInt((prefix + "rmax").c_str(), 1023);
+              meas["absMin"] = prefs.getFloat((prefix + "absMin").c_str(), INFINITY);
+              meas["absMax"] = prefs.getFloat((prefix + "absMax").c_str(), -INFINITY);
+            }
           }
         }
       }
@@ -439,12 +450,16 @@ bool ConfigPersistence::restorePreferencesFromFile() {
 }
 
 bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& doc) {
-  Preferences prefs;
+  unsigned long startTime = millis();
+  logger.debug(F("ConfigP"), F("Starte Wiederherstellung der Preferences..."));
 
   // Restore general namespace
+  unsigned long stepStart = millis();
   if (doc.containsKey("general")) {
     JsonObjectConst general = doc["general"].as<JsonObjectConst>();
+    Preferences prefs;
     if (prefs.begin(PreferencesNamespaces::GENERAL, false)) {
+      prefs.clear(); // Alte Daten löschen
       if (general.containsKey("device_name"))
         prefs.putString("device_name", general["device_name"].as<String>().c_str());
       if (general.containsKey("admin_pwd"))
@@ -460,47 +475,71 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
       prefs.putBool("initialized", true);
       prefs.end();
     }
+    yield(); // Watchdog reset
+    logger.debug(F("ConfigP"), String(F("General-Namespace wiederhergestellt (")) +
+                                   String(millis() - stepStart) + F(" ms)"));
   }
 
   // Restore WiFi namespaces (3 separate namespaces)
+  stepStart = millis();
   if (doc.containsKey("wifi")) {
     JsonObjectConst wifi = doc["wifi"].as<JsonObjectConst>();
 
     // Restore WiFi 1
-    if (prefs.begin(PreferencesNamespaces::WIFI1, false)) {
-      if (wifi.containsKey("ssid1"))
-        prefs.putString("ssid", wifi["ssid1"].as<String>().c_str());
-      if (wifi.containsKey("pwd1"))
-        prefs.putString("pwd", wifi["pwd1"].as<String>().c_str());
-      prefs.putBool("initialized", true);
-      prefs.end();
+    {
+      Preferences prefs;
+      if (prefs.begin(PreferencesNamespaces::WIFI1, false)) {
+        prefs.clear(); // Alte Daten löschen
+        if (wifi.containsKey("ssid1"))
+          prefs.putString("ssid", wifi["ssid1"].as<String>().c_str());
+        if (wifi.containsKey("pwd1"))
+          prefs.putString("pwd", wifi["pwd1"].as<String>().c_str());
+        prefs.putBool("initialized", true);
+        prefs.end();
+      }
+      yield(); // Watchdog reset
     }
 
     // Restore WiFi 2
-    if (prefs.begin(PreferencesNamespaces::WIFI2, false)) {
-      if (wifi.containsKey("ssid2"))
-        prefs.putString("ssid", wifi["ssid2"].as<String>().c_str());
-      if (wifi.containsKey("pwd2"))
-        prefs.putString("pwd", wifi["pwd2"].as<String>().c_str());
-      prefs.putBool("initialized", true);
-      prefs.end();
+    {
+      Preferences prefs;
+      if (prefs.begin(PreferencesNamespaces::WIFI2, false)) {
+        prefs.clear(); // Alte Daten löschen
+        if (wifi.containsKey("ssid2"))
+          prefs.putString("ssid", wifi["ssid2"].as<String>().c_str());
+        if (wifi.containsKey("pwd2"))
+          prefs.putString("pwd", wifi["pwd2"].as<String>().c_str());
+        prefs.putBool("initialized", true);
+        prefs.end();
+      }
+      yield(); // Watchdog reset
     }
 
     // Restore WiFi 3
-    if (prefs.begin(PreferencesNamespaces::WIFI3, false)) {
-      if (wifi.containsKey("ssid3"))
-        prefs.putString("ssid", wifi["ssid3"].as<String>().c_str());
-      if (wifi.containsKey("pwd3"))
-        prefs.putString("pwd", wifi["pwd3"].as<String>().c_str());
-      prefs.putBool("initialized", true);
-      prefs.end();
+    {
+      Preferences prefs;
+      if (prefs.begin(PreferencesNamespaces::WIFI3, false)) {
+        prefs.clear(); // Alte Daten löschen
+        if (wifi.containsKey("ssid3"))
+          prefs.putString("ssid", wifi["ssid3"].as<String>().c_str());
+        if (wifi.containsKey("pwd3"))
+          prefs.putString("pwd", wifi["pwd3"].as<String>().c_str());
+        prefs.putBool("initialized", true);
+        prefs.end();
+      }
+      yield(); // Watchdog reset
     }
+    logger.debug(F("ConfigP"), String(F("WiFi-Namespaces wiederhergestellt (")) +
+                                   String(millis() - stepStart) + F(" ms)"));
   }
 
   // Restore display namespace
+  stepStart = millis();
   if (doc.containsKey("display")) {
     JsonObjectConst disp = doc["display"].as<JsonObjectConst>();
+    Preferences prefs;
     if (prefs.begin(PreferencesNamespaces::DISP, false)) {
+      prefs.clear(); // Alte Daten löschen
       if (disp.containsKey("show_ip"))
         prefs.putBool("show_ip", disp["show_ip"]);
       if (disp.containsKey("show_clock"))
@@ -509,19 +548,29 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
         prefs.putBool("show_flower", disp["show_flower"]);
       if (disp.containsKey("show_fabmobil"))
         prefs.putBool("show_fabmobil", disp["show_fabmobil"]);
+      if (disp.containsKey("show_qr"))
+        prefs.putBool("show_qr", disp["show_qr"]);
       if (disp.containsKey("screen_dur"))
         prefs.putUInt("screen_dur", disp["screen_dur"]);
       if (disp.containsKey("clock_fmt"))
         prefs.putString("clock_fmt", disp["clock_fmt"].as<String>().c_str());
+      if (disp.containsKey("sensor_disp"))
+        prefs.putString("sensor_disp", disp["sensor_disp"].as<String>().c_str());
       prefs.putBool("initialized", true);
       prefs.end();
     }
+    yield(); // Watchdog reset
+    logger.debug(F("ConfigP"), String(F("Display-Namespace wiederhergestellt (")) +
+                                   String(millis() - stepStart) + F(" ms)"));
   }
 
   // Restore debug namespace
+  stepStart = millis();
   if (doc.containsKey("debug")) {
     JsonObjectConst debug = doc["debug"].as<JsonObjectConst>();
+    Preferences prefs;
     if (prefs.begin(PreferencesNamespaces::DEBUG, false)) {
+      prefs.clear(); // Alte Daten löschen
       if (debug.containsKey("ram"))
         prefs.putBool("ram", debug["ram"]);
       if (debug.containsKey("meas_cycle"))
@@ -535,25 +584,40 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
       prefs.putBool("initialized", true);
       prefs.end();
     }
+    yield(); // Watchdog reset
+    logger.debug(F("ConfigP"), String(F("Debug-Namespace wiederhergestellt (")) +
+                                   String(millis() - stepStart) + F(" ms)"));
   }
 
   // Restore log namespace
+  stepStart = millis();
   if (doc.containsKey("log")) {
     JsonObjectConst log = doc["log"].as<JsonObjectConst>();
+    Preferences prefs;
     if (prefs.begin(PreferencesNamespaces::LOG, false)) {
-      if (log.containsKey("level"))
-        prefs.putUChar("level", log["level"]);
+      prefs.clear(); // Alte Daten löschen
+      if (log.containsKey("level")) {
+        // Log level is stored as string (e.g., "DEBUG", "INFO", "WARNING", "ERROR")
+        String levelStr = log["level"].as<String>();
+        prefs.putString("level", levelStr.c_str());
+      }
       if (log.containsKey("file_enabled"))
         prefs.putBool("file_enabled", log["file_enabled"]);
       prefs.putBool("initialized", true);
       prefs.end();
     }
+    yield(); // Watchdog reset
+    logger.debug(F("ConfigP"), String(F("Log-Namespace wiederhergestellt (")) +
+                                   String(millis() - stepStart) + F(" ms)"));
   }
 
   // Restore LED traffic namespace
+  stepStart = millis();
   if (doc.containsKey("led_traffic")) {
     JsonObjectConst led = doc["led_traffic"].as<JsonObjectConst>();
+    Preferences prefs;
     if (prefs.begin(PreferencesNamespaces::LED_TRAFFIC, false)) {
+      prefs.clear(); // Alte Daten löschen
       if (led.containsKey("mode"))
         prefs.putUChar("mode", led["mode"]);
       if (led.containsKey("sel_meas"))
@@ -561,16 +625,27 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
       prefs.putBool("initialized", true);
       prefs.end();
     }
+    yield(); // Watchdog reset
+    logger.debug(F("ConfigP"), String(F("LED-Traffic-Namespace wiederhergestellt (")) +
+                                   String(millis() - stepStart) + F(" ms)"));
   }
 
   // Restore sensor namespaces
+  stepStart = millis();
   if (doc.containsKey("sensors")) {
     JsonArrayConst sensors = doc["sensors"].as<JsonArrayConst>();
+    logger.debug(F("ConfigP"), String(F("Beginne Wiederherstellung von ")) +
+                                   String(sensors.size()) + F(" Sensoren..."));
+
     for (JsonObjectConst sensor : sensors) {
       String sensorId = sensor["id"].as<String>();
       String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+      unsigned long sensorStart = millis();
 
+      Preferences prefs; // Neue Instanz für jeden Sensor
       if (prefs.begin(ns.c_str(), false)) {
+        prefs.clear(); // Alte Daten löschen
+
         if (sensor.containsKey("name"))
           prefs.putString("name", sensor["name"].as<String>().c_str());
         if (sensor.containsKey("meas_int"))
@@ -582,6 +657,10 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
         // Restore measurements
         if (sensor.containsKey("measurements")) {
           JsonArrayConst measurements = sensor["measurements"].as<JsonArrayConst>();
+          bool isAnalog = sensorId.equals("ANALOG");
+          unsigned long measStart = millis();
+          uint8_t measCount = 0;
+
           for (JsonObjectConst meas : measurements) {
             uint8_t idx = meas["idx"];
             String prefix = "m" + String(idx) + "_";
@@ -606,26 +685,51 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
               prefs.putFloat((prefix + "gh").c_str(), meas["gh"]);
             if (meas.containsKey("yh"))
               prefs.putFloat((prefix + "yh").c_str(), meas["yh"]);
-            if (meas.containsKey("inv"))
-              prefs.putBool((prefix + "inv").c_str(), meas["inv"]);
-            if (meas.containsKey("cal"))
-              prefs.putBool((prefix + "cal").c_str(), meas["cal"]);
-            if (meas.containsKey("acd"))
-              prefs.putUInt((prefix + "acd").c_str(), meas["acd"]);
-            if (meas.containsKey("rmin"))
-              prefs.putInt((prefix + "rmin").c_str(), meas["rmin"]);
-            if (meas.containsKey("rmax"))
-              prefs.putInt((prefix + "rmax").c_str(), meas["rmax"]);
+
+            // Analog-spezifische Felder nur für ANALOG-Sensoren laden
+            if (isAnalog) {
+              if (meas.containsKey("inv"))
+                prefs.putBool((prefix + "inv").c_str(), meas["inv"]);
+              if (meas.containsKey("cal"))
+                prefs.putBool((prefix + "cal").c_str(), meas["cal"]);
+              if (meas.containsKey("acd"))
+                prefs.putUInt((prefix + "acd").c_str(), meas["acd"]);
+              if (meas.containsKey("rmin"))
+                prefs.putInt((prefix + "rmin").c_str(), meas["rmin"]);
+              if (meas.containsKey("rmax"))
+                prefs.putInt((prefix + "rmax").c_str(), meas["rmax"]);
+              if (meas.containsKey("absMin"))
+                prefs.putFloat((prefix + "absMin").c_str(), meas["absMin"]);
+              if (meas.containsKey("absMax"))
+                prefs.putFloat((prefix + "absMax").c_str(), meas["absMax"]);
+            }
+
+            // Watchdog reset nach jeder 2. Messung
+            measCount++;
+            if (measCount % 2 == 0) {
+              yield();
+            }
           }
+
+          logger.debug(F("ConfigP"), String(F("  - ")) + String(measurements.size()) +
+                                         F(" Messungen für ") + sensorId +
+                                         F(" wiederhergestellt (") + String(millis() - measStart) +
+                                         F(" ms)"));
         }
 
         prefs.end();
+        yield(); // Watchdog reset nach jedem Sensor
+        logger.debug(F("ConfigP"), String(F("Sensor ")) + sensorId + F(" wiederhergestellt (") +
+                                       String(millis() - sensorStart) + F(" ms)"));
       }
     }
+    logger.debug(F("ConfigP"), String(F("Alle Sensor-Namespaces wiederhergestellt (")) +
+                                   String(millis() - stepStart) + F(" ms)"));
   }
 
   // Backup file cleaned up by caller (flash restore or config upload handler)
 
-  logger.info(F("ConfigP"), F("Preferences erfolgreich wiederhergestellt"));
+  logger.info(F("ConfigP"), String(F("Preferences erfolgreich wiederhergestellt (Gesamtdauer: ")) +
+                                String(millis() - startTime) + F(" ms)"));
   return true;
 }

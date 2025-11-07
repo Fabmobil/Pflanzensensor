@@ -156,17 +156,11 @@ public:
                                          int minValue, int maxValue, bool inverted);
 
   /**
-   * @brief Process any pending queued persistence updates. Should be called from the main loop
-   * outside of time-critical sections. Writes are batched and flushed every 60 seconds to
-   * minimize flash wear and prevent watchdog resets.
+   * @brief Flush pending updates for a specific sensor immediately after measurement cycle.
+   * This is the preferred method - each sensor flushes its own data right after measurement.
+   * @param sensorId Sensor ID to flush updates for
    */
-  static void processPendingUpdates();
-
-  /**
-   * @brief Force an immediate flush of all pending updates (e.g., before reboot).
-   * Use sparingly as this can cause blocking writes.
-   */
-  static void flushPendingUpdates();
+  static void flushPendingUpdatesForSensor(const String& sensorId);
 
   /**
    * @brief Update analog sensor calibration mode flag atomically

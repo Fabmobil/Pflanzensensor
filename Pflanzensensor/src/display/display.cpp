@@ -287,24 +287,11 @@ DisplayResult SSD1306Display::showInfoScreen(const String& ipAddress) {
       ssid = String(F("(SSID unbekannt)"));
   }
 
-  // Build URL for QR code
-  String url = F("http://");
-  url += ip;
-  url.trim();
-
-  // Update cached QR code if needed
-  bool qrValid = updateQrCodeIfNeeded(url);
-  logger.debug(F("DisplayM"), F("QR input: ") + url + F(" (len=") + String(url.length()) + F(")"));
-
-  // Layout
-  int qrScale = 2;
-  int qrSize = (qrValid) ? (m_cachedQrcode.size * qrScale) : 0;
-  int textBlockWidth = 128 - qrSize - 4; // 4px margin
-  if (textBlockWidth < 40)
-    textBlockWidth = 40; // minimum for text
+  // Layout - full width for text (no QR code on this screen anymore)
+  int textBlockWidth = 128;
   int yOffset = 8;
 
-  // Draw stacked text block (left side), truncating if needed
+  // Draw stacked text block, truncating if needed
   m_display.setCursor(0, yOffset);
   m_display.println(truncateToFit(name, textBlockWidth));
   m_display.setCursor(0, yOffset + 12);
@@ -314,20 +301,68 @@ DisplayResult SSD1306Display::showInfoScreen(const String& ipAddress) {
   m_display.setCursor(0, yOffset + 36);
   m_display.println(truncateToFit(ssid, textBlockWidth));
 
-  // Draw QR code (right-aligned)
+  m_display.display();
+#endif
+  return DisplayResult::success();
+}
+
+DisplayResult SSD1306Display::showQrCodeScreen() {
+#if USE_DISPLAY
+  if (!m_initialized) {
+    return DisplayResult::fail(DisplayError::INVALID_STATE, F("Display not initialized"));
+  }
+
+  m_display.clearDisplay();
+
+  // Prepare URL for QR code
+  String ip;
+  if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
+    ip = WiFi.softAPIP().toString();
+  } else if (WiFi.status() == WL_CONNECTED) {
+    ip = WiFi.localIP().toString();
+  } else {
+    ip = "0.0.0.0";
+  }
+
+  String url = F("http://");
+  url += ip;
+  url.trim();
+
+  // Generate QR code
+  bool qrValid = updateQrCodeIfNeeded(url);
+
   if (qrValid) {
-    int qrX = 128 - qrSize;
-    int qrY = (64 - qrSize) / 2;
+    // Display title centered at top
+    m_display.setTextSize(1);
+    m_display.setTextColor(SSD1306_WHITE);
+    String title = F("QR zu Website:");
+    int16_t x1, y1;
+    uint16_t w, h;
+    m_display.getTextBounds(title, 0, 0, &x1, &y1, &w, &h);
+    int titleX = (128 - w) / 2;
+    m_display.setCursor(titleX, 0);
+    m_display.println(title);
+
+    // Display QR code centered at bottom in 2x scale
+    int scale = 2;
+    int qrSize = m_cachedQrcode.size * scale;
+    int qrX = (128 - qrSize) / 2;
+    int qrY = 64 - qrSize; // Bottom aligned
+
     for (int y = 0; y < m_cachedQrcode.size; ++y) {
       for (int x = 0; x < m_cachedQrcode.size; ++x) {
         if (qrcode_getModule(&m_cachedQrcode, x, y)) {
-          m_display.fillRect(qrX + x * qrScale, qrY + y * qrScale, qrScale, qrScale, SSD1306_WHITE);
+          m_display.fillRect(qrX + x * scale, qrY + y * scale, scale, scale, SSD1306_WHITE);
         }
       }
     }
   } else {
-    m_display.setCursor(0, 56);
-    m_display.println(F("QR ERR"));
+    // QR code generation failed
+    m_display.setTextSize(2);
+    m_display.setTextColor(SSD1306_WHITE);
+    m_display.setCursor(0, 0);
+    m_display.println(F("QR-Code"));
+    m_display.println(F("Fehler"));
   }
 
   m_display.display();

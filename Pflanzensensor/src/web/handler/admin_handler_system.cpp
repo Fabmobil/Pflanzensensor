@@ -31,7 +31,7 @@ void AdminHandler::handleConfigReset() {
         if (result.isSuccess()) {
           sendChunk(F("<h2>✓ Konfiguration zurückgesetzt</h2>"));
           sendChunk(F("<p>Die Konfiguration wurde erfolgreich auf Standardwerte "
-                      "zurückgesetzt.</p>"));
+                      "zurückgesetzt. Der Neustart kann bis zu 1 Minute dauern.</p>"));
         } else {
           sendChunk(F("<h2>❌ Fehler</h2><p class='error-message'>Fehler beim Zurücksetzen: "));
           sendChunk(result.getMessage());
@@ -48,7 +48,7 @@ void AdminHandler::handleConfigReset() {
   // confirmation page. 2000ms is a reasonable short delay.
   delay(2000);
   if (result.isSuccess()) {
-    logger.warning(F("AdminHandler"), F("Rebooting after config reset"));
+    logger.warning(F("AdminHandler"), F("Neustart nach Zurücksetzen der Konfiguration"));
     ESP.restart();
   }
 }

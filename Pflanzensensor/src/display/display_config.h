@@ -32,6 +32,7 @@ struct DisplayConfig {
   bool showClock;         // New field for clock display
   bool showFlowerImage;   // New field for flower image
   bool showFabmobilImage; // New field for fabmobil image
+  bool showQrCode;        // New field for QR code display (now as separate screen)
   unsigned long screenDuration;
   String clockFormat;
   // Per-sensor display settings: for each sensor id a vector of booleans
@@ -52,17 +53,19 @@ struct DisplayConfig {
         showClock(true),
         showFlowerImage(true),
         showFabmobilImage(true),
+        showQrCode(false),
         screenDuration(DISPLAY_DEFAULT_TIME * 1000),
         clockFormat("24h") {}
   // Constructor with parameters (not used in practice, but kept for
   // compatibility)
-  DisplayConfig(bool showIp, bool showClk, bool showFlower, bool showFabmobil,
+  DisplayConfig(bool showIp, bool showClk, bool showFlower, bool showFabmobil, bool showQr,
                 unsigned long duration, const String& format,
                 const std::vector<SensorDisplayEntry>& displays)
       : showIpScreen(showIp),
         showClock(showClk),
         showFlowerImage(showFlower),
         showFabmobilImage(showFabmobil),
+        showQrCode(showQr),
         screenDuration(duration),
         clockFormat(format),
         sensorDisplays(displays) {}

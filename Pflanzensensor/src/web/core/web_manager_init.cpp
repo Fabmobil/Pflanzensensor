@@ -158,6 +158,25 @@ ResourceResult WebManager::setupMinimalServices() {
                                   F("OTA-Handler konnte nicht angelegt werden"));
     }
 
+    // Register essential static files for OTA update page
+    // CSS files needed for update page
+    _server->on("/css/style.css", HTTP_GET,
+                [this]() { serveStaticFile("/css/style.css", "text/css", "max-age=86400"); });
+
+    _server->on("/css/admin.css", HTTP_GET,
+                [this]() { serveStaticFile("/css/admin.css", "text/css", "max-age=86400"); });
+
+    // JavaScript file for OTA functionality
+    _server->on("/js/ota.js", HTTP_GET, [this]() {
+      serveStaticFile("/js/ota.js", "application/javascript", "max-age=86400");
+    });
+
+    // Favicon (often requested by browsers)
+    _server->on("/favicon.ico", HTTP_GET,
+                [this]() { serveStaticFile("/favicon.ico", "image/x-icon", "max-age=86400"); });
+
+    logger.debug(F("WebManager"), F("Statische Dateien für Update-Modus registriert"));
+
     _server->begin();
 
     return ResourceResult::success();

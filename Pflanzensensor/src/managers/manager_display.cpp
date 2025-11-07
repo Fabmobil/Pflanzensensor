@@ -107,10 +107,46 @@ DisplayResult DisplayManager::loadConfig() {
       PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_flower", true);
   m_config.showFabmobilImage =
       PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_fabmobil", true);
-  m_config.screenDuration =
-      PreferencesManager::getUInt(PreferencesNamespaces::DISP, "screen_dur", 5);
+  m_config.showQrCode = PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_qr", false);
+  m_config.screenDuration = PreferencesManager::getUInt(PreferencesNamespaces::DISP, "screen_dur",
+                                                        DISPLAY_DEFAULT_TIME * 1000);
   m_config.clockFormat =
       PreferencesManager::getString(PreferencesNamespaces::DISP, "clock_fmt", "24h");
+
+  // Load sensor display settings
+  // Format: "sensor1:0,1,0;sensor2:1,1" (sensorId:bool,bool,bool;nextSensor)
+  String sensorDisplayStr =
+      PreferencesManager::getString(PreferencesNamespaces::DISP, "sensor_disp", "");
+  m_config.sensorDisplays.clear();
+
+  if (sensorDisplayStr.length() > 0) {
+    unsigned int sensorStart = 0;
+    while (sensorStart < sensorDisplayStr.length()) {
+      int semicolon = sensorDisplayStr.indexOf(';', sensorStart);
+      unsigned int semicolonPos = (semicolon == -1) ? sensorDisplayStr.length() : semicolon;
+
+      String sensorEntry = sensorDisplayStr.substring(sensorStart, semicolonPos);
+      int colon = sensorEntry.indexOf(':');
+      if (colon > 0) {
+        DisplayConfig::SensorDisplayEntry entry;
+        entry.sensorId = sensorEntry.substring(0, colon);
+        String measurements = sensorEntry.substring(colon + 1);
+
+        unsigned int measStart = 0;
+        while (measStart < measurements.length()) {
+          int comma = measurements.indexOf(',', measStart);
+          unsigned int commaPos = (comma == -1) ? measurements.length() : comma;
+          String val = measurements.substring(measStart, commaPos);
+          entry.showMeasurements.push_back(val == "1");
+          measStart = commaPos + 1;
+        }
+        m_config.sensorDisplays.push_back(entry);
+      }
+      sensorStart = semicolonPos + 1;
+    }
+    logger.debug(F("DisplayM"), String(F("Sensor-Anzeigeeinstellungen geladen: ")) +
+                                    String(m_config.sensorDisplays.size()) + F(" Sensoren"));
+  }
 
   logger.info(F("DisplayM"), F("Display-Konfiguration aus Preferences geladen"));
   {
@@ -119,8 +155,9 @@ DisplayResult DisplayManager::loadConfig() {
         String(F("Geladene Konfiguration - IP-Anzeige: ")) + String(m_config.showIpScreen) +
         String(F(", Uhr: ")) + String(m_config.showClock) + String(F(", Blume: ")) +
         String(m_config.showFlowerImage) + String(F(", Fabmobil: ")) +
-        String(m_config.showFabmobilImage) + String(F(", Dauer: ")) +
-        String(m_config.screenDuration) + String(F(", Format: ")) + m_config.clockFormat;
+        String(m_config.showFabmobilImage) + String(F(", QR-Screen: ")) +
+        String(m_config.showQrCode) + String(F(", Dauer: ")) + String(m_config.screenDuration) +
+        String(F(", Format: ")) + m_config.clockFormat;
     logger.debug(F("DisplayM"), configMsg);
   }
 
@@ -170,9 +207,28 @@ DisplayResult DisplayManager::saveConfig() {
                                                 m_config.screenDuration);
   auto r6 = PreferencesManager::updateStringValue(PreferencesNamespaces::DISP, "clock_fmt",
                                                   m_config.clockFormat);
+  auto r7 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_qr",
+                                                m_config.showQrCode);
+
+  // Save sensor display settings
+  // Format: "sensor1:0,1,0;sensor2:1,1" (sensorId:bool,bool,bool;nextSensor)
+  String sensorDisplayStr = "";
+  for (size_t i = 0; i < m_config.sensorDisplays.size(); i++) {
+    const auto& entry = m_config.sensorDisplays[i];
+    if (i > 0)
+      sensorDisplayStr += ";";
+    sensorDisplayStr += entry.sensorId + ":";
+    for (size_t j = 0; j < entry.showMeasurements.size(); j++) {
+      if (j > 0)
+        sensorDisplayStr += ",";
+      sensorDisplayStr += entry.showMeasurements[j] ? "1" : "0";
+    }
+  }
+  auto r8 = PreferencesManager::updateStringValue(PreferencesNamespaces::DISP, "sensor_disp",
+                                                  sensorDisplayStr);
 
   if (!r1.isSuccess() || !r2.isSuccess() || !r3.isSuccess() || !r4.isSuccess() || !r5.isSuccess() ||
-      !r6.isSuccess()) {
+      !r6.isSuccess() || !r7.isSuccess() || !r8.isSuccess()) {
     logger.error(F("DisplayM"), F("Fehler beim Speichern der Display-Konfiguration"));
     return DisplayResult::fail(
         DisplayError::FILE_ERROR,
@@ -180,8 +236,10 @@ DisplayResult DisplayManager::saveConfig() {
   }
 
   logger.info(F("DisplayM"), F("Display-Konfiguration erfolgreich in Preferences gespeichert"));
+  logger.debug(F("DisplayM"),
+               String(F("Sensor-Anzeigeeinstellungen gespeichert: ")) + sensorDisplayStr);
 
-  // Note: Sensor-specific display settings (sensorDisplays) are managed separately
+  // Note: Sensor-specific display settings (sensorDisplays) are now persisted above
   // through the admin interface and saved atomically when changed
 
 #endif
@@ -214,11 +272,13 @@ void DisplayManager::rotateScreen() {
 
   m_lastScreenChange = now;
 
-  // Count static screens (IP, clock, images)
+  // Count static screens (IP, clock, QR, images)
   size_t staticScreens = 0;
   if (m_config.showIpScreen)
     staticScreens++;
   if (m_config.showClock)
+    staticScreens++;
+  if (m_config.showQrCode)
     staticScreens++;
   if (m_config.showFlowerImage)
     staticScreens++;
@@ -287,6 +347,21 @@ void DisplayManager::rotateScreen() {
     return;
   }
   if (m_config.showClock)
+    idx++;
+  if (m_config.showQrCode && currentIndex == idx) {
+    if (ConfigMgr.isDebugDisplay()) {
+      logger.debug(F("DisplayM"), F("QR-Code-Seite wird gezeigt"));
+    }
+    m_display->showQrCodeScreen();
+    if (ledTrafficLightManager) {
+      ledTrafficLightManager->handleDisplayUpdate();
+    }
+    m_currentScreenIndex++;
+    if (m_currentScreenIndex >= totalScreens)
+      m_currentScreenIndex = 0;
+    return;
+  }
+  if (m_config.showQrCode)
     idx++;
   if (m_config.showFlowerImage && currentIndex == idx) {
     if (ConfigMgr.isDebugDisplay()) {
@@ -553,6 +628,24 @@ DisplayResult DisplayManager::setFabmobilImageEnabled(bool enabled) {
 #endif
 }
 
+DisplayResult DisplayManager::setQrCodeEnabled(bool enabled) {
+#if USE_DISPLAY
+  m_config.showQrCode = enabled;
+
+  // Use unified config manager method
+  auto result = ConfigMgr.setConfigValue("display", "show_qr", enabled ? "true" : "false",
+                                         ConfigValueType::BOOL);
+  if (!result.isSuccess()) {
+    return DisplayResult::fail(DisplayError::SAVE_FAILED,
+                               F("Fehler beim Speichern der QR-Code-Seite"));
+  }
+
+  return DisplayResult::success();
+#else
+  return DisplayResult::success();
+#endif
+}
+
 DisplayResult DisplayManager::setSensorMeasurementDisplay(const String& sensorId,
                                                           size_t measurementIndex, bool enabled) {
 #if USE_DISPLAY
@@ -603,6 +696,14 @@ void DisplayManager::showInfoScreen(const String& ipAddress) {
 #if USE_DISPLAY
   if (m_display) {
     m_display->showInfoScreen(ipAddress);
+  }
+#endif
+}
+
+void DisplayManager::showQrCodeScreen() {
+#if USE_DISPLAY
+  if (m_display) {
+    m_display->showQrCodeScreen();
   }
 #endif
 }

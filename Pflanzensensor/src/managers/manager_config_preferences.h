@@ -78,14 +78,15 @@ public:
                                           float yellowLow, float greenLow, float greenHigh,
                                           float yellowHigh, bool inverted, bool calibrationMode,
                                           uint32_t autocalDuration, int absoluteRawMin,
-                                          int absoluteRawMax);
+                                          int absoluteRawMax, float absoluteMin, float absoluteMax);
   static PrefResult loadSensorMeasurement(const String& sensorId, uint8_t measurementIndex,
                                           bool& enabled, String& name, String& fieldName,
                                           String& unit, float& minValue, float& maxValue,
                                           float& yellowLow, float& greenLow, float& greenHigh,
                                           float& yellowHigh, bool& inverted, bool& calibrationMode,
                                           uint32_t& autocalDuration, int& absoluteRawMin,
-                                          int& absoluteRawMax);
+                                          int& absoluteRawMax, float& absoluteMin,
+                                          float& absoluteMax);
 
   // Check if sensor namespace exists
   static bool sensorNamespaceExists(const String& sensorId);

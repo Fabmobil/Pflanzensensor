@@ -8,7 +8,6 @@
 #include <LittleFS.h>
 
 #include "../logger/logger.h"
-#include "../utils/critical_section.h"
 #include "managers/manager_config.h"
 #include "managers/manager_config_preferences.h"
 #include "managers/manager_resource.h"
@@ -53,8 +52,6 @@ struct PendingUpdate {
 };
 
 static std::vector<PendingUpdate> g_pendingUpdates;
-static unsigned long g_lastFlushTime = 0;
-static constexpr unsigned long FLUSH_INTERVAL_MS = 60000; // 60 seconds
 
 bool SensorPersistence::configExists() {
   // Check if any sensor has Preferences data
@@ -160,11 +157,12 @@ SensorPersistence::PersistenceResult SensorPersistence::load() {
       bool inverted, calibrationMode;
       uint32_t autocalDuration;
       int absoluteRawMin, absoluteRawMax;
+      float absoluteMin, absoluteMax;
 
       auto measResult = PreferencesManager::loadSensorMeasurement(
           sensorId, i, enabled, measName, fieldName, unit, minValue, maxValue, yellowLow, greenLow,
           greenHigh, yellowHigh, inverted, calibrationMode, autocalDuration, absoluteRawMin,
-          absoluteRawMax);
+          absoluteRawMax, absoluteMin, absoluteMax);
 
       if (!measResult.isSuccess()) {
         if (ConfigMgr.isDebugSensor()) {
@@ -193,6 +191,8 @@ SensorPersistence::PersistenceResult SensorPersistence::load() {
       config.measurements[i].autocalHalfLifeSeconds = autocalDuration;
       config.measurements[i].absoluteRawMin = absoluteRawMin;
       config.measurements[i].absoluteRawMax = absoluteRawMax;
+      config.measurements[i].absoluteMin = absoluteMin;
+      config.measurements[i].absoluteMax = absoluteMax;
 
       if (ConfigMgr.isDebugSensor()) {
         logger.debug(F("SensorP"),
@@ -248,7 +248,7 @@ SensorPersistence::PersistenceResult SensorPersistence::save() {
           sensorId, i, meas.enabled, meas.name, meas.fieldName, meas.unit, meas.minValue,
           meas.maxValue, meas.limits.yellowLow, meas.limits.greenLow, meas.limits.greenHigh,
           meas.limits.yellowHigh, meas.inverted, meas.calibrationMode, meas.autocalHalfLifeSeconds,
-          meas.absoluteRawMin, meas.absoluteRawMax);
+          meas.absoluteRawMin, meas.absoluteRawMax, meas.absoluteMin, meas.absoluteMax);
 
       if (!measResult.isSuccess()) {
         logger.error(F("SensorP"), String(F("Fehler beim Speichern von Messung ")) + String(i) +
@@ -266,9 +266,6 @@ SensorPersistence::PersistenceResult
 SensorPersistence::updateSensorThresholds(const String& sensorId, size_t measurementIndex,
                                           float yellowLow, float greenLow, float greenHigh,
                                           float yellowHigh) {
-  // Use critical section to prevent memory corruption
-  CriticalSection cs;
-
   // Update thresholds directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
@@ -279,8 +276,11 @@ SensorPersistence::updateSensorThresholds(const String& sensorId, size_t measure
 
   String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putFloat(prefs, (prefix + "yl").c_str(), yellowLow);
+  yield(); // Feed watchdog
   PreferencesManager::putFloat(prefs, (prefix + "gl").c_str(), greenLow);
+  yield(); // Feed watchdog
   PreferencesManager::putFloat(prefs, (prefix + "gh").c_str(), greenHigh);
+  yield(); // Feed watchdog
   PreferencesManager::putFloat(prefs, (prefix + "yh").c_str(), yellowHigh);
 
   prefs.end();
@@ -294,9 +294,6 @@ SensorPersistence::updateSensorThresholds(const String& sensorId, size_t measure
 SensorPersistence::PersistenceResult
 SensorPersistence::updateAnalogMinMax(const String& sensorId, size_t measurementIndex,
                                       float minValue, float maxValue, bool inverted) {
-  // Kritischen Abschnitt nutzen, um Speicherfehler zu vermeiden
-  CriticalSection cs;
-
   // Update min/max/inverted directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
@@ -307,7 +304,9 @@ SensorPersistence::updateAnalogMinMax(const String& sensorId, size_t measurement
 
   String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putFloat(prefs, (prefix + "min").c_str(), minValue);
+  yield(); // Feed watchdog
   PreferencesManager::putFloat(prefs, (prefix + "max").c_str(), maxValue);
+  yield(); // Feed watchdog
   PreferencesManager::putBool(prefs, (prefix + "inv").c_str(), inverted);
 
   prefs.end();
@@ -345,47 +344,47 @@ SensorPersistence::updateAnalogMinMaxInteger(const String& sensorId, size_t meas
 SensorPersistence::PersistenceResult SensorPersistence::updateAnalogMinMaxIntegerNoReload(
     const String& sensorId, size_t measurementIndex, int minValue, int maxValue, bool inverted) {
   // Update min/max/inverted directly in Preferences without reload
-  CriticalSection cs;
-
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  String prefix = "m" + String(measurementIndex) + "_";
+
   Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
-    logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
 
-  String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putFloat(prefs, (prefix + "min").c_str(), static_cast<float>(minValue));
+  yield(); // Feed watchdog between writes
   PreferencesManager::putFloat(prefs, (prefix + "max").c_str(), static_cast<float>(maxValue));
+  yield(); // Feed watchdog between writes
   PreferencesManager::putBool(prefs, (prefix + "inv").c_str(), inverted);
 
   prefs.end();
 
-  logger.info(F("SensorP"), F("Analog min/max aktualisiert für ") + sensorId +
-                                String(measurementIndex) + F(". Min: ") + String(minValue) +
-                                F(", Max: ") + String(maxValue) + F(", Inverted: ") +
-                                String(inverted));
+  // Minimal logging - avoid String concatenation to save heap
+  if (ConfigMgr.isDebugSensor()) {
+    logger.debug(F("SensorP"), F("Analog min/max updated"));
+  }
 
   return PersistenceResult::success();
 }
 
 SensorPersistence::PersistenceResult
 SensorPersistence::updateMeasurementInterval(const String& sensorId, unsigned long interval) {
-  CriticalSection cs;
-
   // Update measurement interval directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+
   Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
-    logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
 
   PreferencesManager::putUInt(prefs, "meas_int", interval);
   prefs.end();
 
-  logger.info(F("SensorP"), F("Messintervall aktualisiert für ") + sensorId + F(", Intervall: ") +
-                                String(interval));
+  // Minimal logging
+  if (ConfigMgr.isDebugSensor()) {
+    logger.debug(F("SensorP"), F("Messintervall updated"));
+  }
 
   return PersistenceResult::success();
 }
@@ -393,23 +392,22 @@ SensorPersistence::updateMeasurementInterval(const String& sensorId, unsigned lo
 SensorPersistence::PersistenceResult
 SensorPersistence::updateMeasurementEnabled(const String& sensorId, size_t measurementIndex,
                                             bool enabled) {
-  // Kritischen Abschnitt nutzen, um Speicherfehler zu vermeiden
-  CriticalSection cs;
-
   // Update enabled flag directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  String prefix = "m" + String(measurementIndex) + "_";
+
   Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
-    logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
 
-  String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putBool(prefs, (prefix + "en").c_str(), enabled);
   prefs.end();
 
-  logger.info(F("SensorP"), F("Messung aktiviert/deaktiviert für ") + sensorId + F(" Messung ") +
-                                String(measurementIndex) + F(", aktiviert: ") + String(enabled));
+  // Minimal logging
+  if (ConfigMgr.isDebugSensor()) {
+    logger.debug(F("SensorP"), F("Measurement enabled updated"));
+  }
 
   return PersistenceResult::success();
 }
@@ -417,23 +415,22 @@ SensorPersistence::updateMeasurementEnabled(const String& sensorId, size_t measu
 SensorPersistence::PersistenceResult
 SensorPersistence::updateMeasurementName(const String& sensorId, size_t measurementIndex,
                                          const String& name) {
-  // Kritischen Abschnitt nutzen, um Speicherfehler zu vermeiden
-  CriticalSection cs;
-
   // Update name directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  String prefix = "m" + String(measurementIndex) + "_";
+
   Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
-    logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
 
-  String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putString(prefs, (prefix + "name").c_str(), name);
   prefs.end();
 
-  logger.info(F("SensorP"), F("Messwertname aktualisiert für ") + sensorId + F(" Messung ") +
-                                String(measurementIndex) + F(", Name: ") + name);
+  // Minimal logging
+  if (ConfigMgr.isDebugSensor()) {
+    logger.debug(F("SensorP"), F("Measurement name updated"));
+  }
 
   return PersistenceResult::success();
 }
@@ -441,26 +438,24 @@ SensorPersistence::updateMeasurementName(const String& sensorId, size_t measurem
 SensorPersistence::PersistenceResult
 SensorPersistence::updateAbsoluteMinMax(const String& sensorId, size_t measurementIndex,
                                         float absoluteMin, float absoluteMax) {
-  CriticalSection cs;
-
   // Update absolute min/max directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  String prefix = "m" + String(measurementIndex) + "_";
+
   Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
-    logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
 
-  String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putFloat(prefs, (prefix + "absMin").c_str(), absoluteMin);
+  yield(); // Feed watchdog between writes
   PreferencesManager::putFloat(prefs, (prefix + "absMax").c_str(), absoluteMax);
 
   prefs.end();
 
+  // Minimal logging
   if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("Konfiguration aktualisiert für Sensor ") + sensorId +
-                                   F(" Messung ") + String(measurementIndex) + F(" - Min: ") +
-                                   String(absoluteMin) + F(", Max: ") + String(absoluteMax));
+    logger.debug(F("SensorP"), F("Absolute min/max updated"));
   }
 
   return PersistenceResult::success();
@@ -469,32 +464,24 @@ SensorPersistence::updateAbsoluteMinMax(const String& sensorId, size_t measureme
 SensorPersistence::PersistenceResult
 SensorPersistence::updateAnalogRawMinMax(const String& sensorId, size_t measurementIndex,
                                          int absoluteRawMin, int absoluteRawMax) {
-  if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("updateAnalogRawMinMax aufgerufen für ") + sensorId +
-                                   F(" Messung ") + String(measurementIndex) +
-                                   F(" mit Werten Min: ") + String(absoluteRawMin) + F(", Max: ") +
-                                   String(absoluteRawMax));
-  }
-
-  // Kritischen Abschnitt über die gesamte Operation legen
-  CriticalSection cs;
-
   // Update raw min/max directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  String prefix = "m" + String(measurementIndex) + "_";
+
   Preferences prefs;
   if (!prefs.begin(ns.c_str(), false)) {
-    logger.error(F("SensorP"), String(F("Fehler beim Öffnen von Preferences für ")) + sensorId);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot open sensor namespace");
   }
 
-  String prefix = "m" + String(measurementIndex) + "_";
   PreferencesManager::putInt(prefs, (prefix + "rmin").c_str(), absoluteRawMin);
+  yield(); // Feed watchdog between writes
   PreferencesManager::putInt(prefs, (prefix + "rmax").c_str(), absoluteRawMax);
   prefs.end();
 
-  logger.info(F("SensorP"), F("Analog raw min/max aktualisiert für ") + sensorId + F(" Messung ") +
-                                String(measurementIndex) + F(" - Min: ") + String(absoluteRawMin) +
-                                F(", Max: ") + String(absoluteRawMax));
+  // Minimal logging - avoid String concatenation to save heap
+  if (ConfigMgr.isDebugSensor()) {
+    logger.debug(F("SensorP"), F("Raw min/max updated"));
+  }
 
   return PersistenceResult::success();
 }
@@ -653,128 +640,109 @@ void SensorPersistence::enqueueAnalogMinMaxInteger(const String& sensorId, size_
   g_pendingUpdates.push_back(std::move(u));
 }
 
-void SensorPersistence::processPendingUpdates() {
-  unsigned long now = millis();
-
-  // Check if it's time for a periodic flush (every 60 seconds)
-  bool forceFlush = (now - g_lastFlushTime) >= FLUSH_INTERVAL_MS;
-
-  if (forceFlush && !g_pendingUpdates.empty()) {
-    logger.info(F("SensorP"), F("Periodischer Flush: schreibe ") + String(g_pendingUpdates.size()) +
-                                  F(" ausstehende Updates"));
-
-    // Flush all pending updates in one batch
-    size_t successCount = 0;
-    size_t errorCount = 0;
-
-    while (!g_pendingUpdates.empty()) {
-      PendingUpdate u = g_pendingUpdates.front();
-      g_pendingUpdates.erase(g_pendingUpdates.begin());
-
-      bool success = true;
-      switch (u.type) {
-      case PendingUpdateType::RAW_MIN_MAX:
-        success = updateAnalogRawMinMax(u.sensorId, u.measurementIndex, u.data.raw.absoluteRawMin,
-                                        u.data.raw.absoluteRawMax)
-                      .isSuccess();
-        break;
-      case PendingUpdateType::ABSOLUTE_MIN_MAX:
-        success = updateAbsoluteMinMax(u.sensorId, u.measurementIndex, u.data.absolute.absoluteMin,
-                                       u.data.absolute.absoluteMax)
-                      .isSuccess();
-        break;
-      case PendingUpdateType::CALIBRATED_MIN_MAX:
-        success = updateAnalogMinMaxIntegerNoReload(
-                      u.sensorId, u.measurementIndex, u.data.calibrated.minValue,
-                      u.data.calibrated.maxValue, u.data.calibrated.inverted)
-                      .isSuccess();
-        break;
-      }
-
-      if (success) {
-        successCount++;
-      } else {
-        errorCount++;
-      }
-
-      // Feed watchdog during batch write to prevent WDT reset
-      yield();
-    }
-
-    g_lastFlushTime = now;
-
-    if (errorCount > 0) {
-      logger.warning(F("SensorP"), F("Flush abgeschlossen: ") + String(successCount) +
-                                       F(" erfolgreich, ") + String(errorCount) + F(" Fehler"));
-    } else {
-      logger.info(F("SensorP"),
-                  F("Flush erfolgreich: ") + String(successCount) + F(" Updates geschrieben"));
-    }
-  } else if (!forceFlush && !g_pendingUpdates.empty()) {
-    // Just report queue status occasionally
-    static unsigned long lastStatusLog = 0;
-    if ((now - lastStatusLog) >= 10000) { // Every 10 seconds
-      logger.debug(F("SensorP"), F("Ausstehende Updates: ") + String(g_pendingUpdates.size()) +
-                                     F(", nächster Flush in ") +
-                                     String((FLUSH_INTERVAL_MS - (now - g_lastFlushTime)) / 1000) +
-                                     F("s"));
-      lastStatusLog = now;
-    }
-  }
-}
-
-void SensorPersistence::flushPendingUpdates() {
+void SensorPersistence::flushPendingUpdatesForSensor(const String& sensorId) {
   if (g_pendingUpdates.empty()) {
     return;
   }
 
-  logger.info(F("SensorP"), F("Erzwungener Flush: schreibe ") + String(g_pendingUpdates.size()) +
-                                F(" ausstehende Updates"));
-
-  size_t successCount = 0;
-  size_t errorCount = 0;
-
-  while (!g_pendingUpdates.empty()) {
-    PendingUpdate u = g_pendingUpdates.front();
-    g_pendingUpdates.erase(g_pendingUpdates.begin());
-
-    bool success = true;
-    switch (u.type) {
-    case PendingUpdateType::RAW_MIN_MAX:
-      success = updateAnalogRawMinMax(u.sensorId, u.measurementIndex, u.data.raw.absoluteRawMin,
-                                      u.data.raw.absoluteRawMax)
-                    .isSuccess();
-      break;
-    case PendingUpdateType::ABSOLUTE_MIN_MAX:
-      success = updateAbsoluteMinMax(u.sensorId, u.measurementIndex, u.data.absolute.absoluteMin,
-                                     u.data.absolute.absoluteMax)
-                    .isSuccess();
-      break;
-    case PendingUpdateType::CALIBRATED_MIN_MAX:
-      success = updateAnalogMinMaxIntegerNoReload(
-                    u.sensorId, u.measurementIndex, u.data.calibrated.minValue,
-                    u.data.calibrated.maxValue, u.data.calibrated.inverted)
-                    .isSuccess();
-      break;
+  // Count updates for this sensor
+  size_t totalForSensor = 0;
+  for (const auto& u : g_pendingUpdates) {
+    if (u.sensorId == sensorId) {
+      totalForSensor++;
     }
-
-    if (success) {
-      successCount++;
-    } else {
-      errorCount++;
-    }
-
-    yield();
   }
 
-  g_lastFlushTime = millis();
+  if (totalForSensor == 0) {
+    return; // No updates for this sensor
+  }
 
-  if (errorCount > 0) {
-    logger.warning(F("SensorP"), F("Erzwungener Flush abgeschlossen: ") + String(successCount) +
-                                     F(" erfolgreich, ") + String(errorCount) + F(" Fehler"));
-  } else {
-    logger.info(F("SensorP"), F("Erzwungener Flush erfolgreich: ") + String(successCount) +
-                                  F(" Updates geschrieben"));
+  unsigned long flushStartTime = millis();
+
+  if (ConfigMgr.isDebugSensor()) {
+    logger.debug(F("SensorP"),
+                 F("Flushe ") + String(totalForSensor) + F(" Updates für ") + sensorId);
+  }
+
+  // Open Preferences ONCE for this sensor
+  String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
+  Preferences prefs;
+
+  unsigned long prefsOpenTime = millis();
+  if (!prefs.begin(ns.c_str(), false)) {
+    logger.error(F("SensorP"), F("Konnte Namespace nicht öffnen: ") + ns);
+    // Remove all updates for this sensor to prevent queue buildup
+    g_pendingUpdates.erase(
+        std::remove_if(g_pendingUpdates.begin(), g_pendingUpdates.end(),
+                       [&sensorId](const PendingUpdate& u) { return u.sensorId == sensorId; }),
+        g_pendingUpdates.end());
+    return;
+  }
+
+  if (ConfigMgr.isDebugSensor()) {
+    logger.debug(F("SensorP"),
+                 F("Preferences geöffnet in ") + String(millis() - prefsOpenTime) + F(" ms"));
+  }
+
+  // OPTIMIZED: Process ALL updates for this sensor in one transaction
+  // Collect all keys and values FIRST (in RAM), then write in batch
+  size_t successCount = 0;
+  auto it = g_pendingUpdates.begin();
+
+  // Write all updates for this sensor without yield() between individual writes
+  // This minimizes NVS transaction overhead
+  while (it != g_pendingUpdates.end()) {
+    if (it->sensorId != sensorId) {
+      ++it;
+      continue;
+    }
+
+    // This update is for our sensor - process it
+    size_t measurementIndex = it->measurementIndex;
+    String prefix = "m" + String(measurementIndex) + "_";
+
+    // Write directly to already-open Preferences
+    // NOTE: We don't yield() between writes - this is intentional for performance
+    // The prefs.end() call commits everything at once
+    switch (it->type) {
+    case PendingUpdateType::RAW_MIN_MAX:
+      PreferencesManager::putInt(prefs, (prefix + "rmin").c_str(), it->data.raw.absoluteRawMin);
+      PreferencesManager::putInt(prefs, (prefix + "rmax").c_str(), it->data.raw.absoluteRawMax);
+      break;
+    case PendingUpdateType::ABSOLUTE_MIN_MAX:
+      PreferencesManager::putFloat(prefs, (prefix + "absMin").c_str(),
+                                   it->data.absolute.absoluteMin);
+      PreferencesManager::putFloat(prefs, (prefix + "absMax").c_str(),
+                                   it->data.absolute.absoluteMax);
+      break;
+    case PendingUpdateType::CALIBRATED_MIN_MAX:
+      PreferencesManager::putFloat(prefs, (prefix + "min").c_str(),
+                                   static_cast<float>(it->data.calibrated.minValue));
+      PreferencesManager::putFloat(prefs, (prefix + "max").c_str(),
+                                   static_cast<float>(it->data.calibrated.maxValue));
+      PreferencesManager::putBool(prefs, (prefix + "inv").c_str(), it->data.calibrated.inverted);
+      break;
+    }
+
+    successCount++;
+    it = g_pendingUpdates.erase(it); // Erase and get next iterator
+  }
+
+  // Close Preferences ONCE for all updates (this commits all changes in one NVS transaction)
+  // This is much faster than committing after each individual write
+  unsigned long prefsCloseStartTime = millis();
+  prefs.end();
+  unsigned long prefsCloseTime = millis() - prefsCloseStartTime;
+  unsigned long totalFlushTime = millis() - flushStartTime;
+
+  // Feed watchdog AFTER all writes are done
+  yield();
+
+  if (ConfigMgr.isDebugSensor()) {
+    logger.debug(F("SensorP"), String(successCount) + F(" Updates für ") + sensorId +
+                                   F(" erfolgreich geschrieben"));
+    logger.debug(F("SensorP"), F("prefs.end() dauerte ") + String(prefsCloseTime) +
+                                   F(" ms, gesamt ") + String(totalFlushTime) + F(" ms"));
   }
 }
 
@@ -802,9 +770,6 @@ SensorPersistence::updateAnalogCalibrationMode(const String& sensorId, size_t me
 SensorPersistence::PersistenceResult
 SensorPersistence::updateAutocalDuration(const String& sensorId, size_t measurementIndex,
                                          uint32_t halfLifeSeconds) {
-  // Use critical section to avoid concurrent writes
-  CriticalSection cs;
-
   // Update autocal duration directly in Preferences
   String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
   Preferences prefs;
