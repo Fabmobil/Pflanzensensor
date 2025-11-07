@@ -78,8 +78,6 @@ void WebManager::setupRoutes() {
     String uri = _server->uri();
     HTTPMethod method = _server->method();
 
-    logger.debug(F("WebManager"), F("Router-Anfrage: ") + String(method) + F(" ") + uri);
-
     // Let router handle the request (will run middleware and find routes)
     if (_router && _router->handleRequest(method, uri)) {
       // Request was handled by router

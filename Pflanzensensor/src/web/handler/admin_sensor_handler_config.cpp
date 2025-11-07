@@ -211,8 +211,8 @@ void AdminSensorHandler::handleMeasurementName() {
 
     config.measurements[measurementIndex].name = newName;
 
-    // Save the change
-    auto saveResult = SensorPersistence::save();
+    // Save only the changed measurement name
+    auto saveResult = SensorPersistence::updateMeasurementName(id, measurementIndex, newName);
     if (!saveResult.isSuccess()) {
       sendJsonResponse(500, F("{\"success\":false,\"error\":\"Failed to save sensor config\"}"));
       return;

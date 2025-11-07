@@ -399,14 +399,14 @@ bool ConfigPersistence::backupPreferencesToFile() {
     }
   }
 
-  // Write to file
+  // Write to file with pretty formatting
   File f = LittleFS.open("/prefs_backup.json", "w");
   if (!f) {
     logger.error(F("ConfigP"), F("Konnte Backup-Datei nicht erstellen"));
     return false;
   }
 
-  if (serializeJson(doc, f) == 0) {
+  if (serializeJsonPretty(doc, f) == 0) {
     logger.error(F("ConfigP"), F("Fehler beim Schreiben der Backup-Datei"));
     f.close();
     return false;

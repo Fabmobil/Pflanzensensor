@@ -151,8 +151,6 @@ String WebRouter::methodToString(HTTPMethod method) {
 
 bool WebRouter::executeMiddleware(HTTPMethod method, const String& url) {
   for (const auto& mw : _middleware) {
-    logger.debug(F("WebRouter"),
-                 String(F("Führe Middleware aus für: ")) + methodToString(method) + " " + url);
     if (!mw(method, url)) {
       logger.debug(F("WebRouter"), String(F("Middleware blockierte Anfrage: ")) + url);
       return false;
@@ -162,14 +160,9 @@ bool WebRouter::executeMiddleware(HTTPMethod method, const String& url) {
 }
 
 Route* WebRouter::findRoute(HTTPMethod method, const String& url) {
-  logger.debug(F("WebRouter"), F("Suche nach Route: ") + methodToString(method) + F(" ") + url);
-  logger.debug(F("WebRouter"),
-               String(F("Insgesamt registrierte Routen: ")) + String(_routes.size()));
 
   for (auto& route : _routes) {
     if (route.url == url && route.method == method) {
-      logger.debug(F("WebRouter"),
-                   F("Gefundene passende Route: ") + methodToString(method) + F(" ") + url);
       return &route;
     }
   }

@@ -90,6 +90,16 @@ public:
                                                     bool enabled);
 
   /**
+   * @brief Update measurement name atomically
+   * @param sensorId Sensor ID to update
+   * @param measurementIndex Measurement index to update
+   * @param name New name for the measurement
+   * @return PersistenceResult indicating success or failure
+   */
+  static PersistenceResult updateMeasurementName(const String& sensorId, size_t measurementIndex,
+                                                 const String& name);
+
+  /**
    * @brief Update absolute min/max values atomically
    * @param sensorId Sensor ID to update
    * @param measurementIndex Measurement index to update
@@ -192,83 +202,6 @@ public:
 
 private:
   SensorPersistence() = default;
-
-  /**
-   * @brief Internal save method
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult saveInternal();
-
-  /**
-   * @brief Internal method for updating sensor thresholds
-   * @param sensorId Sensor ID to update
-   * @param measurementIndex Measurement index to update
-   * @param yellowLow Yellow low threshold value
-   * @param greenLow Green low threshold value
-   * @param greenHigh Green high threshold value
-   * @param yellowHigh Yellow high threshold value
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult updateSensorThresholdsInternal(const String& sensorId,
-                                                          size_t measurementIndex, float yellowLow,
-                                                          float greenLow, float greenHigh,
-                                                          float yellowHigh);
-
-  /**
-   * @brief Internal method for updating analog min/max values
-   * @param sensorId Sensor ID to update
-   * @param measurementIndex Measurement index to update
-   * @param minValue Minimum value
-   * @param maxValue Maximum value
-   * @param inverted Whether the sensor is inverted
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult updateAnalogMinMaxInternal(const String& sensorId,
-                                                      size_t measurementIndex, float minValue,
-                                                      float maxValue, bool inverted);
-
-  /**
-   * @brief Internal method for updating measurement interval
-   * @param sensorId Sensor ID to update
-   * @param interval Measurement interval in milliseconds
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult updateMeasurementIntervalInternal(const String& sensorId,
-                                                             unsigned long interval);
-
-  /**
-   * @brief Internal method for updating measurement enabled state
-   * @param sensorId Sensor ID to update
-   * @param measurementIndex Measurement index to update
-   * @param enabled Whether the measurement is enabled
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult updateMeasurementEnabledInternal(const String& sensorId,
-                                                            size_t measurementIndex, bool enabled);
-
-  /**
-   * @brief Internal method for updating absolute min/max values
-   * @param sensorId Sensor ID to update
-   * @param measurementIndex Measurement index to update
-   * @param absoluteMin Absolute minimum value
-   * @param absoluteMax Absolute maximum value
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult updateAbsoluteMinMaxInternal(const String& sensorId,
-                                                        size_t measurementIndex, float absoluteMin,
-                                                        float absoluteMax);
-
-  /**
-   * @brief Internal method for updating analog raw min/max values
-   * @param sensorId Sensor ID to update
-   * @param measurementIndex Measurement index to update
-   * @param absoluteRawMin Absolute minimum raw value
-   * @param absoluteRawMax Absolute maximum raw value
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult updateAnalogRawMinMaxInternal(const String& sensorId,
-                                                         size_t measurementIndex,
-                                                         int absoluteRawMin, int absoluteRawMax);
 };
 
 #endif
