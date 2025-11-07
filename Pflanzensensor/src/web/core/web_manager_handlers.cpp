@@ -103,24 +103,24 @@ void WebManager::handleSetConfigValue() {
   }
 
   String namespaceName, key, value, typeStr;
-  
+
   // Check if request is form-encoded (new unified method) or JSON (legacy)
   String contentType = _server->header("Content-Type");
   bool isFormEncoded = contentType.indexOf("application/x-www-form-urlencoded") >= 0;
-  
+
   if (isFormEncoded || _server->hasArg("namespace")) {
     // New unified method with namespace and type
     namespaceName = _server->arg("namespace");
     key = _server->arg("key");
     value = _server->arg("value");
     typeStr = _server->arg("type");
-    
+
     if (namespaceName.isEmpty() || key.isEmpty()) {
       logger.error(F("WebManager"), F("Missing namespace or key parameter"));
       sendErrorResponse(400, F("Missing namespace or key parameter"));
       return;
     }
-    
+
     // Parse type parameter
     ConfigValueType type = ConfigValueType::STRING; // default
     if (typeStr == "bool") {
@@ -134,10 +134,10 @@ void WebManager::handleSetConfigValue() {
     } else if (typeStr == "string") {
       type = ConfigValueType::STRING;
     }
-    
-    logger.debug(F("WebManager"), String(F("Setting config: ")) + namespaceName + 
-                 F(".") + key + F(" = ") + value + F(" (type: ") + typeStr + F(")"));
-    
+
+    logger.debug(F("WebManager"), String(F("Setting config: ")) + namespaceName + F(".") + key +
+                                      F(" = ") + value + F(" (type: ") + typeStr + F(")"));
+
     // Update config value using new method
     auto result = ConfigMgr.setConfigValue(namespaceName, key, value, type);
     if (!result.isSuccess()) {
@@ -145,14 +145,14 @@ void WebManager::handleSetConfigValue() {
       sendErrorResponse(400, result.getMessage());
       return;
     }
-    
+
     // Send success response (no message - let frontend format it)
     StaticJsonDocument<200> response;
     response["success"] = true;
     String jsonResponse;
     serializeJson(response, jsonResponse);
     _server->send(200, F("application/json"), jsonResponse);
-    
+
   } else {
     // Legacy JSON method - kept for backward compatibility during transition
     String json = _server->arg("plain");
@@ -249,7 +249,7 @@ bool WebManager::prepareUpdateMode(bool fileSystemUpdate, bool firmwareUpdate, b
     return false;
   }
 
-  logger.debug(F("WebManager"), F("Configuration saved successfully"));
+  logger.debug(F("WebManager"), F("Konfiguration erfolgreich gespeichert"));
   return true;
 }
 

@@ -48,8 +48,8 @@ public:
 
     // Check if current holder has timed out
     if (!m_currentSensor.isEmpty() && (now - m_slotAcquiredTime >= SLOT_TIMEOUT_MS)) {
-      logger.warning(F("SensorLimiter"),
-                     F("Forcing slot release from ") + m_currentSensor + F(" due to timeout"));
+      logger.warning(F("SensorLimiter"), F("Erzwinge Freigabe des Slots von ") + m_currentSensor +
+                                             F(" wegen Zeitüberschreitung"));
       m_currentSensor = "";
     }
 
@@ -57,14 +57,15 @@ public:
       m_currentSensor = sensorId;
       m_slotAcquiredTime = now;
       if (ConfigMgr.isDebugMeasurementCycle()) {
-        logger.debug(F("SensorLimiter"), F("Slot acquired by: ") + sensorId);
+        logger.debug(F("SensorLimiter"), F("Slot wurde von ") + sensorId + F(" belegt"));
       }
       return true;
     }
 
     if (ConfigMgr.isDebugMeasurementCycle() && m_lastBlockingSensor != m_currentSensor) {
-      logger.debug(F("SensorLimiter"), F("Slot acquisition failed for ") + sensorId +
-                                           F(" - currently held by: ") + m_currentSensor);
+      logger.debug(F("SensorLimiter"), F("Slot-Anforderung von ") + sensorId +
+                                           F(" fehlgeschlagen - aktuell belegt von: ") +
+                                           m_currentSensor);
       m_lastBlockingSensor = m_currentSensor;
     }
     return false;
@@ -79,13 +80,14 @@ public:
   void releaseSlot(const String& sensorId) {
     if (m_currentSensor == sensorId) {
       if (ConfigMgr.isDebugMeasurementCycle()) {
-        logger.debug(F("SensorLimiter"), F("Slot released by: ") + sensorId);
+        logger.debug(F("SensorLimiter"), F("Slot wurde von ") + sensorId + F(" freigegeben"));
       }
       m_currentSensor = "";
       m_slotAcquiredTime = 0;
     } else if (!m_currentSensor.isEmpty()) {
-      logger.warning(F("SensorLimiter"), F("Attempt to release slot by ") + sensorId +
-                                             F(" but slot is held by: ") + m_currentSensor);
+      logger.warning(F("SensorLimiter"), F("Versuch von ") + sensorId +
+                                             F(" den Slot freizugeben, aber aktuell belegt von: ") +
+                                             m_currentSensor);
     }
   }
 

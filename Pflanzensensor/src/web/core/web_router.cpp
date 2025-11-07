@@ -27,7 +27,8 @@ WebRouter::WebRouter(ESP8266WebServer& server) : _server(server) {
   }
 }
 
-RouterResult WebRouter::addRoute(HTTPMethod method, const String& url, HandlerCallback handler) {
+RouterResult WebRouter::addRoute(HTTPMethod method, const String& url, HandlerCallback handler,
+                                 const String& handlerType) {
   if (!hasEnoughMemory()) {
     logger.error(F("WebRouter"), F("Nicht genügend Speicher für Route: ") + url);
     return RouterResult::fail(RouterError::RESOURCE_ERROR, F("Nicht genügend Speicher"));
@@ -43,45 +44,28 @@ RouterResult WebRouter::addRoute(HTTPMethod method, const String& url, HandlerCa
     return RouterResult::fail(RouterError::REGISTRATION_FAILED, F("Routen-Limit überschritten"));
   }
 
-  try {
-    // Check for duplicate before modifying anything
-    for (const auto& route : _routes) {
-      if (route.url == url && route.method == method) {
-        logger.debug(F("WebRouter"), F("Route existiert bereits: ") + url);
-        return RouterResult::success(); // Don't add duplicates
-      }
+  // Check for duplicate before modifying anything
+  for (const auto& route : _routes) {
+    if (route.url == url && route.method == method) {
+      // Route already exists - update handler if different handlerType
+      logger.debug(F("WebRouter"),
+                   F("Route bereits registriert: ") + methodToString(method) + F(" ") + url);
+      return RouterResult::success();
     }
-
-    // Store route first
-    _routes.emplace_back(url, method, handler);
-
-    // Register with server
-    switch (method) {
-    case HTTP_GET:
-      _server.on(url, HTTP_GET, handler);
-      break;
-    case HTTP_POST:
-      _server.on(url, HTTP_POST, handler);
-      break;
-    case HTTP_PUT:
-      _server.on(url, HTTP_PUT, handler);
-      break;
-    case HTTP_DELETE:
-      _server.on(url, HTTP_DELETE, handler);
-      logger.info(F("WebRouter"), F("DELETE-Route registriert: ") + url);
-      break;
-    default:
-      _routes.pop_back(); // Rollback route addition
-      logger.error(F("WebRouter"), F("Nicht unterstützte Methode für Route: ") + url);
-      return RouterResult::fail(RouterError::INVALID_METHOD, F("Nicht unterstützte Methode"));
-    }
-
-    return RouterResult::success();
-  } catch (const std::exception& e) {
-    logger.error(F("WebRouter"), String(F("Routenregistrierung fehlgeschlagen: ")) +
-                                     String(e.what()) + F(" für Route: ") + url);
-    return RouterResult::fail(RouterError::REGISTRATION_FAILED, F("Speicherfehler"));
   }
+
+  // Use provided handlerType, or fall back to context if not specified
+  String effectiveHandlerType = handlerType.isEmpty() ? _currentHandlerType : handlerType;
+
+  // Store route with handler type for cleanup tracking
+  _routes.emplace_back(url, method, handler, effectiveHandlerType);
+
+  // NOTE: We do NOT register with _server.on() because ESP8266WebServer
+  // has no way to unregister routes. All routing goes through handleRequest()
+  // which is called from onNotFound handler in setupRoutes().
+
+  logRouteRegistration(method, url);
+  return RouterResult::success();
 }
 
 void WebRouter::serveStatic(const String& urlPrefix, fs::FS& fs, const String& path, bool cache) {
@@ -183,20 +167,53 @@ Route* WebRouter::findRoute(HTTPMethod method, const String& url) {
                String(F("Insgesamt registrierte Routen: ")) + String(_routes.size()));
 
   for (auto& route : _routes) {
-    logger.debug(F("WebRouter"),
-                 F("Prüfe Route: ") + methodToString(route.method) + F(" ") + route.url);
     if (route.url == url && route.method == method) {
       logger.debug(F("WebRouter"),
                    F("Gefundene passende Route: ") + methodToString(method) + F(" ") + url);
       return &route;
     }
   }
-  logger.debug(F("WebRouter"),
-               F("Keine passende Route gefunden für: ") + methodToString(method) + F(" ") + url);
+  logger.warning(F("WebRouter"),
+                 F("Keine passende Route gefunden für: ") + methodToString(method) + F(" ") + url);
   return nullptr;
 }
 
 void WebRouter::logRouteRegistration(HTTPMethod method, const String& url) {
   logger.debug(F("WebRouter"),
                String(F("Route erfolgreich registriert: ")) + methodToString(method) + " " + url);
+}
+
+RouterResult WebRouter::removeRoute(HTTPMethod method, const String& url) {
+  auto it = std::remove_if(_routes.begin(), _routes.end(), [&](const Route& route) {
+    return route.url == url && route.method == method;
+  });
+
+  if (it != _routes.end()) {
+    _routes.erase(it, _routes.end());
+    logger.debug(F("WebRouter"), F("Route entfernt: ") + methodToString(method) + F(" ") + url);
+    return RouterResult::success();
+  }
+
+  logger.debug(F("WebRouter"),
+               F("Route nicht gefunden zum Entfernen: ") + methodToString(method) + F(" ") + url);
+  return RouterResult::fail(RouterError::INVALID_ROUTE, F("Route nicht gefunden"));
+}
+
+void WebRouter::removeHandlerRoutes(const String& handlerType) {
+  if (handlerType.isEmpty()) {
+    logger.debug(F("WebRouter"), F("Leerer handlerType - überspringe Route-Entfernung"));
+    return;
+  }
+
+  auto it = std::remove_if(_routes.begin(), _routes.end(),
+                           [&](const Route& route) { return route.handlerType == handlerType; });
+
+  if (it != _routes.end()) {
+    size_t removedCount = std::distance(it, _routes.end());
+    _routes.erase(it, _routes.end());
+    logger.info(F("WebRouter"), F("Handler-Routen entfernt: ") + handlerType + F(" (") +
+                                    String(removedCount) + F(" Routen)"));
+  } else {
+    logger.debug(F("WebRouter"), F("Keine Routen gefunden für Handler: ") + handlerType);
+  }
 }

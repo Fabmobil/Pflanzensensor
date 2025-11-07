@@ -158,7 +158,6 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
     return result;
   }
 
-  logger.info(F("AdminSensorHandler"), F("Sensor-Config-Routen erfolgreich registriert"));
   return RouterResult::success();
 }
 

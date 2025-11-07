@@ -20,7 +20,7 @@ extern std::unique_ptr<DisplayManager> displayManager;
 AdminDisplayHandler::~AdminDisplayHandler() = default;
 
 AdminDisplayHandler::AdminDisplayHandler(ESP8266WebServer& server) : BaseHandler(server) {
-  logger.debug(F("AdminDisplayHandler"), F("Initializing AdminDisplayHandler"));
+  logger.debug(F("AdminDisplayHandler"), F("Initialisiere AdminDisplayHandler"));
 }
 
 void AdminDisplayHandler::handleDisplayConfig() {
@@ -268,20 +268,21 @@ bool AdminDisplayHandler::validateRequest() const {
 }
 
 RouterResult AdminDisplayHandler::onRegisterRoutes(WebRouter& router) {
+  logger.debug(F("AdminDisplayHandler"), F("Registriere Display-Routen"));
+
   auto result = router.addRoute(HTTP_GET, "/admin/display", [this]() { handleDisplayConfig(); });
   if (!result.isSuccess())
     return result;
 
   // Note: Screen duration, clock format, and display toggles are now handled
   // by the unified /admin/config/setConfigValue route with namespace="display"
-  
+
   // Keep measurement toggle for now as it's managed by DisplayManager
   result = router.addRoute(HTTP_POST, "/admin/display/measurement_toggle",
                            [this]() { handleMeasurementDisplayToggle(); });
   if (!result.isSuccess())
     return result;
 
-  logger.info(F("AdminDisplayHandler"), F("Display config routes registered"));
   return RouterResult::success();
 }
 

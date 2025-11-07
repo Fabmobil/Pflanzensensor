@@ -47,6 +47,7 @@
 #endif
 
 // helper methods
+#include "managers/manager_sensor_persistence.h"
 #include "utils/helper.h"
 
 // Global objects
@@ -299,8 +300,7 @@ void setup() {
 #if USE_WIFI
   if (WiFi.status() == WL_CONNECTED) {
 #endif
-    Helper::initializeComponent(F("NTP time sync"), []() -> ResourceResult {
-      logger.info(F("main"), F("Initialisiere NTP-Zeitsynchronisation"));
+    Helper::initializeComponent(F("NTP-Zeitsynchronisation"), []() -> ResourceResult {
       logger.initNTP();
       int timeSync = 0;
       while (timeSync < 10) {
@@ -507,6 +507,10 @@ void loop() {
 #if USE_WIFI
     logger.updateNTP();
 #endif
+
+    // Force flush of any pending persistence updates during maintenance
+    SensorPersistence::flushPendingUpdates();
+
     lastMaintenanceCheck = currentMillis;
   }
 
@@ -532,6 +536,9 @@ void loop() {
   if (sensorManager && sensorManager->getState() == ManagerState::INITIALIZED &&
       currentMillis - lastMeasurementUpdate >= MEASUREMENT_UPDATE_INTERVAL) {
     sensorManager->updateMeasurements();
+
+    // Process a small number of deferred persistence updates (non-blocking)
+    SensorPersistence::processPendingUpdates();
 
     // Update LED traffic light status for mode 2
 #if USE_LED_TRAFFIC_LIGHT

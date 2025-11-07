@@ -112,6 +112,53 @@ public:
                                                  int absoluteRawMin, int absoluteRawMax);
 
   /**
+   * @brief Enqueue an analog raw min/max update to be processed later in the main loop.
+   * This avoids performing blocking Preferences writes from a time-critical context.
+   * Updates are batched and written every 60 seconds to reduce flash wear.
+   * @param sensorId Sensor ID
+   * @param measurementIndex Measurement index
+   * @param absoluteRawMin New minimum raw value
+   * @param absoluteRawMax New maximum raw value
+   */
+  static void enqueueAnalogRawMinMax(const String& sensorId, size_t measurementIndex,
+                                     int absoluteRawMin, int absoluteRawMax);
+
+  /**
+   * @brief Enqueue an absolute min/max update (float) to be processed later.
+   * Used by all sensor types (not just analog) to batch persistence writes.
+   * @param sensorId Sensor ID
+   * @param measurementIndex Measurement index
+   * @param absoluteMin New minimum value
+   * @param absoluteMax New maximum value
+   */
+  static void enqueueAbsoluteMinMax(const String& sensorId, size_t measurementIndex,
+                                    float absoluteMin, float absoluteMax);
+
+  /**
+   * @brief Enqueue an analog min/max/inverted update (integer) to be processed later.
+   * @param sensorId Sensor ID
+   * @param measurementIndex Measurement index
+   * @param minValue Minimum calibrated value
+   * @param maxValue Maximum calibrated value
+   * @param inverted Inversion flag
+   */
+  static void enqueueAnalogMinMaxInteger(const String& sensorId, size_t measurementIndex,
+                                         int minValue, int maxValue, bool inverted);
+
+  /**
+   * @brief Process any pending queued persistence updates. Should be called from the main loop
+   * outside of time-critical sections. Writes are batched and flushed every 60 seconds to
+   * minimize flash wear and prevent watchdog resets.
+   */
+  static void processPendingUpdates();
+
+  /**
+   * @brief Force an immediate flush of all pending updates (e.g., before reboot).
+   * Use sparingly as this can cause blocking writes.
+   */
+  static void flushPendingUpdates();
+
+  /**
    * @brief Update analog sensor calibration mode flag atomically
    * @param sensorId Sensor ID to update
    * @param measurementIndex Measurement index to update

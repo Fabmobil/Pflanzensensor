@@ -9,8 +9,8 @@
 
 #include "../logger/logger.h"
 #include "../utils/critical_section.h"
-#include "managers/manager_config_preferences.h"
 #include "managers/manager_config.h"
+#include "managers/manager_config_preferences.h"
 #include "managers/manager_resource.h"
 #include "managers/manager_sensor.h"
 #include "sensors/sensors.h"
@@ -18,6 +18,43 @@
 #include "sensors/sensor_analog.h"
 #endif
 #include "sensors/sensor_autocalibration.h"
+
+// Write-behind cache: Instead of writing immediately, we collect all changes
+// in RAM and flush them periodically (e.g., every 60 seconds). This drastically
+// reduces flash wear and eliminates blocking writes during measurements.
+enum class PendingUpdateType {
+  RAW_MIN_MAX,       // int absoluteRawMin, absoluteRawMax
+  ABSOLUTE_MIN_MAX,  // float absoluteMin, absoluteMax
+  CALIBRATED_MIN_MAX // int minValue, maxValue, bool inverted
+};
+
+struct PendingUpdate {
+  PendingUpdateType type;
+  String sensorId;
+  size_t measurementIndex;
+  unsigned long timestamp; // When this update was queued
+
+  // Union to save memory - only one set of values is active at a time
+  union {
+    struct {
+      int absoluteRawMin;
+      int absoluteRawMax;
+    } raw;
+    struct {
+      float absoluteMin;
+      float absoluteMax;
+    } absolute;
+    struct {
+      int minValue;
+      int maxValue;
+      bool inverted;
+    } calibrated;
+  } data;
+};
+
+static std::vector<PendingUpdate> g_pendingUpdates;
+static unsigned long g_lastFlushTime = 0;
+static constexpr unsigned long FLUSH_INTERVAL_MS = 60000; // 60 seconds
 
 bool SensorPersistence::configExists() {
   // Check if any sensor has Preferences data
@@ -298,10 +335,6 @@ SensorPersistence::updateAnalogMinMaxInteger(const String& sensorId, size_t meas
   logger.info(F("SensorP"), F("Analog min/max (int) atomar aktualisiert für ") + sensorId +
                                 F(" Messung ") + String(measurementIndex));
 
-  // Reload configuration to sync in-memory state
-  logger.info(F("SensorP"), String(F("Min/Max aktualisiert für ")) + sensorId +
-                                F(" Messung ") + String(measurementIndex));
-
   return PersistenceResult::success();
 }
 
@@ -410,9 +443,6 @@ SensorPersistence::updateAbsoluteMinMax(const String& sensorId, size_t measureme
 
   prefs.end();
 
-  logger.info(F("SensorP"), F("Absolute min/max atomar aktualisiert für ") + sensorId +
-                                F(" Messung ") + String(measurementIndex));
-
   if (ConfigMgr.isDebugSensor()) {
     logger.debug(F("SensorP"), F("Konfiguration aktualisiert für Sensor ") + sensorId +
                                    F(" Messung ") + String(measurementIndex) + F(" - Min: ") +
@@ -441,6 +471,289 @@ SensorPersistence::updateAnalogRawMinMax(const String& sensorId, size_t measurem
   return result;
 }
 
+void SensorPersistence::enqueueAnalogRawMinMax(const String& sensorId, size_t measurementIndex,
+                                               int absoluteRawMin, int absoluteRawMax) {
+  // Check if we already have a RAW_MIN_MAX pending update for this sensor/measurement
+  for (auto& u : g_pendingUpdates) {
+    if (u.type == PendingUpdateType::RAW_MIN_MAX && u.sensorId == sensorId &&
+        u.measurementIndex == measurementIndex) {
+      // Update existing entry with new values
+      u.data.raw.absoluteRawMin = absoluteRawMin;
+      u.data.raw.absoluteRawMax = absoluteRawMax;
+      u.timestamp = millis();
+      return;
+    }
+  }
+
+  // Add new entry
+  PendingUpdate u;
+  u.type = PendingUpdateType::RAW_MIN_MAX;
+  u.sensorId = sensorId;
+  u.measurementIndex = measurementIndex;
+  u.timestamp = millis();
+  u.data.raw.absoluteRawMin = absoluteRawMin;
+  u.data.raw.absoluteRawMax = absoluteRawMax;
+
+  // Keep queue size reasonable — if it grows too large, flush oldest entries
+  const size_t MAX_PENDING = 32;
+  if (g_pendingUpdates.size() >= MAX_PENDING) {
+    logger.warning(F("SensorP"), F("Pending updates queue full, forcing partial flush"));
+    // Flush oldest entry
+    if (!g_pendingUpdates.empty()) {
+      PendingUpdate oldest = g_pendingUpdates.front();
+      g_pendingUpdates.erase(g_pendingUpdates.begin());
+
+      switch (oldest.type) {
+      case PendingUpdateType::RAW_MIN_MAX:
+        updateAnalogRawMinMaxInternal(oldest.sensorId, oldest.measurementIndex,
+                                      oldest.data.raw.absoluteRawMin,
+                                      oldest.data.raw.absoluteRawMax);
+        break;
+      case PendingUpdateType::ABSOLUTE_MIN_MAX:
+        updateAbsoluteMinMax(oldest.sensorId, oldest.measurementIndex,
+                             oldest.data.absolute.absoluteMin, oldest.data.absolute.absoluteMax);
+        break;
+      case PendingUpdateType::CALIBRATED_MIN_MAX:
+        updateAnalogMinMaxIntegerNoReload(
+            oldest.sensorId, oldest.measurementIndex, oldest.data.calibrated.minValue,
+            oldest.data.calibrated.maxValue, oldest.data.calibrated.inverted);
+        break;
+      }
+    }
+  }
+  g_pendingUpdates.push_back(std::move(u));
+}
+
+void SensorPersistence::enqueueAbsoluteMinMax(const String& sensorId, size_t measurementIndex,
+                                              float absoluteMin, float absoluteMax) {
+  // Check if we already have an ABSOLUTE_MIN_MAX pending update for this sensor/measurement
+  for (auto& u : g_pendingUpdates) {
+    if (u.type == PendingUpdateType::ABSOLUTE_MIN_MAX && u.sensorId == sensorId &&
+        u.measurementIndex == measurementIndex) {
+      // Update existing entry with new values
+      u.data.absolute.absoluteMin = absoluteMin;
+      u.data.absolute.absoluteMax = absoluteMax;
+      u.timestamp = millis();
+      return;
+    }
+  }
+
+  // Add new entry
+  PendingUpdate u;
+  u.type = PendingUpdateType::ABSOLUTE_MIN_MAX;
+  u.sensorId = sensorId;
+  u.measurementIndex = measurementIndex;
+  u.timestamp = millis();
+  u.data.absolute.absoluteMin = absoluteMin;
+  u.data.absolute.absoluteMax = absoluteMax;
+
+  const size_t MAX_PENDING = 32;
+  if (g_pendingUpdates.size() >= MAX_PENDING) {
+    logger.warning(F("SensorP"), F("Pending updates queue full, forcing partial flush"));
+    if (!g_pendingUpdates.empty()) {
+      PendingUpdate oldest = g_pendingUpdates.front();
+      g_pendingUpdates.erase(g_pendingUpdates.begin());
+
+      switch (oldest.type) {
+      case PendingUpdateType::RAW_MIN_MAX:
+        updateAnalogRawMinMaxInternal(oldest.sensorId, oldest.measurementIndex,
+                                      oldest.data.raw.absoluteRawMin,
+                                      oldest.data.raw.absoluteRawMax);
+        break;
+      case PendingUpdateType::ABSOLUTE_MIN_MAX:
+        updateAbsoluteMinMax(oldest.sensorId, oldest.measurementIndex,
+                             oldest.data.absolute.absoluteMin, oldest.data.absolute.absoluteMax);
+        break;
+      case PendingUpdateType::CALIBRATED_MIN_MAX:
+        updateAnalogMinMaxIntegerNoReload(
+            oldest.sensorId, oldest.measurementIndex, oldest.data.calibrated.minValue,
+            oldest.data.calibrated.maxValue, oldest.data.calibrated.inverted);
+        break;
+      }
+    }
+  }
+  g_pendingUpdates.push_back(std::move(u));
+}
+
+void SensorPersistence::enqueueAnalogMinMaxInteger(const String& sensorId, size_t measurementIndex,
+                                                   int minValue, int maxValue, bool inverted) {
+  // Check if we already have a CALIBRATED_MIN_MAX pending update for this sensor/measurement
+  for (auto& u : g_pendingUpdates) {
+    if (u.type == PendingUpdateType::CALIBRATED_MIN_MAX && u.sensorId == sensorId &&
+        u.measurementIndex == measurementIndex) {
+      // Update existing entry with new values
+      u.data.calibrated.minValue = minValue;
+      u.data.calibrated.maxValue = maxValue;
+      u.data.calibrated.inverted = inverted;
+      u.timestamp = millis();
+      return;
+    }
+  }
+
+  // Add new entry
+  PendingUpdate u;
+  u.type = PendingUpdateType::CALIBRATED_MIN_MAX;
+  u.sensorId = sensorId;
+  u.measurementIndex = measurementIndex;
+  u.timestamp = millis();
+  u.data.calibrated.minValue = minValue;
+  u.data.calibrated.maxValue = maxValue;
+  u.data.calibrated.inverted = inverted;
+
+  const size_t MAX_PENDING = 32;
+  if (g_pendingUpdates.size() >= MAX_PENDING) {
+    logger.warning(F("SensorP"), F("Pending updates queue full, forcing partial flush"));
+    if (!g_pendingUpdates.empty()) {
+      PendingUpdate oldest = g_pendingUpdates.front();
+      g_pendingUpdates.erase(g_pendingUpdates.begin());
+
+      switch (oldest.type) {
+      case PendingUpdateType::RAW_MIN_MAX:
+        updateAnalogRawMinMaxInternal(oldest.sensorId, oldest.measurementIndex,
+                                      oldest.data.raw.absoluteRawMin,
+                                      oldest.data.raw.absoluteRawMax);
+        break;
+      case PendingUpdateType::ABSOLUTE_MIN_MAX:
+        updateAbsoluteMinMax(oldest.sensorId, oldest.measurementIndex,
+                             oldest.data.absolute.absoluteMin, oldest.data.absolute.absoluteMax);
+        break;
+      case PendingUpdateType::CALIBRATED_MIN_MAX:
+        updateAnalogMinMaxIntegerNoReload(
+            oldest.sensorId, oldest.measurementIndex, oldest.data.calibrated.minValue,
+            oldest.data.calibrated.maxValue, oldest.data.calibrated.inverted);
+        break;
+      }
+    }
+  }
+  g_pendingUpdates.push_back(std::move(u));
+}
+
+void SensorPersistence::processPendingUpdates() {
+  unsigned long now = millis();
+
+  // Check if it's time for a periodic flush (every 60 seconds)
+  bool forceFlush = (now - g_lastFlushTime) >= FLUSH_INTERVAL_MS;
+
+  if (forceFlush && !g_pendingUpdates.empty()) {
+    logger.info(F("SensorP"), F("Periodischer Flush: schreibe ") + String(g_pendingUpdates.size()) +
+                                  F(" ausstehende Updates"));
+
+    // Flush all pending updates in one batch
+    size_t successCount = 0;
+    size_t errorCount = 0;
+
+    while (!g_pendingUpdates.empty()) {
+      PendingUpdate u = g_pendingUpdates.front();
+      g_pendingUpdates.erase(g_pendingUpdates.begin());
+
+      bool success = true;
+      switch (u.type) {
+      case PendingUpdateType::RAW_MIN_MAX:
+        success =
+            updateAnalogRawMinMaxInternal(u.sensorId, u.measurementIndex, u.data.raw.absoluteRawMin,
+                                          u.data.raw.absoluteRawMax)
+                .isSuccess();
+        break;
+      case PendingUpdateType::ABSOLUTE_MIN_MAX:
+        success = updateAbsoluteMinMax(u.sensorId, u.measurementIndex, u.data.absolute.absoluteMin,
+                                       u.data.absolute.absoluteMax)
+                      .isSuccess();
+        break;
+      case PendingUpdateType::CALIBRATED_MIN_MAX:
+        success = updateAnalogMinMaxIntegerNoReload(
+                      u.sensorId, u.measurementIndex, u.data.calibrated.minValue,
+                      u.data.calibrated.maxValue, u.data.calibrated.inverted)
+                      .isSuccess();
+        break;
+      }
+
+      if (success) {
+        successCount++;
+      } else {
+        errorCount++;
+      }
+
+      // Feed watchdog during batch write to prevent WDT reset
+      yield();
+    }
+
+    g_lastFlushTime = now;
+
+    if (errorCount > 0) {
+      logger.warning(F("SensorP"), F("Flush abgeschlossen: ") + String(successCount) +
+                                       F(" erfolgreich, ") + String(errorCount) + F(" Fehler"));
+    } else {
+      logger.info(F("SensorP"),
+                  F("Flush erfolgreich: ") + String(successCount) + F(" Updates geschrieben"));
+    }
+  } else if (!forceFlush && !g_pendingUpdates.empty()) {
+    // Just report queue status occasionally
+    static unsigned long lastStatusLog = 0;
+    if ((now - lastStatusLog) >= 10000) { // Every 10 seconds
+      logger.debug(F("SensorP"), F("Ausstehende Updates: ") + String(g_pendingUpdates.size()) +
+                                     F(", nächster Flush in ") +
+                                     String((FLUSH_INTERVAL_MS - (now - g_lastFlushTime)) / 1000) +
+                                     F("s"));
+      lastStatusLog = now;
+    }
+  }
+}
+
+void SensorPersistence::flushPendingUpdates() {
+  if (g_pendingUpdates.empty()) {
+    return;
+  }
+
+  logger.info(F("SensorP"), F("Erzwungener Flush: schreibe ") + String(g_pendingUpdates.size()) +
+                                F(" ausstehende Updates"));
+
+  size_t successCount = 0;
+  size_t errorCount = 0;
+
+  while (!g_pendingUpdates.empty()) {
+    PendingUpdate u = g_pendingUpdates.front();
+    g_pendingUpdates.erase(g_pendingUpdates.begin());
+
+    bool success = true;
+    switch (u.type) {
+    case PendingUpdateType::RAW_MIN_MAX:
+      success = updateAnalogRawMinMaxInternal(u.sensorId, u.measurementIndex,
+                                              u.data.raw.absoluteRawMin, u.data.raw.absoluteRawMax)
+                    .isSuccess();
+      break;
+    case PendingUpdateType::ABSOLUTE_MIN_MAX:
+      success = updateAbsoluteMinMax(u.sensorId, u.measurementIndex, u.data.absolute.absoluteMin,
+                                     u.data.absolute.absoluteMax)
+                    .isSuccess();
+      break;
+    case PendingUpdateType::CALIBRATED_MIN_MAX:
+      success = updateAnalogMinMaxIntegerNoReload(
+                    u.sensorId, u.measurementIndex, u.data.calibrated.minValue,
+                    u.data.calibrated.maxValue, u.data.calibrated.inverted)
+                    .isSuccess();
+      break;
+    }
+
+    if (success) {
+      successCount++;
+    } else {
+      errorCount++;
+    }
+
+    yield();
+  }
+
+  g_lastFlushTime = millis();
+
+  if (errorCount > 0) {
+    logger.warning(F("SensorP"), F("Erzwungener Flush abgeschlossen: ") + String(successCount) +
+                                     F(" erfolgreich, ") + String(errorCount) + F(" Fehler"));
+  } else {
+    logger.info(F("SensorP"), F("Erzwungener Flush erfolgreich: ") + String(successCount) +
+                                  F(" Updates geschrieben"));
+  }
+}
+
 SensorPersistence::PersistenceResult
 SensorPersistence::updateAnalogRawMinMaxInternal(const String& sensorId, size_t measurementIndex,
                                                  int absoluteRawMin, int absoluteRawMax) {
@@ -458,12 +771,8 @@ SensorPersistence::updateAnalogRawMinMaxInternal(const String& sensorId, size_t 
   prefs.end();
 
   logger.info(F("SensorP"), F("Analog raw min/max aktualisiert für ") + sensorId + F(" Messung ") +
-                                String(measurementIndex));
-
-  // Nach dem Update Konfiguration neu laden, damit In-Memory-Config synchron bleibt
-  logger.info(F("SensorP"), String(F("Raw Min/Max aktualisiert für ")) + sensorId +
-                                F(" Messung ") + String(measurementIndex) +
-                                F(" - Min: ") + String(absoluteRawMin) + F(", Max: ") + String(absoluteRawMax));
+                                String(measurementIndex) + F(" - Min: ") + String(absoluteRawMin) +
+                                F(", Max: ") + String(absoluteRawMax));
 
   return PersistenceResult::success();
 }
@@ -485,10 +794,6 @@ SensorPersistence::updateAnalogCalibrationMode(const String& sensorId, size_t me
 
   logger.info(F("SensorP"), F("Kalibrierungsmodus aktualisiert für ") + sensorId + F(" Messung ") +
                                 String(measurementIndex));
-
-  // Reload configuration to sync in-memory state
-  logger.info(F("SensorP"), String(F("Kalibrierungsmodus aktualisiert für ")) + sensorId +
-                                F(" Messung ") + String(measurementIndex));
 
   return PersistenceResult::success();
 }
@@ -513,10 +818,6 @@ SensorPersistence::updateAutocalDuration(const String& sensorId, size_t measurem
 
   logger.info(F("SensorP"), F("Autocal-Dauer aktualisiert für ") + sensorId + F(" Messung ") +
                                 String(measurementIndex));
-
-  // Reload configuration to sync in-memory state
-  logger.info(F("SensorP"), String(F("Autocal-Dauer aktualisiert für ")) + sensorId +
-                                F(" Messung ") + String(measurementIndex));
 
   return PersistenceResult::success();
 }

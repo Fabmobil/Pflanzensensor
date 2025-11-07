@@ -70,20 +70,13 @@ void SensorMeasurementCycleManager::handleProcessing() {
           minMaxChanged = true;
         }
 
-        // Save configuration if min/max values changed
+        // Enqueue configuration changes to be written in batches (reduces flash wear)
         if (minMaxChanged) {
-          auto saveResult = SensorPersistence::updateAbsoluteMinMax(
-              m_sensor->getId(), i, config.measurements[i].absoluteMin,
-              config.measurements[i].absoluteMax);
-          if (saveResult.isSuccess()) {
-            logger.debug(F("MeasurementCycle"),
-                         F("Gespeicherte aktualisierte absolute Min/Max für Sensor ") +
-                             m_sensor->getId() + F(" Messung ") + String(i));
-          } else {
-            logger.warning(F("MeasurementCycle"),
-                           F("Konnte aktualisierte absolute Min/Max nicht speichern: ") +
-                               saveResult.getMessage());
-          }
+          SensorPersistence::enqueueAbsoluteMinMax(m_sensor->getId(), i,
+                                                   config.measurements[i].absoluteMin,
+                                                   config.measurements[i].absoluteMax);
+          logger.debug(F("MeasurementCycle"), F("Absolute Min/Max aktualisiert für Sensor ") +
+                                                  m_sensor->getId() + F(" Messung ") + String(i));
         }
       }
     } else {

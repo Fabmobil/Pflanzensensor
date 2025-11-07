@@ -115,7 +115,6 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/updateWiFi-Route"));
 
-  logger.info(F("AdminHandler"), F("Alle Admin-Routen erfolgreich registriert"));
   logger.logMemoryStats(F("AdminRegisterRoutes"));
   return result;
 }
@@ -154,7 +153,7 @@ void AdminHandler::handleAdminPage() {
         sendChunk(F("</div>"));
       },
       css, js);
-  logger.debug(F("AdminHandler"), F("Admin page sent successfully"));
+  logger.debug(F("AdminHandler"), F("Adminseite erfolgreich gesendet"));
 }
 
 void AdminHandler::handleDownloadLog() {

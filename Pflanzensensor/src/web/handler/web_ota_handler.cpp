@@ -51,6 +51,8 @@ void WebOTAHandler::handleStatus() {
 }
 
 RouterResult WebOTAHandler::onRegisterRoutes(WebRouter& router) {
+  logger.debug(F("WebOTAHandler"), F("Registriere OTA-Routen"));
+
   // Register status endpoint
   auto result = router.addRoute(HTTP_GET, "/status", [this]() { handleStatus(); });
   if (!result.isSuccess())
@@ -70,7 +72,6 @@ RouterResult WebOTAHandler::onRegisterRoutes(WebRouter& router) {
       },
       [this]() { handleUpdateUpload(); });
 
-  logger.info(F("WebOTAHandler"), F("OTA-Routen registriert"));
   return RouterResult::success();
 }
 
@@ -388,7 +389,7 @@ void WebOTAHandler::handleUpdateUpload() {
 #if USE_DISPLAY
       // Show success on display
       if (displayManager) {
-        displayManager->updateLogStatus(F("Update completed successfully!"), false);
+        displayManager->updateLogStatus(F("Update erfolgreich durchgeführt!"), false);
         delay(1000); // Show success message briefly
         displayManager->endUpdateMode();
       }

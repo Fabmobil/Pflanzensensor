@@ -58,13 +58,6 @@ void WebManager::handleClientInternal() {
   static size_t lastHandlerCount = 0;
   const unsigned long currentTime = millis();
 
-  // Initialize remaining handlers if not done yet
-  if (!m_handlersInitialized && currentTime > 10000) { // Wait 10s after boot
-    if (ESP.getFreeHeap() > 8192) {                    // Only if enough memory
-      initializeRemainingHandlers();
-    }
-  }
-
   // Memory monitoring
   if (currentTime - lastMemoryCheck > 10000) {
     const uint32_t freeHeap = ESP.getFreeHeap();
@@ -136,40 +129,10 @@ void WebManager::cleanup() {
 #endif
 
   // Clean up LogHandler before other handlers
-  if (_logHandler) {
-    _logHandler->cleanup();
-    _logHandler.reset();
-  }
+  // Clean up cached handlers via cleanupNonEssentialHandlers()
+  cleanupNonEssentialHandlers();
 
   // WiFiSetupHandler entfernt/Deprecated: keine explizite Reinigung erforderlich
-
-  // Clean up other handlers
-  if (_startHandler) {
-    _startHandler->cleanup();
-    _startHandler.reset();
-  }
-
-  if (_adminHandler) {
-    _adminHandler->cleanup();
-    _adminHandler.reset();
-  }
-
-  if (_sensorHandler) {
-    _sensorHandler->cleanup();
-    _sensorHandler.reset();
-  }
-
-  if (_adminSensorHandler) {
-    _adminSensorHandler->cleanup();
-    _adminSensorHandler.reset();
-  }
-
-#if USE_DISPLAY
-  if (_displayHandler) {
-    _displayHandler->cleanup();
-    _displayHandler.reset();
-  }
-#endif
 
   // Clean up services
   if (_server) {

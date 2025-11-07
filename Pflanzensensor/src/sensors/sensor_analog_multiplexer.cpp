@@ -69,6 +69,9 @@ SensorResult Multiplexer::init() {
 
     m_initialized = true;
     m_currentChannel = 1; // Initial state (111) corresponds to sensor 1
+    m_switchStartTime = 0;
+    m_switchInProgress = false;
+    m_targetChannel = -1;
     return SensorResult::success();
   } catch (...) {
     logger.error(F("Multiplexer"), F("Ausnahme während der Initialisierung"));
@@ -114,6 +117,11 @@ bool Multiplexer::switchToSensor(int sensorIndex) {
                                      String(sensorIndex) + F(" (Binär: ") + binaryAddress + F(")"));
 
   // Set all pins at once to minimize transition time
+  // record target and start time so we can measure actual settle time
+  m_targetChannel = sensorIndex;
+  m_switchInProgress = true;
+  m_switchStartTime = millis();
+
   noInterrupts(); // Disable interrupts during pin changes
   digitalWrite(MUX_A, pinAState);
   digitalWrite(MUX_B, pinBState);
@@ -146,9 +154,20 @@ bool Multiplexer::switchToSensor(int sensorIndex) {
 
   // Update state
   m_currentChannel = sensorIndex;
+  // mark switch finished
+  m_switchInProgress = false;
+  m_targetChannel = -1;
+
+  // Only compute elapsed if start time was set
+  unsigned long elapsed = 0;
+  if (m_switchStartTime != 0) {
+    elapsed = millis() - m_switchStartTime;
+  }
   logger.debug(F("Multiplexer"), F("Erfolgreich auf Kanal ") + String(sensorIndex) +
-                                     F(" umgeschaltet nach ") +
-                                     String(millis() - m_switchStartTime) + F("ms"));
+                                     F(" umgeschaltet nach ") + String(elapsed) + F("ms"));
+
+  // clear start time to avoid future miscalculations
+  m_switchStartTime = 0;
   return true;
 
 #else

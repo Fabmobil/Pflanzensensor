@@ -43,7 +43,7 @@ public:
   AdminHandler(ESP8266WebServer& server, [[maybe_unused]] WebAuth& auth,
                [[maybe_unused]] CSSService& cssService)
       : BaseHandler(server) { // We only use the server parameter
-    logger.debug(F("AdminHandler"), F("Initializing AdminHandler"));
+    logger.debug(F("AdminHandler"), F("Initialisiere AdminHandler"));
     logger.logMemoryStats(F("Admihandler"));
   }
 
