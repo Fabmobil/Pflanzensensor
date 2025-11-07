@@ -13,6 +13,7 @@
 // System Components
 #include "configs/config.h"
 #include "utils/critical_section.h"
+#include "utils/flash_persistence.h"
 #include "utils/persistence_utils.h"
 #include "utils/result_types.h"
 
@@ -65,20 +66,48 @@ void setup() {
   Serial.setDebugOutput(true); // Enable debug output to serial
   delay(1000);                 // Give sensors time to power up and stabilize
 
+  // **ULTRA-CRITICAL: Check for flash restore BEFORE ANYTHING ELSE**
+  // We need to restore with the absolute cleanest heap possible
+  // Don't even initialize logger yet - heap fragmentation is critical
+  {
+    CriticalSection cs;
+    if (!LittleFS.begin()) {
+      Serial.println(F("FATAL: Dateisystem-Mount fehlgeschlagen"));
+      return;
+    }
+  }
+
+  if (LittleFS.exists("/.restore_from_flash")) {
+    Serial.println(
+        F("Wiederherstellungs-Flag gefunden - stelle Konfiguration aus Flash wieder her "));
+
+    // Remove flag FIRST to prevent infinite loops
+    LittleFS.remove("/.restore_from_flash");
+
+    if (FlashPersistence::hasValidConfig()) {
+      Serial.print(F("Freier Heap vor Wiederherstellung: "));
+      Serial.println(ESP.getFreeHeap());
+
+      // Call restore directly - minimal allocations
+      auto result = FlashPersistence::restoreFromFlash();
+      if (result.isSuccess()) {
+        Serial.println(F("Konfiguration erfolgreich wiederhergestellt - starte neu..."));
+        delay(1000);
+        ESP.restart(); // Reboot with restored config
+      } else {
+        Serial.print(F("Wiederherstellung fehlgeschlagen: "));
+        Serial.println(result.getMessage());
+      }
+    } else {
+      Serial.println(F("Kein gültiges Flash-Backup gefunden"));
+    }
+  }
+
+  // Normal boot continues here
   logger.beginMemoryTracking(F("managers_init"));
 
-  // Initialize filesystem
-  if (!Helper::initializeComponent(F("filesystem"), []() -> ResourceResult {
-        CriticalSection cs;
-        if (!LittleFS.begin()) {
-          logger.error(F("main"), F("Dateisystem konnte nicht eingehängt werden"));
-          return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR,
-                                      F("Dateisystem konnte nicht eingehängt werden"));
-        }
-        return ResourceResult::success();
-      })) {
-    return;
-  }
+  // Filesystem already mounted above
+  logger.info(F("main"), F("Initialisiere Dateisystem"));
 
 #if USE_LED_TRAFFIC_LIGHT
   if (!Helper::initializeComponent(F("LED traffic light manager"), []() -> ResourceResult {
@@ -241,7 +270,7 @@ void setup() {
   Helper::initializeComponent(F("WiFi"), []() -> ResourceResult {
     auto result = setupWiFi();
     if (!result.isSuccess()) {
-      logger.error(F("main"), F("Failed to initialize WiFi: ") + result.getMessage());
+      logger.error(F("main"), F("WiFi-Initialisierung fehlgeschlagen: ") + result.getMessage());
     }
     return result;
   });

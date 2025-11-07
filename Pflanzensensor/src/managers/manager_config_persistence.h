@@ -71,7 +71,7 @@ public:
   static bool savePreferencesToFlash();
 
   /**
-   * @brief Restore all Preferences from flash after filesystem update  
+   * @brief Restore all Preferences from flash after filesystem update
    * @return True if restore successful, false otherwise
    * @details Reads JSON from flash and restores all settings to Preferences
    */
@@ -92,6 +92,14 @@ public:
    * @deprecated Use restorePreferencesFromFlash() instead
    */
   static bool restorePreferencesFromFile();
+
+  /**
+   * @brief Restore Preferences from parsed JSON document
+   * @param doc Parsed JSON document containing preferences backup
+   * @return True if restore successful, false otherwise
+   * @details Helper function used by both restorePreferencesFromFile and restorePreferencesFromFlash
+   */
+  static bool restorePreferencesFromJson(const DynamicJsonDocument& doc);
 
 private:
   ConfigPersistence() = default;

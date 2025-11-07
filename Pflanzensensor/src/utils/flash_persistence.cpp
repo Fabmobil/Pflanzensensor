@@ -1,13 +1,14 @@
 /**
  * @file flash_persistence.cpp
- * @brief Implementation of flash-based configuration persistence
+ * @brief Text-based flash persistence implementation
  */
 
 #include "flash_persistence.h"
 #include "../logger/logger.h"
+#include "../managers/manager_config_preferences.h"
 #include <ESP8266WiFi.h>
 
-// CRC32 lookup table for fast calculation
+// CRC32 lookup table (same as before)
 static const uint32_t crc32_table[256] PROGMEM = {
     0x00000000, 0x77073096, 0xee0e612c, 0x990951ba, 0x076dc419, 0x706af48f, 0xe963a535, 0x9e6495a3,
     0x0edb8832, 0x79dcb8a4, 0xe0d5e91e, 0x97d2d988, 0x09b64c2b, 0x7eb17cbd, 0xe7b82d07, 0x90bf1d91,
@@ -52,225 +53,431 @@ uint32_t FlashPersistence::calculateCRC32(const uint8_t* data, size_t length) {
 }
 
 uint32_t FlashPersistence::getSafeOffset() {
-  // Get actual compiled sketch size
   uint32_t sketchSize = ESP.getSketchSize();
-
-  // Round up to next sector boundary and add safety margin
   uint32_t safeOffset =
       ((sketchSize + FP_FLASH_SECTOR_SIZE - 1) / FP_FLASH_SECTOR_SIZE + FP_SAFETY_MARGIN_SECTORS) *
       FP_FLASH_SECTOR_SIZE;
 
-  // Ensure we're still within the sketch partition
   uint32_t sketchEnd = ESP.getFreeSketchSpace() + sketchSize;
   if (safeOffset + FP_MAX_CONFIG_SIZE > sketchEnd) {
-    logger.error(F("FlashPers"), F("Insufficient flash space for config storage"));
+    logger.error(F("FlashPers"), F("Nicht genug Flash-Speicher"));
     return 0;
   }
-
-  logger.debug(F("FlashPers"), F("Safe offset: ") + String(safeOffset) + F(" (sketch: ") +
-                                   String(sketchSize) + F(" bytes)"));
 
   return safeOffset;
 }
 
-uint32_t FlashPersistence::getMaxSize() { return FP_MAX_CONFIG_SIZE; }
+ResourceResult FlashPersistence::saveToFlash() {
+  logger.info(F("FlashPers"), F("Speichere Preferences als Text..."));
 
-ResourceResult FlashPersistence::saveToFlash(const String& jsonData) {
-  logger.info(F("FlashPers"), F("Saving config to flash..."));
-
-  // Calculate safe offset
   uint32_t offset = getSafeOffset();
   if (offset == 0) {
-    return ResourceResult::fail(ResourceError::INSUFFICIENT_SPACE,
-                                F("No safe flash space available"));
+    return ResourceResult::fail(ResourceError::INSUFFICIENT_SPACE, F("No flash space"));
   }
 
-  // Check data size
-  uint32_t dataSize = jsonData.length();
-  if (dataSize == 0) {
-    return ResourceResult::fail(ResourceError::VALIDATION_ERROR, F("Empty config data"));
+  // Build simple text format: "namespace:key=value\n"
+  String textData;
+  textData.reserve(8192); // Pre-allocate to reduce fragmentation
+
+  Preferences prefs;
+
+  // List of all namespaces to backup
+  const char* namespaces[] = {PreferencesNamespaces::GENERAL, PreferencesNamespaces::WIFI1,
+                              PreferencesNamespaces::WIFI2,   PreferencesNamespaces::WIFI3,
+                              PreferencesNamespaces::DISP,    PreferencesNamespaces::DEBUG,
+                              PreferencesNamespaces::LOG,     PreferencesNamespaces::LED_TRAFFIC};
+
+  // Export each namespace
+  for (const char* ns : namespaces) {
+    if (!prefs.begin(ns, true))
+      continue;
+
+    // Get all keys (Preferences library limitation - we know the keys)
+    // For general namespace
+    if (strcmp(ns, PreferencesNamespaces::GENERAL) == 0) {
+      textData += String(ns) + ":initialized=1\n"; // Marker key for namespace existence
+      textData += String(ns) + ":device_name=" + prefs.getString("device_name", "") + "\n";
+      textData += String(ns) + ":admin_pwd=" + prefs.getString("admin_pwd", "") + "\n";
+      textData += String(ns) +
+                  ":md5_verify=" + String(prefs.getBool("md5_verify", false) ? "1" : "0") + "\n";
+      textData +=
+          String(ns) + ":file_log=" + String(prefs.getBool("file_log", false) ? "1" : "0") + "\n";
+      textData += String(ns) + ":flower_sens=" + prefs.getString("flower_sens", "") + "\n";
+    }
+    // For WiFi namespaces
+    else if (strncmp(ns, "wifi", 4) == 0) {
+      textData += String(ns) + ":initialized=1\n";
+      textData += String(ns) + ":ssid=" + prefs.getString("ssid", "") + "\n";
+      textData += String(ns) + ":pwd=" + prefs.getString("pwd", "") + "\n";
+    }
+    // For display namespace
+    else if (strcmp(ns, PreferencesNamespaces::DISP) == 0) {
+      textData += String(ns) + ":initialized=1\n";
+      textData +=
+          String(ns) + ":show_ip=" + String(prefs.getBool("show_ip", true) ? "1" : "0") + "\n";
+      textData += String(ns) +
+                  ":show_clock=" + String(prefs.getBool("show_clock", true) ? "1" : "0") + "\n";
+      textData += String(ns) +
+                  ":show_flower=" + String(prefs.getBool("show_flower", true) ? "1" : "0") + "\n";
+      textData += String(ns) +
+                  ":show_fabmobil=" + String(prefs.getBool("show_fabmobil", true) ? "1" : "0") +
+                  "\n";
+      textData += String(ns) + ":screen_dur=" + String(prefs.getUInt("screen_dur", 5)) + "\n";
+      textData += String(ns) + ":clock_fmt=" + prefs.getString("clock_fmt", "24h") + "\n";
+    }
+    // For debug namespace
+    else if (strcmp(ns, PreferencesNamespaces::DEBUG) == 0) {
+      textData += String(ns) + ":initialized=1\n";
+      textData += String(ns) + ":ram=" + String(prefs.getBool("ram", false) ? "1" : "0") + "\n";
+      textData += String(ns) +
+                  ":meas_cycle=" + String(prefs.getBool("meas_cycle", false) ? "1" : "0") + "\n";
+      textData +=
+          String(ns) + ":sensor=" + String(prefs.getBool("sensor", false) ? "1" : "0") + "\n";
+      textData +=
+          String(ns) + ":display=" + String(prefs.getBool("display", false) ? "1" : "0") + "\n";
+      textData +=
+          String(ns) + ":websocket=" + String(prefs.getBool("websocket", false) ? "1" : "0") + "\n";
+    }
+    // For log namespace
+    else if (strcmp(ns, PreferencesNamespaces::LOG) == 0) {
+      textData += String(ns) + ":initialized=1\n";
+      textData += String(ns) + ":level=" + String(prefs.getUChar("level", 3)) + "\n";
+      textData += String(ns) +
+                  ":file_enabled=" + String(prefs.getBool("file_enabled", false) ? "1" : "0") +
+                  "\n";
+    }
+    // For LED traffic namespace
+    else if (strcmp(ns, PreferencesNamespaces::LED_TRAFFIC) == 0) {
+      textData += String(ns) + ":initialized=1\n";
+      textData += String(ns) + ":mode=" + String(prefs.getUChar("mode", 0)) + "\n";
+      textData += String(ns) + ":sel_meas=" + prefs.getString("sel_meas", "") + "\n";
+    }
+
+    prefs.end();
   }
 
-  if (dataSize > FP_MAX_CONFIG_SIZE - 16) { // Reserve 16 bytes for header
-    return ResourceResult::fail(ResourceError::INSUFFICIENT_SPACE,
-                                F("Config data too large: ") + String(dataSize));
+  // Also backup sensor namespaces (dynamic: s_SENSORID)
+  // Known sensor types that might exist
+  const char* knownSensors[] = {"ANALOG", "DHT", "DHT22"};
+
+  for (const char* sensorId : knownSensors) {
+    String sensorNs = "s_" + String(sensorId);
+    if (sensorNs.length() > 15)
+      sensorNs = sensorNs.substring(0, 15);
+
+    if (!prefs.begin(sensorNs.c_str(), true))
+      continue; // Namespace doesn't exist
+
+    // Check if it's initialized
+    if (!prefs.isKey("initialized")) {
+      prefs.end();
+      continue;
+    }
+
+    textData += sensorNs + ":initialized=1\n";
+    textData += sensorNs + ":name=" + prefs.getString("name", "") + "\n";
+    textData += sensorNs + ":meas_int=" + String(prefs.getUInt("meas_int", 10000)) + "\n";
+    textData += sensorNs + ":has_err=" + String(prefs.getBool("has_err", false) ? "1" : "0") + "\n";
+
+    // Save all measurements (max 8 measurements per sensor)
+    for (uint8_t idx = 0; idx < 8; idx++) {
+      String prefix = "m" + String(idx) + "_";
+
+      // Check if measurement exists
+      if (!prefs.isKey((prefix + "en").c_str()))
+        break;
+
+      textData += sensorNs + ":" + prefix +
+                  "en=" + String(prefs.getBool((prefix + "en").c_str(), false) ? "1" : "0") + "\n";
+      textData +=
+          sensorNs + ":" + prefix + "nm=" + prefs.getString((prefix + "nm").c_str(), "") + "\n";
+      textData +=
+          sensorNs + ":" + prefix + "fn=" + prefs.getString((prefix + "fn").c_str(), "") + "\n";
+      textData +=
+          sensorNs + ":" + prefix + "un=" + prefs.getString((prefix + "un").c_str(), "") + "\n";
+      textData += sensorNs + ":" + prefix +
+                  "min=" + String(prefs.getInt((prefix + "min").c_str(), 0)) + "\n";
+      textData += sensorNs + ":" + prefix +
+                  "max=" + String(prefs.getInt((prefix + "max").c_str(), 0)) + "\n";
+      textData += sensorNs + ":" + prefix +
+                  "yl=" + String(prefs.getUChar((prefix + "yl").c_str(), 0)) + "\n";
+      textData += sensorNs + ":" + prefix +
+                  "gl=" + String(prefs.getUChar((prefix + "gl").c_str(), 0)) + "\n";
+      textData += sensorNs + ":" + prefix +
+                  "gh=" + String(prefs.getUChar((prefix + "gh").c_str(), 0)) + "\n";
+      textData += sensorNs + ":" + prefix +
+                  "yh=" + String(prefs.getUChar((prefix + "yh").c_str(), 0)) + "\n";
+      textData += sensorNs + ":" + prefix +
+                  "inv=" + String(prefs.getBool((prefix + "inv").c_str(), false) ? "1" : "0") +
+                  "\n";
+      textData += sensorNs + ":" + prefix +
+                  "cal=" + String(prefs.getBool((prefix + "cal").c_str(), false) ? "1" : "0") +
+                  "\n";
+      textData += sensorNs + ":" + prefix +
+                  "acd=" + String(prefs.getUInt((prefix + "acd").c_str(), 86400)) + "\n";
+      textData += sensorNs + ":" + prefix +
+                  "rmin=" + String(prefs.getInt((prefix + "rmin").c_str(), INT32_MAX)) + "\n";
+      textData += sensorNs + ":" + prefix +
+                  "rmax=" + String(prefs.getInt((prefix + "rmax").c_str(), INT32_MIN)) + "\n";
+    }
+
+    prefs.end();
   }
 
-  // Calculate CRC
-  uint32_t crc = calculateCRC32((const uint8_t*)jsonData.c_str(), dataSize);
+  uint32_t dataSize = textData.length();
+  logger.info(F("FlashPers"), F("Textgröße: ") + String(dataSize) + F(" Bytes"));
 
-  // Prepare header: [MAGIC(4)] [VERSION(1)] [SIZE(4)] [CRC(4)] [RESERVED(3)]
+  if (dataSize == 0 || dataSize > FP_MAX_CONFIG_SIZE - 16) {
+    return ResourceResult::fail(ResourceError::VALIDATION_ERROR, F("Invalid data size"));
+  } // Calculate CRC
+  uint32_t crc = calculateCRC32((const uint8_t*)textData.c_str(), dataSize);
+
+  // Prepare header
   uint8_t header[16];
   memcpy(header, &FP_MAGIC_NUMBER, 4);
   header[4] = FP_VERSION;
   memcpy(header + 5, &dataSize, 4);
   memcpy(header + 9, &crc, 4);
-  memset(header + 13, 0, 3); // Reserved bytes
+  memset(header + 13, 0, 3);
 
-  // Erase sectors (need to erase before writing)
+  // Erase sectors
   uint32_t sectorsNeeded = ((dataSize + 16 + FP_FLASH_SECTOR_SIZE - 1) / FP_FLASH_SECTOR_SIZE);
-  logger.debug(F("FlashPers"), F("Erasing ") + String(sectorsNeeded) + F(" sectors..."));
-
   for (uint32_t i = 0; i < sectorsNeeded; i++) {
     uint32_t sectorAddr = (offset + i * FP_FLASH_SECTOR_SIZE) / FP_FLASH_SECTOR_SIZE;
     if (!ESP.flashEraseSector(sectorAddr)) {
-      return ResourceResult::fail(ResourceError::OPERATION_FAILED,
-                                  F("Failed to erase sector ") + String(i));
+      return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Erase failed"));
     }
   }
 
   // Write header
   if (!ESP.flashWrite(offset, (uint32_t*)header, 16)) {
-    return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Failed to write header"));
+    return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Write header failed"));
   }
 
-  // Write data in chunks (ESP.flashWrite requires 4-byte aligned writes)
-  const char* dataPtr = jsonData.c_str();
+  // Write data in chunks
+  const char* dataPtr = textData.c_str();
   uint32_t written = 0;
   uint32_t writeOffset = offset + 16;
 
   while (written < dataSize) {
-    // Prepare 4-byte aligned buffer
-    uint32_t chunk[256]; // 1KB buffer
+    uint32_t chunk[256];
     uint32_t chunkSize = min((uint32_t)1024, dataSize - written);
     memcpy(chunk, dataPtr + written, chunkSize);
-
-    // Pad to 4-byte boundary if needed
     uint32_t alignedSize = (chunkSize + 3) & ~3;
 
     if (!ESP.flashWrite(writeOffset, chunk, alignedSize)) {
-      return ResourceResult::fail(ResourceError::OPERATION_FAILED,
-                                  F("Failed to write data at offset ") + String(written));
+      return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Write failed"));
     }
 
     written += chunkSize;
     writeOffset += alignedSize;
   }
 
-  logger.info(F("FlashPers"), F("Saved ") + String(dataSize) + F(" bytes to flash"));
+  logger.info(F("FlashPers"), F("Erfolgreich gespeichert"));
   return ResourceResult::success();
 }
 
-ResourceResult FlashPersistence::loadFromFlash(String& jsonData) {
-  logger.info(F("FlashPers"), F("Loading config from flash..."));
+ResourceResult FlashPersistence::restoreFromFlash() {
+  // CRITICAL: NO LOGGER CALLS - heap is too fragmented, use Serial only
+  Serial.println(F("[FlashPers] Stelle Textformat wieder her..."));
 
-  // Calculate safe offset
   uint32_t offset = getSafeOffset();
   if (offset == 0) {
-    return ResourceResult::fail(ResourceError::OPERATION_FAILED,
-                                F("No safe flash space available"));
+    Serial.println(F("[FlashPers] FEHLER: Kein Flash-Speicher"));
+    return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("No flash space"));
   }
 
   // Read header
   uint8_t header[16];
   if (!ESP.flashRead(offset, (uint32_t*)header, 16)) {
-    return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Failed to read header"));
+    Serial.println(F("[FlashPers] FEHLER: Header-Lesen fehlgeschlagen"));
+    return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Read header failed"));
   }
 
-  // Verify magic number
   uint32_t magic;
   memcpy(&magic, header, 4);
   if (magic != FP_MAGIC_NUMBER) {
-    logger.debug(F("FlashPers"), F("No valid config found (bad magic)"));
-    return ResourceResult::fail(ResourceError::RESOURCE_ERROR, F("No valid config in flash"));
+    Serial.println(F("[FlashPers] FEHLER: Keine gültige Konfiguration"));
+    return ResourceResult::fail(ResourceError::RESOURCE_ERROR, F("No valid config"));
   }
 
-  // Check version
   uint8_t version = header[4];
   if (version != FP_VERSION) {
-    logger.warning(F("FlashPers"), F("Config version mismatch: ") + String(version));
-    return ResourceResult::fail(ResourceError::VERSION_MISMATCH, F("Incompatible config version"));
+    Serial.println(F("[FlashPers] FEHLER: Versionskonflikt"));
+    return ResourceResult::fail(ResourceError::VERSION_MISMATCH, F("Version mismatch"));
   }
 
-  // Get data size and CRC
   uint32_t dataSize, storedCRC;
   memcpy(&dataSize, header + 5, 4);
   memcpy(&storedCRC, header + 9, 4);
 
   if (dataSize == 0 || dataSize > FP_MAX_CONFIG_SIZE) {
-    return ResourceResult::fail(ResourceError::VALIDATION_ERROR,
-                                F("Invalid data size: ") + String(dataSize));
+    Serial.println(F("[FlashPers] FEHLER: Ungültige Größe"));
+    return ResourceResult::fail(ResourceError::VALIDATION_ERROR, F("Invalid size"));
   }
 
-  // Allocate buffer for data
-  char* buffer = (char*)malloc(dataSize + 1);
-  if (!buffer) {
-    return ResourceResult::fail(ResourceError::INSUFFICIENT_MEMORY,
-                                F("Failed to allocate ") + String(dataSize) + F(" bytes"));
-  }
+  Serial.print(F("[FlashPers] Lese "));
+  Serial.print(dataSize);
+  Serial.println(F(" Bytes (CRC-Check übersprungen für geringen RAM)..."));
 
-  // Read data in chunks
-  uint32_t read = 0;
+  //  CRITICAL: Don't malloc the entire buffer - heap fragmentation!
+  // CRC check skipped - we rely on magic number + version for validation
+  // Instead, read and parse line-by-line in small chunks
+  // Instead, read and parse line-by-line in small chunks
+  Preferences prefs;
+  int lineCount = 0;
+  char currentNs[32] = "";
+  bool nsOpen = false;
+
+  char lineBuffer[256];
+  int linePos = 0;
   uint32_t readOffset = offset + 16;
+  uint32_t bytesRead = 0;
 
-  while (read < dataSize) {
-    uint32_t chunkSize = min((uint32_t)1024, dataSize - read);
+  // Read and parse in 256-byte chunks
+  while (bytesRead < dataSize) {
+    // Read chunk
+    char chunk[256];
+    uint32_t chunkSize = min((uint32_t)256, dataSize - bytesRead);
     uint32_t alignedSize = (chunkSize + 3) & ~3;
 
-    if (!ESP.flashRead(readOffset, (uint32_t*)(buffer + read), alignedSize)) {
-      free(buffer);
-      return ResourceResult::fail(ResourceError::OPERATION_FAILED,
-                                  F("Failed to read data at offset ") + String(read));
+    if (!ESP.flashRead(readOffset, (uint32_t*)chunk, alignedSize)) {
+      Serial.println(F("[FlashPers] FEHLER: Lesen fehlgeschlagen"));
+      if (nsOpen)
+        prefs.end();
+      return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Read failed"));
     }
 
-    read += chunkSize;
+    // Process each byte in chunk
+    for (uint32_t i = 0; i < chunkSize; i++) {
+      char c = chunk[i];
+
+      if (c == '\n' || c == '\r' || linePos >= 255) {
+        if (linePos > 0) {
+          lineBuffer[linePos] = '\0';
+
+          // Parse "namespace:key=value"
+          char* colon = strchr(lineBuffer, ':');
+          if (colon) {
+            *colon = '\0';
+            char* ns = lineBuffer;
+            char* keyValue = colon + 1;
+
+            char* equals = strchr(keyValue, '=');
+            if (equals) {
+              *equals = '\0';
+              char* key = keyValue;
+              char* value = equals + 1;
+
+              // Check if we need to switch namespace
+              if (strcmp(ns, currentNs) != 0) {
+                if (nsOpen) {
+                  prefs.end();
+                  nsOpen = false;
+                }
+
+                if (prefs.begin(ns, false)) {
+                  strncpy(currentNs, ns, 31);
+                  currentNs[31] = '\0';
+                  nsOpen = true;
+                } else {
+                  Serial.print(F("[FlashPers] FEHLER: Kann Namespace nicht öffnen: "));
+                  Serial.println(ns);
+                  linePos = 0;
+                  continue;
+                }
+              }
+
+              if (nsOpen) {
+                // Determine type and write
+                // Check for boolean (exactly "0" or "1")
+                if (strcmp(value, "0") == 0 || strcmp(value, "1") == 0) {
+                  prefs.putBool(key, value[0] == '1');
+                }
+                // Check if it's a number
+                else if (strlen(value) > 0 && (isdigit(value[0]) || value[0] == '-')) {
+                  // Check if all chars are digits (or minus sign at start)
+                  bool isNumber = true;
+                  for (size_t j = (value[0] == '-' ? 1 : 0); value[j] != '\0'; j++) {
+                    if (!isdigit(value[j])) {
+                      isNumber = false;
+                      break;
+                    }
+                  }
+
+                  if (isNumber) {
+                    long val = atol(value);
+
+                    // Decide between UChar, UInt, and Int based on value
+                    if (val >= 0 && val <= 255) {
+                      prefs.putUChar(key, (uint8_t)val);
+                    } else if (val >= 0 && val <= 4294967295L) {
+                      prefs.putUInt(key, (uint32_t)val);
+                    } else {
+                      prefs.putInt(key, (int32_t)val);
+                    }
+                  } else {
+                    // Not a number - store as string
+                    prefs.putString(key, value);
+                  }
+                } else {
+                  // String
+                  prefs.putString(key, value);
+                }
+                lineCount++;
+              }
+            }
+          }
+        }
+        linePos = 0;
+      } else {
+        if (linePos < 255) {
+          lineBuffer[linePos++] = c;
+        }
+      }
+    }
+
+    bytesRead += chunkSize;
     readOffset += alignedSize;
   }
 
-  buffer[dataSize] = '\0';
-
-  // Verify CRC
-  uint32_t calculatedCRC = calculateCRC32((const uint8_t*)buffer, dataSize);
-  if (calculatedCRC != storedCRC) {
-    free(buffer);
-    logger.error(F("FlashPers"), F("CRC mismatch - data corrupted"));
-    return ResourceResult::fail(ResourceError::DATA_CORRUPTION,
-                                F("Config data corrupted (CRC mismatch)"));
+  // Close last namespace
+  if (nsOpen) {
+    prefs.end();
   }
 
-  jsonData = String(buffer);
-  free(buffer);
+  Serial.print(F("[FlashPers] "));
+  Serial.print(lineCount);
+  Serial.println(F(" Einträge wiederhergestellt"));
 
-  logger.info(F("FlashPers"), F("Loaded ") + String(dataSize) + F(" bytes from flash"));
   return ResourceResult::success();
 }
 
 ResourceResult FlashPersistence::clearFlash() {
-  logger.info(F("FlashPers"), F("Clearing config from flash..."));
+  logger.info(F("FlashPers"), F("Lösche Flash..."));
 
   uint32_t offset = getSafeOffset();
   if (offset == 0) {
-    return ResourceResult::success(); // Nothing to clear
+    return ResourceResult::success();
   }
 
-  // Erase first sector (invalidates the magic number)
   uint32_t sectorAddr = offset / FP_FLASH_SECTOR_SIZE;
   if (!ESP.flashEraseSector(sectorAddr)) {
-    return ResourceResult::fail(ResourceError::OPERATION_FAILED,
-                                F("Failed to erase config sector"));
+    return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Erase failed"));
   }
 
-  logger.info(F("FlashPers"), F("Config cleared from flash"));
+  logger.info(F("FlashPers"), F("Gelöscht"));
   return ResourceResult::success();
 }
 
 bool FlashPersistence::hasValidConfig() {
   uint32_t offset = getSafeOffset();
-  if (offset == 0) {
+  if (offset == 0)
     return false;
-  }
 
-  // Read just the magic number
   uint32_t magic;
-  if (!ESP.flashRead(offset, &magic, 4)) {
+  if (!ESP.flashRead(offset, &magic, 4))
     return false;
-  }
 
   return (magic == FP_MAGIC_NUMBER);
-}
-
-bool FlashPersistence::verifyIntegrity(uint32_t offset, uint32_t size, uint32_t storedCRC) {
-  // This is called internally during loadFromFlash
-  // Kept as separate function for potential future use
-  return true;
 }

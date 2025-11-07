@@ -250,15 +250,12 @@ void WebOTAHandler::handleUpdateUpload() {
                                         F(")"));
     logger.debug(F("WebOTAHandler"), F("Inhaltlänge: ") + String(contentLength) + F(" Bytes"));
 
-    // FLASH-BASED PERSISTENCE: Check if config was saved to flash before FS update
-    // Flash storage survives filesystem updates (stored in firmware partition)
+    // FLASH-BASED PERSISTENCE: Config restoration happens after reboot
+    // The backup was already created before reboot and will be restored
+    // automatically on next boot if FS update is detected
     if (isFilesystem && FlashPersistence::hasValidConfig()) {
-      logger.info(F("WebOTAHandler"), F("Flash-Backup gefunden, stelle Preferences wieder her..."));
-      if (ConfigPersistence::restorePreferencesFromFlash()) {
-        logger.info(F("WebOTAHandler"), F("Preferences erfolgreich aus Flash wiederhergestellt"));
-      } else {
-        logger.warning(F("WebOTAHandler"), F("Wiederherstellen aus Flash fehlgeschlagen"));
-      }
+      logger.info(F("WebOTAHandler"),
+                  F("Flash-Backup vorhanden - wird nach Neustart wiederhergestellt"));
     }
 
     size_t freeSpace;
@@ -399,17 +396,40 @@ void WebOTAHandler::handleUpdateUpload() {
 
       logger.info(F("WebOTAHandler"), F("Filesystem-Update erfolgreich"));
 
-      // Send success response to deploy script IMMEDIATELY after update
-      // succeeds Do this BEFORE any JSON operations that might cause crashes
+      // Send success response to deploy script IMMEDIATELY after update succeeds
+      // For FS updates with restore pending, indicate this in the response
       StaticJsonDocument<200> response;
       response["success"] = true;
       response["needsReboot"] = true;
+
+      if (isFilesystem && FlashPersistence::hasValidConfig()) {
+        response["restorePending"] = true;
+        response["message"] =
+            "Filesystem aktualisiert. Einstellungen werden nach Neustart wiederhergestellt.";
+      }
+
       String jsonStr;
       serializeJson(response, jsonStr);
       sendJsonResponse(200, jsonStr);
 
       // Give the response time to be sent
       delay(200);
+
+      // **CRITICAL: Set flag for flash restore after reboot for FS updates**
+      // Don't restore here - HTTP context is still active and heap too fragmented
+      // Restore will happen cleanly on next boot with full heap available
+      if (isFilesystem && FlashPersistence::hasValidConfig()) {
+        logger.info(F("WebOTAHandler"),
+                    F("FS-Update abgeschlossen - setze Restore-Flag für nächsten Boot..."));
+        File flagFile = LittleFS.open("/.restore_from_flash", "w");
+        if (flagFile) {
+          flagFile.println("1");
+          flagFile.close();
+          logger.info(F("WebOTAHandler"), F("Restore-Flag erfolgreich gesetzt"));
+        } else {
+          logger.warning(F("WebOTAHandler"), F("Konnte Restore-Flag nicht setzen"));
+        }
+      }
 
       // Now try to clear update flags (this might crash, but response is
       // already sent)

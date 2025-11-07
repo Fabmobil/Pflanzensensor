@@ -89,24 +89,17 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleDownloadConfig();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/downloadConfig-Route fehlgeschlagen"));
+    logger.error(F("AdminHandler"),
+                 F("Registrieren der /admin/downloadConfig-Route fehlgeschlagen"));
     return result;
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadConfig-Route"));
 
-  // Register config upload route
-  result = router.addRoute(HTTP_POST, "/admin/uploadConfig", [this]() {
-    if (!validateRequest()) {
-      _server.requestAuthentication();
-      return;
-    }
-    handleUploadConfig();
-  });
-  if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/uploadConfig-Route fehlgeschlagen"));
-    return result;
-  }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/uploadConfig-Route"));
+  // Config upload route is registered directly in WebManager::setupRoutes()
+  // because it needs file upload support which requires _server.on()
+  // See web_manager_routes.cpp for the actual registration
+  logger.debug(F("AdminHandler"),
+               F("Config-Upload-Route wird im WebManager registriert (File-Upload)"));
 
   // Register WiFi settings update route
   result = router.addRoute(HTTP_POST, "/admin/updateWiFi", [this]() {

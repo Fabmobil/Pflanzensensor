@@ -98,13 +98,30 @@ async function startUpdate() {
             throw new Error(`Upload failed: ${response.statusText}`);
         }
 
-        showStatus('Update erfolgreich! Gerät startet neu...', 'success');
-        updateProgress(100);
+        // Parse response to check for restore pending
+        const result = await response.json().catch(() => ({ success: true }));
 
-        // Warte auf Neustart und Redirect
-        setTimeout(() => {
-            window.location.href = '/';
-        }, 10000);
+        if (result.restorePending) {
+            // Update progress to 40% when upload complete
+            updateProgress(40);
+            showStatus('Filesystem aktualisiert...', 'success');
+
+            // Show restore pending message with countdown in status area
+            // Device will reboot twice - first to restore config, then normal boot
+            setTimeout(() => {
+                updateProgress(70);
+                showRestoreCountdown(25, result.message || 'Einstellungen werden nach Neustart wiederhergestellt.');
+            }, 500);
+        } else {
+            // Standard success handling
+            showStatus('Update erfolgreich! Gerät startet neu...', 'success');
+            updateProgress(100);
+
+            // Warte auf Neustart und Redirect
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 10000);
+        }
 
     } catch (error) {
         showStatus('Fehler: ' + error.message, 'error');
@@ -196,3 +213,99 @@ if (window.XMLHttpRequest) {
     }
     window.XMLHttpRequest = newXHR;
 }
+
+// Show restore countdown in status area (not modal)
+function showRestoreCountdown(seconds, message) {
+    const statusDiv = document.getElementById('status');
+    if (!statusDiv) return;
+
+    let remaining = seconds;
+
+    const updateCountdown = () => {
+        statusDiv.className = 'status-success';
+        statusDiv.innerHTML = `
+            <strong>Einstellungen werden wiederhergestellt</strong><br>
+            ${message}<br><br>
+            <strong style="font-size:1.2em">Neustart in ${remaining} Sekunden...</strong>
+        `;
+    };
+
+    updateCountdown();
+
+    const interval = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+            clearInterval(interval);
+            statusDiv.innerHTML = 'Lade neu...';
+            window.location.href = '/';
+            return;
+        }
+        updateCountdown();
+    }, 1000);
+}
+
+    // --- Old modal version (kept for compatibility but not used) ---
+    function showRestoreModal(seconds, message) {
+        // Create modal elements if not present
+        let modal = document.getElementById('restore-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'restore-modal';
+            modal.style.position = 'fixed';
+            modal.style.left = '0';
+            modal.style.top = '0';
+            modal.style.width = '100%';
+            modal.style.height = '100%';
+            modal.style.background = 'rgba(0,0,0,0.6)';
+            modal.style.display = 'flex';
+            modal.style.alignItems = 'center';
+            modal.style.justifyContent = 'center';
+            modal.style.zIndex = 9999;
+
+            const box = document.createElement('div');
+            box.id = 'restore-box';
+            box.style.background = '#fff';
+            box.style.color = '#000';
+            box.style.padding = '20px';
+            box.style.borderRadius = '8px';
+            box.style.maxWidth = '480px';
+            box.style.textAlign = 'center';
+            box.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)';
+
+            const h = document.createElement('h3');
+            h.textContent = 'Einstellungen werden wiederhergestellt';
+            box.appendChild(h);
+
+            const p = document.createElement('p');
+            p.id = 'restore-message';
+            p.style.whiteSpace = 'pre-wrap';
+            box.appendChild(p);
+
+            const counter = document.createElement('div');
+            counter.id = 'restore-counter';
+            counter.style.fontSize = '20px';
+            counter.style.marginTop = '12px';
+            box.appendChild(counter);
+
+            modal.appendChild(box);
+            document.body.appendChild(modal);
+        }
+
+        document.getElementById('restore-message').textContent = message;
+        let remaining = seconds;
+        const counterEl = document.getElementById('restore-counter');
+        counterEl.textContent = `Neustart in ${remaining} Sekunden...`;
+
+        const interval = setInterval(() => {
+            remaining--;
+            if (remaining <= 0) {
+                clearInterval(interval);
+                // Remove modal and reload start page
+                const m = document.getElementById('restore-modal');
+                if (m) m.parentNode.removeChild(m);
+                window.location.href = '/';
+                return;
+            }
+            counterEl.textContent = `Neustart in ${remaining} Sekunden...`;
+        }, 1000);
+    }

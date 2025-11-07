@@ -530,3 +530,105 @@ window.addEventListener('load', () => {
     }
   // No legacy redirect handling required: uploads return JSON now.
 });
+
+// --- Reboot modal for config upload ---
+function showRebootModal(seconds, message) {
+    // Create modal elements if not present
+    let modal = document.getElementById('reboot-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'reboot-modal';
+        modal.style.position = 'fixed';
+        modal.style.left = '0';
+        modal.style.top = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.background = 'rgba(0,0,0,0.6)';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.zIndex = '9999';
+
+        const box = document.createElement('div');
+        box.id = 'reboot-box';
+        box.style.background = '#fff';
+        box.style.color = '#000';
+        box.style.padding = '30px';
+        box.style.borderRadius = '8px';
+        box.style.maxWidth = '480px';
+        box.style.textAlign = 'center';
+        box.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)';
+
+        const h = document.createElement('h3');
+        h.textContent = 'Konfiguration wird angewendet';
+        h.style.marginTop = '0';
+        box.appendChild(h);
+
+        const p = document.createElement('p');
+        p.id = 'reboot-message';
+        p.style.whiteSpace = 'pre-wrap';
+        p.style.marginBottom = '20px';
+        box.appendChild(p);
+
+        const counter = document.createElement('div');
+        counter.id = 'reboot-counter';
+        counter.style.fontSize = '20px';
+        counter.style.fontWeight = 'bold';
+        counter.style.marginTop = '12px';
+        box.appendChild(counter);
+
+        modal.appendChild(box);
+        document.body.appendChild(modal);
+    }
+
+    document.getElementById('reboot-message').textContent = message;
+    let remaining = seconds;
+    const counterEl = document.getElementById('reboot-counter');
+    counterEl.textContent = `Neustart in ${remaining} Sekunden...`;
+
+    const interval = setInterval(() => {
+        remaining--;
+        if (remaining <= 0) {
+            clearInterval(interval);
+            // Remove modal and reload admin page
+            const m = document.getElementById('reboot-modal');
+            if (m) m.parentNode.removeChild(m);
+            window.location.href = '/admin';
+            return;
+        }
+        counterEl.textContent = `Neustart in ${remaining} Sekunden...`;
+    }, 1000);
+}
+
+// --- Config upload handler (auto-initialized) ---
+(function initConfigUpload() {
+    const fileInput = document.getElementById('configFile');
+    const form = document.getElementById('uploadConfigForm');
+
+    if (!fileInput || !form) return; // Elements not on this page
+
+    fileInput.addEventListener('change', function(e) {
+        if (e.target.files.length > 0) {
+            if (confirm('Konfiguration hochladen und anwenden?')) {
+                const formData = new FormData(form);
+                fetch(form.action, {method: 'POST', body: formData})
+                    .then(r => {
+                        if (!r.ok) throw new Error('HTTP ' + r.status);
+                        return r.json();
+                    })
+                    .then(data => {
+                        if (data.success && data.rebootPending) {
+                            showRebootModal(20, data.message || 'Konfiguration wird angewendet...');
+                        } else {
+                            alert('Fehler: ' + (data.message || 'Unbekannter Fehler'));
+                        }
+                    })
+                    .catch(err => {
+                        alert('Netzwerkfehler: ' + err.message);
+                    });
+            } else {
+                e.target.value = ''; // Clear selection if cancelled
+            }
+        }
+    });
+})();

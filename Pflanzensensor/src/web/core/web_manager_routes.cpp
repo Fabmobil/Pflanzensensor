@@ -13,6 +13,25 @@ void WebManager::setupRoutes() {
     return;
   }
 
+  // CRITICAL: Register file upload routes FIRST using _server.on()
+  // These MUST be registered before any router routes to take priority
+  // File uploads cannot go through the router system
+  logger.debug(F("WebManager"), F("Registriere Upload-Routen (vor Router)"));
+
+  // Config upload route - needs direct server registration for file upload support
+  _server->on(
+      "/admin/uploadConfig", HTTP_POST,
+      [this]() {
+        // Called after upload completes - response is sent in upload handler
+      },
+      [this]() {
+        // Upload handler - called during file upload
+        if (_adminHandler) {
+          _adminHandler->handleUploadConfig();
+        }
+      });
+  logger.debug(F("WebManager"), F("Upload-Route /admin/uploadConfig registriert"));
+
   // Hinweis: Captive-Portal / AP-spezifische WiFi-Setup-Routen wurden entfernt.
   // WiFi-Updates werden über den Admin-Bereich (/admin) verwaltet.
 

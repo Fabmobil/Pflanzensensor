@@ -12,6 +12,7 @@
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "managers/manager_config_persistence.h"
+#include "managers/manager_resource.h"
 
 void AdminHandler::handleDownloadConfig() {
   logger.info(F("AdminHandler"), F("Config-Download angefordert"));
@@ -65,6 +66,11 @@ void AdminHandler::handleUploadConfig() {
     String filename = upload.filename;
     logger.debug(F("AdminHandler"), F("Upload gestartet: ") + filename);
 
+    // Remove old upload file if exists
+    if (LittleFS.exists("/prefs_upload.json")) {
+      LittleFS.remove("/prefs_upload.json");
+    }
+
     // Open file for writing
     File uploadFile = LittleFS.open("/prefs_upload.json", "w");
     if (!uploadFile) {
@@ -72,66 +78,99 @@ void AdminHandler::handleUploadConfig() {
       return;
     }
     uploadFile.close();
-  }
-  else if (upload.status == UPLOAD_FILE_WRITE) {
+    logger.debug(F("AdminHandler"), F("Upload-Datei erstellt"));
+  } else if (upload.status == UPLOAD_FILE_WRITE) {
     // Write uploaded data to file
     File uploadFile = LittleFS.open("/prefs_upload.json", "a");
     if (uploadFile) {
-      uploadFile.write(upload.buf, upload.currentSize);
+      size_t written = uploadFile.write(upload.buf, upload.currentSize);
       uploadFile.close();
+      logger.debug(F("AdminHandler"), F("Schreibe ") + String(upload.currentSize) +
+                                          F(" bytes (geschrieben: ") + String(written) + F(")"));
+    } else {
+      logger.error(F("AdminHandler"), F("Konnte Upload-Datei nicht im Append-Modus öffnen"));
     }
-  }
-  else if (upload.status == UPLOAD_FILE_END) {
-    logger.debug(F("AdminHandler"), F("Upload abgeschlossen: ") + String(upload.totalSize) + F(" bytes"));
+  } else if (upload.status == UPLOAD_FILE_END) {
+    logger.debug(F("AdminHandler"),
+                 F("Upload abgeschlossen: ") + String(upload.totalSize) + F(" bytes"));
 
-    // Validate JSON
-    File uploadFile = LittleFS.open("/prefs_upload.json", "r");
-    if (!uploadFile) {
-      logger.error(F("AdminHandler"), F("Konnte Upload-Datei nicht öffnen"));
-      _server.send(500, "text/plain", "Fehler beim Öffnen der hochgeladenen Datei");
+    // Check if file exists
+    if (!LittleFS.exists("/prefs_upload.json")) {
+      logger.error(F("AdminHandler"), F("Upload-Datei existiert nicht!"));
+      _server.send(500, "text/plain", "Upload-Datei wurde nicht gefunden");
       return;
     }
+
+    logger.info(F("AdminHandler"),
+                F("Upload erfolgreich, sende JSON-Antwort und starte Verarbeitung..."));
+
+    // Send JSON success response FIRST before doing any heavy processing
+    _server.send(200, "application/json",
+                 "{\"success\":true,\"message\":\"Konfiguration wird angewendet. Der ESP startet "
+                 "neu...\",\"rebootPending\":true}");
+
+    // Give response time to be sent
+    delay(200);
+
+    // Now do heavy processing with maximum RAM
+    logger.info(F("AdminHandler"), F("Führe Emergency Cleanup für maximalen RAM durch..."));
+    // memory stats suppressed to avoid verbose output during uploads
+
+    // Stop webserver and free resources
+    ResourceMgr.performEmergencyCleanup();
+
+    logger.logMemoryStats(F("after_emergency_cleanup"));
+    // memory stats suppressed to avoid verbose output during uploads
+
+    // Validate and process JSON
+    logger.info(F("AdminHandler"), F("Öffne und validiere JSON..."));
+    File uploadFile = LittleFS.open("/prefs_upload.json", "r");
+    if (!uploadFile) {
+      logger.error(F("AdminHandler"), F("Konnte Upload-Datei nicht öffnen nach Cleanup"));
+      LittleFS.remove("/prefs_upload.json");
+      ESP.restart();
+      return;
+    }
+
+    size_t fileSize = uploadFile.size();
+    logger.info(F("AdminHandler"), F("Upload-Datei: ") + String(fileSize) + F(" bytes"));
+    // memory stats suppressed before JSON parse
 
     DynamicJsonDocument doc(8192);
     DeserializationError error = deserializeJson(doc, uploadFile);
     uploadFile.close();
 
+    // memory stats suppressed after JSON parse
+
     if (error) {
       logger.error(F("AdminHandler"), F("Ungültige JSON-Datei: ") + String(error.c_str()));
       LittleFS.remove("/prefs_upload.json");
-      _server.send(400, "text/plain", "Ungültige JSON-Datei");
+      ESP.restart();
       return;
     }
 
-    // Rename to backup file name for restoration
-    LittleFS.remove("/prefs_backup.json");
-    LittleFS.rename("/prefs_upload.json", "/prefs_backup.json");
+    logger.info(F("AdminHandler"), F("JSON validiert, stelle Preferences wieder her..."));
+    // memory stats suppressed before restore
 
-    // Restore from file (reuse existing restore function)
-    if (!ConfigPersistence::restorePreferencesFromFile()) {
-      logger.error(F("AdminHandler"), F("Config-Wiederherstellung fehlgeschlagen"));
-      LittleFS.remove("/prefs_backup.json");
-      _server.send(500, "text/plain", "Fehler beim Wiederherstellen der Konfiguration");
-      return;
-    }
+    // Restore from parsed JSON document
+    bool success = ConfigPersistence::restorePreferencesFromJson(doc);
+
+    // memory stats suppressed after restore
 
     // Clean up
-    LittleFS.remove("/prefs_backup.json");
+    LittleFS.remove("/prefs_upload.json");
 
-    // Reload configuration from Preferences
-    ConfigMgr.loadConfig();
+    if (success) {
+      logger.info(F("AdminHandler"), F("Config erfolgreich wiederhergestellt, starte neu..."));
+    } else {
+      logger.error(F("AdminHandler"),
+                   F("Config-Wiederherstellung fehlgeschlagen, starte trotzdem neu..."));
+    }
 
-    logger.info(F("AdminHandler"), F("Config erfolgreich hochgeladen und angewendet"));
-
-    // Send success response
-    _server.send(200, "text/html", 
-      "<html><body><h2>Konfiguration erfolgreich hochgeladen</h2>"
-      "<p>Die Einstellungen wurden übernommen.</p>"
-      "<p><a href='/admin'>Zurück zur Admin-Seite</a></p>"
-      "<script>setTimeout(function(){ window.location.href='/admin'; }, 3000);</script>"
-      "</body></html>");
-  }
-  else if (upload.status == UPLOAD_FILE_ABORTED) {
+    // Reboot to apply settings
+    delay(500);
+    ESP.restart();
+  } else if (upload.status == UPLOAD_FILE_ABORTED) {
     logger.warning(F("AdminHandler"), F("Upload abgebrochen"));
     LittleFS.remove("/prefs_upload.json");
   }

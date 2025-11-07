@@ -150,11 +150,14 @@ void AdminHandler::generateAndSendSystemActionsCard() {
   sendChunk(F("<form action='/admin/downloadConfig' method='GET' class='inline'>"));
   sendChunk(F("<button type='submit' class='button button-primary'>Konfiguration "
               "herunterladen</button></form>"));
-  sendChunk(F("<form action='/admin/uploadConfig' method='POST' enctype='multipart/form-data' class='inline'>"));
-  sendChunk(F("<input type='file' name='config' accept='.json' style='display:none' id='configFile'>"));
-  sendChunk(F("<button type='button' onclick='document.getElementById(\"configFile\").click()' class='button button-primary'>Konfiguration hochladen</button>"));
-  sendChunk(F("<script>document.getElementById('configFile').addEventListener('change', function(e) { if(e.target.files.length > 0) { if(confirm('Konfiguration hochladen und anwenden?')) { e.target.form.submit(); } else { e.target.value = ''; } } });</script>"));
+  sendChunk(F("<form action='/admin/uploadConfig' method='POST' enctype='multipart/form-data' "
+              "class='inline' id='uploadConfigForm'>"));
+  sendChunk(
+      F("<input type='file' name='config' accept='.json' style='display:none' id='configFile'>"));
+  sendChunk(F("<button type='button' onclick='document.getElementById(\"configFile\").click()' "
+              "class='button button-primary'>Konfiguration hochladen</button>"));
   sendChunk(F("</form>"));
+  // Config upload logic is in /js/admin.js (initConfigUpload)
   // Close button-group and card
   sendChunk(F("</div></div>"));
 }

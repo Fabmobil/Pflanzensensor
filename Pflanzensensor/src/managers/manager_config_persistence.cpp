@@ -38,7 +38,7 @@ size_t ConfigPersistence::getConfigSize() {
 // This function has been moved to manager_sensor_persistence.cpp
 
 ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config) {
-  logger.logMemoryStats(F("ConfigP_load_before"));
+  // initial memory stats suppressed to reduce verbose boot output
 
   // Check if Preferences exist, if not initialize with defaults
   if (!PreferencesManager::namespaceExists(PreferencesNamespaces::GENERAL)) {
@@ -120,7 +120,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
 
   logger.info(F("ConfigP"), F("Konfiguration erfolgreich aus Preferences geladen"));
 
-  logger.logMemoryStats(F("ConfigP_load_after"));
+  // final memory stats suppressed
   return PersistenceResult::success();
 }
 
@@ -247,29 +247,10 @@ void ConfigPersistence::readUpdateFlagsFromFile(bool& fs, bool& fw) {
 }
 
 bool ConfigPersistence::savePreferencesToFlash() {
-  logger.info(F("ConfigP"), F("Sichere Preferences in Flash..."));
+  logger.info(F("ConfigP"), F("Sichere Preferences in Flash FlashPersistence..."));
 
-  // First, backup to JSON file (reuse existing function)
-  if (!backupPreferencesToFile()) {
-    logger.error(F("ConfigP"), F("Konnte JSON-Backup nicht erstellen"));
-    return false;
-  }
-
-  // Read the JSON file
-  File f = LittleFS.open("/prefs_backup.json", "r");
-  if (!f) {
-    logger.error(F("ConfigP"), F("Konnte Backup-Datei nicht öffnen"));
-    return false;
-  }
-
-  String jsonData = f.readString();
-  f.close();
-
-  // Delete the file from LittleFS (will be wiped anyway)
-  LittleFS.remove("/prefs_backup.json");
-
-  // Save to flash using FlashPersistence
-  auto result = FlashPersistence::saveToFlash(jsonData);
+  // Use simple text format instead of JSON - much less heap usage
+  auto result = FlashPersistence::saveToFlash();
   if (!result.isSuccess()) {
     logger.error(F("ConfigP"), F("Flash-Speicherung fehlgeschlagen: ") + result.getMessage());
     return false;
@@ -280,42 +261,19 @@ bool ConfigPersistence::savePreferencesToFlash() {
 }
 
 bool ConfigPersistence::restorePreferencesFromFlash() {
-  logger.info(F("ConfigP"), F("Stelle Preferences aus Flash wieder her..."));
+  logger.info(F("ConfigP"), F("Stelle Preferences aus Flash wieder her FlashPersistence..."));
 
-  // Load JSON from flash
-  String jsonData;
-  auto result = FlashPersistence::loadFromFlash(jsonData);
+  // Use simple text format - parses line by line with minimal allocations
+  auto result = FlashPersistence::restoreFromFlash();
   if (!result.isSuccess()) {
-    logger.error(F("ConfigP"), F("Flash-Lesen fehlgeschlagen: ") + result.getMessage());
+    logger.error(F("ConfigP"), F("Flash-Wiederherstellung fehlgeschlagen: ") + result.getMessage());
     return false;
   }
 
-  // Write to temporary file for restoration
-  File f = LittleFS.open("/prefs_backup.json", "w");
-  if (!f) {
-    logger.error(F("ConfigP"), F("Konnte temporäre Datei nicht erstellen"));
-    return false;
-  }
-
-  f.print(jsonData);
-  f.close();
-
-  // Restore using existing function
-  bool success = restorePreferencesFromFile();
-
-  // Clean up
-  LittleFS.remove("/prefs_backup.json");
-
-  // Clear flash storage
+  // Clear flash storage after successful restore
   FlashPersistence::clearFlash();
-
-  if (success) {
-    logger.info(F("ConfigP"), F("Preferences erfolgreich aus Flash wiederhergestellt"));
-  } else {
-    logger.error(F("ConfigP"), F("Wiederherstellen aus Flash fehlgeschlagen"));
-  }
-
-  return success;
+  logger.info(F("ConfigP"), F("Preferences erfolgreich aus Flash wiederhergestellt"));
+  return true;
 }
 
 bool ConfigPersistence::backupPreferencesToFile() {
@@ -477,11 +435,15 @@ bool ConfigPersistence::restorePreferencesFromFile() {
     return false;
   }
 
+  return restorePreferencesFromJson(doc);
+}
+
+bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& doc) {
   Preferences prefs;
 
   // Restore general namespace
   if (doc.containsKey("general")) {
-    JsonObject general = doc["general"];
+    JsonObjectConst general = doc["general"].as<JsonObjectConst>();
     if (prefs.begin(PreferencesNamespaces::GENERAL, false)) {
       if (general.containsKey("device_name"))
         prefs.putString("device_name", general["device_name"].as<String>().c_str());
@@ -502,7 +464,7 @@ bool ConfigPersistence::restorePreferencesFromFile() {
 
   // Restore WiFi namespaces (3 separate namespaces)
   if (doc.containsKey("wifi")) {
-    JsonObject wifi = doc["wifi"];
+    JsonObjectConst wifi = doc["wifi"].as<JsonObjectConst>();
 
     // Restore WiFi 1
     if (prefs.begin(PreferencesNamespaces::WIFI1, false)) {
@@ -537,7 +499,7 @@ bool ConfigPersistence::restorePreferencesFromFile() {
 
   // Restore display namespace
   if (doc.containsKey("display")) {
-    JsonObject disp = doc["display"];
+    JsonObjectConst disp = doc["display"].as<JsonObjectConst>();
     if (prefs.begin(PreferencesNamespaces::DISP, false)) {
       if (disp.containsKey("show_ip"))
         prefs.putBool("show_ip", disp["show_ip"]);
@@ -558,7 +520,7 @@ bool ConfigPersistence::restorePreferencesFromFile() {
 
   // Restore debug namespace
   if (doc.containsKey("debug")) {
-    JsonObject debug = doc["debug"];
+    JsonObjectConst debug = doc["debug"].as<JsonObjectConst>();
     if (prefs.begin(PreferencesNamespaces::DEBUG, false)) {
       if (debug.containsKey("ram"))
         prefs.putBool("ram", debug["ram"]);
@@ -577,7 +539,7 @@ bool ConfigPersistence::restorePreferencesFromFile() {
 
   // Restore log namespace
   if (doc.containsKey("log")) {
-    JsonObject log = doc["log"];
+    JsonObjectConst log = doc["log"].as<JsonObjectConst>();
     if (prefs.begin(PreferencesNamespaces::LOG, false)) {
       if (log.containsKey("level"))
         prefs.putUChar("level", log["level"]);
@@ -590,7 +552,7 @@ bool ConfigPersistence::restorePreferencesFromFile() {
 
   // Restore LED traffic namespace
   if (doc.containsKey("led_traffic")) {
-    JsonObject led = doc["led_traffic"];
+    JsonObjectConst led = doc["led_traffic"].as<JsonObjectConst>();
     if (prefs.begin(PreferencesNamespaces::LED_TRAFFIC, false)) {
       if (led.containsKey("mode"))
         prefs.putUChar("mode", led["mode"]);
@@ -603,8 +565,8 @@ bool ConfigPersistence::restorePreferencesFromFile() {
 
   // Restore sensor namespaces
   if (doc.containsKey("sensors")) {
-    JsonArray sensors = doc["sensors"];
-    for (JsonObject sensor : sensors) {
+    JsonArrayConst sensors = doc["sensors"].as<JsonArrayConst>();
+    for (JsonObjectConst sensor : sensors) {
       String sensorId = sensor["id"].as<String>();
       String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
 
@@ -619,8 +581,8 @@ bool ConfigPersistence::restorePreferencesFromFile() {
 
         // Restore measurements
         if (sensor.containsKey("measurements")) {
-          JsonArray measurements = sensor["measurements"];
-          for (JsonObject meas : measurements) {
+          JsonArrayConst measurements = sensor["measurements"].as<JsonArrayConst>();
+          for (JsonObjectConst meas : measurements) {
             uint8_t idx = meas["idx"];
             String prefix = "m" + String(idx) + "_";
 
