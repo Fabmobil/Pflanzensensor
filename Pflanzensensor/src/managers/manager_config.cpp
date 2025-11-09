@@ -11,6 +11,7 @@
 #include "../managers/manager_sensor.h"
 #include "../managers/manager_sensor_persistence.h"
 #include "../utils/critical_section.h"
+#include "../utils/flash_persistence.h"
 #include "../web/handler/admin_handler.h"
 #include "../web/handler/web_ota_handler.h"
 #include "managers/manager_config_preferences.h"
@@ -189,14 +190,18 @@ ConfigManager::ConfigResult ConfigManager::setUpdateFlags(bool fileSystem, bool 
   logger.info(F("ConfigM"), F("Setze Update-Flags - Dateisystem: ") + String(fileSystem) +
                                 F(", Firmware: ") + String(firmware));
 
-  // If setting filesystem update flag, save Preferences to FLASH BEFORE reboot
+  // If setting filesystem update flag, save ALL config (Preferences + JSON) to FLASH BEFORE reboot
   // Flash storage survives filesystem OTA updates
+  // WICHTIG: Dies muss VOR dem Neustart geschehen, NICHT während des Uploads!
   if (fileSystem) {
-    logger.info(F("ConfigM"), F("Sichere Preferences in Flash vor Dateisystem-Update..."));
-    if (!ConfigPersistence::savePreferencesToFlash()) {
-      logger.warning(F("ConfigM"), F("Flash-Sicherung fehlgeschlagen - Fortsetzen trotzdem"));
+    logger.info(F("ConfigM"),
+                F("Sichere Preferences + JSON-Configs in Flash vor Dateisystem-Update..."));
+    auto result = FlashPersistence::saveAllToFlash();
+    if (!result.isSuccess()) {
+      logger.warning(F("ConfigM"), F("Flash-Sicherung fehlgeschlagen: ") + result.getMessage() +
+                                       F(" - Fortsetzen trotzdem"));
     } else {
-      logger.info(F("ConfigM"), F("Einstellungen erfolgreich in Flash gesichert"));
+      logger.info(F("ConfigM"), F("Alle Einstellungen erfolgreich in Flash gesichert"));
     }
   }
 

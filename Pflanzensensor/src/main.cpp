@@ -12,9 +12,9 @@
 
 // System Components
 #include "configs/config.h"
+#include "utils/config_backup_utils.h"
 #include "utils/critical_section.h"
 #include "utils/flash_persistence.h"
-#include "utils/persistence_utils.h"
 #include "utils/result_types.h"
 
 // Manager Classes
@@ -92,7 +92,17 @@ void setup() {
       // Call restore directly - minimal allocations
       auto result = FlashPersistence::restoreFromFlash();
       if (result.isSuccess()) {
-        Serial.println(F("Konfiguration erfolgreich wiederhergestellt - starte neu..."));
+        Serial.println(F("Preferences erfolgreich wiederhergestellt"));
+
+        // Restore JSON config files from /backup/ to /config/
+        Serial.println(F("Stelle Config-Dateien wieder her..."));
+        if (ConfigBackupUtils::restoreConfigFiles()) {
+          Serial.println(F("Config-Dateien erfolgreich wiederhergestellt"));
+        } else {
+          Serial.println(F("Keine Config-Dateien zum Wiederherstellen gefunden"));
+        }
+
+        Serial.println(F("Wiederherstellung abgeschlossen - starte neu..."));
         delay(1000);
         ESP.restart(); // Reboot with restored config
       } else {

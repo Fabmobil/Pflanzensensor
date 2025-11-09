@@ -18,7 +18,7 @@
 #include "managers/manager_display.h"
 #endif
 #include "utils/critical_section.h"
-// Flash persistence used to keep Preferences across FS updates
+// Flash persistence used to check for existing backup and restore after FS update
 #include "../../utils/flash_persistence.h"
 
 extern std::unique_ptr<SensorManager> sensorManager;
@@ -67,8 +67,16 @@ RouterResult WebOTAHandler::onRegisterRoutes(WebRouter& router) {
   _server.on(
       "/update", HTTP_POST,
       [this]() {
-        sendJsonResponse(200,
-                         Update.hasError() ? F("{\"success\":false}") : F("{\"success\":true}"));
+        // Send response immediately after upload completes
+        // Don't wait here as the response was already sent in UPLOAD_FILE_END
+        // Just ensure clean exit from this handler
+        if (!Update.hasError()) {
+          // Success response was already sent during UPLOAD_FILE_END
+          // This callback is called after upload completes
+          yield();
+        } else {
+          sendJsonResponse(500, F("{\"success\":false,\"error\":\"Update failed\"}"));
+        }
       },
       [this]() { handleUpdateUpload(); });
 
@@ -251,12 +259,18 @@ void WebOTAHandler::handleUpdateUpload() {
                                         F(")"));
     logger.debug(F("WebOTAHandler"), F("Inhaltlänge: ") + String(contentLength) + F(" Bytes"));
 
-    // FLASH-BASED PERSISTENCE: Config restoration happens after reboot
-    // The backup was already created before reboot and will be restored
-    // automatically on next boot if FS update is detected
-    if (isFilesystem && FlashPersistence::hasValidConfig()) {
-      logger.info(F("WebOTAHandler"),
-                  F("Flash-Backup vorhanden - wird nach Neustart wiederhergestellt"));
+    // FLASH-BASED PERSISTENCE: Config backup was already created BEFORE reboot
+    // (in ConfigManager::setUpdateFlags when the update flag was set)
+    // The backup will be restored automatically on next boot if FS update is detected
+    // DO NOT backup here - it would interfere with the ongoing HTTP upload and cause crashes!
+    if (isFilesystem) {
+      if (FlashPersistence::hasValidConfig()) {
+        logger.info(F("WebOTAHandler"),
+                    F("Flash-Backup vorhanden - wird nach Neustart wiederhergestellt"));
+      } else {
+        logger.warning(F("WebOTAHandler"),
+                       F("Kein Flash-Backup gefunden - Konfiguration könnte verloren gehen"));
+      }
     }
 
     size_t freeSpace;
@@ -357,6 +371,9 @@ void WebOTAHandler::handleUpdateUpload() {
       }
       return;
     }
+
+    // Yield to prevent watchdog timeout and keep HTTP connection alive
+    yield();
 
     _status.currentProgress = Update.progress();
     uint8_t progress = (_status.currentProgress * 100) / _status.totalSize;

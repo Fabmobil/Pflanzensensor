@@ -470,7 +470,9 @@ button.warning:hover,
 
 /* --- Threshold Slider Gradient Bar --- */
 .threshold-gradient-bar {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
   width: 100%;
   height: 12px;
   border-radius: 6px;

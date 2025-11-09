@@ -25,10 +25,6 @@ constexpr const char* DISP =
 constexpr const char* LOG = "log";              // Logging settings
 constexpr const char* LED_TRAFFIC = "led_traf"; // LED traffic light settings (max 15 chars)
 constexpr const char* DEBUG = "debug";          // Debug flags
-
-// Sensor namespaces - dynamic, format: "sensor_X" where X is sensor index
-String getSensorNamespace(const String& sensorId);
-String getSensorMeasurementKey(uint8_t measurementIndex, const char* suffix);
 } // namespace PreferencesNamespaces
 
 /**
@@ -63,36 +59,6 @@ public:
    * @return PrefResult indicating success or failure
    */
   static PrefResult clearAll();
-
-  // Sensor settings - per sensor
-  static PrefResult saveSensorSettings(const String& sensorId, const String& name,
-                                       unsigned long measurementInterval, bool hasPersistentError);
-  static PrefResult loadSensorSettings(const String& sensorId, String& name,
-                                       unsigned long& measurementInterval,
-                                       bool& hasPersistentError);
-
-  // Sensor measurement settings - per measurement
-  static PrefResult saveSensorMeasurement(const String& sensorId, uint8_t measurementIndex,
-                                          bool enabled, const String& name, const String& fieldName,
-                                          const String& unit, float minValue, float maxValue,
-                                          float yellowLow, float greenLow, float greenHigh,
-                                          float yellowHigh, bool inverted, bool calibrationMode,
-                                          uint32_t autocalDuration, int absoluteRawMin,
-                                          int absoluteRawMax, float absoluteMin, float absoluteMax);
-  static PrefResult loadSensorMeasurement(const String& sensorId, uint8_t measurementIndex,
-                                          bool& enabled, String& name, String& fieldName,
-                                          String& unit, float& minValue, float& maxValue,
-                                          float& yellowLow, float& greenLow, float& greenHigh,
-                                          float& yellowHigh, bool& inverted, bool& calibrationMode,
-                                          uint32_t& autocalDuration, int& absoluteRawMin,
-                                          int& absoluteRawMax, float& absoluteMin,
-                                          float& absoluteMax);
-
-  // Check if sensor namespace exists
-  static bool sensorNamespaceExists(const String& sensorId);
-
-  // Clear sensor namespace
-  static PrefResult clearSensorNamespace(const String& sensorId);
 
   // Specialized WiFi update (validates index + updates 2 keys atomically)
   static PrefResult updateWiFiCredentials(uint8_t setIndex, const String& ssid,

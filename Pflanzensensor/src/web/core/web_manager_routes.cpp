@@ -164,9 +164,17 @@ void WebManager::setupMinimalRoutes() {
     String uri = _server->uri();
     HTTPMethod method = _server->method();
 
+    // Debug: Log every request that hits onNotFound
+    logger.debug(F("WebManager"), F("onNotFound aufgerufen für: ") +
+                                      String(method == HTTP_GET    ? F("GET")
+                                             : method == HTTP_POST ? F("POST")
+                                                                   : F("OTHER")) +
+                                      F(" ") + uri);
+
     // Let router handle the request
     if (_router && _router->handleRequest(method, uri)) {
       // Request was handled by router
+      logger.debug(F("WebManager"), F("Router hat Request behandelt: ") + uri);
       return;
     }
 

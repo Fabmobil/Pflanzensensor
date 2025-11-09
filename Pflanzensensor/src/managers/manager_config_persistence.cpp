@@ -12,10 +12,10 @@ using namespace ArduinoJson;
 
 #include "../logger/logger.h"
 #include "../utils/critical_section.h"
-#include "../utils/persistence_utils.h"
 #include "managers/manager_config_preferences.h"
 #include "managers/manager_resource.h"
 #include "managers/manager_sensor.h"
+#include "managers/manager_sensor_persistence.h"
 // Flash persistence is used to store prefs across FS updates
 #include "../utils/flash_persistence.h"
 
@@ -246,36 +246,6 @@ void ConfigPersistence::readUpdateFlagsFromFile(bool& fs, bool& fw) {
   }
 }
 
-bool ConfigPersistence::savePreferencesToFlash() {
-  logger.info(F("ConfigP"), F("Sichere Preferences in Flash FlashPersistence..."));
-
-  // Use simple text format instead of JSON - much less heap usage
-  auto result = FlashPersistence::saveToFlash();
-  if (!result.isSuccess()) {
-    logger.error(F("ConfigP"), F("Flash-Speicherung fehlgeschlagen: ") + result.getMessage());
-    return false;
-  }
-
-  logger.info(F("ConfigP"), F("Preferences erfolgreich in Flash gesichert"));
-  return true;
-}
-
-bool ConfigPersistence::restorePreferencesFromFlash() {
-  logger.info(F("ConfigP"), F("Stelle Preferences aus Flash wieder her FlashPersistence..."));
-
-  // Use simple text format - parses line by line with minimal allocations
-  auto result = FlashPersistence::restoreFromFlash();
-  if (!result.isSuccess()) {
-    logger.error(F("ConfigP"), F("Flash-Wiederherstellung fehlgeschlagen: ") + result.getMessage());
-    return false;
-  }
-
-  // Clear flash storage after successful restore
-  FlashPersistence::clearFlash();
-  logger.info(F("ConfigP"), F("Preferences erfolgreich aus Flash wiederhergestellt"));
-  return true;
-}
-
 bool ConfigPersistence::backupPreferencesToFile() {
   logger.info(F("ConfigP"), F("Sichere Preferences in Datei..."));
 
@@ -356,59 +326,85 @@ bool ConfigPersistence::backupPreferencesToFile() {
     prefs.end();
   }
 
-  // Backup sensor namespaces
+  // Backup sensor measurements from JSON files (new JSON-based persistence)
   const char* sensorIds[] = {"ANALOG", "DHT"};
   JsonArray sensors = doc.createNestedArray("sensors");
 
+  // Get sensor manager to access measurementInterval
+  extern std::unique_ptr<SensorManager> sensorManager;
+
   for (const char* sensorId : sensorIds) {
-    String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-    if (prefs.begin(ns.c_str(), true)) {
-      if (prefs.getBool("initialized", false)) {
-        JsonObject sensor = sensors.createNestedObject();
-        sensor["id"] = sensorId;
-        sensor["name"] = prefs.getString("name", "");
-        sensor["meas_int"] = prefs.getUInt("meas_int", 30000);
-        sensor["has_err"] = prefs.getBool("has_err", false);
+    yield(); // Watchdog reset before processing each sensor type
 
-        // Backup measurements (max 8 for ANALOG, 2 for DHT)
-        bool isAnalog = (String(sensorId) == "ANALOG");
-        uint8_t maxMeas = isAnalog ? 8 : 2;
-        JsonArray measurements = sensor.createNestedArray("measurements");
+    bool isAnalog = (String(sensorId) == "ANALOG");
+    uint8_t maxMeas = isAnalog ? 8 : 2;
 
-        for (uint8_t i = 0; i < maxMeas; i++) {
-          String prefix = "m" + String(i) + "_";
-          String nameKey = prefix + "nm";
+    // Get measurement interval from sensor (only once per sensor, not per measurement)
+    unsigned long measurementInterval = MEASUREMENT_INTERVAL * 1000; // Default fallback
+    if (sensorManager) {
+      const auto& sensors_list = sensorManager->getSensors();
+      for (const auto& sensorPtr : sensors_list) {
+        if (sensorPtr && sensorPtr->config().id == sensorId) {
+          measurementInterval = sensorPtr->config().measurementInterval;
+          break;
+        }
+      }
+    }
 
-          if (prefs.isKey(nameKey.c_str())) {
-            JsonObject meas = measurements.createNestedObject();
-            meas["idx"] = i;
-            meas["en"] = prefs.getBool((prefix + "en").c_str(), true);
-            meas["nm"] = prefs.getString((prefix + "nm").c_str(), "");
-            meas["fn"] = prefs.getString((prefix + "fn").c_str(), "");
-            meas["un"] = prefs.getString((prefix + "un").c_str(), "");
-            meas["min"] = prefs.getFloat((prefix + "min").c_str(), 0.0);
-            meas["max"] = prefs.getFloat((prefix + "max").c_str(), 100.0);
-            meas["yl"] = prefs.getFloat((prefix + "yl").c_str(), 0.0);
-            meas["gl"] = prefs.getFloat((prefix + "gl").c_str(), 0.0);
-            meas["gh"] = prefs.getFloat((prefix + "gh").c_str(), 100.0);
-            meas["yh"] = prefs.getFloat((prefix + "yh").c_str(), 100.0);
+    // Create sensor group with id and measInt at top level
+    JsonObject sensorGroup = sensors.createNestedObject();
+    sensorGroup["id"] = sensorId;
+    sensorGroup["measInt"] = measurementInterval;
+    JsonArray measurements = sensorGroup.createNestedArray("measurements");
 
-            // Analog-spezifische Felder nur für ANALOG-Sensoren
-            if (isAnalog) {
-              meas["inv"] = prefs.getBool((prefix + "inv").c_str(), false);
-              meas["cal"] = prefs.getBool((prefix + "cal").c_str(), false);
-              meas["acd"] = prefs.getUInt((prefix + "acd").c_str(), 0);
-              meas["rmin"] = prefs.getInt((prefix + "rmin").c_str(), 0);
-              meas["rmax"] = prefs.getInt((prefix + "rmax").c_str(), 1023);
-              meas["absMin"] = prefs.getFloat((prefix + "absMin").c_str(), INFINITY);
-              meas["absMax"] = prefs.getFloat((prefix + "absMax").c_str(), -INFINITY);
-            }
+    for (uint8_t i = 0; i < maxMeas; i++) {
+      yield(); // Watchdog reset for each measurement
+
+      MeasurementConfig config;
+      auto result = SensorPersistence::loadMeasurementFromJson(sensorId, i, config);
+
+      if (result.isSuccess()) {
+        JsonObject meas = measurements.createNestedObject();
+        meas["idx"] = i;
+        meas["en"] = config.enabled;
+        meas["nm"] = config.name;
+        meas["fn"] = config.fieldName;
+        meas["un"] = config.unit;
+        meas["min"] = config.minValue;
+        meas["max"] = config.maxValue;
+
+        JsonObject thresh = meas.createNestedObject("thresh");
+        thresh["yl"] = config.limits.yellowLow;
+        thresh["gl"] = config.limits.greenLow;
+        thresh["gh"] = config.limits.greenHigh;
+        thresh["yh"] = config.limits.yellowHigh;
+
+        // Analog-spezifische Felder
+        if (isAnalog) {
+          meas["inv"] = config.inverted;
+          meas["cal"] = config.calibrationMode;
+          meas["ahl"] = config.autocalHalfLifeSeconds;
+          meas["rmin"] = config.absoluteRawMin;
+          meas["rmax"] = config.absoluteRawMax;
+
+          // Handle infinity values - use null for JSON compatibility
+          if (isinf(config.absoluteMin)) {
+            meas["amin"] = serialized("null");
+          } else {
+            meas["amin"] = config.absoluteMin;
+          }
+
+          if (isinf(config.absoluteMax)) {
+            meas["amax"] = serialized("null");
+          } else {
+            meas["amax"] = config.absoluteMax;
           }
         }
       }
-      prefs.end();
     }
   }
+
+  yield(); // Watchdog reset before file operations
 
   // Write to file with pretty formatting
   File f = LittleFS.open("/prefs_backup.json", "w");
@@ -416,6 +412,8 @@ bool ConfigPersistence::backupPreferencesToFile() {
     logger.error(F("ConfigP"), F("Konnte Backup-Datei nicht erstellen"));
     return false;
   }
+
+  yield(); // Watchdog reset before serialization
 
   if (serializeJsonPretty(doc, f) == 0) {
     logger.error(F("ConfigP"), F("Fehler beim Schreiben der Backup-Datei"));
@@ -426,27 +424,6 @@ bool ConfigPersistence::backupPreferencesToFile() {
   f.close();
   logger.info(F("ConfigP"), F("Preferences erfolgreich in /prefs_backup.json gesichert"));
   return true;
-}
-
-bool ConfigPersistence::restorePreferencesFromFile() {
-  logger.info(F("ConfigP"), F("Stelle Preferences aus Datei wieder her..."));
-
-  File f = LittleFS.open("/prefs_backup.json", "r");
-  if (!f) {
-    logger.warning(F("ConfigP"), F("Keine Backup-Datei gefunden"));
-    return false;
-  }
-
-  DynamicJsonDocument doc(8192);
-  DeserializationError error = deserializeJson(doc, f);
-  f.close();
-
-  if (error) {
-    logger.error(F("ConfigP"), F("Fehler beim Lesen der Backup-Datei: ") + String(error.c_str()));
-    return false;
-  }
-
-  return restorePreferencesFromJson(doc);
 }
 
 bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& doc) {
@@ -630,100 +607,190 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
                                    String(millis() - stepStart) + F(" ms)"));
   }
 
-  // Restore sensor namespaces
+  // Restore sensor measurements to JSON files (new JSON-based persistence)
   stepStart = millis();
   if (doc.containsKey("sensors")) {
     JsonArrayConst sensors = doc["sensors"].as<JsonArrayConst>();
     logger.debug(F("ConfigP"), String(F("Beginne Wiederherstellung von ")) +
-                                   String(sensors.size()) + F(" Sensoren..."));
+                                   String(sensors.size()) + F(" Sensor-Gruppen..."));
 
-    for (JsonObjectConst sensor : sensors) {
-      String sensorId = sensor["id"].as<String>();
-      String ns = PreferencesNamespaces::getSensorNamespace(sensorId);
-      unsigned long sensorStart = millis();
+    // Track measurement intervals per sensor
+    std::map<String, unsigned long> sensorIntervals;
 
-      Preferences prefs; // Neue Instanz für jeden Sensor
-      if (prefs.begin(ns.c_str(), false)) {
-        prefs.clear(); // Alte Daten löschen
+    // NEW STRUCTURE: sensors array contains sensor groups with measurements sub-array
+    for (JsonObjectConst sensorGroup : sensors) {
+      String sensorId = sensorGroup["id"] | "";
 
-        if (sensor.containsKey("name"))
-          prefs.putString("name", sensor["name"].as<String>().c_str());
-        if (sensor.containsKey("meas_int"))
-          prefs.putUInt("meas_int", sensor["meas_int"]);
-        if (sensor.containsKey("has_err"))
-          prefs.putBool("has_err", sensor["has_err"]);
-        prefs.putBool("initialized", true);
+      // Extract measurement interval at sensor group level
+      if (sensorGroup.containsKey("measInt")) {
+        unsigned long interval = sensorGroup["measInt"] | (MEASUREMENT_INTERVAL * 1000);
+        sensorIntervals[sensorId] = interval;
+      }
 
-        // Restore measurements
-        if (sensor.containsKey("measurements")) {
-          JsonArrayConst measurements = sensor["measurements"].as<JsonArrayConst>();
-          bool isAnalog = sensorId.equals("ANALOG");
-          unsigned long measStart = millis();
-          uint8_t measCount = 0;
+      // Check if new structure (with measurements array) or old structure (backward compatibility)
+      if (sensorGroup.containsKey("measurements")) {
+        // NEW STRUCTURE: iterate over measurements array
+        JsonArrayConst measurements = sensorGroup["measurements"].as<JsonArrayConst>();
 
-          for (JsonObjectConst meas : measurements) {
-            uint8_t idx = meas["idx"];
-            String prefix = "m" + String(idx) + "_";
+        for (JsonObjectConst meas : measurements) {
+          size_t idx = meas["idx"] | 0;
 
-            if (meas.containsKey("en"))
-              prefs.putBool((prefix + "en").c_str(), meas["en"]);
-            if (meas.containsKey("nm"))
-              prefs.putString((prefix + "nm").c_str(), meas["nm"].as<String>().c_str());
-            if (meas.containsKey("fn"))
-              prefs.putString((prefix + "fn").c_str(), meas["fn"].as<String>().c_str());
-            if (meas.containsKey("un"))
-              prefs.putString((prefix + "un").c_str(), meas["un"].as<String>().c_str());
-            if (meas.containsKey("min"))
-              prefs.putFloat((prefix + "min").c_str(), meas["min"]);
-            if (meas.containsKey("max"))
-              prefs.putFloat((prefix + "max").c_str(), meas["max"]);
-            if (meas.containsKey("yl"))
-              prefs.putFloat((prefix + "yl").c_str(), meas["yl"]);
-            if (meas.containsKey("gl"))
-              prefs.putFloat((prefix + "gl").c_str(), meas["gl"]);
-            if (meas.containsKey("gh"))
-              prefs.putFloat((prefix + "gh").c_str(), meas["gh"]);
-            if (meas.containsKey("yh"))
-              prefs.putFloat((prefix + "yh").c_str(), meas["yh"]);
+          MeasurementConfig config;
+          config.enabled = meas["en"] | true;
+          config.name = meas["nm"] | String("");
+          config.fieldName = meas["fn"] | String("");
+          config.unit = meas["un"] | String("");
+          config.minValue = meas["min"] | 0.0f;
+          config.maxValue = meas["max"] | 100.0f;
 
-            // Analog-spezifische Felder nur für ANALOG-Sensoren laden
-            if (isAnalog) {
-              if (meas.containsKey("inv"))
-                prefs.putBool((prefix + "inv").c_str(), meas["inv"]);
-              if (meas.containsKey("cal"))
-                prefs.putBool((prefix + "cal").c_str(), meas["cal"]);
-              if (meas.containsKey("acd"))
-                prefs.putUInt((prefix + "acd").c_str(), meas["acd"]);
-              if (meas.containsKey("rmin"))
-                prefs.putInt((prefix + "rmin").c_str(), meas["rmin"]);
-              if (meas.containsKey("rmax"))
-                prefs.putInt((prefix + "rmax").c_str(), meas["rmax"]);
-              if (meas.containsKey("absMin"))
-                prefs.putFloat((prefix + "absMin").c_str(), meas["absMin"]);
-              if (meas.containsKey("absMax"))
-                prefs.putFloat((prefix + "absMax").c_str(), meas["absMax"]);
+          JsonObjectConst thresh = meas["thresh"];
+          config.limits.yellowLow = thresh["yl"] | 0.0f;
+          config.limits.greenLow = thresh["gl"] | 0.0f;
+          config.limits.greenHigh = thresh["gh"] | 100.0f;
+          config.limits.yellowHigh = thresh["yh"] | 100.0f;
+
+          // Analog-spezifische Felder
+          if (sensorId == "ANALOG") {
+            config.inverted = meas["inv"] | false;
+            config.calibrationMode = meas["cal"] | false;
+            config.autocalHalfLifeSeconds = meas["ahl"] | 0;
+            config.absoluteRawMin = meas["rmin"] | 0;
+            config.absoluteRawMax = meas["rmax"] | 1023;
+
+            // Handle null values for infinity
+            if (meas["amin"].isNull()) {
+              config.absoluteMin = INFINITY;
+            } else {
+              config.absoluteMin = meas["amin"] | INFINITY;
             }
 
-            // Watchdog reset nach jeder 2. Messung
-            measCount++;
-            if (measCount % 2 == 0) {
-              yield();
+            if (meas["amax"].isNull()) {
+              config.absoluteMax = -INFINITY;
+            } else {
+              config.absoluteMax = meas["amax"] | -INFINITY;
             }
           }
 
-          logger.debug(F("ConfigP"), String(F("  - ")) + String(measurements.size()) +
-                                         F(" Messungen für ") + sensorId +
-                                         F(" wiederhergestellt (") + String(millis() - measStart) +
-                                         F(" ms)"));
+          // Schreibe Messung in JSON-Datei
+          auto result = SensorPersistence::saveMeasurementToJson(sensorId, idx, config);
+          if (!result.isSuccess()) {
+            logger.warning(F("ConfigP"), F("Fehler beim Wiederherstellen von ") + sensorId +
+                                             F("[") + String(idx) + F("]: ") + result.getMessage());
+          }
+
+          yield(); // Watchdog reset
+        }
+      } else {
+        // OLD STRUCTURE (backward compatibility): sensor group IS the measurement
+        size_t idx = sensorGroup["idx"] | 0;
+
+        MeasurementConfig config;
+        config.enabled = sensorGroup["en"] | true;
+        config.name = sensorGroup["nm"] | String("");
+        config.fieldName = sensorGroup["fn"] | String("");
+        config.unit = sensorGroup["un"] | String("");
+        config.minValue = sensorGroup["min"] | 0.0f;
+        config.maxValue = sensorGroup["max"] | 100.0f;
+
+        JsonObjectConst thresh = sensorGroup["thresh"];
+        config.limits.yellowLow = thresh["yl"] | 0.0f;
+        config.limits.greenLow = thresh["gl"] | 0.0f;
+        config.limits.greenHigh = thresh["gh"] | 100.0f;
+        config.limits.yellowHigh = thresh["yh"] | 100.0f;
+
+        // Analog-spezifische Felder
+        if (sensorId == "ANALOG") {
+          config.inverted = sensorGroup["inv"] | false;
+          config.calibrationMode = sensorGroup["cal"] | false;
+          config.autocalHalfLifeSeconds = sensorGroup["ahl"] | 0;
+          config.absoluteRawMin = sensorGroup["rmin"] | 0;
+          config.absoluteRawMax = sensorGroup["rmax"] | 1023;
+
+          // Handle null values for infinity
+          if (sensorGroup["amin"].isNull()) {
+            config.absoluteMin = INFINITY;
+          } else {
+            config.absoluteMin = sensorGroup["amin"] | INFINITY;
+          }
+
+          if (sensorGroup["amax"].isNull()) {
+            config.absoluteMax = -INFINITY;
+          } else {
+            config.absoluteMax = sensorGroup["amax"] | -INFINITY;
+          }
         }
 
-        prefs.end();
-        yield(); // Watchdog reset nach jedem Sensor
-        logger.debug(F("ConfigP"), String(F("Sensor ")) + sensorId + F(" wiederhergestellt (") +
-                                       String(millis() - sensorStart) + F(" ms)"));
+        // Schreibe Messung in JSON-Datei
+        auto result = SensorPersistence::saveMeasurementToJson(sensorId, idx, config);
+        if (!result.isSuccess()) {
+          logger.warning(F("ConfigP"), F("Fehler beim Wiederherstellen von ") + sensorId + F("[") +
+                                           String(idx) + F("]: ") + result.getMessage());
+        }
+
+        yield(); // Watchdog reset
       }
     }
-    logger.debug(F("ConfigP"), String(F("Alle Sensor-Namespaces wiederhergestellt (")) +
+
+    // Apply measurement intervals to sensors
+    extern std::unique_ptr<SensorManager> sensorManager;
+    if (sensorManager && !sensorIntervals.empty()) {
+      // Load settings.json to update intervals persistently
+      const char* settingsPath = "/config/settings.json";
+      DynamicJsonDocument settingsDoc(4096);
+
+      {
+        File settingsFile = LittleFS.open(settingsPath, "r");
+        if (settingsFile) {
+          DeserializationError error = deserializeJson(settingsDoc, settingsFile);
+          settingsFile.close();
+          if (error != DeserializationError::Ok) {
+            logger.warning(F("ConfigP"), F("Konnte settings.json nicht parsen, erstelle neue"));
+          }
+        }
+      }
+
+      // Ensure sensors object exists in settings.json
+      if (!settingsDoc.containsKey("sensors")) {
+        settingsDoc.createNestedObject("sensors");
+      }
+      JsonObject settingsSensors = settingsDoc["sensors"];
+
+      for (const auto& pair : sensorIntervals) {
+        const String& sensorId = pair.first;
+        unsigned long interval = pair.second;
+
+        // Find sensor and update interval in memory
+        const auto& sensors_list = sensorManager->getSensors();
+        for (const auto& sensorPtr : sensors_list) {
+          if (sensorPtr && sensorPtr->config().id == sensorId) {
+            sensorPtr->mutableConfig().measurementInterval = interval;
+            logger.debug(F("ConfigP"), String(F("Messintervall für ")) + sensorId + F(" auf ") +
+                                           String(interval) + F("ms gesetzt"));
+            break;
+          }
+        }
+
+        // Also save to settings.json for persistence across reboots
+        if (!settingsSensors.containsKey(sensorId)) {
+          settingsSensors.createNestedObject(sensorId);
+        }
+        settingsSensors[sensorId]["interval"] = interval;
+      }
+
+      // Save updated settings.json
+      {
+        File settingsFile = LittleFS.open(settingsPath, "w");
+        if (settingsFile) {
+          serializeJson(settingsDoc, settingsFile);
+          settingsFile.close();
+          logger.debug(F("ConfigP"), F("Messintervalle in settings.json gespeichert"));
+        } else {
+          logger.warning(F("ConfigP"), F("Konnte settings.json nicht für Schreibzugriff öffnen"));
+        }
+      }
+    }
+
+    logger.debug(F("ConfigP"), String(F("Sensor-Messungen wiederhergestellt (")) +
                                    String(millis() - stepStart) + F(" ms)"));
   }
 

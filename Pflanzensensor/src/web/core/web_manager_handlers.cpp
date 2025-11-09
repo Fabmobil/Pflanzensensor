@@ -64,13 +64,36 @@ void WebManager::handleSetUpdate() {
 
   logger.debug(F("WebManager"), F("Sende Erfolgsantwort"));
   _server->send(200, F("application/json"), jsonResponse);
+  // Try to flush TCP buffers and then close the client socket so the
+  // browser receives the response reliably before we reboot.
+  logger.debug(F("WebManager"), F("Flush und schließe Client-Socket (wenn möglich)"));
   _server->client().flush();
-  logger.debug(F("WebManager"), F("Antwort gesendet"));
+  // Small pause to let the stack push out bytes
+  delay(200);
+  // Explicitly stop the client to terminate the TCP connection cleanly
+  _server->client().stop();
+  logger.debug(F("WebManager"), F("Antwort gesendet und Client-Socket gestoppt"));
 
   // 9. Handle update mode and reboot if necessary
   if (updateMode) {
     logger.info(F("WebManager"), F("Update-Modus aktiviert, bereite Neustart vor..."));
-    delay(500); // Give more time for response and logging
+
+    // CRITICAL: Give browser time to receive response before reboot.
+    // Some browsers keep connections open; wait up to a short timeout while
+    // processing the server loop so the TCP stack can finish sending data.
+    const unsigned long startWait = millis();
+    const unsigned long maxWait = 5000; // wait up to 5s
+    while (millis() - startWait < maxWait) {
+      _server->handleClient();
+      // If there are no active clients, we can proceed earlier
+      if (!_server->client().connected()) {
+        logger.debug(F("WebManager"), F("Kein aktiver Client mehr - bereit zum Neustart"));
+        break;
+      }
+      delay(50);
+    }
+    // Extra safety margin
+    delay(200);
 
     // Stop non-critical services
     if (_sensorManager) {

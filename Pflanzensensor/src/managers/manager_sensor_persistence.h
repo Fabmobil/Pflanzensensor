@@ -8,11 +8,14 @@
 
 #include "../utils/result_types.h"
 #include "manager_config_types.h"
+#include <ArduinoJson.h>
 
 // Forward declarations
 #if USE_ANALOG
 class AnalogSensor;
 #endif
+
+struct MeasurementConfig; // From sensor_types.h
 
 class SensorPersistence {
 public:
@@ -182,17 +185,52 @@ public:
   static PersistenceResult updateAutocalDuration(const String& sensorId, size_t measurementIndex,
                                                  uint32_t halfLifeSeconds);
 
-  /**
-   * @brief Check if sensor configuration exists in Preferences
-   * @return True if sensor config exists, false otherwise
-   */
-  static bool configExists();
+  // ============================================================================
+  // JSON-based persistence (new approach)
+  // ============================================================================
 
   /**
-   * @brief Get estimated sensor configuration size in Preferences
-   * @return Estimated size in bytes
+   * @brief Save a single measurement configuration to JSON file
+   * @param sensorId Sensor ID (e.g., "ANALOG", "DHT")
+   * @param measurementIndex Measurement index (0-based)
+   * @param config Measurement configuration to save
+   * @return PersistenceResult indicating success or failure
    */
-  static size_t getConfigSize();
+  static PersistenceResult saveMeasurementToJson(const String& sensorId, size_t measurementIndex,
+                                                 const MeasurementConfig& config);
+
+  /**
+   * @brief Load a single measurement configuration from JSON file
+   * @param sensorId Sensor ID (e.g., "ANALOG", "DHT")
+   * @param measurementIndex Measurement index (0-based)
+   * @param config Output parameter - loaded configuration
+   * @return PersistenceResult indicating success or failure
+   */
+  static PersistenceResult loadMeasurementFromJson(const String& sensorId, size_t measurementIndex,
+                                                   MeasurementConfig& config);
+
+  /**
+   * @brief Update a single measurement setting via generic field name
+   * @param sensorId Sensor ID to update
+   * @param measurementIndex Measurement index to update
+   * @param fieldName Name of the field to update (e.g., "enabled", "minValue", "name")
+   * @param value JSON value to set
+   * @return PersistenceResult indicating success or failure
+   */
+  static PersistenceResult updateMeasurementSetting(const String& sensorId, size_t measurementIndex,
+                                                    const String& fieldName,
+                                                    const JsonVariant& value);
+
+  /**
+   * @brief Update multiple measurement settings at once (batch update)
+   * @param sensorId Sensor ID to update
+   * @param measurementIndex Measurement index to update
+   * @param settings JSON object with field name/value pairs
+   * @return PersistenceResult indicating success or failure
+   */
+  static PersistenceResult updateMeasurementSettings(const String& sensorId,
+                                                     size_t measurementIndex,
+                                                     const JsonObject& settings);
 
 private:
   SensorPersistence() = default;

@@ -64,52 +64,26 @@ public:
   static void readUpdateFlagsFromFile(bool& fs, bool& fw);
 
   /**
-   * @brief Save all Preferences to flash before filesystem update
-   * @return True if save successful, false otherwise
-   * @details Creates JSON with all settings and stores in firmware flash area
-   */
-  static bool savePreferencesToFlash();
-
-  /**
-   * @brief Restore all Preferences from flash after filesystem update
-   * @return True if restore successful, false otherwise
-   * @details Reads JSON from flash and restores all settings to Preferences
-   */
-  static bool restorePreferencesFromFlash();
-
-  /**
-   * @brief Backup all Preferences to a JSON file before filesystem update
+   * @brief Backup all config data (Preferences + JSON sensor files) to /prefs_backup.json
    * @return True if backup successful, false otherwise
-   * @details Creates /prefs_backup.json with all settings (WiFi, sensors, display, etc.)
-   * @deprecated Use savePreferencesToFlash() instead - this backs up to LittleFS which gets wiped
+   * @details Creates /prefs_backup.json containing:
+   *          - Global settings (WiFi, Display, Debug, NTP, InfluxDB) from Preferences
+   *          - Sensor measurements from /config/sensor_*.json files
+   *          Used for Config Download in WebUI
    */
   static bool backupPreferencesToFile();
 
   /**
-   * @brief Restore all Preferences from backup JSON file after filesystem update
+   * @brief Restore config data from parsed JSON document
+   * @param doc Parsed JSON document containing config backup
    * @return True if restore successful, false otherwise
-   * @details Reads /prefs_backup.json and restores all settings to Preferences
-   * @deprecated Use restorePreferencesFromFlash() instead
-   */
-  static bool restorePreferencesFromFile();
-
-  /**
-   * @brief Restore Preferences from parsed JSON document
-   * @param doc Parsed JSON document containing preferences backup
-   * @return True if restore successful, false otherwise
-   * @details Helper function used by both restorePreferencesFromFile and restorePreferencesFromFlash
+   * @details Helper function used by restorePreferencesFromFile for Config Upload
+   *          Restores both global Preferences and sensor JSON files
    */
   static bool restorePreferencesFromJson(const DynamicJsonDocument& doc);
 
 private:
   ConfigPersistence() = default;
-
-  /**
-   * @brief Load sensor error flags from JSON
-   * @param sensorErrors JSON document containing sensor errors
-   * @param config Configuration data to populate
-   */
-  static void loadSensorErrors(const ArduinoJson::JsonObject& sensorErrors, ConfigData& config);
 };
 
 #endif

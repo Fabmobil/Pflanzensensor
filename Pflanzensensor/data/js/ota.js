@@ -39,31 +39,44 @@ async function startUpdate() {
     try {
         // Setze Update-Flags
         showStatus('Setze Update-Flags...', 'info');
-        const flagsResponse = await fetch('/admin/config/update', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-                isFileSystemUpdatePending: isFileSystem,
-                isFirmwareUpdatePending: isFirmware,
-                inUpdateMode: true
-            })
-        });
 
-        if (!flagsResponse.ok) {
-            throw new Error(`Failed to set update flags: ${flagsResponse.statusText}`);
+        try {
+            const flagsResponse = await fetch('/admin/config/update', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    isFileSystemUpdatePending: isFileSystem,
+                    isFirmwareUpdatePending: isFirmware,
+                    inUpdateMode: true
+                })
+            });
+
+            if (!flagsResponse.ok) {
+                console.warn('Update flags response not OK, but continuing (device may be rebooting)');
+            }
+        } catch (flagsError) {
+            // Expected: Device reboots immediately after setting flags, so connection may be closed
+            console.log('Update flags request failed (expected if device is rebooting):', flagsError.message);
         }
 
-    // Warte bis Gerät im Update-Modus ist (poll /status). Wenn das Gerät
-    // etwas länger zum Umbau in den Update-Modus braucht, vermeiden wir
-    // so ein vorzeitiges Abbrechen des Uploads. Erhöhe Timeout auf 30s.
-    showStatus('Warte, bis Gerät in den Update-Modus wechselt...', 'info');
-    const waitOk = await waitForUpdateMode(60000, 500);
+        // Warte kurz, damit der ESP Zeit hat, die Flags zu verarbeiten und neu zu starten
+        showStatus('Update-Flags gesetzt, warte auf Neustart...', 'info');
+        await new Promise(r => setTimeout(r, 2000)); // 2 Sekunden warten
+
+        // Warte bis Gerät im Update-Modus ist (poll /status). Wenn das Gerät
+        // etwas länger zum Umbau in den Update-Modus braucht, vermeiden wir
+        // so ein vorzeitiges Abbrechen des Uploads. Erhöhe Timeout auf 90s.
+        showStatus('Warte, bis Gerät in den Update-Modus wechselt...', 'info');
+        const waitOk = await waitForUpdateMode(90000, 1000);
         if (!waitOk) {
-            throw new Error('Timeout waiting for device to enter update mode');
+            throw new Error('Timeout waiting for device to enter update mode (90s)');
         }
+
+        showStatus('Update-Modus aktiv, bereit für Upload', 'success');
+        await new Promise(r => setTimeout(r, 500)); // Kurze Pause vor Upload
 
         // Starte Upload
         uploadInProgress = true;
@@ -89,38 +102,54 @@ async function startUpdate() {
         // streaming upload (some servers don't expose multipart form
         // fields until after the file is processed).
         const uploadUrl = isFileSystem ? '/update?mode=fs' : '/update';
-        const response = await fetch(uploadUrl, {
-            method: 'POST',
-            body: formData
-        });
 
-        if (!response.ok) {
-            throw new Error(`Upload failed: ${response.statusText}`);
-        }
+        // Create AbortController for timeout handling (5 minutes for large filesystem images)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes
 
-        // Parse response to check for restore pending
-        const result = await response.json().catch(() => ({ success: true }));
+        try {
+            const response = await fetch(uploadUrl, {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal
+            });
 
-        if (result.restorePending) {
-            // Update progress to 40% when upload complete
-            updateProgress(40);
-            showStatus('Filesystem aktualisiert...', 'success');
+            clearTimeout(timeoutId);
 
-            // Show restore pending message with countdown in status area
-            // Device will reboot twice - first to restore config, then normal boot
-            setTimeout(() => {
-                updateProgress(70);
-                showRestoreCountdown(45, result.message || 'Einstellungen werden nach Neustart wiederhergestellt.');
-            }, 500);
-        } else {
-            // Standard success handling
-            showStatus('Update erfolgreich! Gerät startet neu...', 'success');
-            updateProgress(100);
+            if (!response.ok) {
+                throw new Error(`Upload failed: ${response.statusText}`);
+            }
 
-            // Warte auf Neustart und Redirect
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 10000);
+            // Parse response to check for restore pending
+            const result = await response.json().catch(() => ({ success: true }));
+
+            if (result.restorePending) {
+                // Update progress to 40% when upload complete
+                updateProgress(40);
+                showStatus('Filesystem aktualisiert...', 'success');
+
+                // Show restore pending message with countdown in status area
+                // Device will reboot twice - first to restore config, then normal boot
+                setTimeout(() => {
+                    updateProgress(70);
+                    showRestoreCountdown(45, result.message || 'Einstellungen werden nach Neustart wiederhergestellt.');
+                }, 500);
+            } else {
+                // Standard success handling
+                showStatus('Update erfolgreich! Gerät startet neu...', 'success');
+                updateProgress(100);
+
+                // Warte auf Neustart und Redirect
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 10000);
+            }
+        } catch (fetchError) {
+            clearTimeout(timeoutId);
+            if (fetchError.name === 'AbortError') {
+                throw new Error('Upload-Timeout (5 Minuten überschritten)');
+            }
+            throw fetchError;
         }
 
     } catch (error) {
@@ -132,20 +161,64 @@ async function startUpdate() {
 
 // Poll /status until device reports inUpdateMode or timeout.
 // timeoutMs: maximum time to wait, intervalMs: poll interval
-async function waitForUpdateMode(timeoutMs = 15000, intervalMs = 500) {
+async function waitForUpdateMode(timeoutMs = 15000, intervalMs = 1000) {
     const deadline = Date.now() + timeoutMs;
+    let consecutiveErrors = 0;
+    const maxConsecutiveErrors = 5; // Maximal 5 Fehler hintereinander, dann aufgeben
+    let deviceResponded = false; // Track if device ever responded
+
     while (Date.now() < deadline) {
         try {
-            const resp = await fetch('/status');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s Timeout pro Request
+
+            const resp = await fetch('/status', {
+                signal: controller.signal,
+                cache: 'no-cache',  // Prevent caching
+                headers: {
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            });
+            clearTimeout(timeoutId);
+
             if (resp.ok) {
-                const json = await resp.json().catch(() => null);
-                if (json && json.inUpdateMode) return true;
+                deviceResponded = true;
+                const json = await resp.json().catch(e => {
+                    console.log('Failed to parse JSON:', e);
+                    return null;
+                });
+
+                if (json && json.inUpdateMode) {
+                    console.log('Device is in update mode');
+                    return true;
+                }
+
+                // Device responded but not in update mode yet
+                console.log('Device responded, not in update mode yet. Uptime:', json?.uptime);
+                consecutiveErrors = 0;
+            } else {
+                console.log('Status check returned non-OK status:', resp.status);
+                consecutiveErrors++;
             }
         } catch (e) {
-            // ignore network errors while waiting
+            // Network error or timeout - device might be rebooting
+            consecutiveErrors++;
+
+            // If we never got a response, be more lenient with errors (device might still be booting)
+            const errorThreshold = deviceResponded ? maxConsecutiveErrors : 10;
+
+            console.log(`Status check failed (${consecutiveErrors}/${errorThreshold}): ${e.message}`);
+
+            // If too many consecutive errors AFTER device responded once, something is wrong
+            if (consecutiveErrors >= errorThreshold) {
+                console.error('Too many consecutive errors, giving up');
+                return false;
+            }
         }
         await new Promise(r => setTimeout(r, intervalMs));
     }
+    console.error('Timeout waiting for update mode');
     return false;
 }
 
