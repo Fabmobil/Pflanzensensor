@@ -45,9 +45,8 @@ public:
 
   /**
    * @brief Switches the multiplexer to the specified sensor.
-   * @param sensorIndex Index of the sensor (0-7)
-   * @return true if switch is complete, false if still waiting for settling
-   * time
+   * @param sensorIndex Index of the sensor (1-8)
+   * @return true if switch is complete and pins match, false on failure
    */
   bool switchToSensor(int sensorIndex);
 

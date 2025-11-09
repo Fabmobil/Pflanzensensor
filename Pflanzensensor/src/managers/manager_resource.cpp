@@ -207,7 +207,7 @@ ResourceResult ResourceManager::doFirmwareUpgrade() {
   }
 
   // Initialize minimal system
-  logger.info(F("ResourceM"), F("Initializing minimal system for firmware upgrade"));
+  logger.info(F("ResourceM"), F("Initialisiere minimales System für Firmware-Upgrade"));
   auto initStatus = initMinimalSystem();
   if (!initStatus.isSuccess()) {
     logger.error(F("ResourceM"), F("Initialisierung des minimalen Systems fehlgeschlagen"));

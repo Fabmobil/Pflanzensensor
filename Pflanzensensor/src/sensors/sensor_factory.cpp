@@ -77,7 +77,7 @@ SensorFactory::createAllSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
   logger.info(F("SensorFactory"), F("Starte Sensor-Erstellungsprozess"));
 
   try {
-    logger.logMemoryStats(F("before_sensor_creation"));
+    logger.logMemoryStats(F("vor_sensorerstellung"));
     sensors.clear();
 
     std::vector<String> errors;
@@ -89,7 +89,7 @@ SensorFactory::createAllSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
     addDHTSensors(sensors, sensorManager, errors);
 #endif
 
-    logger.logMemoryStats(F("nach_sensor_erstellung"));
+    logger.logMemoryStats(F("nach_sensorerstellung"));
 
     // If we have any sensors initialized, consider it a partial success
     if (!sensors.empty()) {

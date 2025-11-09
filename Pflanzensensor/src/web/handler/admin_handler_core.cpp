@@ -80,10 +80,26 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadLog-Route"));
 
-  // NOTE: Download/upload routes removed - configuration now in Preferences (EEPROM)
-  // OLD REMOVED: /admin/downloadConfig (GET)
-  // OLD REMOVED: /admin/downloadSensors (GET)
-  // OLD REMOVED: /admin/uploadConfig (POST)
+  // Register config download route
+  result = router.addRoute(HTTP_GET, "/admin/downloadConfig", [this]() {
+    if (!validateRequest()) {
+      _server.requestAuthentication();
+      return;
+    }
+    handleDownloadConfig();
+  });
+  if (!result.isSuccess()) {
+    logger.error(F("AdminHandler"),
+                 F("Registrieren der /admin/downloadConfig-Route fehlgeschlagen"));
+    return result;
+  }
+  logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadConfig-Route"));
+
+  // Config upload route is registered directly in WebManager::setupRoutes()
+  // because it needs file upload support which requires _server.on()
+  // See web_manager_routes.cpp for the actual registration
+  logger.debug(F("AdminHandler"),
+               F("Config-Upload-Route wird im WebManager registriert (File-Upload)"));
 
   // Register WiFi settings update route
   result = router.addRoute(HTTP_POST, "/admin/updateWiFi", [this]() {
@@ -99,7 +115,6 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/updateWiFi-Route"));
 
-  logger.info(F("AdminHandler"), F("Alle Admin-Routen erfolgreich registriert"));
   logger.logMemoryStats(F("AdminRegisterRoutes"));
   return result;
 }
@@ -138,7 +153,7 @@ void AdminHandler::handleAdminPage() {
         sendChunk(F("</div>"));
       },
       css, js);
-  logger.debug(F("AdminHandler"), F("Admin page sent successfully"));
+  logger.debug(F("AdminHandler"), F("Adminseite erfolgreich gesendet"));
 }
 
 void AdminHandler::handleDownloadLog() {

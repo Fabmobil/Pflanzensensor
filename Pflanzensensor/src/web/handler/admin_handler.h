@@ -43,7 +43,7 @@ public:
   AdminHandler(ESP8266WebServer& server, [[maybe_unused]] WebAuth& auth,
                [[maybe_unused]] CSSService& cssService)
       : BaseHandler(server) { // We only use the server parameter
-    logger.debug(F("AdminHandler"), F("Initializing AdminHandler"));
+    logger.debug(F("AdminHandler"), F("Initialisiere AdminHandler"));
     logger.logMemoryStats(F("Admihandler"));
   }
 
@@ -77,6 +77,26 @@ public:
    * enabled.
    */
   void handleDownloadLog();
+
+  /**
+   * @brief Download configuration as JSON file
+   * @details Exports all Preferences settings to config.json
+   */
+  void handleDownloadConfig();
+
+  /**
+   * @brief Upload handler for configuration file
+   * @details Receives uploaded config.json file and saves to temp location
+   * Sets flag for POST handler to process
+   */
+  void handleUploadConfig();
+
+  /**
+   * @brief Process uploaded configuration and reboot
+   * @details Validates JSON, restores preferences, and reboots ESP
+   * Called by POST handler after upload completes
+   */
+  void handleUploadConfigRestore();
 
   // Card generation methods - implemented in admin_handler_cards.cpp
 
@@ -179,11 +199,6 @@ private:
    *          - Provides feedback
    */
   void handleReboot();
-
-  // NOTE: JSON download/upload methods removed - configuration now in Preferences (EEPROM)
-  // OLD REMOVED: handleDownloadConfig()
-  // OLD REMOVED: handleDownloadSensors()
-  // OLD REMOVED: handleUploadConfig()
 
   // Utility methods - implemented in admin_handler_utils.cpp
   /**

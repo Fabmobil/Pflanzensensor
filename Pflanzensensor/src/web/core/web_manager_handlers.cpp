@@ -10,34 +10,35 @@
 #include "web/core/web_manager.h"
 
 void WebManager::handleSetUpdate() {
-  logger.debug(F("WebManager"), F("Enter WebManager::handleSetUpdate()"));
+  logger.debug(F("WebManager"), F("Betrete WebManager::handleSetUpdate()"));
 
   // 1. Verify server instance
   if (!_server) {
-    logger.error(F("WebManager"), F("Server instance is null"));
+    logger.error(F("WebManager"), F("Serverinstanz ist null"));
     return;
   }
 
   // 2. Basic auth check with detailed logging
-  logger.debug(F("WebManager"), F("Checking authentication..."));
+  logger.debug(F("WebManager"), F("Prüfe Authentifizierung..."));
   if (!_server->authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
-    logger.warning(F("WebManager"), F("Authentication failed for setUpdate request"));
+    logger.warning(F("WebManager"), F("Authentifizierung für setUpdate-Anfrage fehlgeschlagen"));
     _server->requestAuthentication();
     return;
   }
-  logger.debug(F("WebManager"), F("Authentication successful"));
+  logger.debug(F("WebManager"), F("Authentifizierung erfolgreich"));
 
   // 3. Verify request method
   if (_server->method() != HTTP_POST) {
-    logger.warning(F("WebManager"), F("Invalid method for setUpdate"));
-    sendErrorResponse(405, F("Method Not Allowed"));
+    logger.warning(F("WebManager"), F("Ungültige Methode für setUpdate"));
+    sendErrorResponse(405, F("Methode nicht erlaubt"));
     return;
   }
 
   // 4. Get and validate request body
   String json = _server->arg("plain");
-  logger.debug(F("WebManager"), "Received update request body length: " + String(json.length()));
-  logger.debug(F("WebManager"), "Raw request body: " + json);
+  logger.debug(F("WebManager"),
+               "Empfangene Länge des Update-Request-Bodys: " + String(json.length()));
+  logger.debug(F("WebManager"), "Roher Request-Body: " + json);
 
   // 5. Validate request and extract flags
   bool fileSystemUpdate, firmwareUpdate, updateMode;
@@ -47,8 +48,8 @@ void WebManager::handleSetUpdate() {
   }
 
   // 6. Log the intended update type
-  logger.debug(F("WebManager"), F("Setting flags - FS: ") + String(fileSystemUpdate) + F(", FW: ") +
-                                    String(firmwareUpdate) + F(", Mode: ") + String(updateMode));
+  logger.debug(F("WebManager"), F("Setze Flags - FS: ") + String(fileSystemUpdate) + F(", FW: ") +
+                                    String(firmwareUpdate) + F(", Modus: ") + String(updateMode));
 
   // 7. Save configuration and prepare for update
   if (!prepareUpdateMode(fileSystemUpdate, firmwareUpdate, updateMode)) {
@@ -61,66 +62,90 @@ void WebManager::handleSetUpdate() {
   String jsonResponse;
   serializeJson(response, jsonResponse);
 
-  logger.debug(F("WebManager"), F("Sending success response"));
+  logger.debug(F("WebManager"), F("Sende Erfolgsantwort"));
   _server->send(200, F("application/json"), jsonResponse);
+  // Try to flush TCP buffers and then close the client socket so the
+  // browser receives the response reliably before we reboot.
+  logger.debug(F("WebManager"), F("Flush und schließe Client-Socket (wenn möglich)"));
   _server->client().flush();
-  logger.debug(F("WebManager"), F("Response sent"));
+  // Small pause to let the stack push out bytes
+  delay(200);
+  // Explicitly stop the client to terminate the TCP connection cleanly
+  _server->client().stop();
+  logger.debug(F("WebManager"), F("Antwort gesendet und Client-Socket gestoppt"));
 
   // 9. Handle update mode and reboot if necessary
   if (updateMode) {
-    logger.info(F("WebManager"), F("Update mode enabled, preparing for reboot..."));
-    delay(500); // Give more time for response and logging
+    logger.info(F("WebManager"), F("Update-Modus aktiviert, bereite Neustart vor..."));
+
+    // CRITICAL: Give browser time to receive response before reboot.
+    // Some browsers keep connections open; wait up to a short timeout while
+    // processing the server loop so the TCP stack can finish sending data.
+    const unsigned long startWait = millis();
+    const unsigned long maxWait = 5000; // wait up to 5s
+    while (millis() - startWait < maxWait) {
+      _server->handleClient();
+      // If there are no active clients, we can proceed earlier
+      if (!_server->client().connected()) {
+        logger.debug(F("WebManager"), F("Kein aktiver Client mehr - bereit zum Neustart"));
+        break;
+      }
+      delay(50);
+    }
+    // Extra safety margin
+    delay(200);
 
     // Stop non-critical services
     if (_sensorManager) {
-      logger.debug(F("WebManager"), F("Stopping sensor manager..."));
+      logger.debug(F("WebManager"), F("Stoppe Sensor-Manager..."));
       _sensorManager->stopAll();
       _sensorManager = nullptr;
     }
 
-    logger.debug(F("WebManager"), F("Running cleanup..."));
+    logger.debug(F("WebManager"), F("Führe Aufräumarbeiten durch..."));
     cleanup();
 
-    logger.info(F("WebManager"), F("Rebooting into update mode..."));
+    logger.info(F("WebManager"), F("Starte neu im Update-Modus..."));
     delay(100); // Small delay to ensure logs are written
     ESP.restart();
   }
 
-  logger.debug(F("WebManager"), F("Exit WebManager::handleSetUpdate()"));
+  logger.debug(F("WebManager"), F("Verlasse WebManager::handleSetUpdate()"));
 }
 
 void WebManager::handleSetConfigValue() {
   if (!_server) {
-    logger.error(F("WebManager"), F("Server instance is null"));
+    logger.error(F("WebManager"), F("Serverinstanz ist null"));
     return;
   }
 
   // Check authentication
   if (!_server->authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
-    logger.warning(F("WebManager"), F("Authentication failed for setConfigValue request"));
+    logger.warning(F("WebManager"),
+                   F("Authentifizierung für setConfigValue-Anfrage fehlgeschlagen"));
     _server->requestAuthentication();
     return;
   }
 
   String namespaceName, key, value, typeStr;
-  
+
   // Check if request is form-encoded (new unified method) or JSON (legacy)
   String contentType = _server->header("Content-Type");
   bool isFormEncoded = contentType.indexOf("application/x-www-form-urlencoded") >= 0;
-  
+
   if (isFormEncoded || _server->hasArg("namespace")) {
     // New unified method with namespace and type
     namespaceName = _server->arg("namespace");
     key = _server->arg("key");
     value = _server->arg("value");
     typeStr = _server->arg("type");
-    
+
     if (namespaceName.isEmpty() || key.isEmpty()) {
-      logger.error(F("WebManager"), F("Missing namespace or key parameter"));
-      sendErrorResponse(400, F("Missing namespace or key parameter"));
+      logger.error(F("WebManager"), F("Fehlender Namespace- oder Schlüssel-Parameter"));
+      sendErrorResponse(400, F("Fehlender Namespace- oder Schlüssel-Parameter"));
       return;
     }
-    
+
     // Parse type parameter
     ConfigValueType type = ConfigValueType::STRING; // default
     if (typeStr == "bool") {
@@ -134,36 +159,37 @@ void WebManager::handleSetConfigValue() {
     } else if (typeStr == "string") {
       type = ConfigValueType::STRING;
     }
-    
-    logger.debug(F("WebManager"), String(F("Setting config: ")) + namespaceName + 
-                 F(".") + key + F(" = ") + value + F(" (type: ") + typeStr + F(")"));
-    
+
+    logger.debug(F("WebManager"), String(F("Setze Konfiguration: ")) + namespaceName + F(".") +
+                                      key + F(" = ") + value + F(" (Typ: ") + typeStr + F(")"));
+
     // Update config value using new method
     auto result = ConfigMgr.setConfigValue(namespaceName, key, value, type);
     if (!result.isSuccess()) {
-      logger.error(F("WebManager"), "Failed to set config value: " + result.getMessage());
+      logger.error(F("WebManager"), String(F("Konfigurationswert konnte nicht gesetzt werden: ")) +
+                                        result.getMessage());
       sendErrorResponse(400, result.getMessage());
       return;
     }
-    
+
     // Send success response (no message - let frontend format it)
     StaticJsonDocument<200> response;
     response["success"] = true;
     String jsonResponse;
     serializeJson(response, jsonResponse);
     _server->send(200, F("application/json"), jsonResponse);
-    
+
   } else {
     // Legacy JSON method - kept for backward compatibility during transition
     String json = _server->arg("plain");
-    logger.debug(F("WebManager"), "Received legacy config update request: " + json);
+    logger.debug(F("WebManager"), "Empfangene Legacy-Konfigurations-Update-Anfrage: " + json);
 
     // Parse JSON
     StaticJsonDocument<512> doc;
     DeserializationError error = deserializeJson(doc, json);
 
     if (error) {
-      String errorMsg = String(F("JSON parse error: ")) + error.c_str();
+      String errorMsg = String(F("JSON-Parsefehler: ")) + error.c_str();
       logger.error(F("WebManager"), errorMsg);
       sendErrorResponse(400, errorMsg);
       return;
@@ -174,15 +200,16 @@ void WebManager::handleSetConfigValue() {
     const char* valuePtr = doc["value"] | "";
 
     if (!keyPtr[0]) {
-      logger.error(F("WebManager"), F("Missing key in request"));
-      sendErrorResponse(400, F("Missing key parameter"));
+      logger.error(F("WebManager"), F("Schlüssel in Anfrage fehlt"));
+      sendErrorResponse(400, F("Fehlender Schlüssel-Parameter"));
       return;
     }
 
     // Update config value using legacy method
     auto result = ConfigMgr.setConfigValue(keyPtr, valuePtr);
     if (!result.isSuccess()) {
-      logger.error(F("WebManager"), "Failed to set config value: " + result.getMessage());
+      logger.error(F("WebManager"), String(F("Konfigurationswert konnte nicht gesetzt werden: ")) +
+                                        result.getMessage());
       sendErrorResponse(400, result.getMessage());
       return;
     }
@@ -190,8 +217,9 @@ void WebManager::handleSetConfigValue() {
     // Save config
     auto saveResult = ConfigMgr.saveConfig();
     if (!saveResult.isSuccess()) {
-      logger.error(F("WebManager"), "Failed to save config: " + saveResult.getMessage());
-      sendErrorResponse(500, F("Failed to save configuration"));
+      logger.error(F("WebManager"), String(F("Konfiguration konnte nicht gespeichert werden: ")) +
+                                        saveResult.getMessage());
+      sendErrorResponse(500, F("Konfiguration konnte nicht gespeichert werden"));
       return;
     }
 
@@ -207,8 +235,8 @@ void WebManager::handleSetConfigValue() {
 ResourceResult WebManager::validateUpdateRequest(const String& json, bool& fileSystemUpdate,
                                                  bool& firmwareUpdate, bool& updateMode) {
   if (json.length() == 0) {
-    logger.warning(F("WebManager"), F("Empty request body"));
-    sendErrorResponse(400, F("Missing request body"));
+    logger.warning(F("WebManager"), F("Leerer Request-Body"));
+    sendErrorResponse(400, F("Fehlender Request-Body"));
     return ResourceResult::fail(ResourceError::VALIDATION_ERROR, F("Missing request body"));
   }
 
@@ -217,11 +245,11 @@ ResourceResult WebManager::validateUpdateRequest(const String& json, bool& fileS
   DeserializationError error = deserializeJson(doc, json);
 
   if (error) {
-    String errorMsg = String(F("JSON parse error: ")) + error.c_str();
+    String errorMsg = String(F("JSON-Parsefehler: ")) + error.c_str();
     logger.error(F("WebManager"), errorMsg);
     sendErrorResponse(400, errorMsg);
     return ResourceResult::fail(ResourceError::VALIDATION_ERROR,
-                                String(F("JSON parse error: ")) + error.c_str());
+                                String(F("JSON-Parsefehler: ")) + error.c_str());
   }
 
   // Extract and validate update flags
@@ -231,10 +259,11 @@ ResourceResult WebManager::validateUpdateRequest(const String& json, bool& fileS
 
   // Check that not both update types are requested
   if (fileSystemUpdate && firmwareUpdate) {
-    logger.error(F("WebManager"), F("Cannot update both filesystem and firmware simultaneously"));
-    sendErrorResponse(400, F("Only one update type allowed at a time"));
+    logger.error(F("WebManager"),
+                 F("Kann nicht gleichzeitig Dateisystem und Firmware aktualisieren"));
+    sendErrorResponse(400, F("Es ist nur ein Aktualisierungstyp gleichzeitig erlaubt"));
     return ResourceResult::fail(ResourceError::VALIDATION_ERROR,
-                                F("Only one update type allowed at a time"));
+                                F("Es ist nur ein Aktualisierungstyp gleichzeitig erlaubt"));
   }
 
   return ResourceResult::success();
@@ -249,7 +278,7 @@ bool WebManager::prepareUpdateMode(bool fileSystemUpdate, bool firmwareUpdate, b
     return false;
   }
 
-  logger.debug(F("WebManager"), F("Configuration saved successfully"));
+  logger.debug(F("WebManager"), F("Konfiguration erfolgreich gespeichert"));
   return true;
 }
 

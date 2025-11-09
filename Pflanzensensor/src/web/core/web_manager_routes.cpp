@@ -13,50 +13,78 @@ void WebManager::setupRoutes() {
     return;
   }
 
-  // Hinweis: Captive-Portal / AP-spezifische WiFi-Setup-Routen wurden entfernt.
-  // WiFi-Updates werden über den Admin-Bereich (/admin) verwaltet.
+  logger.debug(F("WebManager"), F("Registriere essenzielle Routen (Lazy-Loading für Handler)"));
 
-  // START PAGE - ALWAYS register (shows sensor data in both modes)
-  _router->addRoute(HTTP_GET, "/", [this]() {
-    if (!_startHandler) {
-      _startHandler = std::make_unique<StartpageHandler>(*_server, *_auth, *_cssService);
-    }
-    _startHandler->handleRoot();
-  });
+  // CRITICAL: Register file upload routes FIRST using _server.on()
+  // These MUST be registered before any router routes to take priority
+  // File uploads cannot go through the router system
+  logger.debug(F("WebManager"), F("Registriere Upload-Routen (vor Router)"));
 
-  // SENSOR ROUTES - ALWAYS register these regardless of WiFi status
-  if (_sensorManager) {
-    if (!_sensorHandler) {
-      logger.debug(F("WebManager"), F("Initialisiere Sensor-Handler"));
-      _sensorHandler =
-          std::make_unique<SensorHandler>(*_server, *_auth, *_cssService, *_sensorManager);
-      auto result = _sensorHandler->registerRoutes(*_router);
-      if (!result.isSuccess()) {
-        logger.error(F("WebManager"),
-                     F("Registrieren der Sensor-Routen fehlgeschlagen: ") + result.getMessage());
-      } else {
-        logger.info(F("WebManager"), F("Sensor-Routen registriert"));
-      }
-    }
+  // Config upload route - needs direct server registration for file upload support
+  _server->on(
+      "/admin/uploadConfig", HTTP_POST,
+      [this]() {
+        // POST handler - called after upload completes
+        // Send response and trigger reboot here
+        BaseHandler* handler = getCachedHandler("admin");
+        if (handler) {
+          // Check if upload was successful by checking if temp file exists
+          if (LittleFS.exists("/prefs_upload_done.flag")) {
+            logger.info(F("WebManager"), F("Config-Upload erfolgreich, sende Antwort"));
 
-    // ADMIN SENSOR ROUTES - ALWAYS register these too
-    if (!_adminSensorHandler) {
-      logger.debug(F("WebManager"), F("Initialisiere AdminSensorHandler"));
-      _adminSensorHandler =
-          std::make_unique<AdminSensorHandler>(*_server, *_auth, *_cssService, *_sensorManager);
-      auto result = _adminSensorHandler->registerRoutes(*_router);
-      if (!result.isSuccess()) {
-        logger.error(F("WebManager"), F("Registrieren der Admin-Sensor-Routen fehlgeschlagen: ") +
-                                          result.getMessage());
-      } else {
-        logger.info(F("WebManager"), F("AdminSensorHandler-Routen registriert"));
-      }
-    }
-  } else {
-    logger.warning(F("WebManager"), F("Sensor-Manager nicht verfügbar"));
-  }
+            // Send success response
+            _server->send(
+                200, "application/json",
+                "{\"success\":true,\"message\":\"Die Konfiguration wird wiederhergestellt. "
+                "Dies kann bis zu 60 Sekunden dauern. Bitte warten "
+                "Sie...\",\"rebootPending\":true}");
 
-  // Add update route first to ensure it's available
+            // Give response time to reach client
+            delay(500);
+            _server->handleClient();
+            delay(100);
+
+            // Now restore and reboot (called from AdminHandler)
+            static_cast<AdminHandler*>(handler)->handleUploadConfigRestore();
+          } else if (LittleFS.exists("/prefs_upload_error.flag")) {
+            logger.error(F("WebManager"), F("Config-Upload fehlgeschlagen"));
+            _server->send(500, "application/json",
+                          "{\"success\":false,\"error\":\"Upload fehlgeschlagen\"}");
+            LittleFS.remove("/prefs_upload_error.flag");
+          } else {
+            logger.error(F("WebManager"), F("Kein Upload-Status gefunden"));
+            _server->send(500, "application/json",
+                          "{\"success\":false,\"error\":\"Unbekannter Fehler\"}");
+          }
+        } else {
+          _server->send(500, F("text/plain"), F("Handler nicht gefunden"));
+        }
+      },
+      [this]() {
+        // Upload handler - called during file upload
+        // AdminHandler must be loaded for this
+        BaseHandler* handler = getCachedHandler("admin");
+        if (!handler) {
+          logger.debug(F("WebManager"), F("Lazy-Loading AdminHandler für Upload"));
+          auto newHandler = std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
+          auto result = newHandler->registerRoutes(*_router);
+          if (result.isSuccess()) {
+            cacheHandler(std::move(newHandler), "admin");
+            handler = getCachedHandler("admin");
+          }
+        }
+        if (handler) {
+          static_cast<AdminHandler*>(handler)->handleUploadConfig();
+        } else {
+          logger.error(F("WebManager"), F("AdminHandler konnte nicht geladen werden"));
+          _server->send(500, F("text/plain"), F("Handler-Ladefehler"));
+        }
+      });
+  logger.debug(F("WebManager"), F("Upload-Route /admin/uploadConfig registriert"));
+
+  // Essential routes that cannot be lazy-loaded due to special handling
+
+  // Add update route - critical for OTA updates
   auto updateResult =
       _router->addRoute(HTTP_POST, "/admin/config/update", [this]() { handleSetUpdate(); });
   if (!updateResult.isSuccess()) {
@@ -64,101 +92,39 @@ void WebManager::setupRoutes() {
                  F("Registrieren der Update-Route fehlgeschlagen: ") + updateResult.getMessage());
   }
 
-  // Add config value update route
+  // Add config value update route - used frequently
   _router->addRoute(HTTP_POST, "/admin/config/setConfigValue",
                     [this]() { handleSetConfigValue(); });
 
-  // /admin/updateWiFi wird vom AdminHandler registriert; keine explizite Delegierung hier nötig.
-
-  _router->addRoute(HTTP_POST, "/admin/reboot", [this]() {
-    if (!_adminHandler) {
-      logger.debug(F("WebManager"), F("AdminHandler für Neustart nachladen"));
-      _adminHandler = std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
-      auto result = _adminHandler->registerRoutes(*_router);
-      if (!result.isSuccess()) {
-        logger.error(F("WebManager"),
-                     F("Registrieren der Admin-Routen fehlgeschlagen: ") + result.getMessage());
-      }
-    }
-    _adminHandler->handleReboot();
-  });
-
-  // General admin routes
-  _router->addRoute(HTTP_GET, "/admin", [this]() {
-    if (!_adminHandler) {
-      logger.debug(F("WebManager"), F("AdminHandler nachladen"));
-      _adminHandler = std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
-      auto result = _adminHandler->registerRoutes(*_router);
-      if (!result.isSuccess()) {
-        logger.error(F("WebManager"),
-                     F("Registrieren der Admin-Routen fehlgeschlagen: ") + result.getMessage());
-      }
-    }
-    _adminHandler->handleAdminPage();
-  });
-
-  // Note: /admin/updateSettings route removed - use unified /admin/config/setConfigValue
-
-  // Direct route for admin reset
-  _router->addRoute(HTTP_POST, "/admin/reset", [this]() {
-    if (!_adminHandler) {
-      logger.debug(F("WebManager"), F("AdminHandler für Reset nachladen"));
-      _adminHandler = std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
-      auto result = _adminHandler->registerRoutes(*_router);
-      if (!result.isSuccess()) {
-        logger.error(F("WebManager"),
-                     F("Registrieren der Admin-Routen fehlgeschlagen: ") + result.getMessage());
-      }
-    }
-    _adminHandler->handleConfigReset();
-  });
-
-  // /admin/config/set is registered by AdminHandler::onRegisterRoutes to
-  // centralize admin-related routes. Avoid registering it here to prevent
-  // duplicate route entries.
-
-  // Direct route for admin download log
-  _router->addRoute(HTTP_GET, "/admin/downloadLog", [this]() {
-    if (!_adminHandler) {
-      logger.debug(F("WebManager"), F("AdminHandler für Log-Download nachladen"));
-      _adminHandler = std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
-      auto result = _adminHandler->registerRoutes(*_router);
-      if (!result.isSuccess()) {
-        logger.error(F("WebManager"),
-                     F("Registrieren der Admin-Routen fehlgeschlagen: ") + result.getMessage());
-      }
-    }
-    _adminHandler->handleDownloadLog();
-  });
-
-#if USE_DISPLAY
-  if (!_displayHandler) {
-    logger.debug(F("WebManager"), F("Initialisiere AdminDisplayHandler"));
-    _displayHandler = std::make_unique<AdminDisplayHandler>(*_server);
-    auto result = _displayHandler->registerRoutes(*_router);
-    if (!result.isSuccess()) {
-      logger.error(F("WebManager"),
-                   F("Registrieren der Display-Routen fehlgeschlagen: ") + result.getMessage());
-    }
-  }
-#endif
-
-  // Register OTA routes
+  // Register OTA routes - critical for firmware updates, cannot be lazy-loaded
   if (_otaHandler) {
     auto result = _otaHandler->registerRoutes(*_router);
     if (!result.isSuccess()) {
       logger.error(F("WebManager"),
                    F("Registrieren der OTA-Routen fehlgeschlagen: ") + result.getMessage());
+    } else {
+      logger.info(F("WebManager"), F("OTA-Routen erfolgreich registriert"));
     }
   }
 
-  // Not found handler
+  // Catch-all handler - forward ALL requests to router (which runs middleware and finds routes)
   _server->onNotFound([this]() {
-    logger.warning(F("WebManager"), F("404: Nicht gefunden: ") + _server->uri());
+    String uri = _server->uri();
+    HTTPMethod method = _server->method();
+
+    // Let router handle the request (will run middleware and find routes)
+    if (_router && _router->handleRequest(method, uri)) {
+      // Request was handled by router
+      return;
+    }
+
+    // No route found even after middleware
+    logger.warning(F("WebManager"), F("404: Nicht gefunden: ") + uri);
     _server->send(404, "text/plain", "404: Not Found");
   });
 
-  logger.debug(F("WebManager"), F("Routen-Setup abgeschlossen"));
+  logger.info(F("WebManager"),
+              F("Essenzielle Routen registriert - Handler werden bei Bedarf geladen"));
 }
 
 void WebManager::setupMinimalRoutes() {
@@ -169,47 +135,21 @@ void WebManager::setupMinimalRoutes() {
     return;
   }
 
-  // Hinweis: Captive-Portal-spezifische WiFi-Setup-Routen im Minimalmodus entfernt.
-  // Admin-API bleibt für konfigurierte Admin-Routen verfügbar.
-
-  // SENSOR FUNCTIONALITY - ALWAYS available in minimal mode too
-  if (_sensorManager) {
-    if (!_sensorHandler) {
-      logger.debug(F("WebManager"), F("Minimalmodus - registriere Sensor-Routen"));
-      _sensorHandler =
-          std::make_unique<SensorHandler>(*_server, *_auth, *_cssService, *_sensorManager);
-      auto result = _sensorHandler->registerRoutes(*_router);
-      if (!result.isSuccess()) {
-        logger.error(F("WebManager"),
-                     F("Registrieren der Sensor-Routen im Minimalmodus fehlgeschlagen: ") +
-                         result.getMessage());
-      } else {
-        logger.info(F("WebManager"), F("Sensor-Routen im Minimalmodus registriert"));
-      }
-    }
-  }
-
-  // START PAGE - ALWAYS available
-  _router->addRoute(HTTP_GET, "/", [this]() {
-    if (!_startHandler) {
-      _startHandler = std::make_unique<StartpageHandler>(*_server, *_auth, *_cssService);
-    }
-    _startHandler->handleRoot();
-  });
+  logger.debug(F("WebManager"), F("Registriere minimale Routen (Lazy-Loading aktiv)"));
 
   // Create minimal admin handler
   _minimalAdminHandler = std::make_unique<AdminMinimalHandler>(*_server, *_auth);
 
-  // Register existing OTA routes
+  // Register existing OTA routes - critical for updates
   auto result = _otaHandler->registerRoutes(*_router);
   if (!result.isSuccess()) {
     logger.error(F("WebManager"),
                  F("Registrieren der OTA-Routen fehlgeschlagen: ") + result.getMessage());
     return;
   }
-  logger.info(F("WebManager"), F("OTA-Routen registriert"));
+  logger.info(F("WebManager"), F("OTA-Routen erfolgreich registriert"));
 
-  // Register admin setUpdate route
+  // Register admin setUpdate route - critical
   auto rebootResult =
       _router->addRoute(HTTP_POST, "/admin/config/update", [this]() { handleSetUpdate(); });
   if (!rebootResult.isSuccess()) {
@@ -219,28 +159,31 @@ void WebManager::setupMinimalRoutes() {
     return;
   }
 
-  // Register admin reboot route
-  result = _router->addRoute(HTTP_POST, "/admin/reboot", [this]() {
-    if (!_adminHandler) {
-      logger.debug(F("WebManager"), F("AdminHandler für Neustart nachladen"));
-      _adminHandler = std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
-      // Register all admin routes immediately
-      auto result = _adminHandler->registerRoutes(*_router);
-      if (!result.isSuccess()) {
-        logger.error(F("WebManager"),
-                     F("Registrieren der Admin-Routen fehlgeschlagen: ") + result.getMessage());
-      }
-    }
-    _adminHandler->handleReboot();
-  });
-  if (!result.isSuccess()) {
-    logger.error(F("WebManager"),
-                 F("Registrieren der Reboot-Route fehlgeschlagen: ") + result.getMessage());
-    return;
-  }
-  logger.debug(F("WebManager"), F("Admin-Neustart-Route registriert"));
+  // CRITICAL: Catch-all handler to forward requests to router in minimal mode
+  _server->onNotFound([this]() {
+    String uri = _server->uri();
+    HTTPMethod method = _server->method();
 
-  logger.debug(F("WebManager"), F("Minimal-Routen-Konfiguration abgeschlossen"));
+    // Debug: Log every request that hits onNotFound
+    logger.debug(F("WebManager"), F("onNotFound aufgerufen für: ") +
+                                      String(method == HTTP_GET    ? F("GET")
+                                             : method == HTTP_POST ? F("POST")
+                                                                   : F("OTHER")) +
+                                      F(" ") + uri);
+
+    // Let router handle the request
+    if (_router && _router->handleRequest(method, uri)) {
+      // Request was handled by router
+      logger.debug(F("WebManager"), F("Router hat Request behandelt: ") + uri);
+      return;
+    }
+
+    // No route found
+    logger.warning(F("WebManager"), F("404: Nicht gefunden: ") + uri);
+    _server->send(404, "text/plain", "404: Not Found");
+  });
+
+  logger.info(F("WebManager"), F("Minimal-Routen registriert - Handler werden bei Bedarf geladen"));
 }
 
 bool WebManager::hasRoute(const String& path, HTTPMethod method) const {

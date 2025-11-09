@@ -18,6 +18,8 @@
 #include "managers/manager_display.h"
 #endif
 #include "utils/critical_section.h"
+// Flash persistence used to check for existing backup and restore after FS update
+#include "../../utils/flash_persistence.h"
 
 extern std::unique_ptr<SensorManager> sensorManager;
 #if USE_DISPLAY
@@ -49,6 +51,8 @@ void WebOTAHandler::handleStatus() {
 }
 
 RouterResult WebOTAHandler::onRegisterRoutes(WebRouter& router) {
+  logger.debug(F("WebOTAHandler"), F("Registriere OTA-Routen"));
+
   // Register status endpoint
   auto result = router.addRoute(HTTP_GET, "/status", [this]() { handleStatus(); });
   if (!result.isSuccess())
@@ -63,12 +67,19 @@ RouterResult WebOTAHandler::onRegisterRoutes(WebRouter& router) {
   _server.on(
       "/update", HTTP_POST,
       [this]() {
-        sendJsonResponse(200,
-                         Update.hasError() ? F("{\"success\":false}") : F("{\"success\":true}"));
+        // Send response immediately after upload completes
+        // Don't wait here as the response was already sent in UPLOAD_FILE_END
+        // Just ensure clean exit from this handler
+        if (!Update.hasError()) {
+          // Success response was already sent during UPLOAD_FILE_END
+          // This callback is called after upload completes
+          yield();
+        } else {
+          sendJsonResponse(500, F("{\"success\":false,\"error\":\"Update failed\"}"));
+        }
       },
       [this]() { handleUpdateUpload(); });
 
-  logger.info(F("WebOTAHandler"), F("OTA-Routen registriert"));
   return RouterResult::success();
 }
 
@@ -247,19 +258,18 @@ void WebOTAHandler::handleUpdateUpload() {
                                         String(isFilesystem ? F("Dateisystem") : F("Firmware")) +
                                         F(")"));
     logger.debug(F("WebOTAHandler"), F("Inhaltlänge: ") + String(contentLength) + F(" Bytes"));
-    
-    // CRITICAL: During filesystem update, LittleFS is completely wiped including Preferences
-    // We must restore preferences BEFORE Update.begin() so they're in their storage
-    // The Preferences library uses separate storage that may survive the FS update
-    if (isFilesystem && LittleFS.exists("/prefs_backup.json")) {
-      logger.info(F("WebOTAHandler"), F("Backup-Datei gefunden, stelle Preferences wieder her..."));
-      if (ConfigPersistence::restorePreferencesFromFile()) {
-        logger.info(F("WebOTAHandler"), F("Preferences erfolgreich wiederhergestellt"));
-        // Delete backup file to free memory before Update.begin()
-        LittleFS.remove("/prefs_backup.json");
-        logger.debug(F("WebOTAHandler"), F("Backup-Datei gelöscht um Speicher freizugeben"));
+
+    // FLASH-BASED PERSISTENCE: Config backup was already created BEFORE reboot
+    // (in ConfigManager::setUpdateFlags when the update flag was set)
+    // The backup will be restored automatically on next boot if FS update is detected
+    // DO NOT backup here - it would interfere with the ongoing HTTP upload and cause crashes!
+    if (isFilesystem) {
+      if (FlashPersistence::hasValidConfig()) {
+        logger.info(F("WebOTAHandler"),
+                    F("Flash-Backup vorhanden - wird nach Neustart wiederhergestellt"));
       } else {
-        logger.warning(F("WebOTAHandler"), F("Wiederherstellen der Preferences fehlgeschlagen"));
+        logger.warning(F("WebOTAHandler"),
+                       F("Kein Flash-Backup gefunden - Konfiguration könnte verloren gehen"));
       }
     }
 
@@ -306,9 +316,9 @@ void WebOTAHandler::handleUpdateUpload() {
     }
 
     uint8_t command = isFilesystem ? U_FS : U_FLASH;
-    logger.debug(F("WebOTAHandler"), F("Update-Befehl: ") + String(command) + F(", Inhaltslänge: ") +
-                                         String(contentLength) + F(", verfügbarer Speicher: ") +
-                                         String(freeSpace));
+    logger.debug(F("WebOTAHandler"), F("Update-Befehl: ") + String(command) +
+                                         F(", Inhaltslänge: ") + String(contentLength) +
+                                         F(", verfügbarer Speicher: ") + String(freeSpace));
 
     // Note: Preferences backup/restore happens BEFORE Update.begin()
     // The backup file was created before first reboot and already restored above
@@ -362,6 +372,9 @@ void WebOTAHandler::handleUpdateUpload() {
       return;
     }
 
+    // Yield to prevent watchdog timeout and keep HTTP connection alive
+    yield();
+
     _status.currentProgress = Update.progress();
     uint8_t progress = (_status.currentProgress * 100) / _status.totalSize;
 
@@ -393,7 +406,7 @@ void WebOTAHandler::handleUpdateUpload() {
 #if USE_DISPLAY
       // Show success on display
       if (displayManager) {
-        displayManager->updateLogStatus(F("Update completed successfully!"), false);
+        displayManager->updateLogStatus(F("Update erfolgreich durchgeführt!"), false);
         delay(1000); // Show success message briefly
         displayManager->endUpdateMode();
       }
@@ -401,17 +414,40 @@ void WebOTAHandler::handleUpdateUpload() {
 
       logger.info(F("WebOTAHandler"), F("Filesystem-Update erfolgreich"));
 
-      // Send success response to deploy script IMMEDIATELY after update
-      // succeeds Do this BEFORE any JSON operations that might cause crashes
+      // Send success response to deploy script IMMEDIATELY after update succeeds
+      // For FS updates with restore pending, indicate this in the response
       StaticJsonDocument<200> response;
       response["success"] = true;
       response["needsReboot"] = true;
+
+      if (isFilesystem && FlashPersistence::hasValidConfig()) {
+        response["restorePending"] = true;
+        response["message"] =
+            "Filesystem aktualisiert. Einstellungen werden nach Neustart wiederhergestellt.";
+      }
+
       String jsonStr;
       serializeJson(response, jsonStr);
       sendJsonResponse(200, jsonStr);
 
       // Give the response time to be sent
       delay(200);
+
+      // **CRITICAL: Set flag for flash restore after reboot for FS updates**
+      // Don't restore here - HTTP context is still active and heap too fragmented
+      // Restore will happen cleanly on next boot with full heap available
+      if (isFilesystem && FlashPersistence::hasValidConfig()) {
+        logger.info(F("WebOTAHandler"),
+                    F("FS-Update abgeschlossen - setze Restore-Flag für nächsten Boot..."));
+        File flagFile = LittleFS.open("/.restore_from_flash", "w");
+        if (flagFile) {
+          flagFile.println("1");
+          flagFile.close();
+          logger.info(F("WebOTAHandler"), F("Restore-Flag erfolgreich gesetzt"));
+        } else {
+          logger.warning(F("WebOTAHandler"), F("Konnte Restore-Flag nicht setzen"));
+        }
+      }
 
       // Now try to clear update flags (this might crash, but response is
       // already sent)
@@ -513,4 +549,3 @@ size_t WebOTAHandler::calculateRequiredSpace(bool isFilesystem) const {
     return (ESP.getFreeSketchSpace() - 0x1000) & 0xFFFFF000;
   }
 }
-

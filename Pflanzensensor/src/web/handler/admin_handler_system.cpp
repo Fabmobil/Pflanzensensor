@@ -16,8 +16,8 @@
 #include "utils/critical_section.h"
 #include "web/handler/admin_handler.h"
 
-// NOTE: ArduinoJson and PersistenceUtils includes removed - no longer needed
-// Configuration now stored in Preferences (EEPROM), not JSON files
+// Configuration storage: Preferences library (flash-based key-value store)
+// All settings stored in Preferences namespaces, not JSON files
 
 void AdminHandler::handleConfigReset() {
   auto result = ConfigMgr.resetToDefaults();
@@ -31,7 +31,7 @@ void AdminHandler::handleConfigReset() {
         if (result.isSuccess()) {
           sendChunk(F("<h2>✓ Konfiguration zurückgesetzt</h2>"));
           sendChunk(F("<p>Die Konfiguration wurde erfolgreich auf Standardwerte "
-                      "zurückgesetzt.</p>"));
+                      "zurückgesetzt. Der Neustart kann bis zu 1 Minute dauern.</p>"));
         } else {
           sendChunk(F("<h2>❌ Fehler</h2><p class='error-message'>Fehler beim Zurücksetzen: "));
           sendChunk(result.getMessage());
@@ -48,7 +48,7 @@ void AdminHandler::handleConfigReset() {
   // confirmation page. 2000ms is a reasonable short delay.
   delay(2000);
   if (result.isSuccess()) {
-    logger.warning(F("AdminHandler"), F("Rebooting after config reset"));
+    logger.warning(F("AdminHandler"), F("Neustart nach Zurücksetzen der Konfiguration"));
     ESP.restart();
   }
 }
@@ -72,10 +72,8 @@ void AdminHandler::handleReboot() {
   ESP.restart();
 }
 
-// NOTE: JSON download/upload handlers removed - configuration now stored in Preferences (EEPROM)
-// Users can edit configuration through the web interface at /admin and /admin/sensors
-// All changes are saved directly to Preferences
+// Configuration download/upload: See admin_handler_config.cpp
+// - handleDownloadConfig() exports Preferences to JSON
+// - handleUploadConfig() imports JSON to Preferences
 
-// OLD REMOVED: handleDownloadConfig()
-// OLD REMOVED: handleDownloadSensors()
 // OLD REMOVED: handleUploadConfig()

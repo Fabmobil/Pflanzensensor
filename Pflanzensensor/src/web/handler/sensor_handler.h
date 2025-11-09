@@ -54,7 +54,7 @@ public:
   SensorHandler(ESP8266WebServer& server, WebAuth& auth, CSSService& cssService,
                 SensorManager& sensorManager)
       : BaseHandler(server), _auth(auth), _cssService(cssService), _sensorManager(sensorManager) {
-    logger.debug(F("SensorHandler"), F("Initializing SensorHandler"));
+    logger.debug(F("SensorHandler"), F("Initialisiere SensorHandler"));
   }
 
   /**

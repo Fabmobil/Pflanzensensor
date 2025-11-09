@@ -21,7 +21,7 @@ RouterResult LogHandler::onRegisterRoutes(WebRouter& router) {
                               F("LogHandler nicht initialisiert"));
   }
 
-  logger.debug(F("LogHandler"), F("Registriere /logs Route"));
+  logger.debug(F("LogHandler"), F("Registriere Log-Routen"));
   auto result = router.addRoute(HTTP_GET, "/logs", [this]() {
     logger.debug(F("LogHandler"), F("Log route handler called"));
     handleLogs();
@@ -34,9 +34,6 @@ RouterResult LogHandler::onRegisterRoutes(WebRouter& router) {
     return RouterResult::fail(RouterError::OPERATION_FAILED,
                               F("WebSocket-Server konnte nicht initialisiert werden"));
   }
-  logger.info(F("LogHandler"), F("Log-Routen und WebSocket registriert"));
-#else
-  logger.info(F("LogHandler"), F("Log-Routen registriert"));
 #endif
   return RouterResult::success();
 }

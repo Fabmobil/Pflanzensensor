@@ -8,11 +8,14 @@
 
 #include "../utils/result_types.h"
 #include "manager_config_types.h"
+#include <ArduinoJson.h>
 
 // Forward declarations
 #if USE_ANALOG
 class AnalogSensor;
 #endif
+
+struct MeasurementConfig; // From sensor_types.h
 
 class SensorPersistence {
 public:
@@ -90,6 +93,16 @@ public:
                                                     bool enabled);
 
   /**
+   * @brief Update measurement name atomically
+   * @param sensorId Sensor ID to update
+   * @param measurementIndex Measurement index to update
+   * @param name New name for the measurement
+   * @return PersistenceResult indicating success or failure
+   */
+  static PersistenceResult updateMeasurementName(const String& sensorId, size_t measurementIndex,
+                                                 const String& name);
+
+  /**
    * @brief Update absolute min/max values atomically
    * @param sensorId Sensor ID to update
    * @param measurementIndex Measurement index to update
@@ -112,6 +125,47 @@ public:
                                                  int absoluteRawMin, int absoluteRawMax);
 
   /**
+   * @brief Enqueue an analog raw min/max update to be processed later in the main loop.
+   * This avoids performing blocking Preferences writes from a time-critical context.
+   * Updates are batched and written every 60 seconds to reduce flash wear.
+   * @param sensorId Sensor ID
+   * @param measurementIndex Measurement index
+   * @param absoluteRawMin New minimum raw value
+   * @param absoluteRawMax New maximum raw value
+   */
+  static void enqueueAnalogRawMinMax(const String& sensorId, size_t measurementIndex,
+                                     int absoluteRawMin, int absoluteRawMax);
+
+  /**
+   * @brief Enqueue an absolute min/max update (float) to be processed later.
+   * Used by all sensor types (not just analog) to batch persistence writes.
+   * @param sensorId Sensor ID
+   * @param measurementIndex Measurement index
+   * @param absoluteMin New minimum value
+   * @param absoluteMax New maximum value
+   */
+  static void enqueueAbsoluteMinMax(const String& sensorId, size_t measurementIndex,
+                                    float absoluteMin, float absoluteMax);
+
+  /**
+   * @brief Enqueue an analog min/max/inverted update (integer) to be processed later.
+   * @param sensorId Sensor ID
+   * @param measurementIndex Measurement index
+   * @param minValue Minimum calibrated value
+   * @param maxValue Maximum calibrated value
+   * @param inverted Inversion flag
+   */
+  static void enqueueAnalogMinMaxInteger(const String& sensorId, size_t measurementIndex,
+                                         int minValue, int maxValue, bool inverted);
+
+  /**
+   * @brief Flush pending updates for a specific sensor immediately after measurement cycle.
+   * This is the preferred method - each sensor flushes its own data right after measurement.
+   * @param sensorId Sensor ID to flush updates for
+   */
+  static void flushPendingUpdatesForSensor(const String& sensorId);
+
+  /**
    * @brief Update analog sensor calibration mode flag atomically
    * @param sensorId Sensor ID to update
    * @param measurementIndex Measurement index to update
@@ -131,97 +185,55 @@ public:
   static PersistenceResult updateAutocalDuration(const String& sensorId, size_t measurementIndex,
                                                  uint32_t halfLifeSeconds);
 
-  /**
-   * @brief Check if sensor configuration exists in Preferences
-   * @return True if sensor config exists, false otherwise
-   */
-  static bool configExists();
+  // ============================================================================
+  // JSON-based persistence (new approach)
+  // ============================================================================
 
   /**
-   * @brief Get estimated sensor configuration size in Preferences
-   * @return Estimated size in bytes
+   * @brief Save a single measurement configuration to JSON file
+   * @param sensorId Sensor ID (e.g., "ANALOG", "DHT")
+   * @param measurementIndex Measurement index (0-based)
+   * @param config Measurement configuration to save
+   * @return PersistenceResult indicating success or failure
    */
-  static size_t getConfigSize();
+  static PersistenceResult saveMeasurementToJson(const String& sensorId, size_t measurementIndex,
+                                                 const MeasurementConfig& config);
+
+  /**
+   * @brief Load a single measurement configuration from JSON file
+   * @param sensorId Sensor ID (e.g., "ANALOG", "DHT")
+   * @param measurementIndex Measurement index (0-based)
+   * @param config Output parameter - loaded configuration
+   * @return PersistenceResult indicating success or failure
+   */
+  static PersistenceResult loadMeasurementFromJson(const String& sensorId, size_t measurementIndex,
+                                                   MeasurementConfig& config);
+
+  /**
+   * @brief Update a single measurement setting via generic field name
+   * @param sensorId Sensor ID to update
+   * @param measurementIndex Measurement index to update
+   * @param fieldName Name of the field to update (e.g., "enabled", "minValue", "name")
+   * @param value JSON value to set
+   * @return PersistenceResult indicating success or failure
+   */
+  static PersistenceResult updateMeasurementSetting(const String& sensorId, size_t measurementIndex,
+                                                    const String& fieldName,
+                                                    const JsonVariant& value);
+
+  /**
+   * @brief Update multiple measurement settings at once (batch update)
+   * @param sensorId Sensor ID to update
+   * @param measurementIndex Measurement index to update
+   * @param settings JSON object with field name/value pairs
+   * @return PersistenceResult indicating success or failure
+   */
+  static PersistenceResult updateMeasurementSettings(const String& sensorId,
+                                                     size_t measurementIndex,
+                                                     const JsonObject& settings);
 
 private:
   SensorPersistence() = default;
-
-  /**
-   * @brief Internal save method
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult saveInternal();
-
-  /**
-   * @brief Internal method for updating sensor thresholds
-   * @param sensorId Sensor ID to update
-   * @param measurementIndex Measurement index to update
-   * @param yellowLow Yellow low threshold value
-   * @param greenLow Green low threshold value
-   * @param greenHigh Green high threshold value
-   * @param yellowHigh Yellow high threshold value
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult updateSensorThresholdsInternal(const String& sensorId,
-                                                          size_t measurementIndex, float yellowLow,
-                                                          float greenLow, float greenHigh,
-                                                          float yellowHigh);
-
-  /**
-   * @brief Internal method for updating analog min/max values
-   * @param sensorId Sensor ID to update
-   * @param measurementIndex Measurement index to update
-   * @param minValue Minimum value
-   * @param maxValue Maximum value
-   * @param inverted Whether the sensor is inverted
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult updateAnalogMinMaxInternal(const String& sensorId,
-                                                      size_t measurementIndex, float minValue,
-                                                      float maxValue, bool inverted);
-
-  /**
-   * @brief Internal method for updating measurement interval
-   * @param sensorId Sensor ID to update
-   * @param interval Measurement interval in milliseconds
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult updateMeasurementIntervalInternal(const String& sensorId,
-                                                             unsigned long interval);
-
-  /**
-   * @brief Internal method for updating measurement enabled state
-   * @param sensorId Sensor ID to update
-   * @param measurementIndex Measurement index to update
-   * @param enabled Whether the measurement is enabled
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult updateMeasurementEnabledInternal(const String& sensorId,
-                                                            size_t measurementIndex, bool enabled);
-
-  /**
-   * @brief Internal method for updating absolute min/max values
-   * @param sensorId Sensor ID to update
-   * @param measurementIndex Measurement index to update
-   * @param absoluteMin Absolute minimum value
-   * @param absoluteMax Absolute maximum value
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult updateAbsoluteMinMaxInternal(const String& sensorId,
-                                                        size_t measurementIndex, float absoluteMin,
-                                                        float absoluteMax);
-
-  /**
-   * @brief Internal method for updating analog raw min/max values
-   * @param sensorId Sensor ID to update
-   * @param measurementIndex Measurement index to update
-   * @param absoluteRawMin Absolute minimum raw value
-   * @param absoluteRawMax Absolute maximum raw value
-   * @return PersistenceResult indicating success or failure
-   */
-  static PersistenceResult updateAnalogRawMinMaxInternal(const String& sensorId,
-                                                         size_t measurementIndex,
-                                                         int absoluteRawMin, int absoluteRawMax);
 };
 
 #endif

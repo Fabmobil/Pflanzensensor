@@ -44,6 +44,7 @@ public:
   DisplayResult setClockEnabled(bool enabled);         // New method
   DisplayResult setFlowerImageEnabled(bool enabled);   // New method
   DisplayResult setFabmobilImageEnabled(bool enabled); // New method
+  DisplayResult setQrCodeEnabled(bool enabled);        // New method for QR code screen
   // Set display-only flag for a specific sensor measurement. This does not
   // disable the sensor itself, only whether the measurement should be shown
   // on the display rotation.
@@ -99,8 +100,15 @@ public:
    */
   inline bool isFabmobilImageEnabled() const { return m_config.showFabmobilImage; }
 
+  /**
+   * @brief Check if QR code screen is enabled
+   * @return True if QR code screen is enabled, false otherwise
+   */
+  inline bool isQrCodeEnabled() const { return m_config.showQrCode; }
+
   // Display operations
   void showInfoScreen(const String& ipAddress);
+  void showQrCodeScreen(); // New method to show dedicated QR code screen
   void update();
 
   // Unified logging methods for both boot and update modes

@@ -1,0 +1,46 @@
+{
+  "wifi": {
+    "ssid1": "YourWiFi1",
+    "password1": "",
+    "ssid2": "YourWiFi2",
+    "password2": "",
+    "hostname": "pflanzensensor"
+  },
+  "display": {
+    "showIP": true,
+    "showClock": true,
+    "showFlower": true,
+    "showFabmobil": true,
+    "showQR": false,
+    "screenDuration": 5000,
+    "clockFormat": "24h"
+  },
+  "ntp": {
+    "server": "pool.ntp.org",
+    "timezone": "CET-1CEST,M3.5.0,M10.5.0/3"
+  },
+  "influxdb": {
+    "enabled": false,
+    "url": "",
+    "token": "",
+    "org": "",
+    "bucket": "",
+    "interval": 60000
+  },
+  "sensors": {
+    "ANALOG": {
+      "enabled": true,
+      "interval": 60000
+    },
+    "DHT": {
+      "enabled": true,
+      "interval": 60000
+    }
+  },
+  "system": {
+    "logLevel": "INFO",
+    "debugSensor": false,
+    "debugDisplay": false,
+    "debugWifi": false
+  }
+}

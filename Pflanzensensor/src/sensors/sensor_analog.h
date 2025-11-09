@@ -304,6 +304,8 @@ private:
   std::vector<float> m_maxValues;
   // Store last raw ADC value per channel
   std::vector<int> m_lastRawValues;
+  // Track if clamping warning was already shown in this measurement cycle
+  std::vector<bool> m_clampWarningShown;
 
   // Only keep DRY-compliant helpers
   bool validateReading(int reading, size_t measurementIndex) const;

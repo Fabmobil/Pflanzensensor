@@ -99,14 +99,15 @@ function updateClockFormat(format) {
 }
 
 /**
- * Initialize display toggle checkboxes (IP, clock, flower, fabmobil)
+ * Initialize display toggle checkboxes (IP, clock, flower, fabmobil, QR)
  */
 function initDisplayToggleHandlers() {
   const checkboxes = [
     { selector: '.show-ip-checkbox', setting: 'show_ip' },
     { selector: '.show-clock-checkbox', setting: 'show_clock' },
     { selector: '.show-flower-checkbox', setting: 'show_flower' },
-    { selector: '.show-fabmobil-checkbox', setting: 'show_fabmobil' }
+    { selector: '.show-fabmobil-checkbox', setting: 'show_fabmobil' },
+    { selector: '.show-qr-checkbox', setting: 'show_qr' }
   ];
 
   checkboxes.forEach(({ selector, setting }) => {
@@ -129,7 +130,8 @@ function updateDisplayToggle(setting, enabled) {
     'show_ip': 'show_ip',
     'show_clock': 'show_clock',
     'show_flower': 'show_flower',
-    'show_fabmobil': 'show_fabmobil'
+    'show_fabmobil': 'show_fabmobil',
+    'show_qr': 'show_qr'
   };
 
   const key = keyMap[setting];

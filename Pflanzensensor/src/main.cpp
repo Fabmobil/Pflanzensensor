@@ -12,8 +12,9 @@
 
 // System Components
 #include "configs/config.h"
+#include "utils/config_backup_utils.h"
 #include "utils/critical_section.h"
-#include "utils/persistence_utils.h"
+#include "utils/flash_persistence.h"
 #include "utils/result_types.h"
 
 // Manager Classes
@@ -46,6 +47,7 @@
 #endif
 
 // helper methods
+#include "managers/manager_sensor_persistence.h"
 #include "utils/helper.h"
 
 // Global objects
@@ -65,20 +67,58 @@ void setup() {
   Serial.setDebugOutput(true); // Enable debug output to serial
   delay(1000);                 // Give sensors time to power up and stabilize
 
+  // **ULTRA-CRITICAL: Check for flash restore BEFORE ANYTHING ELSE**
+  // We need to restore with the absolute cleanest heap possible
+  // Don't even initialize logger yet - heap fragmentation is critical
+  {
+    CriticalSection cs;
+    if (!LittleFS.begin()) {
+      Serial.println(F("FATAL: Dateisystem-Mount fehlgeschlagen"));
+      return;
+    }
+  }
+
+  if (LittleFS.exists("/.restore_from_flash")) {
+    Serial.println(
+        F("Wiederherstellungs-Flag gefunden - stelle Konfiguration aus Flash wieder her "));
+
+    // Remove flag FIRST to prevent infinite loops
+    LittleFS.remove("/.restore_from_flash");
+
+    if (FlashPersistence::hasValidConfig()) {
+      Serial.print(F("Freier Heap vor Wiederherstellung: "));
+      Serial.println(ESP.getFreeHeap());
+
+      // Call restore directly - minimal allocations
+      auto result = FlashPersistence::restoreFromFlash();
+      if (result.isSuccess()) {
+        Serial.println(F("Preferences erfolgreich wiederhergestellt"));
+
+        // Restore JSON config files from /backup/ to /config/
+        Serial.println(F("Stelle Config-Dateien wieder her..."));
+        if (ConfigBackupUtils::restoreConfigFiles()) {
+          Serial.println(F("Config-Dateien erfolgreich wiederhergestellt"));
+        } else {
+          Serial.println(F("Keine Config-Dateien zum Wiederherstellen gefunden"));
+        }
+
+        Serial.println(F("Wiederherstellung abgeschlossen - starte neu..."));
+        delay(1000);
+        ESP.restart(); // Reboot with restored config
+      } else {
+        Serial.print(F("Wiederherstellung fehlgeschlagen: "));
+        Serial.println(result.getMessage());
+      }
+    } else {
+      Serial.println(F("Kein gültiges Flash-Backup gefunden"));
+    }
+  }
+
+  // Normal boot continues here
   logger.beginMemoryTracking(F("managers_init"));
 
-  // Initialize filesystem
-  if (!Helper::initializeComponent(F("filesystem"), []() -> ResourceResult {
-        CriticalSection cs;
-        if (!LittleFS.begin()) {
-          logger.error(F("main"), F("Dateisystem konnte nicht eingehängt werden"));
-          return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR,
-                                      F("Dateisystem konnte nicht eingehängt werden"));
-        }
-        return ResourceResult::success();
-      })) {
-    return;
-  }
+  // Filesystem already mounted above
+  logger.info(F("main"), F("Initialisiere Dateisystem"));
 
 #if USE_LED_TRAFFIC_LIGHT
   if (!Helper::initializeComponent(F("LED traffic light manager"), []() -> ResourceResult {
@@ -241,7 +281,7 @@ void setup() {
   Helper::initializeComponent(F("WiFi"), []() -> ResourceResult {
     auto result = setupWiFi();
     if (!result.isSuccess()) {
-      logger.error(F("main"), F("Failed to initialize WiFi: ") + result.getMessage());
+      logger.error(F("main"), F("WiFi-Initialisierung fehlgeschlagen: ") + result.getMessage());
     }
     return result;
   });
@@ -270,8 +310,7 @@ void setup() {
 #if USE_WIFI
   if (WiFi.status() == WL_CONNECTED) {
 #endif
-    Helper::initializeComponent(F("NTP time sync"), []() -> ResourceResult {
-      logger.info(F("main"), F("Initialisiere NTP-Zeitsynchronisation"));
+    Helper::initializeComponent(F("NTP-Zeitsynchronisation"), []() -> ResourceResult {
       logger.initNTP();
       int timeSync = 0;
       while (timeSync < 10) {
@@ -398,7 +437,6 @@ void setup() {
 
 void loop() {
   static unsigned long lastMemoryCheck = 0;
-  static unsigned long lastMaintenanceCheck = 0;
   static unsigned long lastWiFiCheck = 0;
   static unsigned long lastMeasurementUpdate = 0;
   static unsigned long lastUpdateModeLog = 0;
@@ -430,8 +468,7 @@ void loop() {
       lastUpdateModeLog = currentMillis;
     }
     WebManager::getInstance().handleClient();
-    ESP.wdtFeed();
-    delay(10);
+    yield(); // Allow background tasks without blocking upload
     return;
   }
 
@@ -471,16 +508,6 @@ void loop() {
     lastWiFiCheck = currentMillis;
   }
 
-  // System maintenance tasks
-  if (currentMillis - lastMaintenanceCheck >= 600000) { // Every 10 minutes
-    logger.debug(F("main"), F("Führe Wartungsaufgaben aus"));
-
-#if USE_WIFI
-    logger.updateNTP();
-#endif
-    lastMaintenanceCheck = currentMillis;
-  }
-
 // Handle web server requests
 #if USE_WEBSERVER
   WebManager::getInstance().handleClient();
@@ -503,6 +530,9 @@ void loop() {
   if (sensorManager && sensorManager->getState() == ManagerState::INITIALIZED &&
       currentMillis - lastMeasurementUpdate >= MEASUREMENT_UPDATE_INTERVAL) {
     sensorManager->updateMeasurements();
+
+    // Note: Sensor persistence is now handled per-sensor in handleDeinitializing()
+    // No need for periodic processPendingUpdates() anymore
 
     // Update LED traffic light status for mode 2
 #if USE_LED_TRAFFIC_LIGHT

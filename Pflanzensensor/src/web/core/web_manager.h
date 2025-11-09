@@ -169,7 +169,7 @@ public:
   void resetUpdateModeStartTime() { m_updateModeStartTime = 0; }
 
 private:
-  static const size_t MAX_ACTIVE_HANDLERS = 4; ///< Maximum number of cached handlers
+  static const size_t MAX_ACTIVE_HANDLERS = 3; ///< Maximum number of cached handlers
 
   /**
    * @struct HandlerCacheEntry
@@ -417,16 +417,9 @@ private:
   std::unique_ptr<AdminMinimalHandler> _minimalAdminHandler; ///< Minimal admin interface
   SensorManager* _sensorManager;                             ///< Sensor management
 
-  // On-demand handlers
-  std::unique_ptr<StartpageHandler> _startHandler;         ///< Start page handler
-  std::unique_ptr<AdminHandler> _adminHandler;             ///< Admin interface handler
-  std::unique_ptr<SensorHandler> _sensorHandler;           ///< Sensor data handler
-  std::unique_ptr<AdminSensorHandler> _adminSensorHandler; ///< Sensor admin handler
-  std::unique_ptr<LogHandler> _logHandler;                 ///< Logging handler
+  // Note: All request handlers are now managed via LRU cache (m_handlerCache)
+  // They are created on-demand and automatically evicted when cache is full
   // WiFiSetupHandler entfernt: AdminHandler behandelt WiFi-Updates über /admin/updateWiFi
-#if USE_DISPLAY
-  std::unique_ptr<AdminDisplayHandler> _displayHandler; ///< Display admin handler
-#endif
 
   bool _initialized{false}; ///< Initialization state flag
   uint16_t _port;           ///< Server port number

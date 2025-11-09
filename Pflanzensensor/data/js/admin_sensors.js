@@ -584,7 +584,9 @@ ThresholdSlider.prototype.init = function () { this.render(); };
 ThresholdSlider.prototype.render = function () {
   var container = this.container, cfg = this.config;
   container.innerHTML = '';
-  try { container.classList.add('threshold-slider-container'); } catch (e) {}
+  // Note: Do NOT add 'threshold-slider-container' class here!
+  // The container already has the correct 'threshold-container' class from HTML.
+  // The parent element has 'threshold-slider-container'.
   if (cfg.max <= cfg.min) { Logger.error('Invalid slider range:', cfg); return; }
   if (!this.validateThresholds()) return;
   this.renderGradientBar();
@@ -817,20 +819,45 @@ var ThresholdSliderInitializer = (function () {
     var thresholds = [meas.thresholds.yellowLow, meas.thresholds.greenLow, meas.thresholds.greenHigh, meas.thresholds.yellowHigh];
     var minThreshold = Math.min.apply(null, thresholds); var maxThreshold = Math.max.apply(null, thresholds); var thresholdRange = maxThreshold - minThreshold;
     var min, max;
-    // For analog sensors, always use 0..100 scale
-    if (sensor.id && sensor.id.toLowerCase().indexOf('analog') === 0) {
-      min = 0; max = 100; Logger.debug(sensor.id + '_' + index + ': Analog sensor, fixed scale 0-100%');
+    var isAnalog = (sensor.id && sensor.id.toLowerCase().indexOf('analog') === 0);
+
+    // For analog sensors, always use 0..100 scale (relative values, not raw values)
+    if (isAnalog) {
+      min = 0; max = 100;
+      Logger.debug(sensor.id + '_' + index + ': Analog sensor, fixed scale 0-100%');
     } else if (name.indexOf('hum') !== -1 || name.indexOf('%') !== -1 || id.indexOf('hum') !== -1 || unit.indexOf('%') !== -1) {
-      min = 0; max = 100; Logger.debug(sensor.id + '_' + index + ': Percentage scale 0-100%');
+      min = 0; max = 100;
+      Logger.debug(sensor.id + '_' + index + ': Percentage scale 0-100%');
     } else {
-      var buffer = thresholdRange * 0.2; min = Math.floor(minThreshold - buffer); max = Math.ceil(maxThreshold + buffer);
-      if (name.indexOf('temp') !== -1 || name.indexOf('°c') !== -1 || id.indexOf('temp') !== -1) { min = Math.max(min, -40); max = Math.max(max, 50); Logger.debug(sensor.id + '_' + index + ': Temperature scale ' + min + '-' + max + '°C'); }
-      else if (name.indexOf('co2') !== -1 || name.indexOf('ppm') !== -1 || id.indexOf('co2') !== -1) { min = Math.max(min, 0); Logger.debug(sensor.id + '_' + index + ': CO2 scale ' + min + '-' + max + ' ppm'); }
-      else if (name.indexOf('pm') !== -1 || name.indexOf('partikel') !== -1 || id.indexOf('pm') !== -1) { min = Math.max(min, 0); Logger.debug(sensor.id + '_' + index + ': PM scale ' + min + '-' + max); }
-      else { Logger.debug(sensor.id + '_' + index + ': Generic scale ' + min + '-' + max); }
+      var buffer = thresholdRange * 0.2;
+      min = Math.floor(minThreshold - buffer);
+      max = Math.ceil(maxThreshold + buffer);
+      if (name.indexOf('temp') !== -1 || name.indexOf('°c') !== -1 || id.indexOf('temp') !== -1) {
+        min = Math.max(min, -40); max = Math.max(max, 50);
+        Logger.debug(sensor.id + '_' + index + ': Temperature scale ' + min + '-' + max + '°C');
+      } else if (name.indexOf('co2') !== -1 || name.indexOf('ppm') !== -1 || id.indexOf('co2') !== -1) {
+        min = Math.max(min, 0);
+        Logger.debug(sensor.id + '_' + index + ': CO2 scale ' + min + '-' + max + ' ppm');
+      } else if (name.indexOf('pm') !== -1 || name.indexOf('partikel') !== -1 || id.indexOf('pm') !== -1) {
+        min = Math.max(min, 0);
+        Logger.debug(sensor.id + '_' + index + ': PM scale ' + min + '-' + max);
+      } else {
+        Logger.debug(sensor.id + '_' + index + ': Generic scale ' + min + '-' + max);
+      }
+
+      // For non-analog sensors, allow minmax override if specified
+      if (meas.minmax && typeof meas.minmax.min !== 'undefined') {
+        min = meas.minmax.min;
+        Logger.debug(sensor.id + '_' + index + ': Using config minmax.min: ' + min);
+      }
+      if (meas.minmax && typeof meas.minmax.max !== 'undefined') {
+        max = meas.minmax.max;
+        Logger.debug(sensor.id + '_' + index + ': Using config minmax.max: ' + max);
+      }
     }
-    if (typeof meas.min !== 'undefined') { min = meas.min; Logger.debug(sensor.id + '_' + index + ': Using config min: ' + min); }
-    if (typeof meas.max !== 'undefined') { max = meas.max; Logger.debug(sensor.id + '_' + index + ': Using config max: ' + max); }
+    // Note: For analog sensors, we deliberately ignore meas.minmax here.
+    // The minmax values are the RAW sensor values used for percentage calculation,
+    // but the threshold slider always displays the RELATIVE 0-100% scale.
   // Do NOT extend slider range to absolute min/max; only use calculated min/max for threshold bar
     if (minThreshold < min || maxThreshold > max) { Logger.warn(sensor.id + '_' + index + ': Thresholds (' + minThreshold + '-' + maxThreshold + ') don\'t fit in scale (' + min + '-' + max + '). Adjusting.'); min = Math.min(min, minThreshold - 5); max = Math.max(max, maxThreshold + 5); }
     return { min: min, max: max };
@@ -1049,9 +1076,9 @@ var ConfigLoader = (function () {
   function load() {
     return new Promise(function (resolve, reject) {
       if (typeof fetch === 'function') {
-        fetch('/admin/getSensorConfig', { credentials: 'include' }).then(function (r) { return parseJsonResponse(r); }).then(function (data) { if (data && data.sensors) { storeInitialValues(data.sensors); ThresholdSliderInitializer.initialize(data); initializeAutocalCheckboxes(data.sensors); Logger.debug('Config loaded successfully'); resolve(data); } else { Logger.warn('No sensors in config'); resolve(data); } }).catch(function (err) { Logger.error('Failed to load config:', err); reject(err); });
+        fetch('/admin/getSensorConfig', { credentials: 'include' }).then(function (r) { return parseJsonResponse(r); }).then(function (data) { if (data && data.sensors) { storeInitialValues(data.sensors); updateThresholdInputsFromConfig(data.sensors); ThresholdSliderInitializer.initialize(data); initializeAutocalCheckboxes(data.sensors); Logger.debug('Config loaded successfully'); resolve(data); } else { Logger.warn('No sensors in config'); resolve(data); } }).catch(function (err) { Logger.error('Failed to load config:', err); reject(err); });
       } else {
-        var xhr = new XMLHttpRequest(); xhr.open('GET', '/admin/getSensorConfig', true); xhr.withCredentials = true; xhr.onload = function () { if (xhr.status >= 200 && xhr.status < 300) try { var data = JSON.parse(xhr.responseText); if (data && data.sensors) { storeInitialValues(data.sensors); ThresholdSliderInitializer.initialize(data); initializeAutocalCheckboxes(data.sensors); Logger.debug('Config loaded successfully'); resolve(data); } else { Logger.warn('No sensors in config'); resolve(data); } } catch (e) { Logger.error('Failed to parse getSensorConfig', e); reject(e); } else reject(new Error('HTTP ' + xhr.status)); }; xhr.onerror = function () { Logger.error('Network error while loading config'); reject(new Error('Network error')); }; xhr.send(null);
+        var xhr = new XMLHttpRequest(); xhr.open('GET', '/admin/getSensorConfig', true); xhr.withCredentials = true; xhr.onload = function () { if (xhr.status >= 200 && xhr.status < 300) try { var data = JSON.parse(xhr.responseText); if (data && data.sensors) { storeInitialValues(data.sensors); updateThresholdInputsFromConfig(data.sensors); ThresholdSliderInitializer.initialize(data); initializeAutocalCheckboxes(data.sensors); Logger.debug('Config loaded successfully'); resolve(data); } else { Logger.warn('No sensors in config'); resolve(data); } } catch (e) { Logger.error('Failed to parse getSensorConfig', e); reject(e); } else reject(new Error('HTTP ' + xhr.status)); }; xhr.onerror = function () { Logger.error('Network error while loading config'); reject(new Error('Network error')); }; xhr.send(null);
       }
     });
   }
@@ -1068,6 +1095,49 @@ var ConfigLoader = (function () {
       }
     }
     AppState.setInitialConfig(initialValues);
+  }
+
+  function updateThresholdInputsFromConfig(sensors) {
+    // CRITICAL: Update threshold input values from loaded config
+    // This ensures the inputs show the correct values from Preferences,
+    // not the server-side rendered values which might be outdated
+    Logger.debug('Updating threshold inputs from config');
+    for (var sensorId in sensors) if (sensors.hasOwnProperty(sensorId)) {
+      var sensor = sensors[sensorId];
+      if (!sensor.measurements) continue;
+      var measKeys = (Object.prototype.toString.call(sensor.measurements) === '[object Array]') ? sensor.measurements : (function (m) { var arr = []; for (var kk in m) if (m.hasOwnProperty(kk)) arr.push(m[kk]); return arr; })(sensor.measurements);
+      for (var idx = 0; idx < measKeys.length; idx++) {
+        var m = measKeys[idx];
+
+        // Update threshold input fields
+        if (m.thresholds) {
+          var inputNames = ['yellowLow', 'greenLow', 'greenHigh', 'yellowHigh'];
+          var thresholdValues = [m.thresholds.yellowLow, m.thresholds.greenLow, m.thresholds.greenHigh, m.thresholds.yellowHigh];
+
+          for (var i = 0; i < inputNames.length; i++) {
+            var inputName = sensorId + '_' + idx + '_' + inputNames[i];
+            var input = document.querySelector('input[name="' + inputName + '"]');
+            if (input && typeof thresholdValues[i] !== 'undefined') {
+              input.value = thresholdValues[i];
+              Logger.debug('Updated ' + inputName + ' to ' + thresholdValues[i]);
+            }
+          }
+        }
+
+        // CRITICAL: Also update absolute min/max inputs and markers
+        // These are rendered server-side but might be outdated
+        if (typeof m.absoluteMin !== 'undefined' || typeof m.absoluteMax !== 'undefined') {
+          DisplayUpdater.updateAbsoluteMinMax(sensorId, idx, m.absoluteMin, m.absoluteMax);
+          Logger.debug('Updated absolute min/max for ' + sensorId + '_' + idx);
+        }
+
+        // Update absolute raw min/max if present
+        if (typeof m.absoluteRawMin !== 'undefined' || typeof m.absoluteRawMax !== 'undefined') {
+          DisplayUpdater.updateAbsoluteRawMinMax(sensorId, idx, m.absoluteRawMin, m.absoluteRawMax);
+          Logger.debug('Updated absolute raw min/max for ' + sensorId + '_' + idx);
+        }
+      }
+    }
   }
 
   function initializeAutocalCheckboxes(sensors) {
