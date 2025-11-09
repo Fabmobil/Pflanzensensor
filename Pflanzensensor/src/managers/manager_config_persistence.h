@@ -17,18 +17,18 @@ public:
   using PersistenceResult = TypedResult<ConfigError, void>;
 
   /**
-   * @brief Load configuration from file
+   * @brief Load configuration from Preferences
    * @param config Configuration data structure to populate
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult loadFromFile(ConfigData& config);
+  static PersistenceResult load(ConfigData& config);
 
   /**
-   * @brief Save configuration to file (minimal, no String or logger)
+   * @brief Save configuration to Preferences
    * @param config Configuration data to save
    * @return PersistenceResult indicating success or failure
    */
-  static PersistenceResult saveToFileMinimal(const ConfigData& config);
+  static PersistenceResult save(const ConfigData& config);
 
   /**
    * @brief Reset configuration to default values
@@ -38,16 +38,16 @@ public:
   static PersistenceResult resetToDefaults(ConfigData& config);
 
   /**
-   * @brief Check if configuration file exists
-   * @return True if config file exists, false otherwise
+   * @brief Check if configuration exists in Preferences
+   * @return True if config exists, false otherwise
    */
-  static bool configFileExists();
+  static bool configExists();
 
   /**
-   * @brief Get configuration file size
-   * @return Size of config file in bytes, 0 if file doesn't exist
+   * @brief Get estimated configuration size in Preferences
+   * @return Estimated size in bytes
    */
-  static size_t getConfigFileSize();
+  static size_t getConfigSize();
 
   /**
    * @brief Write update flags to a simple text file (not JSON config)
@@ -63,18 +63,27 @@ public:
    */
   static void readUpdateFlagsFromFile(bool& fs, bool& fw);
 
-private:
-  ConfigPersistence() = default;
+  /**
+   * @brief Backup all config data (Preferences + JSON sensor files) to /prefs_backup.json
+   * @return True if backup successful, false otherwise
+   * @details Creates /prefs_backup.json containing:
+   *          - Global settings (WiFi, Display, Debug, NTP, InfluxDB) from Preferences
+   *          - Sensor measurements from /config/sensor_*.json files
+   *          Used for Config Download in WebUI
+   */
+  static bool backupPreferencesToFile();
 
   /**
-   * @brief Load sensor error flags from JSON
-   * @param sensorErrors JSON document containing sensor errors
-   * @param config Configuration data to populate
+   * @brief Restore config data from parsed JSON document
+   * @param doc Parsed JSON document containing config backup
+   * @return True if restore successful, false otherwise
+   * @details Helper function used by restorePreferencesFromFile for Config Upload
+   *          Restores both global Preferences and sensor JSON files
    */
-  static void loadSensorErrors(const ArduinoJson::JsonObject& sensorErrors, ConfigData& config);
-};
+  static bool restorePreferencesFromJson(const DynamicJsonDocument& doc);
 
-// Function to apply sensor settings directly from JSON
-void applySensorSettingsFromJson(const String& sensorId, const JsonObject& sensorConfig);
+private:
+  ConfigPersistence() = default;
+};
 
 #endif

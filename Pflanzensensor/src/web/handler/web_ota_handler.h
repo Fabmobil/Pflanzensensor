@@ -256,6 +256,17 @@ private:
   /// Minimum required free heap space for safe operation
   static const size_t MIN_FREE_HEAP = 5500;
 
+  /**
+   * @brief Back up all Preferences before filesystem update
+   * @return true if backup successful
+   * @details Saves all config data to RAM before LittleFS update
+   */
+  
+  // Removed obsolete RAM-based backup/restore methods and PreferencesBackup struct.
+  // Now using file-based backup exclusively (see ConfigPersistence::backupPreferencesToFile).
+
+  String _backupFileContent; ///< REMOVED - not used, caused memory issues
   WebAuth& _auth;    ///< Reference to authentication manager
   OTAStatus _status; ///< Current update status
 };
+

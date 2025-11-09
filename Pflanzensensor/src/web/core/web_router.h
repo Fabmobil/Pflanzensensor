@@ -36,21 +36,24 @@ using MiddlewareCallback = std::function<bool(HTTPMethod, String)>;
  *          - URL pattern
  *          - HTTP method
  *          - Handler function
+ *          - Owner tracking for lazy-loading cleanup
  */
 struct Route {
   String url;              ///< URL pattern to match
   HTTPMethod method;       ///< HTTP method to match
   HandlerCallback handler; ///< Function to handle the route
+  String handlerType;      ///< Type of handler that registered this route (for cleanup)
 
   /**
    * @brief Constructor for Route
    * @param u URL pattern
    * @param m HTTP method
    * @param h Handler function
+   * @param ht Handler type identifier (optional, for lazy-loading cleanup)
    * @details Uses move semantics for efficient handler storage
    */
-  Route(const String& u, HTTPMethod m, HandlerCallback h)
-      : url(u), method(m), handler(std::move(h)) {} // Use move semantics for handler
+  Route(const String& u, HTTPMethod m, HandlerCallback h, const String& ht = "")
+      : url(u), method(m), handler(std::move(h)), handlerType(ht) {}
 };
 
 /**
@@ -66,7 +69,9 @@ struct Route {
 class WebRouter {
 public:
   // Configuration constants
-  /// Maximum total routes based on enabled sensors
+  /// Maximum total routes - with lazy-loading and route cleanup, only active handlers'
+  /// routes are in memory. Typical usage: ~10-15 routes per handler * 4 cached handlers = 40-60.
+  /// Set to 50 with safety margin.
   static constexpr size_t MAX_ROUTES = 50;
   /// Maximum number of middleware functions
   static constexpr size_t MAX_MIDDLEWARE = 8;
@@ -95,13 +100,51 @@ public:
    * @param method HTTP method to handle
    * @param url URL pattern to match
    * @param handler Function to handle the route
+   * @param handlerType Type identifier for the handler (for cleanup tracking)
    * @return RouterResult indicating success or failure
    * @details Registers a new route with error checking:
    *          - Validates memory availability
    *          - Checks route limits
    *          - Ensures unique routes
+   *          - Tracks handler ownership for cleanup
    */
-  RouterResult addRoute(HTTPMethod method, const String& url, HandlerCallback handler);
+  RouterResult addRoute(HTTPMethod method, const String& url, HandlerCallback handler,
+                        const String& handlerType = "");
+
+  /**
+   * @brief Set current handler type context for route registration
+   * @param handlerType Type identifier to use for subsequently registered routes
+   * @details Sets a context that will be used for all routes registered
+   *          until clearHandlerTypeContext() is called. This allows
+   *          registerRoutes() implementations to work without modification.
+   */
+  void setHandlerTypeContext(const String& handlerType) { _currentHandlerType = handlerType; }
+
+  /**
+   * @brief Clear handler type context
+   * @details Resets the handler type context after route registration is complete
+   */
+  void clearHandlerTypeContext() { _currentHandlerType = ""; }
+
+  /**
+   * @brief Remove route for specific HTTP method and URL
+   * @param method HTTP method to remove
+   * @param url URL pattern to remove
+   * @return RouterResult indicating success or failure
+   * @details Removes a previously registered route:
+   *          - Finds matching route in collection
+   *          - Removes from internal routes vector
+   *          - Note: Cannot unregister from ESP8266WebServer (limitation)
+   */
+  RouterResult removeRoute(HTTPMethod method, const String& url);
+
+  /**
+   * @brief Remove all routes registered by a handler
+   * @param handlerType Type identifier for the handler
+   * @details Removes all routes associated with a specific handler type.
+   *          Used when handler is evicted from cache.
+   */
+  void removeHandlerRoutes(const String& handlerType);
 
   /**
    * @brief Add middleware function
@@ -175,10 +218,32 @@ public:
     return ESP.getFreeHeap() >= MIN_FREE_HEAP && ESP.getHeapFragmentation() < 70;
   }
 
+  /**
+   * @brief Get current route count
+   * @return Number of registered routes
+   * @details Returns the number of routes currently registered.
+   *          Useful for monitoring and debugging lazy-loading system.
+   */
+  size_t getRouteCount() const { return _routes.size(); }
+
+  /**
+   * @brief Log route statistics
+   * @details Logs current routing statistics for debugging:
+   *          - Total registered routes
+   *          - Route limit usage
+   *          - Memory status
+   */
+  void logRouteStats() const {
+    logger.info(F("WebRouter"), F("Routen: ") + String(_routes.size()) + F("/") +
+                                    String(MAX_ROUTES) + F(" (") +
+                                    String((_routes.size() * 100) / MAX_ROUTES) + F("%)"));
+  }
+
 private:
   ESP8266WebServer& _server;                   ///< Reference to web server
   std::vector<Route> _routes;                  ///< Collection of registered routes
   std::vector<MiddlewareCallback> _middleware; ///< Registered middleware functions
+  String _currentHandlerType; ///< Current handler type context for route registration
 
   /**
    * @brief Check if route limit is exceeded

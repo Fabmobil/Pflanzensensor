@@ -47,8 +47,11 @@ function initScreenDurationHandler() {
     clearTimeout(timeout);
     timeout = setTimeout(() => {
       const duration = parseInt(this.value);
+      // User-facing input is in seconds. Convert to milliseconds before storing
+      // because the firmware expects screen_dur in milliseconds.
       if (duration >= 1 && duration <= 60) {
-        updateScreenDuration(duration);
+        const durationMs = duration * 1000;
+        updateScreenDuration(durationMs);
       }
     }, 1000); // 1 second debounce
   });
@@ -59,27 +62,14 @@ function initScreenDurationHandler() {
  * Update screen duration via AJAX
  */
 function updateScreenDuration(duration) {
-  const formData = new FormData();
-  formData.append('duration', duration.toString());
-
-  fetch('/admin/display/screen_duration', {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    credentials: 'include',
-    body: new URLSearchParams({ screen_duration: duration, ajax: '1' })
-  })
-  .then(parseJsonResponse)
-  .then(data => {
-    if (data.success) {
-      showSuccessMessage('Anzeigedauer erfolgreich aktualisiert');
-    } else {
-      showErrorMessage('Fehler beim Aktualisieren: ' + (data.error || 'Unbekannter Fehler'));
-    }
-  })
-  .catch(error => {
-    console.error('[admin_display.js] Error updating screen duration:', error);
-    showErrorMessage('Fehler beim Aktualisieren: ' + error.message);
-  });
+  // duration passed in is milliseconds
+  setConfigValue('display', 'screen_dur', duration, 'uint')
+    .then(() => {
+      console.log('[admin_display.js] Screen duration updated');
+    })
+    .catch(error => {
+      console.error('[admin_display.js] Error updating screen duration:', error);
+    });
 }
 
 /**
@@ -99,38 +89,25 @@ function initClockFormatHandler() {
  * Update clock format via AJAX
  */
 function updateClockFormat(format) {
-  const formData = new FormData();
-  formData.append('format', format);
-
-  fetch('/admin/display/clock_format', {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    credentials: 'include',
-    body: new URLSearchParams({ clock_format: format, ajax: '1' })
-  })
-  .then(parseJsonResponse)
-  .then(data => {
-    if (data.success) {
-      showSuccessMessage('Uhrzeitformat erfolgreich aktualisiert');
-    } else {
-      showErrorMessage('Fehler beim Aktualisieren: ' + (data.error || 'Unbekannter Fehler'));
-    }
-  })
-  .catch(error => {
-    console.error('[admin_display.js] Error updating clock format:', error);
-    showErrorMessage('Fehler beim Aktualisieren: ' + error.message);
-  });
+  setConfigValue('display', 'clock_fmt', format, 'string')
+    .then(() => {
+      console.log('[admin_display.js] Clock format updated');
+    })
+    .catch(error => {
+      console.error('[admin_display.js] Error updating clock format:', error);
+    });
 }
 
 /**
- * Initialize display toggle checkboxes (IP, clock, flower, fabmobil)
+ * Initialize display toggle checkboxes (IP, clock, flower, fabmobil, QR)
  */
 function initDisplayToggleHandlers() {
   const checkboxes = [
     { selector: '.show-ip-checkbox', setting: 'show_ip' },
     { selector: '.show-clock-checkbox', setting: 'show_clock' },
     { selector: '.show-flower-checkbox', setting: 'show_flower' },
-    { selector: '.show-fabmobil-checkbox', setting: 'show_fabmobil' }
+    { selector: '.show-fabmobil-checkbox', setting: 'show_fabmobil' },
+    { selector: '.show-qr-checkbox', setting: 'show_qr' }
   ];
 
   checkboxes.forEach(({ selector, setting }) => {
@@ -148,28 +125,28 @@ function initDisplayToggleHandlers() {
  * Update display toggle setting via AJAX
  */
 function updateDisplayToggle(setting, enabled) {
-  const formData = new FormData();
-  formData.append('setting', setting);
-  formData.append('enabled', enabled.toString());
+  // Map setting names to config keys
+  const keyMap = {
+    'show_ip': 'show_ip',
+    'show_clock': 'show_clock',
+    'show_flower': 'show_flower',
+    'show_fabmobil': 'show_fabmobil',
+    'show_qr': 'show_qr'
+  };
 
-  fetch('/admin/display/toggle', {
-    method: 'POST',
-    headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
-    credentials: 'include',
-    body: new URLSearchParams({ display: setting, enabled: enabled, ajax: '1' })
-  })
-  .then(parseJsonResponse)
-  .then(data => {
-    if (data.success) {
-      showSuccessMessage('Einstellung erfolgreich aktualisiert');
-    } else {
-      showErrorMessage('Fehler beim Aktualisieren: ' + (data.error || 'Unbekannter Fehler'));
-    }
-  })
-  .catch(error => {
-    console.error('[admin_display.js] Error updating display toggle:', error);
-    showErrorMessage('Fehler beim Aktualisieren: ' + error.message);
-  });
+  const key = keyMap[setting];
+  if (!key) {
+    console.error('[admin_display.js] Unknown setting:', setting);
+    return;
+  }
+
+  setConfigValue('display', key, enabled, 'bool')
+    .then(() => {
+      console.log('[admin_display.js] Display toggle updated:', setting, enabled);
+    })
+    .catch(error => {
+      console.error('[admin_display.js] Error updating display toggle:', error);
+    });
 }
 
 /**
@@ -216,6 +193,10 @@ function updateMeasurementDisplay(sensorId, enabled, measurementIndex) {
     bodyParams.measurement_index = measurementIndex;
   }
 
+  // Prepare user-friendly message
+  const state = enabled ? 'aktiviert' : 'deaktiviert';
+  const successMsg = `Displayanzeige von ${sensorId} ${state}`;
+
   fetch('/admin/display/measurement_toggle', {
     method: 'POST',
     headers: { 'X-Requested-With': 'XMLHttpRequest', 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -225,7 +206,7 @@ function updateMeasurementDisplay(sensorId, enabled, measurementIndex) {
   .then(parseJsonResponse)
   .then(data => {
     if (data.success) {
-      showSuccessMessage('Messungsanzeige erfolgreich aktualisiert');
+      showSuccessMessage(successMsg);
     } else {
       showErrorMessage('Fehler beim Aktualisieren: ' + (data.error || 'Unbekannter Fehler'));
     }

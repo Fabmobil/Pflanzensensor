@@ -35,9 +35,7 @@ String Helper::getFormattedTime(bool use24Hour) {
     snprintf(buffer, sizeof(buffer), "%02d:%02d", timeinfo->tm_hour, timeinfo->tm_min);
   } else {
     int hour12 = (timeinfo->tm_hour % 12) ? (timeinfo->tm_hour % 12) : 12;
-    // Use German short markers for AM/PM
-    const char* ampm = timeinfo->tm_hour >= 12 ? "nachm." : "vorm.";
-    snprintf(buffer, sizeof(buffer), "%02d:%02d %s", hour12, timeinfo->tm_min, ampm);
+    snprintf(buffer, sizeof(buffer), "%02d:%02d", hour12, timeinfo->tm_min);
   }
   return String(buffer);
 }

@@ -39,23 +39,23 @@ public:
    */
   template <typename F>
   static bool initializeComponent(const __FlashStringHelper* componentName, F initFunc) {
-    logger.info(F("main"), String(F("Initializing ")) + componentName);
+    logger.info(F("main"), String(F("Initialisiere ")) + componentName);
     try {
       auto result = initFunc();
       if (!result.isSuccess()) {
-        logger.error(F("main"), String(F("Failed to initialize ")) + componentName + F(": ") +
-                                    result.getMessage());
+        logger.error(F("main"), String(F("Fehler beim Initialisieren von ")) + componentName +
+                                    F(": ") + result.getMessage());
         return false;
       }
-      logger.debug(F("main"), String(componentName) + F(" initialized successfully"));
+      logger.debug(F("main"), String(componentName) + F(" erfolgreich initialisiert"));
       return true;
     } catch (const std::exception& e) {
-      logger.error(F("main"), String(F("Exception during ")) + componentName +
-                                  F(" initialization: ") + String(e.what()));
+      logger.error(F("main"), String(F("Ausnahme während der Initialisierung von ")) +
+                                  componentName + F(": ") + String(e.what()));
       return false;
     } catch (...) {
-      logger.error(F("main"),
-                   String(F("Unknown exception during ")) + componentName + F(" initialization"));
+      logger.error(F("main"), String(F("Unbekannte Ausnahme während der Initialisierung von ")) +
+                                  componentName);
       return false;
     }
   }

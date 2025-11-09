@@ -43,7 +43,7 @@ public:
   AdminHandler(ESP8266WebServer& server, [[maybe_unused]] WebAuth& auth,
                [[maybe_unused]] CSSService& cssService)
       : BaseHandler(server) { // We only use the server parameter
-    logger.debug(F("AdminHandler"), F("Initializing AdminHandler"));
+    logger.debug(F("AdminHandler"), F("Initialisiere AdminHandler"));
     logger.logMemoryStats(F("Admihandler"));
   }
 
@@ -77,6 +77,26 @@ public:
    * enabled.
    */
   void handleDownloadLog();
+
+  /**
+   * @brief Download configuration as JSON file
+   * @details Exports all Preferences settings to config.json
+   */
+  void handleDownloadConfig();
+
+  /**
+   * @brief Upload handler for configuration file
+   * @details Receives uploaded config.json file and saves to temp location
+   * Sets flag for POST handler to process
+   */
+  void handleUploadConfig();
+
+  /**
+   * @brief Process uploaded configuration and reboot
+   * @details Validates JSON, restores preferences, and reboots ESP
+   * Called by POST handler after upload completes
+   */
+  void handleUploadConfigRestore();
 
   // Card generation methods - implemented in admin_handler_cards.cpp
 
@@ -161,19 +181,6 @@ private:
 
   // System action methods - implemented in admin_handler_system.cpp
   /**
-   * @brief Handle configuration update requests
-   * @details Processes configuration changes:
-   *          - Validates input
-   *          - Applies changes
-   *          - Updates storage
-   *          - Logs modifications
-   *
-   * This single endpoint supports only AJAX partial updates
-   * (indicated by X-Requested-With or ajax=1) and always returns JSON.
-   */
-  void handleAdminUpdate();
-
-  /**
    * @brief Handle configuration reset requests
    * @details Manages configuration reset:
    *          - Validates authorization
@@ -193,21 +200,6 @@ private:
    */
   void handleReboot();
 
-  /**
-   * @brief Stream config.json to client for download
-   */
-  void handleDownloadConfig();
-
-  /**
-   * @brief Stream sensors.json to client for download
-   */
-  void handleDownloadSensors();
-
-  /**
-   * @brief Handle uploaded config.json (replace after validation)
-   */
-  void handleUploadConfig();
-
   // Utility methods - implemented in admin_handler_utils.cpp
   /**
    * @brief Processes configuration updates from form submission
@@ -220,8 +212,6 @@ private:
    *          - Measurement intervals
    *          - System settings
    */
-  bool processConfigUpdates(String& changes, String* error = nullptr);
-
   /**
    * @brief Format memory size in human readable format
    * @param bytes Size in bytes
@@ -252,19 +242,6 @@ private:
    *          - Logs attempts
    */
   bool validateRequest() const;
-
-  /**
-   * @brief Validate and apply a configuration value
-   * @param key Name of the setting
-   * @param value New value to set
-   * @return true if setting was successfully applied
-   * @details Processes configuration changes:
-   *          - Validates key exists
-   *          - Checks value format
-   *          - Applies change
-   *          - Updates storage
-   */
-  bool applyConfigValue(const String& key, const String& value);
 
   /**
    * @brief Custom cleanup logic for AdminHandler

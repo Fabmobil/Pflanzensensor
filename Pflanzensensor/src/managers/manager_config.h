@@ -18,6 +18,7 @@
 #include "manager_config_debug.h"
 #include "manager_config_notifier.h"
 #include "manager_config_persistence.h"
+#include "manager_config_preferences.h"
 #include "manager_config_sensor_tracker.h"
 #include "manager_config_types.h"
 #include "manager_config_validator.h"
@@ -110,12 +111,23 @@ public:
   ConfigResult setCollectdSendSingleMeasurement(bool enable);
 
   /**
-   * @brief Set a configuration value by key
+   * @brief Set a configuration value by key (legacy method)
    * @param key The configuration key to set
    * @param value The value to set
    * @return Result of the set operation
    */
   ConfigResult setConfigValue(const char* key, const char* value);
+
+  /**
+   * @brief Set a configuration value with namespace and type
+   * @param namespaceName The namespace (e.g., "general", "wifi", "display", "debug", "s_ANALOG_1")
+   * @param key The configuration key to set
+   * @param value The value to set as string
+   * @param type The type of the value (BOOL, INT, UINT, FLOAT, STRING)
+   * @return Result of the set operation
+   */
+  ConfigResult setConfigValue(const String& namespaceName, const String& key, const String& value,
+                              ConfigValueType type);
 
   // Main configuration getters
   /**
@@ -323,9 +335,12 @@ public:
    */
   ConfigResult setWiFiSSID1(const String& ssid) {
     ScopedLock lock;
-    m_configData.wifiSSID1 = ssid;
-    notifyConfigChange("wifi_ssid_1", ssid, false);
-    return ConfigResult::success();
+    return updateStringConfig(
+        m_configData.wifiSSID1, ssid,
+        [](const String& val) {
+          return PreferencesManager::updateStringValue(PreferencesNamespaces::WIFI1, "ssid", val);
+        },
+        "wifi_ssid_1", false);
   }
   /**
    * @brief Get WiFi Password 1
@@ -336,9 +351,12 @@ public:
    */
   ConfigResult setWiFiPassword1(const String& pwd) {
     ScopedLock lock;
-    m_configData.wifiPassword1 = pwd;
-    notifyConfigChange("wifi_pwd_1", "***", false);
-    return ConfigResult::success();
+    return updateStringConfig(
+        m_configData.wifiPassword1, pwd,
+        [](const String& val) {
+          return PreferencesManager::updateStringValue(PreferencesNamespaces::WIFI1, "pwd", val);
+        },
+        "wifi_pwd_1", false);
   }
   /**
    * @brief Get WiFi SSID 2
@@ -349,9 +367,12 @@ public:
    */
   ConfigResult setWiFiSSID2(const String& ssid) {
     ScopedLock lock;
-    m_configData.wifiSSID2 = ssid;
-    notifyConfigChange("wifi_ssid_2", ssid, false);
-    return ConfigResult::success();
+    return updateStringConfig(
+        m_configData.wifiSSID2, ssid,
+        [](const String& val) {
+          return PreferencesManager::updateStringValue(PreferencesNamespaces::WIFI2, "ssid", val);
+        },
+        "wifi_ssid_2", false);
   }
   /**
    * @brief Get WiFi Password 2
@@ -362,9 +383,12 @@ public:
    */
   ConfigResult setWiFiPassword2(const String& pwd) {
     ScopedLock lock;
-    m_configData.wifiPassword2 = pwd;
-    notifyConfigChange("wifi_pwd_2", "***", false);
-    return ConfigResult::success();
+    return updateStringConfig(
+        m_configData.wifiPassword2, pwd,
+        [](const String& val) {
+          return PreferencesManager::updateStringValue(PreferencesNamespaces::WIFI2, "pwd", val);
+        },
+        "wifi_pwd_2", false);
   }
   /**
    * @brief Get WiFi SSID 3
@@ -375,9 +399,12 @@ public:
    */
   ConfigResult setWiFiSSID3(const String& ssid) {
     ScopedLock lock;
-    m_configData.wifiSSID3 = ssid;
-    notifyConfigChange("wifi_ssid_3", ssid, false);
-    return ConfigResult::success();
+    return updateStringConfig(
+        m_configData.wifiSSID3, ssid,
+        [](const String& val) {
+          return PreferencesManager::updateStringValue(PreferencesNamespaces::WIFI3, "ssid", val);
+        },
+        "wifi_ssid_3", false);
   }
   /**
    * @brief Get WiFi Password 3
@@ -388,9 +415,12 @@ public:
    */
   ConfigResult setWiFiPassword3(const String& pwd) {
     ScopedLock lock;
-    m_configData.wifiPassword3 = pwd;
-    notifyConfigChange("wifi_pwd_3", "***", false);
-    return ConfigResult::success();
+    return updateStringConfig(
+        m_configData.wifiPassword3, pwd,
+        [](const String& val) {
+          return PreferencesManager::updateStringValue(PreferencesNamespaces::WIFI3, "pwd", val);
+        },
+        "wifi_pwd_3", false);
   }
 
   // LED Traffic Light configuration
@@ -455,6 +485,57 @@ private:
 
   SensorManager* m_sensorManager = nullptr;
   bool m_configLoaded = false;
+
+  /**
+   * @brief Generic helper to update a boolean config value atomically
+   * @param currentValue Reference to the current value in RAM
+   * @param newValue The new value to set
+   * @param updateFunc Pointer to PreferencesManager update function
+   * @param notifyKey Key for change notification
+   * @param updateSensors Whether to trigger sensor updates
+   * @return Result of the operation
+   */
+  using BoolUpdateFunc = PreferencesManager::PrefResult (*)(bool);
+  ConfigResult updateBoolConfig(bool& currentValue, bool newValue, BoolUpdateFunc updateFunc,
+                                const String& notifyKey, bool updateSensors = false);
+
+  /**
+   * @brief Generic helper to update a string config value atomically
+   * @param currentValue Reference to the current value in RAM
+   * @param newValue The new value to set
+   * @param updateFunc Pointer to PreferencesManager update function
+   * @param notifyKey Key for change notification
+   * @param updateSensors Whether to trigger sensor updates
+   * @return Result of the operation
+   */
+  using StringUpdateFunc = PreferencesManager::PrefResult (*)(const String&);
+  ConfigResult updateStringConfig(String& currentValue, const String& newValue,
+                                  StringUpdateFunc updateFunc, const String& notifyKey,
+                                  bool updateSensors = false);
+
+  /**
+   * @brief Generic helper to update a uint8_t config value atomically
+   * @param currentValue Reference to the current value in RAM
+   * @param newValue The new value to set
+   * @param updateFunc Pointer to PreferencesManager update function
+   * @param notifyKey Key for change notification
+   * @param updateSensors Whether to trigger sensor updates
+   * @return Result of the operation
+   */
+  using UInt8UpdateFunc = PreferencesManager::PrefResult (*)(uint8_t);
+  ConfigResult updateUInt8Config(uint8_t& currentValue, uint8_t newValue,
+                                 UInt8UpdateFunc updateFunc, const String& notifyKey,
+                                 bool updateSensors = false);
+
+  /**
+   * @brief Generic helper to update a debug config value atomically
+   * @param debugSetFunc Function to set value in DebugConfig
+   * @param updateFunc Pointer to PreferencesManager update function
+   * @return Result of the operation
+   */
+  using DebugSetFunc = ConfigResult (DebugConfig::*)(bool);
+  ConfigResult updateDebugConfig(bool enabled, DebugSetFunc debugSetFunc,
+                                 BoolUpdateFunc updateFunc);
 
   /**
    * @brief Notify listeners of a configuration change

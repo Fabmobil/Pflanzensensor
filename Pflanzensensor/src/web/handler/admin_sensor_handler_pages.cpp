@@ -100,9 +100,9 @@ void AdminSensorHandler::handleSensorUpdate() {
       }
     }
     if (changesOccurred) {
-      auto saveResult = SensorPersistence::saveToFileMinimal();
+      auto saveResult = SensorPersistence::save();
       logger.info(F("AdminSensorHandler"),
-                  F("SensorPersistence::saveToFile() called, result: ") + saveResult.getMessage());
+                  F("SensorPersistence::save() called, result: ") + saveResult.getMessage());
       if (!saveResult.isSuccess()) {
         return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR,
                                     F("Fehler beim Speichern der Sensor-Konfiguration: ") +
@@ -188,34 +188,5 @@ void AdminSensorHandler::handleTriggerMeasurement() {
   }
 }
 
-void AdminSensorHandler::handleFlowerStatusUpdate(const std::map<String, String>& params) {
-  if (!validateRequest())
-    return;
-
-  logger.info(F("AdminSensorHandler"), F("handleFlowerStatusUpdate() aufgerufen"));
-
-  // Get sensor parameter from form
-  auto sensorIt = params.find("sensor");
-  if (sensorIt == params.end() || sensorIt->second.length() == 0) {
-    logger.warning(F("AdminSensorHandler"),
-                   F("Flower Status Update: Kein Sensor-Parameter erhalten"));
-    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Kein Sensor angegeben\"}"));
-    return;
-  }
-
-  String selectedSensor = sensorIt->second;
-  logger.info(F("AdminSensorHandler"), F("Ausgewählter Flower Status Sensor: ") + selectedSensor);
-
-  // Update configuration
-  auto result = ConfigMgr.setFlowerStatusSensor(selectedSensor);
-
-  if (result.isSuccess()) {
-    logger.info(F("AdminSensorHandler"),
-                F("Flower Status Sensor erfolgreich gespeichert: ") + selectedSensor);
-    sendJsonResponse(200, F("{\"success\":true}"));
-  } else {
-    logger.error(F("AdminSensorHandler"),
-                 F("Fehler beim Speichern des Flower Status Sensors: ") + result.getMessage());
-    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Speichern\"}"));
-  }
-}
+// Note: handleFlowerStatusUpdate removed - now handled by unified /admin/config/setConfigValue
+// with namespace="general", key="flower_sens", type="string"

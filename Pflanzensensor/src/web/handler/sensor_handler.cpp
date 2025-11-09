@@ -16,7 +16,7 @@
 static constexpr size_t MAX_VALUES = 10;
 
 RouterResult SensorHandler::onRegisterRoutes(WebRouter& router) {
-  logger.info(F("SensorHandler"), F("Sensor-Routen werden registriert:"));
+  logger.debug(F("SensorHandler"), F("Registriere Sensor-Routen"));
 
   // Register Latest Values endpoint
   auto latestResult =
@@ -24,7 +24,6 @@ RouterResult SensorHandler::onRegisterRoutes(WebRouter& router) {
   if (!latestResult.isSuccess())
     return latestResult;
 
-  logger.info(F("SensorHandler"), F("Sensor-Routen erfolgreich registriert"));
   return RouterResult::success();
 }
 

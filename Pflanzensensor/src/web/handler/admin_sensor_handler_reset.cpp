@@ -74,7 +74,7 @@ void AdminSensorHandler::handleResetAbsoluteMinMax() {
     logger.debug(F("AdminSensorHandler"), F("Reloading sensor configuration after reset"));
   }
 
-  auto reloadResult = SensorPersistence::loadFromFile();
+  auto reloadResult = SensorPersistence::load();
   if (!reloadResult.isSuccess()) {
     logger.warning(F("AdminSensorHandler"),
                    F("Fehler beim Nachladen der Sensor-Konfiguration nach dem Zurücksetzen: ") +

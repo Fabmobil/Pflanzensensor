@@ -32,25 +32,8 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin-Route"));
 
-  // Register admin update route
-  result = router.addRoute(HTTP_POST, "/admin/updateSettings", [this]() {
-    if (!validateRequest()) {
-      _server.requestAuthentication();
-      return;
-    }
-    logger.debug(F("AdminHandler"), F("Handling admin update request"));
-    handleAdminUpdate();
-  });
-  if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"),
-                 F("Registrieren der /admin/updateSettings-Route fehlgeschlagen"));
-    return result;
-  }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/updateSettings-Route"));
-
-  // Note: AJAX/partial updates are handled by the single /admin/updateSettings
-  // endpoint which expects AJAX and returns JSON responses. Duplicate JSON
-  // routes were removed to keep a single consistent code path.
+  // Note: Config updates are now handled by unified /admin/config/setConfigValue
+  // Old /admin/updateSettings route has been removed.
 
   // Register config reset route
   result = router.addRoute(HTTP_POST, "/admin/reset", [this]() {
@@ -97,7 +80,7 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadLog-Route"));
 
-  // Register download/upload routes for settings and sensors
+  // Register config download route
   result = router.addRoute(HTTP_GET, "/admin/downloadConfig", [this]() {
     if (!validateRequest()) {
       _server.requestAuthentication();
@@ -112,41 +95,11 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadConfig-Route"));
 
-  result = router.addRoute(HTTP_GET, "/admin/downloadSensors", [this]() {
-    if (!validateRequest()) {
-      _server.requestAuthentication();
-      return;
-    }
-    handleDownloadSensors();
-  });
-  if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"),
-                 F("Registrieren der /admin/downloadSensors-Route fehlgeschlagen"));
-    return result;
-  }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadSensors-Route"));
-
-  // Register upload endpoint (single field). The upload handler will detect
-  // whether the uploaded JSON is config or sensors and act accordingly.
-  _server.on(
-      "/admin/uploadConfig", HTTP_POST,
-      [this]() {
-        const char* resPath = "/upload_result.json";
-        String body = "{\"success\":true}";
-        if (LittleFS.exists(resPath)) {
-          File rf = LittleFS.open(resPath, "r");
-          if (rf) {
-            body = rf.readString();
-            rf.close();
-            LittleFS.remove(resPath);
-          }
-        }
-
-        // Always return JSON for uploads (AJAX-only API).
-        _server.send(200, "application/json", body);
-      },
-      [this]() { handleUploadConfig(); });
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/uploadConfig-Route (multipart)"));
+  // Config upload route is registered directly in WebManager::setupRoutes()
+  // because it needs file upload support which requires _server.on()
+  // See web_manager_routes.cpp for the actual registration
+  logger.debug(F("AdminHandler"),
+               F("Config-Upload-Route wird im WebManager registriert (File-Upload)"));
 
   // Register WiFi settings update route
   result = router.addRoute(HTTP_POST, "/admin/updateWiFi", [this]() {
@@ -162,7 +115,6 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   }
   logger.debug(F("AdminHandler"), F("Registrierte /admin/updateWiFi-Route"));
 
-  logger.info(F("AdminHandler"), F("Alle Admin-Routen erfolgreich registriert"));
   logger.logMemoryStats(F("AdminRegisterRoutes"));
   return result;
 }
@@ -201,7 +153,7 @@ void AdminHandler::handleAdminPage() {
         sendChunk(F("</div>"));
       },
       css, js);
-  logger.debug(F("AdminHandler"), F("Admin page sent successfully"));
+  logger.debug(F("AdminHandler"), F("Adminseite erfolgreich gesendet"));
 }
 
 void AdminHandler::handleDownloadLog() {

@@ -81,7 +81,7 @@ private:
   static constexpr unsigned long DEBUG_INTERVAL = 5000; ///< Interval between debug logs (5 seconds)
   static constexpr unsigned long SLOT_RETRY_DELAY =
       50; ///< Delay between slot attempts (50ms, reduced from 100ms)
-  static constexpr unsigned long SLOT_TIMEOUT = 30000; ///< Maximum slot hold time (30 seconds)
+  static constexpr unsigned long SLOT_TIMEOUT = 50000; ///< Maximum slot hold time (50 seconds)
 
   // Member variables
   Sensor* m_sensor;                    ///< Pointer to the managed sensor

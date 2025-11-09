@@ -29,20 +29,8 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
     return result;
   }
 
-  result = router.addRoute(HTTP_POST, "/admin/sensors/flower_status", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /admin/sensors/flower_status aufgerufen"));
-    std::map<String, String> params;
-    for (int i = 0; i < _server.args(); i++) {
-      params[_server.argName(i)] = _server.arg(i);
-    }
-    handleFlowerStatusUpdate(params);
-  });
-  if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/sensors/flower_status fehlgeschlagen: ") +
-                     result.getMessage());
-    return result;
-  }
+  // Note: /admin/sensors/flower_status removed - use unified /admin/config/setConfigValue
+  // with namespace="general", key="flower_sens"
 
   result = router.addRoute(HTTP_POST, "/admin/sensor_update", [this]() {
     logger.debug(F("AdminSensorHandler"), F("POST /admin/sensor_update aufgerufen"));
@@ -74,17 +62,6 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
                  F("Registrieren von POST /admin/analog_minmax fehlgeschlagen: ") +
-                     result.getMessage());
-    return result;
-  }
-
-  result = router.addRoute(HTTP_POST, "/admin/analog_inverted", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /admin/analog_inverted aufgerufen"));
-    handleAnalogInverted();
-  });
-  if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/analog_inverted fehlgeschlagen: ") +
                      result.getMessage());
     return result;
   }
@@ -181,7 +158,6 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
     return result;
   }
 
-  logger.info(F("AdminSensorHandler"), F("Sensor-Config-Routen erfolgreich registriert"));
   return RouterResult::success();
 }
 
@@ -202,9 +178,7 @@ HandlerResult AdminSensorHandler::handlePost(const String& uri,
   } else if (uri == "/trigger_measurement") {
     handleTriggerMeasurement();
     return HandlerResult::success();
-  } else if (uri == "/admin/sensors/flower_status") {
-    handleFlowerStatusUpdate(params);
-    return HandlerResult::success();
   }
+  // Note: /admin/sensors/flower_status removed - use unified /admin/config/setConfigValue
   return HandlerResult::fail(HandlerError::NOT_FOUND, "Unbekannter Endpunkt");
 }

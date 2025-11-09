@@ -5,376 +5,156 @@
 
 #include "manager_sensor_persistence.h"
 
-#include <ArduinoJson.h>
-using namespace ArduinoJson;
-
 #include <LittleFS.h>
+#include <map>
 
 #include "../logger/logger.h"
-#include "../utils/critical_section.h"
+#include "../utils/json_file_utils.h"
 #include "managers/manager_config.h"
+#include "managers/manager_config_preferences.h"
 #include "managers/manager_resource.h"
 #include "managers/manager_sensor.h"
 #include "sensors/sensors.h"
 #if USE_ANALOG
 #include "sensors/sensor_analog.h"
 #endif
-#include "../utils/persistence_utils.h"
 #include "sensors/sensor_autocalibration.h"
 
-// Static document for sensor operations
-static StaticJsonDocument<4096> sensorDoc;
+// Write-behind cache: Instead of writing immediately, we collect all changes
+// in RAM and flush them periodically (e.g., every 60 seconds). This drastically
+// reduces flash wear and eliminates blocking writes during measurements.
+enum class PendingUpdateType {
+  RAW_MIN_MAX,       // int absoluteRawMin, absoluteRawMax
+  ABSOLUTE_MIN_MAX,  // float absoluteMin, absoluteMax
+  CALIBRATED_MIN_MAX // int minValue, maxValue, bool inverted
+};
 
-bool SensorPersistence::configFileExists() { return PersistenceUtils::fileExists("/sensors.json"); }
+struct PendingUpdate {
+  PendingUpdateType type;
+  String sensorId;
+  size_t measurementIndex;
+  unsigned long timestamp; // When this update was queued
 
-size_t SensorPersistence::getConfigFileSize() {
-  if (!configFileExists()) {
-    return 0;
+  // Union to save memory - only one set of values is active at a time
+  union {
+    struct {
+      int absoluteRawMin;
+      int absoluteRawMax;
+    } raw;
+    struct {
+      float absoluteMin;
+      float absoluteMax;
+    } absolute;
+    struct {
+      int minValue;
+      int maxValue;
+      bool inverted;
+    } calibrated;
+  } data;
+};
+
+static std::vector<PendingUpdate> g_pendingUpdates;
+
+SensorPersistence::PersistenceResult SensorPersistence::load() {
+  if (ConfigMgr.isDebugSensor()) {
+    logger.debug(F("SensorP"), F("Beginne Laden der Sensorkonfiguration aus JSON"));
   }
 
-  File f = LittleFS.open("/sensors.json", "r");
-  if (!f) {
-    return 0;
-  }
-
-  size_t size = f.size();
-  f.close();
-  return size;
-}
-
-// Simple function to apply sensor settings directly during JSON parsing
-void SensorPersistence::applySensorSettingsFromJson(const String& sensorId,
-                                                    const JsonObject& sensorConfig) {
   extern std::unique_ptr<SensorManager> sensorManager;
 
   // Early exit if sensor manager is not available
   if (!sensorManager || sensorManager->getState() != ManagerState::INITIALIZED) {
-    logger.warning(F("SensorP"),
-                   F("Sensor-Manager nicht bereit, Einstellungen übersprungen für: ") + sensorId);
-    return;
-  }
-
-  // Find the sensor
-  const auto& allSensors = sensorManager->getSensors();
-  Sensor* sensor = nullptr;
-  for (const auto& sensorPtr : allSensors) {
-    if (sensorPtr && sensorPtr->config().id == sensorId) {
-      sensor = sensorPtr.get();
-      break;
-    }
-  }
-
-  if (!sensor) {
-    logger.debug(F("SensorP"), F("Sensor nicht gefunden: ") + sensorId);
-    return;
-  }
-
-  logger.debug(F("SensorP"), F("Wende Einstellungen an Sensor: ") + sensorId);
-
-  try {
-    SensorConfig& config = sensor->mutableConfig();
-
-    if (ConfigMgr.isDebugSensor()) {
-      logger.debug(F("SensorP"), F("Got mutable config for sensor: ") + sensorId);
-    }
-
-    // Apply measurement interval
-    if (sensorConfig["measurementInterval"].is<unsigned long>()) {
-      unsigned long interval = sensorConfig["measurementInterval"] | 60000UL;
-      config.measurementInterval = interval;
-      sensor->setMeasurementInterval(interval);
-    }
-
-    // Apply measurements
-    if (sensorConfig["measurements"].is<JsonObject>()) {
-      JsonObject measurements = sensorConfig["measurements"];
-      for (JsonPair measurementPair : measurements) {
-        String indexStr = measurementPair.key().c_str();
-        size_t index = indexStr.toInt();
-
-        if (index >= config.activeMeasurements) {
-          continue;
-        }
-
-        JsonObject measurement = measurementPair.value();
-
-        // Apply basic measurement settings
-        if (measurement["enabled"].is<bool>()) {
-          config.measurements[index].enabled = measurement["enabled"] | true;
-        }
-
-        // Apply measurement name
-        if (measurement["name"].is<const char*>()) {
-          config.measurements[index].name = String(measurement["name"].as<const char*>());
-          if (ConfigMgr.isDebugSensor()) {
-            logger.debug(F("SensorP"), F("Geladener Name: '") + config.measurements[index].name +
-                                           F("' für Sensor ") + sensorId + F(" Messung ") +
-                                           String(index));
-          }
-        }
-
-        // Apply measurement field name
-        if (measurement["fieldName"].is<const char*>()) {
-          config.measurements[index].fieldName = String(measurement["fieldName"].as<const char*>());
-          if (ConfigMgr.isDebugSensor()) {
-            logger.debug(F("SensorP"),
-                         F("Geladener Feldname: '") + config.measurements[index].fieldName +
-                             F("' für Sensor ") + sensorId + F(" Messung ") + String(index));
-          }
-        }
-
-        // Apply measurement unit
-        if (measurement["unit"].is<const char*>()) {
-          config.measurements[index].unit = String(measurement["unit"].as<const char*>());
-          if (ConfigMgr.isDebugSensor()) {
-            logger.debug(F("SensorP"), F("Geladene Einheit: '") + config.measurements[index].unit +
-                                           F("' für Sensor ") + sensorId + F(" Messung ") +
-                                           String(index));
-          }
-        }
-
-        // Apply thresholds
-        if (measurement["thresholds"].is<JsonObject>()) {
-          JsonObject thresholds = measurement["thresholds"];
-          config.measurements[index].limits.yellowLow = thresholds["yellowLow"] | -10.0f;
-          config.measurements[index].limits.greenLow = thresholds["greenLow"] | 0.0f;
-          config.measurements[index].limits.greenHigh = thresholds["greenHigh"] | 30.0f;
-          config.measurements[index].limits.yellowHigh = thresholds["yellowHigh"] | 40.0f;
-        }
-
-#if USE_ANALOG
-
-        // Apply analog-specific settings
-        if ((measurement["min"].is<float>() || measurement["min"].is<int>() ||
-             measurement["min"].is<unsigned int>()) &&
-            (measurement["max"].is<float>() || measurement["max"].is<int>() ||
-             measurement["max"].is<unsigned int>()) &&
-            measurement["inverted"].is<bool>()) {
-          // Accept numeric types for min/max (int or float) and coerce to float
-          config.measurements[index].minValue = measurement["min"].as<float>();
-          config.measurements[index].maxValue = measurement["max"].as<float>();
-          config.measurements[index].inverted = measurement["inverted"] | false;
-
-          // Apply to analog sensor if it's an analog sensor
-          if (config.id.startsWith("ANALOG")) {
-            AnalogSensor* analogSensor = static_cast<AnalogSensor*>(sensor);
-            if (analogSensor) {
-              analogSensor->setMinValue(index, config.measurements[index].minValue);
-              analogSensor->setMaxValue(index, config.measurements[index].maxValue);
-            }
-          }
-        }
-#endif
-
-        // Apply absolute min/max values
-        if (measurement["absoluteMin"].is<float>()) {
-          config.measurements[index].absoluteMin = measurement["absoluteMin"] | INFINITY;
-        }
-        if (measurement["absoluteMax"].is<float>()) {
-          config.measurements[index].absoluteMax = measurement["absoluteMax"] | -INFINITY;
-        }
-
-        // Apply absolute raw min/max values for analog sensors
-        if (measurement["absoluteRawMin"].is<int>()) {
-          int rawMin = measurement["absoluteRawMin"]; // CRITICAL FIX: Remove bitwise OR
-          config.measurements[index].absoluteRawMin = rawMin;
-
-          // CRITICAL FIX: Also apply to analog sensor if it's an analog sensor
-#if USE_ANALOG
-          if (config.id.startsWith("ANALOG")) {
-            AnalogSensor* analogSensor = static_cast<AnalogSensor*>(sensor);
-            if (analogSensor) {
-              analogSensor->setAbsoluteRawMin(index, rawMin);
-            }
-          }
-#endif
-
-          if (ConfigMgr.isDebugSensor()) {
-            logger.debug(F("SensorP"), F("Geladener absoluteRawMin: ") + String(rawMin) +
-                                           F(" für Sensor ") + sensorId + F(" Messung ") +
-                                           String(index));
-          }
-        } else {
-          if (ConfigMgr.isDebugSensor()) {
-            logger.debug(F("SensorP"), F("Kein absoluteRawMin in JSON für Sensor ") + sensorId +
-                                           F(" Messung ") + String(index) +
-                                           F(", Standard behalten: ") +
-                                           String(config.measurements[index].absoluteRawMin));
-          }
-        }
-        if (measurement["absoluteRawMax"].is<int>()) {
-          int rawMax = measurement["absoluteRawMax"]; // CRITICAL FIX: Remove bitwise OR
-          config.measurements[index].absoluteRawMax = rawMax;
-
-          // CRITICAL FIX: Also apply to analog sensor if it's an analog sensor
-#if USE_ANALOG
-          if (config.id.startsWith("ANALOG")) {
-            AnalogSensor* analogSensor = static_cast<AnalogSensor*>(sensor);
-            if (analogSensor) {
-              analogSensor->setAbsoluteRawMax(index, rawMax);
-            }
-          }
-#endif
-
-          if (ConfigMgr.isDebugSensor()) {
-            logger.debug(F("SensorP"), F("Geladener absoluteRawMax: ") + String(rawMax) +
-                                           F(" für Sensor ") + sensorId + F(" Messung ") +
-                                           String(index));
-          }
-        } else {
-          if (ConfigMgr.isDebugSensor()) {
-            logger.debug(F("SensorP"), F("Kein absoluteRawMax in JSON für Sensor ") + sensorId +
-                                           F(" Messung ") + String(index) +
-                                           F(", Standard behalten: ") +
-                                           String(config.measurements[index].absoluteRawMax));
-          }
-        }
-
-        // Apply persisted autocalibration flag (calibrationMode) so that
-        // autocalibration state survives a reboot.
-        if (measurement.containsKey("calibrationMode")) {
-          // Use boolean coercion; fall back to false if parsing fails
-          bool calMode = false;
-          if (measurement["calibrationMode"].is<bool>()) {
-            calMode = measurement["calibrationMode"] | false;
-          } else if (measurement["calibrationMode"].is<int>()) {
-            calMode = (measurement["calibrationMode"].as<int>() != 0);
-          } else if (measurement["calibrationMode"].is<const char*>()) {
-            String s = String(measurement["calibrationMode"].as<const char*>());
-            s.toLowerCase();
-            calMode = (s == "true" || s == "1");
-          } else {
-            calMode = measurement["calibrationMode"] | false;
-          }
-          config.measurements[index].calibrationMode = calMode;
-          // Also apply to the runtime analog sensor copy so fetchSample
-          // and mapping logic immediately observe the calibration mode.
-#if USE_ANALOG
-          if (config.id.startsWith("ANALOG")) {
-            AnalogSensor* analogSensor = static_cast<AnalogSensor*>(sensor);
-            if (analogSensor)
-              analogSensor->setCalibrationMode(index, calMode);
-          }
-#endif
-          if (ConfigMgr.isDebugSensor()) {
-            logger.debug(F("SensorP"), F("Geladener calibrationMode: ") +
-                                           String(calMode ? "true" : "false") + F(" für Sensor ") +
-                                           sensorId + F(" Messung ") + String(index));
-          }
-        }
-
-        // Apply autocal half-life duration (seconds) if present
-        if (measurement["autocalDuration"].is<unsigned long>()) {
-          unsigned long dur = measurement["autocalDuration"] | 86400UL;
-          config.measurements[index].autocalHalfLifeSeconds = static_cast<uint32_t>(dur);
-          if (ConfigMgr.isDebugSensor()) {
-            logger.debug(F("SensorP"), F("Geladene autocalDuration: ") + String(dur) +
-                                           F(" s für Sensor ") + sensorId + F(" Messung ") +
-                                           String(index));
-          }
-        }
-
-        // Initialize autocal from absolute raw values (if present) instead of
-        // reading a separate persistent 'autocal' block. This avoids creating
-        // extra persisted fields and uses the existing absoluteRaw storage.
-#if USE_ANALOG
-        if (config.id.startsWith("ANALOG")) {
-          AnalogSensor* analogSensor = static_cast<AnalogSensor*>(sensor);
-          if (analogSensor) {
-            AutoCal temp = config.measurements[index].autocal;
-            // Prefer persisted calculation limits (min/max) for initializing
-            // runtime autocal. This ensures autocal controls the mapping limits
-            // and does not overwrite the historical extremum storage.
-            if (measurement.containsKey("min") && measurement.containsKey("max")) {
-              temp.min_value = static_cast<float>(config.measurements[index].minValue);
-              temp.max_value = static_cast<float>(config.measurements[index].maxValue);
-            } else if (config.measurements[index].absoluteRawMin != INT_MAX ||
-                       config.measurements[index].absoluteRawMax != INT_MIN) {
-              // Legacy fallback: if absolute raw extremes exist in JSON (from
-              // older firmware) use them to initialize autocal.
-              if (config.measurements[index].absoluteRawMin != INT_MAX)
-                temp.min_value = static_cast<float>(config.measurements[index].absoluteRawMin);
-              if (config.measurements[index].absoluteRawMax != INT_MIN)
-                temp.max_value = static_cast<float>(config.measurements[index].absoluteRawMax);
-            } else {
-              // Final fallback: use configured min/max defaults
-              temp.min_value = static_cast<float>(config.measurements[index].minValue);
-              temp.max_value = static_cast<float>(config.measurements[index].maxValue);
-            }
-            config.measurements[index].autocal = temp;
-            analogSensor->setAutoCalibration(index, temp);
-          }
-        }
-#endif
-      }
-    }
-
-    // Apply persistent error flag
-    if (sensorConfig["hasPersistentError"].is<bool>()) {
-      config.hasPersistentError = sensorConfig["hasPersistentError"] | false;
-    }
-
-  } catch (...) {
-    logger.error(F("SensorP"),
-                 F("Ausnahme beim Anwenden der Einstellungen für Sensor: ") + sensorId);
-  }
-}
-
-SensorPersistence::PersistenceResult SensorPersistence::loadFromFile() {
-  if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("Beginne Laden der Sensorkonfiguration aus Datei"));
-  }
-
-  String errorMsg;
-  StaticJsonDocument<4096>& doc = sensorDoc;
-  doc.clear();
-
-  if (!PersistenceUtils::fileExists("/sensors.json")) {
-    // File does not exist: use defaults, do not treat as error
-    if (ConfigMgr.isDebugSensor()) {
-      logger.debug(F("SensorP"),
-                   F("Sensorkonfigurationsdatei nicht gefunden, verwende Standardwerte."));
-    }
-    logger.info(F("SensorP"),
-                F("Sensorkonfigurationsdatei nicht gefunden, verwende Standardwerte."));
+    logger.warning(F("SensorP"), F("Sensor-Manager nicht bereit, überspringe Laden"));
     return PersistenceResult::success();
   }
 
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    if (ConfigMgr.isDebugSensor()) {
-      logger.debug(F("SensorP"), F("Fehler beim Lesen von sensors.json: ") + errorMsg);
-    }
-    logger.error(F("SensorP"), F("Sensorkonfiguration konnte nicht geladen werden: ") + errorMsg);
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
+  // Load measurement intervals from settings.json
+  const char* settingsPath = "/config/settings.json";
+  DynamicJsonDocument settingsDoc(4096);
+  bool hasSettings = loadJsonFile(settingsPath, settingsDoc);
 
-  if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("sensors.json erfolgreich gelesen"));
-  }
+  const auto& allSensors = sensorManager->getSensors();
+  bool anyLoaded = false;
+  size_t filesCreated = 0;
 
-  // Load sensor configuration
-  if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("Beginne Verarbeitung der Sensoren aus JSON"));
-  }
-
-  for (JsonPair sensorPair : doc.as<JsonObject>()) {
-    if (!sensorPair.key().c_str() || strlen(sensorPair.key().c_str()) == 0) {
-      logger.warning(F("SensorP"), F("Überspringe Sensor mit leerem Schlüssel"));
+  // Load each sensor's measurements from individual JSON files
+  for (const auto& sensorPtr : allSensors) {
+    if (!sensorPtr)
       continue;
+
+    String sensorId = sensorPtr->config().id;
+    SensorConfig& config = sensorPtr->mutableConfig();
+
+    // Load measurement interval from settings.json if available
+    if (hasSettings && settingsDoc.containsKey("sensors")) {
+      JsonObjectConst sensors = settingsDoc["sensors"];
+      if (sensors.containsKey(sensorId) && sensors[sensorId].containsKey("interval")) {
+        unsigned long interval = sensors[sensorId]["interval"] | (MEASUREMENT_INTERVAL * 1000);
+        config.measurementInterval = interval;
+        sensorPtr->setMeasurementInterval(interval);
+
+        if (ConfigMgr.isDebugSensor()) {
+          logger.debug(F("SensorP"), F("Messintervall für ") + sensorId +
+                                         F(" aus settings.json geladen: ") + String(interval) +
+                                         F("ms"));
+        }
+      }
     }
-    String sensorId = String(sensorPair.key().c_str());
-    JsonObject sensorConfig = sensorPair.value();
 
     if (ConfigMgr.isDebugSensor()) {
-      logger.debug(F("SensorP"), F("Verarbeite Sensor: ") + sensorId);
+      logger.debug(F("SensorP"), String(F("Lade Messungen für Sensor: ")) + sensorId);
     }
 
-    applySensorSettingsFromJson(sensorId, sensorConfig);
+    // Try to load each measurement from its JSON file
+    for (size_t i = 0; i < config.activeMeasurements; ++i) {
+      String path = getMeasurementFilePath(sensorId, i);
+
+      // Check if file exists
+      if (!LittleFS.exists(path)) {
+        // File doesn't exist - create it with current defaults
+        if (ConfigMgr.isDebugSensor()) {
+          logger.debug(F("SensorP"), String(F("Erstelle Default-Datei: ")) + path);
+        }
+
+        auto saveResult = saveMeasurementToJson(sensorId, i, config.measurements[i]);
+        if (saveResult.isSuccess()) {
+          filesCreated++;
+        } else {
+          logger.warning(F("SensorP"), F("Konnte Default-Datei nicht erstellen: ") + path);
+        }
+        continue;
+      }
+
+      // Load from JSON
+      MeasurementConfig loadedConfig;
+      auto result = loadMeasurementFromJson(sensorId, i, loadedConfig);
+
+      if (result.isSuccess()) {
+        // Apply loaded settings
+        config.measurements[i] = loadedConfig;
+        anyLoaded = true;
+
+        if (ConfigMgr.isDebugSensor()) {
+          logger.debug(F("SensorP"), String(F("Messung geladen: ")) + path);
+        }
+      } else {
+        logger.warning(F("SensorP"), F("Konnte Messung nicht laden: ") + path);
+      }
+
+      yield(); // Feed watchdog
+    }
   }
 
-  if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("Verarbeitung aller Sensoren aus JSON beendet"));
+  if (filesCreated > 0) {
+    logger.info(F("SensorP"), String(filesCreated) + F(" Default-Messungs-Dateien erstellt"));
   }
+
+  if (anyLoaded) {
+    logger.info(F("SensorP"), F("Sensor-Konfiguration erfolgreich aus JSON geladen"));
+  } else if (filesCreated == 0) {
+    logger.warning(F("SensorP"), F("Keine Sensor-Konfiguration gefunden oder geladen"));
+  }
+
   return PersistenceResult::success();
 }
 
@@ -382,58 +162,44 @@ SensorPersistence::PersistenceResult SensorPersistence::loadFromFile() {
 // saveToFileMinimal Remove saveToFile and saveToFileInternal implementations,
 // keep saveToFileMinimal
 
-SensorPersistence::PersistenceResult SensorPersistence::saveToFileMinimal() {
-  StaticJsonDocument<4096>& doc = sensorDoc;
-  doc.clear();
-  ArduinoJson::JsonObject docRoot = doc.to<JsonObject>();
+SensorPersistence::PersistenceResult SensorPersistence::save() {
   extern std::unique_ptr<SensorManager> sensorManager;
   if (!sensorManager) {
     return PersistenceResult::success();
   }
+
   const auto& allSensors = sensorManager->getSensors();
+  size_t totalSaved = 0;
+
+  // Save each measurement to its own JSON file
   for (const auto& sensorPtr : allSensors) {
     if (!sensorPtr)
       continue;
+
     const SensorConfig& sensorConfig = sensorPtr->config();
-    ArduinoJson::JsonObject sensorObj = docRoot[sensorConfig.id.c_str()].to<JsonObject>();
-    sensorObj["measurementInterval"] = sensorConfig.measurementInterval;
-    ArduinoJson::JsonObject measurements = sensorObj["measurements"].to<JsonObject>();
-    for (size_t i = 0; i < sensorConfig.activeMeasurements; ++i) {
-      char idxBuf[8];
-      snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(i));
-      ArduinoJson::JsonObject measurementObj = measurements[idxBuf].to<JsonObject>();
-      measurementObj["enabled"] = sensorConfig.measurements[i].enabled;
-      measurementObj["name"] = sensorConfig.measurements[i].name;
-      measurementObj["fieldName"] = sensorConfig.measurements[i].fieldName;
-      measurementObj["unit"] = sensorConfig.measurements[i].unit;
-      ArduinoJson::JsonObject thresholds = measurementObj["thresholds"].to<JsonObject>();
-      thresholds["yellowLow"] = sensorConfig.measurements[i].limits.yellowLow;
-      thresholds["greenLow"] = sensorConfig.measurements[i].limits.greenLow;
-      thresholds["greenHigh"] = sensorConfig.measurements[i].limits.greenHigh;
-      thresholds["yellowHigh"] = sensorConfig.measurements[i].limits.yellowHigh;
-#if USE_ANALOG
-      if (sensorConfig.id.startsWith("ANALOG")) {
-        // Persist min/max as integer values (rounding) to keep JSON
-        // consistent and reduce wear
-        measurementObj["min"] = static_cast<int>(roundf(sensorConfig.measurements[i].minValue));
-        measurementObj["max"] = static_cast<int>(roundf(sensorConfig.measurements[i].maxValue));
-        measurementObj["inverted"] = sensorConfig.measurements[i].inverted;
-      }
-      // Persist calibration mode for analog sensors
-      measurementObj["calibrationMode"] = sensorConfig.measurements[i].calibrationMode;
-      // Persist autocal half-life duration (seconds)
-      measurementObj["autocalDuration"] = sensorConfig.measurements[i].autocalHalfLifeSeconds;
-      // Persist absolute raw min/max values (reuse this storage for autocal)
-      measurementObj["absoluteRawMin"] = sensorConfig.measurements[i].absoluteRawMin;
-      measurementObj["absoluteRawMax"] = sensorConfig.measurements[i].absoluteRawMax;
-#endif
+    String sensorId = sensorConfig.id;
+
+    if (ConfigMgr.isDebugSensor()) {
+      logger.debug(F("SensorP"), String(F("Speichere Messungen für Sensor: ")) + sensorId);
     }
-    sensorObj["hasPersistentError"] = sensorConfig.hasPersistentError;
+
+    // Save each measurement to individual JSON file
+    for (size_t i = 0; i < sensorConfig.activeMeasurements; ++i) {
+      auto result = saveMeasurementToJson(sensorId, i, sensorConfig.measurements[i]);
+      if (result.isSuccess()) {
+        totalSaved++;
+      } else {
+        logger.warning(F("SensorP"), String(F("Fehler beim Speichern von ")) + sensorId +
+                                         F(" Messung ") + String(i));
+      }
+      yield(); // Feed watchdog
+    }
+
+    logger.info(F("SensorP"), String(F("Sensor gespeichert: ")) + sensorId + F(" (") +
+                                  String(sensorConfig.activeMeasurements) + F(" Messungen)"));
   }
-  // Remove unused variable 'errorMsg'
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, *(new String()))) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR);
-  }
+
+  logger.info(F("SensorP"), String(totalSaved) + F(" Messungs-Dateien gespeichert"));
   return PersistenceResult::success();
 }
 
@@ -441,221 +207,114 @@ SensorPersistence::PersistenceResult
 SensorPersistence::updateSensorThresholds(const String& sensorId, size_t measurementIndex,
                                           float yellowLow, float greenLow, float greenHigh,
                                           float yellowHigh) {
-  // Use critical section instead of callback manipulation to prevent memory
-  // corruption
-  CriticalSection cs;
+  // Now update JSON file directly
+  extern std::unique_ptr<SensorManager> sensorManager;
+  if (!sensorManager) {
+    return PersistenceResult::fail(ConfigError::SAVE_FAILED, "SensorManager not available");
+  }
 
-  PersistenceResult result = updateSensorThresholdsInternal(sensorId, measurementIndex, yellowLow,
-                                                            greenLow, greenHigh, yellowHigh);
+  // Find sensor and update measurement
+  for (const auto& sensorPtr : sensorManager->getSensors()) {
+    if (sensorPtr && sensorPtr->config().id == sensorId) {
+      const SensorConfig& config = sensorPtr->config();
+      if (measurementIndex >= config.activeMeasurements) {
+        return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Invalid measurement index");
+      }
 
-  return result;
+      // Create updated config
+      MeasurementConfig updatedConfig = config.measurements[measurementIndex];
+      updatedConfig.limits.yellowLow = yellowLow;
+      updatedConfig.limits.greenLow = greenLow;
+      updatedConfig.limits.greenHigh = greenHigh;
+      updatedConfig.limits.yellowHigh = yellowHigh;
+
+      // Save to JSON
+      auto result = saveMeasurementToJson(sensorId, measurementIndex, updatedConfig);
+      if (result.isSuccess()) {
+        logger.info(F("SensorP"), String(F("Schwellenwerte aktualisiert für ")) + sensorId +
+                                      F(" Messung ") + String(measurementIndex));
+      }
+      return result;
+    }
+  }
+
+  return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Sensor not found");
 }
 
-SensorPersistence::PersistenceResult
-SensorPersistence::updateSensorThresholdsInternal(const String& sensorId, size_t measurementIndex,
-                                                  float yellowLow, float greenLow, float greenHigh,
-                                                  float yellowHigh) {
-  // Bestehende Konfiguration laden
-  StaticJsonDocument<4096> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  // Zum spezifischen Sensor und Messwert navigieren
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
-  }
-
-  JsonObject measurements = sensorObj["measurements"];
-  if (measurements.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
-  }
-
-  char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
-  JsonObject measurementObj = measurements[idxBuf];
-  if (measurementObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Messung nicht gefunden: ") + String(measurementIndex));
-  }
-
-  JsonObject thresholds = measurementObj["thresholds"];
-  if (thresholds.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR, F("Kein thresholds-Objekt gefunden"));
-  }
-
-  // Nur die Schwellwerte aktualisieren
-  thresholds["yellowLow"] = yellowLow;
-  thresholds["greenLow"] = greenLow;
-  thresholds["greenHigh"] = greenHigh;
-  thresholds["yellowHigh"] = yellowHigh;
-
-  // Zurück in die Datei schreiben
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  logger.info(F("SensorP"), F("Schwellwerte atomar aktualisiert für ") + sensorId + F(" Messung ") +
-                                String(measurementIndex) + F(", Bytes geschrieben: ") +
-                                String(PersistenceUtils::getFileSize("/sensors.json")));
-
-  return PersistenceResult::success();
-}
+// ============================================================================
+// JSON-based Update Functions (replaces old Preferences-based code)
+// ============================================================================
 
 SensorPersistence::PersistenceResult
 SensorPersistence::updateAnalogMinMax(const String& sensorId, size_t measurementIndex,
                                       float minValue, float maxValue, bool inverted) {
-  // Kritischen Abschnitt nutzen, um Speicherfehler zu vermeiden
-  CriticalSection cs;
-
-  PersistenceResult result =
-      updateAnalogMinMaxInternal(sensorId, measurementIndex, minValue, maxValue, inverted);
-
-  return result;
+  // Batch update mehrerer Felder auf einmal (effizient!)
+  DynamicJsonDocument doc(256);
+  JsonObject settings = doc.to<JsonObject>();
+  settings["minValue"] = minValue;
+  settings["maxValue"] = maxValue;
+  settings["inverted"] = inverted;
+  return updateMeasurementSettings(sensorId, measurementIndex, settings);
 }
 
 SensorPersistence::PersistenceResult
 SensorPersistence::updateAnalogMinMaxInteger(const String& sensorId, size_t measurementIndex,
                                              int minValue, int maxValue, bool inverted) {
-  // Perform integer-specific update so the JSON stores integers as before
-  StaticJsonDocument<4096> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
-  }
-  JsonObject measurements = sensorObj["measurements"];
-  if (measurements.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
-  }
-  char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
-  JsonObject measurementObj = measurements[idxBuf];
-  if (measurementObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Messung nicht gefunden: ") + String(measurementIndex));
-  }
-
-  measurementObj["min"] = minValue;
-  measurementObj["max"] = maxValue;
-  measurementObj["inverted"] = inverted;
-
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  logger.info(F("SensorP"), F("Analog min/max (int) atomar aktualisiert für ") + sensorId +
-                                F(" Messung ") + String(measurementIndex) +
-                                F(", Bytes geschrieben: ") +
-                                String(PersistenceUtils::getFileSize("/sensors.json")));
-
-  // Reload configuration to sync in-memory state
-  auto reloadResult = loadFromFile();
-  if (!reloadResult.isSuccess()) {
-    logger.warning(F("SensorP"),
-                   F("Neuladen der Sensorkonfiguration nach int min/max Update fehlgeschlagen: ") +
-                       reloadResult.getMessage());
-  }
-
-  return PersistenceResult::success();
+  // Wrapper: Cast int to float und nutze generische Funktion
+  DynamicJsonDocument doc(256);
+  JsonObject settings = doc.to<JsonObject>();
+  settings["minValue"] = static_cast<float>(minValue);
+  settings["maxValue"] = static_cast<float>(maxValue);
+  settings["inverted"] = inverted;
+  return updateMeasurementSettings(sensorId, measurementIndex, settings);
 }
 
+// Alias für updateAnalogMinMaxInteger mit NoReload suffix (Kompatibilität)
 SensorPersistence::PersistenceResult SensorPersistence::updateAnalogMinMaxIntegerNoReload(
     const String& sensorId, size_t measurementIndex, int minValue, int maxValue, bool inverted) {
-  // Use a critical section to avoid concurrent writers (autocal + other
-  // config paths) clobbering sensors.json. Also increase the JSON buffer
-  // size to handle larger sensors.json files safely.
-  CriticalSection cs;
-  StaticJsonDocument<4096> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
-  }
-  JsonObject measurements = sensorObj["measurements"];
-  if (measurements.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
-  }
-  char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
-  JsonObject measurementObj = measurements[idxBuf];
-  if (measurementObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Messung nicht gefunden: ") + String(measurementIndex));
-  }
-
-  // Update only integer min/max/inverted keys to avoid touching other fields
-  measurementObj["min"] = minValue;
-  measurementObj["max"] = maxValue;
-  measurementObj["inverted"] = inverted;
-
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  logger.info(F("SensorP"), F("Analog min/max aktualisiert für ") + sensorId +
-                                String(measurementIndex) + F(". Min: ") + String(minValue) +
-                                F(", Max: ") + String(maxValue) + F(", Inverted: ") +
-                                String(inverted) + F(", Bytes geschrieben: ") +
-                                String(PersistenceUtils::getFileSize("/sensors.json")));
-
-  return PersistenceResult::success();
+  // Wrapper: JSON ist bereits schnell, kein "NoReload" nötig
+  return updateAnalogMinMaxInteger(sensorId, measurementIndex, minValue, maxValue, inverted);
 }
 
 SensorPersistence::PersistenceResult
 SensorPersistence::updateMeasurementInterval(const String& sensorId, unsigned long interval) {
-  // Kritischen Abschnitt nutzen, um Speicherfehler zu vermeiden
-  CriticalSection cs;
+  // Measurement interval ist NICHT pro Messung, sondern sensor-weit
+  // Speichere in settings.json
 
-  PersistenceResult result = updateMeasurementIntervalInternal(sensorId, interval);
+  const char* settingsPath = "/config/settings.json";
 
-  return result;
-}
-
-SensorPersistence::PersistenceResult
-SensorPersistence::updateMeasurementIntervalInternal(const String& sensorId,
-                                                     unsigned long interval) {
-  // Bestehende Konfiguration laden
-  StaticJsonDocument<4096> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  // Load existing settings.json
+  DynamicJsonDocument doc(4096);
+  if (!loadJsonFile(settingsPath, doc)) {
+    logger.error(F("SensorP"), F("Konnte settings.json nicht laden"));
+    return PersistenceResult::fail(ConfigError::FILE_ERROR, "Cannot load settings.json");
   }
 
-  // Zum spezifischen Sensor navigieren
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
+  // Ensure sensors object exists
+  if (!doc.containsKey("sensors")) {
+    doc.createNestedObject("sensors");
   }
 
-  // Messintervall aktualisieren
-  sensorObj["measurementInterval"] = interval;
+  JsonObject sensors = doc["sensors"];
 
-  // Zurück in die Datei schreiben
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+  // Ensure sensor object exists
+  if (!sensors.containsKey(sensorId)) {
+    sensors.createNestedObject(sensorId);
   }
 
-  logger.info(F("SensorP"), F("Messintervall atomar aktualisiert für ") + sensorId +
-                                F(", Intervall: ") + String(interval) + F(", Bytes geschrieben: ") +
-                                String(PersistenceUtils::getFileSize("/sensors.json")));
+  // Update interval
+  sensors[sensorId]["interval"] = interval;
+
+  // Save back to file
+  if (!saveJsonFile(settingsPath, doc)) {
+    logger.error(F("SensorP"), F("Konnte settings.json nicht speichern"));
+    return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot save settings.json");
+  }
+
+  if (ConfigMgr.isDebugSensor()) {
+    logger.debug(F("SensorP"), F("Messintervall für ") + sensorId + F(" auf ") + String(interval) +
+                                   F("ms gesetzt"));
+  }
 
   return PersistenceResult::success();
 }
@@ -663,301 +322,589 @@ SensorPersistence::updateMeasurementIntervalInternal(const String& sensorId,
 SensorPersistence::PersistenceResult
 SensorPersistence::updateMeasurementEnabled(const String& sensorId, size_t measurementIndex,
                                             bool enabled) {
-  // Kritischen Abschnitt nutzen, um Speicherfehler zu vermeiden
-  CriticalSection cs;
-
-  PersistenceResult result = updateMeasurementEnabledInternal(sensorId, measurementIndex, enabled);
-
-  return result;
+  // Wrapper: Erstelle temporäres JsonDocument für Typ-Konvertierung
+  StaticJsonDocument<32> doc;
+  doc.set(enabled);
+  return updateMeasurementSetting(sensorId, measurementIndex, "enabled", doc.as<JsonVariant>());
 }
 
 SensorPersistence::PersistenceResult
-SensorPersistence::updateMeasurementEnabledInternal(const String& sensorId, size_t measurementIndex,
-                                                    bool enabled) {
-  // Bestehende Konfiguration laden
-  StaticJsonDocument<4096> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  // Zum spezifischen Sensor und Messwert navigieren
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
-  }
-
-  JsonObject measurements = sensorObj["measurements"];
-  if (measurements.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
-  }
-
-  char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
-  JsonObject measurementObj = measurements[idxBuf];
-  if (measurementObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Messung nicht gefunden: ") + String(measurementIndex));
-  }
-
-  // Aktivierungsstatus aktualisieren
-  measurementObj["enabled"] = enabled;
-
-  // Zurück in die Datei schreiben
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  logger.info(F("SensorP"), F("Messung aktiviert/deaktiviert atomar für ") + sensorId +
-                                F(" Messung ") + String(measurementIndex) + F(", aktiviert: ") +
-                                String(enabled) + F(", Bytes geschrieben: ") +
-                                String(PersistenceUtils::getFileSize("/sensors.json")));
-
-  return PersistenceResult::success();
+SensorPersistence::updateMeasurementName(const String& sensorId, size_t measurementIndex,
+                                         const String& name) {
+  // Wrapper: Erstelle temporäres JsonDocument für Typ-Konvertierung
+  StaticJsonDocument<128> doc;
+  doc.set(name);
+  return updateMeasurementSetting(sensorId, measurementIndex, "name", doc.as<JsonVariant>());
 }
 
 SensorPersistence::PersistenceResult
 SensorPersistence::updateAbsoluteMinMax(const String& sensorId, size_t measurementIndex,
                                         float absoluteMin, float absoluteMax) {
-  // Bestehende Konfiguration laden
-  StaticJsonDocument<4096> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  // Zum spezifischen Sensor und Messwert navigieren
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
-  }
-
-  JsonObject measurements = sensorObj["measurements"];
-  if (measurements.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
-  }
-
-  char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
-  JsonObject measurementObj = measurements[idxBuf];
-  if (measurementObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Messung nicht gefunden: ") + String(measurementIndex));
-  }
-
-  // Absolute min/max Werte immer speichern, damit sie nach Neustart erhalten bleiben
-  measurementObj["absoluteMin"] = absoluteMin;
-  measurementObj["absoluteMax"] = absoluteMax;
-
-  // Zurück in die Datei schreiben
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  logger.info(F("SensorP"), F("Absolute min/max atomar aktualisiert für ") + sensorId +
-                                F(" Messung ") + String(measurementIndex) +
-                                F(", Bytes geschrieben: ") +
-                                String(PersistenceUtils::getFileSize("/sensors.json")));
-
-  if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("Konfiguration aktualisiert für Sensor ") + sensorId +
-                                   F(" Messung ") + String(measurementIndex) + F(" - Min: ") +
-                                   String(absoluteMin) + F(", Max: ") + String(absoluteMax));
-  }
-
-  return PersistenceResult::success();
+  // Wrapper: Batch update für beide Felder
+  DynamicJsonDocument doc(256);
+  JsonObject settings = doc.to<JsonObject>();
+  settings["absoluteMin"] = absoluteMin;
+  settings["absoluteMax"] = absoluteMax;
+  return updateMeasurementSettings(sensorId, measurementIndex, settings);
 }
 
 SensorPersistence::PersistenceResult
 SensorPersistence::updateAnalogRawMinMax(const String& sensorId, size_t measurementIndex,
                                          int absoluteRawMin, int absoluteRawMax) {
-  if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("updateAnalogRawMinMax aufgerufen für ") + sensorId +
-                                   F(" Messung ") + String(measurementIndex) +
-                                   F(" mit Werten Min: ") + String(absoluteRawMin) + F(", Max: ") +
-                                   String(absoluteRawMax));
-  }
-
-  // Kritischen Abschnitt über die gesamte Operation legen
-  CriticalSection cs;
-
-  PersistenceResult result =
-      updateAnalogRawMinMaxInternal(sensorId, measurementIndex, absoluteRawMin, absoluteRawMax);
-
-  return result;
+  // Wrapper: Batch update für beide Felder
+  DynamicJsonDocument doc(256);
+  JsonObject settings = doc.to<JsonObject>();
+  settings["absoluteRawMin"] = absoluteRawMin;
+  settings["absoluteRawMax"] = absoluteRawMax;
+  return updateMeasurementSettings(sensorId, measurementIndex, settings);
 }
 
-SensorPersistence::PersistenceResult
-SensorPersistence::updateAnalogRawMinMaxInternal(const String& sensorId, size_t measurementIndex,
-                                                 int absoluteRawMin, int absoluteRawMax) {
-  // Bestehende Konfiguration laden
-  StaticJsonDocument<4096> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  // Zum spezifischen Sensor und Messwert navigieren
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
-  }
-
-  JsonObject measurements = sensorObj["measurements"];
-  if (measurements.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
-  }
-
-  char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
-  JsonObject measurementObj = measurements[idxBuf];
-  if (measurementObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Messung nicht gefunden: ") + String(measurementIndex));
-  }
-
-  // Absolute raw min/max Werte immer speichern, damit sie nach Neustart erhalten bleiben
-  measurementObj["absoluteRawMin"] = absoluteRawMin;
-  measurementObj["absoluteRawMax"] = absoluteRawMax;
-
-  // Zurück in die Datei schreiben
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  logger.info(F("SensorP"), F("Analog raw min/max atomar aktualisiert für ") + sensorId +
-                                F(" Messung ") + String(measurementIndex) +
-                                F(", Bytes geschrieben: ") +
-                                String(PersistenceUtils::getFileSize("/sensors.json")));
-
-  // Nach dem Update Konfiguration neu laden, damit In-Memory-Config synchron bleibt
-  auto reloadResult = loadFromFile();
-  if (!reloadResult.isSuccess()) {
-    logger.warning(F("SensorP"),
-                   F("Neuladen der Sensorkonfiguration nach raw min/max Update fehlgeschlagen: ") +
-                       reloadResult.getMessage());
-  } else {
-    if (ConfigMgr.isDebugSensor()) {
-      logger.debug(F("SensorP"),
-                   F("Sensorkonfiguration nach raw min/max Update erfolgreich neu geladen"));
+void SensorPersistence::enqueueAnalogRawMinMax(const String& sensorId, size_t measurementIndex,
+                                               int absoluteRawMin, int absoluteRawMax) {
+  // Check if we already have a RAW_MIN_MAX pending update for this sensor/measurement
+  for (auto& u : g_pendingUpdates) {
+    if (u.type == PendingUpdateType::RAW_MIN_MAX && u.sensorId == sensorId &&
+        u.measurementIndex == measurementIndex) {
+      // Update existing entry with new values
+      u.data.raw.absoluteRawMin = absoluteRawMin;
+      u.data.raw.absoluteRawMax = absoluteRawMax;
+      u.timestamp = millis();
+      return;
     }
   }
 
-  if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("Konfiguration aktualisiert für Sensor ") + sensorId +
-                                   F(" Messung ") + String(measurementIndex) + F(" - Min: ") +
-                                   String(absoluteRawMin) + F(", Max: ") + String(absoluteRawMax));
+  // Add new entry
+  PendingUpdate u;
+  u.type = PendingUpdateType::RAW_MIN_MAX;
+  u.sensorId = sensorId;
+  u.measurementIndex = measurementIndex;
+  u.timestamp = millis();
+  u.data.raw.absoluteRawMin = absoluteRawMin;
+  u.data.raw.absoluteRawMax = absoluteRawMax;
+
+  // Keep queue size reasonable — if it grows too large, flush oldest entries
+  const size_t MAX_PENDING = 32;
+  if (g_pendingUpdates.size() >= MAX_PENDING) {
+    logger.warning(F("SensorP"), F("Pending updates queue full, forcing partial flush"));
+    // Flush oldest entry
+    if (!g_pendingUpdates.empty()) {
+      PendingUpdate oldest = g_pendingUpdates.front();
+      g_pendingUpdates.erase(g_pendingUpdates.begin());
+
+      switch (oldest.type) {
+      case PendingUpdateType::RAW_MIN_MAX:
+        updateAnalogRawMinMax(oldest.sensorId, oldest.measurementIndex,
+                              oldest.data.raw.absoluteRawMin, oldest.data.raw.absoluteRawMax);
+        break;
+      case PendingUpdateType::ABSOLUTE_MIN_MAX:
+        updateAbsoluteMinMax(oldest.sensorId, oldest.measurementIndex,
+                             oldest.data.absolute.absoluteMin, oldest.data.absolute.absoluteMax);
+        break;
+      case PendingUpdateType::CALIBRATED_MIN_MAX:
+        updateAnalogMinMaxIntegerNoReload(
+            oldest.sensorId, oldest.measurementIndex, oldest.data.calibrated.minValue,
+            oldest.data.calibrated.maxValue, oldest.data.calibrated.inverted);
+        break;
+      }
+    }
+  }
+  g_pendingUpdates.push_back(std::move(u));
+}
+
+void SensorPersistence::enqueueAbsoluteMinMax(const String& sensorId, size_t measurementIndex,
+                                              float absoluteMin, float absoluteMax) {
+  // Check if we already have an ABSOLUTE_MIN_MAX pending update for this sensor/measurement
+  for (auto& u : g_pendingUpdates) {
+    if (u.type == PendingUpdateType::ABSOLUTE_MIN_MAX && u.sensorId == sensorId &&
+        u.measurementIndex == measurementIndex) {
+      // Update existing entry with new values
+      u.data.absolute.absoluteMin = absoluteMin;
+      u.data.absolute.absoluteMax = absoluteMax;
+      u.timestamp = millis();
+      return;
+    }
   }
 
-  return PersistenceResult::success();
+  // Add new entry
+  PendingUpdate u;
+  u.type = PendingUpdateType::ABSOLUTE_MIN_MAX;
+  u.sensorId = sensorId;
+  u.measurementIndex = measurementIndex;
+  u.timestamp = millis();
+  u.data.absolute.absoluteMin = absoluteMin;
+  u.data.absolute.absoluteMax = absoluteMax;
+
+  const size_t MAX_PENDING = 32;
+  if (g_pendingUpdates.size() >= MAX_PENDING) {
+    logger.warning(F("SensorP"), F("Pending updates queue full, forcing partial flush"));
+    if (!g_pendingUpdates.empty()) {
+      PendingUpdate oldest = g_pendingUpdates.front();
+      g_pendingUpdates.erase(g_pendingUpdates.begin());
+
+      switch (oldest.type) {
+      case PendingUpdateType::RAW_MIN_MAX:
+        updateAnalogRawMinMax(oldest.sensorId, oldest.measurementIndex,
+                              oldest.data.raw.absoluteRawMin, oldest.data.raw.absoluteRawMax);
+        break;
+      case PendingUpdateType::ABSOLUTE_MIN_MAX:
+        updateAbsoluteMinMax(oldest.sensorId, oldest.measurementIndex,
+                             oldest.data.absolute.absoluteMin, oldest.data.absolute.absoluteMax);
+        break;
+      case PendingUpdateType::CALIBRATED_MIN_MAX:
+        updateAnalogMinMaxIntegerNoReload(
+            oldest.sensorId, oldest.measurementIndex, oldest.data.calibrated.minValue,
+            oldest.data.calibrated.maxValue, oldest.data.calibrated.inverted);
+        break;
+      }
+    }
+  }
+  g_pendingUpdates.push_back(std::move(u));
+}
+
+void SensorPersistence::enqueueAnalogMinMaxInteger(const String& sensorId, size_t measurementIndex,
+                                                   int minValue, int maxValue, bool inverted) {
+  // Check if we already have a CALIBRATED_MIN_MAX pending update for this sensor/measurement
+  for (auto& u : g_pendingUpdates) {
+    if (u.type == PendingUpdateType::CALIBRATED_MIN_MAX && u.sensorId == sensorId &&
+        u.measurementIndex == measurementIndex) {
+      // Update existing entry with new values
+      u.data.calibrated.minValue = minValue;
+      u.data.calibrated.maxValue = maxValue;
+      u.data.calibrated.inverted = inverted;
+      u.timestamp = millis();
+      return;
+    }
+  }
+
+  // Add new entry
+  PendingUpdate u;
+  u.type = PendingUpdateType::CALIBRATED_MIN_MAX;
+  u.sensorId = sensorId;
+  u.measurementIndex = measurementIndex;
+  u.timestamp = millis();
+  u.data.calibrated.minValue = minValue;
+  u.data.calibrated.maxValue = maxValue;
+  u.data.calibrated.inverted = inverted;
+
+  const size_t MAX_PENDING = 32;
+  if (g_pendingUpdates.size() >= MAX_PENDING) {
+    logger.warning(F("SensorP"), F("Pending updates queue full, forcing partial flush"));
+    if (!g_pendingUpdates.empty()) {
+      PendingUpdate oldest = g_pendingUpdates.front();
+      g_pendingUpdates.erase(g_pendingUpdates.begin());
+
+      switch (oldest.type) {
+      case PendingUpdateType::RAW_MIN_MAX:
+        updateAnalogRawMinMax(oldest.sensorId, oldest.measurementIndex,
+                              oldest.data.raw.absoluteRawMin, oldest.data.raw.absoluteRawMax);
+        break;
+      case PendingUpdateType::ABSOLUTE_MIN_MAX:
+        updateAbsoluteMinMax(oldest.sensorId, oldest.measurementIndex,
+                             oldest.data.absolute.absoluteMin, oldest.data.absolute.absoluteMax);
+        break;
+      case PendingUpdateType::CALIBRATED_MIN_MAX:
+        updateAnalogMinMaxIntegerNoReload(
+            oldest.sensorId, oldest.measurementIndex, oldest.data.calibrated.minValue,
+            oldest.data.calibrated.maxValue, oldest.data.calibrated.inverted);
+        break;
+      }
+    }
+  }
+  g_pendingUpdates.push_back(std::move(u));
+}
+
+void SensorPersistence::flushPendingUpdatesForSensor(const String& sensorId) {
+  if (g_pendingUpdates.empty()) {
+    return;
+  }
+
+  // Count updates for this sensor
+  size_t totalForSensor = 0;
+  for (const auto& u : g_pendingUpdates) {
+    if (u.sensorId == sensorId) {
+      totalForSensor++;
+    }
+  }
+
+  if (totalForSensor == 0) {
+    return; // No updates for this sensor
+  }
+
+  unsigned long flushStartTime = millis();
+
+  if (ConfigMgr.isDebugSensor()) {
+    logger.debug(F("SensorP"),
+                 F("Flushe ") + String(totalForSensor) + F(" Updates für ") + sensorId);
+  }
+
+  // JSON-based: Group updates by measurementIndex, then apply all changes to each file
+  // This is much faster than writing individual fields multiple times
+  std::map<size_t, MeasurementConfig> configsToUpdate;
+
+  // First pass: Load all affected measurement configs
+  auto it = g_pendingUpdates.begin();
+  while (it != g_pendingUpdates.end()) {
+    if (it->sensorId != sensorId) {
+      ++it;
+      continue;
+    }
+
+    size_t measurementIndex = it->measurementIndex;
+
+    // Load config if not already loaded
+    if (configsToUpdate.find(measurementIndex) == configsToUpdate.end()) {
+      MeasurementConfig config;
+      auto loadResult = loadMeasurementFromJson(sensorId, measurementIndex, config);
+      if (!loadResult.isSuccess()) {
+        logger.error(F("SensorP"), F("Fehler beim Laden von Messung ") + String(measurementIndex) +
+                                       F(" für ") + sensorId);
+        it = g_pendingUpdates.erase(it); // Remove failed update
+        continue;
+      }
+      configsToUpdate[measurementIndex] = config;
+    }
+
+    ++it;
+  }
+
+  // Second pass: Apply all pending updates to loaded configs (in RAM)
+  it = g_pendingUpdates.begin();
+  size_t successCount = 0;
+  while (it != g_pendingUpdates.end()) {
+    if (it->sensorId != sensorId) {
+      ++it;
+      continue;
+    }
+
+    size_t measurementIndex = it->measurementIndex;
+    auto& config = configsToUpdate[measurementIndex];
+
+    // Apply update based on type
+    switch (it->type) {
+    case PendingUpdateType::RAW_MIN_MAX:
+      config.absoluteRawMin = it->data.raw.absoluteRawMin;
+      config.absoluteRawMax = it->data.raw.absoluteRawMax;
+      break;
+    case PendingUpdateType::ABSOLUTE_MIN_MAX:
+      config.absoluteMin = it->data.absolute.absoluteMin;
+      config.absoluteMax = it->data.absolute.absoluteMax;
+      break;
+    case PendingUpdateType::CALIBRATED_MIN_MAX:
+      config.minValue = static_cast<float>(it->data.calibrated.minValue);
+      config.maxValue = static_cast<float>(it->data.calibrated.maxValue);
+      config.inverted = it->data.calibrated.inverted;
+      break;
+    }
+
+    successCount++;
+    it = g_pendingUpdates.erase(it); // Remove processed update
+  }
+
+  // Third pass: Save all modified configs back to JSON files
+  for (auto& pair : configsToUpdate) {
+    size_t measurementIndex = pair.first;
+    const MeasurementConfig& config = pair.second;
+
+    auto saveResult = saveMeasurementToJson(sensorId, measurementIndex, config);
+    if (!saveResult.isSuccess()) {
+      logger.error(F("SensorP"), F("Fehler beim Speichern von Messung ") +
+                                     String(measurementIndex) + F(" für ") + sensorId);
+    }
+    yield(); // Feed watchdog between file writes
+  }
+
+  unsigned long totalFlushTime = millis() - flushStartTime;
+
+  // Log flush performance
+  logger.info(F("SensorP"), String(successCount) + F(" Updates für ") + sensorId + F(" in ") +
+                                String(totalFlushTime) + F(" ms geflusht (JSON)"));
 }
 
 SensorPersistence::PersistenceResult
 SensorPersistence::updateAnalogCalibrationMode(const String& sensorId, size_t measurementIndex,
                                                bool enabled) {
-  StaticJsonDocument<2048> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
-  }
-  JsonObject measurements = sensorObj["measurements"];
-  if (measurements.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
-  }
-
-  char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
-  JsonObject measurementObj = measurements[idxBuf];
-  if (measurementObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Messung nicht gefunden: ") + String(measurementIndex));
-  }
-
-  measurementObj["calibrationMode"] = enabled;
-
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  logger.info(F("SensorP"), F("Kalibrierungsmodus atomar aktualisiert für ") + sensorId +
-                                F(" Messung ") + String(measurementIndex));
-
-  // Reload configuration to sync in-memory state
-  auto reloadResult = loadFromFile();
-  if (!reloadResult.isSuccess()) {
-    logger.warning(
-        F("SensorP"),
-        F("Neuladen der Sensorkonfiguration nach Kalibrierungsmodus-Update fehlgeschlagen: ") +
-            reloadResult.getMessage());
-  }
-
-  return PersistenceResult::success();
+  // Wrapper: Erstelle temporäres JsonDocument für Typ-Konvertierung
+  StaticJsonDocument<32> doc;
+  doc.set(enabled);
+  return updateMeasurementSetting(sensorId, measurementIndex, "calibrationMode",
+                                  doc.as<JsonVariant>());
 }
 
 SensorPersistence::PersistenceResult
 SensorPersistence::updateAutocalDuration(const String& sensorId, size_t measurementIndex,
                                          uint32_t halfLifeSeconds) {
-  // Use critical section to avoid concurrent writes
-  CriticalSection cs;
+  // Wrapper: Erstelle temporäres JsonDocument für Typ-Konvertierung
+  StaticJsonDocument<32> doc;
+  doc.set(halfLifeSeconds);
+  return updateMeasurementSetting(sensorId, measurementIndex, "autocalHalfLifeSeconds",
+                                  doc.as<JsonVariant>());
+}
 
-  StaticJsonDocument<4096> doc;
-  String errorMsg;
-  if (!PersistenceUtils::readJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
+// ============================================================================
+// JSON-based persistence (new approach - replaces Preferences for sensor config)
+// ============================================================================
+
+#include "../utils/json_file_utils.h"
+
+/**
+ * @brief Save a single measurement configuration to JSON file
+ * @param sensorId Sensor ID (e.g., "ANALOG", "DHT")
+ * @param measurementIndex Measurement index (0-based)
+ * @param config Measurement configuration to save
+ * @return PersistenceResult indicating success or failure
+ */
+SensorPersistence::PersistenceResult
+SensorPersistence::saveMeasurementToJson(const String& sensorId, size_t measurementIndex,
+                                         const MeasurementConfig& config) {
+  // Allocate small JSON document (~512 bytes)
+  DynamicJsonDocument doc(512);
+
+  // Serialize measurement config
+  doc["enabled"] = config.enabled;
+  doc["name"] = config.name;
+  doc["fieldName"] = config.fieldName;
+  doc["unit"] = config.unit;
+  doc["minValue"] = config.minValue;
+  doc["maxValue"] = config.maxValue;
+
+  JsonObject thresholds = doc.createNestedObject("thresholds");
+  thresholds["yellowLow"] = config.limits.yellowLow;
+  thresholds["greenLow"] = config.limits.greenLow;
+  thresholds["greenHigh"] = config.limits.greenHigh;
+  thresholds["yellowHigh"] = config.limits.yellowHigh;
+
+  // Analog-specific fields
+  if (sensorId == "ANALOG") {
+    doc["inverted"] = config.inverted;
+    doc["calibrationMode"] = config.calibrationMode;
+    doc["autocalHalfLifeSeconds"] = config.autocalHalfLifeSeconds;
+    doc["absoluteRawMin"] = config.absoluteRawMin;
+    doc["absoluteRawMax"] = config.absoluteRawMax;
+
+    // Store null for INFINITY values
+    if (isinf(config.absoluteMin)) {
+      doc["absoluteMin"] = nullptr;
+    } else {
+      doc["absoluteMin"] = config.absoluteMin;
+    }
+
+    if (isinf(config.absoluteMax)) {
+      doc["absoluteMax"] = nullptr;
+    } else {
+      doc["absoluteMax"] = config.absoluteMax;
+    }
   }
 
-  JsonObject sensorObj = doc[sensorId.c_str()];
-  if (sensorObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Sensor nicht gefunden: ") + sensorId);
+  String path = getMeasurementFilePath(sensorId, measurementIndex);
+
+  if (!saveJsonFile(path, doc)) {
+    logger.error(F("SensorP"), F("Fehler beim Schreiben von ") + path);
+    return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot write measurement file");
   }
 
-  JsonObject measurements = sensorObj["measurements"];
-  if (measurements.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Keine Messungen für Sensor gefunden: ") + sensorId);
-  }
-
-  char idxBuf[8];
-  snprintf(idxBuf, sizeof(idxBuf), "%u", static_cast<unsigned>(measurementIndex));
-  JsonObject measurementObj = measurements[idxBuf];
-  if (measurementObj.isNull()) {
-    return PersistenceResult::fail(ConfigError::PARSE_ERROR,
-                                   F("Messung nicht gefunden: ") + String(measurementIndex));
-  }
-
-  measurementObj["autocalDuration"] = static_cast<unsigned long>(halfLifeSeconds);
-
-  if (!PersistenceUtils::writeJsonFile("/sensors.json", doc, errorMsg)) {
-    return PersistenceResult::fail(ConfigError::FILE_ERROR, errorMsg);
-  }
-
-  logger.info(F("SensorP"), F("Autocal-Dauer atomar aktualisiert für ") + sensorId +
-                                F(" Messung ") + String(measurementIndex) +
-                                F(", Bytes geschrieben: ") +
-                                String(PersistenceUtils::getFileSize("/sensors.json")));
-
-  // Reload configuration to sync in-memory state
-  auto reloadResult = loadFromFile();
-  if (!reloadResult.isSuccess()) {
-    logger.warning(
-        F("SensorP"),
-        F("Neuladen der Sensorkonfiguration nach Autocal-Dauer-Update fehlgeschlagen: ") +
-            reloadResult.getMessage());
+  if (ConfigMgr.isDebugSensor()) {
+    logger.debug(F("SensorP"), F("Messung gespeichert: ") + path);
   }
 
   return PersistenceResult::success();
 }
+
+/**
+ * @brief Load a single measurement configuration from JSON file
+ * @param sensorId Sensor ID (e.g., "ANALOG", "DHT")
+ * @param measurementIndex Measurement index (0-based)
+ * @param config Output parameter - loaded configuration
+ * @return PersistenceResult indicating success or failure
+ */
+SensorPersistence::PersistenceResult
+SensorPersistence::loadMeasurementFromJson(const String& sensorId, size_t measurementIndex,
+                                           MeasurementConfig& config) {
+  String path = getMeasurementFilePath(sensorId, measurementIndex);
+
+  if (!LittleFS.exists(path)) {
+    if (ConfigMgr.isDebugSensor()) {
+      logger.debug(F("SensorP"), F("Messung-Datei nicht gefunden: ") + path);
+    }
+    return PersistenceResult::fail(ConfigError::FILE_ERROR, "Measurement file not found");
+  }
+
+  // Allocate small JSON document (~512 bytes)
+  DynamicJsonDocument doc(512);
+
+  if (!loadJsonFile(path, doc)) {
+    logger.error(F("SensorP"), F("Fehler beim Lesen von ") + path);
+    return PersistenceResult::fail(ConfigError::FILE_ERROR, "Cannot read measurement file");
+  }
+
+  // Deserialize measurement config
+  config.enabled = doc["enabled"] | true;
+  config.name = doc["name"] | String("");
+  config.fieldName = doc["fieldName"] | String("");
+  config.unit = doc["unit"] | String("");
+  config.minValue = doc["minValue"] | 0.0f;
+  config.maxValue = doc["maxValue"] | 100.0f;
+
+  JsonObjectConst thresholds = doc["thresholds"];
+  config.limits.yellowLow = thresholds["yellowLow"] | 0.0f;
+  config.limits.greenLow = thresholds["greenLow"] | 0.0f;
+  config.limits.greenHigh = thresholds["greenHigh"] | 100.0f;
+  config.limits.yellowHigh = thresholds["yellowHigh"] | 100.0f;
+
+  // Analog-specific fields
+  if (sensorId == "ANALOG") {
+    config.inverted = doc["inverted"] | false;
+    config.calibrationMode = doc["calibrationMode"] | false;
+    config.autocalHalfLifeSeconds = doc["autocalHalfLifeSeconds"] | 0;
+    config.absoluteRawMin = doc["absoluteRawMin"] | 0;
+    config.absoluteRawMax = doc["absoluteRawMax"] | 1023;
+
+    // Handle null for INFINITY
+    if (doc["absoluteMin"].isNull()) {
+      config.absoluteMin = INFINITY;
+    } else {
+      config.absoluteMin = doc["absoluteMin"] | INFINITY;
+    }
+
+    if (doc["absoluteMax"].isNull()) {
+      config.absoluteMax = -INFINITY;
+    } else {
+      config.absoluteMax = doc["absoluteMax"] | -INFINITY;
+    }
+  }
+
+  if (ConfigMgr.isDebugSensor()) {
+    logger.debug(F("SensorP"), F("Messung geladen: ") + path);
+  }
+
+  return PersistenceResult::success();
+}
+
+// ============================================================================
+// Generische Update-Funktionen (Macro-basiert für DRY-Prinzip)
+// ============================================================================
+
+/**
+ * @brief Zentrale Feld-Definition für alle MeasurementConfig-Felder
+ * Diese Macro-Liste ist die EINZIGE Stelle, die bei neuen Feldern geändert werden muss!
+ */
+#define MEASUREMENT_FIELDS                                                                         \
+  FIELD(enabled, bool)                                                                             \
+  FIELD(name, String)                                                                              \
+  FIELD(fieldName, String)                                                                         \
+  FIELD(unit, String)                                                                              \
+  FIELD(minValue, float)                                                                           \
+  FIELD(maxValue, float)                                                                           \
+  FIELD(inverted, bool)                                                                            \
+  FIELD(calibrationMode, bool)                                                                     \
+  FIELD(autocalHalfLifeSeconds, uint32_t)                                                          \
+  FIELD(absoluteRawMin, int)                                                                       \
+  FIELD(absoluteRawMax, int)                                                                       \
+  FIELD(absoluteMin, float)                                                                        \
+  FIELD(absoluteMax, float)
+
+/**
+ * @brief Helper: Setzt ein einzelnes Feld in MeasurementConfig
+ * Nutzt Macro-Expansion um Code-Duplikation zu vermeiden
+ */
+static bool setConfigField(MeasurementConfig& config, const String& fieldName,
+                           const JsonVariant& value) {
+// Macro generiert automatisch alle if-Zweige
+#define FIELD(name, type)                                                                          \
+  if (fieldName == #name) {                                                                        \
+    config.name = value.as<type>();                                                                \
+    return true;                                                                                   \
+  }
+
+  MEASUREMENT_FIELDS // Expandiert zu if-Kette
+
+#undef FIELD
+
+      // Spezialfall: Nested "thresholds" Objekt
+      if (fieldName == "thresholds") {
+    JsonObject t = value.as<JsonObject>();
+    if (t.containsKey("yellowLow"))
+      config.limits.yellowLow = t["yellowLow"];
+    if (t.containsKey("greenLow"))
+      config.limits.greenLow = t["greenLow"];
+    if (t.containsKey("greenHigh"))
+      config.limits.greenHigh = t["greenHigh"];
+    if (t.containsKey("yellowHigh"))
+      config.limits.yellowHigh = t["yellowHigh"];
+    return true;
+  }
+
+  // Spezialfall: Einzelne Threshold-Felder
+  if (fieldName == "yellowLow") {
+    config.limits.yellowLow = value.as<float>();
+    return true;
+  }
+  if (fieldName == "greenLow") {
+    config.limits.greenLow = value.as<float>();
+    return true;
+  }
+  if (fieldName == "greenHigh") {
+    config.limits.greenHigh = value.as<float>();
+    return true;
+  }
+  if (fieldName == "yellowHigh") {
+    config.limits.yellowHigh = value.as<float>();
+    return true;
+  }
+
+  return false; // Unbekanntes Feld
+}
+
+/**
+ * @brief Generische Update-Funktion für ein einzelnes Feld
+ * Ersetzt alle spezialisierten update*() Funktionen
+ */
+SensorPersistence::PersistenceResult
+SensorPersistence::updateMeasurementSetting(const String& sensorId, size_t measurementIndex,
+                                            const String& fieldName, const JsonVariant& value) {
+  // Load
+  MeasurementConfig config;
+  auto loadResult = loadMeasurementFromJson(sensorId, measurementIndex, config);
+  if (!loadResult.isSuccess()) {
+    return loadResult;
+  }
+
+  // Update (via Macro-generated code)
+  if (!setConfigField(config, fieldName, value)) {
+    return PersistenceResult::fail(ConfigError::VALIDATION_ERROR,
+                                   String(F("Unbekanntes Feld: ")) + fieldName);
+  }
+
+  // Save
+  return saveMeasurementToJson(sensorId, measurementIndex, config);
+}
+
+/**
+ * @brief Batch-Update für mehrere Felder auf einmal
+ * Effizient: Nur 1x laden/speichern statt mehrfach
+ */
+SensorPersistence::PersistenceResult
+SensorPersistence::updateMeasurementSettings(const String& sensorId, size_t measurementIndex,
+                                             const JsonObject& settings) {
+  MeasurementConfig config;
+  auto loadResult = loadMeasurementFromJson(sensorId, measurementIndex, config);
+  if (!loadResult.isSuccess()) {
+    return loadResult;
+  }
+
+  // Apply all settings
+  for (JsonPair kv : settings) {
+    if (!setConfigField(config, kv.key().c_str(), kv.value())) {
+      logger.warning(F("SensorP"), F("Überspringe unbekanntes Feld: ") + String(kv.key().c_str()));
+    }
+  }
+
+  return saveMeasurementToJson(sensorId, measurementIndex, config);
+}
+
+// Räume Macro-Definition auf
+#undef MEASUREMENT_FIELDS
+
+// ============================================================================
+// Update-Wrapper (Kompatibilität mit bestehenden Code)
+// Nutzen die generische updateMeasurementSetting() Funktion
+// ============================================================================

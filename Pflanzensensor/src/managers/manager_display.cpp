@@ -12,11 +12,11 @@
 #include "display/display_images.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
+#include "managers/manager_config_preferences.h"
 #include "managers/manager_led_traffic_light.h"
 #include "managers/manager_sensor.h"
 #include "utils/critical_section.h"
 #include "utils/helper.h"
-#include "utils/persistence_utils.h"
 #include "utils/result_types.h"
 
 extern std::unique_ptr<SensorManager> sensorManager;
@@ -84,57 +84,89 @@ DisplayResult DisplayManager::loadConfig() {
 #if USE_DISPLAY
   CriticalSection cs;
 
-  if (!LittleFS.exists("/display_config.json")) {
-    return DisplayResult::fail(DisplayError::FILE_ERROR,
-                               F("Display-Konfigurationsdatei nicht gefunden"));
-  }
-
-  File configFile = LittleFS.open("/display_config.json", "r");
-  if (!configFile) {
-    return DisplayResult::fail(DisplayError::FILE_ERROR,
-                               F("Öffnen der Display-Konfigurationsdatei fehlgeschlagen"));
-  }
-
-  StaticJsonDocument<512> doc;
-  DeserializationError error = deserializeJson(doc, configFile);
-  configFile.close();
-
-  if (error) {
-    return DisplayResult::fail(DisplayError::INVALID_CONFIG,
-                               String(F("Parsen der Display-Konfiguration fehlgeschlagen: ")) +
-                                   String(error.c_str()));
-  }
-
-  m_config.showIpScreen = doc["show_ip"] | true;
-  m_config.showClock = doc["show_clock"] | true;
-  m_config.showFlowerImage = doc["show_flower"] | true;
-  m_config.showFabmobilImage = doc["show_fabmobil"] | true;
-  m_config.screenDuration = doc["duration"] | (DISPLAY_DEFAULT_TIME * 1000);
-  m_config.clockFormat = doc["clock_format"] | "24h";
-  // Load per-sensor display entries (optional)
-  if (doc.containsKey("sensor_displays") && doc["sensor_displays"].is<JsonArray>()) {
-    m_config.sensorDisplays.clear();
-    for (JsonObject entry : doc["sensor_displays"].as<JsonArray>()) {
-      DisplayConfig::SensorDisplayEntry e;
-      e.sensorId = entry["sensor_id"].as<String>();
-      if (entry.containsKey("measurements") && entry["measurements"].is<JsonArray>()) {
-        for (JsonVariant v : entry["measurements"].as<JsonArray>()) {
-          e.showMeasurements.push_back((bool)v.as<bool>());
-        }
-      }
-      m_config.sensorDisplays.push_back(e);
+  // Check if Preferences exist, if not initialize with defaults
+  if (!PreferencesManager::namespaceExists(PreferencesNamespaces::DISP)) {
+    logger.info(F("DisplayM"),
+                F("Keine Display-Konfiguration gefunden, initialisiere mit Standardwerten..."));
+    auto initResult = PreferencesManager::initDisplayNamespace();
+    if (!initResult.isSuccess()) {
+      logger.warning(F("DisplayM"), F("Fehler beim Initialisieren der Display-Preferences"));
+      // Use defaults from constructor
+      return DisplayResult::success();
     }
   }
 
-  String configMsg =
-      String(F("Geladene Konfiguration - IP-Anzeige: ")) + String(m_config.showIpScreen) +
-      String(F(", Uhr: ")) + String(m_config.showClock) + String(F(", Blume: ")) +
-      String(m_config.showFlowerImage) + String(F(", Fabmobil: ")) +
-      String(m_config.showFabmobilImage) + String(F(", Dauer: ")) +
-      String(m_config.screenDuration) + String(F(", Format: ")) + m_config.clockFormat;
-  logger.debug(F("DisplayM"), configMsg);
+  // Load from Preferences
+  logger.debug(F("DisplayM"), F("Lade Display-Konfiguration aus Preferences..."));
+
+  // Load each setting using generic getters
+  m_config.showIpScreen = PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_ip", true);
+  m_config.showClock = PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_clock", true);
+  m_config.showFlowerImage =
+      PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_flower", true);
+  m_config.showFabmobilImage =
+      PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_fabmobil", true);
+  m_config.showQrCode = PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_qr", false);
+  m_config.screenDuration = PreferencesManager::getUInt(PreferencesNamespaces::DISP, "screen_dur",
+                                                        DISPLAY_DEFAULT_TIME * 1000);
+  m_config.clockFormat =
+      PreferencesManager::getString(PreferencesNamespaces::DISP, "clock_fmt", "24h");
+
+  // Load sensor display settings
+  // Format: "sensor1:0,1,0;sensor2:1,1" (sensorId:bool,bool,bool;nextSensor)
+  String sensorDisplayStr =
+      PreferencesManager::getString(PreferencesNamespaces::DISP, "sensor_disp", "");
+  m_config.sensorDisplays.clear();
+
+  if (sensorDisplayStr.length() > 0) {
+    unsigned int sensorStart = 0;
+    while (sensorStart < sensorDisplayStr.length()) {
+      int semicolon = sensorDisplayStr.indexOf(';', sensorStart);
+      unsigned int semicolonPos = (semicolon == -1) ? sensorDisplayStr.length() : semicolon;
+
+      String sensorEntry = sensorDisplayStr.substring(sensorStart, semicolonPos);
+      int colon = sensorEntry.indexOf(':');
+      if (colon > 0) {
+        DisplayConfig::SensorDisplayEntry entry;
+        entry.sensorId = sensorEntry.substring(0, colon);
+        String measurements = sensorEntry.substring(colon + 1);
+
+        unsigned int measStart = 0;
+        while (measStart < measurements.length()) {
+          int comma = measurements.indexOf(',', measStart);
+          unsigned int commaPos = (comma == -1) ? measurements.length() : comma;
+          String val = measurements.substring(measStart, commaPos);
+          entry.showMeasurements.push_back(val == "1");
+          measStart = commaPos + 1;
+        }
+        m_config.sensorDisplays.push_back(entry);
+      }
+      sensorStart = semicolonPos + 1;
+    }
+    logger.debug(F("DisplayM"), String(F("Sensor-Anzeigeeinstellungen geladen: ")) +
+                                    String(m_config.sensorDisplays.size()) + F(" Sensoren"));
+  }
+
+  logger.info(F("DisplayM"), F("Display-Konfiguration aus Preferences geladen"));
+  {
+
+    String configMsg =
+        String(F("Geladene Konfiguration - IP-Anzeige: ")) + String(m_config.showIpScreen) +
+        String(F(", Uhr: ")) + String(m_config.showClock) + String(F(", Blume: ")) +
+        String(m_config.showFlowerImage) + String(F(", Fabmobil: ")) +
+        String(m_config.showFabmobilImage) + String(F(", QR-Screen: ")) +
+        String(m_config.showQrCode) + String(F(", Dauer: ")) + String(m_config.screenDuration) +
+        String(F(", Format: ")) + m_config.clockFormat;
+    logger.debug(F("DisplayM"), configMsg);
+  }
+
 #endif
   return DisplayResult::success();
+}
+
+DisplayResult DisplayManager::reloadConfig() {
+  // Forward to private implementation - keeps loadConfig() encapsulated
+  return loadConfig();
 }
 
 DisplayResult DisplayManager::validateConfig() {
@@ -159,45 +191,56 @@ DisplayResult DisplayManager::saveConfig() {
 
   CriticalSection cs;
 
-  StaticJsonDocument<512> doc;
-  doc["show_ip"] = m_config.showIpScreen;
-  doc["show_clock"] = m_config.showClock;
-  doc["show_flower"] = m_config.showFlowerImage;
-  doc["show_fabmobil"] = m_config.showFabmobilImage;
-  doc["duration"] = m_config.screenDuration;
-  doc["clock_format"] = m_config.clockFormat;
-  // Persist per-sensor display entries
-  if (!m_config.sensorDisplays.empty()) {
-    JsonArray arr = doc.createNestedArray("sensor_displays");
-    for (const auto& e : m_config.sensorDisplays) {
-      JsonObject obj = arr.createNestedObject();
-      obj["sensor_id"] = e.sensorId;
-      JsonArray measurements = obj.createNestedArray("measurements");
-      for (bool b : e.showMeasurements) {
-        measurements.add(b);
-      }
+  // Save to Preferences using atomic update helpers
+  logger.debug(F("DisplayM"), F("Speichere Display-Konfiguration in Preferences..."));
+
+  auto r1 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_ip",
+                                                m_config.showIpScreen);
+  auto r2 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_clock",
+                                                m_config.showClock);
+  auto r3 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_flower",
+                                                m_config.showFlowerImage);
+  auto r4 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_fabmobil",
+                                                m_config.showFabmobilImage);
+  auto r5 = PreferencesManager::updateUIntValue(PreferencesNamespaces::DISP, "screen_dur",
+                                                m_config.screenDuration);
+  auto r6 = PreferencesManager::updateStringValue(PreferencesNamespaces::DISP, "clock_fmt",
+                                                  m_config.clockFormat);
+  auto r7 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_qr",
+                                                m_config.showQrCode);
+
+  // Save sensor display settings
+  // Format: "sensor1:0,1,0;sensor2:1,1" (sensorId:bool,bool,bool;nextSensor)
+  String sensorDisplayStr = "";
+  for (size_t i = 0; i < m_config.sensorDisplays.size(); i++) {
+    const auto& entry = m_config.sensorDisplays[i];
+    if (i > 0)
+      sensorDisplayStr += ";";
+    sensorDisplayStr += entry.sensorId + ":";
+    for (size_t j = 0; j < entry.showMeasurements.size(); j++) {
+      if (j > 0)
+        sensorDisplayStr += ",";
+      sensorDisplayStr += entry.showMeasurements[j] ? "1" : "0";
     }
   }
+  auto r8 = PreferencesManager::updateStringValue(PreferencesNamespaces::DISP, "sensor_disp",
+                                                  sensorDisplayStr);
 
-  File configFile = LittleFS.open("/display_config.json", "w");
-  if (!configFile) {
+  if (!r1.isSuccess() || !r2.isSuccess() || !r3.isSuccess() || !r4.isSuccess() || !r5.isSuccess() ||
+      !r6.isSuccess() || !r7.isSuccess() || !r8.isSuccess()) {
+    logger.error(F("DisplayM"), F("Fehler beim Speichern der Display-Konfiguration"));
     return DisplayResult::fail(
         DisplayError::FILE_ERROR,
-        F("Öffnen der Display-Konfigurationsdatei zum Schreiben fehlgeschlagen"));
+        F("Speichern der Display-Konfiguration in Preferences fehlgeschlagen"));
   }
 
-  if (serializeJson(doc, configFile) == 0) {
-    configFile.close();
-    return DisplayResult::fail(DisplayError::FILE_ERROR,
-                               F("Schreiben der Display-Konfiguration fehlgeschlagen"));
-  }
+  logger.info(F("DisplayM"), F("Display-Konfiguration erfolgreich in Preferences gespeichert"));
+  logger.debug(F("DisplayM"),
+               String(F("Sensor-Anzeigeeinstellungen gespeichert: ")) + sensorDisplayStr);
 
-  configFile.close();
+  // Note: Sensor-specific display settings (sensorDisplays) are now persisted above
+  // through the admin interface and saved atomically when changed
 
-  // Log success and written size for diagnostics (helps detect silent FS failures)
-  size_t bytes = PersistenceUtils::getFileSize("/display_config.json");
-  logger.info(F("DisplayM"),
-              String(F("Display-Konfiguration gespeichert, Bytes geschrieben: ")) + String(bytes));
 #endif
   return DisplayResult::success();
 }
@@ -228,11 +271,13 @@ void DisplayManager::rotateScreen() {
 
   m_lastScreenChange = now;
 
-  // Count static screens (IP, clock, images)
+  // Count static screens (IP, clock, QR, images)
   size_t staticScreens = 0;
   if (m_config.showIpScreen)
     staticScreens++;
   if (m_config.showClock)
+    staticScreens++;
+  if (m_config.showQrCode)
     staticScreens++;
   if (m_config.showFlowerImage)
     staticScreens++;
@@ -301,6 +346,21 @@ void DisplayManager::rotateScreen() {
     return;
   }
   if (m_config.showClock)
+    idx++;
+  if (m_config.showQrCode && currentIndex == idx) {
+    if (ConfigMgr.isDebugDisplay()) {
+      logger.debug(F("DisplayM"), F("QR-Code-Seite wird gezeigt"));
+    }
+    m_display->showQrCodeScreen();
+    if (ledTrafficLightManager) {
+      ledTrafficLightManager->handleDisplayUpdate();
+    }
+    m_currentScreenIndex++;
+    if (m_currentScreenIndex >= totalScreens)
+      m_currentScreenIndex = 0;
+    return;
+  }
+  if (m_config.showQrCode)
     idx++;
   if (m_config.showFlowerImage && currentIndex == idx) {
     if (ConfigMgr.isDebugDisplay()) {
@@ -465,7 +525,15 @@ DisplayResult DisplayManager::setScreenDuration(unsigned long duration) {
   }
 
   m_config.screenDuration = duration;
-  return saveConfig();
+
+  // Use unified config manager method
+  auto result =
+      ConfigMgr.setConfigValue("display", "screen_dur", String(duration), ConfigValueType::UINT);
+  if (!result.isSuccess()) {
+    return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save screen duration");
+  }
+
+  return DisplayResult::success();
 #else
   return DisplayResult::success();
 #endif
@@ -478,7 +546,14 @@ DisplayResult DisplayManager::setClockFormat(const String& format) {
   }
 
   m_config.clockFormat = format;
-  return saveConfig();
+
+  // Use unified config manager method
+  auto result = ConfigMgr.setConfigValue("display", "clock_fmt", format, ConfigValueType::STRING);
+  if (!result.isSuccess()) {
+    return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save clock format");
+  }
+
+  return DisplayResult::success();
 #else
   return DisplayResult::success();
 #endif
@@ -487,7 +562,15 @@ DisplayResult DisplayManager::setClockFormat(const String& format) {
 DisplayResult DisplayManager::setClockEnabled(bool enabled) {
 #if USE_DISPLAY
   m_config.showClock = enabled;
-  return saveConfig();
+
+  // Use unified config manager method
+  auto result = ConfigMgr.setConfigValue("display", "show_clock", enabled ? "true" : "false",
+                                         ConfigValueType::BOOL);
+  if (!result.isSuccess()) {
+    return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save clock enabled");
+  }
+
+  return DisplayResult::success();
 #else
   return DisplayResult::success();
 #endif
@@ -496,7 +579,15 @@ DisplayResult DisplayManager::setClockEnabled(bool enabled) {
 DisplayResult DisplayManager::setIpScreenEnabled(bool enabled) {
 #if USE_DISPLAY
   m_config.showIpScreen = enabled;
-  return saveConfig();
+
+  // Use unified config manager method
+  auto result = ConfigMgr.setConfigValue("display", "show_ip", enabled ? "true" : "false",
+                                         ConfigValueType::BOOL);
+  if (!result.isSuccess()) {
+    return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save IP screen enabled");
+  }
+
+  return DisplayResult::success();
 #else
   return DisplayResult::success();
 #endif
@@ -505,7 +596,15 @@ DisplayResult DisplayManager::setIpScreenEnabled(bool enabled) {
 DisplayResult DisplayManager::setFlowerImageEnabled(bool enabled) {
 #if USE_DISPLAY
   m_config.showFlowerImage = enabled;
-  return saveConfig();
+
+  // Use unified config manager method
+  auto result = ConfigMgr.setConfigValue("display", "show_flower", enabled ? "true" : "false",
+                                         ConfigValueType::BOOL);
+  if (!result.isSuccess()) {
+    return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save flower image enabled");
+  }
+
+  return DisplayResult::success();
 #else
   return DisplayResult::success();
 #endif
@@ -514,7 +613,33 @@ DisplayResult DisplayManager::setFlowerImageEnabled(bool enabled) {
 DisplayResult DisplayManager::setFabmobilImageEnabled(bool enabled) {
 #if USE_DISPLAY
   m_config.showFabmobilImage = enabled;
-  return saveConfig();
+
+  // Use unified config manager method
+  auto result = ConfigMgr.setConfigValue("display", "show_fabmobil", enabled ? "true" : "false",
+                                         ConfigValueType::BOOL);
+  if (!result.isSuccess()) {
+    return DisplayResult::fail(DisplayError::SAVE_FAILED, "Failed to save fabmobil image enabled");
+  }
+
+  return DisplayResult::success();
+#else
+  return DisplayResult::success();
+#endif
+}
+
+DisplayResult DisplayManager::setQrCodeEnabled(bool enabled) {
+#if USE_DISPLAY
+  m_config.showQrCode = enabled;
+
+  // Use unified config manager method
+  auto result = ConfigMgr.setConfigValue("display", "show_qr", enabled ? "true" : "false",
+                                         ConfigValueType::BOOL);
+  if (!result.isSuccess()) {
+    return DisplayResult::fail(DisplayError::SAVE_FAILED,
+                               F("Fehler beim Speichern der QR-Code-Seite"));
+  }
+
+  return DisplayResult::success();
 #else
   return DisplayResult::success();
 #endif
@@ -570,6 +695,14 @@ void DisplayManager::showInfoScreen(const String& ipAddress) {
 #if USE_DISPLAY
   if (m_display) {
     m_display->showInfoScreen(ipAddress);
+  }
+#endif
+}
+
+void DisplayManager::showQrCodeScreen() {
+#if USE_DISPLAY
+  if (m_display) {
+    m_display->showQrCodeScreen();
   }
 #endif
 }

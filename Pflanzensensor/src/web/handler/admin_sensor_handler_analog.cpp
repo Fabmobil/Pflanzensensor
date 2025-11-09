@@ -1,6 +1,7 @@
 /**
  * @file admin_sensor_handler_analog.cpp
- * @brief Analog sensor specific operations (min/max, inversion)
+ * @brief Analog sensor specific operations (min/max, autocalibration)
+ * NOTE: Inverted setting now handled via unified setConfigValue (namespace=s_<sensorId>, key=m<idx>_inv)
  */
 
 #include "admin_sensor_handler.h"
@@ -8,94 +9,6 @@
 #include "managers/manager_sensor_persistence.h"
 #include "sensors/sensor_analog.h"
 #include "utils/helper.h"
-
-void AdminSensorHandler::handleAnalogInverted() {
-#if USE_ANALOG
-  if (!requireAjaxRequest())
-    return;
-  if (!validateRequest()) {
-    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
-    return;
-  }
-
-  if (!_server.hasArg("sensor_id") || !_server.hasArg("measurement_index") ||
-      !_server.hasArg("inverted")) {
-    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Erforderliche Parameter fehlen\"}"));
-    return;
-  }
-
-  String sensorId = _server.arg("sensor_id");
-  size_t measurementIndex = _server.arg("measurement_index").toInt();
-  bool inverted = _server.arg("inverted") == "true";
-
-  logger.debug(F("AdminSensorHandler"), F("handleAnalogInverted: sensor=") + sensorId +
-                                            F(", measurement=") + String(measurementIndex) +
-                                            F(", inverted=") + String(inverted));
-
-  if (!_sensorManager.isHealthy()) {
-    sendJsonResponse(500,
-                     F("{\"success\":false,\"error\":\"Sensor-Manager nicht betriebsbereit\"}"));
-    return;
-  }
-
-  Sensor* sensor = _sensorManager.getSensor(sensorId);
-  if (!sensor) {
-    sendJsonResponse(404, F("{\"success\":false,\"error\":\"Sensor nicht gefunden\"}"));
-    return;
-  }
-
-  if (!sensor->isInitialized()) {
-    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Sensor nicht initialisiert\"}"));
-    return;
-  }
-
-  if (!isAnalogSensor(sensor)) {
-    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Sensor ist nicht analog\"}"));
-    return;
-  }
-
-  SensorConfig& config = sensor->mutableConfig();
-  if (measurementIndex >= config.measurements.size()) {
-    logger.error(F("AdminSensorHandler"), F("Ungültiger Messindex: ") + String(measurementIndex) +
-                                              F(", max erlaubt: ") +
-                                              String(config.measurements.size() - 1));
-    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messindex\"}"));
-    return;
-  }
-
-  // If nothing changed, return OK (use config's inverted flag)
-  if (config.measurements[measurementIndex].inverted == inverted) {
-    logger.debug(F("AdminSensorHandler"),
-                 F("Keine Änderungen für invertierten Zustand festgestellt"));
-    sendJsonResponse(200, F("{\"success\":true}"));
-    return;
-  }
-
-  // Update in-memory config and persist (store ints in JSON)
-  config.measurements[measurementIndex].inverted = inverted;
-  int persistMin = static_cast<int>(roundf(config.measurements[measurementIndex].minValue));
-  int persistMax = static_cast<int>(roundf(config.measurements[measurementIndex].maxValue));
-  auto result = SensorPersistence::updateAnalogMinMaxInteger(
-      sensorId, measurementIndex, persistMin, persistMax,
-      config.measurements[measurementIndex].inverted);
-  if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 F("Fehler beim Aktualisieren des invertierten Zustands: ") + result.getMessage());
-    sendJsonResponse(
-        500,
-        F("{\"success\":false,\"error\":\"Fehler beim Speichern des invertierten Zustands\"}"));
-    return;
-  }
-
-  logger.info(F("AdminSensorHandler"), F("Analog invertiert für ") + sensorId + F("[") +
-                                           String(measurementIndex) + F("]: invertiert=") +
-                                           String(inverted));
-
-  sendJsonResponse(200, F("{\"success\":true}"));
-#else
-  sendJsonResponse(400, F("{\"success\":false,\"error\":\"Analog sensors not enabled\"}"));
-#endif
-}
 
 void AdminSensorHandler::handleAnalogMinMax() {
 #if USE_ANALOG

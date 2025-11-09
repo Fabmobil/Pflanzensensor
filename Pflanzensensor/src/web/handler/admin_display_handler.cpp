@@ -20,7 +20,7 @@ extern std::unique_ptr<DisplayManager> displayManager;
 AdminDisplayHandler::~AdminDisplayHandler() = default;
 
 AdminDisplayHandler::AdminDisplayHandler(ESP8266WebServer& server) : BaseHandler(server) {
-  logger.debug(F("AdminDisplayHandler"), F("Initializing AdminDisplayHandler"));
+  logger.debug(F("AdminDisplayHandler"), F("Initialisiere AdminDisplayHandler"));
 }
 
 void AdminDisplayHandler::handleDisplayConfig() {
@@ -89,6 +89,14 @@ void AdminDisplayHandler::handleDisplayConfig() {
           sendChunk(F(" checked"));
         }
         sendChunk(F("> Fabmobil-Logo anzeigen</label></div>"));
+
+        // Show QR code screen
+        sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+        sendChunk(F("<input type='checkbox' class='show-qr-checkbox'"));
+        if (displayManager && displayManager->isQrCodeEnabled()) {
+          sendChunk(F(" checked"));
+        }
+        sendChunk(F("> QR-Code-Seite anzeigen</label></div>"));
 
         sendChunk(F("</div>")); // Close first card
 
@@ -183,117 +191,6 @@ void AdminDisplayHandler::handleDisplayConfig() {
       css, js);
 }
 
-void AdminDisplayHandler::handleScreenDurationUpdate() {
-  if (!requireAjaxRequest())
-    return;
-  if (!validateRequest()) {
-    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
-    return;
-  }
-
-  // Require new AJAX param 'screen_duration'
-  if (!_server.hasArg("screen_duration")) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Fehlende Parameter: screen_duration erwartet\"}"));
-    return;
-  }
-
-  int duration = _server.arg("screen_duration").toInt();
-  if (duration < 1 || duration > 60) {
-    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültige Dauer (1-60 Sekunden)\"}"));
-    return;
-  }
-
-  if (displayManager) {
-    displayManager->setScreenDuration(duration * 1000);
-    auto result = displayManager->saveConfig();
-    if (result.isSuccess()) {
-      sendJsonResponse(200, F("{\"success\":true}"));
-    } else {
-      sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Speichern\"}"));
-    }
-  } else {
-    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Display Manager nicht verfügbar\"}"));
-  }
-}
-
-void AdminDisplayHandler::handleClockFormatUpdate() {
-  if (!requireAjaxRequest())
-    return;
-  if (!validateRequest()) {
-    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
-    return;
-  }
-
-  // Require new AJAX param 'clock_format'
-  if (!_server.hasArg("clock_format")) {
-    sendJsonResponse(
-        400, F("{\"success\":false,\"error\":\"Fehlende Parameter: clock_format erwartet\"}"));
-    return;
-  }
-
-  String format = _server.arg("clock_format");
-  if (format != "24h" && format != "12h") {
-    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiges Format\"}"));
-    return;
-  }
-
-  if (displayManager) {
-    displayManager->setClockFormat(format);
-    auto result = displayManager->saveConfig();
-    if (result.isSuccess()) {
-      sendJsonResponse(200, F("{\"success\":true}"));
-    } else {
-      sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Speichern\"}"));
-    }
-  } else {
-    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Display Manager nicht verfügbar\"}"));
-  }
-}
-
-void AdminDisplayHandler::handleDisplayToggle() {
-  if (!requireAjaxRequest())
-    return;
-  if (!validateRequest()) {
-    sendJsonResponse(401, F("{\"success\":false,\"error\":\"Authentifizierung erforderlich\"}"));
-    return;
-  }
-  // Require new AJAX params 'display' and 'enabled'
-  if (!_server.hasArg("display") || !_server.hasArg("enabled")) {
-    sendJsonResponse(
-        400,
-        F("{\"success\":false,\"error\":\"Fehlende Parameter: display und enabled erwartet\"}"));
-    return;
-  }
-
-  String setting = _server.arg("display");
-  bool enabled = _server.arg("enabled") == "true";
-
-  if (displayManager) {
-    if (setting == "show_ip") {
-      displayManager->setIpScreenEnabled(enabled);
-    } else if (setting == "show_clock") {
-      displayManager->setClockEnabled(enabled);
-    } else if (setting == "show_flower") {
-      displayManager->setFlowerImageEnabled(enabled);
-    } else if (setting == "show_fabmobil") {
-      displayManager->setFabmobilImageEnabled(enabled);
-    } else {
-      sendJsonResponse(400, F("{\"success\":false,\"error\":\"Unbekannte Einstellung\"}"));
-      return;
-    }
-
-    auto result = displayManager->saveConfig();
-    if (result.isSuccess()) {
-      sendJsonResponse(200, F("{\"success\":true}"));
-    } else {
-      sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Speichern\"}"));
-    }
-  } else {
-    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Display Manager nicht verfügbar\"}"));
-  }
-}
-
 void AdminDisplayHandler::handleMeasurementDisplayToggle() {
   if (!requireAjaxRequest())
     return;
@@ -379,30 +276,21 @@ bool AdminDisplayHandler::validateRequest() const {
 }
 
 RouterResult AdminDisplayHandler::onRegisterRoutes(WebRouter& router) {
+  logger.debug(F("AdminDisplayHandler"), F("Registriere Display-Routen"));
+
   auto result = router.addRoute(HTTP_GET, "/admin/display", [this]() { handleDisplayConfig(); });
   if (!result.isSuccess())
     return result;
 
-  result = router.addRoute(HTTP_POST, "/admin/display/screen_duration",
-                           [this]() { handleScreenDurationUpdate(); });
-  if (!result.isSuccess())
-    return result;
+  // Note: Screen duration, clock format, and display toggles are now handled
+  // by the unified /admin/config/setConfigValue route with namespace="display"
 
-  result = router.addRoute(HTTP_POST, "/admin/display/clock_format",
-                           [this]() { handleClockFormatUpdate(); });
-  if (!result.isSuccess())
-    return result;
-
-  result = router.addRoute(HTTP_POST, "/admin/display/toggle", [this]() { handleDisplayToggle(); });
-  if (!result.isSuccess())
-    return result;
-
+  // Keep measurement toggle for now as it's managed by DisplayManager
   result = router.addRoute(HTTP_POST, "/admin/display/measurement_toggle",
                            [this]() { handleMeasurementDisplayToggle(); });
   if (!result.isSuccess())
     return result;
 
-  logger.info(F("AdminDisplayHandler"), F("Display config routes registered"));
   return RouterResult::success();
 }
 
