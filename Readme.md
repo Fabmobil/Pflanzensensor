@@ -4,27 +4,12 @@ Dies ist das Repository mit dem Quellcode und allen Informationen zum Fabmobil P
 
 Der Quellcode befindet sich im [Pflanzensensor](https://github.com/Fabmobil/Pflanzensensor/tree/main/Pflanzensensor)-Verzeichnis. Das [Dokumentation](https://github.com/Fabmobil/Pflanzensensor/tree/main/Dokumentation)-Verzeichnis enthält Datenblätter, Schaltpläne und Pinouts der verwendeten Bauteile sowie 3D Modelle für Zubehörteile, die gedruckt werden können. Im [Wiki](https://github.com/Fabmobil/Pflanzensensor/wiki) gibt es weiterführende Informationen und Anleitungen.
 
-## Konfigurationsverwaltung
-
-Das Projekt verwendet eine Preferences-basierte Konfigurationsverwaltung für eine robuste und effiziente Speicherung von Einstellungen. Weitere Details finden Sie in der [Preferences-Dokumentation](PREFERENCES_DOCUMENTATION.md).
-
-**Neue Features:**
-- **EEPROM-basierte Speicherung (16KB)** - Überlebt Filesystem-Flashes
-- **Erweiterte EEPROM-Partition** - Von 4KB auf 16KB erhöht für vollständige Sensordatenspeicherung
-- Organisierte Namespace-Struktur für verschiedene Einstellungsbereiche
-- Direktes Laden/Speichern in Preferences (keine JSON-Dateien)
-- Umfassende deutsche Logger-Ausgaben
-
-**Aktueller Stand:**
-- ✅ General, WiFi, Display, Log, LED Traffic Light und Debug-Einstellungen in Preferences
-- ✅ Alle Sensor-Einstellungen (einschließlich Namen, Einheiten, fieldNames) in Preferences
-- ✅ Linker-Script angepasst: LittleFS 916KB, EEPROM 16KB
 
 ![Pflanzensensor](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Pflanzensensor.jpeg?raw=true)
 ![Pflanzensensor in Blumentopf](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Pflanzensensor_in_Blumentopf.jpeg?raw=true)
 ![Pflanzensensor Webinterface](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Webinterface.png?raw=true)
 
-[<img height="50" alt="Bosch" src="https://github.com/user-attachments/assets/16b5bcbe-fffa-43eb-bbd5-1f107192353f" />](https://www.fabmobil.org) 
+[<img height="50" alt="Bosch" src="https://github.com/user-attachments/assets/16b5bcbe-fffa-43eb-bbd5-1f107192353f" />](https://www.fabmobil.org)
 
 wird gefördert von:
 
