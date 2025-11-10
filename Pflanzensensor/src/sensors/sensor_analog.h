@@ -42,11 +42,127 @@ struct AnalogConfig : public SensorConfig {
       measurementInterval = ANALOG_MEASUREMENT_INTERVAL * 1000;
     minimumDelay = ANALOG_MINIMUM_DELAY;
 
-    // Set min/max for each measurement in MeasurementConfig
+    // Set min/max and inverted for each measurement in MeasurementConfig
     for (size_t i = 0; i < activeMeasurements && i < measurements.size(); ++i) {
-      measurements[i].minValue = /* set from macro or default */ 0.0f;
-      measurements[i].maxValue = /* set from macro or default */ 0.0f;
-
+      switch (i) {
+      case 0:
+        measurements[i].name = ANALOG_1_NAME;
+        measurements[i].fieldName = ANALOG_1_FIELD_NAME;
+        measurements[i].unit = ANALOG_1_UNIT;
+        measurements[i].minValue = ANALOG_1_MIN;
+        measurements[i].maxValue = ANALOG_1_MAX;
+        measurements[i].inverted = ANALOG_1_INVERTED;
+        measurements[i].calibrationMode = ANALOG_1_CALIBRATION_MODE;
+        measurements[i].limits.yellowLow = ANALOG_1_YELLOW_LOW;
+        measurements[i].limits.greenLow = ANALOG_1_GREEN_LOW;
+        measurements[i].limits.greenHigh = ANALOG_1_GREEN_HIGH;
+        measurements[i].limits.yellowHigh = ANALOG_1_YELLOW_HIGH;
+        break;
+      case 1:
+        measurements[i].name = ANALOG_2_NAME;
+        measurements[i].fieldName = ANALOG_2_FIELD_NAME;
+        measurements[i].unit = ANALOG_2_UNIT;
+        measurements[i].minValue = ANALOG_2_MIN;
+        measurements[i].maxValue = ANALOG_2_MAX;
+        measurements[i].inverted = ANALOG_2_INVERTED;
+        measurements[i].calibrationMode = ANALOG_2_CALIBRATION_MODE;
+        measurements[i].limits.yellowLow = ANALOG_2_YELLOW_LOW;
+        measurements[i].limits.greenLow = ANALOG_2_GREEN_LOW;
+        measurements[i].limits.greenHigh = ANALOG_2_GREEN_HIGH;
+        measurements[i].limits.yellowHigh = ANALOG_2_YELLOW_HIGH;
+        break;
+      case 2:
+        measurements[i].name = ANALOG_3_NAME;
+        measurements[i].fieldName = ANALOG_3_FIELD_NAME;
+        measurements[i].unit = ANALOG_3_UNIT;
+        measurements[i].minValue = ANALOG_3_MIN;
+        measurements[i].maxValue = ANALOG_3_MAX;
+        measurements[i].inverted = ANALOG_3_INVERTED;
+        measurements[i].calibrationMode = ANALOG_3_CALIBRATION_MODE;
+        measurements[i].limits.yellowLow = ANALOG_3_YELLOW_LOW;
+        measurements[i].limits.greenLow = ANALOG_3_GREEN_LOW;
+        measurements[i].limits.greenHigh = ANALOG_3_GREEN_HIGH;
+        measurements[i].limits.yellowHigh = ANALOG_3_YELLOW_HIGH;
+        break;
+      case 3:
+        measurements[i].name = ANALOG_4_NAME;
+        measurements[i].fieldName = ANALOG_4_FIELD_NAME;
+        measurements[i].unit = ANALOG_4_UNIT;
+        measurements[i].minValue = ANALOG_4_MIN;
+        measurements[i].maxValue = ANALOG_4_MAX;
+        measurements[i].inverted = ANALOG_4_INVERTED;
+        measurements[i].calibrationMode = ANALOG_4_CALIBRATION_MODE;
+        measurements[i].limits.yellowLow = ANALOG_4_YELLOW_LOW;
+        measurements[i].limits.greenLow = ANALOG_4_GREEN_LOW;
+        measurements[i].limits.greenHigh = ANALOG_4_GREEN_HIGH;
+        measurements[i].limits.yellowHigh = ANALOG_4_YELLOW_HIGH;
+        break;
+      case 4:
+        measurements[i].name = ANALOG_5_NAME;
+        measurements[i].fieldName = ANALOG_5_FIELD_NAME;
+        measurements[i].unit = ANALOG_5_UNIT;
+        measurements[i].minValue = ANALOG_5_MIN;
+        measurements[i].maxValue = ANALOG_5_MAX;
+        measurements[i].inverted = ANALOG_5_INVERTED;
+        measurements[i].calibrationMode = ANALOG_5_CALIBRATION_MODE;
+        measurements[i].limits.yellowLow = ANALOG_5_YELLOW_LOW;
+        measurements[i].limits.greenLow = ANALOG_5_GREEN_LOW;
+        measurements[i].limits.greenHigh = ANALOG_5_GREEN_HIGH;
+        measurements[i].limits.yellowHigh = ANALOG_5_YELLOW_HIGH;
+        break;
+      case 5:
+        measurements[i].name = ANALOG_6_NAME;
+        measurements[i].fieldName = ANALOG_6_FIELD_NAME;
+        measurements[i].unit = ANALOG_6_UNIT;
+        measurements[i].minValue = ANALOG_6_MIN;
+        measurements[i].maxValue = ANALOG_6_MAX;
+        measurements[i].inverted = ANALOG_6_INVERTED;
+        measurements[i].calibrationMode = ANALOG_6_CALIBRATION_MODE;
+        measurements[i].limits.yellowLow = ANALOG_6_YELLOW_LOW;
+        measurements[i].limits.greenLow = ANALOG_6_GREEN_LOW;
+        measurements[i].limits.greenHigh = ANALOG_6_GREEN_HIGH;
+        measurements[i].limits.yellowHigh = ANALOG_6_YELLOW_HIGH;
+        break;
+      case 6:
+        measurements[i].name = ANALOG_7_NAME;
+        measurements[i].fieldName = ANALOG_7_FIELD_NAME;
+        measurements[i].unit = ANALOG_7_UNIT;
+        measurements[i].minValue = ANALOG_7_MIN;
+        measurements[i].maxValue = ANALOG_7_MAX;
+        measurements[i].inverted = ANALOG_7_INVERTED;
+        measurements[i].calibrationMode = ANALOG_7_CALIBRATION_MODE;
+        measurements[i].limits.yellowLow = ANALOG_7_YELLOW_LOW;
+        measurements[i].limits.greenLow = ANALOG_7_GREEN_LOW;
+        measurements[i].limits.greenHigh = ANALOG_7_GREEN_HIGH;
+        measurements[i].limits.yellowHigh = ANALOG_7_YELLOW_HIGH;
+        break;
+      case 7:
+        measurements[i].name = ANALOG_8_NAME;
+        measurements[i].fieldName = ANALOG_8_FIELD_NAME;
+        measurements[i].unit = ANALOG_8_UNIT;
+        measurements[i].minValue = ANALOG_8_MIN;
+        measurements[i].maxValue = ANALOG_8_MAX;
+        measurements[i].inverted = ANALOG_8_INVERTED;
+        measurements[i].calibrationMode = ANALOG_8_CALIBRATION_MODE;
+        measurements[i].limits.yellowLow = ANALOG_8_YELLOW_LOW;
+        measurements[i].limits.greenLow = ANALOG_8_GREEN_LOW;
+        measurements[i].limits.greenHigh = ANALOG_8_GREEN_HIGH;
+        measurements[i].limits.yellowHigh = ANALOG_8_YELLOW_HIGH;
+        break;
+      default:
+        measurements[i].name = "";
+        measurements[i].fieldName = "";
+        measurements[i].unit = "%";
+        measurements[i].minValue = 0.0f;
+        measurements[i].maxValue = 0.0f;
+        measurements[i].inverted = false;
+        measurements[i].calibrationMode = false;
+        measurements[i].limits.yellowLow = 0.0f;
+        measurements[i].limits.greenLow = 0.0f;
+        measurements[i].limits.greenHigh = 100.0f;
+        measurements[i].limits.yellowHigh = 100.0f;
+        break;
+      }
       // DO NOT initialize raw min/max values here - let JSON loading handle it
       // This prevents constructor values from overriding loaded JSON values
     }

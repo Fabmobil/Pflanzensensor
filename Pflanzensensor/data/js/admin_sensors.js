@@ -1010,6 +1010,15 @@ var EventHandlers = (function () {
         maxInput.disabled = enabled;
         if (enabled) maxInput.classList.add('readonly-value'); else maxInput.classList.remove('readonly-value');
       }
+      // Show/hide autocal duration section immediately
+      var selInit = document.querySelector('.analog-autocal-duration[data-sensor-id="' + sensorId + '"][data-measurement-index="' + measurementIndex + '"]');
+      if (selInit) {
+        var cont = selInit;
+        var depth2 = 0;
+        while (cont && depth2 < 6 && !(cont.classList && cont.classList.contains('autocal-duration-section'))) { cont = cont.parentElement; depth2++; }
+        if (cont && cont.style) cont.style.display = enabled ? '' : 'none';
+        try { selInit.disabled = !enabled; } catch (e) {}
+      }
     } catch (e) { Logger.debug('Immediate UI toggle failed', e); }
     // If enabling autocal, first persist the current manual min/max (if present)
     // so the autocal starts from the user's configured values.
