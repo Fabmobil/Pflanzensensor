@@ -240,6 +240,14 @@ bool AnalogSensor::fetchSample(float& value, size_t index) {
   if (index < m_lastRawValues.size()) {
     m_lastRawValues[index] = raw;
   }
+  // Update runtime copy and central config so later persistence sees the last raw value
+  if (index < m_analogConfig.measurements.size()) {
+    m_analogConfig.measurements[index].lastRawValue = raw;
+    SensorConfig& cfg = this->mutableConfig();
+    if (index < cfg.measurements.size()) {
+      cfg.measurements[index].lastRawValue = raw;
+    }
+  }
 
   // Aktualisiere und persistiere die historischen Roh-Extrema unabhängig
   // von Autocal. Setze bei der ersten Messung beide Werte auf den aktuellen

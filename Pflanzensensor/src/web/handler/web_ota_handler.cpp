@@ -123,9 +123,18 @@ void WebOTAHandler::handleUpdatePage() {
             F("<a href='https://github.com/Fabmobil/Pflanzensensor/releases' target='_blank'>"));
         sendChunk(F("Pflanzensensor Github Seite</a> herunterladen.</li>"));
         sendChunk(F("<li>Beim aktualisieren bleiben deine "));
-        sendChunk(F("Einstellungen erhalten.</li> "));
-        sendChunk(F("<li>Die Reihenfolge ist wichtig: bei einem Update muss du immer zu erst "));
-        sendChunk(F("die Firmware (firmware.bin) und danach das Dateisystem (littlefs.bin) "
+        sendChunk(F("Einstellungen normalerweise erhalten.</li> "));
+        sendChunk(
+            F("<ul><li>Eine Sicherheitskopie deiner Einstellungen kann aber nicht schaden:<br>"));
+        sendChunk(F("<form action='/admin/downloadConfig' method='GET' class='inline'>"));
+        sendChunk(F("<button type='submit' class='button button-primary'>Konfiguration "
+                    "herunterladen</button>"));
+        sendChunk(F("</form>"));
+        sendChunk(F("</li></ul>"));
+        sendChunk(
+            F("<li>Die Reihenfolge ist wichtig: bei einem Update muss du immer <b>zu erst</b> "));
+        sendChunk(F("die Firmware (<b>firmware.bin</b>) und <b>danach</b> das Dateisystem "
+                    "(<b>littlefs.bin</b>) "
                     "aktualisieren.</li>"));
         sendChunk(F("<li>Das Gerät wird nach erfolgreichem Update automatisch neu gestartet</li>"));
         sendChunk(F("<li>Trenne während des Updates nicht die Stromversorgung!</li>"));

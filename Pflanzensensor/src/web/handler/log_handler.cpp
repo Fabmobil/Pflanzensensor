@@ -78,7 +78,7 @@ void LogHandler::handleLogs() {
   }
 
   std::vector<String> css = {"admin", "logs"};
-  std::vector<String> js = {"logs"};
+  std::vector<String> js = {"admin", "logs"};
 
   this->renderAdminPage(
       ConfigMgr.getDeviceName(), "logs",
@@ -90,29 +90,78 @@ void LogHandler::handleLogs() {
         sendChunk(F("';</script>"));
 #endif
 
-        // Controls row with two cards, each with two rows
+        // Controls row with two cards
         sendChunk(F("<div class='log-controls-row'>"));
-        // Card 1: Log-Level
+        // Card 1: Debug settings form (auto-saved by admin.js)
         sendChunk(F("<div class='card log-controls-card'>"));
-        sendChunk(F("<div class='log-controls-label'>Log-Level:</div>"));
-        sendChunk(F("<div class='button-group'>"));
-        sendChunk(F("<button onclick='setLogLevel(\"DEBUG\")' class='button "
-                    "button-debug log-level-btn level-debug'>DEBUG</button>"));
-        sendChunk(F("<button onclick='setLogLevel(\"INFO\")' class='button "
-                    "button-info log-level-btn level-info'>INFO</button>"));
-        sendChunk(F("<button onclick='setLogLevel(\"WARNING\")' class='button "
-                    "button-warning log-level-btn level-warning'>WARNING</button>"));
-        sendChunk(F("<button onclick='setLogLevel(\"ERROR\")' class='button "
-                    "button-error log-level-btn level-error'>ERROR</button>"));
+        sendChunk(F("<div class='log-controls-label'>Log Einstellungen</div>"));
+        // Determine whether the requesting client already provided Basic-Auth
+        bool isAuth = _server.authenticate("admin", ConfigMgr.getAdminPassword().c_str());
+        sendChunk(F("<form method='post' action='/admin/updateSettings' class='config-form'>"));
+        sendChunk(F("<input type='hidden' name='section' value='debug'>"));
+        // Debug RAM
+        sendChunk(F("<div><label class='checkbox-label'>"));
+        sendChunk(F("<input type='checkbox' id='debug_ram' name='debug_ram' value='true'"));
+        if (ConfigMgr.isDebugRAM())
+          sendChunk(F(" checked"));
+        if (!isAuth)
+          sendChunk(F(" disabled"));
+        sendChunk(F("> Debug RAM</label></div>"));
+        // Debug Measurement Cycle
+        sendChunk(F("<div><label class='checkbox-label'>"));
+        sendChunk(F("<input type='checkbox' id='debug_measurement_cycle' "
+                    "name='debug_measurement_cycle' value='true'"));
+        if (ConfigMgr.isDebugMeasurementCycle())
+          sendChunk(F(" checked"));
+        if (!isAuth)
+          sendChunk(F(" disabled"));
+        sendChunk(F("> Debug Messzyklus</label></div>"));
+        // Debug Sensor
+        sendChunk(F("<div><label class='checkbox-label'>"));
+        sendChunk(F("<input type='checkbox' id='debug_sensor' name='debug_sensor' value='true'"));
+        if (ConfigMgr.isDebugSensor())
+          sendChunk(F(" checked"));
+        if (!isAuth)
+          sendChunk(F(" disabled"));
+        sendChunk(F("> Debug Sensor</label></div>"));
+        // Debug Display
+        sendChunk(F("<div><label class='checkbox-label'>"));
+        sendChunk(F("<input type='checkbox' id='debug_display' name='debug_display' value='true'"));
+        if (ConfigMgr.isDebugDisplay())
+          sendChunk(F(" checked"));
+        if (!isAuth)
+          sendChunk(F(" disabled"));
+        sendChunk(F("> Debug Display</label></div>"));
+        // Debug WebSocket
+        sendChunk(F("<div><label class='checkbox-label'>"));
+        sendChunk(
+            F("<input type='checkbox' id='debug_websocket' name='debug_websocket' value='true'"));
+        if (ConfigMgr.isDebugWebSocket())
+          sendChunk(F(" checked"));
+        if (!isAuth)
+          sendChunk(F(" disabled"));
+        sendChunk(F("> Debug WebSocket</label></div>"));
+        sendChunk(F("</form>"));
         sendChunk(F("</div>"));
-        sendChunk(F("</div>"));
-        // Card 2: WebSocket Status and Auto-scroll
+        // Card 2: WebSocket Status and Auto-scroll (with Log-Level buttons below)
         sendChunk(F("<div class='card log-controls-card'>"));
-        sendChunk(F("<div class='log-controls-label'>WebSocket Status: <span "
-                    "id='wsStatusCard' class='ws-status'>Connecting...</span></div>"));
+        sendChunk(F("<div class='log-controls-label'>WebSocket Status: <span id='wsStatusCard' "
+                    "class='ws-status'>Connecting...</span></div>"));
         sendChunk(F("<div class='button-group'>"));
-        sendChunk(F("<button id='autoScrollBtn' class='button "
-                    "button-primary'>Auto-scroll: ON</button>"));
+        sendChunk(
+            F("<button id='autoScrollBtn' class='button button-primary'>Auto-scroll: ON</button>"));
+        sendChunk(F("</div>"));
+        // Immediate Log-Level buttons (call setLogLevel from logs.js)
+        sendChunk(F("<div class='log-controls-label'>Log Level setzen:</div>"));
+        sendChunk(F("<div style='margin-top:8px;' class='button-group'>"));
+        sendChunk(F("<button onclick='setLogLevel(\"DEBUG\")' class='button button-debug "
+                    "log-level-btn level-debug'>DEBUG</button>"));
+        sendChunk(F("<button onclick='setLogLevel(\"INFO\")' class='button button-info "
+                    "log-level-btn level-info'>INFO</button>"));
+        sendChunk(F("<button onclick='setLogLevel(\"WARNING\")' class='button button-warning "
+                    "log-level-btn level-warning'>WARNING</button>"));
+        sendChunk(F("<button onclick='setLogLevel(\"ERROR\")' class='button button-error "
+                    "log-level-btn level-error'>ERROR</button>"));
         sendChunk(F("</div>"));
         sendChunk(F("</div>"));
         sendChunk(F("</div>"));

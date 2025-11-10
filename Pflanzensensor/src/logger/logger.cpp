@@ -186,7 +186,7 @@ void Logger::log(LogLevel level, const String& module, const String& message) {
 
 void Logger::setLogLevel(LogLevel level) {
   m_logLevel = level;
-  debug("Logger", String(F("Log-Level gesetzt auf: ")) + logLevelToString(level));
+  warning("Logger", String(F("Log-Level gesetzt auf: ")) + logLevelToString(level));
 }
 
 LogLevel Logger::getLogLevel() const { return m_logLevel; }
