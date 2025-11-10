@@ -124,9 +124,10 @@ void WebOTAHandler::handleUpdatePage() {
         sendChunk(F("Pflanzensensor Github Seite</a> herunterladen.</li>"));
         sendChunk(F("<li>Beim aktualisieren bleiben deine "));
         sendChunk(F("Einstellungen erhalten.</li> "));
-        sendChunk(F("</ul>"));
-        sendChunk(F("<li>Das Gerät wird nach erfolgreichem Update automatisch neu "
-                    "gestartet</li>"));
+        sendChunk(F("<li>Die Reihenfolge ist wichtig: bei einem Update muss du immer zu erst "));
+        sendChunk(F("die Firmware (firmware.bin) und danach das Dateisystem (littlefs.bin) "
+                    "aktualisieren.</li>"));
+        sendChunk(F("<li>Das Gerät wird nach erfolgreichem Update automatisch neu gestartet</li>"));
         sendChunk(F("<li>Trenne während des Updates nicht die Stromversorgung!</li>"));
         sendChunk(F("</ul></div>"));
 

@@ -68,7 +68,7 @@ void AdminSensorHandler::handleSensorConfig() {
 
             // Measurement interval input (sensor-wide)
             sendChunk(F("<div class='card-section status-row'>"));
-            sendChunk(F("Messintervall: <input type='number' step='any' size='4' "
+            sendChunk(F("Messintervall: <input type='number' step='any' size='6' "
                         "name='interval_"));
             sendChunk(id);
             sendChunk(F("' value='"));

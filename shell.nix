@@ -8,6 +8,7 @@ pkgs.mkShell {
     zsh
     clang-tools_14
     pandoc
+    cppcheck
   ];
 
   shellHook = ''

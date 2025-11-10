@@ -220,5 +220,11 @@ void AdminHandler::generateAndSendSystemInfoCard() {
     }
   }
   yield();
-  sendChunk(F("</table></div>"));
+  sendChunk(F("</table>"));
+  // Add Download Config button (exports Preferences as JSON)
+  sendChunk(F("<div style='margin-top:8px;'>"));
+  sendChunk(F("<form action='/admin/downloadConfig' method='GET' class='inline'>"));
+  sendChunk(F(
+      "<button type='submit' class='button button-primary'>Konfiguration herunterladen</button>"));
+  sendChunk(F("</form></div></div>"));
 }
