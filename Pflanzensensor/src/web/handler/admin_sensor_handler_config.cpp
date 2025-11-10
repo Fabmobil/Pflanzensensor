@@ -3,6 +3,7 @@
  * @brief Sensor configuration update and retrieval handlers
  */
 
+#include <cmath>
 #include <map>
 
 #include "admin_sensor_handler.h"
@@ -277,11 +278,21 @@ void AdminSensorHandler::handleGetSensorConfigJson() {
       sendChunk(buf);
 
       // Always include absolute min/max values to ensure they are displayed
-      // properly
-      snprintf(buf, sizeof(buf), ",\"absoluteMin\":%.2f", meas.absoluteMin);
-      sendChunk(buf);
-      snprintf(buf, sizeof(buf), ",\"absoluteMax\":%.2f", meas.absoluteMax);
-      sendChunk(buf);
+      // properly. If values are infinite serialize them as JSON null so the
+      // browser's JSON.parse() doesn't fail (JavaScript uses null for JSON
+      // null, 'inf' is invalid JSON).
+      if (isinf(meas.absoluteMin)) {
+        sendChunk(F(",\"absoluteMin\":null"));
+      } else {
+        snprintf(buf, sizeof(buf), ",\"absoluteMin\":%.2f", meas.absoluteMin);
+        sendChunk(buf);
+      }
+      if (isinf(meas.absoluteMax)) {
+        sendChunk(F(",\"absoluteMax\":null"));
+      } else {
+        snprintf(buf, sizeof(buf), ",\"absoluteMax\":%.2f", meas.absoluteMax);
+        sendChunk(buf);
+      }
 
 #if USE_ANALOG
       if (analog) {

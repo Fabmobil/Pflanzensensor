@@ -693,7 +693,13 @@ SensorPersistence::saveMeasurementToJson(const String& sensorId, size_t measurem
     } else {
       doc["absoluteMax"] = config.absoluteMax;
     }
+
+    // Speichere letzten Rohwert
+    doc["lastRawValue"] = config.lastRawValue;
   }
+
+  // Generisch: Speichere letzten Messwert
+  doc["lastValue"] = config.lastValue;
 
   String path = getMeasurementFilePath(sensorId, measurementIndex);
 
@@ -740,6 +746,7 @@ SensorPersistence::loadMeasurementFromJson(const String& sensorId, size_t measur
   config.enabled = doc["enabled"] | true;
   config.name = doc["name"] | String("");
   config.fieldName = doc["fieldName"] | String("");
+  config.lastValue = doc["lastValue"] | NAN;
   config.unit = doc["unit"] | String("");
   config.minValue = doc["minValue"] | 0.0f;
   config.maxValue = doc["maxValue"] | 100.0f;
@@ -755,6 +762,7 @@ SensorPersistence::loadMeasurementFromJson(const String& sensorId, size_t measur
     config.inverted = doc["inverted"] | false;
     config.calibrationMode = doc["calibrationMode"] | false;
     config.autocalHalfLifeSeconds = doc["autocalHalfLifeSeconds"] | 0;
+    config.lastRawValue = doc["lastRawValue"] | -1;
     config.absoluteRawMin = doc["absoluteRawMin"] | 0;
     config.absoluteRawMax = doc["absoluteRawMax"] | 1023;
 
@@ -800,7 +808,9 @@ SensorPersistence::loadMeasurementFromJson(const String& sensorId, size_t measur
   FIELD(absoluteRawMin, int)                                                                       \
   FIELD(absoluteRawMax, int)                                                                       \
   FIELD(absoluteMin, float)                                                                        \
-  FIELD(absoluteMax, float)
+  FIELD(absoluteMax, float)                                                                        \
+  FIELD(lastRawValue, int)                                                                         \
+  FIELD(lastValue, float)
 
 /**
  * @brief Helper: Setzt ein einzelnes Feld in MeasurementConfig

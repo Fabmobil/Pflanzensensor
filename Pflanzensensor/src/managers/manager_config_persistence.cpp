@@ -135,6 +135,24 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(ConfigDa
                    F("Fehler beim Löschen der Preferences: ") + clearResult.getMessage());
   }
 
+  // Also remove per-measurement JSON files stored under /config
+  // These files are named like: /config/sensor_<ID>_<index>.json
+  logger.info(F("ConfigP"), F("Lsche Messungs-JSON-Dateien in /config (falls vorhanden)..."));
+  {
+    Dir dir = LittleFS.openDir("/config");
+    while (dir.next()) {
+      String filename = dir.fileName();
+      if (filename.startsWith("sensor_") && filename.endsWith(".json")) {
+        String path = String("/config/") + filename;
+        if (LittleFS.remove(path)) {
+          logger.info(F("ConfigP"), String(F("Gelöscht: ")) + path);
+        } else {
+          logger.warning(F("ConfigP"), String(F("Konnte Datei nicht löschen: ")) + path);
+        }
+      }
+    }
+  }
+
   logger.info(F("ConfigP"), F("Factory Reset abgeschlossen"));
   // Return success; caller (UI) will handle reboot
   return PersistenceResult::success();
@@ -399,6 +417,14 @@ bool ConfigPersistence::backupPreferencesToFile() {
           } else {
             meas["amax"] = config.absoluteMax;
           }
+          // include stored last raw value (may be -1 if unknown)
+          meas["lastRawValue"] = config.lastRawValue;
+        }
+        // include stored last measured value for all sensors; use null for NaN
+        if (isnan(config.lastValue)) {
+          meas["lastValue"] = serialized("null");
+        } else {
+          meas["lastValue"] = config.lastValue;
         }
       }
     }
@@ -639,6 +665,8 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
           config.enabled = meas["en"] | true;
           config.name = meas["nm"] | String("");
           config.fieldName = meas["fn"] | String("");
+          // Restore last measured value if present
+          config.lastValue = meas.containsKey("lastValue") ? (float)meas["lastValue"] : NAN;
           config.unit = meas["un"] | String("");
           config.minValue = meas["min"] | 0.0f;
           config.maxValue = meas["max"] | 100.0f;
@@ -654,6 +682,8 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
             config.inverted = meas["inv"] | false;
             config.calibrationMode = meas["cal"] | false;
             config.autocalHalfLifeSeconds = meas["ahl"] | 0;
+            // Restore last raw value if present
+            config.lastRawValue = meas.containsKey("lastRawValue") ? (int)meas["lastRawValue"] : -1;
             config.absoluteRawMin = meas["rmin"] | 0;
             config.absoluteRawMax = meas["rmax"] | 1023;
 
@@ -688,6 +718,9 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
         config.enabled = sensorGroup["en"] | true;
         config.name = sensorGroup["nm"] | String("");
         config.fieldName = sensorGroup["fn"] | String("");
+        // Restore last measured value if present (old structure)
+        config.lastValue =
+            sensorGroup.containsKey("lastValue") ? (float)sensorGroup["lastValue"] : NAN;
         config.unit = sensorGroup["un"] | String("");
         config.minValue = sensorGroup["min"] | 0.0f;
         config.maxValue = sensorGroup["max"] | 100.0f;
@@ -703,6 +736,9 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
           config.inverted = sensorGroup["inv"] | false;
           config.calibrationMode = sensorGroup["cal"] | false;
           config.autocalHalfLifeSeconds = sensorGroup["ahl"] | 0;
+          // Restore last raw value if present (old structure)
+          config.lastRawValue =
+              sensorGroup.containsKey("lastRawValue") ? (int)sensorGroup["lastRawValue"] : -1;
           config.absoluteRawMin = sensorGroup["rmin"] | 0;
           config.absoluteRawMax = sensorGroup["rmax"] | 1023;
 

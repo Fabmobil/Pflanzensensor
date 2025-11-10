@@ -95,6 +95,10 @@ struct MeasurementConfig {
    * @brief Absolute maximum raw value ever measured for analog sensors
    */
   int absoluteRawMax{INT_MIN};
+  /**
+   * @brief Letzter gemessener Rohwert (nur für Analogsensoren)
+   */
+  int lastRawValue{-1};
 
   /**
    * @brief Whether automatic calibration (AutoCal) is enabled for this
@@ -115,6 +119,11 @@ struct MeasurementConfig {
    */
   AutoCal autocal;
 
+  /**
+   * @brief Letzter gemessener Wert (generisch für alle Sensortypen)
+   */
+  float lastValue{NAN};
+
   MeasurementConfig()
       : enabled(true),
         retryDelay(1000),
@@ -122,7 +131,8 @@ struct MeasurementConfig {
         minValue(0.0f),
         maxValue(0.0f),
         absoluteMin(INFINITY),
-        absoluteMax(-INFINITY)
+        absoluteMax(-INFINITY),
+        lastValue(NAN)
   // DO NOT initialize absoluteRawMin/absoluteRawMax here
   // Let JSON loading handle these values to prevent constructor defaults
   // from overriding loaded configuration

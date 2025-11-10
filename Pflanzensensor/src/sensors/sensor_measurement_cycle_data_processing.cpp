@@ -78,6 +78,36 @@ void SensorMeasurementCycleManager::handleProcessing() {
           logger.debug(F("MeasurementCycle"), F("Absolute Min/Max aktualisiert für Sensor ") +
                                                   m_sensor->getId() + F(" Messung ") + String(i));
         }
+
+        // Update lastValue in runtime config and persist if it changed
+        {
+          float prevLast = config.measurements[i].lastValue;
+          if (isnan(prevLast) || (!isnan(value) && fabs(prevLast - value) > 1e-6f)) {
+            // Update in-memory
+            config.measurements[i].lastValue = value;
+
+            // Prepare small JSON object to persist only the changed fields
+            DynamicJsonDocument tmpDoc(128);
+            JsonObject settings = tmpDoc.to<JsonObject>();
+            settings["lastValue"] = value;
+
+// For analog sensors also persist the last raw value. We don't
+// need to depend on AnalogSensor here; the measurement's
+// persisted runtime value is stored in the MeasurementConfig.
+#if USE_ANALOG
+            int lastRaw = config.measurements[i].lastRawValue;
+            settings["lastRawValue"] = lastRaw;
+#endif
+
+            // Persist changed fields (this will load/save the measurement JSON)
+            auto pres =
+                SensorPersistence::updateMeasurementSettings(m_sensor->getId(), i, settings);
+            if (!pres.isSuccess()) {
+              logger.warning(F("MeasurementCycle"),
+                             F("Konnte lastValue nicht persistieren: ") + pres.getMessage());
+            }
+          }
+        }
       }
     } else {
       updatedData.values[i] = 0.0f;

@@ -68,14 +68,14 @@ void AdminSensorHandler::handleSensorConfig() {
 
             // Measurement interval input (sensor-wide)
             sendChunk(F("<div class='card-section status-row'>"));
-            sendChunk(F("Messintervall: <input type='number' step='any' size='6' "
+            sendChunk(F("Messintervall: <input type='number' step='any' "
                         "name='interval_"));
             sendChunk(id);
             sendChunk(F("' value='"));
             sendChunk(String(int(config.measurementInterval / 1000)));
             sendChunk(F("' class='measurement-interval-input' data-sensor-id='"));
             sendChunk(id);
-            sendChunk(F("' style='width:60px;'> Sekunden"));
+            sendChunk(F("'> Sekunden"));
 
             // Messen button for the whole sensor
             sendChunk(
@@ -223,34 +223,34 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i, si
   sendChunk(F("<div class='status-row'><h3>Schwellwerte</h3></div>"));
   sendChunk(F("<div class='card-section threshold-row'>"));
   sendChunk(F("<div class='threshold-inputs'>"));
-  sendChunk(F("<label>Gelb min: <input type='number' size='4' step='any' name='"));
+  sendChunk(F("<label>Gelb min: <input type='number' step='any' name='"));
   sendChunk(id);
   sendChunk(F("_"));
   sendChunk(String(i));
   sendChunk(F("_yellowLow' value='"));
   sendChunk(String(int(config.measurements[i].limits.yellowLow)));
-  sendChunk(F("' class='threshold-input' style='width:60px;'></label>"));
-  sendChunk(F("<label>Grün min: <input type='number' size='4' step='any' name='"));
+  sendChunk(F("' class='threshold-input'></label>"));
+  sendChunk(F("<label>Grün min: <input type='number' step='any' name='"));
   sendChunk(id);
   sendChunk(F("_"));
   sendChunk(String(i));
   sendChunk(F("_greenLow' value='"));
   sendChunk(String(int(config.measurements[i].limits.greenLow)));
-  sendChunk(F("' class='threshold-input' style='width:60px;'></label>"));
-  sendChunk(F("<label>Grün max: <input type='number' size='4' step='any' name='"));
+  sendChunk(F("' class='threshold-input'></label>"));
+  sendChunk(F("<label>Grün max: <input type='number' step='any' name='"));
   sendChunk(id);
   sendChunk(F("_"));
   sendChunk(String(i));
   sendChunk(F("_greenHigh' value='"));
   sendChunk(String(int(config.measurements[i].limits.greenHigh)));
-  sendChunk(F("' class='threshold-input' style='width:60px;'></label>"));
-  sendChunk(F("<label>Gelb max: <input type='number' size='4' step='any' name='"));
+  sendChunk(F("' class='threshold-input'></label>"));
+  sendChunk(F("<label>Gelb max: <input type='number' step='any' name='"));
   sendChunk(id);
   sendChunk(F("_"));
   sendChunk(String(i));
   sendChunk(F("_yellowHigh' value='"));
   sendChunk(String(int(config.measurements[i].limits.yellowHigh)));
-  sendChunk(F("' class='threshold-input' style='width:60px;'></label>"));
+  sendChunk(F("' class='threshold-input'></label>"));
   sendChunk(F("</div>"));
   float lastValue = (measurementData.isValid() && i < measurementData.activeValues &&
                      i < measurementData.values.size() && i < SensorConfig::MAX_MEASUREMENTS)
@@ -275,7 +275,7 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i, si
     AnalogSensor* analogSensor = static_cast<AnalogSensor*>(sensor);
     sendChunk(F("<div class='card-section minmax-section'>"));
     sendChunk(F("<div class='status-row'><h3>Rohwerte Berechnungslimits:</h3></div>"));
-    sendChunk(F("Min: <input type='number' step='any' size='4' name='min_"));
+    sendChunk(F("Min: <input type='number' step='any' name='min_"));
     sendChunk(id);
     sendChunk(F("_"));
     sendChunk(String(i));
@@ -303,7 +303,7 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i, si
     } else {
       sendChunk(F("--"));
     }
-    sendChunk(F("'> | Max: <input type='number' step='any' size='4' name='max_"));
+    sendChunk(F("'> | Max: <input type='number' step='any' name='max_"));
     sendChunk(id);
     sendChunk(F("_"));
     sendChunk(String(i));

@@ -793,7 +793,8 @@ var ThresholdSliderInitializer = (function () {
   function initializeSingleSlider(sensor, meas, index) {
     var range = calculateRange(sensor, meas, index);
     var min = range.min, max = range.max;
-    var thresholds = [meas.thresholds.yellowLow, meas.thresholds.greenLow, meas.thresholds.greenHigh, meas.thresholds.yellowHigh];
+    var threshObj = (meas.thresh && typeof meas.thresh === 'object') ? meas.thresh : meas.thresholds || {};
+    var thresholds = [threshObj.yl || threshObj.yellowLow, threshObj.gl || threshObj.greenLow, threshObj.gh || threshObj.greenHigh, threshObj.yh || threshObj.yellowHigh];
     var inputNames = ['yellowLow', 'greenLow', 'greenHigh', 'yellowHigh'];
     var inputRefs = inputNames.map(function (th) { return document.querySelector("input[name='" + sensor.id + '_' + index + '_' + th + "']"); });
     var container = document.getElementById('threshold_' + sensor.id + '_' + index);
@@ -804,6 +805,8 @@ var ThresholdSliderInitializer = (function () {
     if (sliderContainer && sliderContainer.classList && sliderContainer.classList.contains('threshold-slider-container')) {
       var lastValueAttr = sliderContainer.getAttribute('data-last-value');
       if (lastValueAttr !== null && !isNaN(parseFloat(lastValueAttr))) measuredValue = parseFloat(lastValueAttr);
+      // prefer server-sent measured value if present on the measurement object
+      if (typeof meas.lastValue !== 'undefined' && meas.lastValue !== null && !isNaN(Number(meas.lastValue))) measuredValue = Number(meas.lastValue);
     }
     // Always render the threshold slider, even if measuredValue is null
     container.setAttribute('data-min', min);
@@ -813,10 +816,11 @@ var ThresholdSliderInitializer = (function () {
   }
 
   function calculateRange(sensor, meas, index) {
-    var name = (meas.name || '').toLowerCase();
+    var name = ((meas.nm || meas.name) || '').toLowerCase();
     var id = (sensor.id + '_' + index).toLowerCase();
-    var unit = (meas.unit || '').toLowerCase();
-    var thresholds = [meas.thresholds.yellowLow, meas.thresholds.greenLow, meas.thresholds.greenHigh, meas.thresholds.yellowHigh];
+    var unit = ((meas.un || meas.unit) || '').toLowerCase();
+    var threshObj = (meas.thresh && typeof meas.thresh === 'object') ? meas.thresh : meas.thresholds || {};
+    var thresholds = [threshObj.yl || threshObj.yellowLow, threshObj.gl || threshObj.greenLow, threshObj.gh || threshObj.greenHigh, threshObj.yh || threshObj.yellowHigh];
     var minThreshold = Math.min.apply(null, thresholds); var maxThreshold = Math.max.apply(null, thresholds); var thresholdRange = maxThreshold - minThreshold;
     var min, max;
     var isAnalog = (sensor.id && sensor.id.toLowerCase().indexOf('analog') === 0);
@@ -1084,10 +1088,38 @@ var EventHandlers = (function () {
 var ConfigLoader = (function () {
   function load() {
     return new Promise(function (resolve, reject) {
+      var handleData = function (data) {
+        if (data && data.sensors) {
+          storeInitialValues(data.sensors);
+          updateThresholdInputsFromConfig(data.sensors);
+          ThresholdSliderInitializer.initialize(data);
+          initializeAutocalCheckboxes(data.sensors);
+          Logger.debug('Config loaded successfully');
+          resolve(data);
+        } else {
+          Logger.warn('No sensors in config');
+          resolve(data);
+        }
+      };
+
       if (typeof fetch === 'function') {
-        fetch('/admin/getSensorConfig', { credentials: 'include' }).then(function (r) { return parseJsonResponse(r); }).then(function (data) { if (data && data.sensors) { storeInitialValues(data.sensors); updateThresholdInputsFromConfig(data.sensors); ThresholdSliderInitializer.initialize(data); initializeAutocalCheckboxes(data.sensors); Logger.debug('Config loaded successfully'); resolve(data); } else { Logger.warn('No sensors in config'); resolve(data); } }).catch(function (err) { Logger.error('Failed to load config:', err); reject(err); });
+        fetch('/admin/getSensorConfig', { credentials: 'include' })
+          .then(function (r) { return parseJsonResponse(r); })
+          .then(handleData)
+          .catch(function (err) { Logger.error('Failed to load config:', err); reject(err); });
       } else {
-        var xhr = new XMLHttpRequest(); xhr.open('GET', '/admin/getSensorConfig', true); xhr.withCredentials = true; xhr.onload = function () { if (xhr.status >= 200 && xhr.status < 300) try { var data = JSON.parse(xhr.responseText); if (data && data.sensors) { storeInitialValues(data.sensors); updateThresholdInputsFromConfig(data.sensors); ThresholdSliderInitializer.initialize(data); initializeAutocalCheckboxes(data.sensors); Logger.debug('Config loaded successfully'); resolve(data); } else { Logger.warn('No sensors in config'); resolve(data); } } catch (e) { Logger.error('Failed to parse getSensorConfig', e); reject(e); } else reject(new Error('HTTP ' + xhr.status)); }; xhr.onerror = function () { Logger.error('Network error while loading config'); reject(new Error('Network error')); }; xhr.send(null);
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', '/admin/getSensorConfig', true);
+        xhr.withCredentials = true;
+        xhr.onload = function () {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try { handleData(JSON.parse(xhr.responseText)); } catch (e) { Logger.error('Failed to parse getSensorConfig', e); reject(e); }
+          } else {
+            reject(new Error('HTTP ' + xhr.status));
+          }
+        };
+        xhr.onerror = function () { Logger.error('Network error while loading config'); reject(new Error('Network error')); };
+        xhr.send(null);
       }
     });
   }
@@ -1097,52 +1129,77 @@ var ConfigLoader = (function () {
     for (var sensorId in sensors) if (sensors.hasOwnProperty(sensorId)) {
       var sensor = sensors[sensorId];
       if (!sensor.measurements) continue;
-      var measKeys = (Object.prototype.toString.call(sensor.measurements) === '[object Array]') ? sensor.measurements : (function (m) { var arr = []; for (var kk in m) if (m.hasOwnProperty(kk)) arr.push(m[kk]); return arr; })(sensor.measurements);
-      for (var idx = 0; idx < measKeys.length; idx++) {
-        var m = measKeys[idx]; var key = sensorId + '_' + idx;
-        initialValues[key] = { name: m.name, enabled: m.enabled, thresholds: { yellowLow: m.thresholds.yellowLow, greenLow: m.thresholds.greenLow, greenHigh: m.thresholds.greenHigh, yellowHigh: m.thresholds.yellowHigh }, min: m.minmax ? m.minmax.min : undefined, max: m.minmax ? m.minmax.max : undefined, inverted: (typeof m.inverted !== 'undefined') ? m.inverted : false, interval: sensor.interval ? sensor.interval / 1000 : undefined, absoluteMin: (typeof m.absoluteMin !== 'undefined') ? m.absoluteMin : undefined, absoluteMax: (typeof m.absoluteMax !== 'undefined') ? m.absoluteMax : undefined, absoluteRawMin: (typeof m.absoluteRawMin !== 'undefined') ? m.absoluteRawMin : undefined, absoluteRawMax: (typeof m.absoluteRawMax !== 'undefined') ? m.absoluteRawMax : undefined, calibrationMode: (typeof m.calibrationMode !== 'undefined') ? m.calibrationMode : false };
+      var measArr = (Object.prototype.toString.call(sensor.measurements) === '[object Array]') ? sensor.measurements : (function (m) { var arr = []; for (var kk in m) if (m.hasOwnProperty(kk)) arr.push(m[kk]); return arr; })(sensor.measurements);
+      for (var idx = 0; idx < measArr.length; idx++) {
+        var m = measArr[idx];
+        var key = sensorId + '_' + idx;
+        try {
+          var thresholds = (m.thresh && typeof m.thresh === 'object') ? m.thresh : m.thresholds || {};
+          initialValues[key] = {
+            name: (typeof m.nm !== 'undefined') ? m.nm : (m.name || ''),
+            enabled: (typeof m.en !== 'undefined') ? m.en : (m.enabled || false),
+            thresholds: {
+              yellowLow: (typeof thresholds.yl !== 'undefined') ? thresholds.yl : undefined,
+              greenLow: (typeof thresholds.gl !== 'undefined') ? thresholds.gl : undefined,
+              greenHigh: (typeof thresholds.gh !== 'undefined') ? thresholds.gh : undefined,
+              yellowHigh: (typeof thresholds.yh !== 'undefined') ? thresholds.yh : undefined
+            },
+            min: (typeof m.min !== 'undefined') ? m.min : (m.minmax ? m.minmax.min : undefined),
+            max: (typeof m.max !== 'undefined') ? m.max : (m.minmax ? m.minmax.max : undefined),
+            inverted: (typeof m.inv !== 'undefined') ? m.inv : (m.inverted || false),
+            interval: (typeof sensor.interval !== 'undefined') ? sensor.interval / 1000 : undefined,
+            absoluteMin: (typeof m.amin !== 'undefined') ? m.amin : (typeof m.absoluteMin !== 'undefined' ? m.absoluteMin : undefined),
+            absoluteMax: (typeof m.amax !== 'undefined') ? m.amax : (typeof m.absoluteMax !== 'undefined' ? m.absoluteMax : undefined),
+            absoluteRawMin: (typeof m.rmin !== 'undefined') ? m.rmin : (typeof m.absoluteRawMin !== 'undefined' ? m.absoluteRawMin : undefined),
+            absoluteRawMax: (typeof m.rmax !== 'undefined') ? m.rmax : (typeof m.absoluteRawMax !== 'undefined' ? m.absoluteRawMax : undefined),
+            calibrationMode: (typeof m.cal !== 'undefined') ? m.cal : (typeof m.calibrationMode !== 'undefined' ? m.calibrationMode : false),
+            lastValue: (typeof m.lastValue !== 'undefined') ? m.lastValue : (typeof m.last_value !== 'undefined' ? m.last_value : undefined),
+            lastRawValue: (typeof m.lastRawValue !== 'undefined') ? m.lastRawValue : (typeof m.last_raw_value !== 'undefined' ? m.last_raw_value : undefined)
+          };
+        } catch (e) {
+          Logger.error('storeInitialValues: failed mapping measurement', e);
+        }
       }
     }
     AppState.setInitialConfig(initialValues);
   }
 
   function updateThresholdInputsFromConfig(sensors) {
-    // CRITICAL: Update threshold input values from loaded config
-    // This ensures the inputs show the correct values from Preferences,
-    // not the server-side rendered values which might be outdated
     Logger.debug('Updating threshold inputs from config');
     for (var sensorId in sensors) if (sensors.hasOwnProperty(sensorId)) {
       var sensor = sensors[sensorId];
       if (!sensor.measurements) continue;
-      var measKeys = (Object.prototype.toString.call(sensor.measurements) === '[object Array]') ? sensor.measurements : (function (m) { var arr = []; for (var kk in m) if (m.hasOwnProperty(kk)) arr.push(m[kk]); return arr; })(sensor.measurements);
-      for (var idx = 0; idx < measKeys.length; idx++) {
-        var m = measKeys[idx];
-
-        // Update threshold input fields
-        if (m.thresholds) {
+      var measArr = (Object.prototype.toString.call(sensor.measurements) === '[object Array]') ? sensor.measurements : (function (m) { var arr = []; for (var kk in m) if (m.hasOwnProperty(kk)) arr.push(m[kk]); return arr; })(sensor.measurements);
+      for (var idx = 0; idx < measArr.length; idx++) {
+        var m = measArr[idx];
+        // thresholds may be under compact key 'thresh' with yl/gl/gh/yh
+        var thresh = (m.thresh && typeof m.thresh === 'object') ? m.thresh : m.thresholds;
+        if (thresh) {
           var inputNames = ['yellowLow', 'greenLow', 'greenHigh', 'yellowHigh'];
-          var thresholdValues = [m.thresholds.yellowLow, m.thresholds.greenLow, m.thresholds.greenHigh, m.thresholds.yellowHigh];
-
+          var thresholdValues = [thresh.yl || thresh.yellowLow, thresh.gl || thresh.greenLow, thresh.gh || thresh.greenHigh, thresh.yh || thresh.yellowHigh];
           for (var i = 0; i < inputNames.length; i++) {
             var inputName = sensorId + '_' + idx + '_' + inputNames[i];
             var input = document.querySelector('input[name="' + inputName + '"]');
-            if (input && typeof thresholdValues[i] !== 'undefined') {
+            if (input && typeof thresholdValues[i] !== 'undefined' && thresholdValues[i] !== null) {
               input.value = thresholdValues[i];
               Logger.debug('Updated ' + inputName + ' to ' + thresholdValues[i]);
             }
           }
         }
 
-        // CRITICAL: Also update absolute min/max inputs and markers
-        // These are rendered server-side but might be outdated
-        if (typeof m.absoluteMin !== 'undefined' || typeof m.absoluteMax !== 'undefined') {
-          DisplayUpdater.updateAbsoluteMinMax(sensorId, idx, m.absoluteMin, m.absoluteMax);
+        // absolute min/max may be compact keys 'amin'/'amax' or verbose 'absoluteMin'/'absoluteMax'
+        var absMin = (typeof m.amin !== 'undefined') ? m.amin : m.absoluteMin;
+        var absMax = (typeof m.amax !== 'undefined') ? m.amax : m.absoluteMax;
+        if (typeof absMin !== 'undefined' || typeof absMax !== 'undefined') {
+          DisplayUpdater.updateAbsoluteMinMax(sensorId, idx, absMin, absMax);
           Logger.debug('Updated absolute min/max for ' + sensorId + '_' + idx);
         }
 
-        // Update absolute raw min/max if present
-        if (typeof m.absoluteRawMin !== 'undefined' || typeof m.absoluteRawMax !== 'undefined') {
-          DisplayUpdater.updateAbsoluteRawMinMax(sensorId, idx, m.absoluteRawMin, m.absoluteRawMax);
+        // absolute raw min/max compact keys 'rmin'/'rmax'
+        var rawMin = (typeof m.rmin !== 'undefined') ? m.rmin : m.absoluteRawMin;
+        var rawMax = (typeof m.rmax !== 'undefined') ? m.rmax : m.absoluteRawMax;
+        if (typeof rawMin !== 'undefined' || typeof rawMax !== 'undefined') {
+          DisplayUpdater.updateAbsoluteRawMinMax(sensorId, idx, rawMin, rawMax);
           Logger.debug('Updated absolute raw min/max for ' + sensorId + '_' + idx);
         }
       }
@@ -1151,17 +1208,23 @@ var ConfigLoader = (function () {
 
   function initializeAutocalCheckboxes(sensors) {
     for (var sensorId in sensors) if (sensors.hasOwnProperty(sensorId)) {
-      var sensor = sensors[sensorId]; if (!sensor.measurements) continue; for (var k in sensor.measurements) if (sensor.measurements.hasOwnProperty(k)) { var m = sensor.measurements[k]; var measurementIndex = parseInt(k, 10); if (typeof m.calibrationMode !== 'undefined') { var shouldBeChecked = !!m.calibrationMode; var selector = '.analog-autocal-checkbox[data-sensor-id="' + sensorId + '"][data-measurement-index="' + measurementIndex + '"]'; var checkbox = DOMUtils.querySelector(selector); if (checkbox && checkbox.checked !== shouldBeChecked) checkbox.checked = shouldBeChecked; // Ensure UI controls are enabled/disabled accordingly
-          // Also update UI controls (disable/enable min/max inputs) to reflect calibrationMode immediately
-          try {
-            if (typeof DisplayUpdater !== 'undefined') DisplayUpdater.updateCalibrationMode(sensorId, measurementIndex, shouldBeChecked);
-          } catch (e) { Logger.debug('Failed to update calibration mode UI during init', e); }
-          // Ensure autocal-duration-section visibility matches calibrationMode on initial load
+      var sensor = sensors[sensorId];
+      if (!sensor.measurements) continue;
+      for (var k in sensor.measurements) if (sensor.measurements.hasOwnProperty(k)) {
+        var m = sensor.measurements[k];
+        var measurementIndex = parseInt(k, 10);
+        // calibration mode may be compact 'cal' or verbose 'calibrationMode'
+        var calMode = (typeof m.cal !== 'undefined') ? m.cal : m.calibrationMode;
+        if (typeof calMode !== 'undefined') {
+          var shouldBeChecked = !!calMode;
+          var selector = '.analog-autocal-checkbox[data-sensor-id="' + sensorId + '"][data-measurement-index="' + measurementIndex + '"]';
+          var checkbox = DOMUtils.querySelector(selector);
+          if (checkbox && checkbox.checked !== shouldBeChecked) checkbox.checked = shouldBeChecked;
+          try { if (typeof DisplayUpdater !== 'undefined') DisplayUpdater.updateCalibrationMode(sensorId, measurementIndex, shouldBeChecked); } catch (e) { Logger.debug('Failed to update calibration mode UI during init', e); }
           try {
             var selInit = DOMUtils.querySelector('.analog-autocal-duration[data-sensor-id="' + sensorId + '"][data-measurement-index="' + measurementIndex + '"]');
             if (selInit) {
-              var cont = selInit;
-              var depth2 = 0;
+              var cont = selInit; var depth2 = 0;
               while (cont && depth2 < 6 && !(cont.classList && cont.classList.contains('autocal-duration-section'))) { cont = cont.parentElement; depth2++; }
               if (cont && cont.style) cont.style.display = shouldBeChecked ? '' : 'none';
               try { selInit.disabled = !shouldBeChecked; } catch (e) {}

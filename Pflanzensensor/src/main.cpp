@@ -426,12 +426,11 @@ void setup() {
   logger.info(F("main"), F("Setup abgeschlossen"));
 
   // Sensor settings are now applied directly during JSON parsing
-  // Trigger first measurement if sensor manager is ready
+  // DO NOT trigger a synchronous initial measurement here - it may block
+  // the webserver while the measurement cycle (and associated LittleFS
+  // flushes) complete. Measurements will be handled in loop() periodically
+  // and start immediately there, keeping the webserver responsive.
   if (sensorManager && sensorManager->getState() == ManagerState::INITIALIZED) {
-    logger.debug(F("main"), F("Starte initialen Messzyklus"));
-    sensorManager->updateMeasurements();
-  } else {
-    logger.warning(F("main"), F("Überspringe initiale Messung – Sensor-Manager nicht bereit"));
   }
 }
 
