@@ -119,15 +119,14 @@ void WebManager::handleSetConfigValue() {
     return;
   }
 
-  // Check authentication
-  if (!_server->authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
-    logger.warning(F("WebManager"),
-                   F("Authentifizierung für setConfigValue-Anfrage fehlgeschlagen"));
-    _server->requestAuthentication();
-    return;
-  }
-
   String namespaceName, key, value, typeStr;
+
+  // NOTE: We used to require authentication for all setConfigValue requests.
+  // For usability we allow unauthenticated updates for a small, safe subset
+  // of configuration: the 'debug' namespace (debug flags) and the
+  // 'log.level' setting so clients can toggle debug/log level without
+  // providing admin credentials. All other configuration updates still
+  // require authentication.
 
   // Check if request is form-encoded (new unified method) or JSON (legacy)
   String contentType = _server->header("Content-Type");
@@ -162,6 +161,24 @@ void WebManager::handleSetConfigValue() {
 
     logger.debug(F("WebManager"), String(F("Setze Konfiguration: ")) + namespaceName + F(".") +
                                       key + F(" = ") + value + F(" (Typ: ") + typeStr + F(")"));
+
+    // Determine whether this particular update is allowed without auth.
+    bool isPublicUpdate = false;
+    if (namespaceName == "debug") {
+      isPublicUpdate = true; // allow toggling debug flags without auth
+    } else if (namespaceName == "log" && key == "level") {
+      isPublicUpdate = true; // allow changing log level without auth
+    }
+
+    // If this is not a public update, require authentication
+    if (!isPublicUpdate) {
+      if (!_server->authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
+        logger.warning(F("WebManager"),
+                       F("Authentifizierung für setConfigValue-Anfrage fehlgeschlagen"));
+        _server->requestAuthentication();
+        return;
+      }
+    }
 
     // Update config value using new method
     auto result = ConfigMgr.setConfigValue(namespaceName, key, value, type);

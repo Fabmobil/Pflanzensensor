@@ -112,9 +112,15 @@ void WebManager::initializeRemainingHandlers() {
         }
 #endif
         // General admin routes (excluding special cases handled above)
+        // NOTE: /admin/config/setConfigValue is an essential route registered
+        // early in WebManager::setupRoutes. Avoid lazy-loading the full
+        // AdminHandler for requests to that path to prevent registering
+        // additional routes and hitting the max-routes limit.
         else if (url.startsWith("/admin") && !url.startsWith("/admin/sensors") &&
                  !url.startsWith("/admin/display") && !(url == "/admin/update") &&
-                 !url.startsWith("/admin/config/update") && !(url == "/admin/uploadConfig")) {
+                 !url.startsWith("/admin/config/update") && !(url == "/admin/uploadConfig") &&
+                 !(url == "/admin/config/setConfigValue" ||
+                   url.startsWith("/admin/config/setConfigValue"))) {
           BaseHandler* handler = getCachedHandler("admin");
           if (!handler) {
             logger.debug(F("WebManager"), F("Lazy-Loading: AdminHandler für URL: ") + url);

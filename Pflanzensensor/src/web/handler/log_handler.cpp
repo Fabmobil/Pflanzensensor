@@ -95,8 +95,6 @@ void LogHandler::handleLogs() {
         // Card 1: Debug settings form (auto-saved by admin.js)
         sendChunk(F("<div class='card log-controls-card'>"));
         sendChunk(F("<div class='log-controls-label'>Log Einstellungen</div>"));
-        // Determine whether the requesting client already provided Basic-Auth
-        bool isAuth = _server.authenticate("admin", ConfigMgr.getAdminPassword().c_str());
         sendChunk(F("<form method='post' action='/admin/updateSettings' class='config-form'>"));
         sendChunk(F("<input type='hidden' name='section' value='debug'>"));
         // Debug RAM
@@ -104,8 +102,6 @@ void LogHandler::handleLogs() {
         sendChunk(F("<input type='checkbox' id='debug_ram' name='debug_ram' value='true'"));
         if (ConfigMgr.isDebugRAM())
           sendChunk(F(" checked"));
-        if (!isAuth)
-          sendChunk(F(" disabled"));
         sendChunk(F("> Debug RAM</label></div>"));
         // Debug Measurement Cycle
         sendChunk(F("<div><label class='checkbox-label'>"));
@@ -113,24 +109,18 @@ void LogHandler::handleLogs() {
                     "name='debug_measurement_cycle' value='true'"));
         if (ConfigMgr.isDebugMeasurementCycle())
           sendChunk(F(" checked"));
-        if (!isAuth)
-          sendChunk(F(" disabled"));
         sendChunk(F("> Debug Messzyklus</label></div>"));
         // Debug Sensor
         sendChunk(F("<div><label class='checkbox-label'>"));
         sendChunk(F("<input type='checkbox' id='debug_sensor' name='debug_sensor' value='true'"));
         if (ConfigMgr.isDebugSensor())
           sendChunk(F(" checked"));
-        if (!isAuth)
-          sendChunk(F(" disabled"));
         sendChunk(F("> Debug Sensor</label></div>"));
         // Debug Display
         sendChunk(F("<div><label class='checkbox-label'>"));
         sendChunk(F("<input type='checkbox' id='debug_display' name='debug_display' value='true'"));
         if (ConfigMgr.isDebugDisplay())
           sendChunk(F(" checked"));
-        if (!isAuth)
-          sendChunk(F(" disabled"));
         sendChunk(F("> Debug Display</label></div>"));
         // Debug WebSocket
         sendChunk(F("<div><label class='checkbox-label'>"));
@@ -138,8 +128,6 @@ void LogHandler::handleLogs() {
             F("<input type='checkbox' id='debug_websocket' name='debug_websocket' value='true'"));
         if (ConfigMgr.isDebugWebSocket())
           sendChunk(F(" checked"));
-        if (!isAuth)
-          sendChunk(F(" disabled"));
         sendChunk(F("> Debug WebSocket</label></div>"));
         sendChunk(F("</form>"));
         sendChunk(F("</div>"));
