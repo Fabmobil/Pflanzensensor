@@ -617,7 +617,7 @@ void SensorPersistence::flushPendingUpdatesForSensor(const String& sensorId) {
 
   // Log flush performance
   logger.info(F("SensorP"), String(successCount) + F(" Updates für ") + sensorId + F(" in ") +
-                                String(totalFlushTime) + F(" ms geflusht (JSON)"));
+                                String(totalFlushTime) + F(" ms aktualisiert"));
 }
 
 SensorPersistence::PersistenceResult
