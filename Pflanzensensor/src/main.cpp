@@ -100,20 +100,9 @@ void setup() {
   }
 #endif
 
-  // Initialize LED traffic light (optional, don't fail on error)
-#if USE_LED_TRAFFIC_LIGHT
-  if (!Helper::initializeComponent(F("LED traffic light manager"), []() -> ResourceResult {
-        ledTrafficLightManager = std::make_unique<LedTrafficLightManager>();
-        auto result = ledTrafficLightManager->init();
-        if (!result.isSuccess()) {
-          LOG_WARN(F("main"), String(F("LED-Ampel-Manager Initialisierung fehlgeschlagen: ")) +
-                                  result.getMessage());
-        }
-        return result;
-      })) {
-    return;
-  }
-#endif
+  // Die LED-Ampel wird weiter unten über initializeLedTrafficLight()
+  // eingerichtet. Hier stand vorher eine zweite, vollständige Initialisierung -
+  // der Manager wurde angelegt und init() gerufen, weiter unten dann erneut.
 
   // Show boot progress
   showBootProgress(F("Config..."));
@@ -263,8 +252,6 @@ void setup() {
   // the webserver while the measurement cycle (and associated LittleFS
   // flushes) complete. Measurements will be handled in loop() periodically
   // and start immediately there, keeping the webserver responsive.
-  if (sensorManager && sensorManager->getState() == ManagerState::INITIALIZED) {
-  }
 }
 
 /**
