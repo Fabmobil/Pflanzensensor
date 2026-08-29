@@ -43,6 +43,7 @@ class ResourceManager {
 private:
   static ResourceManager* instance;
   bool m_inCriticalOperation = false;
+  int m_nestingLevel = 0; ///< Track nesting depth to detect potential deadlocks
   String m_currentOperation;
   unsigned long m_criticalOperationStartTime = 0;
   unsigned long m_lastMemoryCheck = 0;
@@ -119,6 +120,26 @@ public:
   bool isInCriticalOperation() const { return m_inCriticalOperation; }
 
   /**
+   * @brief Check nesting depth of critical operations
+   * @return Nesting level (1 = top-level, >1 = nested)
+   * @note Nesting >1 is a warning - indicates potential deadlock risk
+   */
+  int getNestingLevel() const { return m_nestingLevel; }
+
+  /**
+   * @brief Check if currently nested in critical operations
+   * @return True if nesting >1, false otherwise
+   * @note Nested critical operations indicate potential design issues
+   */
+  bool isNestedCriticalOperation() const { return m_nestingLevel > 1; }
+
+  /**
+   * @brief Get current operation name (for debugging)
+   * @return Current operation name, empty string if no operation active
+   */
+  String getCurrentOperation() const { return m_currentOperation; }
+
+  /**
    * @brief Perform general cleanup of resources.
    */
   void cleanup();
@@ -134,7 +155,12 @@ public:
    * @return Current heap fragmentation as a percentage.
    */
   uint8_t getFragmentation() const {
+#ifdef ESP32
+    // ESP32 doesn't have getMaxFreeBlockSize, use getMaxAllocHeap
+    return static_cast<uint8_t>(100 - (ESP.getMaxAllocHeap() * 100.0 / ESP.getFreeHeap()));
+#else
     return static_cast<uint8_t>(100 - (ESP.getMaxFreeBlockSize() * 100.0 / ESP.getFreeHeap()));
+#endif
   }
 
   /**

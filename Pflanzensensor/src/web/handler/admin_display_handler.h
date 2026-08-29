@@ -13,7 +13,7 @@
 #ifndef ADMIN_DISPLAY_HANDLER_H
 #define ADMIN_DISPLAY_HANDLER_H
 
-#include <ESP8266WebServer.h>
+#include "utils/platform_compat.h"
 
 #include "managers/manager_display.h"
 #include "managers/manager_sensor.h"
@@ -45,7 +45,7 @@ public:
    *          - Prepares display management
    *          - Configures routing
    */
-  explicit AdminDisplayHandler(ESP8266WebServer& server);
+  explicit AdminDisplayHandler(ESPWebServer& server);
 
   /**
    * @brief Destructor

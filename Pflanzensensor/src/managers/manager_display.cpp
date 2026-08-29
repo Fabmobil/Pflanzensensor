@@ -3,7 +3,11 @@
 #if USE_DISPLAY
 
 #include <ArduinoJson.h>
+#ifdef ESP32
+#include <WiFi.h>
+#else
 #include <ESP8266WiFi.h>
+#endif
 #include <LittleFS.h>
 #include <time.h>
 
@@ -319,9 +323,11 @@ void DisplayManager::rotateScreen() {
     }
     String ipStr = (ip[0] == 0) ? F("(IP nicht gesetzt)") : ip.toString();
     m_display->showInfoScreen(ipStr);
+#if USE_LED_TRAFFIC_LIGHT
     if (ledTrafficLightManager) {
       ledTrafficLightManager->handleDisplayUpdate();
     }
+#endif
     m_currentScreenIndex++;
     if (m_currentScreenIndex >= totalScreens)
       m_currentScreenIndex = 0;
@@ -337,9 +343,11 @@ void DisplayManager::rotateScreen() {
       }
       showClock();
     }
+#if USE_LED_TRAFFIC_LIGHT
     if (ledTrafficLightManager) {
       ledTrafficLightManager->handleDisplayUpdate();
     }
+#endif
     m_currentScreenIndex++;
     if (m_currentScreenIndex >= totalScreens)
       m_currentScreenIndex = 0;
@@ -352,9 +360,11 @@ void DisplayManager::rotateScreen() {
       logger.debug(F("DisplayM"), F("QR-Code-Seite wird gezeigt"));
     }
     m_display->showQrCodeScreen();
+#if USE_LED_TRAFFIC_LIGHT
     if (ledTrafficLightManager) {
       ledTrafficLightManager->handleDisplayUpdate();
     }
+#endif
     m_currentScreenIndex++;
     if (m_currentScreenIndex >= totalScreens)
       m_currentScreenIndex = 0;
@@ -367,9 +377,11 @@ void DisplayManager::rotateScreen() {
       logger.debug(F("DisplayM"), F("Blumenbild wird gezeigt"));
     }
     showImage(displayImageFlower);
+#if USE_LED_TRAFFIC_LIGHT
     if (ledTrafficLightManager) {
       ledTrafficLightManager->handleDisplayUpdate();
     }
+#endif
     m_currentScreenIndex++;
     if (m_currentScreenIndex >= totalScreens)
       m_currentScreenIndex = 0;
@@ -382,9 +394,11 @@ void DisplayManager::rotateScreen() {
       logger.debug(F("DisplayM"), F("Fabmobil-Bild wird gezeigt"));
     }
     showImage(displayImageFabmobil);
+#if USE_LED_TRAFFIC_LIGHT
     if (ledTrafficLightManager) {
       ledTrafficLightManager->handleDisplayUpdate();
     }
+#endif
     m_currentScreenIndex++;
     if (m_currentScreenIndex >= totalScreens)
       m_currentScreenIndex = 0;
@@ -451,8 +465,8 @@ void DisplayManager::showSensorData(const String& sensorId, size_t measurementIn
     if (measurementData.isValid()) {
       // Clamp activeValues
       if (measurementData.activeValues > SensorConfig::MAX_MEASUREMENTS) {
-        logger.warning(F("DisplayM"), F("Clamping activeValues from ") +
-                                          String(measurementData.activeValues) + F(" to ") +
+        logger.warning(F("DisplayM"), String(F("Clamping activeValues from ")) +
+                                          String(measurementData.activeValues) + String(F(" to ")) +
                                           String(SensorConfig::MAX_MEASUREMENTS));
       }
       size_t safeActiveValues =
@@ -480,6 +494,7 @@ void DisplayManager::showSensorData(const String& sensorId, size_t measurementIn
         // Update sensor status and control LED traffic light
         sensor->updateStatus(measurementIndex);
 
+#if USE_LED_TRAFFIC_LIGHT
         if (ledTrafficLightManager) {
           uint8_t mode = ConfigMgr.getLedTrafficLightMode();
 
@@ -496,6 +511,7 @@ void DisplayManager::showSensorData(const String& sensorId, size_t measurementIn
                                                          sensor->getStatus(measurementIndex));
           }
         }
+#endif
 
         if (ConfigMgr.isDebugDisplay()) {
           logger.debug(F("DisplayM"),
@@ -723,7 +739,7 @@ void DisplayManager::showClock() {
   m_display->showClock(dateStr, timeStr);
 
   if (ConfigMgr.isDebugDisplay()) {
-    logger.debug(F("DisplayM"), F("Zeige Uhr: ") + dateStr + " " + timeStr);
+    logger.debug(F("DisplayM"), String(F("Zeige Uhr: ")) + dateStr + " " + timeStr);
   }
 #endif
 }
@@ -747,9 +763,9 @@ void DisplayManager::addLogLine(const String& status, bool isBootMode) {
   if (m_display) {
     String header;
     if (isBootMode) {
-      header = ConfigMgr.getDeviceName() + F(" startet:");
+      header = ConfigMgr.getDeviceName() + String(F(" startet:"));
     } else {
-      header = ConfigMgr.getDeviceName() + F(" Update:");
+      header = ConfigMgr.getDeviceName() + String(F(" Update:"));
     }
 
     // Convert to std::vector<String> for display API
@@ -775,9 +791,9 @@ void DisplayManager::showLogScreen(const String& status, bool isBootMode) {
   if (m_display) {
     String header;
     if (isBootMode) {
-      header = ConfigMgr.getDeviceName() + F(" startet:");
+      header = ConfigMgr.getDeviceName() + String(F(" startet:"));
     } else {
-      header = ConfigMgr.getDeviceName() + F(" Update:");
+      header = ConfigMgr.getDeviceName() + String(F(" Update:"));
     }
 
     std::vector<String> lines(m_logLines, m_logLines + m_logLineCount);

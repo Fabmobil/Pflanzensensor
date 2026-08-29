@@ -65,8 +65,8 @@ void WebManager::handleClientInternal() {
 
     // Only log if handler count has changed
     if (currentHandlerCount != lastHandlerCount) {
-      logger.debug(F("WebManager"), F("Active handlers: ") + String(currentHandlerCount) + F("/") +
-                                        String(MAX_ACTIVE_HANDLERS));
+      logger.debug(F("WebManager"), String(F("Active handlers: ")) + String(currentHandlerCount) +
+                                        String(F("/")) + String(MAX_ACTIVE_HANDLERS));
       lastHandlerCount = currentHandlerCount;
     }
 

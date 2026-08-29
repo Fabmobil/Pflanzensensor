@@ -5,7 +5,11 @@
 
 #include "web/core/components.h"
 
+#ifdef ESP32
+#include <WiFi.h>
+#else
 #include <ESP8266WiFi.h>
+#endif
 #include <algorithm>
 
 #include "logger/logger.h"
@@ -43,7 +47,7 @@ String getDisplaySSID() {
   return ssid;
 }
 
-ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
+ResourceResult beginResponse(ESPWebServer& server, const String& title,
                              const std::vector<String>& additionalCss) {
   static const char CONTENT_TYPE[] PROGMEM = "Content-Type";
   static const char TEXT_HTML[] PROGMEM = "text/html";
@@ -88,7 +92,7 @@ ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
   return ResourceResult::success();
 }
 
-void sendChunk(ESP8266WebServer& server, const String& chunk) {
+void sendChunk(ESPWebServer& server, const String& chunk) {
   static char buffer[128]; // Reuse buffer
   size_t remaining = chunk.length();
   size_t offset = 0;
@@ -111,7 +115,7 @@ void sendChunk(ESP8266WebServer& server, const String& chunk) {
   }
 }
 
-void sendPixelatedFooter(ESP8266WebServer& server, const String& version, const String& buildDate,
+void sendPixelatedFooter(ESPWebServer& server, const String& version, const String& buildDate,
                          const String& activeSection) {
   sendChunk(server, F("<div class='footer'>"));
   sendChunk(server, F("<div class='base'>"));
@@ -253,7 +257,7 @@ void sendPixelatedFooter(ESP8266WebServer& server, const String& version, const 
   sendChunk(server, F("</div>"));    // Close footer
 }
 
-void endResponse(ESP8266WebServer& server, const std::vector<String>& additionalScripts) {
+void endResponse(ESPWebServer& server, const std::vector<String>& additionalScripts) {
   // Add each additional script
   for (const auto& script : additionalScripts) {
     if (!script.isEmpty()) {
@@ -267,7 +271,7 @@ void endResponse(ESP8266WebServer& server, const std::vector<String>& additional
   server.sendContent(F("")); // Final empty chunk to signify end of response
 }
 
-void formGroup(ESP8266WebServer& server, const String& label, const String& content) {
+void formGroup(ESPWebServer& server, const String& label, const String& content) {
   sendChunk(server, F("<div class='form-group'>"));
   sendChunk(server, F("<label>"));
   sendChunk(server, label);
@@ -276,8 +280,8 @@ void formGroup(ESP8266WebServer& server, const String& label, const String& cont
   sendChunk(server, F("</div>"));
 }
 
-void button(ESP8266WebServer& server, const String& text, const String& type,
-            const String& className, bool disabled, const String& id) {
+void button(ESPWebServer& server, const String& text, const String& type, const String& className,
+            bool disabled, const String& id) {
   sendChunk(server, F("<button type='"));
   sendChunk(server, type);
   sendChunk(server, F("' class='button "));
@@ -299,13 +303,13 @@ void button(ESP8266WebServer& server, const String& text, const String& type,
   sendChunk(server, F("</button>"));
 }
 
-void beginPixelatedPage(ESP8266WebServer& server, const String& statusClass) {
+void beginPixelatedPage(ESPWebServer& server, const String& statusClass) {
   sendChunk(server, F("<div class='box "));
   sendChunk(server, statusClass);
   sendChunk(server, F("'><div class='group'>"));
 }
 
-void sendCloudTitle(ESP8266WebServer& server, const String& title) {
+void sendCloudTitle(ESPWebServer& server, const String& title) {
   sendChunk(server, F("<div class='cloud' aria-label='"));
   sendChunk(server, title);
   sendChunk(server, F("'>"));
@@ -315,7 +319,7 @@ void sendCloudTitle(ESP8266WebServer& server, const String& title) {
   sendChunk(server, F("</div></div>"));
 }
 
-void beginContentBox(ESP8266WebServer& server, const String& section) {
+void beginContentBox(ESPWebServer& server, const String& section) {
   sendChunk(server, F("<div class='admin-content-box'"));
   if (!section.isEmpty()) {
     sendChunk(server, F(" data-section='"));
@@ -325,9 +329,9 @@ void beginContentBox(ESP8266WebServer& server, const String& section) {
   sendChunk(server, F(">"));
 }
 
-void endContentBox(ESP8266WebServer& server) { sendChunk(server, F("</div>")); }
+void endContentBox(ESPWebServer& server) { sendChunk(server, F("</div>")); }
 
-void endPixelatedPage(ESP8266WebServer& server) {
+void endPixelatedPage(ESPWebServer& server) {
   sendChunk(server, F("</div></div>")); // Close group and box
 }
 

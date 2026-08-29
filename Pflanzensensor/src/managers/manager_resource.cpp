@@ -5,11 +5,16 @@
 
 #include "managers/manager_resource.h"
 
+#ifdef ESP32
+#include <WiFi.h>
+#else
 #include <ESP8266WiFi.h>
+#endif
 #include <LittleFS.h>
 
 #include "configs/config.h"
 #include "logger/logger.h"
+#include "main_wifi.h"
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
 #include "utils/critical_section.h"
@@ -39,13 +44,32 @@ ResourceResult ResourceManager::executeCritical(const String& operation,
 }
 
 ResourceResult ResourceManager::enterCriticalOperation(const String& operation) {
-  if (m_inCriticalOperation) {
+  // Track nesting level
+  m_nestingLevel++;
+
+  // Warning for nested critical operations
+  if (m_nestingLevel > 1) {
+    logger.warning(F("ResourceM"),
+                   String(F("Warnung: Kritische Operation verschachtelt (Level: ")) +
+                       String(m_nestingLevel) + String(F(", Operation: ")) + operation +
+                       String(F(", vorherige: ")) + m_currentOperation +
+                       F(") - Dies kann zu Deadlocks führen!"));
+  }
+
+  // Check if already in critical operation at same level
+  if (m_inCriticalOperation && m_nestingLevel == 1) {
+    m_nestingLevel--; // Reset nesting level before returning
     return ResourceResult::fail(ResourceError::ALREADY_IN_CRITICAL,
-                                F("Bereits in einer kritischen Operation: ") + m_currentOperation);
+                                String(F("Bereits in einer kritischen Operation: ")) +
+                                    m_currentOperation);
   }
 
   uint32_t freeHeap = ESP.getFreeHeap();
+#ifdef ESP32
+  uint32_t maxBlock = ESP.getMaxAllocHeap();
+#else
   uint32_t maxBlock = ESP.getMaxFreeBlockSize();
+#endif
 
   if (freeHeap < MIN_FREE_HEAP_FOR_OTA || maxBlock < MIN_FREE_BLOCK_FOR_OTA) {
     logger.warning(F("ResourceM"), F("Wenig Speicher, versuche Bereinigung..."));
@@ -56,7 +80,11 @@ ResourceResult ResourceManager::enterCriticalOperation(const String& operation) 
     }
 
     freeHeap = ESP.getFreeHeap();
+#ifdef ESP32
+    maxBlock = ESP.getMaxAllocHeap();
+#else
     maxBlock = ESP.getMaxFreeBlockSize();
+#endif
 
     if (freeHeap < MIN_FREE_HEAP_FOR_OTA || maxBlock < MIN_FREE_BLOCK_FOR_OTA) {
       return ResourceResult::fail(ResourceError::INSUFFICIENT_MEMORY,
@@ -68,7 +96,7 @@ ResourceResult ResourceManager::enterCriticalOperation(const String& operation) 
   m_inCriticalOperation = true;
   m_criticalOperationStartTime = millis();
 
-  logger.info(F("ResourceM"), F("Betrete kritische Operation: ") + operation);
+  logger.info(F("ResourceM"), String(F("Betrete kritische Operation: ")) + operation);
 
   return ResourceResult::success();
 }
@@ -81,15 +109,26 @@ void ResourceManager::exitCriticalOperation() {
 
   logger.info(F("ResourceM"), String(F("Beende kritische Operation: ")) + m_currentOperation);
 
-  // Only recreate sensor manager if we're not doing a firmware upgrade
+  // Decrement nesting level
+  m_nestingLevel--;
+  if (m_nestingLevel < 0) {
+    m_nestingLevel = 0; // Safety: prevent negative nesting
+    logger.error(F("ResourceM"), F("Fehler: Nesting-Level negativ! Möglicher Logic-Fehler"));
+  }
+
+  // Reset flag when we're back to top level
+  if (m_nestingLevel == 0) {
+    m_inCriticalOperation = false;
+  }
   if (!ConfigMgr.getDoFirmwareUpgrade()) {
-    // Recreate and initialize sensor manager if it was reset
-    if (!m_sensorManager) {
+    // Only recreate sensor manager if neither the global nor the local one exists.
+    // During boot, initializeSensors() creates the global sensorManager - don't duplicate it.
+    extern std::unique_ptr<SensorManager> sensorManager;
+    if (!m_sensorManager && !sensorManager) {
       logger.debug(F("ResourceM"), F("Sensor-Manager neu erstellen"));
       try {
         m_sensorManager = std::make_unique<SensorManager>();
         if (m_sensorManager) {
-          // Use the public init() method from Manager base class
           auto initResult = m_sensorManager->init();
           if (initResult.isSuccess()) {
             logger.info(F("ResourceM"), F("Sensor-Manager erfolgreich reinitialisiert"));
@@ -97,7 +136,7 @@ void ResourceManager::exitCriticalOperation() {
             logger.error(F("ResourceM"),
                          String(F("Reinitialisierung des Sensor-Managers fehlgeschlagen: ")) +
                              initResult.getMessage());
-            m_sensorManager.reset(); // Clean up on failure
+            m_sensorManager.reset();
           }
         } else {
           logger.error(F("ResourceM"), F("Zuweisung des Sensor-Managers fehlgeschlagen"));
@@ -108,10 +147,6 @@ void ResourceManager::exitCriticalOperation() {
         m_sensorManager.reset();
       }
     }
-
-#if USE_WEBSERVER
-    // WebManager is already initialized, no need to call begin() again
-#endif
   }
 
   // Clear operation info
@@ -134,11 +169,15 @@ ResourceResult ResourceManager::initMinimalSystem() {
 #endif
 
   // Clear WiFi connections
+#ifndef ESP32
   WiFiClient::stopAll();
+#endif
   WiFi.persistent(false);
   WiFi.disconnect(true);
 
+#ifndef ESP32
   ESP.wdtFeed();
+#endif
   delay(200);
   yield();
 
@@ -151,23 +190,14 @@ ResourceResult ResourceManager::initMinimalSystem() {
   }
 
 #if USE_WIFI
-  WiFi.mode(WIFI_STA);
-  WiFi.setAutoReconnect(true);
-  setupWiFi();
-
-  int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 10) {
-    delay(500);
-    attempts++;
-  }
-
-  if (WiFi.status() != WL_CONNECTED) {
+  // Use consolidated WiFi+NTP setup
+  logger.info(F("ResourceM"), F(".. initialisiere WiFi"));
+  auto wifiResult = setupWiFiWithDisplay(false);
+  if (!wifiResult.isSuccess()) {
     return ResourceResult::fail(ResourceError::WIFI_ERROR,
-                                F("WLAN-Verbindung konnte nicht hergestellt werden"));
+                                String(F("WLAN-Verbindung konnte nicht hergestellt werden: ")) +
+                                    wifiResult.getMessage());
   }
-
-  logger.initNTP();
-  logger.updateNTP();
 #endif
 
 #if USE_WEBSERVER
@@ -225,18 +255,27 @@ ResourceResult ResourceManager::doFirmwareUpgrade() {
 
 void ResourceManager::logMemoryStatus(const String& phase) {
   uint32_t freeHeap = ESP.getFreeHeap();
+#ifdef ESP32
+  uint32_t maxFreeBlock = ESP.getMaxAllocHeap();
+#else
   uint32_t maxFreeBlock = ESP.getMaxFreeBlockSize();
+#endif
   float fragmentation = 100.0f - ((float)maxFreeBlock / (float)freeHeap) * 100.0f;
 
-  logger.debug(F("ResourceM"), F("Speicherstatistiken [") + phase + F("]:"));
-  logger.debug(F("ResourceM"), F("- Freier Heap: ") + String(freeHeap) + F(" Bytes"));
-  logger.debug(F("ResourceM"), F("- Größter freier Block: ") + String(maxFreeBlock) + F(" Bytes"));
-  logger.debug(F("ResourceM"), F("- Fragmentierung: ") + String(fragmentation, 0) + F("%"));
+  logger.debug(F("ResourceM"), String(F("Speicherstatistiken [")) + phase + String(F("]:")));
   logger.debug(F("ResourceM"),
-               F("- Freier Cont-Stack: ") + String(ESP.getFreeContStack()) + F(" Bytes"));
-  logger.debug(F("ResourceM"), F("- Freier Stack: ") +
+               String(F("- Freier Heap: ")) + String(freeHeap) + String(F(" Bytes")));
+  logger.debug(F("ResourceM"),
+               String(F("- Größter freier Block: ")) + String(maxFreeBlock) + String(F(" Bytes")));
+  logger.debug(F("ResourceM"),
+               String(F("- Fragmentierung: ")) + String(fragmentation, 0) + String(F("%")));
+#ifndef ESP32
+  logger.debug(F("ResourceM"), String(F("- Freier Cont-Stack: ")) + String(ESP.getFreeContStack()) +
+                                   String(F(" Bytes")));
+  logger.debug(F("ResourceM"), String(F("- Freier Stack: ")) +
                                    String(ESP.getFreeHeap() - ESP.getHeapFragmentation()) +
-                                   F(" Bytes"));
+                                   String(F(" Bytes")));
+#endif
 }
 
 void ResourceManager::cleanup() {
@@ -253,11 +292,15 @@ void ResourceManager::cleanup() {
   }
 
   // Clear memory
+#ifndef ESP32
   ESP.wdtFeed();
+#endif
   delay(100);
 
   // Force garbage collection
+#ifndef ESP32
   ESP.wdtFeed();
+#endif
   delay(100);
 
   // Log memory status
@@ -282,7 +325,9 @@ bool ResourceManager::performEmergencyCleanup() {
   m_currentOperation = "";
 
   // Force garbage collection
+#ifndef ESP32
   ESP.wdtFeed();
+#endif
   delay(100);
 
   // Reconnect WiFi

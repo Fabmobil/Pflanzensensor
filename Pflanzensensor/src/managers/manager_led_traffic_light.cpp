@@ -29,10 +29,11 @@ TypedResult<ResourceError, void> LedTrafficLightManager::initialize() {
   auto initResult = m_ledLights->init();
   if (!initResult.isSuccess()) {
     logger.warning(F("LedTrafficLight"),
-                   F("Initialisierung der LED-Ampel fehlgeschlagen: ") + initResult.getMessage());
+                   String(F("Initialisierung der LED-Ampel fehlgeschlagen: ")) +
+                       initResult.getMessage());
     return TypedResult<ResourceError, void>::fail(
         ResourceError::OPERATION_FAILED,
-        F("Initialisierung der LED-Ampel fehlgeschlagen: ") + initResult.getMessage());
+        String(F("Initialisierung der LED-Ampel fehlgeschlagen: ")) + initResult.getMessage());
   }
 
   logger.info(F("LedTrafficLight"), F("LedTrafficLightManager erfolgreich initialisiert"));
@@ -48,8 +49,9 @@ void LedTrafficLightManager::setStatus(const String& status) {
   if (!m_ledLights)
     return;
 
-  // Don't update if status hasn't changed
-  if (m_lastStatus == status) {
+  // Don't update if status and mode haven't changed
+  bool currentOnlyRed = ConfigMgr.getLedTrafficLightOnlyRed();
+  if (m_lastStatus == status && m_lastOnlyRed == currentOnlyRed) {
     return;
   }
 
@@ -60,12 +62,20 @@ void LedTrafficLightManager::setStatus(const String& status) {
     m_ledLights->switchLedOff(LedLights::GREEN);
   } else if (status == "yellow") {
     m_ledLights->switchLedOff(LedLights::RED);
-    m_ledLights->switchLedOn(LedLights::YELLOW);
+    if (ConfigMgr.getLedTrafficLightOnlyRed()) {
+      m_ledLights->switchLedOff(LedLights::YELLOW);
+    } else {
+      m_ledLights->switchLedOn(LedLights::YELLOW);
+    }
     m_ledLights->switchLedOff(LedLights::GREEN);
   } else if (status == "green") {
     m_ledLights->switchLedOff(LedLights::RED);
     m_ledLights->switchLedOff(LedLights::YELLOW);
-    m_ledLights->switchLedOn(LedLights::GREEN);
+    if (ConfigMgr.getLedTrafficLightOnlyRed()) {
+      m_ledLights->switchLedOff(LedLights::GREEN);
+    } else {
+      m_ledLights->switchLedOn(LedLights::GREEN);
+    }
   } else {
     // Unknown status, turn off all LEDs
     m_ledLights->switchLedOff(LedLights::RED);
@@ -74,6 +84,7 @@ void LedTrafficLightManager::setStatus(const String& status) {
   }
 
   m_lastStatus = status;
+  m_lastOnlyRed = currentOnlyRed;
 #endif
 }
 

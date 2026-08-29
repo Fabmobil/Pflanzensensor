@@ -169,9 +169,20 @@ void AdminHandler::generateAndSendSystemInfoCard() {
   sendChunk(F("<tr><td>Freier Heap</td><td>"));
   sendChunk(formatMemorySize(ESP.getFreeHeap()));
   sendChunk(F("</td></tr><tr><td>Heap Fragmentierung</td><td>"));
+#ifdef ESP32
+  uint32_t freeHeap = ESP.getFreeHeap();
+  uint32_t maxBlock = ESP.getMaxAllocHeap();
+  uint8_t frag = freeHeap > 0 ? (100 - (maxBlock * 100 / freeHeap)) : 0;
+  sendChunk(String(frag));
+#else
   sendChunk(String(ESP.getHeapFragmentation()));
+#endif
   sendChunk(F("%</td></tr><tr><td>Max. Block-Größe</td><td>"));
+#ifdef ESP32
+  sendChunk(formatMemorySize(ESP.getMaxAllocHeap()));
+#else
   sendChunk(formatMemorySize(ESP.getMaxFreeBlockSize()));
+#endif
   sendChunk(F("</td></tr>"));
   yield();
   sendChunk(F("<tr><td>Laufzeit</td><td>"));
@@ -190,6 +201,17 @@ void AdminHandler::generateAndSendSystemInfoCard() {
   sendChunk(F("</td></tr>"));
   yield();
   {
+#ifdef ESP32
+    size_t totalBytes = LittleFS.totalBytes();
+    size_t usedBytes = LittleFS.usedBytes();
+    sendChunk(F("<tr><td>Dateisystem Gesamt</td><td>"));
+    sendChunk(formatMemorySize(totalBytes));
+    sendChunk(F("</td></tr><tr><td>Dateisystem Belegt</td><td>"));
+    sendChunk(formatMemorySize(usedBytes));
+    sendChunk(F("</td></tr><tr><td>Dateisystem Frei</td><td>"));
+    sendChunk(formatMemorySize(totalBytes - usedBytes));
+    sendChunk(F("</td></tr>"));
+#else
     FSInfo fs_info;
     if (LittleFS.info(fs_info)) {
       sendChunk(F("<tr><td>Dateisystem Gesamt</td><td>"));
@@ -218,6 +240,7 @@ void AdminHandler::generateAndSendSystemInfoCard() {
     } else {
       sendChunk(F("<tr><td>Dateisystem</td><td>Fehler beim Zugriff</td></tr>"));
     }
+#endif
   }
   yield();
   sendChunk(F("</table>"));

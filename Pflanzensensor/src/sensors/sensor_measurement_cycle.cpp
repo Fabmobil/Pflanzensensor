@@ -1,7 +1,7 @@
 #include "sensor_measurement_cycle.h"
 
 #if USE_DS18B20
-#include "sensors/sensor_ds18b20.h" // Add include for DS18B20 sensor
+// #include "sensors/sensor_ds18b20.h" // TODO: Add when driver ready // Add include for DS18B20 sensor
 #endif
 SensorMeasurementCycleManager::SensorMeasurementCycleManager(Sensor* sensor)
     : m_sensor(sensor),
@@ -11,7 +11,7 @@ SensorMeasurementCycleManager::SensorMeasurementCycleManager(Sensor* sensor)
   if (m_sensor) {
     if (ConfigMgr.isDebugMeasurementCycle()) {
       logger.debug(F("MeasurementCycle"),
-                   F("Initialisiere Zyklus-Manager für Sensor: ") + m_sensor->getName());
+                   String(F("Initialisiere Zyklus-Manager für Sensor: ")) + m_sensor->getName());
     }
 
     // Check warmup requirements
@@ -19,7 +19,8 @@ SensorMeasurementCycleManager::SensorMeasurementCycleManager(Sensor* sensor)
     if (m_state.needsWarmup) {
       m_state.warmupStartTime = millis(); // Starte Aufwärmphase sofort
       if (ConfigMgr.isDebugMeasurementCycle()) {
-        logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Starte Aufwärmphase von ") +
+        logger.debug(F("MeasurementCycle"), m_sensor->getName() +
+                                                String(F(": Starte Aufwärmphase von ")) +
                                                 String(m_state.warmupTimeNeeded / 1000UL) + F("s"));
       }
     }
@@ -49,10 +50,10 @@ bool SensorMeasurementCycleManager::updateMeasurementCycle() {
   unsigned long currentInterval = m_sensor->getMeasurementInterval();
   if (currentInterval != m_state.measurementInterval) {
     if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("MeasurementCycle"), m_sensor->getName() +
-                                              F(": Messintervall aktualisiert von ") +
-                                              String(m_state.measurementInterval) + F("ms auf ") +
-                                              String(currentInterval) + F("ms"));
+      logger.debug(F("MeasurementCycle"),
+                   m_sensor->getName() + String(F(": Messintervall aktualisiert von ")) +
+                       String(m_state.measurementInterval) + String(F("ms auf ")) +
+                       String(currentInterval) + F("ms"));
     }
     m_state.measurementInterval = currentInterval;
   }

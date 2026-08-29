@@ -26,8 +26,8 @@ void AdminSensorHandler::handleResetAbsoluteMinMax() {
   String sensorId = _server.arg("sensor_id");
   size_t measurementIndex = _server.arg("measurement_index").toInt();
 
-  logger.debug(F("AdminSensorHandler"), F("handleResetAbsoluteMinMax: sensor=") + sensorId +
-                                            F(", measurement=") + String(measurementIndex));
+  logger.debug(F("AdminSensorHandler"), String(F("handleResetAbsoluteMinMax: sensor=")) + sensorId +
+                                            String(F(", measurement=")) + String(measurementIndex));
 
   if (!_sensorManager.isHealthy()) {
     sendJsonResponse(500,
@@ -61,7 +61,7 @@ void AdminSensorHandler::handleResetAbsoluteMinMax() {
       SensorPersistence::updateAbsoluteMinMax(sensorId, measurementIndex, INFINITY, -INFINITY);
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Fehler beim Zurücksetzen von absoluten min/max Werten: ") +
+                 String(F("Fehler beim Zurücksetzen von absoluten min/max Werten: ")) +
                      result.getMessage());
     sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Zurücksetzen der absoluten "
                             "min/max Werte\"}"));
@@ -76,9 +76,10 @@ void AdminSensorHandler::handleResetAbsoluteMinMax() {
 
   auto reloadResult = SensorPersistence::load();
   if (!reloadResult.isSuccess()) {
-    logger.warning(F("AdminSensorHandler"),
-                   F("Fehler beim Nachladen der Sensor-Konfiguration nach dem Zurücksetzen: ") +
-                       reloadResult.getMessage());
+    logger.warning(
+        F("AdminSensorHandler"),
+        String(F("Fehler beim Nachladen der Sensor-Konfiguration nach dem Zurücksetzen: ")) +
+            reloadResult.getMessage());
   } else {
     if (ConfigMgr.isDebugSensor()) {
       logger.debug(F("AdminSensorHandler"),
@@ -86,8 +87,8 @@ void AdminSensorHandler::handleResetAbsoluteMinMax() {
     }
   }
 
-  logger.info(F("AdminSensorHandler"), F("Absolute min/max zurückgesetzt für ") + sensorId +
-                                           F("[") + String(measurementIndex) + F("]"));
+  logger.info(F("AdminSensorHandler"), String(F("Absolute min/max zurückgesetzt für ")) + sensorId +
+                                           String(F("[")) + String(measurementIndex) + F("]"));
 
   sendJsonResponse(200, F("{\"success\":true}"));
 }
@@ -108,8 +109,9 @@ void AdminSensorHandler::handleResetAbsoluteRawMinMax() {
   String sensorId = _server.arg("sensor_id");
   size_t measurementIndex = _server.arg("measurement_index").toInt();
 
-  logger.debug(F("AdminSensorHandler"), F("handleResetAbsoluteRawMinMax: sensor=") + sensorId +
-                                            F(", measurement=") + String(measurementIndex));
+  logger.debug(F("AdminSensorHandler"), String(F("handleResetAbsoluteRawMinMax: sensor=")) +
+                                            sensorId + String(F(", measurement=")) +
+                                            String(measurementIndex));
 
   if (!_sensorManager.isHealthy()) {
     sendJsonResponse(500,
@@ -145,8 +147,8 @@ void AdminSensorHandler::handleResetAbsoluteRawMinMax() {
 
   if (ConfigMgr.isDebugSensor()) {
     logger.debug(F("AdminSensorHandler"),
-                 F("Zurücksetzen der absoluten Roh-Min/Max-Werte für Sensor ") + sensorId +
-                     F(" Messung ") + String(measurementIndex));
+                 String(F("Zurücksetzen der absoluten Roh-Min/Max-Werte für Sensor ")) + sensorId +
+                     String(F(" Messung ")) + String(measurementIndex));
   }
 
   // Use atomic update to reset absolute raw min/max values
@@ -154,7 +156,8 @@ void AdminSensorHandler::handleResetAbsoluteRawMinMax() {
       SensorPersistence::updateAnalogRawMinMax(sensorId, measurementIndex, INT_MAX, INT_MIN);
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Fehler beim Zurücksetzen der Roh-Min/Max-Werte: ") + result.getMessage());
+                 String(F("Fehler beim Zurücksetzen der Roh-Min/Max-Werte: ")) +
+                     result.getMessage());
     sendJsonResponse(
         500, F("{\"success\":false,\"error\":\"Fehler beim Zurücksetzen der Roh-Min/Max-Werte\"}"));
     return;
@@ -162,12 +165,14 @@ void AdminSensorHandler::handleResetAbsoluteRawMinMax() {
 
   // No need to reload configs anymore - we now have a single source of truth
   if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("AdminSensorHandler"), F("Zurücksetzen abgeschlossen für Sensor ") + sensorId +
-                                              F(" Messung ") + String(measurementIndex));
+    logger.debug(F("AdminSensorHandler"), String(F("Zurücksetzen abgeschlossen für Sensor ")) +
+                                              sensorId + String(F(" Messung ")) +
+                                              String(measurementIndex));
   }
 
-  logger.info(F("AdminSensorHandler"), F("Absolute Roh-Min/Max zurückgesetzt für ") + sensorId +
-                                           F("[") + String(measurementIndex) + F("]"));
+  logger.info(F("AdminSensorHandler"), String(F("Absolute Roh-Min/Max zurückgesetzt für ")) +
+                                           sensorId + String(F("[")) + String(measurementIndex) +
+                                           F("]"));
 
   sendJsonResponse(200, F("{\"success\":true}"));
 }

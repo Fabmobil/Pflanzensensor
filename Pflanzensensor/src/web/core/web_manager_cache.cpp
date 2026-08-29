@@ -30,7 +30,7 @@ void WebManager::initializeRemainingHandlers() {
 
             if (!result.isSuccess()) {
               logger.error(F("WebManager"),
-                           F("Lazy-Registrierung fehlgeschlagen (StartpageHandler): ") +
+                           String(F("Lazy-Registrierung fehlgeschlagen (StartpageHandler): ")) +
                                result.getMessage());
               return false; // Block request on registration failure
             }
@@ -53,8 +53,9 @@ void WebManager::initializeRemainingHandlers() {
             _router->clearHandlerTypeContext();
 
             if (!result.isSuccess()) {
-              logger.error(F("WebManager"), F("Lazy-Registrierung fehlgeschlagen (LogHandler): ") +
-                                                result.getMessage());
+              logger.error(F("WebManager"),
+                           String(F("Lazy-Registrierung fehlgeschlagen (LogHandler): ")) +
+                               result.getMessage());
               return false; // Block request on registration failure
             }
             cacheHandler(std::move(newHandler), "log");
@@ -78,7 +79,7 @@ void WebManager::initializeRemainingHandlers() {
 
             if (!result.isSuccess()) {
               logger.error(F("WebManager"),
-                           F("Lazy-Registrierung fehlgeschlagen (AdminSensorHandler): ") +
+                           String(F("Lazy-Registrierung fehlgeschlagen (AdminSensorHandler): ")) +
                                result.getMessage());
               return false; // Block request on registration failure
             }
@@ -101,7 +102,7 @@ void WebManager::initializeRemainingHandlers() {
 
             if (!result.isSuccess()) {
               logger.error(F("WebManager"),
-                           F("Lazy-Registrierung fehlgeschlagen (AdminDisplayHandler): ") +
+                           String(F("Lazy-Registrierung fehlgeschlagen (AdminDisplayHandler): ")) +
                                result.getMessage());
               return false; // Block request on registration failure
             }
@@ -123,7 +124,7 @@ void WebManager::initializeRemainingHandlers() {
                    url.startsWith("/admin/config/setConfigValue"))) {
           BaseHandler* handler = getCachedHandler("admin");
           if (!handler) {
-            logger.debug(F("WebManager"), F("Lazy-Loading: AdminHandler für URL: ") + url);
+            logger.debug(F("WebManager"), String(F("Lazy-Loading: AdminHandler für URL: ")) + url);
             auto newHandler = std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
 
             _router->setHandlerTypeContext("admin");
@@ -132,7 +133,7 @@ void WebManager::initializeRemainingHandlers() {
 
             if (!result.isSuccess()) {
               logger.error(F("WebManager"),
-                           F("Lazy-Registrierung fehlgeschlagen (AdminHandler): ") +
+                           String(F("Lazy-Registrierung fehlgeschlagen (AdminHandler): ")) +
                                result.getMessage());
               return false; // Block request on registration failure
             }
@@ -155,7 +156,7 @@ void WebManager::initializeRemainingHandlers() {
 
             if (!result.isSuccess()) {
               logger.error(F("WebManager"),
-                           F("Lazy-Registrierung fehlgeschlagen (SensorHandler): ") +
+                           String(F("Lazy-Registrierung fehlgeschlagen (SensorHandler): ")) +
                                result.getMessage());
               return false; // Block request on registration failure
             }
@@ -169,7 +170,7 @@ void WebManager::initializeRemainingHandlers() {
       });
 
       m_handlersInitialized = true;
-      logger.info(F("WebManager"), F("Lazy-Loading-Middleware aktiviert (LRU-Cache: ") +
+      logger.info(F("WebManager"), String(F("Lazy-Loading-Middleware aktiviert (LRU-Cache: ")) +
                                        String(MAX_ACTIVE_HANDLERS) + F(" Handler)"));
 
       // Log initial route count (only essential routes registered)
@@ -190,12 +191,12 @@ void WebManager::cleanupNonEssentialHandlers() {
   // lists or callbacks that must be released via cleanup(). Simply
   // clearing the list would drop unique_ptrs without calling their
   // cleanup hooks which can leak memory/resources on constrained devices.
-  logger.debug(F("WebManager"),
-               F("Bereinige Handler-Cache (") + String(m_handlerCache.size()) + F(" Einträge)"));
+  logger.debug(F("WebManager"), String(F("Bereinige Handler-Cache (")) +
+                                    String(m_handlerCache.size()) + F(" Einträge)"));
 
   for (auto& entry : m_handlerCache) {
     if (entry.handler) {
-      logger.debug(F("WebManager"), F("Cleanup: ") + entry.handlerType);
+      logger.debug(F("WebManager"), String(F("Cleanup: ")) + entry.handlerType);
       entry.handler->cleanup();
     }
   }
@@ -217,7 +218,7 @@ void WebManager::cleanupHandlers() {
   // Cleanup all cached handlers
   for (auto& entry : m_handlerCache) {
     if (entry.handler) {
-      logger.debug(F("WebManager"), F("Cleanup cached: ") + entry.handlerType);
+      logger.debug(F("WebManager"), String(F("Cleanup cached: ")) + entry.handlerType);
       entry.handler->cleanup();
     }
   }
@@ -228,14 +229,15 @@ void WebManager::cleanupHandlers() {
 
 void WebManager::cacheHandler(std::unique_ptr<BaseHandler> handler, const String& handlerType) {
   if (!handler) {
-    logger.warning(F("WebManager"), F("Versuch, nullptr-Handler zu cachen: ") + handlerType);
+    logger.warning(F("WebManager"),
+                   String(F("Versuch, nullptr-Handler zu cachen: ")) + handlerType);
     return;
   }
 
   // Check if handler already exists in cache
   for (auto& entry : m_handlerCache) {
     if (entry.handlerType == handlerType) {
-      logger.debug(F("WebManager"), F("Handler bereits im Cache: ") + handlerType);
+      logger.debug(F("WebManager"), String(F("Handler bereits im Cache: ")) + handlerType);
       entry.lastAccess = millis(); // Update access time
       return;
     }
@@ -246,8 +248,9 @@ void WebManager::cacheHandler(std::unique_ptr<BaseHandler> handler, const String
     evictOldestHandler();
   }
 
-  logger.info(F("WebManager"), F("Cache-Handler (") + String(m_handlerCache.size() + 1) + F("/") +
-                                   String(MAX_ACTIVE_HANDLERS) + F("): ") + handlerType);
+  logger.info(F("WebManager"), String(F("Cache-Handler (")) + String(m_handlerCache.size() + 1) +
+                                   String(F("/")) + String(MAX_ACTIVE_HANDLERS) + String(F("): ")) +
+                                   handlerType);
 
   // Add new handler to cache
   HandlerCacheEntry entry{std::move(handler), millis(), handlerType};
@@ -278,8 +281,8 @@ void WebManager::evictOldestHandler() {
 
   // Log eviction with age information
   unsigned long age = (millis() - oldest->lastAccess) / 1000; // seconds
-  logger.info(F("WebManager"), F("LRU-Eviction: ") + oldest->handlerType + F(" (inaktiv seit ") +
-                                   String(age) + F("s)"));
+  logger.info(F("WebManager"), String(F("LRU-Eviction: ")) + oldest->handlerType +
+                                   String(F(" (inaktiv seit ")) + String(age) + F("s)"));
 
   // Remove routes registered by this handler
   if (_router) {

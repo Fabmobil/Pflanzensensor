@@ -11,8 +11,8 @@
 
 #pragma once
 
+#include "utils/platform_compat.h"
 #include <Arduino.h>
-#include <ESP8266WebServer.h>
 
 #include <map>
 #include <string>
@@ -40,7 +40,7 @@ public:
    * @param server Reference to web server instance
    * @details Initializes handler with server reference
    */
-  explicit BaseHandler(ESP8266WebServer& server) : _server(server) {}
+  explicit BaseHandler(ESPWebServer& server) : _server(server) {}
 
   // Prevent copying
   BaseHandler(const BaseHandler&) = delete;
@@ -117,8 +117,8 @@ public:
   virtual RouterResult onRegisterRoutes(WebRouter& router) = 0;
 
 protected:
-  ESP8266WebServer& _server; ///< Protected server reference
-  bool _cleaned = false;     ///< Flag indicating if handler has been cleaned up
+  ESPWebServer& _server; ///< Protected server reference
+  bool _cleaned = false; ///< Flag indicating if handler has been cleaned up
 
   /**
    * @brief Render page with standard layout (DEPRECATED)

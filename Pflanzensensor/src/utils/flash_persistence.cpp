@@ -7,9 +7,13 @@
 #include "../logger/logger.h"
 #include "../managers/manager_config_preferences.h"
 #include "critical_section.h"
+#ifdef ESP32
+#include <WiFi.h>
+#else
 #include <ESP8266WiFi.h>
+#endif
 
-#ifdef USE_WEBSERVER
+#if USE_WEBSERVER
 #include <LittleFS.h>
 #endif
 
@@ -255,7 +259,7 @@ ResourceResult FlashPersistence::saveToFlash() {
   }
 
   uint32_t dataSize = textData.length();
-  logger.info(F("FlashPers"), F("Textgröße: ") + String(dataSize) + F(" Bytes"));
+  logger.info(F("FlashPers"), String(F("Textgröße: ")) + String(dataSize) + F(" Bytes"));
 
   if (dataSize == 0 || dataSize > FP_MAX_CONFIG_SIZE - 16) {
     return ResourceResult::fail(ResourceError::VALIDATION_ERROR, F("Invalid data size"));
@@ -604,6 +608,27 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
   FileInfo files[16]; // Max 16 JSON files
   uint8_t fileCount = 0;
 
+#ifdef ESP32
+  File root = LittleFS.open("/config");
+  if (root && root.isDirectory()) {
+    File entry = root.openNextFile();
+    while (entry && fileCount < 16) {
+      String filename = String(entry.name());
+      int lastSlash = filename.lastIndexOf('/');
+      if (lastSlash >= 0) {
+        filename = filename.substring(lastSlash + 1);
+      }
+      if (filename.endsWith(".json") && !filename.endsWith(".example")) {
+        files[fileCount].filename = filename;
+        files[fileCount].size = entry.size();
+        fileCount++;
+      }
+      entry.close();
+      entry = root.openNextFile();
+    }
+    root.close();
+  }
+#else
   Dir dir = LittleFS.openDir("/config");
   while (dir.next() && fileCount < 16) {
     String filename = dir.fileName();
@@ -617,6 +642,7 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
       }
     }
   }
+#endif
 
   if (fileCount == 0) {
     logger.info(F("FlashPers"), F("Keine JSON-Dateien zum Sichern"));
@@ -637,7 +663,7 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
   }
   totalSize += manifest.length();
 
-  logger.info(F("FlashPers"), F("JSON Gesamt: ") + String(totalSize) + F(" Bytes"));
+  logger.info(F("FlashPers"), String(F("JSON Gesamt: ")) + String(totalSize) + F(" Bytes"));
 
   if (totalSize > FP_JSON_MAX_SIZE) {
     return ResourceResult::fail(ResourceError::INSUFFICIENT_SPACE, F("JSON too large"));
@@ -655,7 +681,7 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
   memset(header + 13, 0, 3);
 
   uint32_t sectorsNeeded = ((totalSize + FP_FLASH_SECTOR_SIZE - 1) / FP_FLASH_SECTOR_SIZE);
-  logger.debug(F("FlashPers"), F("Lösche ") + String(sectorsNeeded) + F(" Sektoren..."));
+  logger.debug(F("FlashPers"), String(F("Lösche ")) + String(sectorsNeeded) + F(" Sektoren..."));
 
   // STEP 4: CRITICAL SECTION - Erase and write header/manifest
   {
@@ -712,7 +738,7 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
     // Open and read file (WiFi ON, interrupts enabled, safe for LittleFS)
     File f = LittleFS.open(filepath, "r");
     if (!f) {
-      logger.warning(F("FlashPers"), F("Konnte nicht öffnen: ") + files[fileIdx].filename);
+      logger.warning(F("FlashPers"), String(F("Konnte nicht öffnen: ")) + files[fileIdx].filename);
       continue;
     }
 
@@ -742,7 +768,7 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
         if (!ESP.flashWrite(writeOffset, alignedChunk, alignedSize)) {
           f.close();
           return ResourceResult::fail(ResourceError::OPERATION_FAILED,
-                                      F("File write failed: ") + files[fileIdx].filename);
+                                      String(F("File write failed: ")) + files[fileIdx].filename);
         }
       }
 
@@ -751,7 +777,7 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
     }
 
     f.close();
-    logger.debug(F("FlashPers"), F("Gesichert: ") + files[fileIdx].filename);
+    logger.debug(F("FlashPers"), String(F("Gesichert: ")) + files[fileIdx].filename);
   }
 
   logger.info(F("FlashPers"), F("JSON-Configs erfolgreich in Flash gesichert"));

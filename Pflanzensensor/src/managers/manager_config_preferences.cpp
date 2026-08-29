@@ -4,7 +4,7 @@
  */
 
 #include "managers/manager_config_preferences.h"
-#include "../configs/config_pflanzensensor.h"
+#include "../configs/config.h" // Verwendet CONFIG_FILE aus Build-Flags
 #include "../logger/logger.h"
 
 // Helper functions for type-safe access
@@ -348,7 +348,7 @@ PreferencesManager::PrefResult PreferencesManager::updateWiFiCredentials(uint8_t
   Preferences prefs;
   if (!prefs.begin(wifiNamespace, false)) {
     logger.error(F("PrefMgr"),
-                 F("Fehler beim Öffnen des WiFi-Namespace: ") + String(wifiNamespace));
+                 String(F("Fehler beim Öffnen des WiFi-Namespace: ")) + String(wifiNamespace));
     return PrefResult::fail(ConfigError::SAVE_FAILED, "Cannot open WiFi namespace");
   }
 

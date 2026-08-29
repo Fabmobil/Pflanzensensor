@@ -10,7 +10,7 @@
 
 #include <map>
 
-#include "../configs/config_pflanzensensor.h"
+#include "../configs/config.h" // Verwendet CONFIG_FILE aus Build-Flags
 #include "../utils/result_types.h"
 
 // Add ConfigError to string conversion function
@@ -36,11 +36,11 @@ inline String errorTypeToString(ConfigError error) {
  * @brief Enum for configuration value types
  */
 enum class ConfigValueType {
-  BOOL,   ///< Boolean value
-  INT,    ///< Integer value
-  UINT,   ///< Unsigned integer value
-  FLOAT,  ///< Float value
-  STRING  ///< String value
+  BOOL,  ///< Boolean value
+  INT,   ///< Integer value
+  UINT,  ///< Unsigned integer value
+  FLOAT, ///< Float value
+  STRING ///< String value
 };
 
 /**
@@ -98,6 +98,8 @@ struct ConfigData {
                                              ///< identifier (format:
                                              ///< "sensorId_measurementIndex",
                                              ///< e.g., "analog_0")
+  bool ledTrafficLightOnlyRed;               ///< When true, only red LED lights up;
+                                             ///< yellow/green turn off
 
   // Flower Status settings (for startpage)
   String flowerStatusSensor; ///< Sensor that controls the flower face status

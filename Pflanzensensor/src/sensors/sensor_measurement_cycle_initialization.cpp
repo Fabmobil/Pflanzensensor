@@ -47,9 +47,9 @@ void SensorMeasurementCycleManager::handleInitializing() {
 
     auto initResult = m_sensor->init();
     if (!initResult.isSuccess()) {
-      logger.error(F("MeasurementCycle"), m_sensor->getName() +
-                                              F(": Sensorinitialisierung fehlgeschlagen: ") +
-                                              initResult.getMessage());
+      logger.error(F("MeasurementCycle"),
+                   m_sensor->getName() + String(F(": Sensorinitialisierung fehlgeschlagen: ")) +
+                       initResult.getMessage());
       handleStateError(F("Sensorinitialisierung fehlgeschlagen"));
       return;
     }
@@ -92,16 +92,17 @@ void SensorMeasurementCycleManager::handleInitializing() {
 
       // Stay in INITIALIZING state to allow retries
       if (ConfigMgr.isDebugMeasurementCycle()) {
-        logger.debug(
-            F("MeasurementCycle"),
-            m_sensor->getName() + F(": Initialisierung fehlgeschlagen, versuche erneut (Versuch ") +
-                String(m_state.errorCount) + F("/") + String(MEASUREMENT_ERROR_COUNT) + F(")"));
+        logger.debug(F("MeasurementCycle"),
+                     m_sensor->getName() +
+                         String(F(": Initialisierung fehlgeschlagen, versuche erneut (Versuch ")) +
+                         String(m_state.errorCount) + String(F("/")) +
+                         String(MEASUREMENT_ERROR_COUNT) + F(")"));
       }
       return; // Stay in INITIALIZING state for retry
     }
 
     // Only treat as fatal error after max retries exceeded
-    logger.error(F("MeasurementCycle"), m_sensor->getName() + F(": Initialisierung nach ") +
+    logger.error(F("MeasurementCycle"), m_sensor->getName() + String(F(": Initialisierung nach ")) +
                                             String(MEASUREMENT_ERROR_COUNT) +
                                             F(" Versuchen fehlgeschlagen"));
     handleStateError(F("Initialisierung nach maximalen Versuchen fehlgeschlagen"));

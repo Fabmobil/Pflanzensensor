@@ -12,6 +12,9 @@
 #if USE_WEBSOCKET
 #include "web/services/websocket.h"
 #endif
+#if USE_PROMETHEUS_METRICS
+#include "web/handler/web_metrics_handler.h"
+#endif
 #include "utils/wifi.h"
 
 ResourceResult WebManager::begin(uint16_t port) {
@@ -25,11 +28,19 @@ ResourceResult WebManager::begin(uint16_t port) {
 
   try {
     // Wichtige Dienste zuerst initialisieren
-    _server = std::make_unique<ESP8266WebServer>(_port);
+    _server = std::make_unique<ESPWebServer>(_port);
     _auth = std::make_unique<WebAuth>(*_server);
     _router = std::make_unique<WebRouter>(*_server);
     _cssService = std::make_unique<CSSService>(*_server);
     _otaHandler = std::make_unique<WebOTAHandler>(*_server, *_auth);
+#if USE_PROMETHEUS_METRICS
+    _metricsHandler = std::make_unique<WebMetricsHandler>();
+    _metricsHandler->init(); // Zustand auf INITIALIZED setzen, damit /metrics aktiv ist
+    // SensorManager-Referenz weiterleiten, falls bereits gesetzt
+    if (_sensorManager) {
+      _metricsHandler->setSensorManager(*_sensorManager);
+    }
+#endif
 
 #if USE_WEBSOCKET
     // WebSocket-Server zuerst initialisieren
@@ -82,7 +93,7 @@ ResourceResult WebManager::beginUpdateMode() {
     // Startzeit für Update-Modus setzen (Timeout-Absicherung)
     m_updateModeStartTime = millis();
     logger.debug(F("WebManager"),
-                 F("Update-Modus Startzeit gesetzt: ") + String(m_updateModeStartTime));
+                 String(F("Update-Modus Startzeit gesetzt: ")) + String(m_updateModeStartTime));
 
     // Alle Dienste zuerst stoppen
     if (_sensorManager) {
@@ -96,17 +107,21 @@ ResourceResult WebManager::beginUpdateMode() {
     cleanup();
 
     delay(500);
+#ifndef ESP32
     ESP.wdtFeed();
+#endif
 
     // Minimale Dienste mit expliziten Speicherzuweisungen erstellen
     logger.logMemoryStats(F("vor_minimalen_diensten"));
     auto setupResult = setupMinimalServices();
     if (!setupResult.isSuccess()) {
-      logger.error(F("WebManager"), F("Minimale Dienste konnten nicht eingerichtet werden: ") +
-                                        setupResult.getMessage());
-      return ResourceResult::fail(ResourceError::WEBSERVER_ERROR,
-                                  F("Minimale Dienste konnten nicht eingerichtet werden: ") +
-                                      setupResult.getMessage());
+      logger.error(F("WebManager"),
+                   String(F("Minimale Dienste konnten nicht eingerichtet werden: ")) +
+                       setupResult.getMessage());
+      return ResourceResult::fail(
+          ResourceError::WEBSERVER_ERROR,
+          String(F("Minimale Dienste konnten nicht eingerichtet werden: ")) +
+              setupResult.getMessage());
     }
 
     // Explizit als Minimalmodus markieren
@@ -133,7 +148,7 @@ ResourceResult WebManager::beginUpdateMode() {
 ResourceResult WebManager::setupMinimalServices() {
   try {
     // Dienste in bestimmter Reihenfolge anlegen
-    _server = std::make_unique<ESP8266WebServer>(_port);
+    _server = std::make_unique<ESPWebServer>(_port);
     if (!_server) {
       return ResourceResult::fail(ResourceError::RESOURCE_ERROR,
                                   F("Webserver konnte nicht angelegt werden"));
@@ -301,7 +316,8 @@ void WebManager::setupMiddleware() {
 
   // Logging-Middleware hinzufügen
   _router->addMiddleware([this](HTTPMethod method, String url) {
-    logger.debug(F("WebManager"), F("Anfrage: ") + methodToString(method) + F(" ") + url);
+    logger.debug(F("WebManager"),
+                 String(F("Anfrage: ")) + methodToString(method) + String(F(" ")) + url);
     return true;
   });
 

@@ -27,7 +27,7 @@ public:
    * @param server Reference to web server instance
    * @details Initializes the CSS service and sets up required modules
    */
-  explicit CSSService(ESP8266WebServer& server);
+  explicit CSSService(ESPWebServer& server);
 
   /**
    * @brief Register CSS service routes with router

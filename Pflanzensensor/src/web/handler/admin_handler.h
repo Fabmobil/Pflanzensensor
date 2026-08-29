@@ -40,7 +40,7 @@ public:
    *          - Initializes CSS handling
    *          - Sets up logging
    */
-  AdminHandler(ESP8266WebServer& server, [[maybe_unused]] WebAuth& auth,
+  AdminHandler(ESPWebServer& server, [[maybe_unused]] WebAuth& auth,
                [[maybe_unused]] CSSService& cssService)
       : BaseHandler(server) { // We only use the server parameter
     logger.debug(F("AdminHandler"), F("Initialisiere AdminHandler"));

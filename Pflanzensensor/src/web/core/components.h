@@ -9,8 +9,8 @@
 #ifndef COMPONENTS_H
 #define COMPONENTS_H
 
+#include "utils/platform_compat.h"
 #include <Arduino.h>
-#include <ESP8266WebServer.h>
 
 #include <vector>
 
@@ -44,7 +44,7 @@ static const size_t SAFE_HEAP_SIZE = 4096;
  *          - Responsive viewport settings
  *          Performs memory checks before proceeding.
  */
-ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
+ResourceResult beginResponse(ESPWebServer& server, const String& title,
                              const std::vector<String>& additionalCss = std::vector<String>());
 
 /**
@@ -56,7 +56,7 @@ ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
  *          - Handles both RAM and PROGMEM strings
  *          - Ensures proper content encoding
  */
-void sendChunk(ESP8266WebServer& server, const String& chunk);
+void sendChunk(ESPWebServer& server, const String& chunk);
 
 /**
  * @brief Send pixelated footer with navigation and system info
@@ -70,7 +70,7 @@ void sendChunk(ESP8266WebServer& server, const String& chunk);
  *          - Version and build information
  *          - Fabmobil logo
  */
-void sendPixelatedFooter(ESP8266WebServer& server, const String& version, const String& buildDate,
+void sendPixelatedFooter(ESPWebServer& server, const String& version, const String& buildDate,
                          const String& activeSection);
 
 /**
@@ -79,7 +79,7 @@ void sendPixelatedFooter(ESP8266WebServer& server, const String& version, const 
  * @param statusClass Status class for the box (status-green, status-red, etc.)
  * @details Starts the main pixelated container with status-based background
  */
-void beginPixelatedPage(ESP8266WebServer& server, const String& statusClass = "status-unknown");
+void beginPixelatedPage(ESPWebServer& server, const String& statusClass = "status-unknown");
 
 /**
  * @brief Send cloud title section
@@ -87,7 +87,7 @@ void beginPixelatedPage(ESP8266WebServer& server, const String& statusClass = "s
  * @param title Title text to display in cloud
  * @details Generates cloud image with centered title text
  */
-void sendCloudTitle(ESP8266WebServer& server, const String& title);
+void sendCloudTitle(ESPWebServer& server, const String& title);
 
 /**
  * @brief Begin content box (dark container for cards/content)
@@ -95,21 +95,21 @@ void sendCloudTitle(ESP8266WebServer& server, const String& title);
  * @param section Optional section name for styling (admin, sensors, display, wifi, system, ota, logs)
  * @details Starts the dark content container that replaces the flower
  */
-void beginContentBox(ESP8266WebServer& server, const String& section = "");
+void beginContentBox(ESPWebServer& server, const String& section = "");
 
 /**
  * @brief End content box
  * @param server Reference to web server
  * @details Closes the content container
  */
-void endContentBox(ESP8266WebServer& server);
+void endContentBox(ESPWebServer& server);
 
 /**
  * @brief End pixelated page layout
  * @param server Reference to web server
  * @details Closes the main pixelated container
  */
-void endPixelatedPage(ESP8266WebServer& server);
+void endPixelatedPage(ESPWebServer& server);
 
 /**
  * @brief Get a display-friendly IP address string
@@ -132,7 +132,7 @@ String getDisplaySSID();
  *          - Adds any final scripts
  *          - Flushes remaining content
  */
-void endResponse(ESP8266WebServer& server,
+void endResponse(ESPWebServer& server,
                  const std::vector<String>& additionalScripts = std::vector<String>());
 
 /**
@@ -146,7 +146,7 @@ void endResponse(ESP8266WebServer& server,
  *          - Proper spacing and alignment
  *          - Accessibility attributes
  */
-void formGroup(ESP8266WebServer& server, const String& label, const String& content);
+void formGroup(ESPWebServer& server, const String& label, const String& content);
 
 /**
  * @brief Create a button component
@@ -163,7 +163,7 @@ void formGroup(ESP8266WebServer& server, const String& label, const String& cont
  *          - Optional ID for JavaScript interaction
  *          - Proper ARIA attributes
  */
-void button(ESP8266WebServer& server, const String& text, const String& type,
+void button(ESPWebServer& server, const String& text, const String& type,
             const String& className = "", bool disabled = false, const String& id = "");
 
 } // namespace Component

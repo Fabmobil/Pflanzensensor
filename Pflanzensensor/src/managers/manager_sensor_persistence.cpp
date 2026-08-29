@@ -70,7 +70,7 @@ SensorPersistence::PersistenceResult SensorPersistence::load() {
 
   // Load measurement intervals from settings.json
   const char* settingsPath = "/config/settings.json";
-  DynamicJsonDocument settingsDoc(4096);
+  DynamicJsonDocument settingsDoc(512);
   bool hasSettings = loadJsonFile(settingsPath, settingsDoc);
 
   const auto& allSensors = sensorManager->getSensors();
@@ -94,9 +94,9 @@ SensorPersistence::PersistenceResult SensorPersistence::load() {
         sensorPtr->setMeasurementInterval(interval);
 
         if (ConfigMgr.isDebugSensor()) {
-          logger.debug(F("SensorP"), F("Messintervall für ") + sensorId +
-                                         F(" aus settings.json geladen: ") + String(interval) +
-                                         F("ms"));
+          logger.debug(F("SensorP"), String(F("Messintervall für ")) + sensorId +
+                                         String(F(" aus settings.json geladen: ")) +
+                                         String(interval) + F("ms"));
         }
       }
     }
@@ -120,7 +120,7 @@ SensorPersistence::PersistenceResult SensorPersistence::load() {
         if (saveResult.isSuccess()) {
           filesCreated++;
         } else {
-          logger.warning(F("SensorP"), F("Konnte Default-Datei nicht erstellen: ") + path);
+          logger.warning(F("SensorP"), String(F("Konnte Default-Datei nicht erstellen: ")) + path);
         }
         continue;
       }
@@ -138,7 +138,7 @@ SensorPersistence::PersistenceResult SensorPersistence::load() {
           logger.debug(F("SensorP"), String(F("Messung geladen: ")) + path);
         }
       } else {
-        logger.warning(F("SensorP"), F("Konnte Messung nicht laden: ") + path);
+        logger.warning(F("SensorP"), String(F("Konnte Messung nicht laden: ")) + path);
       }
 
       yield(); // Feed watchdog
@@ -190,12 +190,12 @@ SensorPersistence::PersistenceResult SensorPersistence::save() {
         totalSaved++;
       } else {
         logger.warning(F("SensorP"), String(F("Fehler beim Speichern von ")) + sensorId +
-                                         F(" Messung ") + String(i));
+                                         String(F(" Messung ")) + String(i));
       }
       yield(); // Feed watchdog
     }
 
-    logger.info(F("SensorP"), String(F("Sensor gespeichert: ")) + sensorId + F(" (") +
+    logger.info(F("SensorP"), String(F("Sensor gespeichert: ")) + sensorId + String(F(" (")) +
                                   String(sensorConfig.activeMeasurements) + F(" Messungen)"));
   }
 
@@ -232,7 +232,7 @@ SensorPersistence::updateSensorThresholds(const String& sensorId, size_t measure
       auto result = saveMeasurementToJson(sensorId, measurementIndex, updatedConfig);
       if (result.isSuccess()) {
         logger.info(F("SensorP"), String(F("Schwellenwerte aktualisiert für ")) + sensorId +
-                                      F(" Messung ") + String(measurementIndex));
+                                      String(F(" Messung ")) + String(measurementIndex));
       }
       return result;
     }
@@ -284,7 +284,7 @@ SensorPersistence::updateMeasurementInterval(const String& sensorId, unsigned lo
   const char* settingsPath = "/config/settings.json";
 
   // Load existing settings.json
-  DynamicJsonDocument doc(4096);
+  DynamicJsonDocument doc(512);
   if (!loadJsonFile(settingsPath, doc)) {
     logger.error(F("SensorP"), F("Konnte settings.json nicht laden"));
     return PersistenceResult::fail(ConfigError::FILE_ERROR, "Cannot load settings.json");
@@ -312,8 +312,8 @@ SensorPersistence::updateMeasurementInterval(const String& sensorId, unsigned lo
   }
 
   if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("Messintervall für ") + sensorId + F(" auf ") + String(interval) +
-                                   F("ms gesetzt"));
+    logger.debug(F("SensorP"), String(F("Messintervall für ")) + sensorId + String(F(" auf ")) +
+                                   String(interval) + F("ms gesetzt"));
   }
 
   return PersistenceResult::success();
@@ -359,21 +359,66 @@ SensorPersistence::updateAnalogRawMinMax(const String& sensorId, size_t measurem
   return updateMeasurementSettings(sensorId, measurementIndex, settings);
 }
 
-void SensorPersistence::enqueueAnalogRawMinMax(const String& sensorId, size_t measurementIndex,
-                                               int absoluteRawMin, int absoluteRawMax) {
-  // Check if we already have a RAW_MIN_MAX pending update for this sensor/measurement
+/**
+ * @brief Ältesten Eintrag aus der Warteschlange entfernen und auf Flash schreiben
+ * @details Wird aufgerufen wenn die Warteschlange voll ist (MAX_PENDING erreicht).
+ *          Schreibt den ältesten Eintrag sofort auf Flash, um Platz für neue zu schaffen.
+ */
+static void flushOldestPendingUpdate() {
+  if (g_pendingUpdates.empty())
+    return;
+
+  logger.warning(F("SensorP"), F("Warteschlange voll, ältesten Eintrag schreiben"));
+  PendingUpdate oldest = g_pendingUpdates.front();
+  g_pendingUpdates.erase(g_pendingUpdates.begin());
+
+  switch (oldest.type) {
+  case PendingUpdateType::RAW_MIN_MAX:
+    SensorPersistence::updateAnalogRawMinMax(oldest.sensorId, oldest.measurementIndex,
+                                             oldest.data.raw.absoluteRawMin,
+                                             oldest.data.raw.absoluteRawMax);
+    break;
+  case PendingUpdateType::ABSOLUTE_MIN_MAX:
+    SensorPersistence::updateAbsoluteMinMax(oldest.sensorId, oldest.measurementIndex,
+                                            oldest.data.absolute.absoluteMin,
+                                            oldest.data.absolute.absoluteMax);
+    break;
+  case PendingUpdateType::CALIBRATED_MIN_MAX:
+    SensorPersistence::updateAnalogMinMaxIntegerNoReload(
+        oldest.sensorId, oldest.measurementIndex, oldest.data.calibrated.minValue,
+        oldest.data.calibrated.maxValue, oldest.data.calibrated.inverted);
+    break;
+  }
+}
+
+/**
+ * @brief Neuen Eintrag in die Warteschlange einreihen
+ * @details Prüft auf vorhandene Einträge desselben Typs/Sensors/Index und
+ *          aktualisiert diese statt neue hinzuzufügen. Bei voller Warteschlange
+ *          wird der älteste Eintrag zuerst auf Flash geschrieben.
+ */
+static void enqueuePendingUpdate(PendingUpdate&& update) {
+  // Vorhandenen Eintrag desselben Typs aktualisieren statt neuen hinzufügen
   for (auto& u : g_pendingUpdates) {
-    if (u.type == PendingUpdateType::RAW_MIN_MAX && u.sensorId == sensorId &&
-        u.measurementIndex == measurementIndex) {
-      // Update existing entry with new values
-      u.data.raw.absoluteRawMin = absoluteRawMin;
-      u.data.raw.absoluteRawMax = absoluteRawMax;
+    if (u.type == update.type && u.sensorId == update.sensorId &&
+        u.measurementIndex == update.measurementIndex) {
+      u.data = update.data;
       u.timestamp = millis();
       return;
     }
   }
 
-  // Add new entry
+  // Warteschlange voll → ältesten Eintrag schreiben
+  constexpr size_t MAX_PENDING = 32;
+  if (g_pendingUpdates.size() >= MAX_PENDING) {
+    flushOldestPendingUpdate();
+  }
+
+  g_pendingUpdates.push_back(std::move(update));
+}
+
+void SensorPersistence::enqueueAnalogRawMinMax(const String& sensorId, size_t measurementIndex,
+                                               int absoluteRawMin, int absoluteRawMax) {
   PendingUpdate u;
   u.type = PendingUpdateType::RAW_MIN_MAX;
   u.sensorId = sensorId;
@@ -381,51 +426,11 @@ void SensorPersistence::enqueueAnalogRawMinMax(const String& sensorId, size_t me
   u.timestamp = millis();
   u.data.raw.absoluteRawMin = absoluteRawMin;
   u.data.raw.absoluteRawMax = absoluteRawMax;
-
-  // Keep queue size reasonable — if it grows too large, flush oldest entries
-  const size_t MAX_PENDING = 32;
-  if (g_pendingUpdates.size() >= MAX_PENDING) {
-    logger.warning(F("SensorP"), F("Pending updates queue full, forcing partial flush"));
-    // Flush oldest entry
-    if (!g_pendingUpdates.empty()) {
-      PendingUpdate oldest = g_pendingUpdates.front();
-      g_pendingUpdates.erase(g_pendingUpdates.begin());
-
-      switch (oldest.type) {
-      case PendingUpdateType::RAW_MIN_MAX:
-        updateAnalogRawMinMax(oldest.sensorId, oldest.measurementIndex,
-                              oldest.data.raw.absoluteRawMin, oldest.data.raw.absoluteRawMax);
-        break;
-      case PendingUpdateType::ABSOLUTE_MIN_MAX:
-        updateAbsoluteMinMax(oldest.sensorId, oldest.measurementIndex,
-                             oldest.data.absolute.absoluteMin, oldest.data.absolute.absoluteMax);
-        break;
-      case PendingUpdateType::CALIBRATED_MIN_MAX:
-        updateAnalogMinMaxIntegerNoReload(
-            oldest.sensorId, oldest.measurementIndex, oldest.data.calibrated.minValue,
-            oldest.data.calibrated.maxValue, oldest.data.calibrated.inverted);
-        break;
-      }
-    }
-  }
-  g_pendingUpdates.push_back(std::move(u));
+  enqueuePendingUpdate(std::move(u));
 }
 
 void SensorPersistence::enqueueAbsoluteMinMax(const String& sensorId, size_t measurementIndex,
                                               float absoluteMin, float absoluteMax) {
-  // Check if we already have an ABSOLUTE_MIN_MAX pending update for this sensor/measurement
-  for (auto& u : g_pendingUpdates) {
-    if (u.type == PendingUpdateType::ABSOLUTE_MIN_MAX && u.sensorId == sensorId &&
-        u.measurementIndex == measurementIndex) {
-      // Update existing entry with new values
-      u.data.absolute.absoluteMin = absoluteMin;
-      u.data.absolute.absoluteMax = absoluteMax;
-      u.timestamp = millis();
-      return;
-    }
-  }
-
-  // Add new entry
   PendingUpdate u;
   u.type = PendingUpdateType::ABSOLUTE_MIN_MAX;
   u.sensorId = sensorId;
@@ -433,50 +438,11 @@ void SensorPersistence::enqueueAbsoluteMinMax(const String& sensorId, size_t mea
   u.timestamp = millis();
   u.data.absolute.absoluteMin = absoluteMin;
   u.data.absolute.absoluteMax = absoluteMax;
-
-  const size_t MAX_PENDING = 32;
-  if (g_pendingUpdates.size() >= MAX_PENDING) {
-    logger.warning(F("SensorP"), F("Pending updates queue full, forcing partial flush"));
-    if (!g_pendingUpdates.empty()) {
-      PendingUpdate oldest = g_pendingUpdates.front();
-      g_pendingUpdates.erase(g_pendingUpdates.begin());
-
-      switch (oldest.type) {
-      case PendingUpdateType::RAW_MIN_MAX:
-        updateAnalogRawMinMax(oldest.sensorId, oldest.measurementIndex,
-                              oldest.data.raw.absoluteRawMin, oldest.data.raw.absoluteRawMax);
-        break;
-      case PendingUpdateType::ABSOLUTE_MIN_MAX:
-        updateAbsoluteMinMax(oldest.sensorId, oldest.measurementIndex,
-                             oldest.data.absolute.absoluteMin, oldest.data.absolute.absoluteMax);
-        break;
-      case PendingUpdateType::CALIBRATED_MIN_MAX:
-        updateAnalogMinMaxIntegerNoReload(
-            oldest.sensorId, oldest.measurementIndex, oldest.data.calibrated.minValue,
-            oldest.data.calibrated.maxValue, oldest.data.calibrated.inverted);
-        break;
-      }
-    }
-  }
-  g_pendingUpdates.push_back(std::move(u));
+  enqueuePendingUpdate(std::move(u));
 }
 
 void SensorPersistence::enqueueAnalogMinMaxInteger(const String& sensorId, size_t measurementIndex,
                                                    int minValue, int maxValue, bool inverted) {
-  // Check if we already have a CALIBRATED_MIN_MAX pending update for this sensor/measurement
-  for (auto& u : g_pendingUpdates) {
-    if (u.type == PendingUpdateType::CALIBRATED_MIN_MAX && u.sensorId == sensorId &&
-        u.measurementIndex == measurementIndex) {
-      // Update existing entry with new values
-      u.data.calibrated.minValue = minValue;
-      u.data.calibrated.maxValue = maxValue;
-      u.data.calibrated.inverted = inverted;
-      u.timestamp = millis();
-      return;
-    }
-  }
-
-  // Add new entry
   PendingUpdate u;
   u.type = PendingUpdateType::CALIBRATED_MIN_MAX;
   u.sensorId = sensorId;
@@ -485,32 +451,7 @@ void SensorPersistence::enqueueAnalogMinMaxInteger(const String& sensorId, size_
   u.data.calibrated.minValue = minValue;
   u.data.calibrated.maxValue = maxValue;
   u.data.calibrated.inverted = inverted;
-
-  const size_t MAX_PENDING = 32;
-  if (g_pendingUpdates.size() >= MAX_PENDING) {
-    logger.warning(F("SensorP"), F("Pending updates queue full, forcing partial flush"));
-    if (!g_pendingUpdates.empty()) {
-      PendingUpdate oldest = g_pendingUpdates.front();
-      g_pendingUpdates.erase(g_pendingUpdates.begin());
-
-      switch (oldest.type) {
-      case PendingUpdateType::RAW_MIN_MAX:
-        updateAnalogRawMinMax(oldest.sensorId, oldest.measurementIndex,
-                              oldest.data.raw.absoluteRawMin, oldest.data.raw.absoluteRawMax);
-        break;
-      case PendingUpdateType::ABSOLUTE_MIN_MAX:
-        updateAbsoluteMinMax(oldest.sensorId, oldest.measurementIndex,
-                             oldest.data.absolute.absoluteMin, oldest.data.absolute.absoluteMax);
-        break;
-      case PendingUpdateType::CALIBRATED_MIN_MAX:
-        updateAnalogMinMaxIntegerNoReload(
-            oldest.sensorId, oldest.measurementIndex, oldest.data.calibrated.minValue,
-            oldest.data.calibrated.maxValue, oldest.data.calibrated.inverted);
-        break;
-      }
-    }
-  }
-  g_pendingUpdates.push_back(std::move(u));
+  enqueuePendingUpdate(std::move(u));
 }
 
 void SensorPersistence::flushPendingUpdatesForSensor(const String& sensorId) {
@@ -533,8 +474,8 @@ void SensorPersistence::flushPendingUpdatesForSensor(const String& sensorId) {
   unsigned long flushStartTime = millis();
 
   if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"),
-                 F("Flushe ") + String(totalForSensor) + F(" Updates für ") + sensorId);
+    logger.debug(F("SensorP"), String(F("Flushe ")) + String(totalForSensor) +
+                                   String(F(" Updates für ")) + sensorId);
   }
 
   // JSON-based: Group updates by measurementIndex, then apply all changes to each file
@@ -556,8 +497,8 @@ void SensorPersistence::flushPendingUpdatesForSensor(const String& sensorId) {
       MeasurementConfig config;
       auto loadResult = loadMeasurementFromJson(sensorId, measurementIndex, config);
       if (!loadResult.isSuccess()) {
-        logger.error(F("SensorP"), F("Fehler beim Laden von Messung ") + String(measurementIndex) +
-                                       F(" für ") + sensorId);
+        logger.error(F("SensorP"), String(F("Fehler beim Laden von Messung ")) +
+                                       String(measurementIndex) + String(F(" für ")) + sensorId);
         it = g_pendingUpdates.erase(it); // Remove failed update
         continue;
       }
@@ -607,8 +548,8 @@ void SensorPersistence::flushPendingUpdatesForSensor(const String& sensorId) {
 
     auto saveResult = saveMeasurementToJson(sensorId, measurementIndex, config);
     if (!saveResult.isSuccess()) {
-      logger.error(F("SensorP"), F("Fehler beim Speichern von Messung ") +
-                                     String(measurementIndex) + F(" für ") + sensorId);
+      logger.error(F("SensorP"), String(F("Fehler beim Speichern von Messung ")) +
+                                     String(measurementIndex) + String(F(" für ")) + sensorId);
     }
     yield(); // Feed watchdog between file writes
   }
@@ -616,8 +557,8 @@ void SensorPersistence::flushPendingUpdatesForSensor(const String& sensorId) {
   unsigned long totalFlushTime = millis() - flushStartTime;
 
   // Log flush performance
-  logger.info(F("SensorP"), String(successCount) + F(" Updates für ") + sensorId + F(" in ") +
-                                String(totalFlushTime) + F(" ms aktualisiert"));
+  logger.info(F("SensorP"), String(successCount) + String(F(" Updates für ")) + sensorId +
+                                String(F(" in ")) + String(totalFlushTime) + F(" ms aktualisiert"));
 }
 
 SensorPersistence::PersistenceResult
@@ -704,12 +645,12 @@ SensorPersistence::saveMeasurementToJson(const String& sensorId, size_t measurem
   String path = getMeasurementFilePath(sensorId, measurementIndex);
 
   if (!saveJsonFile(path, doc)) {
-    logger.error(F("SensorP"), F("Fehler beim Schreiben von ") + path);
+    logger.error(F("SensorP"), String(F("Fehler beim Schreiben von ")) + path);
     return PersistenceResult::fail(ConfigError::SAVE_FAILED, "Cannot write measurement file");
   }
 
   if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("Messung gespeichert: ") + path);
+    logger.debug(F("SensorP"), String(F("Messung gespeichert: ")) + path);
   }
 
   return PersistenceResult::success();
@@ -729,7 +670,7 @@ SensorPersistence::loadMeasurementFromJson(const String& sensorId, size_t measur
 
   if (!LittleFS.exists(path)) {
     if (ConfigMgr.isDebugSensor()) {
-      logger.debug(F("SensorP"), F("Messung-Datei nicht gefunden: ") + path);
+      logger.debug(F("SensorP"), String(F("Messung-Datei nicht gefunden: ")) + path);
     }
     return PersistenceResult::fail(ConfigError::FILE_ERROR, "Measurement file not found");
   }
@@ -738,7 +679,7 @@ SensorPersistence::loadMeasurementFromJson(const String& sensorId, size_t measur
   DynamicJsonDocument doc(512);
 
   if (!loadJsonFile(path, doc)) {
-    logger.error(F("SensorP"), F("Fehler beim Lesen von ") + path);
+    logger.error(F("SensorP"), String(F("Fehler beim Lesen von ")) + path);
     return PersistenceResult::fail(ConfigError::FILE_ERROR, "Cannot read measurement file");
   }
 
@@ -781,7 +722,7 @@ SensorPersistence::loadMeasurementFromJson(const String& sensorId, size_t measur
   }
 
   if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorP"), F("Messung geladen: ") + path);
+    logger.debug(F("SensorP"), String(F("Messung geladen: ")) + path);
   }
 
   return PersistenceResult::success();
@@ -904,7 +845,8 @@ SensorPersistence::updateMeasurementSettings(const String& sensorId, size_t meas
   // Apply all settings
   for (JsonPair kv : settings) {
     if (!setConfigField(config, kv.key().c_str(), kv.value())) {
-      logger.warning(F("SensorP"), F("Überspringe unbekanntes Feld: ") + String(kv.key().c_str()));
+      logger.warning(F("SensorP"),
+                     String(F("Überspringe unbekanntes Feld: ")) + String(kv.key().c_str()));
     }
   }
 

@@ -31,9 +31,9 @@ LedStatus LedLights::getStatus() const {
 
 ResourceResult LedLights::switchLedOn(int color) {
   if (!isValidColor(color)) {
-    logger.warning(F("LED"), F("Ungültige LED-Farbe: ") + String(color));
+    logger.warning(F("LED"), String(F("Ungültige LED-Farbe: ")) + String(color));
     return ResourceResult::fail(ResourceError::VALIDATION_ERROR,
-                                F("Ungültige LED-Farbe: ") + String(color));
+                                String(F("Ungültige LED-Farbe: ")) + String(color));
   }
 
   switch (color) {
@@ -48,15 +48,15 @@ ResourceResult LedLights::switchLedOn(int color) {
     break;
   }
 
-  // logger.debug(F("LED"), F("LED ") + String(color) + F(" switched on"));
+  // logger.debug(F("LED"), String(F("LED ")) + String(color) + F(" switched on"));
   return ResourceResult::success();
 }
 
 ResourceResult LedLights::switchLedOff(int color) {
   if (!isValidColor(color)) {
-    logger.warning(F("LED"), F("Ungültige LED-Farbe: ") + String(color));
+    logger.warning(F("LED"), String(F("Ungültige LED-Farbe: ")) + String(color));
     return ResourceResult::fail(ResourceError::VALIDATION_ERROR,
-                                F("Ungültige LED-Farbe: ") + String(color));
+                                String(F("Ungültige LED-Farbe: ")) + String(color));
   }
 
   switch (color) {
@@ -71,7 +71,7 @@ ResourceResult LedLights::switchLedOff(int color) {
     break;
   }
 
-  // logger.debug(F("LED"), F("LED ") + String(color) + F(" switched off"));
+  // logger.debug(F("LED"), String(F("LED ")) + String(color) + F(" switched off"));
   return ResourceResult::success();
 }
 

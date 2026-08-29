@@ -7,10 +7,12 @@
 
 #include "utils/result_types.h"
 
+#if USE_MULTIPLEXER
 // Multiplexer control pins from config
 static const uint8_t MUX_A = MULTIPLEXER_PIN_A; // Select bit A (LSB)
 static const uint8_t MUX_B = MULTIPLEXER_PIN_B; // Select bit B
 static const uint8_t MUX_C = MULTIPLEXER_PIN_C; // Select bit C (MSB)
+#endif
 
 Multiplexer::Multiplexer()
     : m_initialized(false), m_switchStartTime(0), m_switchInProgress(false), m_currentChannel(-1) {
@@ -18,12 +20,14 @@ Multiplexer::Multiplexer()
 }
 
 Multiplexer::~Multiplexer() {
+#if USE_MULTIPLEXER
   // Set all pins to input mode on destruction
   if (m_initialized) {
     pinMode(MUX_A, INPUT);
     pinMode(MUX_B, INPUT);
     pinMode(MUX_C, INPUT);
   }
+#endif
 }
 
 SensorResult Multiplexer::init() {
@@ -33,9 +37,9 @@ SensorResult Multiplexer::init() {
 
   try {
     logger.debug(F("Multiplexer"), F("Initialisiere Multiplexer-Pins:"));
-    logger.debug(F("Multiplexer"), F("Pin A (LSB): ") + String(MUX_A));
-    logger.debug(F("Multiplexer"), F("Pin B     : ") + String(MUX_B));
-    logger.debug(F("Multiplexer"), F("Pin C (MSB): ") + String(MUX_C));
+    logger.debug(F("Multiplexer"), String(F("Pin A (LSB): ")) + String(MUX_A));
+    logger.debug(F("Multiplexer"), String(F("Pin B     : ")) + String(MUX_B));
+    logger.debug(F("Multiplexer"), String(F("Pin C (MSB): ")) + String(MUX_C));
 
     // Set up the select pins as outputs
     pinMode(MUX_A, OUTPUT);
@@ -57,12 +61,13 @@ SensorResult Multiplexer::init() {
     bool pinCState = digitalRead(MUX_C);
 
     String binaryState = String(pinCState) + String(pinBState) + String(pinAState);
-    logger.debug(F("Multiplexer"), F("Initiale Pin-Zustände (CBA): ") + binaryState);
+    logger.debug(F("Multiplexer"), String(F("Initiale Pin-Zustände (CBA): ")) + binaryState);
 
     if (pinAState != HIGH || pinBState != HIGH || pinCState != HIGH) {
-      logger.error(F("Multiplexer"),
-                   F("Konnte initiale Pin-Zustände nicht setzen. Erwartet: 111, erhalten: ") +
-                       binaryState);
+      logger.error(
+          F("Multiplexer"),
+          String(F("Konnte initiale Pin-Zustände nicht setzen. Erwartet: 111, erhalten: ")) +
+              binaryState);
       return SensorResult::fail(SensorError::INITIALIZATION_ERROR,
                                 F("Failed to set initial pin states"));
     }
@@ -93,8 +98,9 @@ bool Multiplexer::switchToSensor(int sensorIndex) {
 
   // Validate sensor index (1-8)
   if (sensorIndex < 1 || sensorIndex > MAX_CHANNELS) {
-    logger.error(F("Multiplexer"), F("Ungültiger Sensorindex: ") + String(sensorIndex) +
-                                       F(" (gültiger Bereich: 1-") + String(MAX_CHANNELS) + F(")"));
+    logger.error(F("Multiplexer"), String(F("Ungültiger Sensorindex: ")) + String(sensorIndex) +
+                                       String(F(" (gültiger Bereich: 1-")) + String(MAX_CHANNELS) +
+                                       F(")"));
     return false;
   }
 
@@ -113,8 +119,9 @@ bool Multiplexer::switchToSensor(int sensorIndex) {
   bool pinCState = (muxAddress >> 2) & 0x01; // MSB
 
   String binaryAddress = String(pinCState) + String(pinBState) + String(pinAState);
-  logger.debug(F("Multiplexer"), F("Wechsle von Kanal ") + String(m_currentChannel) + F(" zu ") +
-                                     String(sensorIndex) + F(" (Binär: ") + binaryAddress + F(")"));
+  logger.debug(F("Multiplexer"), String(F("Wechsle von Kanal ")) + String(m_currentChannel) +
+                                     String(F(" zu ")) + String(sensorIndex) +
+                                     String(F(" (Binär: ")) + binaryAddress + F(")"));
 
   // Set all pins at once to minimize transition time
   // record target and start time so we can measure actual settle time
@@ -132,8 +139,9 @@ bool Multiplexer::switchToSensor(int sensorIndex) {
 
   // Verify pin states
   if (!verifyPinStates(sensorIndex)) {
-    logger.error(F("Multiplexer"), F("Überprüfung des Pin-Zustands fehlgeschlagen für Kanal ") +
-                                       String(sensorIndex) + F(" - versuche erneut..."));
+    logger.error(F("Multiplexer"),
+                 String(F("Überprüfung des Pin-Zustands fehlgeschlagen für Kanal ")) +
+                     String(sensorIndex) + F(" - versuche erneut..."));
 
     // One retry attempt
     noInterrupts();
@@ -146,7 +154,7 @@ bool Multiplexer::switchToSensor(int sensorIndex) {
 
     if (!verifyPinStates(sensorIndex)) {
       logger.error(F("Multiplexer"),
-                   F("Überprüfung des Pin-Zustands erneut fehlgeschlagen für Kanal ") +
+                   String(F("Überprüfung des Pin-Zustands erneut fehlgeschlagen für Kanal ")) +
                        String(sensorIndex) + F(" - gebe auf"));
       return false;
     }
@@ -163,8 +171,8 @@ bool Multiplexer::switchToSensor(int sensorIndex) {
   if (m_switchStartTime != 0) {
     elapsed = millis() - m_switchStartTime;
   }
-  logger.debug(F("Multiplexer"), F("Erfolgreich auf Kanal ") + String(sensorIndex) +
-                                     F(" umgeschaltet nach ") + String(elapsed) + F("ms"));
+  logger.debug(F("Multiplexer"), String(F("Erfolgreich auf Kanal ")) + String(sensorIndex) +
+                                     String(F(" umgeschaltet nach ")) + String(elapsed) + F("ms"));
 
   // clear start time to avoid future miscalculations
   m_switchStartTime = 0;
@@ -176,6 +184,7 @@ bool Multiplexer::switchToSensor(int sensorIndex) {
 }
 
 bool Multiplexer::verifyPinStates(int sensorIndex) {
+#if USE_MULTIPLEXER
   // Convert sensor index to expected pin states (inverted addressing)
   int muxAddress = 7 - (sensorIndex - 1); // This gives us the inverted address
 
@@ -191,11 +200,15 @@ bool Multiplexer::verifyPinStates(int sensorIndex) {
   String actualBinary = String(actualC) + String(actualB) + String(actualA);
 
   if (actualA != expectedA || actualB != expectedB || actualC != expectedC) {
-    logger.error(F("Multiplexer"), F("Pin state mismatch for channel ") + String(sensorIndex) +
-                                       F(" - Expected: ") + expectedBinary + F(", Got: ") +
-                                       actualBinary);
+    logger.error(F("Multiplexer"), String(F("Pin state mismatch for channel ")) +
+                                       String(sensorIndex) + String(F(" - Expected: ")) +
+                                       expectedBinary + String(F(", Got: ")) + actualBinary);
     return false;
   }
 
   return true;
+#else
+  (void)sensorIndex;
+  return true;
+#endif
 }

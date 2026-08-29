@@ -1,6 +1,10 @@
 #include "display.h"
 
+#ifdef ESP32
+#include <WiFi.h>
+#else
 #include <ESP8266WiFi.h>
+#endif
 #include <LittleFS.h>
 // #include <qrcodegen.h>  // QR code generation (commented out)
 
@@ -387,7 +391,7 @@ bool SSD1306Display::updateQrCodeIfNeeded(const String& url) {
     m_cachedQrVersion = 2;
     m_qrcodeValid = true;
     m_lastQrUrl = url;
-    logger.debug(F("DisplayM"), F("QR code cached (v2) for: ") + url);
+    logger.debug(F("DisplayM"), String(F("QR code cached (v2) for: ")) + url);
     return true;
   }
 
@@ -396,14 +400,14 @@ bool SSD1306Display::updateQrCodeIfNeeded(const String& url) {
     m_cachedQrVersion = 3;
     m_qrcodeValid = true;
     m_lastQrUrl = url;
-    logger.debug(F("DisplayM"), F("QR code cached (v3) for: ") + url);
+    logger.debug(F("DisplayM"), String(F("QR code cached (v3) for: ")) + url);
     return true;
   }
 
   // Failed to generate QR code
   m_qrcodeValid = false;
   m_lastQrUrl = "";
-  logger.debug(F("DisplayM"), F("QR code generation failed for: ") + url);
+  logger.debug(F("DisplayM"), String(F("QR code generation failed for: ")) + url);
   return false;
 }
 

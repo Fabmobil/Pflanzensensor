@@ -48,8 +48,9 @@ void WebManager::handleSetUpdate() {
   }
 
   // 6. Log the intended update type
-  logger.debug(F("WebManager"), F("Setze Flags - FS: ") + String(fileSystemUpdate) + F(", FW: ") +
-                                    String(firmwareUpdate) + F(", Modus: ") + String(updateMode));
+  logger.debug(F("WebManager"), String(F("Setze Flags - FS: ")) + String(fileSystemUpdate) +
+                                    String(F(", FW: ")) + String(firmwareUpdate) +
+                                    String(F(", Modus: ")) + String(updateMode));
 
   // 7. Save configuration and prepare for update
   if (!prepareUpdateMode(fileSystemUpdate, firmwareUpdate, updateMode)) {
@@ -159,8 +160,9 @@ void WebManager::handleSetConfigValue() {
       type = ConfigValueType::STRING;
     }
 
-    logger.debug(F("WebManager"), String(F("Setze Konfiguration: ")) + namespaceName + F(".") +
-                                      key + F(" = ") + value + F(" (Typ: ") + typeStr + F(")"));
+    logger.debug(F("WebManager"), String(F("Setze Konfiguration: ")) + namespaceName +
+                                      String(F(".")) + key + String(F(" = ")) + value +
+                                      String(F(" (Typ: ")) + typeStr + F(")"));
 
     // Determine whether this particular update is allowed without auth.
     bool isPublicUpdate = false;

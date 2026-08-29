@@ -77,7 +77,7 @@ SensorResult Sensor::handleInvalidReading(float value) {
   } else {
     valueStr = String(value);
   }
-  logger.error(getName(), F(": Ungültige Messung: ") + valueStr);
+  logger.error(getName(), String(F(": Ungültige Messung: ")) + valueStr);
 
   if (m_errorState.invalidCount >= MAX_INVALID_READINGS) {
     logger.error(getName(), F("Zu viele ungültige Messwerte, behandle als Sensorfehler"));
@@ -243,13 +243,15 @@ void Sensor::initMeasurement(size_t index, const String& name, const String& fie
                              const String& unit, float yellowLow, float greenLow, float greenHigh,
                              float yellowHigh) {
   if (index >= SensorConfig::MAX_MEASUREMENTS) {
-    logger.error(F("Sensor"), F("initMeasurement: Index außerhalb des Bereichs: ") + String(index));
+    logger.error(F("Sensor"),
+                 String(F("initMeasurement: Index außerhalb des Bereichs: ")) + String(index));
     return;
   }
   if (!m_lastMeasurementData || index >= SensorConfig::MAX_MEASUREMENTS) {
-    logger.error(F("Sensor"),
-                 F("initMeasurement: Index außerhalb des MeasurementData-Array-Bereichs: ") +
-                     String(index));
+    logger.error(
+        F("Sensor"),
+        String(F("initMeasurement: Index außerhalb des MeasurementData-Array-Bereichs: ")) +
+            String(index));
     return;
   }
   mutableConfig().measurements[index].name = name;
@@ -375,16 +377,16 @@ SensorResult Sensor::init() {
     m_lastMeasurementData->activeValues = config().activeMeasurements;
     // Clamp activeMeasurements and activeValues
     if (config().activeMeasurements > SensorConfig::MAX_MEASUREMENTS) {
-      logger.warning(F("Sensor"), F("Clamping activeMeasurements from ") +
-                                      String(config().activeMeasurements) + F(" to ") +
+      logger.warning(F("Sensor"), String(F("Clamping activeMeasurements from ")) +
+                                      String(config().activeMeasurements) + String(F(" to ")) +
                                       String(SensorConfig::MAX_MEASUREMENTS));
       // Note: We can't modify the config directly anymore, but this is just a
       // warning
     }
     if (m_lastMeasurementData->activeValues > SensorConfig::MAX_MEASUREMENTS) {
-      logger.warning(F("Sensor"), F("Clamping activeValues from ") +
-                                      String(m_lastMeasurementData->activeValues) + F(" to ") +
-                                      String(SensorConfig::MAX_MEASUREMENTS));
+      logger.warning(F("Sensor"), String(F("Clamping activeValues from ")) +
+                                      String(m_lastMeasurementData->activeValues) +
+                                      String(F(" to ")) + String(SensorConfig::MAX_MEASUREMENTS));
       m_lastMeasurementData->activeValues = SensorConfig::MAX_MEASUREMENTS;
     }
     size_t maxFields = SensorConfig::MAX_MEASUREMENTS;
@@ -427,7 +429,7 @@ SensorResult Sensor::performMeasurementCycle() {
   }
 
   if (ESP.getFreeHeap() < 2048) { // Ensure we have at least 2KB free
-    logger.error(getName(), F(": Insufficient memory for measurement cycle. Free heap: ") +
+    logger.error(getName(), String(F(": Insufficient memory for measurement cycle. Free heap: ")) +
                                 String(ESP.getFreeHeap()));
     return SensorResult::fail(SensorError::MEMORY_ERROR, F("Insufficient memory"));
   }
@@ -448,7 +450,7 @@ SensorResult Sensor::performMeasurementCycle() {
         m_state.samples[i].reserve(NUM_SAMPLES);
       }
     } catch (const std::exception& e) {
-      logger.error(getName(), F(": Failed to resize samples vector: ") + String(e.what()));
+      logger.error(getName(), String(F(": Failed to resize samples vector: ")) + String(e.what()));
       m_state.readInProgress = false;
       return SensorResult::fail(SensorError::MEMORY_ERROR,
                                 F("Failed to allocate measurement memory"));

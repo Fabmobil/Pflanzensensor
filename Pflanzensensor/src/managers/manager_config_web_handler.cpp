@@ -10,7 +10,7 @@
 
 ConfigWebHandler::ConfigWebHandler(ConfigManager& configManager) : m_configManager(configManager) {}
 
-ConfigWebHandler::WebResult ConfigWebHandler::updateFromWebRequest(ESP8266WebServer& server) {
+ConfigWebHandler::WebResult ConfigWebHandler::updateFromWebRequest(ESPWebServer& server) {
   bool configChanged = false;
 
   // Process boolean settings
@@ -27,7 +27,7 @@ ConfigWebHandler::WebResult ConfigWebHandler::updateFromWebRequest(ESP8266WebSer
   return WebResult::success();
 }
 
-ConfigWebHandler::WebResult ConfigWebHandler::processBooleanSettings(ESP8266WebServer& server,
+ConfigWebHandler::WebResult ConfigWebHandler::processBooleanSettings(ESPWebServer& server,
                                                                      bool& configChanged) {
   // Get current configuration data
   bool currentMD5 = m_configManager.isMD5Verification();

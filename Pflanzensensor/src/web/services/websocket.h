@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include <ESP8266WebServer.h>
+#include "utils/platform_compat.h"
 #include <WebSocketsServer.h>
 
 #include <functional>

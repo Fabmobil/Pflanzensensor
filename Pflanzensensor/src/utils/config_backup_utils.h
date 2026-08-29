@@ -25,7 +25,8 @@ inline bool backupConfigFiles() {
 
   auto result = FlashPersistence::saveAllToFlash();
   if (!result.isSuccess()) {
-    logger.error(F("ConfigBackup"), F("Flash-Backup fehlgeschlagen: ") + result.getMessage());
+    logger.error(F("ConfigBackup"),
+                 String(F("Flash-Backup fehlgeschlagen: ")) + result.getMessage());
     return false;
   }
 
@@ -46,7 +47,8 @@ inline bool restoreConfigFiles() {
 
   auto result = FlashPersistence::restoreAllFromFlash();
   if (!result.isSuccess()) {
-    logger.error(F("ConfigRestore"), F("Flash-Restore fehlgeschlagen: ") + result.getMessage());
+    logger.error(F("ConfigRestore"),
+                 String(F("Flash-Restore fehlgeschlagen: ")) + result.getMessage());
     return false;
   }
 

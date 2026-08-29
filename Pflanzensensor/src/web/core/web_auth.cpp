@@ -11,7 +11,7 @@
 
 #include "logger/logger.h"
 
-WebAuth::WebAuth(ESP8266WebServer& server) : _server(server) {
+WebAuth::WebAuth(ESPWebServer& server) : _server(server) {
   logger.debug(F("WebAuth"), F("Initialisiere WebAuth"));
 }
 

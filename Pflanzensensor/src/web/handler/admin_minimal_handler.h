@@ -34,7 +34,7 @@ public:
    *          - Configures authentication
    *          - Initializes logging
    */
-  AdminMinimalHandler(ESP8266WebServer& server, WebAuth& auth) : BaseHandler(server), _auth(auth) {
+  AdminMinimalHandler(ESPWebServer& server, WebAuth& auth) : BaseHandler(server), _auth(auth) {
     logger.debug(F("AdminMinimalHandler"), F("Initialisiere AdminMinimalHandler"));
   }
 

@@ -3,6 +3,8 @@
  * @brief WebManager route setup and configuration
  */
 
+#include <LittleFS.h>
+
 #include "configs/config.h"
 #include "logger/logger.h"
 #include "web/core/web_manager.h"
@@ -88,8 +90,8 @@ void WebManager::setupRoutes() {
   auto updateResult =
       _router->addRoute(HTTP_POST, "/admin/config/update", [this]() { handleSetUpdate(); });
   if (!updateResult.isSuccess()) {
-    logger.error(F("WebManager"),
-                 F("Registrieren der Update-Route fehlgeschlagen: ") + updateResult.getMessage());
+    logger.error(F("WebManager"), String(F("Registrieren der Update-Route fehlgeschlagen: ")) +
+                                      updateResult.getMessage());
   }
 
   // Add config value update route - used frequently
@@ -101,7 +103,7 @@ void WebManager::setupRoutes() {
     auto result = _otaHandler->registerRoutes(*_router);
     if (!result.isSuccess()) {
       logger.error(F("WebManager"),
-                   F("Registrieren der OTA-Routen fehlgeschlagen: ") + result.getMessage());
+                   String(F("Registrieren der OTA-Routen fehlgeschlagen: ")) + result.getMessage());
     } else {
       logger.info(F("WebManager"), F("OTA-Routen erfolgreich registriert"));
     }
@@ -119,9 +121,21 @@ void WebManager::setupRoutes() {
     }
 
     // No route found even after middleware
-    logger.warning(F("WebManager"), F("404: Nicht gefunden: ") + uri);
+    logger.warning(F("WebManager"), String(F("404: Nicht gefunden: ")) + uri);
     _server->send(404, "text/plain", "404: Not Found");
   });
+
+#if USE_PROMETHEUS_METRICS
+  // Register /metrics endpoint for Prometheus
+  _server->on(PROMETHEUS_METRICS_PATH, HTTP_GET, [this]() {
+    if (_metricsHandler && _metricsHandler->isEnabled()) {
+      _server->send(200, "text/plain; charset=utf-8", _metricsHandler->handleMetrics());
+    } else {
+      _server->send(503, "text/plain", "Prometheus metrics not available");
+    }
+  });
+  logger.debug(F("WebManager"), F("Prometheus /metrics-Route registriert"));
+#endif
 
   logger.info(F("WebManager"),
               F("Essenzielle Routen registriert - Handler werden bei Bedarf geladen"));
@@ -144,7 +158,7 @@ void WebManager::setupMinimalRoutes() {
   auto result = _otaHandler->registerRoutes(*_router);
   if (!result.isSuccess()) {
     logger.error(F("WebManager"),
-                 F("Registrieren der OTA-Routen fehlgeschlagen: ") + result.getMessage());
+                 String(F("Registrieren der OTA-Routen fehlgeschlagen: ")) + result.getMessage());
     return;
   }
   logger.info(F("WebManager"), F("OTA-Routen erfolgreich registriert"));
@@ -154,7 +168,7 @@ void WebManager::setupMinimalRoutes() {
       _router->addRoute(HTTP_POST, "/admin/config/update", [this]() { handleSetUpdate(); });
   if (!rebootResult.isSuccess()) {
     logger.error(F("WebManager"),
-                 F("Registrieren der /admin/config/update-Route fehlgeschlagen: ") +
+                 String(F("Registrieren der /admin/config/update-Route fehlgeschlagen: ")) +
                      result.getMessage());
     return;
   }
@@ -165,21 +179,21 @@ void WebManager::setupMinimalRoutes() {
     HTTPMethod method = _server->method();
 
     // Debug: Log every request that hits onNotFound
-    logger.debug(F("WebManager"), F("onNotFound aufgerufen für: ") +
+    logger.debug(F("WebManager"), String(F("onNotFound aufgerufen für: ")) +
                                       String(method == HTTP_GET    ? F("GET")
                                              : method == HTTP_POST ? F("POST")
                                                                    : F("OTHER")) +
-                                      F(" ") + uri);
+                                      String(F(" ")) + uri);
 
     // Let router handle the request
     if (_router && _router->handleRequest(method, uri)) {
       // Request was handled by router
-      logger.debug(F("WebManager"), F("Router hat Request behandelt: ") + uri);
+      logger.debug(F("WebManager"), String(F("Router hat Request behandelt: ")) + uri);
       return;
     }
 
     // No route found
-    logger.warning(F("WebManager"), F("404: Nicht gefunden: ") + uri);
+    logger.warning(F("WebManager"), String(F("404: Nicht gefunden: ")) + uri);
     _server->send(404, "text/plain", "404: Not Found");
   });
 
@@ -197,6 +211,7 @@ void WebManager::removeRoute(const String& path, HTTPMethod method) {
   if (_router) {
     // Implementation depends on your WebRouter class
     // This is a placeholder
-    logger.debug(F("WebManager"), F("Entferne Route: ") + methodToString(method) + " " + path);
+    logger.debug(F("WebManager"),
+                 String(F("Entferne Route: ")) + methodToString(method) + " " + path);
   }
 }

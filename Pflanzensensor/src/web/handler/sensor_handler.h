@@ -12,8 +12,8 @@
 #ifndef SENSOR_HANDLER_H
 #define SENSOR_HANDLER_H
 
+#include "utils/platform_compat.h"
 #include <Arduino.h>
-#include <ESP8266WebServer.h>
 
 #include <map>
 
@@ -51,7 +51,7 @@ public:
    *          - CSS management
    *          - Sensor management
    */
-  SensorHandler(ESP8266WebServer& server, WebAuth& auth, CSSService& cssService,
+  SensorHandler(ESPWebServer& server, WebAuth& auth, CSSService& cssService,
                 SensorManager& sensorManager)
       : BaseHandler(server), _auth(auth), _cssService(cssService), _sensorManager(sensorManager) {
     logger.debug(F("SensorHandler"), F("Initialisiere SensorHandler"));

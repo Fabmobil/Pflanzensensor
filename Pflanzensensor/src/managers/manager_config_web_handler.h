@@ -6,7 +6,7 @@
 #ifndef MANAGER_CONFIG_WEB_HANDLER_H
 #define MANAGER_CONFIG_WEB_HANDLER_H
 
-#include <ESP8266WebServer.h>
+#include "../utils/platform_compat.h"
 
 #include "../utils/result_types.h"
 #include "manager_config_types.h"
@@ -28,7 +28,7 @@ public:
    * @param server Reference to the ESP8266 web server
    * @return WebResult indicating success or failure
    */
-  WebResult updateFromWebRequest(ESP8266WebServer& server);
+  WebResult updateFromWebRequest(ESPWebServer& server);
 
 private:
   /**
@@ -37,7 +37,7 @@ private:
    * @param configChanged Reference to boolean indicating if config changed
    * @return WebResult indicating success or failure
    */
-  WebResult processBooleanSettings(ESP8266WebServer& server, bool& configChanged);
+  WebResult processBooleanSettings(ESPWebServer& server, bool& configChanged);
 
 private:
   ConfigManager& m_configManager;

@@ -149,7 +149,7 @@ private:
     if (!m_activeSensor)
       return;
 
-    logger.error(F("SensorQueue"), m_activeSensor->getName() + F(": ") + message);
+    logger.error(F("SensorQueue"), m_activeSensor->getName() + String(F(": ")) + message);
 
     auto& timing = m_timings[m_activeSensor];
     timing.errorCount++;

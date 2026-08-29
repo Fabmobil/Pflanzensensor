@@ -216,4 +216,22 @@ extern std::unique_ptr<DisplayManager> displayManager;
 
 #endif // USE_DISPLAY
 
+#if !USE_DISPLAY
+// Stub-Klasse wenn Display deaktiviert (USE_DISPLAY=false).
+// Inline No-Ops — keine separate .cpp nötig.
+// Aufrufer müssen displayManager auf nullptr prüfen.
+class DisplayManager {
+public:
+  void updateLogStatus(const String&, bool = false) {}
+  void showLogScreen(const String&, bool = false) {}
+  void endUpdateMode() {}
+  void reloadConfig() {}
+  bool isIpScreenEnabled() const { return false; }
+  bool isClockEnabled() const { return false; }
+  bool isFlowerImageEnabled() const { return false; }
+  unsigned long getScreenDuration() const { return 5000; }
+  String getClockFormat() const { return "24h"; }
+};
+extern std::unique_ptr<DisplayManager> displayManager;
+#endif // !USE_DISPLAY
 #endif // manager_display_H

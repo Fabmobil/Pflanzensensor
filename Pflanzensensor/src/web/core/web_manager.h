@@ -10,8 +10,8 @@
 #ifndef WEB_MANAGER_H
 #define WEB_MANAGER_H
 
+#include "utils/platform_compat.h"
 #include <ArduinoJson.h>
-#include <ESP8266WebServer.h>
 
 #include <memory>
 #include <vector>
@@ -27,6 +27,7 @@
 #include "web/handler/log_handler.h"
 #include "web/handler/sensor_handler.h"
 #include "web/handler/startpage_handler.h"
+#include "web/handler/web_metrics_handler.h"
 #include "web/handler/web_ota_handler.h"
 #include "web/services/css_service.h"
 
@@ -63,7 +64,14 @@ public:
    * @brief Set sensor manager reference
    * @param sensorManager Reference to sensor manager instance
    */
-  void setSensorManager(SensorManager& sensorManager) { _sensorManager = &sensorManager; }
+  void setSensorManager(SensorManager& sensorManager) {
+    _sensorManager = &sensorManager;
+#if USE_PROMETHEUS_METRICS
+    if (_metricsHandler) {
+      _metricsHandler->setSensorManager(sensorManager);
+    }
+#endif
+  }
 
   /**
    * @brief Get sensor manager reference
@@ -107,13 +115,13 @@ public:
 
   /**
    * @brief Get reference to underlying web server
-   * @return Reference to ESP8266WebServer instance
+   * @return Reference to ESPWebServer instance
    * @note Direct server access should be used with caution
    * @details Provides access to the underlying web server instance.
    *          Should be used carefully to avoid bypassing WebManager's
    *          security and routing mechanisms.
    */
-  ESP8266WebServer& getServer() { return *_server; }
+  ESPWebServer& getServer() { return *_server; }
 
   /**
    * @brief Check if a route exists for given path and method
@@ -409,12 +417,13 @@ private:
   static char s_responseBuffer[BUFFER_SIZE]; ///< Static response buffer
 
   bool m_handlersInitialized{false};                         ///< Handler initialization flag
-  std::unique_ptr<ESP8266WebServer> _server;                 ///< Web server instance
+  std::unique_ptr<ESPWebServer> _server;                     ///< Web server instance
   std::unique_ptr<WebRouter> _router;                        ///< URL router
   std::unique_ptr<WebAuth> _auth;                            ///< Authentication service
   std::unique_ptr<CSSService> _cssService;                   ///< CSS management service
   std::unique_ptr<WebOTAHandler> _otaHandler;                ///< OTA update handler
   std::unique_ptr<AdminMinimalHandler> _minimalAdminHandler; ///< Minimal admin interface
+  std::unique_ptr<WebMetricsHandler> _metricsHandler;        ///< Prometheus metrics handler
   SensorManager* _sensorManager;                             ///< Sensor management
 
   // Note: All request handlers are now managed via LRU cache (m_handlerCache)

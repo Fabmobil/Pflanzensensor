@@ -107,7 +107,7 @@ void StartpageHandler::generateAndSendSensorGrid() {
 
       if (!hasValidData) {
         logger.debug(F("StartpageHandler"),
-                     F("Skipping sensor with no data: ") + sensor->getName());
+                     String(F("Skipping sensor with no data: ")) + sensor->getName());
         continue;
       }
 

@@ -63,7 +63,7 @@ void AdminHandler::handleUploadConfig() {
 
   if (upload.status == UPLOAD_FILE_START) {
     String filename = upload.filename;
-    logger.info(F("AdminHandler"), F("Config-Upload gestartet: ") + filename);
+    logger.info(F("AdminHandler"), String(F("Config-Upload gestartet: ")) + filename);
 
     // Remove old upload file and flags if they exist
     LittleFS.remove("/prefs_upload.json");
@@ -100,7 +100,7 @@ void AdminHandler::handleUploadConfig() {
     }
   } else if (upload.status == UPLOAD_FILE_END) {
     logger.info(F("AdminHandler"),
-                F("Upload abgeschlossen: ") + String(upload.totalSize) + F(" bytes"));
+                String(F("Upload abgeschlossen: ")) + String(upload.totalSize) + F(" bytes"));
 
     // Check if file exists
     if (!LittleFS.exists("/prefs_upload.json")) {
@@ -141,22 +141,22 @@ void AdminHandler::handleUploadConfigRestore() {
   if (!uploadFile) {
     logger.error(F("AdminHandler"), F("Konnte Upload-Datei nicht öffnen"));
     LittleFS.remove("/prefs_upload.json");
-    delay(1000);
+    // Kein delay - ESP.restart() erfolgt sofort
     ESP.restart();
     return;
   }
 
   size_t fileSize = uploadFile.size();
-  logger.info(F("AdminHandler"), F("Verarbeite Datei: ") + String(fileSize) + F(" bytes"));
+  logger.info(F("AdminHandler"), String(F("Verarbeite Datei: ")) + String(fileSize) + F(" bytes"));
 
-  DynamicJsonDocument doc(8192);
+  DynamicJsonDocument doc(2048);
   DeserializationError error = deserializeJson(doc, uploadFile);
   uploadFile.close();
 
   if (error) {
-    logger.error(F("AdminHandler"), F("Ungültige JSON-Datei: ") + String(error.c_str()));
+    logger.error(F("AdminHandler"), String(F("Ungültige JSON-Datei: ")) + String(error.c_str()));
     LittleFS.remove("/prefs_upload.json");
-    delay(1000);
+    // Kein delay - ESP.restart() erfolgt sofort
     ESP.restart();
     return;
   }

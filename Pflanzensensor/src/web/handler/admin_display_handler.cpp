@@ -19,7 +19,7 @@ extern std::unique_ptr<DisplayManager> displayManager;
 
 AdminDisplayHandler::~AdminDisplayHandler() = default;
 
-AdminDisplayHandler::AdminDisplayHandler(ESP8266WebServer& server) : BaseHandler(server) {
+AdminDisplayHandler::AdminDisplayHandler(ESPWebServer& server) : BaseHandler(server) {
   logger.debug(F("AdminDisplayHandler"), F("Initialisiere AdminDisplayHandler"));
 }
 
@@ -221,7 +221,7 @@ void AdminDisplayHandler::handleMeasurementDisplayToggle() {
     // rotation logic can read it.
     if (_server.hasArg("measurement_index")) {
       int index = _server.arg("measurement_index").toInt();
-      if (index < 0) {
+      if (index < 0 || static_cast<size_t>(index) >= sensor->config().activeMeasurements) {
         sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messungsindex\"}"));
         return;
       }

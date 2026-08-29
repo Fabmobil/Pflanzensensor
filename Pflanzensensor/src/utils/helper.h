@@ -44,14 +44,14 @@ public:
       auto result = initFunc();
       if (!result.isSuccess()) {
         logger.error(F("main"), String(F("Fehler beim Initialisieren von ")) + componentName +
-                                    F(": ") + result.getMessage());
+                                    String(F(": ")) + result.getMessage());
         return false;
       }
       logger.debug(F("main"), String(componentName) + F(" erfolgreich initialisiert"));
       return true;
     } catch (const std::exception& e) {
       logger.error(F("main"), String(F("Ausnahme während der Initialisierung von ")) +
-                                  componentName + F(": ") + String(e.what()));
+                                  componentName + String(F(": ")) + String(e.what()));
       return false;
     } catch (...) {
       logger.error(F("main"), String(F("Unbekannte Ausnahme während der Initialisierung von ")) +

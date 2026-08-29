@@ -12,7 +12,7 @@
 #ifndef WEB_ROUTER_H
 #define WEB_ROUTER_H
 
-#include <ESP8266WebServer.h>
+#include "utils/platform_compat.h"
 
 #include <functional>
 #include <memory>
@@ -80,11 +80,11 @@ public:
 
   /**
    * @brief Constructor
-   * @param server Reference to ESP8266WebServer instance
+   * @param server Reference to ESPWebServer instance
    * @details Initializes router with server reference and
    *          prepares internal data structures
    */
-  explicit WebRouter(ESP8266WebServer& server);
+  explicit WebRouter(ESPWebServer& server);
 
   /**
    * @brief Convert HTTP method to string representation
@@ -134,7 +134,7 @@ public:
    * @details Removes a previously registered route:
    *          - Finds matching route in collection
    *          - Removes from internal routes vector
-   *          - Note: Cannot unregister from ESP8266WebServer (limitation)
+   *          - Note: Cannot unregister from ESPWebServer (limitation)
    */
   RouterResult removeRoute(HTTPMethod method, const String& url);
 
@@ -215,7 +215,12 @@ public:
    *          - Ensures system stability
    */
   bool isHealthy() const {
+#ifdef ESP32
+    // ESP32 doesn't have getHeapFragmentation - just check free heap
+    return ESP.getFreeHeap() >= MIN_FREE_HEAP;
+#else
     return ESP.getFreeHeap() >= MIN_FREE_HEAP && ESP.getHeapFragmentation() < 70;
+#endif
   }
 
   /**
@@ -234,13 +239,13 @@ public:
    *          - Memory status
    */
   void logRouteStats() const {
-    logger.info(F("WebRouter"), F("Routen: ") + String(_routes.size()) + F("/") +
-                                    String(MAX_ROUTES) + F(" (") +
-                                    String((_routes.size() * 100) / MAX_ROUTES) + F("%)"));
+    logger.info(F("WebRouter"), String(F("Routen: ")) + String(_routes.size()) + String(F("/")) +
+                                    String(MAX_ROUTES) + String(F(" (")) +
+                                    String((_routes.size() * 100) / MAX_ROUTES) + String(F("%)")));
   }
 
 private:
-  ESP8266WebServer& _server;                   ///< Reference to web server
+  ESPWebServer& _server;                       ///< Reference to web server
   std::vector<Route> _routes;                  ///< Collection of registered routes
   std::vector<MiddlewareCallback> _middleware; ///< Registered middleware functions
   String _currentHandlerType; ///< Current handler type context for route registration

@@ -46,8 +46,8 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
                 F("Keine Konfiguration gefunden, initialisiere mit Standardwerten..."));
     auto initResult = PreferencesManager::initializeAllNamespaces();
     if (!initResult.isSuccess()) {
-      logger.error(F("ConfigP"),
-                   F("Fehler beim Initialisieren der Preferences: ") + initResult.getMessage());
+      logger.error(F("ConfigP"), String(F("Fehler beim Initialisieren der Preferences: ")) +
+                                     initResult.getMessage());
       auto result = resetToDefaults(config);
       logger.logMemoryStats(F("ConfigP_load_after"));
       return result;
@@ -107,6 +107,8 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
     config.ledTrafficLightMode = PreferencesManager::getUChar(ledPrefs, "mode", 0);
     config.ledTrafficLightSelectedMeasurement =
         PreferencesManager::getString(ledPrefs, "sel_meas", "");
+    config.ledTrafficLightOnlyRed =
+        PreferencesManager::getBool(ledPrefs, "only_red", LED_TRAFFIC_LIGHT_ONLY_RED);
     ledPrefs.end();
   }
 
@@ -132,13 +134,39 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(ConfigDa
   auto clearResult = PreferencesManager::clearAll();
   if (!clearResult.isSuccess()) {
     logger.warning(F("ConfigP"),
-                   F("Fehler beim Löschen der Preferences: ") + clearResult.getMessage());
+                   String(F("Fehler beim Löschen der Preferences: ")) + clearResult.getMessage());
   }
 
   // Also remove per-measurement JSON files stored under /config
   // These files are named like: /config/sensor_<ID>_<index>.json
   logger.info(F("ConfigP"), F("Lsche Messungs-JSON-Dateien in /config (falls vorhanden)..."));
   {
+#ifdef ESP32
+    File root = LittleFS.open("/config");
+    if (root && root.isDirectory()) {
+      File file = root.openNextFile();
+      while (file) {
+        String filename = String(file.name());
+        int lastSlash = filename.lastIndexOf('/');
+        if (lastSlash >= 0) {
+          filename = filename.substring(lastSlash + 1);
+        }
+        if (filename.startsWith("sensor_") && filename.endsWith(".json")) {
+          String path = String("/config/") + filename;
+          file.close();
+          if (LittleFS.remove(path)) {
+            logger.info(F("ConfigP"), String(F("Gelöscht: ")) + path);
+          } else {
+            logger.warning(F("ConfigP"), String(F("Konnte Datei nicht löschen: ")) + path);
+          }
+        } else {
+          file.close();
+        }
+        file = root.openNextFile();
+      }
+      root.close();
+    }
+#else
     Dir dir = LittleFS.openDir("/config");
     while (dir.next()) {
       String filename = dir.fileName();
@@ -151,6 +179,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(ConfigDa
         }
       }
     }
+#endif
   }
 
   logger.info(F("ConfigP"), F("Factory Reset abgeschlossen"));
@@ -233,6 +262,11 @@ ConfigPersistence::PersistenceResult ConfigPersistence::save(const ConfigData& c
   if (!result.isSuccess())
     return result;
 
+  result = PreferencesManager::updateBoolValue(PreferencesNamespaces::LED_TRAFFIC, "only_red",
+                                               config.ledTrafficLightOnlyRed);
+  if (!result.isSuccess())
+    return result;
+
   // Save flower status sensor using atomic update
   result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "flower_sens",
                                                  config.flowerStatusSensor);
@@ -268,7 +302,7 @@ bool ConfigPersistence::backupPreferencesToFile() {
   logger.info(F("ConfigP"), F("Sichere Preferences in Datei..."));
 
   // Create JSON document for backup (allocate enough space)
-  DynamicJsonDocument doc(8192);
+  DynamicJsonDocument doc(2048);
   Preferences prefs;
 
   // Backup general namespace
@@ -341,6 +375,7 @@ bool ConfigPersistence::backupPreferencesToFile() {
     JsonObject led = doc.createNestedObject("led_traffic");
     led["mode"] = prefs.getUChar("mode", 0);
     led["sel_meas"] = prefs.getString("sel_meas", "");
+    led["only_red"] = prefs.getBool("only_red", false);
     prefs.end();
   }
 
@@ -357,7 +392,8 @@ bool ConfigPersistence::backupPreferencesToFile() {
     bool isAnalog = (String(sensorId) == "ANALOG");
     uint8_t maxMeas = isAnalog ? 8 : 2;
 
-    // Get measurement interval from sensor (only once per sensor, not per measurement)
+    // Get measurement interval from sensor (only once per sensor, not per
+    // measurement)
     unsigned long measurementInterval = MEASUREMENT_INTERVAL * 1000; // Default fallback
     if (sensorManager) {
       const auto& sensors_list = sensorManager->getSensors();
@@ -600,7 +636,8 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
     if (prefs.begin(PreferencesNamespaces::LOG, false)) {
       prefs.clear(); // Alte Daten löschen
       if (log.containsKey("level")) {
-        // Log level is stored as string (e.g., "DEBUG", "INFO", "WARNING", "ERROR")
+        // Log level is stored as string (e.g., "DEBUG", "INFO", "WARNING",
+        // "ERROR")
         String levelStr = log["level"].as<String>();
         prefs.putString("level", levelStr.c_str());
       }
@@ -625,6 +662,8 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
         prefs.putUChar("mode", led["mode"]);
       if (led.containsKey("sel_meas"))
         prefs.putString("sel_meas", led["sel_meas"].as<String>().c_str());
+      if (led.containsKey("only_red"))
+        prefs.putBool("only_red", led["only_red"].as<bool>());
       prefs.putBool("initialized", true);
       prefs.end();
     }
@@ -643,7 +682,8 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
     // Track measurement intervals per sensor
     std::map<String, unsigned long> sensorIntervals;
 
-    // NEW STRUCTURE: sensors array contains sensor groups with measurements sub-array
+    // NEW STRUCTURE: sensors array contains sensor groups with measurements
+    // sub-array
     for (JsonObjectConst sensorGroup : sensors) {
       String sensorId = sensorGroup["id"] | "";
 
@@ -653,7 +693,8 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
         sensorIntervals[sensorId] = interval;
       }
 
-      // Check if new structure (with measurements array) or old structure (backward compatibility)
+      // Check if new structure (with measurements array) or old structure
+      // (backward compatibility)
       if (sensorGroup.containsKey("measurements")) {
         // NEW STRUCTURE: iterate over measurements array
         JsonArrayConst measurements = sensorGroup["measurements"].as<JsonArrayConst>();
@@ -704,14 +745,16 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
           // Schreibe Messung in JSON-Datei
           auto result = SensorPersistence::saveMeasurementToJson(sensorId, idx, config);
           if (!result.isSuccess()) {
-            logger.warning(F("ConfigP"), F("Fehler beim Wiederherstellen von ") + sensorId +
-                                             F("[") + String(idx) + F("]: ") + result.getMessage());
+            logger.warning(F("ConfigP"), String(F("Fehler beim Wiederherstellen von ")) + sensorId +
+                                             String(F("[")) + String(idx) + String(F("]: ")) +
+                                             result.getMessage());
           }
 
           yield(); // Watchdog reset
         }
       } else {
-        // OLD STRUCTURE (backward compatibility): sensor group IS the measurement
+        // OLD STRUCTURE (backward compatibility): sensor group IS the
+        // measurement
         size_t idx = sensorGroup["idx"] | 0;
 
         MeasurementConfig config;
@@ -759,8 +802,9 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
         // Schreibe Messung in JSON-Datei
         auto result = SensorPersistence::saveMeasurementToJson(sensorId, idx, config);
         if (!result.isSuccess()) {
-          logger.warning(F("ConfigP"), F("Fehler beim Wiederherstellen von ") + sensorId + F("[") +
-                                           String(idx) + F("]: ") + result.getMessage());
+          logger.warning(F("ConfigP"), String(F("Fehler beim Wiederherstellen von ")) + sensorId +
+                                           String(F("[")) + String(idx) + String(F("]: ")) +
+                                           result.getMessage());
         }
 
         yield(); // Watchdog reset
@@ -772,7 +816,7 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
     if (sensorManager && !sensorIntervals.empty()) {
       // Load settings.json to update intervals persistently
       const char* settingsPath = "/config/settings.json";
-      DynamicJsonDocument settingsDoc(4096);
+      DynamicJsonDocument settingsDoc(512);
 
       {
         File settingsFile = LittleFS.open(settingsPath, "r");
@@ -800,8 +844,8 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
         for (const auto& sensorPtr : sensors_list) {
           if (sensorPtr && sensorPtr->config().id == sensorId) {
             sensorPtr->mutableConfig().measurementInterval = interval;
-            logger.debug(F("ConfigP"), String(F("Messintervall für ")) + sensorId + F(" auf ") +
-                                           String(interval) + F("ms gesetzt"));
+            logger.debug(F("ConfigP"), String(F("Messintervall für ")) + sensorId +
+                                           String(F(" auf ")) + String(interval) + F("ms gesetzt"));
             break;
           }
         }

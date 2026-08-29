@@ -779,6 +779,11 @@ ThresholdSlider.prototype.clamp = function (val, idx) {
 // THRESHOLD SLIDER INITIALIZER
 // ------------------------------
 var ThresholdSliderInitializer = (function () {
+  function pickThresholdValue(primary, fallback) {
+    if (typeof primary !== 'undefined' && primary !== null) return primary;
+    return fallback;
+  }
+
   function initialize(sensorConfigData) {
     if (!sensorConfigData || !sensorConfigData.sensors) { Logger.warn('No sensors found in config'); return; }
     var sensors = sensorConfigData.sensors;
@@ -794,7 +799,12 @@ var ThresholdSliderInitializer = (function () {
     var range = calculateRange(sensor, meas, index);
     var min = range.min, max = range.max;
     var threshObj = (meas.thresh && typeof meas.thresh === 'object') ? meas.thresh : meas.thresholds || {};
-    var thresholds = [threshObj.yl || threshObj.yellowLow, threshObj.gl || threshObj.greenLow, threshObj.gh || threshObj.greenHigh, threshObj.yh || threshObj.yellowHigh];
+    var thresholds = [
+      pickThresholdValue(threshObj.yl, threshObj.yellowLow),
+      pickThresholdValue(threshObj.gl, threshObj.greenLow),
+      pickThresholdValue(threshObj.gh, threshObj.greenHigh),
+      pickThresholdValue(threshObj.yh, threshObj.yellowHigh)
+    ];
     var inputNames = ['yellowLow', 'greenLow', 'greenHigh', 'yellowHigh'];
     var inputRefs = inputNames.map(function (th) { return document.querySelector("input[name='" + sensor.id + '_' + index + '_' + th + "']"); });
     var container = document.getElementById('threshold_' + sensor.id + '_' + index);
@@ -820,7 +830,12 @@ var ThresholdSliderInitializer = (function () {
     var id = (sensor.id + '_' + index).toLowerCase();
     var unit = ((meas.un || meas.unit) || '').toLowerCase();
     var threshObj = (meas.thresh && typeof meas.thresh === 'object') ? meas.thresh : meas.thresholds || {};
-    var thresholds = [threshObj.yl || threshObj.yellowLow, threshObj.gl || threshObj.greenLow, threshObj.gh || threshObj.greenHigh, threshObj.yh || threshObj.yellowHigh];
+    var thresholds = [
+      pickThresholdValue(threshObj.yl, threshObj.yellowLow),
+      pickThresholdValue(threshObj.gl, threshObj.greenLow),
+      pickThresholdValue(threshObj.gh, threshObj.greenHigh),
+      pickThresholdValue(threshObj.yh, threshObj.yellowHigh)
+    ];
     var minThreshold = Math.min.apply(null, thresholds); var maxThreshold = Math.max.apply(null, thresholds); var thresholdRange = maxThreshold - minThreshold;
     var min, max;
     var isAnalog = (sensor.id && sensor.id.toLowerCase().indexOf('analog') === 0);

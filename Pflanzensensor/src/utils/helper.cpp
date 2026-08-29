@@ -4,6 +4,7 @@
 #include <LittleFS.h>
 
 #include "logger/logger.h"
+#include "main_wifi.h"
 #include "utils/critical_section.h"
 
 // Forward declaration for the static helper in wifi.cpp
@@ -105,33 +106,24 @@ ResourceResult Helper::incrementRebootCount() {
 
   file.println(count);
   file.close();
-  logger.debug(F("Helper"), F("Neustartzähler erhöht auf: ") + String(count));
+  logger.debug(F("Helper"), String(F("Neustartzähler erhöht auf: ")) + String(count));
   return ResourceResult::success();
 }
 
 ResourceResult Helper::initializeUpgradeMode() {
-  WiFi.mode(WIFI_STA);
-  if (!tryAllWiFiCredentials()) {
-    return ResourceResult::fail(
-        ResourceError::WIFI_ERROR,
-        F("Verbindung mit WLAN im Upgrade-Modus fehlgeschlagen (alle Credentials)"));
-  }
-  logger.info(F("Helper"), F("WLAN im Upgrade-Modus verbunden"));
-  logger.info(F("Helper"), F("IP: ") + WiFi.localIP().toString());
+  logger.info(F("Helper"), F("Upgrade-Modus: WiFi-Initialisierung"));
 
-  // Initialize time synchronization
-  logger.info(F("Helper"), F("Initialisiere NTP im Minimalmodus..."));
-  logger.initNTP();
-  // Wait for time sync
-  int retries = 0;
-  while (retries < 10) {
-    if (logger.getSynchronizedTime() > 24 * 3600) { // Time is after Jan 1, 1970
-      break;
-    }
-    delay(1000);
-    logger.updateNTP();
-    retries++;
+  // Use consolidated WiFi+NTP setup (includes NTP synchronization)
+  auto wifiResult = setupWiFiWithDisplay(false);
+  if (!wifiResult.isSuccess()) {
+    logger.error(F("Helper"),
+                 String(F("WiFi-Initialisierung fehlgeschlagen: ")) + wifiResult.getMessage());
+    return ResourceResult::fail(ResourceError::WIFI_ERROR, wifiResult.getMessage());
   }
+
+  logger.info(F("Helper"), F("WLAN im Upgrade-Modus verbunden"));
+  logger.info(F("Helper"), String(F("IP: ")) + WiFi.localIP().toString());
+
   if (!WebManager::getInstance().beginUpdateMode()) {
     return ResourceResult::fail(ResourceError::OPERATION_FAILED,
                                 F("Starten des WebManagers im Update-Modus fehlgeschlagen"));

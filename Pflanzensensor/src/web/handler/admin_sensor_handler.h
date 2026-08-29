@@ -32,7 +32,7 @@ public:
    * @param cssService Reference to CSS management service
    * @param sensorManager Reference to sensor management service
    */
-  AdminSensorHandler(ESP8266WebServer& server, WebAuth& auth, CSSService& cssService,
+  AdminSensorHandler(ESPWebServer& server, WebAuth& auth, CSSService& cssService,
                      SensorManager& sensorManager)
       : BaseHandler(server), _auth(auth), _cssService(cssService), _sensorManager(sensorManager) {}
 
@@ -84,6 +84,20 @@ protected:
   WebAuth& _auth;                ///< Reference to authentication service
   CSSService& _cssService;       ///< Reference to CSS service
   SensorManager& _sensorManager; ///< Reference to sensor manager
+
+  /**
+   * @brief Validiert measurementIndex gegen die aktiven Messungen eines Sensors
+   * @param sensor Zeiger auf den Sensor
+   * @param measurementIndex Der zu prüfende Index
+   * @return true wenn gültig, false wenn ungültig (sendet automatisch 400-Fehler)
+   */
+  bool validateMeasurementIndex(Sensor* sensor, size_t measurementIndex) {
+    if (!sensor || measurementIndex >= sensor->config().activeMeasurements) {
+      sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messungsindex\"}"));
+      return false;
+    }
+    return true;
+  }
 
   // Threshold management
   void generateThresholdConfig(Sensor* sensor, size_t measurementIdx);

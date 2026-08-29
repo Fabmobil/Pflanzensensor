@@ -58,6 +58,7 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_1_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_1_YELLOW_HIGH;
         break;
+#if ANALOG_SENSOR_COUNT > 1
       case 1:
         measurements[i].name = ANALOG_2_NAME;
         measurements[i].fieldName = ANALOG_2_FIELD_NAME;
@@ -71,6 +72,8 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_2_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_2_YELLOW_HIGH;
         break;
+#endif
+#if ANALOG_SENSOR_COUNT > 2
       case 2:
         measurements[i].name = ANALOG_3_NAME;
         measurements[i].fieldName = ANALOG_3_FIELD_NAME;
@@ -84,6 +87,8 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_3_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_3_YELLOW_HIGH;
         break;
+#endif
+#if ANALOG_SENSOR_COUNT > 3
       case 3:
         measurements[i].name = ANALOG_4_NAME;
         measurements[i].fieldName = ANALOG_4_FIELD_NAME;
@@ -97,6 +102,8 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_4_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_4_YELLOW_HIGH;
         break;
+#endif
+#if ANALOG_SENSOR_COUNT > 4
       case 4:
         measurements[i].name = ANALOG_5_NAME;
         measurements[i].fieldName = ANALOG_5_FIELD_NAME;
@@ -110,6 +117,8 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_5_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_5_YELLOW_HIGH;
         break;
+#endif
+#if ANALOG_SENSOR_COUNT > 5
       case 5:
         measurements[i].name = ANALOG_6_NAME;
         measurements[i].fieldName = ANALOG_6_FIELD_NAME;
@@ -123,6 +132,8 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_6_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_6_YELLOW_HIGH;
         break;
+#endif
+#if ANALOG_SENSOR_COUNT > 6
       case 6:
         measurements[i].name = ANALOG_7_NAME;
         measurements[i].fieldName = ANALOG_7_FIELD_NAME;
@@ -136,6 +147,8 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_7_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_7_YELLOW_HIGH;
         break;
+#endif
+#if ANALOG_SENSOR_COUNT > 7
       case 7:
         measurements[i].name = ANALOG_8_NAME;
         measurements[i].fieldName = ANALOG_8_FIELD_NAME;
@@ -149,6 +162,7 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_8_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_8_YELLOW_HIGH;
         break;
+#endif
       default:
         measurements[i].name = "";
         measurements[i].fieldName = "";
@@ -238,7 +252,8 @@ public:
    * @override
    */
   SharedHardwareInfo getSharedHardwareInfo() const override {
-    return SharedHardwareInfo(SensorType::ANALOG, m_analogConfig.pin, m_analogConfig.minimumDelay);
+    return SharedHardwareInfo(SensorType::ANALOG_SENSOR, m_analogConfig.pin,
+                              m_analogConfig.minimumDelay);
   }
 
   /**

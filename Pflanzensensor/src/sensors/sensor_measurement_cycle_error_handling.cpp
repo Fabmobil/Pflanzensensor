@@ -1,125 +1,163 @@
+/**
+ * @file sensor_measurement_cycle_error_handling.cpp
+ * @brief Fehlerbehandlung für den Messzyklus
+ * @details Verwaltet Fehlerzustände, Wiederholungslogik und Sensor-Deaktivierung.
+ *
+ * Fehlerfluss:
+ *   1. handleStateError() wird aufgerufen → merkt sich vorherigen Zustand,
+ *      gibt ggf. Slot frei, setzt Zustand auf ERROR
+ *   2. Nächster updateMeasurementCycle()-Aufruf → handleError() behandelt
+ *      die Wiederholungslogik und ggf. Reinitialisierung
+ *
+ * WICHTIG: recordError() inkrementiert errorCount bereits.
+ *          handleError() darf errorCount NICHT erneut inkrementieren.
+ */
+
 #include "sensor_measurement_cycle.h"
 
+/**
+ * @brief Behandelt den ERROR-Zustand
+ * @details Entscheidet basierend auf Fehleranzahl über Wiederholung oder
+ *          Sensor-Deaktivierung. Gibt den Slot NICHT erneut frei — das
+ *          hat handleStateError() bereits erledigt.
+ *
+ * Fehlerbehandlung:
+ *   - Unter MEASUREMENT_ERROR_COUNT: Deinitialisierung + Wartezeit + erneuter Versuch
+ *   - Bei MEASUREMENT_ERROR_COUNT: Reinitialisierungsversuch
+ *   - Falls Reinitialisierung scheitert: Sensor deaktivieren (oder Neustart bei DS18B20)
+ */
 void SensorMeasurementCycleManager::handleError() {
-  if (m_lastState != MeasurementState::WAITING_FOR_DUE &&
-      m_lastState != MeasurementState::WAITING_FOR_SLOT) {
-    if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Releasing slot due to error"));
+  // Prüfen ob maximale Fehleranzahl erreicht
+  if (m_state.errorCount >= MEASUREMENT_ERROR_COUNT) {
+    logger.warning(F("MeasurementCycle"),
+                   m_sensor->getName() + String(F(": Maximale Fehleranzahl erreicht (")) +
+                       String(m_state.errorCount) + F("), versuche Reinitialisierung"));
+
+    // Sensor deinitialisieren falls nötig
+    if (m_sensor->isInitialized()) {
+      m_sensor->deinitialize();
     }
-    SensorManagerLimiter::getInstance().releaseSlot(m_sensor->getId());
-  }
 
-  // Only increment error count for sensor-related errors
-  if (m_lastState != MeasurementState::SENDING_INFLUX) {
-    m_state.errorCount++;
-    if (m_state.errorCount >= MEASUREMENT_ERROR_COUNT) {
-      // Try to reinitialize first
-      logger.warning(F("MeasurementCycle"),
-                     m_sensor->getName() + F(": Max errors reached, attempting reinitialization"));
-
-      if (m_sensor->isInitialized()) {
-        m_sensor->deinitialize();
+    // Reinitialisierungsversuch
+    if (m_sensor->init().isSuccess()) {
+      // Erfolg — Fehler zurücksetzen und weitermachen
+      if (m_sensor->config().hasPersistentError) {
+        logger.info(F("MeasurementCycle"),
+                    m_sensor->getName() +
+                        F(": Erfolgreich reinitialisiert nach persistentem Fehler"));
+        m_sensor->mutableConfig().hasPersistentError = false;
       }
-
-      if (!m_sensor->init()) {
-        // Reinitialization failed, mark sensor as having persistent error
-        logger.error(F("MeasurementCycle"),
-                     m_sensor->getName() +
-                         F(": Reinitialization failed, marking as persistently failed"));
-        m_sensor->mutableConfig().hasPersistentError = true;
-
-        // New: Check if this is a DS18B20 sensor and trigger reboot
-        if (m_sensor->getSharedHardwareInfo().type == SensorType::DS18B20) {
-          logger.error(F("MeasurementCycle"),
-                       m_sensor->getName() + F(": DS18B20 failure detected, triggering reboot"));
-          // Allow time for logging to complete
-          delay(1000);
-          ESP.restart();
-          return; // Never reached, but good practice
-        }
-
-        // For non-DS18B20 sensors, continue with existing behavior
-        if (!m_sensor->config().hasPersistentError) {
-          logger.error(F("MeasurementCycle"),
-                       m_sensor->getName() + F(": First-time failure, triggering reboot"));
-          ESP.restart();
-          return;
-        }
-      } else {
-        // Reinitialization succeeded, clear any persistent error
-        if (m_sensor->config().hasPersistentError) {
-          logger.info(F("MeasurementCycle"),
-                      m_sensor->getName() +
-                          F(": Successfully reinitialized after persistent failure"));
-          m_sensor->mutableConfig().hasPersistentError = false;
-        }
-        // Reset error count since reinitialization succeeded
-        m_state.errorCount = 0;
-        m_state.scheduleNextMeasurement(millis(), m_state.measurementInterval);
-        m_state.setState(MeasurementState::WAITING_FOR_DUE, m_sensor->getName());
-        return;
-      }
-
-      deactivateSensor();
+      m_state.errorCount = 0;
+      m_state.fatalError = false;
+      m_state.scheduleNextMeasurement(millis(), m_state.measurementInterval);
+      m_state.setState(MeasurementState::WAITING_FOR_DUE, m_sensor->getName());
       return;
     }
+
+    // Reinitialisierung fehlgeschlagen
+    logger.error(F("MeasurementCycle"),
+                 m_sensor->getName() + F(": Reinitialisierung fehlgeschlagen"));
+    m_sensor->mutableConfig().hasPersistentError = true;
+
+    // DS18B20: Neustart weil Hardware-Reset nötig
+    if (m_sensor->getSharedHardwareInfo().type == SensorType::DS18B20) {
+      logger.error(F("MeasurementCycle"),
+                   m_sensor->getName() + F(": DS18B20-Fehler, löse Neustart aus"));
+      delay(1000);
+      ESP.restart();
+      return;
+    }
+
+    // Andere Sensoren: Deaktivieren
+    deactivateSensor();
+    return;
   }
 
+  // Unter maximaler Fehleranzahl: Deinitialisieren und erneut versuchen
   if (m_sensor->isInitialized()) {
     m_sensor->deinitialize();
     m_state.needsInitialization = true;
   }
 
+  // Wartezeit vor erneutem Versuch
   if (millis() - m_state.lastErrorTime >= ERROR_RETRY_DELAY) {
     m_state.scheduleNextMeasurement(millis(), m_state.measurementInterval);
     m_state.setState(MeasurementState::WAITING_FOR_DUE, m_sensor->getName());
   }
 }
 
+/**
+ * @brief Behandelt unbekannte Zustände
+ * @details Sicherheitsnetz — sollte nie auftreten. Löst Fehlerbehandlung aus.
+ */
 void SensorMeasurementCycleManager::handleUnknownState() {
-  handleStateError(F("Unknown state encountered"));
+  handleStateError(F("Unbekannter Zustand aufgetreten"));
 }
 
+/**
+ * @brief Zentrale Fehlerbehandlung bei Zustandsfehlern
+ * @param error Beschreibung des Fehlers
+ * @details Gibt den Messslot frei (falls gehalten), protokolliert den Fehler
+ *          und setzt den Zustand auf ERROR.
+ *
+ * WICHTIG: Diese Funktion gibt den Slot frei und ruft recordError() auf.
+ *          handleError() darf beides NICHT erneut tun.
+ */
 void SensorMeasurementCycleManager::handleStateError(const String& error) {
-  m_lastState = m_state.state;
+  MeasurementState previousState = m_state.state;
+  m_lastState = previousState;
+
+  // Slot freigeben, falls wir einen halten (nicht in Wartezuständen)
+  if (previousState != MeasurementState::WAITING_FOR_DUE &&
+      previousState != MeasurementState::WAITING_FOR_SLOT) {
+    SensorManagerLimiter::getInstance().releaseSlot(m_sensor->getId());
+    if (ConfigMgr.isDebugMeasurementCycle()) {
+      logger.debug(F("MeasurementCycle"),
+                   m_sensor->getName() + F(": Slot wegen Fehler freigegeben"));
+    }
+  }
+
+  // Fehler aufzeichnen (inkrementiert errorCount)
   m_state.recordError(error);
 
-  // Release slot if we were holding it
-  if (m_lastState != MeasurementState::WAITING_FOR_DUE &&
-      m_lastState != MeasurementState::WAITING_FOR_SLOT) {
-    if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Releasing slot due to error"));
-    }
-    SensorManagerLimiter::getInstance().releaseSlot(m_sensor->getId());
-  }
-
+  // Zustand auf ERROR setzen
   m_state.setState(MeasurementState::ERROR, m_sensor->getName());
 
-  // Log error with appropriate severity based on error type
-  if (m_lastState == MeasurementState::SENDING_INFLUX) {
-    logger.warning(F("MeasurementCycle"), F("Network error: ") + error);
+  // Fehler mit passender Priorität protokollieren
+  if (previousState == MeasurementState::SENDING_INFLUX) {
+    logger.warning(F("MeasurementCycle"),
+                   m_sensor->getName() + String(F(": Netzwerkfehler: ")) + error);
   } else {
-    logger.error(F("MeasurementCycle"), F("Sensor error: ") + error);
+    logger.error(F("MeasurementCycle"),
+                 m_sensor->getName() + String(F(": Sensorfehler: ")) + error);
   }
 }
 
+/**
+ * @brief Behandelt C++-Ausnahmen während der Verarbeitung
+ * @param e Die gefangene Ausnahme
+ * @details Leitet an handleStateError weiter, es sei denn es ist ein
+ *          DS18B20-Init-Retry (spezielle Ausnahme für Wiederholungslogik).
+ */
 void SensorMeasurementCycleManager::handleException(const std::exception& e) {
-  // Special handling for DS18B20 init retries
+  // DS18B20-Init-Retry ist keine echte Ausnahme — Wiederholungslogik fortsetzen
   if (String(e.what()) == "DS18B20_INIT_RETRY") {
-    // Don't treat this as an error, just let the retry logic continue
     return;
   }
 
-  String error = F("Exception in measurement cycle: ");
-  error += e.what();
-  handleStateError(error);
+  handleStateError(String(F("Ausnahme im Messzyklus: ")) + String(e.what()));
 }
 
+/**
+ * @brief Deaktiviert den Sensor nach fatalen Fehlern
+ * @details Setzt den Sensor auf deaktiviert. Wird nur aufgerufen wenn
+ *          alle Wiederholungsversuche erschöpft sind.
+ */
 void SensorMeasurementCycleManager::deactivateSensor() {
   if (m_sensor) {
-    logger.warning(F("MeasurementCycle"), F("Deactivated sensor after ") +
+    logger.warning(F("MeasurementCycle"), m_sensor->getName() + String(F(": Deaktiviert nach ")) +
                                               String(m_state.errorCount) +
-                                              F(" consecutive errors: ") + m_sensor->getName());
+                                              F(" aufeinanderfolgenden Fehlern"));
     m_sensor->setEnabled(false);
   }
 }

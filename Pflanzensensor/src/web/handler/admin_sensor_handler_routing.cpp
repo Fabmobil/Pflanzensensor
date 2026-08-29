@@ -15,7 +15,8 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   });
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von GET /admin/sensors fehlgeschlagen: ") + result.getMessage());
+                 String(F("Registrieren von GET /admin/sensors fehlgeschlagen: ")) +
+                     result.getMessage());
     return result;
   }
 
@@ -25,7 +26,8 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   });
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/sensors fehlgeschlagen: ") + result.getMessage());
+                 String(F("Registrieren von POST /admin/sensors fehlgeschlagen: ")) +
+                     result.getMessage());
     return result;
   }
 
@@ -38,7 +40,7 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   });
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/sensor_update fehlgeschlagen: ") +
+                 String(F("Registrieren von POST /admin/sensor_update fehlgeschlagen: ")) +
                      result.getMessage());
     return result;
   }
@@ -49,7 +51,7 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   });
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/measurement_interval fehlgeschlagen: ") +
+                 String(F("Registrieren von POST /admin/measurement_interval fehlgeschlagen: ")) +
                      result.getMessage());
     return result;
   }
@@ -61,7 +63,7 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   });
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/analog_minmax fehlgeschlagen: ") +
+                 String(F("Registrieren von POST /admin/analog_minmax fehlgeschlagen: ")) +
                      result.getMessage());
     return result;
   }
@@ -72,7 +74,7 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   });
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/analog_autocal fehlgeschlagen: ") +
+                 String(F("Registrieren von POST /admin/analog_autocal fehlgeschlagen: ")) +
                      result.getMessage());
     return result;
   }
@@ -82,9 +84,10 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
     handleAnalogAutocalDuration();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/analog_autocal_duration fehlgeschlagen: ") +
-                     result.getMessage());
+    logger.error(
+        F("AdminSensorHandler"),
+        String(F("Registrieren von POST /admin/analog_autocal_duration fehlgeschlagen: ")) +
+            result.getMessage());
     return result;
   }
 #endif
@@ -95,7 +98,7 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   });
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/thresholds fehlgeschlagen: ") +
+                 String(F("Registrieren von POST /admin/thresholds fehlgeschlagen: ")) +
                      result.getMessage());
     return result;
   }
@@ -106,7 +109,7 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   });
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/measurement_name fehlgeschlagen: ") +
+                 String(F("Registrieren von POST /admin/measurement_name fehlgeschlagen: ")) +
                      result.getMessage());
     return result;
   }
@@ -117,7 +120,7 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   });
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/reset_absolute_minmax fehlgeschlagen: ") +
+                 String(F("Registrieren von POST /admin/reset_absolute_minmax fehlgeschlagen: ")) +
                      result.getMessage());
     return result;
   }
@@ -127,9 +130,10 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
     handleResetAbsoluteRawMinMax();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /admin/reset_absolute_raw_minmax fehlgeschlagen: ") +
-                     result.getMessage());
+    logger.error(
+        F("AdminSensorHandler"),
+        String(F("Registrieren von POST /admin/reset_absolute_raw_minmax fehlgeschlagen: ")) +
+            result.getMessage());
     return result;
   }
 
@@ -142,7 +146,7 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   });
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von POST /trigger_measurement fehlgeschlagen: ") +
+                 String(F("Registrieren von POST /trigger_measurement fehlgeschlagen: ")) +
                      result.getMessage());
     return result;
   }
@@ -153,7 +157,7 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   });
   if (!result.isSuccess()) {
     logger.error(F("AdminSensorHandler"),
-                 F("Registrieren von GET /admin/getSensorConfig fehlgeschlagen: ") +
+                 String(F("Registrieren von GET /admin/getSensorConfig fehlgeschlagen: ")) +
                      result.getMessage());
     return result;
   }

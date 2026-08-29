@@ -8,7 +8,7 @@
 #include "utils/critical_section.h"
 #include "web/core/components.h"
 
-CSSService::CSSService(ESP8266WebServer& server) : BaseHandler(server) {
+CSSService::CSSService(ESPWebServer& server) : BaseHandler(server) {
   logger.debug(F("CSSService"), F("Initialisiere CSS-Service"));
   initModules();
 }

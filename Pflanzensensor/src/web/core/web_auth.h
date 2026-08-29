@@ -12,7 +12,7 @@
 #ifndef WEB_AUTH_H
 #define WEB_AUTH_H
 
-#include <ESP8266WebServer.h>
+#include "utils/platform_compat.h"
 
 #include <map>
 
@@ -78,7 +78,7 @@ public:
    * @details Initializes the authentication manager with server reference
    *          and sets up internal data structures.
    */
-  explicit WebAuth(ESP8266WebServer& server);
+  explicit WebAuth(ESPWebServer& server);
 
   /**
    * @brief Decode Base64 encoded string
@@ -157,7 +157,7 @@ public:
   }
 
 private:
-  ESP8266WebServer& _server;               ///< Reference to web server instance
+  ESPWebServer& _server;                   ///< Reference to web server instance
   std::map<String, String> _credentials;   ///< Username to password mapping
   std::map<String, UserRole> _roles;       ///< Username to role mapping
   std::map<String, SessionInfo> _sessions; ///< Token to session info mapping

@@ -40,7 +40,7 @@ public:
    *          - Prepares CSS handling
    *          - Initializes logging
    */
-  StartpageHandler(ESP8266WebServer& server, WebAuth& auth, CSSService& cssService)
+  StartpageHandler(ESPWebServer& server, WebAuth& auth, CSSService& cssService)
       : BaseHandler(server), _auth(auth), _cssService(cssService) {
     logger.debug(F("StartpageHandler"), F("Initialisiere StartpageHandler"));
     logger.logMemoryStats(F("StartpageHandler"));

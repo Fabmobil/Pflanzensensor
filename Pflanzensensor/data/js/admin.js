@@ -353,7 +353,8 @@ function mapFieldToConfig(fieldName, section) {
   if (section === 'led_traffic_light') {
     const mapping = {
       'led_traffic_light_mode': { namespace: 'led_traf', key: 'mode', type: 'uint' },
-      'led_traffic_light_measurement': { namespace: 'led_traf', key: 'sel_meas', type: 'string' }
+      'led_traffic_light_measurement': { namespace: 'led_traf', key: 'sel_meas', type: 'string' },
+      'led_traffic_light_only_red': { namespace: 'led_traf', key: 'only_red', type: 'bool' }
     };
     return mapping[fieldName] || null;
   }

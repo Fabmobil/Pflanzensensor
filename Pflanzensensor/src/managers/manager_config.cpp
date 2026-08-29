@@ -33,8 +33,9 @@ ConfigManager& ConfigManager::getInstance() {
 ConfigManager::ConfigResult ConfigManager::loadConfig() {
   ScopedLock lock;
 
-  // Load and apply log level from Preferences FIRST, before loading other config
-  // This ensures the correct log level is active for all subsequent log messages
+  // Load and apply log level from Preferences FIRST, before loading other
+  // config This ensures the correct log level is active for all subsequent log
+  // messages
   String logLevel =
       PreferencesManager::getString(PreferencesNamespaces::LOG, "level", String(LOG_LEVEL));
   logger.setLogLevel(Logger::stringToLogLevel(logLevel));
@@ -49,6 +50,13 @@ ConfigManager::ConfigResult ConfigManager::loadConfig() {
 
   // Sync subsystem data
   syncSubsystemData();
+
+  // Validate loaded config (non-fatal - warn but continue)
+  auto validationResult = ConfigValidator::validateConfigData(m_configData);
+  if (!validationResult.isSuccess()) {
+    logger.warning(F("ConfigM"), String(F("Geladene Konfiguration hat Validierungsprobleme: ")) +
+                                     validationResult.getMessage());
+  }
 
   notifyConfigChange("config", "loaded", false);
   m_configLoaded = true;
@@ -68,8 +76,8 @@ ConfigManager::ConfigResult ConfigManager::saveConfig() {
   // Validate before saving
   auto validationResult = ConfigValidator::validateConfigData(m_configData);
   if (!validationResult.isSuccess()) {
-    logger.error(F("ConfigM"),
-                 F("Konfigurationsvalidierung fehlgeschlagen: ") + validationResult.getMessage());
+    logger.error(F("ConfigM"), String(F("Konfigurationsvalidierung fehlgeschlagen: ")) +
+                                   validationResult.getMessage());
     return ConfigResult::fail(validationResult.error().value_or(ConfigError::UNKNOWN_ERROR),
                               validationResult.getMessage());
   }
@@ -84,7 +92,7 @@ ConfigManager::ConfigResult ConfigManager::saveConfig() {
   // Save sensor configuration
   auto sensorResult = SensorPersistence::save();
   if (!sensorResult.isSuccess()) {
-    logger.warning(F("ConfigM"), F("Speichern der Sensorkonfiguration fehlgeschlagen: ") +
+    logger.warning(F("ConfigM"), String(F("Speichern der Sensorkonfiguration fehlgeschlagen: ")) +
                                      sensorResult.getMessage());
     // Continue even if sensor config save fails
   }
@@ -119,7 +127,7 @@ ConfigManager::ConfigResult ConfigManager::resetToDefaults() {
   return ConfigResult::success();
 }
 
-ConfigManager::ConfigResult ConfigManager::updateFromWeb(ESP8266WebServer& server) {
+ConfigManager::ConfigResult ConfigManager::updateFromWeb(ESPWebServer& server) {
   ScopedLock lock;
   return m_webHandler.updateFromWebRequest(server);
 }
@@ -187,19 +195,19 @@ ConfigManager::ConfigResult ConfigManager::setUpdateFlags(bool fileSystem, bool 
                               F("Es kann jeweils nur ein Update-Typ aktiv sein"));
   }
 
-  logger.info(F("ConfigM"), F("Setze Update-Flags - Dateisystem: ") + String(fileSystem) +
-                                F(", Firmware: ") + String(firmware));
+  logger.info(F("ConfigM"), String(F("Setze Update-Flags - Dateisystem: ")) + String(fileSystem) +
+                                String(F(", Firmware: ")) + String(firmware));
 
-  // If setting filesystem update flag, save ALL config (Preferences + JSON) to FLASH BEFORE reboot
-  // Flash storage survives filesystem OTA updates
-  // WICHTIG: Dies muss VOR dem Neustart geschehen, NICHT während des Uploads!
+  // If setting filesystem update flag, save ALL config (Preferences + JSON) to
+  // FLASH BEFORE reboot Flash storage survives filesystem OTA updates WICHTIG:
+  // Dies muss VOR dem Neustart geschehen, NICHT während des Uploads!
   if (fileSystem) {
-    logger.info(F("ConfigM"),
-                F("Sichere Preferences + JSON-Configs in Flash vor Dateisystem-Update..."));
+    logger.info(F("ConfigM"), F("Sichere Preferences + JSON-Configs in Flash "
+                                "vor Dateisystem-Update..."));
     auto result = FlashPersistence::saveAllToFlash();
     if (!result.isSuccess()) {
-      logger.warning(F("ConfigM"), F("Flash-Sicherung fehlgeschlagen: ") + result.getMessage() +
-                                       F(" - Fortsetzen trotzdem"));
+      logger.warning(F("ConfigM"), String(F("Flash-Sicherung fehlgeschlagen: ")) +
+                                       result.getMessage() + F(" - Fortsetzen trotzdem"));
     } else {
       logger.info(F("ConfigM"), F("Alle Einstellungen erfolgreich in Flash gesichert"));
     }
@@ -269,8 +277,8 @@ ConfigManager::ConfigResult ConfigManager::setLogLevel(const String& level) {
   // Persist to Preferences
   auto result = PreferencesManager::updateStringValue(PreferencesNamespaces::LOG, "level", level);
   if (!result.isSuccess()) {
-    logger.error(F("ConfigM"),
-                 F("Fehler beim persistenten Speichern von log_level: ") + result.getMessage());
+    logger.error(F("ConfigM"), String(F("Fehler beim persistenten Speichern von log_level: ")) +
+                                   result.getMessage());
     return ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
   }
 
@@ -354,7 +362,7 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const char* key, const
     }
   } else {
     return ConfigResult::fail(ConfigError::VALIDATION_ERROR,
-                              F("Unknown configuration key: ") + keyStr);
+                              String(F("Unknown configuration key: ")) + keyStr);
   }
 
   return ConfigResult::success();
@@ -365,8 +373,8 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
                                                           ConfigValueType type) {
   ScopedLock lock;
 
-  logger.debug(F("ConfigM"), String(F("setConfigValue: namespace=")) + namespaceName + F(", key=") +
-                                 key + F(", value=") + value);
+  logger.debug(F("ConfigM"), String(F("setConfigValue: namespace=")) + namespaceName +
+                                 String(F(", key=")) + key + String(F(", value=")) + value);
 
   // Handle general namespace - route through existing setters for validation
   if (namespaceName == "general") {
@@ -431,13 +439,15 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
       wifiNamespace = PreferencesNamespaces::WIFI3;
       prefKey = (key == "ssid3") ? "ssid" : "pwd";
     } else {
-      return ConfigResult::fail(ConfigError::VALIDATION_ERROR, F("Unknown WiFi key: ") + key);
+      return ConfigResult::fail(ConfigError::VALIDATION_ERROR,
+                                String(F("Unknown WiFi key: ")) + key);
     }
 
     Preferences prefs;
     if (!prefs.begin(wifiNamespace, false)) {
       return ConfigResult::fail(ConfigError::FILE_ERROR,
-                                F("Failed to open WiFi namespace: ") + String(wifiNamespace));
+                                String(F("Failed to open WiFi namespace: ")) +
+                                    String(wifiNamespace));
     }
 
     bool success = PreferencesManager::putString(prefs, prefKey.c_str(), value);
@@ -462,8 +472,8 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
       setWiFiPassword3(value);
 
     String displayValue = key.indexOf("pwd") >= 0 ? "***" : value;
-    logger.info(F("ConfigM"), String(F("WiFi ")) + key + F(" gespeichert in ") +
-                                  String(wifiNamespace) + F(": ") + displayValue);
+    logger.info(F("ConfigM"), String(F("WiFi ")) + key + String(F(" gespeichert in ")) +
+                                  String(wifiNamespace) + String(F(": ")) + displayValue);
     return ConfigResult::success();
   }
 
@@ -529,7 +539,8 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
     }
 #endif
 
-    logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + key + F(" = ") + displayValue);
+    logger.info(F("ConfigM"),
+                String(F("Einstellung geändert: ")) + key + String(F(" = ")) + displayValue);
     notifyConfigChange(key, value, false);
     return ConfigResult::success();
   }
@@ -550,7 +561,7 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
       result = setDebugWebSocket(enabled);
     }
     if (result.isSuccess()) {
-      logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + key + F(" = ") +
+      logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + key + String(F(" = ")) +
                                     (enabled ? F("true") : F("false")));
     }
     return result;
@@ -592,6 +603,14 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
         logger.info(F("ConfigM"), String(F("Einstellung geändert: led_sel_meas = ")) + value);
       }
       return result;
+    } else if (key == "only_red") {
+      bool onlyRed = (value == "true" || value == "1");
+      result = setLedTrafficLightOnlyRed(onlyRed);
+      if (result.isSuccess()) {
+        logger.info(F("ConfigM"), String(F("Einstellung geändert: led_only_red = ")) +
+                                      (onlyRed ? F("true") : F("false")));
+      }
+      return result;
     }
   }
 
@@ -600,7 +619,7 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
     Preferences prefs;
     if (!prefs.begin(namespaceName.c_str(), false)) {
       return ConfigResult::fail(ConfigError::FILE_ERROR,
-                                F("Failed to open sensor namespace: ") + namespaceName);
+                                String(F("Failed to open sensor namespace: ")) + namespaceName);
     }
 
     bool success = false;
@@ -639,17 +658,18 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
 
     if (!success) {
       return ConfigResult::fail(ConfigError::SAVE_FAILED,
-                                F("Failed to save sensor setting: ") + key);
+                                String(F("Failed to save sensor setting: ")) + key);
     }
 
-    logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + namespaceName + F(".") + key +
-                                  F(" = ") + displayValue);
+    logger.info(F("ConfigM"), String(F("Einstellung geändert: ")) + namespaceName + String(F(".")) +
+                                  key + String(F(" = ")) + displayValue);
     notifyConfigChange(key, value, true);
     return ConfigResult::success();
   }
 
-  return ConfigResult::fail(ConfigError::VALIDATION_ERROR,
-                            F("Unknown namespace or key: ") + namespaceName + F(".") + key);
+  return ConfigResult::fail(ConfigError::VALIDATION_ERROR, String(F("Unknown namespace or key: ")) +
+                                                               namespaceName + String(F(".")) +
+                                                               key);
 }
 
 void ConfigManager::addChangeCallback(ConfigNotifier::ChangeCallback callback) {
@@ -657,10 +677,9 @@ void ConfigManager::addChangeCallback(ConfigNotifier::ChangeCallback callback) {
 }
 
 void ConfigManager::notifyConfigChange(const String& key, const String& value, bool updateSensors) {
-
   // Delegate to notifier
   logger.debug(F("ConfigM"), String(F("Konfigurationsänderung für Schlüssel: ")) + key +
-                                 F(" (updateSensors=") + String(updateSensors) +
+                                 String(F(" (updateSensors=")) + String(updateSensors) +
                                  F(") wird gemeldet"));
   m_notifier.notifyChange(key, value, updateSensors);
 }
@@ -671,7 +690,6 @@ ConfigManager::ConfigResult ConfigManager::updateBoolConfig(bool& currentValue, 
                                                             BoolUpdateFunc updateFunc,
                                                             const String& notifyKey,
                                                             bool updateSensors) {
-
   if (currentValue != newValue) {
     currentValue = newValue;
 
@@ -679,7 +697,7 @@ ConfigManager::ConfigResult ConfigManager::updateBoolConfig(bool& currentValue, 
     auto saveResult = updateFunc(newValue);
     if (!saveResult.isSuccess()) {
       logger.error(F("ConfigM"), String(F("Fehler beim persistenten Speichern von ")) + notifyKey +
-                                     F(": ") + saveResult.getMessage());
+                                     String(F(": ")) + saveResult.getMessage());
       return ConfigResult::fail(ConfigError::SAVE_FAILED, saveResult.getMessage());
     }
 
@@ -693,7 +711,6 @@ ConfigManager::ConfigResult ConfigManager::updateStringConfig(String& currentVal
                                                               StringUpdateFunc updateFunc,
                                                               const String& notifyKey,
                                                               bool updateSensors) {
-
   if (currentValue != newValue) {
     currentValue = newValue;
 
@@ -701,7 +718,7 @@ ConfigManager::ConfigResult ConfigManager::updateStringConfig(String& currentVal
     auto saveResult = updateFunc(newValue);
     if (!saveResult.isSuccess()) {
       logger.error(F("ConfigM"), String(F("Fehler beim persistenten Speichern von ")) + notifyKey +
-                                     F(": ") + saveResult.getMessage());
+                                     String(F(": ")) + saveResult.getMessage());
       return ConfigResult::fail(ConfigError::SAVE_FAILED, saveResult.getMessage());
     }
 
@@ -715,7 +732,6 @@ ConfigManager::ConfigResult ConfigManager::updateUInt8Config(uint8_t& currentVal
                                                              UInt8UpdateFunc updateFunc,
                                                              const String& notifyKey,
                                                              bool updateSensors) {
-
   if (currentValue != newValue) {
     currentValue = newValue;
 
@@ -723,7 +739,7 @@ ConfigManager::ConfigResult ConfigManager::updateUInt8Config(uint8_t& currentVal
     auto saveResult = updateFunc(newValue);
     if (!saveResult.isSuccess()) {
       logger.error(F("ConfigM"), String(F("Fehler beim persistenten Speichern von ")) + notifyKey +
-                                     F(": ") + saveResult.getMessage());
+                                     String(F(": ")) + saveResult.getMessage());
       return ConfigResult::fail(ConfigError::SAVE_FAILED, saveResult.getMessage());
     }
 
@@ -735,7 +751,6 @@ ConfigManager::ConfigResult ConfigManager::updateUInt8Config(uint8_t& currentVal
 ConfigManager::ConfigResult ConfigManager::updateDebugConfig(bool enabled,
                                                              DebugSetFunc debugSetFunc,
                                                              BoolUpdateFunc updateFunc) {
-
   auto result = (m_debugConfig.*debugSetFunc)(enabled);
   if (!result.isSuccess()) {
     return ConfigResult::fail(result.error().value_or(ConfigError::UNKNOWN_ERROR),
@@ -828,6 +843,16 @@ ConfigManager::setLedTrafficLightSelectedMeasurement(const String& measurementId
                                                      val);
       },
       "led_traffic_light_selected_measurement", false);
+}
+
+ConfigManager::ConfigResult ConfigManager::setLedTrafficLightOnlyRed(bool onlyRed) {
+  return updateBoolConfig(
+      m_configData.ledTrafficLightOnlyRed, onlyRed,
+      [](bool val) {
+        return PreferencesManager::updateBoolValue(PreferencesNamespaces::LED_TRAFFIC, "only_red",
+                                                   val);
+      },
+      "led_traffic_light_only_red", false);
 }
 
 // ====== Simplified Setters Using DRY Helpers (defined at end of file) ======

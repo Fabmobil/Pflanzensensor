@@ -75,8 +75,8 @@ struct MeasurementStateInfo {
   void setState(MeasurementState newState, const String& sensorName = "") {
     if (state != newState) {
       if (ConfigMgr.isDebugMeasurementCycle()) {
-        String transition =
-            sensorName + F(": State ") + stateToString(state) + F(" -> ") + stateToString(newState);
+        String transition = sensorName + String(F(": State ")) + stateToString(state) +
+                            String(F(" -> ")) + stateToString(newState);
         logger.debug(F("MeasurementState"), transition);
       }
       state = newState;
