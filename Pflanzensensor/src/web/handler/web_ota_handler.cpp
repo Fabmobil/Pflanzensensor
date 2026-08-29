@@ -4,6 +4,7 @@
  */
 
 #include "web_ota_handler.h"
+#include "web/core/web_auth.h"
 
 #include <ArduinoJson.h>
 #include <LittleFS.h>
@@ -266,7 +267,7 @@ void WebOTAHandler::abortUpdate() {
 OTAStatus WebOTAHandler::getStatus() const { return _status; }
 
 bool WebOTAHandler::requireUploadAuth() {
-  if (_server.authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
+  if (WebAuth::checkAdminCredentials(_server)) {
     return true;
   }
   LOG_WARN(F("WebOTAHandler"), F("Firmware-Upload ohne gültige Anmeldung abgewiesen"));

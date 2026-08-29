@@ -3,6 +3,7 @@
  * @brief WebManager route setup and configuration
  */
 
+#include "web/core/web_auth.h"
 #include <LittleFS.h>
 
 #include "configs/config.h"
@@ -73,8 +74,7 @@ void WebManager::setupRoutes() {
         // Upload handler - called during file upload
         // Auth einmal zu Beginn prüfen, Ergebnis für alle Chunks merken
         if (_server->upload().status == UPLOAD_FILE_START) {
-          m_configUploadAuthorized =
-              _server->authenticate("admin", ConfigMgr.getAdminPassword().c_str());
+          m_configUploadAuthorized = WebAuth::checkAdminCredentials(*_server);
           if (!m_configUploadAuthorized) {
             LOG_WARN(F("WebManager"), F("Config-Upload ohne gültige Anmeldung abgewiesen"));
           }

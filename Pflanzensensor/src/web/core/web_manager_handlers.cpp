@@ -3,6 +3,7 @@
  * @brief WebManager request handling and processing
  */
 
+#include "web/core/web_auth.h"
 #include <ArduinoJson.h>
 
 #include "configs/config.h"
@@ -20,7 +21,7 @@ void WebManager::handleSetUpdate() {
 
   // 2. Basic auth check with detailed logging
   LOG_DEBUG(F("WebManager"), F("Prüfe Authentifizierung..."));
-  if (!_server->authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
+  if (!WebAuth::checkAdminCredentials(*_server)) {
     LOG_WARN(F("WebManager"), F("Authentifizierung für setUpdate-Anfrage fehlgeschlagen"));
     _server->requestAuthentication();
     return;
@@ -163,7 +164,7 @@ void WebManager::handleSetConfigValue() {
 
     // If this is not a public update, require authentication
     if (!isPublicUpdate) {
-      if (!_server->authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
+      if (!WebAuth::checkAdminCredentials(*_server)) {
         LOG_WARN(F("WebManager"), F("Authentifizierung für setConfigValue-Anfrage fehlgeschlagen"));
         _server->requestAuthentication();
         return;

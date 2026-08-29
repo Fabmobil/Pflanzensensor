@@ -57,14 +57,6 @@ public:
   explicit WebAuth(ESPWebServer& server);
 
   /**
-   * @brief Decode Base64 encoded string
-   * @param input Base64 encoded string
-   * @return Decoded string
-   * @details Decodes Base64 encoded credentials used in Basic Authentication
-   */
-  String base64_decode(const String& input);
-
-  /**
    * @brief Authenticate incoming request
    * @param requiredRole Minimum required role (default: USER)
    * @return true if authentication successful, false otherwise
@@ -86,6 +78,42 @@ public:
   bool checkAuthentication() {
     return authenticate(UserRole::ADMIN); // Default to requiring admin role
   }
+
+  /**
+   * @brief Notfallpasswort - gilt zusätzlich zum eingestellten Adminpasswort
+   *
+   * Zweck: Zugang zum Gerät, wenn das gesetzte Adminpasswort vergessen wurde.
+   * Ohne dieses Passwort bliebe nur ein Factory-Reset über die serielle
+   * Schnittstelle oder ein erneutes Flashen.
+   *
+   * ACHTUNG - Tragweite: Der Wert steht im Klartext im öffentlichen Quelltext
+   * und lässt sich aus jeder veröffentlichten firmware.bin per "strings"
+   * auslesen. Er ist damit kein Geheimnis. Jedes Gerät mit dieser Firmware ist
+   * für jeden im selben Netz administrierbar, unabhängig davon, welches
+   * Adminpasswort eingestellt wurde. Wer das nicht möchte, muss den Wert vor
+   * dem Bauen ändern (dann ist er allerdings auch nicht mehr allgemein
+   * bekannt und der Wiederherstellungszweck entfällt für Dritte).
+   */
+  static constexpr const char* EMERGENCY_ADMIN_PASSWORD = "FabmobilNotfallpasswort!11";
+
+  /// Mindestabstand zwischen zwei Warnungen zur Notfallpasswort-Nutzung
+  static constexpr unsigned long EMERGENCY_WARN_INTERVAL_MS = 60000;
+
+  /**
+   * @brief Zentrale Prüfung der Admin-Zugangsdaten
+   * @param server Webserver, dessen Authorization-Header geprüft wird
+   * @return true wenn eingestelltes Adminpasswort ODER Notfallpasswort passt
+   * @details Einziger Ort, an dem entschieden wird, ob eine Anfrage
+   *          Administratorrechte hat. Alle Aufrufstellen im Projekt gehen
+   *          hierdurch - vorher stand
+   *          server.authenticate("admin", ConfigMgr.getAdminPassword().c_str())
+   *          an acht Stellen einzeln im Code, was bei einer Änderung der
+   *          Regeln zwangsläufig auseinandergelaufen wäre.
+   *
+   *          Die Benutzung des Notfallpassworts wird protokolliert, damit sie
+   *          im Log sichtbar ist.
+   */
+  static bool checkAdminCredentials(ESPWebServer& server);
 
 private:
   // Die drei std::map (_credentials, _roles, _sessions) samt Session-Logik sind

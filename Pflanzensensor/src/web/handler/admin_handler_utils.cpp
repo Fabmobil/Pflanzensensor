@@ -5,6 +5,7 @@
  *          authentication, and configuration value handling
  */
 
+#include "web/core/web_auth.h"
 #include <LittleFS.h>
 
 #include "configs/config.h"
@@ -45,7 +46,7 @@ String AdminHandler::formatUptime() const {
 }
 
 bool AdminHandler::validateRequest() const {
-  if (!_server.authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
+  if (!WebAuth::checkAdminCredentials(_server)) {
     return false;
   }
   return true;

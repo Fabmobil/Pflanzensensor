@@ -3,6 +3,7 @@
  * @brief WebManager-Initialisierung und Dienst-Einrichtung
  */
 
+#include "web/core/web_auth.h"
 #include <stdexcept>
 
 #include "configs/config.h"
@@ -197,7 +198,7 @@ void WebManager::setupMiddleware() {
     }
 
     // Alles Übrige benötigt Authentifizierung
-    if (!_server->authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
+    if (!WebAuth::checkAdminCredentials(*_server)) {
       _server->requestAuthentication();
       return false;
     }

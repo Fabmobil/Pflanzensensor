@@ -268,7 +268,7 @@ void AdminDisplayHandler::handleMeasurementDisplayToggle() {
 }
 
 bool AdminDisplayHandler::validateRequest() const {
-  if (!_server.authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
+  if (!WebAuth::checkAdminCredentials(_server)) {
     _server.requestAuthentication();
     return false;
   }

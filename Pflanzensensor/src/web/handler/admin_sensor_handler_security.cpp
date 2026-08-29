@@ -6,11 +6,12 @@
 #include "admin_sensor_handler.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
+#include "web/core/web_auth.h"
 
 bool AdminSensorHandler::validateRequest() const {
   LOG_DEBUG(F("AdminSensorHandler"), F("validateRequest() called"));
 
-  if (!_server.authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
+  if (!WebAuth::checkAdminCredentials(_server)) {
     LOG_DEBUG(F("AdminSensorHandler"), F("Authentication failed, requesting auth"));
     _server.requestAuthentication();
     return false;
