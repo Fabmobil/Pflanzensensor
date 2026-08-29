@@ -102,9 +102,15 @@ HandlerResult WebOTAHandler::handlePost(const String& uri, const std::map<String
   return HandlerResult::fail(HandlerError::INVALID_REQUEST, "Use registerRoutes instead");
 }
 
-std::vector<String> css = {"admin"};
-std::vector<String> js = {"ota"};
 void WebOTAHandler::handleUpdatePage() {
+  // Diese beiden Vektoren standen vorher auf Dateiebene - ohne static, ohne
+  // anonymen Namespace. Das waren zwei dauerhafte Heap-Allokationen bei der
+  // statischen Initialisierung, und die Symbole "css" und "js" hatten externe
+  // Bindung: jede weitere Definition gleichen Namens in einer anderen
+  // Übersetzungseinheit wäre ein ODR-Verstoß gewesen.
+  const std::vector<String> css = {"admin"};
+  const std::vector<String> js = {"ota"};
+
   renderAdminPage(
       ConfigMgr.getDeviceName(), "admin/update",
       [this]() {
