@@ -365,18 +365,27 @@ void loop() {
   // Handle sensor measurements
   static constexpr unsigned long MEASUREMENT_UPDATE_INTERVAL =
       1000; // 1s between measurement updates
-  if (sensorManager && sensorManager->getState() == ManagerState::INITIALIZED &&
-      currentMillis - lastMeasurementUpdate >= MEASUREMENT_UPDATE_INTERVAL) {
-    sensorManager->updateMeasurements();
+  if (sensorManager && sensorManager->getState() == ManagerState::INITIALIZED) {
+    const bool intervalElapsed =
+        (currentMillis - lastMeasurementUpdate >= MEASUREMENT_UPDATE_INTERVAL);
 
-    // Update LED traffic light status for mode 2
-#if USE_LED_TRAFFIC_LIGHT
-    if (ledTrafficLightManager) {
-      ledTrafficLightManager->updateSelectedMeasurementStatus();
+    // Eine manuell ausgelöste Messung wird ohne Takt weitergeschaltet.
+    // Im 1-Sekunden-Takt kostet jeder Zustandswechsel bis zu einer Sekunde;
+    // bis zur ersten Probe sind das fünf Wechsel und damit mehrere Sekunden
+    // Wartezeit, obwohl der Nutzer gerade eben auf "Messen" gedrückt hat.
+    if (intervalElapsed || sensorManager->hasForcedMeasurement()) {
+      sensorManager->updateMeasurements();
     }
-#endif
 
-    lastMeasurementUpdate = currentMillis;
+    if (intervalElapsed) {
+      // Update LED traffic light status for mode 2
+#if USE_LED_TRAFFIC_LIGHT
+      if (ledTrafficLightManager) {
+        ledTrafficLightManager->updateSelectedMeasurementStatus();
+      }
+#endif
+      lastMeasurementUpdate = currentMillis;
+    }
   }
 
   // Basic system maintenance

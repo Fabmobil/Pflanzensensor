@@ -51,6 +51,17 @@ struct MeasurementStateInfo {
   bool measurementStarted{false};    /**< Flag indicating if measurement process has started */
   unsigned long warmupTimeNeeded{0}; /**< Required warmup time in milliseconds */
   unsigned long warmupStartTime{0};  /**< Timestamp when warmup period started */
+  /**
+   * @brief Aufwärmphase dieses Messzyklus bereits absolviert?
+   * @details Muss getrennt von warmupStartTime geführt werden: diese dient
+   *          gleichzeitig der einmaligen Aufwärmphase nach dem Einschalten und
+   *          wird von handleWarmup() am Ende wieder auf 0 gesetzt. Wurde sie
+   *          zusätzlich als "Aufwärmen steht noch aus" gelesen, wechselten
+   *          Sensoren mit Aufwärmphase endlos zwischen WARMUP und
+   *          WAITING_FOR_DELAY und hielten dabei den Messslot bis zum Timeout
+   *          nach 45 s fest.
+   */
+  bool warmupDoneThisCycle{false};
 
   // Timing information
   unsigned long lastMeasurementTime{0}; /**< Timestamp of the last successful measurement */
@@ -153,6 +164,7 @@ struct MeasurementStateInfo {
     lastError = "";
     needsInitialization = true;
     warmupStartTime = 0;
+    warmupDoneThisCycle = false;
     lastErrorTime = 0;
     measurementStarted = false;
     // Note: measurementInterval is not reset to persist across cycles

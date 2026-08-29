@@ -20,6 +20,7 @@ void SensorManager::updateMeasurements() {
   // Rot-Schwarz-Baum-Suchen mit String-Vergleich. operator[] LEGT dabei einen
   // Eintrag an, wenn der Schlüssel fehlt: bei m_cycleManagers wurde so ein
   // leerer unique_ptr eingefügt, statt den Fehlerfall zu erkennen.
+  bool forcedActive = false;
   for (const auto& sensor : m_sensors) {
     if (!sensor || !sensor->isEnabled()) {
       continue;
@@ -32,8 +33,13 @@ void SensorManager::updateMeasurements() {
     }
 
     cycleManager->tick();
+    forcedActive = forcedActive || cycleManager->isForced();
     safeYield();
   }
+
+  // Kennzeichen nachführen: solange es gesetzt ist, ruft main.cpp diese
+  // Funktion in jedem Schleifendurchlauf auf statt nur einmal pro Sekunde.
+  m_forcedMeasurementActive = forcedActive;
 }
 
 TypedResult<ResourceError, void> SensorManager::initialize() {

@@ -174,12 +174,12 @@ void AdminSensorHandler::handleTriggerMeasurement() {
 
   // New: Force immediate measurement via cycle manager
   if (_sensorManager.forceImmediateMeasurement(sensorId)) {
-    String logMsg = String(F("Manuelle Messung geplant für Sensor: ")) + sensorId;
+    String logMsg = String(F("Manuelle Messung gestartet für Sensor: ")) + sensorId;
     if (measurementIndexStr.length() > 0) {
       logMsg += String(F(" Messung: ")) + measurementIndexStr;
     }
     LOG_INFO(F("AdminSensorHandler"), logMsg);
-    sendJsonResponse(200, F("{\"success\":true,\"message\":\"Messung geplant\"}"));
+    sendJsonResponse(200, F("{\"success\":true,\"message\":\"Messung gestartet\"}"));
     return;
   } else {
     LOG_ERROR(F("AdminSensorHandler"),

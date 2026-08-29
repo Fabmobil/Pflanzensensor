@@ -21,7 +21,17 @@ bool SensorMeasurementCycleManager::handleWaitingForDue() {
   if (m_state.needsWarmup) {
     unsigned long warmupElapsed = now - m_state.warmupStartTime;
     if (warmupElapsed < m_state.warmupTimeNeeded) {
-      // Aufwärmphase läuft noch
+      // Aufwärmphase läuft noch. Auch eine manuell ausgelöste Messung muss
+      // hier warten — der Sensor liefert vor Ablauf der Aufwärmzeit schlicht
+      // keine gültigen Werte. Damit das nicht wie ein Hänger aussieht, wird
+      // es in dem Fall unabhängig vom Debug-Schalter protokolliert.
+      if (m_forced && (now - m_lastDebugTime >= DEBUG_INTERVAL)) {
+        LOG_INFO(
+            F("MeasurementCycle"),
+            m_sensor->getName() + String(F(": Messung angefordert, Sensor wärmt noch auf - ")) +
+                String((m_state.warmupTimeNeeded - warmupElapsed) / 1000UL) + F(" s verbleibend"));
+        m_lastDebugTime = now;
+      }
       if (ConfigMgr.isDebugMeasurementCycle() && (now - m_lastDebugTime >= DEBUG_INTERVAL)) {
         unsigned long remaining = (m_state.warmupTimeNeeded - warmupElapsed) / 1000UL;
         LOG_DEBUG(F("MeasurementCycle"), m_sensor->getName() + String(F(": Aufwärmphase läuft, ")) +
@@ -50,6 +60,7 @@ bool SensorMeasurementCycleManager::handleWaitingForDue() {
               m_sensor->getName() + F(": Messintervall abgelaufen, fordere Slot an"));
   }
 
+  m_state.warmupDoneThisCycle = false;
   m_state.setState(MeasurementState::WAITING_FOR_SLOT, m_sensor->getName());
   return false; // Zyklus ist NICHT abgeschlossen — er beginnt gerade erst
 }
@@ -111,7 +122,7 @@ void SensorMeasurementCycleManager::handleWaitingForDelay() {
   }
 
   // Nach Initialisierung: Prüfen ob Sensor pro Messzyklus ein Warmup braucht
-  if (m_sensor->isMeasurementWarmupSensor() && m_state.warmupStartTime == 0) {
+  if (m_sensor->isMeasurementWarmupSensor() && !m_state.warmupDoneThisCycle) {
     m_state.setState(MeasurementState::WARMUP, m_sensor->getName());
   } else {
     m_state.setState(MeasurementState::MEASURING, m_sensor->getName());
@@ -137,6 +148,7 @@ void SensorMeasurementCycleManager::handleWarmup() {
       LOG_DEBUG(F("MeasurementCycle"), m_sensor->getName() + F(": Aufwärmen abgeschlossen"));
     }
     m_state.warmupStartTime = 0;
+    m_state.warmupDoneThisCycle = true;
     m_state.setMinimumDelay(WARMUP_DELAY);
     m_state.setState(MeasurementState::WAITING_FOR_DELAY, m_sensor->getName());
   }

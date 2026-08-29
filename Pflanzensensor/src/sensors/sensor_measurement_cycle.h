@@ -71,13 +71,34 @@ public:
   bool isDue() const { return m_state.isDue(); }
 
   /**
-   * @brief Forces the next measurement for this sensor ASAP
+   * @brief Startet sofort eine Messung, ohne Wartezeit
+   * @details Bricht einen eventuell laufenden eigenen Zyklus sauber ab, gibt
+   *          den Slot frei und setzt den Sensor auf "sofort fällig". Das
+   *          gesetzte Kennzeichen isForced() sorgt dafür, dass die
+   *          Zustandsmaschine anschließend in jedem Schleifendurchlauf
+   *          weitergeschaltet wird statt nur einmal pro Sekunde, und dass die
+   *          Wartezeit nach der Initialisierung entfällt.
+   *
+   *          Vorher wurde hier nur der Zustand zurückgesetzt. Steckte der
+   *          Sensor noch mitten im Zyklus, behielt er dabei seinen Messslot —
+   *          und blockierte sich dann selbst, bis der Slot nach 45 s
+   *          zwangsweise freigegeben wurde.
    */
-  void forceImmediateMeasurement() {
-    unsigned long now = millis();
-    m_state.setState(MeasurementState::WAITING_FOR_DUE, m_sensor ? m_sensor->getId() : "");
-    m_state.nextDueTime = now;
-  }
+  void forceImmediateMeasurement();
+
+  /**
+   * @brief Bricht einen laufenden Messzyklus ab und gibt den Slot frei
+   * @details Deinitialisiert den Sensor, falls er für diesen Zyklus
+   *          initialisiert wurde, gibt einen gehaltenen Messslot frei und
+   *          setzt die Zustandsmaschine auf WAITING_FOR_DUE zurück. Der
+   *          nächste reguläre Messzeitpunkt bleibt unverändert.
+   */
+  void abortCycle();
+
+  /**
+   * @brief Läuft gerade eine manuell ausgelöste Messung?
+   */
+  bool isForced() const { return m_forced; }
 
 private:
   // Timeouts and delays
@@ -105,6 +126,7 @@ private:
   unsigned long m_cycleStartTime{0};       ///< Start time of current measurement cycle
   unsigned long m_lastSlotAttemptTime{0};  ///< Last attempt to acquire measurement slot
   unsigned long m_slotRequestStartTime{0}; ///< When current slot request started
+  bool m_forced{false}; ///< Manuell ausgelöste Messung: ohne Wartezeit durchziehen
 
   // State handlers (defined in separate files)
 

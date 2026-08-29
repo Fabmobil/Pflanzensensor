@@ -121,6 +121,8 @@ void SensorMeasurementCycleManager::handleInitializing() {
   }
 
   m_state.needsInitialization = false;
-  m_state.setMinimumDelay(INIT_DELAY);
+  // Bei einer manuell ausgelösten Messung entfällt die Wartezeit nach der
+  // Initialisierung — der Nutzer hat die Messung gerade eben angefordert.
+  m_state.setMinimumDelay(m_forced ? 0 : INIT_DELAY);
   m_state.setState(MeasurementState::WAITING_FOR_DELAY, m_sensor->getName());
 }

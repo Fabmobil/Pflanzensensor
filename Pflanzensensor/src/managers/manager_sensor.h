@@ -110,9 +110,47 @@ public:
     Sensor* sensor = getSensor(id);
     if (!sensor || !sensor->cycleManager())
       return false;
+
+    auto& limiter = SensorManagerLimiter::getInstance();
+    // Kopie, nicht Referenz: abortCycle()/releaseSlot() leeren das Member.
+    const String holder = limiter.getCurrentSensor();
+
+    if (!holder.isEmpty() && holder != id) {
+      // Es misst gerade ein anderer Sensor. Warten würde je nach Sensor
+      // zehn Sekunden und mehr dauern, deshalb wird dessen Zyklus abgebrochen.
+      Sensor* other = getSensor(holder);
+      if (other && other->cycleManager()) {
+        LOG_INFO(F("SensorManager"),
+                 String(F("Messung von ")) + holder +
+                     String(F(" wird für die manuell ausgelöste Messung von ")) + id +
+                     F(" abgebrochen"));
+        other->cycleManager()->abortCycle();
+      } else {
+        // Halter existiert nicht mehr (Sensor entfernt/deaktiviert) — Slot
+        // wäre sonst bis zum Timeout blockiert.
+        LOG_WARN(F("SensorManager"),
+                 String(F("Messslot war von unbekanntem Sensor ")) + holder + F(" belegt"));
+        limiter.releaseSlot(holder);
+      }
+    }
+
     sensor->cycleManager()->forceImmediateMeasurement();
+    // Slot direkt zuteilen, damit die Messung im selben Schleifendurchlauf
+    // beginnen kann statt erst beim nächsten Slot-Versuch.
+    limiter.forceTakeSlot(id);
+    m_forcedMeasurementActive = true;
     return true;
   }
+
+  /**
+   * @brief Läuft gerade eine manuell ausgelöste Messung?
+   * @details main.cpp schaltet die Zustandsmaschine normalerweise nur einmal
+   *          pro Sekunde weiter. Bei fünf Zustandswechseln bis zur ersten Probe
+   *          sind das mehrere Sekunden Wartezeit. Solange dieses Kennzeichen
+   *          gesetzt ist, läuft die Zustandsmaschine in jedem
+   *          Schleifendurchlauf — die Messung startet damit ohne Verzögerung.
+   */
+  bool hasForcedMeasurement() const { return m_forcedMeasurementActive; }
 
   /**
    * @brief Applies sensor settings from the configuration file
@@ -138,6 +176,10 @@ private:
   // und zwei Baumsuchen pro Sekunde.
   std::vector<std::unique_ptr<Sensor>> m_sensors;
   unsigned long m_lastMemoryLog{0};
+  /// true, solange mindestens ein Sensor eine manuell ausgelöste Messung fährt.
+  /// Wird in updateMeasurements() aus den Zyklusmanagern nachgeführt, damit
+  /// main.cpp den Zustand ohne Schleife über alle Sensoren abfragen kann.
+  bool m_forcedMeasurementActive{false};
 };
 
 #endif // MANAGER_SENSOR_H

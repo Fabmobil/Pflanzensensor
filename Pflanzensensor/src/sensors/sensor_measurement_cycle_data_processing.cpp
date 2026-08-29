@@ -150,6 +150,10 @@ void SensorMeasurementCycleManager::handleDeinitializing() {
     m_sensor->deinitialize();
   }
 
+  // Der Zyklus ist gelaufen — eine eventuell erzwungene Messung ist damit
+  // erledigt und der Sensor kehrt in den normalen Takt zurück.
+  m_forced = false;
+
   // CRITICAL: Release measurement slot AFTER all cleanup is done
   // This prevents other sensors from starting measurement while we're still
   // flushing data or deinitializing
