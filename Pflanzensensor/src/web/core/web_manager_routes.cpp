@@ -23,9 +23,16 @@ void WebManager::setupRoutes() {
   logger.debug(F("WebManager"), F("Registriere Upload-Routen (vor Router)"));
 
   // Config upload route - needs direct server registration for file upload support
+  // ACHTUNG: _server->on() umgeht die Router-Middleware. Die Authentifizierung
+  // muss deshalb in beiden Callbacks selbst geprüft werden, sonst könnte jeder
+  // im Netz eine Konfiguration einspielen und damit einen Neustart auslösen.
   _server->on(
       "/admin/uploadConfig", HTTP_POST,
       [this]() {
+        if (!m_configUploadAuthorized) {
+          _server->requestAuthentication();
+          return;
+        }
         // POST handler - called after upload completes
         // Send response and trigger reboot here
         BaseHandler* handler = getCachedHandler("admin");
@@ -64,6 +71,18 @@ void WebManager::setupRoutes() {
       },
       [this]() {
         // Upload handler - called during file upload
+        // Auth einmal zu Beginn prüfen, Ergebnis für alle Chunks merken
+        if (_server->upload().status == UPLOAD_FILE_START) {
+          m_configUploadAuthorized =
+              _server->authenticate("admin", ConfigMgr.getAdminPassword().c_str());
+          if (!m_configUploadAuthorized) {
+            logger.warning(F("WebManager"), F("Config-Upload ohne gültige Anmeldung abgewiesen"));
+          }
+        }
+        if (!m_configUploadAuthorized) {
+          return;
+        }
+
         // AdminHandler must be loaded for this
         BaseHandler* handler = getCachedHandler("admin");
         if (!handler) {

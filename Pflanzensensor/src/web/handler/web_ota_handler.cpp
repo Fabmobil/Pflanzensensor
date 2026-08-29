@@ -69,9 +69,15 @@ RouterResult WebOTAHandler::onRegisterRoutes(WebRouter& router) {
     return result;
 
   // Register update handler
+  // ACHTUNG: _server.on() umgeht die Router-Middleware, daher muss die
+  // Authentifizierung hier in beiden Callbacks selbst geprüft werden.
   _server.on(
       "/update", HTTP_POST,
       [this]() {
+        if (!_uploadAuthorized) {
+          _server.requestAuthentication();
+          return;
+        }
         // Send response immediately after upload completes
         // Don't wait here as the response was already sent in UPLOAD_FILE_END
         // Just ensure clean exit from this handler
@@ -253,6 +259,14 @@ void WebOTAHandler::abortUpdate() {
 
 OTAStatus WebOTAHandler::getStatus() const { return _status; }
 
+bool WebOTAHandler::requireUploadAuth() {
+  if (_server.authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
+    return true;
+  }
+  logger.warning(F("WebOTAHandler"), F("Firmware-Upload ohne gültige Anmeldung abgewiesen"));
+  return false;
+}
+
 void WebOTAHandler::handleUpdateUpload() {
   HTTPUpload& upload = _server.upload();
   static bool isFilesystem = false;
@@ -261,6 +275,15 @@ void WebOTAHandler::handleUpdateUpload() {
   static uint8_t lastProgressUpdate = 0;
 
   // Display integration for update progress visualization
+
+  // Auth einmal zu Beginn des Uploads prüfen und Ergebnis für alle weiteren
+  // Chunks merken. Ohne gültige Anmeldung wird kein Byte in den Flash geschrieben.
+  if (upload.status == UPLOAD_FILE_START) {
+    _uploadAuthorized = requireUploadAuth();
+  }
+  if (!_uploadAuthorized) {
+    return;
+  }
 
   switch (upload.status) {
   case UPLOAD_FILE_START: {

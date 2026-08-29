@@ -416,12 +416,14 @@ private:
   static constexpr size_t BUFFER_SIZE = 256; ///< Response buffer size
   static char s_responseBuffer[BUFFER_SIZE]; ///< Static response buffer
 
-  bool m_handlersInitialized{false};                         ///< Handler initialization flag
-  std::unique_ptr<ESPWebServer> _server;                     ///< Web server instance
-  std::unique_ptr<WebRouter> _router;                        ///< URL router
-  std::unique_ptr<WebAuth> _auth;                            ///< Authentication service
-  std::unique_ptr<CSSService> _cssService;                   ///< CSS management service
-  std::unique_ptr<WebOTAHandler> _otaHandler;                ///< OTA update handler
+  bool m_handlersInitialized{false};          ///< Handler initialization flag
+  bool m_configUploadAuthorized{false};       ///< Auth-Ergebnis des laufenden Config-Uploads
+                                              ///< (/admin/uploadConfig umgeht die Middleware)
+  std::unique_ptr<ESPWebServer> _server;      ///< Web server instance
+  std::unique_ptr<WebRouter> _router;         ///< URL router
+  std::unique_ptr<WebAuth> _auth;             ///< Authentication service
+  std::unique_ptr<CSSService> _cssService;    ///< CSS management service
+  std::unique_ptr<WebOTAHandler> _otaHandler; ///< OTA update handler
   std::unique_ptr<AdminMinimalHandler> _minimalAdminHandler; ///< Minimal admin interface
   std::unique_ptr<WebMetricsHandler> _metricsHandler;        ///< Prometheus metrics handler
   SensorManager* _sensorManager;                             ///< Sensor management
