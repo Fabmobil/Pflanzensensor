@@ -17,7 +17,9 @@
  * @brief Configuration structure for DHT sensor
  */
 struct DHTConfig : public SensorConfig {
-  uint8_t pin;  ///< Digital pin for DHT sensor
+  // pin NICHT hier deklarieren - existiert bereits in SensorConfig. Ein
+  // eigener Member gleichen Namens hätte den Basis-Member verdeckt, der beim
+  // Slicing in Sensor::m_tempConfig dann auf 0 geblieben wäre.
   uint8_t type; ///< DHT sensor type (DHT11, DHT22, etc.)
 
   /**
@@ -25,9 +27,10 @@ struct DHTConfig : public SensorConfig {
    * @details Sets pin to DHT_PIN and type to 0 (must be set in cpp). Sets id to
    * 'DHT'.
    */
-  DHTConfig() : pin(DHT_PIN), type(0) {
+  DHTConfig() : type(0) {
     name = F("DHT");
     id = F("DHT"); // Unified ID
+    pin = DHT_PIN;
     activeMeasurements = 2;
     if (measurementInterval == 0)
       measurementInterval = DHT_MEASUREMENT_INTERVAL * 1000;

@@ -22,21 +22,24 @@ class SensorPersistence;
  * including pin assignments, multiplexer settings, and calibration values.
  */
 struct AnalogConfig : public SensorConfig {
-  uint8_t pin;                ///< The analog input pin to read from
-  bool useMultiplexer;        ///< Whether to use multiplexer for multiple inputs
-  unsigned long minimumDelay; ///< Minimum delay between readings
+  // ACHTUNG: pin und minimumDelay NICHT hier deklarieren - beide existieren
+  // bereits in SensorConfig. Eigene Member gleichen Namens hätten die
+  // Basis-Member verdeckt: der Konstruktor hätte die abgeleiteten gesetzt,
+  // während Sensor::m_tempConfig = config beim Slicing nur die Basis kopiert -
+  // und die wäre auf 0 geblieben. Genau das war der Fall: die konfigurierten
+  // 500 ms Mindestabstand zwischen Einzelmessungen wurden bei Analogsensoren
+  // stillschweigend ignoriert, weil Sensor::performMeasurementCycle() auf
+  // config().minimumDelay == 0 traf.
+  bool useMultiplexer; ///< Whether to use multiplexer for multiple inputs
 
   /**
    * @brief Default constructor for AnalogConfig
    * @details Sets id to 'ANALOG'.
    */
-  AnalogConfig()
-      : SensorConfig(),
-        pin(ANALOG_PIN),
-        useMultiplexer(USE_MULTIPLEXER),
-        minimumDelay(ANALOG_MINIMUM_DELAY) {
+  AnalogConfig() : SensorConfig(), useMultiplexer(USE_MULTIPLEXER) {
     name = F("Analog Sensor");
     id = F("ANALOG"); // Unified ID
+    pin = ANALOG_PIN;
     activeMeasurements = ANALOG_SENSOR_COUNT;
     if (measurementInterval == 0)
       measurementInterval = ANALOG_MEASUREMENT_INTERVAL * 1000;
