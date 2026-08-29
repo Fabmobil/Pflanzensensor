@@ -24,9 +24,10 @@
 // in RAM and flush them periodically (e.g., every 60 seconds). This drastically
 // reduces flash wear and eliminates blocking writes during measurements.
 enum class PendingUpdateType {
-  RAW_MIN_MAX,       // int absoluteRawMin, absoluteRawMax
-  ABSOLUTE_MIN_MAX,  // float absoluteMin, absoluteMax
-  CALIBRATED_MIN_MAX // int minValue, maxValue, bool inverted
+  RAW_MIN_MAX,        // int absoluteRawMin, absoluteRawMax
+  ABSOLUTE_MIN_MAX,   // float absoluteMin, absoluteMax
+  CALIBRATED_MIN_MAX, // int minValue, maxValue, bool inverted
+  LAST_VALUE          // float lastValue, int lastRawValue
 };
 
 struct PendingUpdate {
@@ -50,6 +51,10 @@ struct PendingUpdate {
       int maxValue;
       bool inverted;
     } calibrated;
+    struct {
+      float lastValue;
+      int lastRawValue;
+    } last;
   } data;
 };
 
@@ -388,6 +393,15 @@ static void flushOldestPendingUpdate() {
         oldest.sensorId, oldest.measurementIndex, oldest.data.calibrated.minValue,
         oldest.data.calibrated.maxValue, oldest.data.calibrated.inverted);
     break;
+  case PendingUpdateType::LAST_VALUE: {
+    DynamicJsonDocument doc(128);
+    JsonObject settings = doc.to<JsonObject>();
+    settings["lastValue"] = oldest.data.last.lastValue;
+    settings["lastRawValue"] = oldest.data.last.lastRawValue;
+    SensorPersistence::updateMeasurementSettings(oldest.sensorId, oldest.measurementIndex,
+                                                 settings);
+    break;
+  }
   }
 }
 
@@ -451,6 +465,18 @@ void SensorPersistence::enqueueAnalogMinMaxInteger(const String& sensorId, size_
   u.data.calibrated.minValue = minValue;
   u.data.calibrated.maxValue = maxValue;
   u.data.calibrated.inverted = inverted;
+  enqueuePendingUpdate(std::move(u));
+}
+
+void SensorPersistence::enqueueLastValue(const String& sensorId, size_t measurementIndex,
+                                         float lastValue, int lastRawValue) {
+  PendingUpdate u;
+  u.type = PendingUpdateType::LAST_VALUE;
+  u.sensorId = sensorId;
+  u.measurementIndex = measurementIndex;
+  u.timestamp = millis();
+  u.data.last.lastValue = lastValue;
+  u.data.last.lastRawValue = lastRawValue;
   enqueuePendingUpdate(std::move(u));
 }
 
@@ -534,6 +560,10 @@ void SensorPersistence::flushPendingUpdatesForSensor(const String& sensorId) {
       config.minValue = static_cast<float>(it->data.calibrated.minValue);
       config.maxValue = static_cast<float>(it->data.calibrated.maxValue);
       config.inverted = it->data.calibrated.inverted;
+      break;
+    case PendingUpdateType::LAST_VALUE:
+      config.lastValue = it->data.last.lastValue;
+      config.lastRawValue = it->data.last.lastRawValue;
       break;
     }
 

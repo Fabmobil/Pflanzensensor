@@ -81,34 +81,24 @@ void SensorMeasurementCycleManager::handleProcessing() {
                            String(F(" Messung ")) + String(i));
         }
 
-        // Update lastValue in runtime config and persist if it changed
+        // Letzten Messwert aktualisieren.
+        //
+        // Der Wert steht sofort im RAM zur Verfügung (Web-UI, Display,
+        // /metrics lesen aus der Runtime-Config). Das Schreiben läuft über
+        // dieselbe Write-Behind-Queue wie Min/Max und wird beim Flush am Ende
+        // des Messzyklus mit den übrigen Änderungen derselben Messung in einem
+        // einzigen Lade-/Speicher-Zyklus zusammengefasst.
+        //
+        // Vorher wurde hier bei jeder Wertänderung sofort
+        // updateMeasurementSettings() aufgerufen - also ein eigenes
+        // Laden + Serialisieren + remove + rename der Messungs-JSON pro Kanal
+        // und Messung, zusätzlich zum ohnehin folgenden Flush.
         {
           float prevLast = config.measurements[i].lastValue;
           if (isnan(prevLast) || (!isnan(value) && fabs(prevLast - value) > 1e-6f)) {
-            // Update in-memory
             config.measurements[i].lastValue = value;
-
-            // Prepare small JSON object to persist only the changed fields
-            DynamicJsonDocument tmpDoc(128);
-            JsonObject settings = tmpDoc.to<JsonObject>();
-            settings["lastValue"] = value;
-
-// For analog sensors also persist the last raw value. We don't
-// need to depend on AnalogSensor here; the measurement's
-// persisted runtime value is stored in the MeasurementConfig.
-#if USE_ANALOG
-            int lastRaw = config.measurements[i].lastRawValue;
-            settings["lastRawValue"] = lastRaw;
-#endif
-
-            // Persist changed fields (this will load/save the measurement JSON)
-            auto pres =
-                SensorPersistence::updateMeasurementSettings(m_sensor->getId(), i, settings);
-            if (!pres.isSuccess()) {
-              logger.warning(F("MeasurementCycle"),
-                             String(F("Konnte lastValue nicht persistieren: ")) +
-                                 pres.getMessage());
-            }
+            SensorPersistence::enqueueLastValue(m_sensor->getId(), i, value,
+                                                config.measurements[i].lastRawValue);
           }
         }
       }
