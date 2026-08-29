@@ -86,22 +86,18 @@ void WebManager::handleSetUpdate() {
     // aufgerufen hat. Dieser re-entrante Aufruf aus einem Handler heraus, der
     // selbst aus handleClient() stammt, versetzt den Ablauf in den SYS-Kontext;
     // das anschließende delay(50) hat den Core dann mit
-    // "Panic core_esp8266_main.cpp __yield" abgebrochen. Der Watchdog-Reset
-    // führte zwar zufällig zum gewünschten Neustart, aber ohne sauberes
-    // Herunterfahren der Dienste.
-
-    // Stop non-critical services
-    if (_sensorManager) {
-      logger.debug(F("WebManager"), F("Stoppe Sensor-Manager..."));
-      _sensorManager->stopAll();
-      _sensorManager = nullptr;
-    }
-
-    logger.debug(F("WebManager"), F("Führe Aufräumarbeiten durch..."));
-    cleanup();
+    // "Panic core_esp8266_main.cpp __yield" abgebrochen.
+    //
+    // Ebenso wurden hier vorher der Sensor-Manager gestoppt und cleanup()
+    // aufgerufen. Das gab Objekte frei, auf die lwIP und das SDK noch
+    // Callbacks bzw. pcbs hielten; der anschließende WiFi-Teardown lief dann
+    // in eine "Fatal exception 9 (LoadStoreAlignmentCause)". Vor einem
+    // ESP.restart() ist ein Teardown ohnehin sinnlos - der Chip wird komplett
+    // zurückgesetzt. Alle persistenten Daten (Flash-Backup, Preferences,
+    // Update-Flags) sind an dieser Stelle bereits geschrieben.
 
     logger.info(F("WebManager"), F("Starte neu im Update-Modus..."));
-    delay(100); // Small delay to ensure logs are written
+    delay(100); // Kurze Pause, damit die Logzeilen noch rausgehen
     ESP.restart();
   }
 
