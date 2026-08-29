@@ -39,6 +39,15 @@ public:
   bool updateMeasurementCycle();
 
   /**
+   * @brief Einen Durchlauf der Zustandsmaschine ausführen
+   * @details Kapselt, was früher im SensorManager stand: prüfen ob etwas zu
+   *          tun ist, den Zyklus weiterschalten und Zustandswechsel für die
+   *          Debug-Ausgabe verfolgen. Die dafür nötigen Zustände liegen jetzt
+   *          hier statt in einer std::map<String, SensorStateLog>.
+   */
+  void tick();
+
+  /**
    * @brief Resets the measurement cycle to its initial state
    */
   void reset();
@@ -90,6 +99,8 @@ private:
   std::vector<float> m_currentResults; ///< Current measurement results
   // **CRITICAL FIX: Remove local MeasurementData copy to prevent memory
   // corruption** We'll work directly with the sensor's MeasurementData instead
+  MeasurementState m_lastLoggedState{MeasurementState::WAITING_FOR_DUE}; ///< für Debug-Ausgabe
+  bool m_lastUpdateResult{false};                                        ///< für Debug-Ausgabe
   unsigned long m_lastDebugTime{0};        ///< Last debug message timestamp
   unsigned long m_cycleStartTime{0};       ///< Start time of current measurement cycle
   unsigned long m_lastSlotAttemptTime{0};  ///< Last attempt to acquire measurement slot

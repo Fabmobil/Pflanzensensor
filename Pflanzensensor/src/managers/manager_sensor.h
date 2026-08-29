@@ -98,8 +98,7 @@ public:
    */
   void cleanup() {
     stopAll();
-    m_cycleManagers.clear();
-    m_sensors.clear();
+    m_sensors.clear(); // Zyklus-Manager gehören den Sensoren und gehen mit
   }
 
   /**
@@ -108,11 +107,10 @@ public:
    * @return true if successful, false otherwise
    */
   bool forceImmediateMeasurement(const String& id) {
-    auto it = m_cycleManagers.find(id);
-    if (it == m_cycleManagers.end() || !it->second)
+    Sensor* sensor = getSensor(id);
+    if (!sensor || !sensor->cycleManager())
       return false;
-    auto* cycleManager = it->second.get();
-    cycleManager->forceImmediateMeasurement();
+    sensor->cycleManager()->forceImmediateMeasurement();
     return true;
   }
 
@@ -134,22 +132,12 @@ protected:
 private:
   static constexpr unsigned long MEMORY_LOG_INTERVAL = 60000; // 1 minute
 
+  // Beide std::map sind entfallen: der Zyklus-Manager gehört jetzt dem Sensor
+  // (Sensor::cycleManager()), und der Debug-Zustand liegt im Manager selbst.
+  // Das spart pro Sensor einen Rot-Schwarz-Baum-Knoten samt String-Schlüssel
+  // und zwei Baumsuchen pro Sekunde.
   std::vector<std::unique_ptr<Sensor>> m_sensors;
-  std::map<String, std::unique_ptr<SensorMeasurementCycleManager>> m_cycleManagers;
   unsigned long m_lastMemoryLog{0};
-
-  /**
-   * @struct SensorStateLog
-   * @brief Tracks the state and update history of a sensor
-   */
-  struct SensorStateLog {
-    MeasurementState lastState{MeasurementState::WAITING_FOR_DUE};
-    bool lastUpdateResult{false};
-    unsigned long lastStateLogTime{0};
-    static constexpr unsigned long LOG_THROTTLE_INTERVAL =
-        5000; // Only log same state every 5 seconds
-  };
-  std::map<String, SensorStateLog> m_sensorStates;
 };
 
 #endif // MANAGER_SENSOR_H

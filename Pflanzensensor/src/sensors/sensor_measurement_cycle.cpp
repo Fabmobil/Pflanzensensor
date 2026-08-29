@@ -96,6 +96,36 @@ bool SensorMeasurementCycleManager::updateMeasurementCycle() {
   return false;
 }
 
+void SensorMeasurementCycleManager::tick() {
+  if (!m_sensor) {
+    return;
+  }
+
+  MeasurementState currentState = m_state.state;
+
+  const bool stateChanged = (currentState != m_lastLoggedState);
+  m_lastLoggedState = currentState;
+  if (stateChanged && ConfigMgr.isDebugMeasurementCycle()) {
+    LOG_DEBUG(F("MeasurementCycle"), m_sensor->getId() + String(F(" Zustand: ")) +
+                                         String(static_cast<int>(currentState)) + F(" (geändert)"));
+  }
+
+  const bool shouldProcess = (currentState != MeasurementState::WAITING_FOR_DUE) || isDue();
+  if (!shouldProcess) {
+    return;
+  }
+
+  const bool cycleResult = updateMeasurementCycle();
+  const bool resultChanged = (cycleResult != m_lastUpdateResult);
+  m_lastUpdateResult = cycleResult;
+  if (resultChanged && ConfigMgr.isDebugMeasurementCycle()) {
+    LOG_DEBUG(F("MeasurementCycle"),
+              m_sensor->getId() + String(F(" Zyklus: ")) +
+                  (cycleResult ? String(F("Abgeschlossen")) : String(F("In Bearbeitung"))) +
+                  F(" (geändert)"));
+  }
+}
+
 void SensorMeasurementCycleManager::reset() {
   m_state.reset();
   m_lastState = MeasurementState::WAITING_FOR_DUE;

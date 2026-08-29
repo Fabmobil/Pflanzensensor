@@ -3,6 +3,7 @@
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
 #include "sensors/sensor_count.h"
+#include "sensors/sensor_measurement_cycle.h"
 
 // REMOVE: getOrInitThresholds function and any references to it
 // Instead, thresholds are now loaded directly into each sensor's measurement
@@ -35,8 +36,15 @@ Sensor::Sensor(const SensorConfig& config, SensorManager* sensorManager)
 }
 
 Sensor::~Sensor() {
+  // Destruktor hier definiert (nicht inline im Header), damit der
+  // unique_ptr<SensorMeasurementCycleManager> den vollständigen Typ sieht.
+  m_cycleManager.reset();
   m_lastMeasurementData.reset();
   m_measurementDataValid = false;
+}
+
+void Sensor::setCycleManager(std::unique_ptr<SensorMeasurementCycleManager> manager) {
+  m_cycleManager = std::move(manager);
 }
 
 void Sensor::deinitialize() {

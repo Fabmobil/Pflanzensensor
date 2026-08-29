@@ -3,6 +3,7 @@
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "managers/manager_sensor_persistence.h"
+#include "utils/safe_yield.h"
 
 // Global instance
 std::unique_ptr<SensorManager> sensorManager;
@@ -12,49 +13,26 @@ void SensorManager::updateMeasurements() {
     return;
   }
 
+  // Der Zyklus-Manager hängt jetzt direkt am Sensor.
+  //
+  // Vorher lagen Manager und Debug-Zustand in zwei std::map<String, ...>, und
+  // der Zugriff lief über operator[] - also pro Sensor und Sekunde zwei
+  // Rot-Schwarz-Baum-Suchen mit String-Vergleich. operator[] LEGT dabei einen
+  // Eintrag an, wenn der Schlüssel fehlt: bei m_cycleManagers wurde so ein
+  // leerer unique_ptr eingefügt, statt den Fehlerfall zu erkennen.
   for (const auto& sensor : m_sensors) {
     if (!sensor || !sensor->isEnabled()) {
       continue;
     }
 
-    auto& stateLog = m_sensorStates[sensor->getId()];
-    auto cycleManager = m_cycleManagers[sensor->getId()].get();
-
+    auto* cycleManager = sensor->cycleManager();
     if (!cycleManager) {
       LOG_ERROR(F("SensorManager"), String(F("Kein Zyklusmanager für Sensor: ")) + sensor->getId());
       continue;
     }
 
-    MeasurementState currentState = cycleManager->getCurrentState();
-    unsigned long now = millis();
-
-    bool stateChanged = (currentState != stateLog.lastState);
-    stateLog.lastState = currentState;
-
-    if (stateChanged && ConfigMgr.isDebugMeasurementCycle()) {
-      LOG_DEBUG(F("SensorManager"), String(F("Sensor: ")) + sensor->getId() +
-                                        String(F(" Zustand: ")) +
-                                        String(static_cast<int>(currentState)) + F(" (geändert)"));
-      stateLog.lastStateLogTime = now;
-    }
-
-    bool shouldProcess =
-        (currentState == MeasurementState::WAITING_FOR_DUE && cycleManager->isDue()) ||
-        (currentState != MeasurementState::WAITING_FOR_DUE);
-
-    if (shouldProcess) {
-      bool cycleResult = cycleManager->updateMeasurementCycle();
-      bool resultChanged = (cycleResult != stateLog.lastUpdateResult);
-      stateLog.lastUpdateResult = cycleResult;
-
-      if (resultChanged && ConfigMgr.isDebugMeasurementCycle()) {
-        LOG_DEBUG(F("SensorManager"),
-                  String(F("Sensor: ")) + sensor->getId() + String(F(" Zyklus: ")) +
-                      (cycleResult ? F("Abgeschlossen") : F("In Bearbeitung")) + F(" (geändert)"));
-      }
-    }
-
-    yield();
+    cycleManager->tick();
+    safeYield();
   }
 }
 
@@ -112,11 +90,9 @@ TypedResult<ResourceError, void> SensorManager::initialize() {
   size_t enabledCount = 0;
   for (auto& sensor : m_sensors) {
     if (sensor && sensor->isEnabled()) {
-      auto cycleManager = std::make_unique<SensorMeasurementCycleManager>(sensor.get());
-      String sensorId = sensor->getId();
-      m_cycleManagers[sensorId] = std::move(cycleManager);
+      sensor->setCycleManager(std::make_unique<SensorMeasurementCycleManager>(sensor.get()));
       enabledCount++;
-      LOG_DEBUG(F("SensorM"), String(F("Zyklusmanager für Sensor erstellt: ")) + sensorId);
+      LOG_DEBUG(F("SensorM"), String(F("Zyklusmanager für Sensor erstellt: ")) + sensor->getId());
     }
   }
 
