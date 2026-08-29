@@ -8,7 +8,7 @@
 AnalogSensor::~AnalogSensor() { m_state.samples.clear(); }
 
 AnalogSensor::AnalogSensor(const AnalogConfig& config, SensorManager* sensorManager)
-    : Sensor(config, sensorManager), m_analogConfig(config) {
+    : Sensor(config, sensorManager), m_useMultiplexer(config.useMultiplexer) {
   struct SensorDefaults {
     const char* name;
     const char* fieldName;
@@ -57,16 +57,16 @@ AnalogSensor::AnalogSensor(const AnalogConfig& config, SensorManager* sensorMana
   };
 
   size_t maxChannels = sizeof(analogDefaults) / sizeof(analogDefaults[0]);
-  if (m_analogConfig.activeMeasurements > maxChannels) {
+  if (mutableConfig().activeMeasurements > maxChannels) {
     logger.warning(getName(), String(F("Begrenze activeMeasurements von ")) +
-                                  String(m_analogConfig.activeMeasurements) + String(F(" auf ")) +
+                                  String(mutableConfig().activeMeasurements) + String(F(" auf ")) +
                                   String(maxChannels));
-    m_analogConfig.activeMeasurements = maxChannels;
+    mutableConfig().activeMeasurements = maxChannels;
   }
   m_lastRawValues.clear();
-  for (size_t i = 0; i < m_analogConfig.activeMeasurements; ++i) {
+  for (size_t i = 0; i < mutableConfig().activeMeasurements; ++i) {
     const auto& def = analogDefaults[i];
-    auto& meas = m_analogConfig.measurements[i];
+    auto& meas = mutableConfig().measurements[i];
     meas.minValue = def.min;
     meas.maxValue = def.max;
     meas.inverted = def.inverted;
@@ -75,7 +75,7 @@ AnalogSensor::AnalogSensor(const AnalogConfig& config, SensorManager* sensorMana
                     def.yellowHigh);
   }
   // Initialize clamping warning flags
-  m_clampWarningShown.resize(m_analogConfig.activeMeasurements, false);
+  m_clampWarningShown.resize(mutableConfig().activeMeasurements, false);
 #if USE_MULTIPLEXER
   if (config.useMultiplexer) {
     m_multiplexer = std::make_unique<Multiplexer>();
@@ -84,19 +84,19 @@ AnalogSensor::AnalogSensor(const AnalogConfig& config, SensorManager* sensorMana
 }
 
 void AnalogSensor::logDebugDetails() const {
-  logDebug(String(F("Analog-Konfig: pin=")) + String(m_analogConfig.pin) +
-           String(F(", activeMeasurements=")) + String(m_analogConfig.activeMeasurements));
+  logDebug(String(F("Analog-Konfig: pin=")) + String(config().pin) +
+           String(F(", activeMeasurements=")) + String(config().activeMeasurements));
 }
 
 SensorResult AnalogSensor::init() {
-  logDebug(String(F("Initialisiere Analog-Sensor an Pin ")) + String(m_analogConfig.pin));
+  logDebug(String(F("Initialisiere Analog-Sensor an Pin ")) + String(mutableConfig().pin));
   auto memoryResult = validateMemoryState();
   if (!memoryResult.isSuccess()) {
     return memoryResult;
   }
   m_state.samples.clear();
 #if USE_MULTIPLEXER
-  if (m_analogConfig.useMultiplexer) {
+  if (m_useMultiplexer) {
     if (!m_multiplexer) {
       m_multiplexer = std::make_unique<Multiplexer>();
     }
@@ -108,8 +108,8 @@ SensorResult AnalogSensor::init() {
     }
   }
 #endif
-  pinMode(m_analogConfig.pin, INPUT);
-  logger.debug(getName(), String(F(": Initialisiert an Pin ")) + String(m_analogConfig.pin));
+  pinMode(mutableConfig().pin, INPUT);
+  logger.debug(getName(), String(F(": Initialisiert an Pin ")) + String(mutableConfig().pin));
   m_initialized = true;
   return SensorResult::success();
 }
@@ -122,11 +122,11 @@ SensorResult AnalogSensor::startMeasurement() {
   }
   // Log memory snapshot at the beginning of the measurement cycle
   logger.logMemoryStats(F("AnalogSensor::startMeasurement"));
-  if (m_analogConfig.activeMeasurements > SensorConfig::MAX_MEASUREMENTS) {
+  if (mutableConfig().activeMeasurements > SensorConfig::MAX_MEASUREMENTS) {
     logger.warning(getName(), String(F("Begrenze activeMeasurements von ")) +
-                                  String(m_analogConfig.activeMeasurements) + String(F(" auf ")) +
+                                  String(mutableConfig().activeMeasurements) + String(F(" auf ")) +
                                   String(SensorConfig::MAX_MEASUREMENTS));
-    m_analogConfig.activeMeasurements = SensorConfig::MAX_MEASUREMENTS;
+    mutableConfig().activeMeasurements = SensorConfig::MAX_MEASUREMENTS;
   }
   if (!isInitialized()) {
     logger.error(getName(), F(": Versuch, Messung ohne Initialisierung zu starten"));
@@ -137,7 +137,7 @@ SensorResult AnalogSensor::startMeasurement() {
   // Reset clamping warning flags for new measurement cycle
   std::fill(m_clampWarningShown.begin(), m_clampWarningShown.end(), false);
   logger.debug(getName(), String(F(": Starte neuen Messzyklus für ")) +
-                              String(m_analogConfig.activeMeasurements) + F(" Sensoren"));
+                              String(mutableConfig().activeMeasurements) + F(" Sensoren"));
   return SensorResult::success();
 }
 
@@ -179,7 +179,7 @@ void AnalogSensor::deinitialize() {
 }
 
 bool AnalogSensor::validateReading(int reading, size_t measurementIndex) const {
-  if (measurementIndex >= m_analogConfig.measurements.size()) {
+  if (measurementIndex >= config().measurements.size()) {
     logDebug(String(F("AnalogSensor: Index außerhalb des Bereichs für Messungen! index=")) +
              String(measurementIndex));
     return false;
@@ -190,7 +190,7 @@ bool AnalogSensor::validateReading(int reading, size_t measurementIndex) const {
 }
 
 float AnalogSensor::mapAnalogValue(int rawValue, size_t measurementIndex) const {
-  if (measurementIndex >= m_analogConfig.measurements.size()) {
+  if (measurementIndex >= config().measurements.size()) {
     logDebug(String(F("AnalogSensor: Index außerhalb des Bereichs für Messungen! index=")) +
              String(measurementIndex));
     return 0.0f;
@@ -198,7 +198,7 @@ float AnalogSensor::mapAnalogValue(int rawValue, size_t measurementIndex) const 
   // Use accessor helpers so autocal (when active) is taken into account.
   float minValue = getMinValue(measurementIndex);
   float maxValue = getMaxValue(measurementIndex);
-  bool inverted = m_analogConfig.measurements[measurementIndex].inverted;
+  bool inverted = config().measurements[measurementIndex].inverted;
 
   if (maxValue == minValue)
     return 0.0f;
@@ -222,7 +222,7 @@ float AnalogSensor::mapAnalogValue(int rawValue, size_t measurementIndex) const 
 bool AnalogSensor::fetchSample(float& value, size_t index) {
   logDebug(String(F("Lese analogen Messwert für Index ")) + String(index));
 #if USE_MULTIPLEXER
-  if (m_analogConfig.useMultiplexer && m_multiplexer) {
+  if (m_useMultiplexer && m_multiplexer) {
     if (!m_multiplexer->switchToSensor(index + 1)) {
       logger.error(getName(),
                    String(F(": Konnte Kanal ")) + String(index + 1) + F(" nicht auswählen"));
@@ -233,31 +233,26 @@ bool AnalogSensor::fetchSample(float& value, size_t index) {
     delayMicroseconds(500); // 0.5ms statt 2ms
   }
 #endif
-  if (index >= m_analogConfig.measurements.size()) {
+  if (index >= mutableConfig().measurements.size()) {
     logDebug(String(F("AnalogSensor: Index außerhalb des Bereichs für Messungen! index=")) +
              String(index));
     value = NAN;
     return false;
   }
-  int raw = analogRead(m_analogConfig.pin);
-  // Speichere letzten Rohwert
+  int raw = analogRead(mutableConfig().pin);
+  // Letzten Rohwert merken (einmal - es gibt nur noch eine Config)
   if (index < m_lastRawValues.size()) {
     m_lastRawValues[index] = raw;
   }
-  // Update runtime copy and central config so later persistence sees the last raw value
-  if (index < m_analogConfig.measurements.size()) {
-    m_analogConfig.measurements[index].lastRawValue = raw;
-    SensorConfig& cfg = this->mutableConfig();
-    if (index < cfg.measurements.size()) {
-      cfg.measurements[index].lastRawValue = raw;
-    }
+  if (index < mutableConfig().measurements.size()) {
+    mutableConfig().measurements[index].lastRawValue = raw;
   }
 
   // Aktualisiere und persistiere die historischen Roh-Extrema unabhängig
   // von Autocal. Setze bei der ersten Messung beide Werte auf den aktuellen
   // Rohwert; bei späteren Messungen persistieren wir nur, wenn ein neuer
   // Extremwert (kleiner als min oder größer als max) auftritt.
-  if (index < m_analogConfig.measurements.size()) {
+  if (index < mutableConfig().measurements.size()) {
     SensorConfig& cfg = this->mutableConfig();
     int storedRawMin = cfg.measurements[index].absoluteRawMin;
     int storedRawMax = cfg.measurements[index].absoluteRawMax;
@@ -281,9 +276,6 @@ bool AnalogSensor::fetchSample(float& value, size_t index) {
     }
 
     if (needPersistRaw) {
-      // Aktualisiere Laufzeit-Kopie und zentrale Konfiguration
-      m_analogConfig.measurements[index].absoluteRawMin = newRawMin;
-      m_analogConfig.measurements[index].absoluteRawMax = newRawMax;
       cfg.measurements[index].absoluteRawMin = newRawMin;
       cfg.measurements[index].absoluteRawMax = newRawMax;
 
@@ -305,33 +297,30 @@ bool AnalogSensor::fetchSample(float& value, size_t index) {
     bool cfgCal = false;
     if (index < this->mutableConfig().measurements.size())
       cfgCal = this->mutableConfig().measurements[index].calibrationMode;
-    String dbg =
-        String(F("fetchSample debug: idx=")) + String(index) + String(F(", raw=")) + String(raw) +
-        String(F(", runtime.calibrationMode=")) +
-        String(m_analogConfig.measurements[index].calibrationMode ? "1" : "0") +
-        String(F(", cfg.calibrationMode=")) + String(cfgCal ? "1" : "0") + String(F(", calcMin=")) +
-        String(m_analogConfig.measurements[index].minValue) + String(F(", calcMax=")) +
-        String(m_analogConfig.measurements[index].maxValue) + String(F(", autocalIntMin=")) +
-        String(m_analogConfig.measurements[index].autocal.min_value) +
-        String(F(", autocalIntMax=")) +
-        String(m_analogConfig.measurements[index].autocal.max_value) + String(F(", autocalMinF=")) +
-        String(m_analogConfig.measurements[index].autocal.min_value_f) +
-        String(F(", autocalMaxF=")) +
-        String(m_analogConfig.measurements[index].autocal.max_value_f);
+    String dbg = String(F("fetchSample debug: idx=")) + String(index) + String(F(", raw=")) +
+                 String(raw) + String(F(", runtime.calibrationMode=")) +
+                 String(mutableConfig().measurements[index].calibrationMode ? "1" : "0") +
+                 String(F(", cfg.calibrationMode=")) + String(cfgCal ? "1" : "0") +
+                 String(F(", calcMin=")) + String(mutableConfig().measurements[index].minValue) +
+                 String(F(", calcMax=")) + String(mutableConfig().measurements[index].maxValue) +
+                 String(F(", autocalIntMin=")) +
+                 String(mutableConfig().measurements[index].autocal.min_value) +
+                 String(F(", autocalIntMax=")) +
+                 String(mutableConfig().measurements[index].autocal.max_value) +
+                 String(F(", autocalMinF=")) +
+                 String(mutableConfig().measurements[index].autocal.min_value_f) +
+                 String(F(", autocalMaxF=")) +
+                 String(mutableConfig().measurements[index].autocal.max_value_f);
     logger.debug(getName(), dbg);
   }
 
-  // Derive a unified 'calibration mode' flag from both the runtime copy
-  // and the central mutable config. This avoids transient races where one
-  // copy is updated but the other is not yet in sync.
-  bool cfgCalMode = false;
-  if (index < this->mutableConfig().measurements.size())
-    cfgCalMode = this->mutableConfig().measurements[index].calibrationMode;
-  bool unifiedCalibrationMode = m_analogConfig.measurements[index].calibrationMode || cfgCalMode;
+  // Nur noch eine Config - kein Abgleich zweier Kopien mehr nötig.
+  bool unifiedCalibrationMode =
+      (index < config().measurements.size()) && config().measurements[index].calibrationMode;
 
   // Auto-calibration: update exponential moving boundaries if enabled
-  if (index < m_analogConfig.measurements.size()) {
-    auto& measurement = m_analogConfig.measurements[index];
+  if (index < mutableConfig().measurements.size()) {
+    auto& measurement = mutableConfig().measurements[index];
     if (unifiedCalibrationMode) {
       uint32_t minutes = millis() / 60000UL;
 
@@ -351,8 +340,8 @@ bool AnalogSensor::fetchSample(float& value, size_t index) {
         int persistMax = static_cast<int>(measurement.autocal.max_value);
 
         // Enqueue instead of blocking write
-        SensorPersistence::enqueueAnalogMinMaxInteger(m_analogConfig.id, index, persistMin,
-                                                      persistMax, measurement.inverted);
+        SensorPersistence::enqueueAnalogMinMaxInteger(getId(), index, persistMin, persistMax,
+                                                      measurement.inverted);
         persistedImmediate = true;
         if (ConfigMgr.isDebugSensor())
           logger.debug(getName(), String(F("Autocal: untere Grenze auf Rohwert gesetzt: ")) +
@@ -366,8 +355,8 @@ bool AnalogSensor::fetchSample(float& value, size_t index) {
         int persistMax = static_cast<int>(measurement.autocal.max_value);
 
         // Enqueue instead of blocking write
-        SensorPersistence::enqueueAnalogMinMaxInteger(m_analogConfig.id, index, persistMin,
-                                                      persistMax, measurement.inverted);
+        SensorPersistence::enqueueAnalogMinMaxInteger(getId(), index, persistMin, persistMax,
+                                                      measurement.inverted);
         persistedImmediate = true;
         if (ConfigMgr.isDebugSensor())
           logger.debug(getName(), String(F("Autocal: obere Grenze auf Rohwert gesetzt: ")) +
@@ -427,8 +416,8 @@ bool AnalogSensor::fetchSample(float& value, size_t index) {
           int persistMax = static_cast<int>(measurement.autocal.max_value);
 
           // Enqueue instead of blocking write
-          SensorPersistence::enqueueAnalogMinMaxInteger(m_analogConfig.id, index, persistMin,
-                                                        persistMax, measurement.inverted);
+          SensorPersistence::enqueueAnalogMinMaxInteger(getId(), index, persistMin, persistMax,
+                                                        measurement.inverted);
 
           if (ConfigMgr.isDebugSensor())
             logger.debug(getName(),
@@ -441,14 +430,14 @@ bool AnalogSensor::fetchSample(float& value, size_t index) {
   // Prüfe, ob Rohwert außerhalb des Bereichs liegt und begrenze ihn ggf.
   // Autokalibrierung schreibt ihre Ergebnisse in minValue/maxValue; die
   // Abbildung verwendet daher immer die gespeicherten Berechnungslimits.
-  float minValue = m_analogConfig.measurements[index].minValue;
-  float maxValue = m_analogConfig.measurements[index].maxValue;
+  float minValue = mutableConfig().measurements[index].minValue;
+  float maxValue = mutableConfig().measurements[index].maxValue;
   int clampedRaw = raw;
 
   // If autocalibration is active, DO NOT clamp the raw value; autocal
   // should expand/shrink the calculation limits instead so the mapping
   // window shifts. Only clamp when autocal is disabled.
-  if (!m_analogConfig.measurements[index].calibrationMode) {
+  if (!mutableConfig().measurements[index].calibrationMode) {
     if (raw < static_cast<int>(roundf(minValue))) {
       clampedRaw = static_cast<int>(roundf(minValue));
       // Only log warning once per measurement cycle
@@ -479,7 +468,7 @@ bool AnalogSensor::fetchSample(float& value, size_t index) {
   value = mapAnalogValue(clampedRaw, index);
 
   // Debug-Log für invertierte Sensoren
-  if (index < m_analogConfig.measurements.size() && m_analogConfig.measurements[index].inverted) {
+  if (index < mutableConfig().measurements.size() && mutableConfig().measurements[index].inverted) {
     logDebug(String(F("Invertierter Sensor: roh=")) + String(clampedRaw) +
              String(F(", abgebildet=")) + String(value) + F("%"));
   }
