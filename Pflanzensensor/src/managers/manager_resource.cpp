@@ -33,15 +33,9 @@ ResourceResult ResourceManager::executeCritical(const String& operation,
     return status;
   }
 
-  try {
-    auto result = func();
-    exitCriticalOperation();
-    return result;
-  } catch (const std::exception& e) {
-    exitCriticalOperation();
-    return ResourceResult::fail(ResourceError::OPERATION_FAILED,
-                                String(F("Ausnahme: ")) + e.what());
-  }
+  auto result = func();
+  exitCriticalOperation();
+  return result;
 }
 
 ResourceResult ResourceManager::enterCriticalOperation(const String& operation) {

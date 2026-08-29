@@ -556,19 +556,7 @@ void LogHandler::handleClientMessage(uint8_t clientNum, const String& type, cons
     }
 
     // Validate log level before changing
-    try {
-      Logger::stringToLogLevel(data);
-    } catch (const std::exception& e) {
-      StaticJsonDocument<64> response;
-      response["type"] = "error";
-      response["message"] = F("Invalid level");
-      String jsonResponse;
-      serializeJson(response, jsonResponse);
-      if (ESP.getFreeHeap() > 4000 && logger.isCallbackEnabled()) {
-        ws.sendTXT(clientNum, jsonResponse);
-      }
-      return;
-    }
+    Logger::stringToLogLevel(data);
 
     // Send immediate confirmation to prevent timeout
     StaticJsonDocument<96> response;

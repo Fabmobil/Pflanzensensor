@@ -58,43 +58,39 @@ bool SensorMeasurementCycleManager::updateMeasurementCycle() {
     m_state.measurementInterval = currentInterval;
   }
 
-  try {
-    switch (m_state.state) {
-    case MeasurementState::WAITING_FOR_DUE:
-      return handleWaitingForDue();
-    case MeasurementState::WAITING_FOR_SLOT:
-      handleWaitingForSlot();
-      break;
-    case MeasurementState::WAITING_FOR_DELAY:
-      handleWaitingForDelay();
-      break;
-    case MeasurementState::INITIALIZING:
-      handleInitializing();
-      break;
-    case MeasurementState::WARMUP:
-      handleWarmup();
-      break;
-    case MeasurementState::MEASURING:
-      handleMeasuring();
-      break;
-    case MeasurementState::PROCESSING:
-      handleProcessing();
-      break;
-    case MeasurementState::SENDING_INFLUX:
-      handleSendingInflux();
-      break;
-    case MeasurementState::DEINITIALIZING:
-      handleDeinitializing();
-      break;
-    case MeasurementState::ERROR:
-      handleError();
-      break;
-    default:
-      handleUnknownState();
-      break;
-    }
-  } catch (const std::exception& e) {
-    handleException(e);
+  switch (m_state.state) {
+  case MeasurementState::WAITING_FOR_DUE:
+    return handleWaitingForDue();
+  case MeasurementState::WAITING_FOR_SLOT:
+    handleWaitingForSlot();
+    break;
+  case MeasurementState::WAITING_FOR_DELAY:
+    handleWaitingForDelay();
+    break;
+  case MeasurementState::INITIALIZING:
+    handleInitializing();
+    break;
+  case MeasurementState::WARMUP:
+    handleWarmup();
+    break;
+  case MeasurementState::MEASURING:
+    handleMeasuring();
+    break;
+  case MeasurementState::PROCESSING:
+    handleProcessing();
+    break;
+  case MeasurementState::SENDING_INFLUX:
+    handleSendingInflux();
+    break;
+  case MeasurementState::DEINITIALIZING:
+    handleDeinitializing();
+    break;
+  case MeasurementState::ERROR:
+    handleError();
+    break;
+  default:
+    handleUnknownState();
+    break;
   }
 
   return false;

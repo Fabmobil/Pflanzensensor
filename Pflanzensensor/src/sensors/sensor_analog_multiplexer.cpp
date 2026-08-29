@@ -35,55 +35,48 @@ SensorResult Multiplexer::init() {
   if (m_initialized)
     return SensorResult::success();
 
-  try {
-    logger.debug(F("Multiplexer"), F("Initialisiere Multiplexer-Pins:"));
-    logger.debug(F("Multiplexer"), String(F("Pin A (LSB): ")) + String(MUX_A));
-    logger.debug(F("Multiplexer"), String(F("Pin B     : ")) + String(MUX_B));
-    logger.debug(F("Multiplexer"), String(F("Pin C (MSB): ")) + String(MUX_C));
+  logger.debug(F("Multiplexer"), F("Initialisiere Multiplexer-Pins:"));
+  logger.debug(F("Multiplexer"), String(F("Pin A (LSB): ")) + String(MUX_A));
+  logger.debug(F("Multiplexer"), String(F("Pin B     : ")) + String(MUX_B));
+  logger.debug(F("Multiplexer"), String(F("Pin C (MSB): ")) + String(MUX_C));
 
-    // Set up the select pins as outputs
-    pinMode(MUX_A, OUTPUT);
-    pinMode(MUX_B, OUTPUT);
-    pinMode(MUX_C, OUTPUT);
+  // Set up the select pins as outputs
+  pinMode(MUX_A, OUTPUT);
+  pinMode(MUX_B, OUTPUT);
+  pinMode(MUX_C, OUTPUT);
 
-    delay(10); // Allow pins to stabilize after mode change
+  delay(10); // Allow pins to stabilize after mode change
 
-    // Set initial state to all pins HIGH (111) - corresponds to sensor 1
-    digitalWrite(MUX_A, HIGH);
-    digitalWrite(MUX_B, HIGH);
-    digitalWrite(MUX_C, HIGH);
+  // Set initial state to all pins HIGH (111) - corresponds to sensor 1
+  digitalWrite(MUX_A, HIGH);
+  digitalWrite(MUX_B, HIGH);
+  digitalWrite(MUX_C, HIGH);
 
-    delay(10); // Allow pins to stabilize after state change
+  delay(10); // Allow pins to stabilize after state change
 
-    // Validate pin states - read back each pin
-    bool pinAState = digitalRead(MUX_A);
-    bool pinBState = digitalRead(MUX_B);
-    bool pinCState = digitalRead(MUX_C);
+  // Validate pin states - read back each pin
+  bool pinAState = digitalRead(MUX_A);
+  bool pinBState = digitalRead(MUX_B);
+  bool pinCState = digitalRead(MUX_C);
 
-    String binaryState = String(pinCState) + String(pinBState) + String(pinAState);
-    logger.debug(F("Multiplexer"), String(F("Initiale Pin-Zustände (CBA): ")) + binaryState);
+  String binaryState = String(pinCState) + String(pinBState) + String(pinAState);
+  logger.debug(F("Multiplexer"), String(F("Initiale Pin-Zustände (CBA): ")) + binaryState);
 
-    if (pinAState != HIGH || pinBState != HIGH || pinCState != HIGH) {
-      logger.error(
-          F("Multiplexer"),
-          String(F("Konnte initiale Pin-Zustände nicht setzen. Erwartet: 111, erhalten: ")) +
-              binaryState);
-      return SensorResult::fail(SensorError::INITIALIZATION_ERROR,
-                                F("Failed to set initial pin states"));
-    }
-
-    m_initialized = true;
-    m_currentChannel = 1; // Initial state (111) corresponds to sensor 1
-    m_switchStartTime = 0;
-    m_switchInProgress = false;
-    m_targetChannel = -1;
-    return SensorResult::success();
-  } catch (...) {
-    logger.error(F("Multiplexer"), F("Ausnahme während der Initialisierung"));
-    m_initialized = false;
+  if (pinAState != HIGH || pinBState != HIGH || pinCState != HIGH) {
+    logger.error(F("Multiplexer"),
+                 String(F("Konnte initiale Pin-Zustände nicht setzen. Erwartet: 111, erhalten: ")) +
+                     binaryState);
     return SensorResult::fail(SensorError::INITIALIZATION_ERROR,
-                              F("Exception during initialization"));
+                              F("Failed to set initial pin states"));
   }
+
+  m_initialized = true;
+  m_currentChannel = 1; // Initial state (111) corresponds to sensor 1
+  m_switchStartTime = 0;
+  m_switchInProgress = false;
+  m_targetChannel = -1;
+  return SensorResult::success();
+
 #else
   return SensorResult::fail(SensorError::INITIALIZATION_ERROR, F("Multiplexer not supported"));
 #endif

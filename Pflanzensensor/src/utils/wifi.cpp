@@ -266,23 +266,18 @@ TypedResult<ResourceError, bool> checkPort(uint16_t port) {
                                                   F("WiFi nicht verbunden"));
   }
 
-  try {
-    WiFiServer testServer(port);
-    testServer.begin();
-    delay(100);
+  WiFiServer testServer(port);
+  testServer.begin();
+  delay(100);
 #ifdef ESP32
-    // ESP32 WiFiServer doesn't have status() method
-    bool isAvailable = true; // Assume available if begin() didn't throw
-    testServer.end();
+  // ESP32 WiFiServer doesn't have status() method
+  bool isAvailable = true; // Assume available if begin() didn't throw
+  testServer.end();
 #else
-    bool isAvailable = testServer.status() != CLOSED;
-    testServer.close();
+  bool isAvailable = testServer.status() != CLOSED;
+  testServer.close();
 #endif
-    return TypedResult<ResourceError, bool>::success(isAvailable);
-  } catch (...) {
-    return TypedResult<ResourceError, bool>::fail(ResourceError::OPERATION_FAILED,
-                                                  F("Port check failed"));
-  }
+  return TypedResult<ResourceError, bool>::success(isAvailable);
 }
 
 int getActiveWiFiSlot() { return g_activeWiFiSlot; }

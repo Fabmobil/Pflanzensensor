@@ -11,177 +11,171 @@ void WebManager::initializeRemainingHandlers() {
   if (m_handlersInitialized)
     return;
 
-  try {
-    if (_router) {
-      // Add middleware for lazy handler initialization and route registration
-      // Handlers are created on-demand and cached using LRU policy
-      _router->addMiddleware([this](HTTPMethod method, String url) {
-        // Root route only
-        if (url == "/") {
-          BaseHandler* handler = getCachedHandler("startpage");
-          if (!handler) {
-            logger.debug(F("WebManager"), F("Lazy-Loading: StartpageHandler"));
-            auto newHandler = std::make_unique<StartpageHandler>(*_server, *_auth, *_cssService);
+  if (_router) {
+    // Add middleware for lazy handler initialization and route registration
+    // Handlers are created on-demand and cached using LRU policy
+    _router->addMiddleware([this](HTTPMethod method, String url) {
+      // Root route only
+      if (url == "/") {
+        BaseHandler* handler = getCachedHandler("startpage");
+        if (!handler) {
+          logger.debug(F("WebManager"), F("Lazy-Loading: StartpageHandler"));
+          auto newHandler = std::make_unique<StartpageHandler>(*_server, *_auth, *_cssService);
 
-            // Set handler type context for route registration
-            _router->setHandlerTypeContext("startpage");
-            auto result = newHandler->registerRoutes(*_router);
-            _router->clearHandlerTypeContext();
+          // Set handler type context for route registration
+          _router->setHandlerTypeContext("startpage");
+          auto result = newHandler->registerRoutes(*_router);
+          _router->clearHandlerTypeContext();
 
-            if (!result.isSuccess()) {
-              logger.error(F("WebManager"),
-                           String(F("Lazy-Registrierung fehlgeschlagen (StartpageHandler): ")) +
-                               result.getMessage());
-              return false; // Block request on registration failure
-            }
-            cacheHandler(std::move(newHandler), "startpage");
-          } else {
-            updateHandlerAccess("startpage");
+          if (!result.isSuccess()) {
+            logger.error(F("WebManager"),
+                         String(F("Lazy-Registrierung fehlgeschlagen (StartpageHandler): ")) +
+                             result.getMessage());
+            return false; // Block request on registration failure
           }
+          cacheHandler(std::move(newHandler), "startpage");
+        } else {
+          updateHandlerAccess("startpage");
         }
-        // Log routes
-        else if (url.startsWith("/logs")) {
-          BaseHandler* handler = getCachedHandler("log");
-          if (!handler) {
-            logger.debug(F("WebManager"), F("Lazy-Loading: LogHandler"));
-            auto newHandler = std::unique_ptr<LogHandler>(
-                LogHandler::getInstance(*_server, *_auth, *_cssService));
-
-            // Set handler type context for route registration
-            _router->setHandlerTypeContext("log");
-            auto result = newHandler->registerRoutes(*_router);
-            _router->clearHandlerTypeContext();
-
-            if (!result.isSuccess()) {
-              logger.error(F("WebManager"),
-                           String(F("Lazy-Registrierung fehlgeschlagen (LogHandler): ")) +
-                               result.getMessage());
-              return false; // Block request on registration failure
-            }
-            cacheHandler(std::move(newHandler), "log");
-          } else {
-            updateHandlerAccess("log");
-          }
-        }
-        // Admin sensor routes
-        else if ((url.startsWith("/admin/sensors") || url == "/trigger_measurement" ||
-                  url == "/admin/getSensorConfig") &&
-                 _sensorManager) {
-          BaseHandler* handler = getCachedHandler("admin_sensor");
-          if (!handler) {
-            logger.debug(F("WebManager"), F("Lazy-Loading: AdminSensorHandler"));
-            auto newHandler = std::make_unique<AdminSensorHandler>(*_server, *_auth, *_cssService,
-                                                                   *_sensorManager);
-
-            _router->setHandlerTypeContext("admin_sensor");
-            auto result = newHandler->registerRoutes(*_router);
-            _router->clearHandlerTypeContext();
-
-            if (!result.isSuccess()) {
-              logger.error(F("WebManager"),
-                           String(F("Lazy-Registrierung fehlgeschlagen (AdminSensorHandler): ")) +
-                               result.getMessage());
-              return false; // Block request on registration failure
-            }
-            cacheHandler(std::move(newHandler), "admin_sensor");
-          } else {
-            updateHandlerAccess("admin_sensor");
-          }
-        }
-#if USE_DISPLAY
-        // Display routes
-        else if (url.startsWith("/admin/display")) {
-          BaseHandler* handler = getCachedHandler("display");
-          if (!handler) {
-            logger.debug(F("WebManager"), F("Lazy-Loading: AdminDisplayHandler"));
-            auto newHandler = std::make_unique<AdminDisplayHandler>(*_server);
-
-            _router->setHandlerTypeContext("display");
-            auto result = newHandler->registerRoutes(*_router);
-            _router->clearHandlerTypeContext();
-
-            if (!result.isSuccess()) {
-              logger.error(F("WebManager"),
-                           String(F("Lazy-Registrierung fehlgeschlagen (AdminDisplayHandler): ")) +
-                               result.getMessage());
-              return false; // Block request on registration failure
-            }
-            cacheHandler(std::move(newHandler), "display");
-          } else {
-            updateHandlerAccess("display");
-          }
-        }
-#endif
-        // General admin routes (excluding special cases handled above)
-        // NOTE: /admin/config/setConfigValue is an essential route registered
-        // early in WebManager::setupRoutes. Avoid lazy-loading the full
-        // AdminHandler for requests to that path to prevent registering
-        // additional routes and hitting the max-routes limit.
-        else if (url.startsWith("/admin") && !url.startsWith("/admin/sensors") &&
-                 !url.startsWith("/admin/display") && !(url == "/admin/update") &&
-                 !url.startsWith("/admin/config/update") && !(url == "/admin/uploadConfig") &&
-                 !(url == "/admin/config/setConfigValue" ||
-                   url.startsWith("/admin/config/setConfigValue"))) {
-          BaseHandler* handler = getCachedHandler("admin");
-          if (!handler) {
-            logger.debug(F("WebManager"), String(F("Lazy-Loading: AdminHandler für URL: ")) + url);
-            auto newHandler = std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
-
-            _router->setHandlerTypeContext("admin");
-            auto result = newHandler->registerRoutes(*_router);
-            _router->clearHandlerTypeContext();
-
-            if (!result.isSuccess()) {
-              logger.error(F("WebManager"),
-                           String(F("Lazy-Registrierung fehlgeschlagen (AdminHandler): ")) +
-                               result.getMessage());
-              return false; // Block request on registration failure
-            }
-            cacheHandler(std::move(newHandler), "admin");
-          } else {
-            updateHandlerAccess("admin");
-          }
-        }
-        // Sensor data routes
-        else if (url == "/getLatestValues" || (url.startsWith("/sensor") && _sensorManager)) {
-          BaseHandler* handler = getCachedHandler("sensor");
-          if (!handler) {
-            logger.debug(F("WebManager"), F("Lazy-Loading: SensorHandler"));
-            auto newHandler =
-                std::make_unique<SensorHandler>(*_server, *_auth, *_cssService, *_sensorManager);
-
-            _router->setHandlerTypeContext("sensor");
-            auto result = newHandler->registerRoutes(*_router);
-            _router->clearHandlerTypeContext();
-
-            if (!result.isSuccess()) {
-              logger.error(F("WebManager"),
-                           String(F("Lazy-Registrierung fehlgeschlagen (SensorHandler): ")) +
-                               result.getMessage());
-              return false; // Block request on registration failure
-            }
-            cacheHandler(std::move(newHandler), "sensor");
-          } else {
-            updateHandlerAccess("sensor");
-          }
-        }
-
-        return true; // Continue with routing
-      });
-
-      m_handlersInitialized = true;
-      logger.info(F("WebManager"), String(F("Lazy-Loading-Middleware aktiviert (LRU-Cache: ")) +
-                                       String(MAX_ACTIVE_HANDLERS) + F(" Handler)"));
-
-      // Log initial route count (only essential routes registered)
-      if (_router) {
-        _router->logRouteStats();
       }
+      // Log routes
+      else if (url.startsWith("/logs")) {
+        BaseHandler* handler = getCachedHandler("log");
+        if (!handler) {
+          logger.debug(F("WebManager"), F("Lazy-Loading: LogHandler"));
+          auto newHandler =
+              std::unique_ptr<LogHandler>(LogHandler::getInstance(*_server, *_auth, *_cssService));
+
+          // Set handler type context for route registration
+          _router->setHandlerTypeContext("log");
+          auto result = newHandler->registerRoutes(*_router);
+          _router->clearHandlerTypeContext();
+
+          if (!result.isSuccess()) {
+            logger.error(F("WebManager"),
+                         String(F("Lazy-Registrierung fehlgeschlagen (LogHandler): ")) +
+                             result.getMessage());
+            return false; // Block request on registration failure
+          }
+          cacheHandler(std::move(newHandler), "log");
+        } else {
+          updateHandlerAccess("log");
+        }
+      }
+      // Admin sensor routes
+      else if ((url.startsWith("/admin/sensors") || url == "/trigger_measurement" ||
+                url == "/admin/getSensorConfig") &&
+               _sensorManager) {
+        BaseHandler* handler = getCachedHandler("admin_sensor");
+        if (!handler) {
+          logger.debug(F("WebManager"), F("Lazy-Loading: AdminSensorHandler"));
+          auto newHandler =
+              std::make_unique<AdminSensorHandler>(*_server, *_auth, *_cssService, *_sensorManager);
+
+          _router->setHandlerTypeContext("admin_sensor");
+          auto result = newHandler->registerRoutes(*_router);
+          _router->clearHandlerTypeContext();
+
+          if (!result.isSuccess()) {
+            logger.error(F("WebManager"),
+                         String(F("Lazy-Registrierung fehlgeschlagen (AdminSensorHandler): ")) +
+                             result.getMessage());
+            return false; // Block request on registration failure
+          }
+          cacheHandler(std::move(newHandler), "admin_sensor");
+        } else {
+          updateHandlerAccess("admin_sensor");
+        }
+      }
+#if USE_DISPLAY
+      // Display routes
+      else if (url.startsWith("/admin/display")) {
+        BaseHandler* handler = getCachedHandler("display");
+        if (!handler) {
+          logger.debug(F("WebManager"), F("Lazy-Loading: AdminDisplayHandler"));
+          auto newHandler = std::make_unique<AdminDisplayHandler>(*_server);
+
+          _router->setHandlerTypeContext("display");
+          auto result = newHandler->registerRoutes(*_router);
+          _router->clearHandlerTypeContext();
+
+          if (!result.isSuccess()) {
+            logger.error(F("WebManager"),
+                         String(F("Lazy-Registrierung fehlgeschlagen (AdminDisplayHandler): ")) +
+                             result.getMessage());
+            return false; // Block request on registration failure
+          }
+          cacheHandler(std::move(newHandler), "display");
+        } else {
+          updateHandlerAccess("display");
+        }
+      }
+#endif
+      // General admin routes (excluding special cases handled above)
+      // NOTE: /admin/config/setConfigValue is an essential route registered
+      // early in WebManager::setupRoutes. Avoid lazy-loading the full
+      // AdminHandler for requests to that path to prevent registering
+      // additional routes and hitting the max-routes limit.
+      else if (url.startsWith("/admin") && !url.startsWith("/admin/sensors") &&
+               !url.startsWith("/admin/display") && !(url == "/admin/update") &&
+               !url.startsWith("/admin/config/update") && !(url == "/admin/uploadConfig") &&
+               !(url == "/admin/config/setConfigValue" ||
+                 url.startsWith("/admin/config/setConfigValue"))) {
+        BaseHandler* handler = getCachedHandler("admin");
+        if (!handler) {
+          logger.debug(F("WebManager"), String(F("Lazy-Loading: AdminHandler für URL: ")) + url);
+          auto newHandler = std::make_unique<AdminHandler>(*_server, *_auth, *_cssService);
+
+          _router->setHandlerTypeContext("admin");
+          auto result = newHandler->registerRoutes(*_router);
+          _router->clearHandlerTypeContext();
+
+          if (!result.isSuccess()) {
+            logger.error(F("WebManager"),
+                         String(F("Lazy-Registrierung fehlgeschlagen (AdminHandler): ")) +
+                             result.getMessage());
+            return false; // Block request on registration failure
+          }
+          cacheHandler(std::move(newHandler), "admin");
+        } else {
+          updateHandlerAccess("admin");
+        }
+      }
+      // Sensor data routes
+      else if (url == "/getLatestValues" || (url.startsWith("/sensor") && _sensorManager)) {
+        BaseHandler* handler = getCachedHandler("sensor");
+        if (!handler) {
+          logger.debug(F("WebManager"), F("Lazy-Loading: SensorHandler"));
+          auto newHandler =
+              std::make_unique<SensorHandler>(*_server, *_auth, *_cssService, *_sensorManager);
+
+          _router->setHandlerTypeContext("sensor");
+          auto result = newHandler->registerRoutes(*_router);
+          _router->clearHandlerTypeContext();
+
+          if (!result.isSuccess()) {
+            logger.error(F("WebManager"),
+                         String(F("Lazy-Registrierung fehlgeschlagen (SensorHandler): ")) +
+                             result.getMessage());
+            return false; // Block request on registration failure
+          }
+          cacheHandler(std::move(newHandler), "sensor");
+        } else {
+          updateHandlerAccess("sensor");
+        }
+      }
+
+      return true; // Continue with routing
+    });
+
+    m_handlersInitialized = true;
+    logger.info(F("WebManager"), String(F("Lazy-Loading-Middleware aktiviert (LRU-Cache: ")) +
+                                     String(MAX_ACTIVE_HANDLERS) + F(" Handler)"));
+
+    // Log initial route count (only essential routes registered)
+    if (_router) {
+      _router->logRouteStats();
     }
-  } catch (const std::exception& e) {
-    logger.error(F("WebManager"),
-                 String(F("Handler konnten nicht initialisiert werden: ")) + String(e.what()));
-    cleanupNonEssentialHandlers();
   }
 }
 

@@ -99,66 +99,57 @@ SensorFactory::createAllSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
                                 SensorManager* sensorManager) {
   logger.info(F("SensorFactory"), F("Starte Sensor-Erstellungsprozess"));
 
-  try {
-    logger.logMemoryStats(F("vor_sensorerstellung"));
-    sensors.clear();
+  logger.logMemoryStats(F("vor_sensorerstellung"));
+  sensors.clear();
 
-    std::vector<String> errors;
+  std::vector<String> errors;
 
 #if USE_ANALOG
-    addAnalogSensors(sensors, sensorManager, errors);
+  addAnalogSensors(sensors, sensorManager, errors);
 #endif
 #if USE_DHT
-    addDHTSensors(sensors, sensorManager, errors);
+  addDHTSensors(sensors, sensorManager, errors);
 #endif
 #if USE_DS18B20
-    addDS18B20Sensors(sensors, sensorManager, errors);
+  addDS18B20Sensors(sensors, sensorManager, errors);
 #endif
 #if USE_SDS011
-    addSDS011Sensors(sensors, sensorManager, errors);
+  addSDS011Sensors(sensors, sensorManager, errors);
 #endif
 #if USE_MHZ19
-    addMHZ19Sensors(sensors, sensorManager, errors);
+  addMHZ19Sensors(sensors, sensorManager, errors);
 #endif
 #if USE_HX711
-    addHX711Sensors(sensors, sensorManager, errors);
+  addHX711Sensors(sensors, sensorManager, errors);
 #endif
 #if USE_BMP280
-    addBMP280Sensors(sensors, sensorManager, errors);
+  addBMP280Sensors(sensors, sensorManager, errors);
 #endif
 #if USE_SERIAL_RECEIVER
-    addSerialReceiverSensors(sensors, sensorManager, errors);
+  addSerialReceiverSensors(sensors, sensorManager, errors);
 #endif
 
-    logger.logMemoryStats(F("nach_sensorerstellung"));
+  logger.logMemoryStats(F("nach_sensorerstellung"));
 
-    // If we have any sensors initialized, consider it a partial success
-    if (!sensors.empty()) {
-      if (errors.empty()) {
-        return SensorResult::success();
-      } else {
-        // Join all errors with semicolons
-        String errorMsg;
-        for (size_t i = 0; i < errors.size(); i++) {
-          if (i > 0)
-            errorMsg += F("; ");
-          errorMsg += errors[i];
-        }
-        return SensorResult::partialSuccess(errorMsg);
+  // If we have any sensors initialized, consider it a partial success
+  if (!sensors.empty()) {
+    if (errors.empty()) {
+      return SensorResult::success();
+    } else {
+      // Join all errors with semicolons
+      String errorMsg;
+      for (size_t i = 0; i < errors.size(); i++) {
+        if (i > 0)
+          errorMsg += F("; ");
+        errorMsg += errors[i];
       }
+      return SensorResult::partialSuccess(errorMsg);
     }
-
-    // If no sensors were initialized at all, return failure
-    return SensorResult::fail(SensorError::INITIALIZATION_ERROR,
-                              F("Keine Sensoren konnten initialisiert werden"));
-  } catch (const std::exception& e) {
-    logger.error(F("SensorFactory"),
-                 String(F("Ausnahme während der Sensorerstellung: ")) + String(e.what()));
-    return SensorResult::fail(SensorError::INITIALIZATION_ERROR, e.what());
-  } catch (...) {
-    logger.error(F("SensorFactory"), F("Unbekannte Ausnahme während der Sensorerstellung"));
-    return SensorResult::fail(SensorError::INITIALIZATION_ERROR);
   }
+
+  // If no sensors were initialized at all, return failure
+  return SensorResult::fail(SensorError::INITIALIZATION_ERROR,
+                            F("Keine Sensoren konnten initialisiert werden"));
 }
 
 SensorFactory::SensorResult

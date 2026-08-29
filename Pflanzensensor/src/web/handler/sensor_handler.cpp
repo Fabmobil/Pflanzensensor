@@ -103,14 +103,9 @@ void SensorHandler::handleGetLatestValues() {
     }
 
     String sensorName;
-    try {
-      sensorName = sensor->getName();
-      if (sensorName.length() == 0) {
-        sensorName = String(F("Unbekannt_")) + String(sensorIndex);
-      }
-    } catch (...) {
-      logger.error(F("SensorHandler"), F("Fehler beim Abrufen des Sensornamens"));
-      continue;
+    sensorName = sensor->getName();
+    if (sensorName.length() == 0) {
+      sensorName = String(F("Unbekannt_")) + String(sensorIndex);
     }
 
     if (!sensor->isEnabled()) {
@@ -119,13 +114,7 @@ void SensorHandler::handleGetLatestValues() {
     }
 
     MeasurementData measurementData;
-    try {
-      measurementData = sensor->getMeasurementData();
-    } catch (...) {
-      logger.error(F("SensorHandler"),
-                   String(F("Fehler beim Abrufen der Messdaten für ")) + sensorName);
-      continue;
-    }
+    measurementData = sensor->getMeasurementData();
 
     if (!measurementData.isValid() || measurementData.activeValues == 0) {
       logger.warning(F("SensorHandler"), String(F("Ungültige Messdaten für Sensor ")) + sensorName);
@@ -153,39 +142,29 @@ void SensorHandler::handleGetLatestValues() {
       }
 
       String fieldName;
-      try {
-        fieldName = measurementData.fieldNames[i];
-        if (fieldName.length() == 0) {
-          continue;
-        }
-
-        fieldName.replace("\"", "");
-        fieldName.replace("\n", "");
-        fieldName.replace("\r", "");
-
-        if (fieldName.length() > 50) {
-          fieldName = fieldName.substring(0, 50);
-        }
-      } catch (...) {
-        logger.error(F("SensorHandler"), F("Fehler beim Zugriff auf Feldnamen"));
+      fieldName = measurementData.fieldNames[i];
+      if (fieldName.length() == 0) {
         continue;
+      }
+
+      fieldName.replace("\"", "");
+      fieldName.replace("\n", "");
+      fieldName.replace("\r", "");
+
+      if (fieldName.length() > 50) {
+        fieldName = fieldName.substring(0, 50);
       }
 
       float value = 0.0f;
       String unit;
-      try {
-        value = measurementData.values[i];
-        unit = measurementData.units[i];
+      value = measurementData.values[i];
+      unit = measurementData.units[i];
 
-        unit.replace("\"", "");
-        unit.replace("\n", "");
-        unit.replace("\r", "");
-        if (unit.length() > 10) {
-          unit = unit.substring(0, 10);
-        }
-      } catch (...) {
-        logger.error(F("SensorHandler"), F("Fehler beim Zugriff auf Wert/Einheit"));
-        continue;
+      unit.replace("\"", "");
+      unit.replace("\n", "");
+      unit.replace("\r", "");
+      if (unit.length() > 10) {
+        unit = unit.substring(0, 10);
       }
 
       // Never expose 0 ppm as a valid reading.
@@ -297,30 +276,25 @@ void SensorHandler::handleGetLatestValues() {
 
   sendChunk(F("}"));
 
-  try {
-    sendChunk(F(",\"system\":{\"freeHeap\":"));
-    sendChunk(String(ESP.getFreeHeap()));
-    sendChunk(F(",\"heapFragmentation\":"));
+  sendChunk(F(",\"system\":{\"freeHeap\":"));
+  sendChunk(String(ESP.getFreeHeap()));
+  sendChunk(F(",\"heapFragmentation\":"));
 #ifdef ESP32
-    uint32_t heapFrag =
-        ESP.getFreeHeap() > 0 ? (100 - (ESP.getMaxAllocHeap() * 100 / ESP.getFreeHeap())) : 0;
-    sendChunk(String(heapFrag));
+  uint32_t heapFrag =
+      ESP.getFreeHeap() > 0 ? (100 - (ESP.getMaxAllocHeap() * 100 / ESP.getFreeHeap())) : 0;
+  sendChunk(String(heapFrag));
 #else
-    sendChunk(String(ESP.getHeapFragmentation()));
+  sendChunk(String(ESP.getHeapFragmentation()));
 #endif
-    sendChunk(F(",\"rebootCount\":"));
-    sendChunk(String(Helper::getRebootCount()));
-    sendChunk(F(",\"version\":\""));
-    sendChunk(VERSION);
-    sendChunk(F("\",\"buildDate\":\""));
-    sendChunk(F(__DATE__));
-    sendChunk(F("\",\"processedSensors\":"));
-    sendChunk(String(processedSensors));
-    sendChunk(F("}}"));
-  } catch (...) {
-    logger.error(F("SensorHandler"), F("Fehler beim Systeminfo-Zugriff"));
-    sendChunk(F(",\"error\":\"Systeminfo-Fehler\"}}"));
-  }
+  sendChunk(F(",\"rebootCount\":"));
+  sendChunk(String(Helper::getRebootCount()));
+  sendChunk(F(",\"version\":\""));
+  sendChunk(VERSION);
+  sendChunk(F("\",\"buildDate\":\""));
+  sendChunk(F(__DATE__));
+  sendChunk(F("\",\"processedSensors\":"));
+  sendChunk(String(processedSensors));
+  sendChunk(F("}}"));
 
   endChunkedResponse();
 }
@@ -370,15 +344,11 @@ void SensorHandler::createSensorListSection() const {
     Component::sendChunk(_server, F("</p>\n"));
     Component::sendChunk(_server, F("    <p>Letzter Wert: "));
 
-    try {
-      auto data = sensor->getMeasurementData();
-      if (data.isValid() && data.activeValues > 0) {
-        Component::sendChunk(_server, String(data.values[0], 2));
-      } else {
-        Component::sendChunk(_server, F("N/A"));
-      }
-    } catch (...) {
-      Component::sendChunk(_server, F("Fehler"));
+    auto data = sensor->getMeasurementData();
+    if (data.isValid() && data.activeValues > 0) {
+      Component::sendChunk(_server, String(data.values[0], 2));
+    } else {
+      Component::sendChunk(_server, F("N/A"));
     }
 
     Component::sendChunk(_server, F("</p>\n"));

@@ -16,32 +16,24 @@ bool WebSocketService::init(uint16_t port, WebSocketEventHandler handler) {
     return true;
   }
 
-  try {
-    _eventHandler = std::move(handler);
-    _wsServer = std::make_unique<WebSocketsServer>(port);
+  _eventHandler = std::move(handler);
+  _wsServer = std::make_unique<WebSocketsServer>(port);
 
-    if (!_wsServer) {
-      logger.error(F("Websocket"), F("WebSocket-Server konnte nicht erstellt werden"));
-      return false;
-    }
-
-    // Enable heartbeat with 15s interval, timeout after 3s, and 2 missed pings
-    _wsServer->enableHeartbeat(15000, 3000, 2);
-
-    _wsServer->onEvent([this](uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
-      handleEvent(num, type, payload, length);
-    });
-
-    _wsServer->begin();
-    logger.info(F("Websocket"), F("WebSocket-Server erfolgreich gestartet"));
-    return true;
-
-  } catch (const std::exception& e) {
-    logger.error(F("Websocket"),
-                 String(F("WebSocket-Initialisierung fehlgeschlagen: ")) + String(e.what()));
-    stop();
+  if (!_wsServer) {
+    logger.error(F("Websocket"), F("WebSocket-Server konnte nicht erstellt werden"));
     return false;
   }
+
+  // Enable heartbeat with 15s interval, timeout after 3s, and 2 missed pings
+  _wsServer->enableHeartbeat(15000, 3000, 2);
+
+  _wsServer->onEvent([this](uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
+    handleEvent(num, type, payload, length);
+  });
+
+  _wsServer->begin();
+  logger.info(F("Websocket"), F("WebSocket-Server erfolgreich gestartet"));
+  return true;
 }
 
 void WebSocketService::stop() {

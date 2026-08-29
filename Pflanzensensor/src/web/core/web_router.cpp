@@ -15,16 +15,12 @@ WebRouter::WebRouter(ESPWebServer& server) : _server(server) {
     return;
   }
 
-  try {
-    _routes.reserve(MAX_ROUTES);
-    _middleware.reserve(MAX_MIDDLEWARE);
+  _routes.reserve(MAX_ROUTES);
+  _middleware.reserve(MAX_MIDDLEWARE);
 
-    logger.debug(F("WebRouter"), F("WebRouter mit Grenzen initialisiert:"));
-    logger.debug(F("WebRouter"), String(F("- Max Routen: ")) + String(MAX_ROUTES));
-    logger.debug(F("WebRouter"), String(F("- Max Middleware: ")) + String(MAX_MIDDLEWARE));
-  } catch (const std::exception& e) {
-    logger.error(F("WebRouter"), F("Zuweisung der Router-Puffer fehlgeschlagen"));
-  }
+  logger.debug(F("WebRouter"), F("WebRouter mit Grenzen initialisiert:"));
+  logger.debug(F("WebRouter"), String(F("- Max Routen: ")) + String(MAX_ROUTES));
+  logger.debug(F("WebRouter"), String(F("- Max Middleware: ")) + String(MAX_MIDDLEWARE));
 }
 
 RouterResult WebRouter::addRoute(HTTPMethod method, const String& url, HandlerCallback handler,
@@ -98,13 +94,8 @@ bool WebRouter::handleRequest(HTTPMethod method, const String& url) {
     return false;
   }
 
-  try {
-    route->handler();
-    return true;
-  } catch (const std::exception& e) {
-    logger.error(F("WebRouter"), String(F("Handler-Fehler: ")) + String(e.what()));
-    return false;
-  }
+  route->handler();
+  return true;
 }
 
 void WebRouter::addMiddleware(MiddlewareCallback middleware) {
@@ -118,12 +109,7 @@ void WebRouter::addMiddleware(MiddlewareCallback middleware) {
     return;
   }
 
-  try {
-    _middleware.emplace_back(std::move(middleware));
-  } catch (const std::exception& e) {
-    logger.error(F("WebRouter"),
-                 String(F("Hinzufügen der Middleware fehlgeschlagen: ")) + String(e.what()));
-  }
+  _middleware.emplace_back(std::move(middleware));
 }
 
 String WebRouter::methodToString(HTTPMethod method) {

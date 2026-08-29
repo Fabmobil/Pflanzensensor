@@ -440,21 +440,15 @@ SensorResult Sensor::performMeasurementCycle() {
     m_state.operationStartTime = millis();
     m_state.sampleCount = 0;
     m_state.samples.clear();
-    try {
-      m_state.samples.resize(numMeasurements);
-      // Pre-allocate inner vectors to avoid heap allocations during the
-      // time-critical fetchSample() calls which can trigger mallocs and
-      // contribute to watchdog resets. Reserve NUM_SAMPLES elements for
-      // each channel ahead of time.
-      for (size_t i = 0; i < m_state.samples.size(); ++i) {
-        m_state.samples[i].reserve(NUM_SAMPLES);
-      }
-    } catch (const std::exception& e) {
-      logger.error(getName(), String(F(": Failed to resize samples vector: ")) + String(e.what()));
-      m_state.readInProgress = false;
-      return SensorResult::fail(SensorError::MEMORY_ERROR,
-                                F("Failed to allocate measurement memory"));
+    m_state.samples.resize(numMeasurements);
+    // Pre-allocate inner vectors to avoid heap allocations during the
+    // time-critical fetchSample() calls which can trigger mallocs and
+    // contribute to watchdog resets. Reserve NUM_SAMPLES elements for
+    // each channel ahead of time.
+    for (size_t i = 0; i < m_state.samples.size(); ++i) {
+      m_state.samples[i].reserve(NUM_SAMPLES);
     }
+
     m_state.measurementIndex = 0;
     m_state.sampleIndex = 0;
     m_state.measurementStarted = true;
