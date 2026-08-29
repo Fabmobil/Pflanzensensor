@@ -180,6 +180,7 @@ void SensorMeasurementCycleManager::reset() {
   m_lastDebugTime = 0;
   m_lastSlotAttemptTime = 0; // Reset slot attempt time
   m_forced = false;
+  m_retryLevel = 0;
 }
 
 MeasurementState SensorMeasurementCycleManager::getCurrentState() const { return m_state.state; }

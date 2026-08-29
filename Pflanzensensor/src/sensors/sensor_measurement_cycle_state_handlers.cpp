@@ -178,6 +178,22 @@ void SensorMeasurementCycleManager::handleMeasuring() {
   // Ergebnisse sichern
   m_currentResults = m_sensor->getAveragedResults();
 
+  // Erfolg hebt die Fehlerhistorie auf.
+  //
+  // MEASUREMENT_ERROR_COUNT ist als "Anzahl aufeinanderfolgender
+  // Fehlmessungen" dokumentiert, errorCount wurde bei einer erfolgreichen
+  // Messung aber nirgends zurückgesetzt - nur nach geglückter
+  // Reinitialisierung. Ein Sensor, der gelegentlich eine Messung verpatzt
+  // (beim DHT völlig normal), summierte die Fehler über Stunden auf und lief
+  // in die Fehlerbehandlung, obwohl er funktionierte.
+  m_state.errorCount = 0;
+  m_state.fatalError = false;
+  m_retryLevel = 0;
+  if (m_sensor->config().hasPersistentError) {
+    LOG_INFO(F("MeasurementCycle"), m_sensor->getName() + F(": Liefert wieder Messwerte"));
+    m_sensor->mutableConfig().hasPersistentError = false;
+  }
+
   // Zeitstempel der erfolgreichen Messung aktualisieren (nur hier, nicht in Processing)
   m_sensor->updateLastMeasurementTime();
 

@@ -113,6 +113,12 @@ private:
       50; ///< Delay between slot attempts (50ms, reduced from 100ms)
   static constexpr unsigned long SLOT_TIMEOUT = 50000; ///< Maximum slot hold time (50 seconds)
 
+  /// Obergrenze für den Abstand zwischen zwei Versuchen eines dauerhaft
+  /// fehlerhaften Sensors (30 Minuten).
+  static constexpr unsigned long MAX_RETRY_BACKOFF = 1800000UL;
+  /// Obergrenze für die Verdopplungsstufe, damit der Zähler nicht wegläuft.
+  static constexpr uint8_t MAX_RETRY_LEVEL = 8;
+
   // Member variables
   Sensor* m_sensor;                    ///< Pointer to the managed sensor
   MeasurementStateInfo m_state;        ///< Current state information
@@ -127,6 +133,10 @@ private:
   unsigned long m_lastSlotAttemptTime{0};  ///< Last attempt to acquire measurement slot
   unsigned long m_slotRequestStartTime{0}; ///< When current slot request started
   bool m_forced{false}; ///< Manuell ausgelöste Messung: ohne Wartezeit durchziehen
+  /// Verdopplungsstufe des Wiederholungsabstands, 0 = normaler Messtakt.
+  /// Wächst mit jeder erschöpften Versuchsreihe, wird bei jeder erfolgreichen
+  /// Messung wieder auf 0 gesetzt.
+  uint8_t m_retryLevel{0};
 
   // State handlers (defined in separate files)
 
@@ -203,7 +213,21 @@ private:
   /**
    * @brief Deactivates the sensor after fatal errors
    */
-  void deactivateSensor();
+  /**
+   * @brief Plant den nächsten Versuch mit wachsendem Abstand
+   * @details Ersetzt die frühere dauerhafte Abschaltung des Sensors. Der
+   *          Sensor bleibt aktiviert; nur der Abstand zwischen zwei Versuchen
+   *          verdoppelt sich mit jeder erschöpften Versuchsreihe, gedeckelt
+   *          auf MAX_RETRY_BACKOFF. Eine erfolgreiche Messung setzt die Stufe
+   *          zurück.
+   *
+   *          Vorher rief handleError() hier setEnabled(false) auf.
+   *          SensorManager::updateMeasurements() überspringt deaktivierte
+   *          Sensoren, und zurück auf true kam der Sensor nur über das
+   *          Webinterface oder einen Neustart - ein Wackelkontakt legte damit
+   *          einen Kanal still, sichtbar allein an einer Logzeile.
+   */
+  void scheduleRetryWithBackoff();
 
   /**
    * @brief Checks if the slot request has timed out

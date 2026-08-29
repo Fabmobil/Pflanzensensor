@@ -66,8 +66,8 @@ void SensorMeasurementCycleManager::handleError() {
       return;
     }
 
-    // Andere Sensoren: Deaktivieren
-    deactivateSensor();
+    // Andere Sensoren: aktiviert lassen, nur seltener versuchen
+    scheduleRetryWithBackoff();
     return;
   }
 
@@ -124,15 +124,46 @@ void SensorMeasurementCycleManager::handleStateError(const String& error) {
 }
 
 /**
- * @brief Deaktiviert den Sensor nach fatalen Fehlern
- * @details Setzt den Sensor auf deaktiviert. Wird nur aufgerufen wenn
- *          alle Wiederholungsversuche erschöpft sind.
+ * @brief Plant den nächsten Versuch mit wachsendem Abstand
+ * @details Siehe Erläuterung an der Deklaration. Der Sensor bleibt aktiviert;
+ *          nur der Abstand wächst, gedeckelt auf MAX_RETRY_BACKOFF.
  */
-void SensorMeasurementCycleManager::deactivateSensor() {
-  if (m_sensor) {
-    LOG_WARN(F("MeasurementCycle"), m_sensor->getName() + String(F(": Deaktiviert nach ")) +
-                                        String(m_state.errorCount) +
-                                        F(" aufeinanderfolgenden Fehlern"));
-    m_sensor->setEnabled(false);
+void SensorMeasurementCycleManager::scheduleRetryWithBackoff() {
+  if (!m_sensor) {
+    return;
   }
+
+  if (m_retryLevel < MAX_RETRY_LEVEL) {
+    m_retryLevel++;
+  }
+
+  // Abstand aus dem reguläreren Messtakt verdoppeln, ohne überzulaufen
+  unsigned long retryDelay = m_state.measurementInterval;
+  if (retryDelay == 0) {
+    retryDelay = ERROR_RETRY_DELAY;
+  }
+  for (uint8_t level = 1; level < m_retryLevel; level++) {
+    if (retryDelay >= MAX_RETRY_BACKOFF / 2) {
+      retryDelay = MAX_RETRY_BACKOFF;
+      break;
+    }
+    retryDelay *= 2;
+  }
+  if (retryDelay > MAX_RETRY_BACKOFF) {
+    retryDelay = MAX_RETRY_BACKOFF;
+  }
+
+  LOG_WARN(F("MeasurementCycle"), m_sensor->getName() +
+                                      String(F(": Bleibt aktiv, nächster Versuch in ")) +
+                                      String(retryDelay / 1000UL) + String(F(" s (Stufe ")) +
+                                      String(m_retryLevel) + F(")"));
+
+  // Frische Versuchsreihe für den nächsten Anlauf. hasPersistentError bleibt
+  // gesetzt, damit der Zustand im Webinterface sichtbar ist; die erste
+  // erfolgreiche Messung räumt beides wieder ab.
+  m_state.errorCount = 0;
+  m_state.fatalError = false;
+  m_state.needsInitialization = true;
+  m_state.scheduleNextMeasurement(millis(), retryDelay);
+  m_state.setState(MeasurementState::WAITING_FOR_DUE, m_sensor->getName());
 }
