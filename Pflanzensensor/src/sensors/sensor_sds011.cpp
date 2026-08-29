@@ -64,8 +64,8 @@ SensorResult SDS011Sensor::init() {
     return memoryResult;
   }
 
-  logger.debug(getName(), String(F("Creating instance on pins RX:")) + String(m_rxPin) +
-                              String(F(" TX:")) + String(m_txPin));
+  LOG_DEBUG(getName(), String(F("Creating instance on pins RX:")) + String(m_rxPin) +
+                           String(F(" TX:")) + String(m_txPin));
 
   m_serial->begin(9600);
   delay(100); // Give serial time to initialize
@@ -82,7 +82,7 @@ SensorResult SDS011Sensor::init() {
 
   // Always keep sensor asleep initially - it will wake up during measurement
   // cycles
-  logger.info(getName(), F("Sensor will sleep between measurements"));
+  LOG_INFO(getName(), F("Sensor will sleep between measurements"));
 
   m_initialized = true; // Mark as initialized so measurement cycle can proceed
   return SensorResult::success();
@@ -310,7 +310,7 @@ SensorResult SDS011Sensor::continueMeasurement() { return SensorResult::success(
 
 SensorResult SDS011Sensor::performMeasurementCycle() {
   if (!isInitialized()) {
-    logger.error(getName(), F(": performMeasurementCycle called on uninitialized sensor!"));
+    LOG_ERROR(getName(), F(": performMeasurementCycle called on uninitialized sensor!"));
     return SensorResult::fail(SensorError::INITIALIZATION_ERROR, F("Sensor not initialized"));
   }
 
@@ -318,7 +318,7 @@ SensorResult SDS011Sensor::performMeasurementCycle() {
   if (m_state.sleeping) {
     logDebug(F("Waking up sensor for measurement"));
     if (!wakeup()) {
-      logger.error(getName(), F("Failed to wake up sensor for measurement"));
+      LOG_ERROR(getName(), F("Failed to wake up sensor for measurement"));
       return SensorResult::fail(SensorError::MEASUREMENT_ERROR, F("Failed to wake up sensor"));
     }
   }
@@ -330,7 +330,7 @@ SensorResult SDS011Sensor::performMeasurementCycle() {
   if (!m_state.sleeping) {
     logDebug(F("Putting sensor back to sleep after measurement"));
     if (!sleep()) {
-      logger.warning(getName(), F("Failed to put sensor to sleep after measurement"));
+      LOG_WARN(getName(), F("Failed to put sensor to sleep after measurement"));
       // Don't fail the measurement result due to sleep failure
     }
   }
@@ -339,12 +339,12 @@ SensorResult SDS011Sensor::performMeasurementCycle() {
 }
 
 void SDS011Sensor::logDebugDetails() const {
-  logger.debug(getName(), String(F("SDS011 state: sleeping=")) + String(m_state.sleeping));
+  LOG_DEBUG(getName(), String(F("SDS011 state: sleeping=")) + String(m_state.sleeping));
   String resp;
   for (size_t i = 0; i < SDS011_RESPONSE_LENGTH; ++i) {
     resp += String(m_response[i], HEX) + " ";
   }
-  logger.debug(getName(), String(F("Last SDS011 response: ")) + resp);
+  LOG_DEBUG(getName(), String(F("Last SDS011 response: ")) + resp);
 }
 
 bool SDS011Sensor::testCommunication() {

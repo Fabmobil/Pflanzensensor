@@ -17,29 +17,28 @@ extern Logger logger;
 
 TypedResult<ResourceError, void> LedTrafficLightManager::initialize() {
 #if USE_LED_TRAFFIC_LIGHT
-  logger.debug(F("LedTrafficLight"), F("Initialisiere LedTrafficLightManager"));
+  LOG_DEBUG(F("LedTrafficLight"), F("Initialisiere LedTrafficLightManager"));
 
   m_ledLights = std::make_unique<LedLights>();
   if (!m_ledLights) {
-    logger.warning(F("LedTrafficLight"), F("LED-Ampel Zuweisung fehlgeschlagen"));
+    LOG_WARN(F("LedTrafficLight"), F("LED-Ampel Zuweisung fehlgeschlagen"));
     return TypedResult<ResourceError, void>::fail(ResourceError::OPERATION_FAILED,
                                                   F("Zuweisung der LED-Ampel fehlgeschlagen"));
   }
 
   auto initResult = m_ledLights->init();
   if (!initResult.isSuccess()) {
-    logger.warning(F("LedTrafficLight"),
-                   String(F("Initialisierung der LED-Ampel fehlgeschlagen: ")) +
-                       initResult.getMessage());
+    LOG_WARN(F("LedTrafficLight"),
+             String(F("Initialisierung der LED-Ampel fehlgeschlagen: ")) + initResult.getMessage());
     return TypedResult<ResourceError, void>::fail(
         ResourceError::OPERATION_FAILED,
         String(F("Initialisierung der LED-Ampel fehlgeschlagen: ")) + initResult.getMessage());
   }
 
-  logger.info(F("LedTrafficLight"), F("LedTrafficLightManager erfolgreich initialisiert"));
+  LOG_INFO(F("LedTrafficLight"), F("LedTrafficLightManager erfolgreich initialisiert"));
   return TypedResult<ResourceError, void>::success();
 #else
-  logger.debug(F("LedTrafficLight"), F("LED traffic light disabled, skipping initialization"));
+  LOG_DEBUG(F("LedTrafficLight"), F("LED traffic light disabled, skipping initialization"));
   return TypedResult<ResourceError, void>::success();
 #endif
 }

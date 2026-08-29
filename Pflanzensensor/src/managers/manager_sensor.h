@@ -80,7 +80,7 @@ public:
    * @return SensorResult indicating success or failure
    */
   SensorResult stopAll() {
-    logger.debug(F("SensorManager"), F("stopAll aufgerufen"));
+    LOG_DEBUG(F("SensorManager"), F("stopAll aufgerufen"));
     for (auto& sensor : m_sensors) {
       if (sensor) {
         sensor->stop();

@@ -43,7 +43,7 @@ public:
   AdminHandler(ESPWebServer& server, [[maybe_unused]] WebAuth& auth,
                [[maybe_unused]] CSSService& cssService)
       : BaseHandler(server) { // We only use the server parameter
-    logger.debug(F("AdminHandler"), F("Initialisiere AdminHandler"));
+    LOG_DEBUG(F("AdminHandler"), F("Initialisiere AdminHandler"));
     logger.logMemoryStats(F("Admihandler"));
   }
 

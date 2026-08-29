@@ -17,15 +17,15 @@ bool LogHandler::s_initialized = false;
 
 RouterResult LogHandler::onRegisterRoutes(WebRouter& router) {
   if (!isInitialized()) {
-    logger.error(F("LogHandler"),
-                 F("Kann Routen nicht registrieren - LogHandler nicht initialisiert"));
+    LOG_ERROR(F("LogHandler"),
+              F("Kann Routen nicht registrieren - LogHandler nicht initialisiert"));
     return RouterResult::fail(RouterError::INITIALIZATION_ERROR,
                               F("LogHandler nicht initialisiert"));
   }
 
-  logger.debug(F("LogHandler"), F("Registriere Log-Routen"));
+  LOG_DEBUG(F("LogHandler"), F("Registriere Log-Routen"));
   auto result = router.addRoute(HTTP_GET, "/logs", [this]() {
-    logger.debug(F("LogHandler"), F("Log route handler called"));
+    LOG_DEBUG(F("LogHandler"), F("Log route handler called"));
     handleLogs();
   });
   if (!result.isSuccess())
@@ -42,8 +42,8 @@ RouterResult LogHandler::onRegisterRoutes(WebRouter& router) {
 
 HandlerResult LogHandler::handleGet(const String& uri, const std::map<String, String>& query) {
   if (!isInitialized()) {
-    logger.error(F("LogHandler"),
-                 F("Kann GET-Anfrage nicht verarbeiten - LogHandler nicht initialisiert"));
+    LOG_ERROR(F("LogHandler"),
+              F("Kann GET-Anfrage nicht verarbeiten - LogHandler nicht initialisiert"));
     return HandlerResult::fail(HandlerError::INITIALIZATION_ERROR,
                                F("LogHandler nicht initialisiert"));
   }
@@ -52,8 +52,8 @@ HandlerResult LogHandler::handleGet(const String& uri, const std::map<String, St
 
 HandlerResult LogHandler::handlePost(const String& uri, const std::map<String, String>& params) {
   if (!isInitialized()) {
-    logger.error(F("LogHandler"),
-                 F("Kann POST-Anfrage nicht verarbeiten - LogHandler nicht initialisiert"));
+    LOG_ERROR(F("LogHandler"),
+              F("Kann POST-Anfrage nicht verarbeiten - LogHandler nicht initialisiert"));
     return HandlerResult::fail(HandlerError::INITIALIZATION_ERROR,
                                F("LogHandler nicht initialisiert"));
   }
@@ -62,17 +62,17 @@ HandlerResult LogHandler::handlePost(const String& uri, const std::map<String, S
 
 void LogHandler::handleLogs() {
   if (!isInitialized()) {
-    logger.error(F("LogHandler"), F("Cannot handle logs - LogHandler not properly initialized"));
+    LOG_ERROR(F("LogHandler"), F("Cannot handle logs - LogHandler not properly initialized"));
     _server.send(500, F("text/plain"), F("LogHandler not initialized"));
     return;
   }
 
-  logger.debug(F("LogHandler"), F("Verarbeite Logseiten-Anfrage"));
+  LOG_DEBUG(F("LogHandler"), F("Verarbeite Logseiten-Anfrage"));
   _cleaned = false;
 
   // Check memory before proceeding
   if (ESP.getFreeHeap() < 6000) { // Higher threshold for log handling
-    logger.warning(F("LogHandler"), F("Wenig Speicher, liefere minimale Log-Seite"));
+    LOG_WARN(F("LogHandler"), F("Wenig Speicher, liefere minimale Log-Seite"));
     _server.send(200, F("text/html"),
                  F("<!DOCTYPE html><html><body><h1>Wenig Speicher</h1>"
                    "<p>Bitte versuchen Sie es in wenigen Momenten erneut.</p></body></html>"));
@@ -172,7 +172,7 @@ void LogHandler::handleLogs() {
       },
       css, js);
 
-  logger.debug(F("LogHandler"), F("Log-Seite erfolgreich gesendet"));
+  LOG_DEBUG(F("LogHandler"), F("Log-Seite erfolgreich gesendet"));
 }
 
 void LogHandler::cleanupLogs() {
@@ -223,18 +223,18 @@ String LogHandler::getLogLevelColor(LogLevel level) const {
 #if USE_WEBSOCKET
 bool LogHandler::initWebSocket() {
   if (!isInitialized()) {
-    logger.error(F("LogHandler"),
-                 F("Cannot initialize WebSocket - LogHandler not properly initialized"));
+    LOG_ERROR(F("LogHandler"),
+              F("Cannot initialize WebSocket - LogHandler not properly initialized"));
     return false;
   }
 
   auto& ws = WebSocketService::getInstance();
   if (!ws.isInitialized()) {
-    logger.error(F("LogHandler"), F("WebSocket server not initialized"));
+    LOG_ERROR(F("LogHandler"), F("WebSocket server not initialized"));
     return false;
   }
 
-  logger.debug(F("LogHandler"), F("WebSocket server already initialized"));
+  LOG_DEBUG(F("LogHandler"), F("WebSocket server already initialized"));
 
   // Register logger callback for broadcasting logs
   logger.setCallback([](LogLevel level, const String& message) {
@@ -362,7 +362,7 @@ void LogHandler::cleanupAllClients() {
   _content.clear();
   _cleaned = false;
 
-  logger.debug(F("LogHandler"), F("All WebSocket clients cleaned up"));
+  LOG_DEBUG(F("LogHandler"), F("All WebSocket clients cleaned up"));
 #if USE_WEBSOCKET
   // Unregister logger callback to free std::function memory
   logger.setCallback(nullptr);
@@ -387,8 +387,8 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
   case WStype_CONNECTED: {
     IPAddress ip = ws.remoteIP(num);
     if (ConfigMgr.isDebugWebSocket()) {
-      logger.debug(F("LogHandler"),
-                   "WebSocket client " + String(num) + " connected from " + ip.toString());
+      LOG_DEBUG(F("LogHandler"),
+                "WebSocket client " + String(num) + " connected from " + ip.toString());
     }
     // Only add if not already present
     if (std::find(_clients.begin(), _clients.end(), num) == _clients.end()) {
@@ -408,7 +408,7 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
   }
   case WStype_DISCONNECTED: {
     if (ConfigMgr.isDebugWebSocket()) {
-      logger.debug(F("LogHandler"), "WebSocket client " + String(num) + " disconnected");
+      LOG_DEBUG(F("LogHandler"), "WebSocket client " + String(num) + " disconnected");
     }
     // Remove only the disconnected client
     _clients.remove(num);
@@ -419,7 +419,7 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
   case WStype_TEXT: {
     if (length > WebSocketService::MAX_MESSAGE_SIZE) {
       if (ConfigMgr.isDebugWebSocket()) {
-        logger.warning(F("LogHandler"), F("Message too large, ignoring"));
+        LOG_WARN(F("LogHandler"), F("Message too large, ignoring"));
       }
       return;
     }
@@ -427,7 +427,7 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
     // Additional memory check before JSON parsing
     if (ESP.getFreeHeap() < 4000) {
       if (ConfigMgr.isDebugWebSocket()) {
-        logger.warning(F("LogHandler"), F("Low memory, skipping message"));
+        LOG_WARN(F("LogHandler"), F("Low memory, skipping message"));
       }
       return;
     }
@@ -439,8 +439,7 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
 
     if (error) {
       if (ConfigMgr.isDebugWebSocket()) {
-        logger.error(F("LogHandler"),
-                     "Failed to parse WebSocket message: " + String(error.c_str()));
+        LOG_ERROR(F("LogHandler"), "Failed to parse WebSocket message: " + String(error.c_str()));
       }
       return;
     }
@@ -451,7 +450,7 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
 
     if (!typeStr) {
       if (ConfigMgr.isDebugWebSocket()) {
-        logger.warning(F("LogHandler"), F("Message missing type field"));
+        LOG_WARN(F("LogHandler"), F("Message missing type field"));
       }
       return;
     }
@@ -465,7 +464,7 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
 
   case WStype_ERROR: {
     if (ConfigMgr.isDebugWebSocket()) {
-      logger.error(F("LogHandler"), "WebSocket error on client " + String(num));
+      LOG_ERROR(F("LogHandler"), "WebSocket error on client " + String(num));
     }
     cleanupClientResources(num);
     _clients.remove(num);
@@ -486,7 +485,7 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
   default:
     if (ConfigMgr.isDebugWebSocket()) {
       if (type != WStype_PING) { // Don't log PING events
-        logger.debug(F("LogHandler"), "Unhandled WebSocket event type: " + String(type));
+        LOG_DEBUG(F("LogHandler"), "Unhandled WebSocket event type: " + String(type));
       }
     }
     break;

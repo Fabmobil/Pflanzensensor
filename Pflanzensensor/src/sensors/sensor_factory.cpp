@@ -31,23 +31,22 @@ bool SensorFactory::validateSensorConfig(const Sensor* sensor) {
 
   bool valid = true;
   if (sensor->getId().isEmpty()) {
-    logger.error(F("SensorFactory"), F("Sensor hat keine ID"));
+    LOG_ERROR(F("SensorFactory"), F("Sensor hat keine ID"));
     valid = false;
   }
 
   if (sensor->getName().isEmpty()) {
-    logger.error(F("SensorFactory"),
-                 String(F("Sensor ")) + sensor->getId() + F(" hat keinen Namen"));
+    LOG_ERROR(F("SensorFactory"), String(F("Sensor ")) + sensor->getId() + F(" hat keinen Namen"));
     valid = false;
   }
 
   // Add explicit check for measurement interval
   if (sensor->getMeasurementInterval() < MEASUREMENT_MINIMUM_DELAY) {
-    logger.error(F("SensorFactory"), String(F("Sensor ")) + sensor->getId() +
-                                         String(F(" hat ein ungültiges Messintervall: ")) +
-                                         String(sensor->getMeasurementInterval()) +
-                                         String(F(" (Minimum: ")) +
-                                         String(MEASUREMENT_MINIMUM_DELAY) + F(")"));
+    LOG_ERROR(F("SensorFactory"), String(F("Sensor ")) + sensor->getId() +
+                                      String(F(" hat ein ungültiges Messintervall: ")) +
+                                      String(sensor->getMeasurementInterval()) +
+                                      String(F(" (Minimum: ")) + String(MEASUREMENT_MINIMUM_DELAY) +
+                                      F(")"));
     valid = false;
   }
 
@@ -58,12 +57,11 @@ void SensorFactory::logSensorStatus(const String& phase, const Sensor* sensor) {
   if (!sensor)
     return;
 
-  logger.debug(F("SensorFactory"), phase + String(F(": Sensor ")) + sensor->getName() +
-                                       String(F(" [ID: ")) + sensor->getId() +
-                                       String(F(", Aktiv: ")) +
-                                       String(sensor->isEnabled() ? "ja" : "nein") +
-                                       String(F(", Fehler: ")) + String(sensor->getErrorCount()) +
-                                       String(F(", Status: ")) + sensor->getStatus() + F("]"));
+  LOG_DEBUG(F("SensorFactory"), phase + String(F(": Sensor ")) + sensor->getName() +
+                                    String(F(" [ID: ")) + sensor->getId() + String(F(", Aktiv: ")) +
+                                    String(sensor->isEnabled() ? "ja" : "nein") +
+                                    String(F(", Fehler: ")) + String(sensor->getErrorCount()) +
+                                    String(F(", Status: ")) + sensor->getStatus() + F("]"));
 }
 
 SensorResult SensorFactory::initializeSensor(std::unique_ptr<Sensor>& sensor) {
@@ -71,14 +69,13 @@ SensorResult SensorFactory::initializeSensor(std::unique_ptr<Sensor>& sensor) {
     return SensorResult::fail(SensorError::INITIALIZATION_ERROR, "Null sensor pointer");
   }
 
-  logger.debug(F("SensorFactory"), String(F("Beginne Initialisierung für ")) + sensor->getName());
+  LOG_DEBUG(F("SensorFactory"), String(F("Beginne Initialisierung für ")) + sensor->getName());
 
   // Basic initialization
   auto initResult = sensor->init();
   if (!initResult.isSuccess()) {
-    logger.error(F("SensorFactory"),
-                 String(F("Konnte ")) + sensor->getName() +
-                     F(" nicht initialisieren - sensor->init() fehlgeschlagen"));
+    LOG_ERROR(F("SensorFactory"), String(F("Konnte ")) + sensor->getName() +
+                                      F(" nicht initialisieren - sensor->init() fehlgeschlagen"));
     sensor->setEnabled(false);
     return SensorResult::fail(SensorError::INITIALIZATION_ERROR);
   }
@@ -90,14 +87,14 @@ SensorResult SensorFactory::initializeSensor(std::unique_ptr<Sensor>& sensor) {
   // No action needed here unless you want to override from another source.
 
   sensor->setEnabled(true);
-  logger.debug(F("SensorFactory"), sensor->getName() + F(" erfolgreich initialisiert"));
+  LOG_DEBUG(F("SensorFactory"), sensor->getName() + F(" erfolgreich initialisiert"));
   return SensorResult::success();
 }
 
 SensorFactory::SensorResult
 SensorFactory::createAllSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
                                 SensorManager* sensorManager) {
-  logger.info(F("SensorFactory"), F("Starte Sensor-Erstellungsprozess"));
+  LOG_INFO(F("SensorFactory"), F("Starte Sensor-Erstellungsprozess"));
 
   logger.logMemoryStats(F("vor_sensorerstellung"));
   sensors.clear();
@@ -199,8 +196,8 @@ void SensorFactory::addDHTSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
   auto dhtResult = createDHTSensors(sensors, sensorManager);
   if (!dhtResult.isSuccess()) {
     errors.push_back(String(F("DHT: ")) + dhtResult.getFullErrorMessage());
-    logger.error(F("SensorFactory"),
-                 F("Erstellung DHT-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
+    LOG_ERROR(F("SensorFactory"),
+              F("Erstellung DHT-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
   }
 }
 #endif
@@ -211,8 +208,8 @@ void SensorFactory::addAnalogSensors(std::vector<std::unique_ptr<Sensor>>& senso
   auto analogResult = createAnalogSensors(sensors, sensorManager);
   if (!analogResult.isSuccess()) {
     errors.push_back(String(F("Analog: ")) + analogResult.getFullErrorMessage());
-    logger.error(F("SensorFactory"),
-                 F("Erstellung Analog-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
+    LOG_ERROR(F("SensorFactory"),
+              F("Erstellung Analog-Sensor fehlgeschlagen, fahre mit anderen Sensoren fort"));
   }
 }
 #endif
@@ -240,7 +237,7 @@ void SensorFactory::addDS18B20Sensors(std::vector<std::unique_ptr<Sensor>>& sens
   auto result = createDS18B20Sensors(sensors, sensorManager);
   if (!result.isSuccess()) {
     errors.push_back(String(F("DS18B20: ")) + result.getFullErrorMessage());
-    logger.error(F("SensorFactory"), F("Erstellung DS18B20-Sensor fehlgeschlagen"));
+    LOG_ERROR(F("SensorFactory"), F("Erstellung DS18B20-Sensor fehlgeschlagen"));
   }
 }
 #endif
@@ -264,7 +261,7 @@ void SensorFactory::addSDS011Sensors(std::vector<std::unique_ptr<Sensor>>& senso
   auto result = createSDS011Sensors(sensors, sensorManager);
   if (!result.isSuccess()) {
     errors.push_back(String(F("SDS011: ")) + result.getFullErrorMessage());
-    logger.error(F("SensorFactory"), F("Erstellung SDS011-Sensor fehlgeschlagen"));
+    LOG_ERROR(F("SensorFactory"), F("Erstellung SDS011-Sensor fehlgeschlagen"));
   }
 }
 #endif
@@ -288,7 +285,7 @@ void SensorFactory::addMHZ19Sensors(std::vector<std::unique_ptr<Sensor>>& sensor
   auto result = createMHZ19Sensors(sensors, sensorManager);
   if (!result.isSuccess()) {
     errors.push_back(String(F("MHZ19: ")) + result.getFullErrorMessage());
-    logger.error(F("SensorFactory"), F("Erstellung MHZ19-Sensor fehlgeschlagen"));
+    LOG_ERROR(F("SensorFactory"), F("Erstellung MHZ19-Sensor fehlgeschlagen"));
   }
 }
 #endif
@@ -312,7 +309,7 @@ void SensorFactory::addHX711Sensors(std::vector<std::unique_ptr<Sensor>>& sensor
   auto result = createHX711Sensors(sensors, sensorManager);
   if (!result.isSuccess()) {
     errors.push_back(String(F("HX711: ")) + result.getFullErrorMessage());
-    logger.error(F("SensorFactory"), F("Erstellung HX711-Sensor fehlgeschlagen"));
+    LOG_ERROR(F("SensorFactory"), F("Erstellung HX711-Sensor fehlgeschlagen"));
   }
 }
 #endif
@@ -336,7 +333,7 @@ void SensorFactory::addBMP280Sensors(std::vector<std::unique_ptr<Sensor>>& senso
   auto result = createBMP280Sensors(sensors, sensorManager);
   if (!result.isSuccess()) {
     errors.push_back(String(F("BMP280: ")) + result.getFullErrorMessage());
-    logger.error(F("SensorFactory"), F("Erstellung BMP280-Sensor fehlgeschlagen"));
+    LOG_ERROR(F("SensorFactory"), F("Erstellung BMP280-Sensor fehlgeschlagen"));
   }
 }
 #endif
@@ -361,7 +358,7 @@ void SensorFactory::addSerialReceiverSensors(std::vector<std::unique_ptr<Sensor>
   auto result = createSerialReceiverSensors(sensors, sensorManager);
   if (!result.isSuccess()) {
     errors.push_back(String(F("SerialReceiver: ")) + result.getFullErrorMessage());
-    logger.error(F("SensorFactory"), F("Erstellung SerialReceiver-Sensor fehlgeschlagen"));
+    LOG_ERROR(F("SensorFactory"), F("Erstellung SerialReceiver-Sensor fehlgeschlagen"));
   }
 }
 #endif

@@ -42,12 +42,11 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
 
   // Check if Preferences exist, if not initialize with defaults
   if (!PreferencesManager::namespaceExists(PreferencesNamespaces::GENERAL)) {
-    logger.info(F("ConfigP"),
-                F("Keine Konfiguration gefunden, initialisiere mit Standardwerten..."));
+    LOG_INFO(F("ConfigP"), F("Keine Konfiguration gefunden, initialisiere mit Standardwerten..."));
     auto initResult = PreferencesManager::initializeAllNamespaces();
     if (!initResult.isSuccess()) {
-      logger.error(F("ConfigP"), String(F("Fehler beim Initialisieren der Preferences: ")) +
-                                     initResult.getMessage());
+      LOG_ERROR(F("ConfigP"), String(F("Fehler beim Initialisieren der Preferences: ")) +
+                                  initResult.getMessage());
       auto result = resetToDefaults(config);
       logger.logMemoryStats(F("ConfigP_load_after"));
       return result;
@@ -55,7 +54,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
   }
 
   // Load from Preferences
-  logger.info(F("ConfigP"), F("Lade Konfiguration aus Preferences..."));
+  LOG_INFO(F("ConfigP"), F("Lade Konfiguration aus Preferences..."));
 
   // Load general settings directly using generic getters
   Preferences generalPrefs;
@@ -120,7 +119,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
     flowerPrefs.end();
   }
 
-  logger.info(F("ConfigP"), F("Konfiguration erfolgreich aus Preferences geladen"));
+  LOG_INFO(F("ConfigP"), F("Konfiguration erfolgreich aus Preferences geladen"));
 
   // final memory stats suppressed
   return PersistenceResult::success();
@@ -128,18 +127,18 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
 
 ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(ConfigData& config) {
   // Clear Preferences
-  logger.info(F("ConfigP"), F("ResetToDefaults: Lösche alle Preferences"));
+  LOG_INFO(F("ConfigP"), F("ResetToDefaults: Lösche alle Preferences"));
 
   // Clear all Preferences namespaces
   auto clearResult = PreferencesManager::clearAll();
   if (!clearResult.isSuccess()) {
-    logger.warning(F("ConfigP"),
-                   String(F("Fehler beim Löschen der Preferences: ")) + clearResult.getMessage());
+    LOG_WARN(F("ConfigP"),
+             String(F("Fehler beim Löschen der Preferences: ")) + clearResult.getMessage());
   }
 
   // Also remove per-measurement JSON files stored under /config
   // These files are named like: /config/sensor_<ID>_<index>.json
-  logger.info(F("ConfigP"), F("Lsche Messungs-JSON-Dateien in /config (falls vorhanden)..."));
+  LOG_INFO(F("ConfigP"), F("Lsche Messungs-JSON-Dateien in /config (falls vorhanden)..."));
   {
 #ifdef ESP32
     File root = LittleFS.open("/config");
@@ -155,9 +154,9 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(ConfigDa
           String path = String("/config/") + filename;
           file.close();
           if (LittleFS.remove(path)) {
-            logger.info(F("ConfigP"), String(F("Gelöscht: ")) + path);
+            LOG_INFO(F("ConfigP"), String(F("Gelöscht: ")) + path);
           } else {
-            logger.warning(F("ConfigP"), String(F("Konnte Datei nicht löschen: ")) + path);
+            LOG_WARN(F("ConfigP"), String(F("Konnte Datei nicht löschen: ")) + path);
           }
         } else {
           file.close();
@@ -173,23 +172,23 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(ConfigDa
       if (filename.startsWith("sensor_") && filename.endsWith(".json")) {
         String path = String("/config/") + filename;
         if (LittleFS.remove(path)) {
-          logger.info(F("ConfigP"), String(F("Gelöscht: ")) + path);
+          LOG_INFO(F("ConfigP"), String(F("Gelöscht: ")) + path);
         } else {
-          logger.warning(F("ConfigP"), String(F("Konnte Datei nicht löschen: ")) + path);
+          LOG_WARN(F("ConfigP"), String(F("Konnte Datei nicht löschen: ")) + path);
         }
       }
     }
 #endif
   }
 
-  logger.info(F("ConfigP"), F("Factory Reset abgeschlossen"));
+  LOG_INFO(F("ConfigP"), F("Factory Reset abgeschlossen"));
   // Return success; caller (UI) will handle reboot
   return PersistenceResult::success();
 }
 
 ConfigPersistence::PersistenceResult ConfigPersistence::save(const ConfigData& config) {
   // Save to Preferences using atomic update functions
-  logger.info(F("ConfigP"), F("Speichere Konfiguration in Preferences..."));
+  LOG_INFO(F("ConfigP"), F("Speichere Konfiguration in Preferences..."));
 
   // Save general settings using atomic updates
   auto result = PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "device_name",
@@ -273,7 +272,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::save(const ConfigData& c
   if (!result.isSuccess())
     return result;
 
-  logger.info(F("ConfigP"), F("Konfiguration erfolgreich in Preferences gespeichert"));
+  LOG_INFO(F("ConfigP"), F("Konfiguration erfolgreich in Preferences gespeichert"));
   return PersistenceResult::success();
 }
 
@@ -323,7 +322,7 @@ void ConfigPersistence::readUpdateFlagsFromFile(bool& fs, bool& fw) {
 }
 
 bool ConfigPersistence::backupPreferencesToFile() {
-  logger.info(F("ConfigP"), F("Sichere Preferences in Datei..."));
+  LOG_INFO(F("ConfigP"), F("Sichere Preferences in Datei..."));
 
   // Create JSON document for backup (allocate enough space)
   DynamicJsonDocument doc(2048);
@@ -495,26 +494,26 @@ bool ConfigPersistence::backupPreferencesToFile() {
   // Write to file with pretty formatting
   File f = LittleFS.open("/prefs_backup.json", "w");
   if (!f) {
-    logger.error(F("ConfigP"), F("Konnte Backup-Datei nicht erstellen"));
+    LOG_ERROR(F("ConfigP"), F("Konnte Backup-Datei nicht erstellen"));
     return false;
   }
 
   yield(); // Watchdog reset before serialization
 
   if (serializeJsonPretty(doc, f) == 0) {
-    logger.error(F("ConfigP"), F("Fehler beim Schreiben der Backup-Datei"));
+    LOG_ERROR(F("ConfigP"), F("Fehler beim Schreiben der Backup-Datei"));
     f.close();
     return false;
   }
 
   f.close();
-  logger.info(F("ConfigP"), F("Preferences erfolgreich in /prefs_backup.json gesichert"));
+  LOG_INFO(F("ConfigP"), F("Preferences erfolgreich in /prefs_backup.json gesichert"));
   return true;
 }
 
 bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& doc) {
   unsigned long startTime = millis();
-  logger.debug(F("ConfigP"), F("Starte Wiederherstellung der Preferences..."));
+  LOG_DEBUG(F("ConfigP"), F("Starte Wiederherstellung der Preferences..."));
 
   // Restore general namespace
   unsigned long stepStart = millis();
@@ -539,8 +538,8 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
       prefs.end();
     }
     yield(); // Watchdog reset
-    logger.debug(F("ConfigP"), String(F("General-Namespace wiederhergestellt (")) +
-                                   String(millis() - stepStart) + F(" ms)"));
+    LOG_DEBUG(F("ConfigP"), String(F("General-Namespace wiederhergestellt (")) +
+                                String(millis() - stepStart) + F(" ms)"));
   }
 
   // Restore WiFi namespaces (3 separate namespaces)
@@ -592,8 +591,8 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
       }
       yield(); // Watchdog reset
     }
-    logger.debug(F("ConfigP"), String(F("WiFi-Namespaces wiederhergestellt (")) +
-                                   String(millis() - stepStart) + F(" ms)"));
+    LOG_DEBUG(F("ConfigP"), String(F("WiFi-Namespaces wiederhergestellt (")) +
+                                String(millis() - stepStart) + F(" ms)"));
   }
 
   // Restore display namespace
@@ -623,8 +622,8 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
       prefs.end();
     }
     yield(); // Watchdog reset
-    logger.debug(F("ConfigP"), String(F("Display-Namespace wiederhergestellt (")) +
-                                   String(millis() - stepStart) + F(" ms)"));
+    LOG_DEBUG(F("ConfigP"), String(F("Display-Namespace wiederhergestellt (")) +
+                                String(millis() - stepStart) + F(" ms)"));
   }
 
   // Restore debug namespace
@@ -648,8 +647,8 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
       prefs.end();
     }
     yield(); // Watchdog reset
-    logger.debug(F("ConfigP"), String(F("Debug-Namespace wiederhergestellt (")) +
-                                   String(millis() - stepStart) + F(" ms)"));
+    LOG_DEBUG(F("ConfigP"), String(F("Debug-Namespace wiederhergestellt (")) +
+                                String(millis() - stepStart) + F(" ms)"));
   }
 
   // Restore log namespace
@@ -671,8 +670,8 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
       prefs.end();
     }
     yield(); // Watchdog reset
-    logger.debug(F("ConfigP"), String(F("Log-Namespace wiederhergestellt (")) +
-                                   String(millis() - stepStart) + F(" ms)"));
+    LOG_DEBUG(F("ConfigP"), String(F("Log-Namespace wiederhergestellt (")) +
+                                String(millis() - stepStart) + F(" ms)"));
   }
 
   // Restore LED traffic namespace
@@ -692,16 +691,16 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
       prefs.end();
     }
     yield(); // Watchdog reset
-    logger.debug(F("ConfigP"), String(F("LED-Traffic-Namespace wiederhergestellt (")) +
-                                   String(millis() - stepStart) + F(" ms)"));
+    LOG_DEBUG(F("ConfigP"), String(F("LED-Traffic-Namespace wiederhergestellt (")) +
+                                String(millis() - stepStart) + F(" ms)"));
   }
 
   // Restore sensor measurements to JSON files (new JSON-based persistence)
   stepStart = millis();
   if (doc.containsKey("sensors")) {
     JsonArrayConst sensors = doc["sensors"].as<JsonArrayConst>();
-    logger.debug(F("ConfigP"), String(F("Beginne Wiederherstellung von ")) +
-                                   String(sensors.size()) + F(" Sensor-Gruppen..."));
+    LOG_DEBUG(F("ConfigP"), String(F("Beginne Wiederherstellung von ")) + String(sensors.size()) +
+                                F(" Sensor-Gruppen..."));
 
     // Track measurement intervals per sensor
     std::map<String, unsigned long> sensorIntervals;
@@ -769,9 +768,9 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
           // Schreibe Messung in JSON-Datei
           auto result = SensorPersistence::saveMeasurementToJson(sensorId, idx, config);
           if (!result.isSuccess()) {
-            logger.warning(F("ConfigP"), String(F("Fehler beim Wiederherstellen von ")) + sensorId +
-                                             String(F("[")) + String(idx) + String(F("]: ")) +
-                                             result.getMessage());
+            LOG_WARN(F("ConfigP"), String(F("Fehler beim Wiederherstellen von ")) + sensorId +
+                                       String(F("[")) + String(idx) + String(F("]: ")) +
+                                       result.getMessage());
           }
 
           yield(); // Watchdog reset
@@ -826,9 +825,9 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
         // Schreibe Messung in JSON-Datei
         auto result = SensorPersistence::saveMeasurementToJson(sensorId, idx, config);
         if (!result.isSuccess()) {
-          logger.warning(F("ConfigP"), String(F("Fehler beim Wiederherstellen von ")) + sensorId +
-                                           String(F("[")) + String(idx) + String(F("]: ")) +
-                                           result.getMessage());
+          LOG_WARN(F("ConfigP"), String(F("Fehler beim Wiederherstellen von ")) + sensorId +
+                                     String(F("[")) + String(idx) + String(F("]: ")) +
+                                     result.getMessage());
         }
 
         yield(); // Watchdog reset
@@ -848,7 +847,7 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
           DeserializationError error = deserializeJson(settingsDoc, settingsFile);
           settingsFile.close();
           if (error != DeserializationError::Ok) {
-            logger.warning(F("ConfigP"), F("Konnte settings.json nicht parsen, erstelle neue"));
+            LOG_WARN(F("ConfigP"), F("Konnte settings.json nicht parsen, erstelle neue"));
           }
         }
       }
@@ -868,8 +867,8 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
         for (const auto& sensorPtr : sensors_list) {
           if (sensorPtr && sensorPtr->config().id == sensorId) {
             sensorPtr->mutableConfig().measurementInterval = interval;
-            logger.debug(F("ConfigP"), String(F("Messintervall für ")) + sensorId +
-                                           String(F(" auf ")) + String(interval) + F("ms gesetzt"));
+            LOG_DEBUG(F("ConfigP"), String(F("Messintervall für ")) + sensorId +
+                                        String(F(" auf ")) + String(interval) + F("ms gesetzt"));
             break;
           }
         }
@@ -887,20 +886,20 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
         if (settingsFile) {
           serializeJson(settingsDoc, settingsFile);
           settingsFile.close();
-          logger.debug(F("ConfigP"), F("Messintervalle in settings.json gespeichert"));
+          LOG_DEBUG(F("ConfigP"), F("Messintervalle in settings.json gespeichert"));
         } else {
-          logger.warning(F("ConfigP"), F("Konnte settings.json nicht für Schreibzugriff öffnen"));
+          LOG_WARN(F("ConfigP"), F("Konnte settings.json nicht für Schreibzugriff öffnen"));
         }
       }
     }
 
-    logger.debug(F("ConfigP"), String(F("Sensor-Messungen wiederhergestellt (")) +
-                                   String(millis() - stepStart) + F(" ms)"));
+    LOG_DEBUG(F("ConfigP"), String(F("Sensor-Messungen wiederhergestellt (")) +
+                                String(millis() - stepStart) + F(" ms)"));
   }
 
   // Backup file cleaned up by caller (flash restore or config upload handler)
 
-  logger.info(F("ConfigP"), String(F("Preferences erfolgreich wiederhergestellt (Gesamtdauer: ")) +
-                                String(millis() - startTime) + F(" ms)"));
+  LOG_INFO(F("ConfigP"), String(F("Preferences erfolgreich wiederhergestellt (Gesamtdauer: ")) +
+                             String(millis() - startTime) + F(" ms)"));
   return true;
 }

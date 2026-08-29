@@ -342,7 +342,7 @@ public:
    */
   const MeasurementData& getMeasurementData() const {
     if (!m_measurementDataValid || !m_lastMeasurementData) {
-      logger.error(getName(), F(": getMeasurementData() called after deinit!"));
+      LOG_ERROR(getName(), F(": getMeasurementData() called after deinit!"));
       static MeasurementData invalidData;
       invalidData.invalidate();
       return invalidData;
@@ -439,7 +439,7 @@ protected:
    */
   inline void logDebug(const String& msg) const {
     if (ConfigMgr.isDebugSensor()) {
-      logger.debug(getName(), msg);
+      LOG_DEBUG(getName(), msg);
     }
   }
 

@@ -47,7 +47,7 @@ void AdminHandler::handleConfigReset() {
   // 500ms sollte reichen für Rendern der Seite.
   delay(500);
   if (result.isSuccess()) {
-    logger.warning(F("AdminHandler"), F("Neustart nach Zurücksetzen der Konfiguration"));
+    LOG_WARN(F("AdminHandler"), F("Neustart nach Zurücksetzen der Konfiguration"));
     ESP.restart();
   }
 }
@@ -67,7 +67,7 @@ void AdminHandler::handleReboot() {
 
   // Verzögerter Neustart
   delay(200);
-  logger.warning(F("AdminHandler"), F("Starte ESP neu"));
+  LOG_WARN(F("AdminHandler"), F("Starte ESP neu"));
   ESP.restart();
 }
 

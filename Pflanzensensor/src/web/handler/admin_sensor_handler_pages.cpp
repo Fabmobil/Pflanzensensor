@@ -45,9 +45,9 @@ void AdminSensorHandler::handleSensorUpdate() {
           String newName = _server.arg(nameArg);
           if (newName != config.measurements[i].name) {
             config.measurements[i].name = newName;
-            logger.info(F("AdminSensorHandler"), String(F("Name aktualisiert für ")) + id +
-                                                     String(F("[")) + String(i) + String(F("]: ")) +
-                                                     newName);
+            LOG_INFO(F("AdminSensorHandler"), String(F("Name aktualisiert für ")) + id +
+                                                  String(F("[")) + String(i) + String(F("]: ")) +
+                                                  newName);
             changes += "<li>Sensor " + id + " Messwert " + String(i) + ": Name geändert zu '" +
                        newName + "'</li>";
             changesOccurred = true;
@@ -93,9 +93,9 @@ void AdminSensorHandler::handleSensorUpdate() {
       bool newEnabled = _server.hasArg("enabled_" + id);
       if (newEnabled != sensor->isEnabled()) {
         sensor->setEnabled(newEnabled);
-        logger.info(F("AdminSensorHandler"), String(F("Aktivierungszustand für ")) + id +
-                                                 String(F(": ")) +
-                                                 (newEnabled ? F("aktiviert") : F("deaktiviert")));
+        LOG_INFO(F("AdminSensorHandler"), String(F("Aktivierungszustand für ")) + id +
+                                              String(F(": ")) +
+                                              (newEnabled ? F("aktiviert") : F("deaktiviert")));
         changes += String("<li>Sensor ") + id +
                    (newEnabled ? F(": aktiviert</li>") : F(": deaktiviert</li>"));
         changesOccurred = true;
@@ -103,8 +103,8 @@ void AdminSensorHandler::handleSensorUpdate() {
     }
     if (changesOccurred) {
       auto saveResult = SensorPersistence::save();
-      logger.info(F("AdminSensorHandler"), String(F("SensorPersistence::save() called, result: ")) +
-                                               saveResult.getMessage());
+      LOG_INFO(F("AdminSensorHandler"),
+               String(F("SensorPersistence::save() called, result: ")) + saveResult.getMessage());
       if (!saveResult.isSuccess()) {
         return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR,
                                     String(F("Fehler beim Speichern der Sensor-Konfiguration: ")) +
@@ -147,29 +147,27 @@ void AdminSensorHandler::handleTriggerMeasurement() {
     return;
 
   if (!_server.hasArg("sensor_id")) {
-    logger.error(F("AdminSensorHandler"), F("Messung auslösen: fehlende Sensor-ID"));
+    LOG_ERROR(F("AdminSensorHandler"), F("Messung auslösen: fehlende Sensor-ID"));
     this->sendError(400, F("Fehlende Sensor-ID"));
     return;
   }
 
   String sensorId = _server.arg("sensor_id");
   String measurementIndexStr = _server.arg("measurement_index");
-  logger.debug(
-      F("AdminSensorHandler"),
-      "Triggering measurement for sensor: " + sensorId +
-          (measurementIndexStr.length() > 0 ? " measurement: " + measurementIndexStr : ""));
+  LOG_DEBUG(F("AdminSensorHandler"),
+            "Triggering measurement for sensor: " + sensorId +
+                (measurementIndexStr.length() > 0 ? " measurement: " + measurementIndexStr : ""));
 
   if (!_sensorManager.isHealthy()) {
-    logger.error(F("AdminSensorHandler"),
-                 F("Messung auslösen: Sensor-Manager nicht betriebsbereit"));
+    LOG_ERROR(F("AdminSensorHandler"), F("Messung auslösen: Sensor-Manager nicht betriebsbereit"));
     this->sendError(500, F("Sensor-Manager nicht betriebsbereit"));
     return;
   }
 
   Sensor* sensor = _sensorManager.getSensor(sensorId);
   if (!sensor) {
-    logger.error(F("AdminSensorHandler"),
-                 String(F("Messung auslösen: Sensor nicht gefunden: ")) + sensorId);
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Messung auslösen: Sensor nicht gefunden: ")) + sensorId);
     this->sendError(404, F("Sensor nicht gefunden"));
     return;
   }
@@ -180,13 +178,12 @@ void AdminSensorHandler::handleTriggerMeasurement() {
     if (measurementIndexStr.length() > 0) {
       logMsg += String(F(" Messung: ")) + measurementIndexStr;
     }
-    logger.info(F("AdminSensorHandler"), logMsg);
+    LOG_INFO(F("AdminSensorHandler"), logMsg);
     sendJsonResponse(200, F("{\"success\":true,\"message\":\"Messung geplant\"}"));
     return;
   } else {
-    logger.error(F("AdminSensorHandler"),
-                 String(F("Fehler beim Planen einer manuellen Messung f\u00fcr Sensor: ")) +
-                     sensorId);
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Fehler beim Planen einer manuellen Messung f\u00fcr Sensor: ")) + sensorId);
     sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Planen der Messung\"}"));
     return;
   }

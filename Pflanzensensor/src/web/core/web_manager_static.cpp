@@ -11,14 +11,14 @@
 void WebManager::serveStaticFile(const String& path, const String& contentType,
                                  const String& cacheControl) {
   if (!LittleFS.exists(path)) {
-    logger.warning(F("WebManager"), "Static file not found: " + path);
+    LOG_WARN(F("WebManager"), "Static file not found: " + path);
     _server->send(404, "text/plain", "File not found");
     return;
   }
 
   File file = LittleFS.open(path, "r");
   if (!file) {
-    logger.error(F("WebManager"), "Failed to open static file: " + path);
+    LOG_ERROR(F("WebManager"), "Failed to open static file: " + path);
     _server->send(500, "text/plain", "Internal server error");
     return;
   }

@@ -108,8 +108,8 @@ bool initializeSystem() {
 
   // Check for recovery flag
   if (LittleFS.exists("/.restore_from_flash")) {
-    logger.info(F("main_init"),
-                F("Wiederherstellungs-Flag gefunden - stelle Konfiguration wieder her"));
+    LOG_INFO(F("main_init"),
+             F("Wiederherstellungs-Flag gefunden - stelle Konfiguration wieder her"));
 
     // Remove flag FIRST to prevent infinite loops
     LittleFS.remove("/.restore_from_flash");
@@ -121,26 +121,26 @@ bool initializeSystem() {
       // Call restore directly - minimal allocations
       auto result = FlashPersistence::restoreFromFlash();
       if (result.isSuccess()) {
-        logger.info(F("main_init"), F("Preferences erfolgreich wiederhergestellt"));
+        LOG_INFO(F("main_init"), F("Preferences erfolgreich wiederhergestellt"));
 
         // Restore JSON config files from /backup/ to /config/
-        logger.info(F("main_init"), F("Stelle Config-Dateien wieder her..."));
+        LOG_INFO(F("main_init"), F("Stelle Config-Dateien wieder her..."));
         if (ConfigBackupUtils::restoreConfigFiles()) {
-          logger.info(F("main_init"), F("Config-Dateien erfolgreich wiederhergestellt"));
+          LOG_INFO(F("main_init"), F("Config-Dateien erfolgreich wiederhergestellt"));
         } else {
-          logger.warning(F("main_init"), F("Keine Config-Dateien zum Wiederherstellen gefunden"));
+          LOG_WARN(F("main_init"), F("Keine Config-Dateien zum Wiederherstellen gefunden"));
         }
 
-        logger.info(F("main_init"), F("Wiederherstellung abgeschlossen - starte neu..."));
+        LOG_INFO(F("main_init"), F("Wiederherstellung abgeschlossen - starte neu..."));
         delay(1000);
         ESP.restart(); // Reboot with restored config
         return false;  // Should never reach here
       } else {
-        logger.error(F("main_init"),
-                     String(F("Wiederherstellung fehlgeschlagen: ")) + result.getMessage());
+        LOG_ERROR(F("main_init"),
+                  String(F("Wiederherstellung fehlgeschlagen: ")) + result.getMessage());
       }
     } else {
-      logger.warning(F("main_init"), F("Kein gültiges Flash-Backup gefunden"));
+      LOG_WARN(F("main_init"), F("Kein gültiges Flash-Backup gefunden"));
     }
   }
 

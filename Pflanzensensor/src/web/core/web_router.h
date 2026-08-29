@@ -247,9 +247,9 @@ public:
    *          - Memory status
    */
   void logRouteStats() const {
-    logger.info(F("WebRouter"), String(F("Routen: ")) + String(_routes.size()) + String(F("/")) +
-                                    String(MAX_ROUTES) + String(F(" (")) +
-                                    String((_routes.size() * 100) / MAX_ROUTES) + String(F("%)")));
+    LOG_INFO(F("WebRouter"), String(F("Routen: ")) + String(_routes.size()) + String(F("/")) +
+                                 String(MAX_ROUTES) + String(F(" (")) +
+                                 String((_routes.size() * 100) / MAX_ROUTES) + String(F("%)")));
   }
 
 private:

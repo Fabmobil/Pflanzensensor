@@ -75,14 +75,14 @@ void WebManager::handleClientInternal() {
 
     // Only log if handler count has changed
     if (currentHandlerCount != lastHandlerCount) {
-      logger.debug(F("WebManager"), String(F("Active handlers: ")) + String(currentHandlerCount) +
-                                        String(F("/")) + String(MAX_ACTIVE_HANDLERS));
+      LOG_DEBUG(F("WebManager"), String(F("Active handlers: ")) + String(currentHandlerCount) +
+                                     String(F("/")) + String(MAX_ACTIVE_HANDLERS));
       lastHandlerCount = currentHandlerCount;
     }
 
     if (freeHeap < 4096) {
-      logger.warning(F("WebManager"),
-                     String(F("Wenig Speicher im Web-Handler: ")) + String(freeHeap) + F(" Bytes"));
+      LOG_WARN(F("WebManager"),
+               String(F("Wenig Speicher im Web-Handler: ")) + String(freeHeap) + F(" Bytes"));
       // Handler-Cache leeren gibt Heap frei; danach ganz normal weiterarbeiten,
       // damit der Webserver bedienbar bleibt.
       cleanupNonEssentialHandlers();
@@ -126,7 +126,7 @@ void WebManager::stop() {
   delay(100);
   safeYield();
 
-  logger.debug(F("WebManager"), F("WebManager stopped and cleaned up"));
+  LOG_DEBUG(F("WebManager"), F("WebManager stopped and cleaned up"));
   logger.endMemoryTracking(F("web_manager_stop"));
 }
 
@@ -176,6 +176,6 @@ void WebManager::cleanup() {
 ResourceResult WebManager::setFirmwareUpgradeFlag(bool enabled) {
   // Implementation would depend on your config system
   // This is a placeholder
-  logger.info(F("WebManager"), "Setting firmware upgrade flag to: " + String(enabled));
+  LOG_INFO(F("WebManager"), "Setting firmware upgrade flag to: " + String(enabled));
   return ResourceResult::success();
 }

@@ -20,7 +20,7 @@ extern std::unique_ptr<DisplayManager> displayManager;
 AdminDisplayHandler::~AdminDisplayHandler() = default;
 
 AdminDisplayHandler::AdminDisplayHandler(ESPWebServer& server) : BaseHandler(server) {
-  logger.debug(F("AdminDisplayHandler"), F("Initialisiere AdminDisplayHandler"));
+  LOG_DEBUG(F("AdminDisplayHandler"), F("Initialisiere AdminDisplayHandler"));
 }
 
 void AdminDisplayHandler::handleDisplayConfig() {
@@ -276,7 +276,7 @@ bool AdminDisplayHandler::validateRequest() const {
 }
 
 RouterResult AdminDisplayHandler::onRegisterRoutes(WebRouter& router) {
-  logger.debug(F("AdminDisplayHandler"), F("Registriere Display-Routen"));
+  LOG_DEBUG(F("AdminDisplayHandler"), F("Registriere Display-Routen"));
 
   auto result = router.addRoute(HTTP_GET, "/admin/display", [this]() { handleDisplayConfig(); });
   if (!result.isSuccess())

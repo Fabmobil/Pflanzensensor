@@ -32,7 +32,7 @@ SensorResult HX711Sensor::init() {
   m_scale->begin(hx711Config().doutPin, hx711Config().sckPin);
 
   if (!m_scale->is_ready()) {
-    logger.warning(getName(), F("HX711 nicht bereit – Hardware evtl. nicht angeschlossen"));
+    LOG_WARN(getName(), F("HX711 nicht bereit – Hardware evtl. nicht angeschlossen"));
     // Kein Fehler zurückgeben – graceful degradation via Fehlercount
   }
 
@@ -40,8 +40,8 @@ SensorResult HX711Sensor::init() {
   m_scale->set_scale(HX711_SCALE);
   m_scale->tare();
 
-  logger.info(getName(), String(F("HX711 initialisiert (DOUT:")) + String(hx711Config().doutPin) +
-                             String(F(" SCK:")) + String(hx711Config().sckPin) + F(")"));
+  LOG_INFO(getName(), String(F("HX711 initialisiert (DOUT:")) + String(hx711Config().doutPin) +
+                          String(F(" SCK:")) + String(hx711Config().sckPin) + F(")"));
   return SensorResult::success();
 }
 
@@ -61,7 +61,7 @@ SensorResult HX711Sensor::continueMeasurement() {
     return memResult;
 
   if (millis() - m_state.operationStartTime > 5000UL) {
-    logger.error(getName(), F("Messung Timeout"));
+    LOG_ERROR(getName(), F("Messung Timeout"));
     return SensorResult::fail(SensorError::MEASUREMENT_ERROR, F("Timeout"));
   }
 

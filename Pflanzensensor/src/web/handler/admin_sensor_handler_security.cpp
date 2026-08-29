@@ -8,14 +8,14 @@
 #include "managers/manager_config.h"
 
 bool AdminSensorHandler::validateRequest() const {
-  logger.debug(F("AdminSensorHandler"), F("validateRequest() called"));
+  LOG_DEBUG(F("AdminSensorHandler"), F("validateRequest() called"));
 
   if (!_server.authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
-    logger.debug(F("AdminSensorHandler"), F("Authentication failed, requesting auth"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("Authentication failed, requesting auth"));
     _server.requestAuthentication();
     return false;
   }
 
-  logger.debug(F("AdminSensorHandler"), F("Authentication successful"));
+  LOG_DEBUG(F("AdminSensorHandler"), F("Authentication successful"));
   return true;
 }

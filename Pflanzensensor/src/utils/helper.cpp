@@ -83,8 +83,8 @@ String Helper::getFormattedUptime() {
 ResourceResult Helper::incrementRebootCount() {
 
   if (!LittleFS.begin()) {
-    logger.error(F("Helper"),
-                 F("Dateisystem konnte zum Lesen des Neustartzählers nicht eingehängt werden"));
+    LOG_ERROR(F("Helper"),
+              F("Dateisystem konnte zum Lesen des Neustartzählers nicht eingehängt werden"));
     return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR);
   }
 
@@ -104,23 +104,23 @@ ResourceResult Helper::incrementRebootCount() {
 
   file.println(count);
   file.close();
-  logger.debug(F("Helper"), String(F("Neustartzähler erhöht auf: ")) + String(count));
+  LOG_DEBUG(F("Helper"), String(F("Neustartzähler erhöht auf: ")) + String(count));
   return ResourceResult::success();
 }
 
 ResourceResult Helper::initializeUpgradeMode() {
-  logger.info(F("Helper"), F("Upgrade-Modus: WiFi-Initialisierung"));
+  LOG_INFO(F("Helper"), F("Upgrade-Modus: WiFi-Initialisierung"));
 
   // Use consolidated WiFi+NTP setup (includes NTP synchronization)
   auto wifiResult = setupWiFiWithDisplay(false);
   if (!wifiResult.isSuccess()) {
-    logger.error(F("Helper"),
-                 String(F("WiFi-Initialisierung fehlgeschlagen: ")) + wifiResult.getMessage());
+    LOG_ERROR(F("Helper"),
+              String(F("WiFi-Initialisierung fehlgeschlagen: ")) + wifiResult.getMessage());
     return ResourceResult::fail(ResourceError::WIFI_ERROR, wifiResult.getMessage());
   }
 
-  logger.info(F("Helper"), F("WLAN im Upgrade-Modus verbunden"));
-  logger.info(F("Helper"), String(F("IP: ")) + WiFi.localIP().toString());
+  LOG_INFO(F("Helper"), F("WLAN im Upgrade-Modus verbunden"));
+  LOG_INFO(F("Helper"), String(F("IP: ")) + WiFi.localIP().toString());
 
   if (!WebManager::getInstance().beginUpdateMode()) {
     return ResourceResult::fail(ResourceError::OPERATION_FAILED,

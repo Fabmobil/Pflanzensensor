@@ -42,7 +42,7 @@ public:
    */
   StartpageHandler(ESPWebServer& server, WebAuth& auth, CSSService& cssService)
       : BaseHandler(server), _auth(auth), _cssService(cssService) {
-    logger.debug(F("StartpageHandler"), F("Initialisiere StartpageHandler"));
+    LOG_DEBUG(F("StartpageHandler"), F("Initialisiere StartpageHandler"));
     logger.logMemoryStats(F("StartpageHandler"));
   }
 

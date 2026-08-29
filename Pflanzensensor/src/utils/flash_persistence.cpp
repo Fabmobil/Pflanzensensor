@@ -69,7 +69,7 @@ uint32_t FlashPersistence::getSafeOffset() {
 
   uint32_t sketchEnd = ESP.getFreeSketchSpace() + sketchSize;
   if (safeOffset + FP_PREFS_MAX_SIZE > sketchEnd) {
-    logger.error(F("FlashPers"), F("Nicht genug Flash-Speicher"));
+    LOG_ERROR(F("FlashPers"), F("Nicht genug Flash-Speicher"));
     return 0;
   }
 
@@ -89,7 +89,7 @@ uint32_t FlashPersistence::getJsonStorageOffset() {
   uint32_t sketchEnd = ESP.getFreeSketchSpace() + sketchSize;
 
   if (jsonOffset + FP_JSON_MAX_SIZE > sketchEnd) {
-    logger.error(F("FlashPers"), F("Nicht genug Flash für JSON-Speicher"));
+    LOG_ERROR(F("FlashPers"), F("Nicht genug Flash für JSON-Speicher"));
     return 0;
   }
 
@@ -97,7 +97,7 @@ uint32_t FlashPersistence::getJsonStorageOffset() {
 }
 
 ResourceResult FlashPersistence::saveToFlash() {
-  logger.info(F("FlashPers"), F("Speichere Preferences als Text..."));
+  LOG_INFO(F("FlashPers"), F("Speichere Preferences als Text..."));
 
   uint32_t offset = getSafeOffset();
   if (offset == 0) {
@@ -259,7 +259,7 @@ ResourceResult FlashPersistence::saveToFlash() {
   }
 
   uint32_t dataSize = textData.length();
-  logger.info(F("FlashPers"), String(F("Textgröße: ")) + String(dataSize) + F(" Bytes"));
+  LOG_INFO(F("FlashPers"), String(F("Textgröße: ")) + String(dataSize) + F(" Bytes"));
 
   if (dataSize == 0 || dataSize > FP_MAX_CONFIG_SIZE - 16) {
     return ResourceResult::fail(ResourceError::VALIDATION_ERROR, F("Invalid data size"));
@@ -340,7 +340,7 @@ ResourceResult FlashPersistence::saveToFlash() {
     }
   }
 
-  logger.info(F("FlashPers"), F("Erfolgreich gespeichert"));
+  LOG_INFO(F("FlashPers"), F("Erfolgreich gespeichert"));
   return ResourceResult::success();
 }
 
@@ -532,7 +532,7 @@ ResourceResult FlashPersistence::restoreFromFlash() {
 }
 
 ResourceResult FlashPersistence::clearFlash() {
-  logger.info(F("FlashPers"), F("Lösche Flash..."));
+  LOG_INFO(F("FlashPers"), F("Lösche Flash..."));
 
   uint32_t offset = getSafeOffset();
   if (offset == 0) {
@@ -544,7 +544,7 @@ ResourceResult FlashPersistence::clearFlash() {
     return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Erase failed"));
   }
 
-  logger.info(F("FlashPers"), F("Gelöscht"));
+  LOG_INFO(F("FlashPers"), F("Gelöscht"));
   return ResourceResult::success();
 }
 
@@ -563,7 +563,7 @@ bool FlashPersistence::hasValidConfig() {
 // ==================== NEW: Combined Preferences + Config Files ====================
 
 ResourceResult FlashPersistence::saveAllToFlash() {
-  logger.info(F("FlashPers"), F("Sichere Preferences + Config-Dateien..."));
+  LOG_INFO(F("FlashPers"), F("Sichere Preferences + Config-Dateien..."));
 
   // NEW SIMPLIFIED ARCHITECTURE:
   // WiFi stays ON throughout the entire process. We use CriticalSection
@@ -581,11 +581,11 @@ ResourceResult FlashPersistence::saveAllToFlash() {
   // No delay needed - CriticalSection handles everything safely
   auto jsonResult = saveJsonToFlash();
   if (!jsonResult.isSuccess()) {
-    logger.warning(F("FlashPers"), F("JSON-Sicherung fehlgeschlagen"));
+    LOG_WARN(F("FlashPers"), F("JSON-Sicherung fehlgeschlagen"));
     return jsonResult;
   }
 
-  logger.info(F("FlashPers"), F("Erfolgreich gespeichert (Preferences + JSON-Configs)"));
+  LOG_INFO(F("FlashPers"), F("Erfolgreich gespeichert (Preferences + JSON-Configs)"));
   return ResourceResult::success();
 }
 
@@ -614,7 +614,7 @@ ResourceResult FlashPersistence::restoreAllFromFlash() {
 // Helper methods for JSON storage in separate flash area
 
 ResourceResult FlashPersistence::saveJsonToFlash() {
-  logger.info(F("FlashPers"), F("Sichere JSON-Configs in Flash..."));
+  LOG_INFO(F("FlashPers"), F("Sichere JSON-Configs in Flash..."));
 
 #ifndef USE_WEBSERVER
   return ResourceResult::success(); // Nothing to do without web support
@@ -669,11 +669,11 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
 #endif
 
   if (fileCount == 0) {
-    logger.info(F("FlashPers"), F("Keine JSON-Dateien zum Sichern"));
+    LOG_INFO(F("FlashPers"), F("Keine JSON-Dateien zum Sichern"));
     return ResourceResult::success();
   }
 
-  logger.info(F("FlashPers"), String(fileCount) + F(" JSON-Dateien gefunden"));
+  LOG_INFO(F("FlashPers"), String(fileCount) + F(" JSON-Dateien gefunden"));
 
   // STEP 2: Build manifest (WiFi ON, safe)
   String manifest;
@@ -687,7 +687,7 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
   }
   totalSize += manifest.length();
 
-  logger.info(F("FlashPers"), String(F("JSON Gesamt: ")) + String(totalSize) + F(" Bytes"));
+  LOG_INFO(F("FlashPers"), String(F("JSON Gesamt: ")) + String(totalSize) + F(" Bytes"));
 
   if (totalSize > FP_JSON_MAX_SIZE) {
     return ResourceResult::fail(ResourceError::INSUFFICIENT_SPACE, F("JSON too large"));
@@ -705,7 +705,7 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
   memset(header + 13, 0, 3);
 
   uint32_t sectorsNeeded = ((totalSize + FP_FLASH_SECTOR_SIZE - 1) / FP_FLASH_SECTOR_SIZE);
-  logger.debug(F("FlashPers"), String(F("Lösche ")) + String(sectorsNeeded) + F(" Sektoren..."));
+  LOG_DEBUG(F("FlashPers"), String(F("Lösche ")) + String(sectorsNeeded) + F(" Sektoren..."));
 
   // Header und Manifest schreiben. Wie oben gilt: Interrupts nur um den
   // einzelnen Flash-Aufruf sperren, dazwischen Watchdog füttern.
@@ -772,7 +772,7 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
     // Open and read file (WiFi ON, interrupts enabled, safe for LittleFS)
     File f = LittleFS.open(filepath, "r");
     if (!f) {
-      logger.warning(F("FlashPers"), String(F("Konnte nicht öffnen: ")) + files[fileIdx].filename);
+      LOG_WARN(F("FlashPers"), String(F("Konnte nicht öffnen: ")) + files[fileIdx].filename);
       continue;
     }
 
@@ -811,10 +811,10 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
     }
 
     f.close();
-    logger.debug(F("FlashPers"), String(F("Gesichert: ")) + files[fileIdx].filename);
+    LOG_DEBUG(F("FlashPers"), String(F("Gesichert: ")) + files[fileIdx].filename);
   }
 
-  logger.info(F("FlashPers"), F("JSON-Configs erfolgreich in Flash gesichert"));
+  LOG_INFO(F("FlashPers"), F("JSON-Configs erfolgreich in Flash gesichert"));
   return ResourceResult::success();
 #endif
 }

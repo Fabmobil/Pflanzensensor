@@ -19,7 +19,7 @@ PrometheusMetrics& PrometheusMetrics::getInstance() {
 void PrometheusMetrics::begin() {
   if (!_initialized) {
     _initialized = true;
-    logger.info(F("PromMetrics"), F("Prometheus Metrics exporter initialized"));
+    LOG_INFO(F("PromMetrics"), F("Prometheus Metrics exporter initialized"));
   }
 }
 

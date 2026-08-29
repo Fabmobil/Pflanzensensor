@@ -218,13 +218,13 @@ struct MeasurementData {
    */
   bool isValid() const {
     if (!valid) {
-      logger.error(F("MeasurementData"), F("isValid failed: valid=0"));
+      LOG_ERROR(F("MeasurementData"), F("isValid failed: valid=0"));
       return false;
     }
     if (activeValues > SensorConfig::MAX_MEASUREMENTS) {
-      logger.error(F("MeasurementData"),
-                   String(F("isValid failed: activeValues > MAX_MEASUREMENTS: ")) +
-                       String(activeValues));
+      LOG_ERROR(F("MeasurementData"),
+                String(F("isValid failed: activeValues > MAX_MEASUREMENTS: ")) +
+                    String(activeValues));
       return false;
     }
     return true;

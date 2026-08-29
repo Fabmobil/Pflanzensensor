@@ -22,7 +22,7 @@
  * @note This is optional - system continues even if it fails
  */
 ResourceResult initializeLedTrafficLight() {
-  logger.info(F("main_led"), F("LED-Ampel-Manager Initialisierung gestartet"));
+  LOG_INFO(F("main_led"), F("LED-Ampel-Manager Initialisierung gestartet"));
 
 #if USE_LED_TRAFFIC_LIGHT
   if (!ledTrafficLightManager) {
@@ -31,15 +31,15 @@ ResourceResult initializeLedTrafficLight() {
 
   ResourceResult result = ledTrafficLightManager->init();
   if (!result.isSuccess()) {
-    logger.warning(F("main_led"), String(F("LED-Ampel-Manager Initialisierung fehlgeschlagen: ")) +
-                                      result.getMessage());
+    LOG_WARN(F("main_led"),
+             String(F("LED-Ampel-Manager Initialisierung fehlgeschlagen: ")) + result.getMessage());
     return ResourceResult::fail(ResourceError::OPERATION_FAILED, result.getMessage());
   }
 
-  logger.info(F("main_led"), F("LED-Ampel-Manager Initialisierung erfolgreich"));
+  LOG_INFO(F("main_led"), F("LED-Ampel-Manager Initialisierung erfolgreich"));
   return ResourceResult::success();
 #else
-  logger.info(F("main_led"), F("LED-Ampel nicht aktiviert - Initialisierung übersprungen"));
+  LOG_INFO(F("main_led"), F("LED-Ampel nicht aktiviert - Initialisierung übersprungen"));
   return ResourceResult::success();
 #endif
 }

@@ -12,7 +12,7 @@
 #include "logger/logger.h"
 
 WebAuth::WebAuth(ESPWebServer& server) : _server(server) {
-  logger.debug(F("WebAuth"), F("Initialisiere WebAuth"));
+  LOG_DEBUG(F("WebAuth"), F("Initialisiere WebAuth"));
 }
 
 String WebAuth::base64_decode(const String& input) {
@@ -26,7 +26,7 @@ String WebAuth::base64_decode(const String& input) {
   // Ensure we don't overflow our buffer
   size_t expectedLength = base64_decode_expected_len(input.length());
   if (expectedLength >= MAX_DECODE_LENGTH) {
-    logger.error(F("WebAuth"), F("Base64-Eingabe zu lang"));
+    LOG_ERROR(F("WebAuth"), F("Base64-Eingabe zu lang"));
     return String();
   }
 
@@ -67,7 +67,7 @@ bool WebAuth::authenticate(UserRole requiredRole) {
 void WebAuth::setCredentials(const String& username, const String& password, UserRole role) {
   _credentials[username] = password;
   _roles[username] = role;
-  logger.debug(F("WebAuth"), String(F("Zugangsdaten gesetzt für Benutzer: ")) + username);
+  LOG_DEBUG(F("WebAuth"), String(F("Zugangsdaten gesetzt für Benutzer: ")) + username);
 }
 
 String WebAuth::createSession(const String& username, UserRole role) {
@@ -116,8 +116,8 @@ void WebAuth::cleanupSessions() {
 
   while (it != _sessions.end()) {
     if (now - it->second.lastAccess > SESSION_TIMEOUT) {
-      logger.debug(F("WebAuth"),
-                   String(F("Entferne abgelaufene Sitzung für Benutzer: ")) + it->second.username);
+      LOG_DEBUG(F("WebAuth"),
+                String(F("Entferne abgelaufene Sitzung für Benutzer: ")) + it->second.username);
       it = _sessions.erase(it);
     } else {
       ++it;
@@ -129,18 +129,16 @@ bool WebAuth::checkBasicAuth(const String& username, const String& password) {
   // Check if username exists in credentials
   auto it = _credentials.find(username);
   if (it == _credentials.end()) {
-    logger.warning(F("WebAuth"),
-                   String(F("Authentifizierung fehlgeschlagen: unbekannter Benutzer '")) +
-                       username + "'");
+    LOG_WARN(F("WebAuth"), String(F("Authentifizierung fehlgeschlagen: unbekannter Benutzer '")) +
+                               username + "'");
     return false;
   }
 
   // Compare passwords
   if (it->second != password) {
-    logger.warning(
-        F("WebAuth"),
-        String(F("Authentifizierung fehlgeschlagen: ungültiges Passwort für Benutzer '")) +
-            username + "'");
+    LOG_WARN(F("WebAuth"),
+             String(F("Authentifizierung fehlgeschlagen: ungültiges Passwort für Benutzer '")) +
+                 username + "'");
     return false;
   }
 
@@ -162,6 +160,6 @@ void WebAuth::requestAuth() {
 bool WebAuth::checkTokenAuth(const String& token) { return validateSession(token); }
 
 void WebAuth::logAuthAttempt(const String& username, bool success) {
-  logger.info(F("WebAuth"), String(F("Auth-Versuch für Benutzer '")) + username + String(F("': ")) +
-                                (success ? String(F("Erfolg")) : String(F("Fehler"))));
+  LOG_INFO(F("WebAuth"), String(F("Auth-Versuch für Benutzer '")) + username + String(F("': ")) +
+                             (success ? String(F("Erfolg")) : String(F("Fehler"))));
 }

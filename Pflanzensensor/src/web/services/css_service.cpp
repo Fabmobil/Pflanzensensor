@@ -9,7 +9,7 @@
 #include "web/core/components.h"
 
 CSSService::CSSService(ESPWebServer& server) : BaseHandler(server) {
-  logger.debug(F("CSSService"), F("Initialisiere CSS-Service"));
+  LOG_DEBUG(F("CSSService"), F("Initialisiere CSS-Service"));
   initModules();
 }
 
@@ -21,7 +21,7 @@ void CSSService::initModules() {
 }
 
 RouterResult CSSService::onRegisterRoutes(WebRouter& router) {
-  logger.info(F("CSSService"), F("CSS-Routen registriert"));
+  LOG_INFO(F("CSSService"), F("CSS-Routen registriert"));
   return RouterResult::success();
 }
 
@@ -76,13 +76,13 @@ bool CSSService::createBackup(const String& path) const {
 String CSSService::loadCSS(const String& path) const {
 
   if (!LittleFS.exists(path)) {
-    logger.warning(F("CSSService"), String(F("CSS-Datei nicht gefunden: ")) + path);
+    LOG_WARN(F("CSSService"), String(F("CSS-Datei nicht gefunden: ")) + path);
     return "";
   }
 
   File file = LittleFS.open(path, "r");
   if (!file) {
-    logger.error(F("CSSService"), String(F("Öffnen der CSS-Datei fehlgeschlagen: ")) + path);
+    LOG_ERROR(F("CSSService"), String(F("Öffnen der CSS-Datei fehlgeschlagen: ")) + path);
     return "";
   }
 
@@ -95,8 +95,8 @@ bool CSSService::saveCSS(const String& path, const String& content) const {
 
   File file = LittleFS.open(path, "w");
   if (!file) {
-    logger.error(F("CSSService"),
-                 String(F("Öffnen der CSS-Datei zum Schreiben fehlgeschlagen: ")) + path);
+    LOG_ERROR(F("CSSService"),
+              String(F("Öffnen der CSS-Datei zum Schreiben fehlgeschlagen: ")) + path);
     return false;
   }
 
@@ -104,7 +104,7 @@ bool CSSService::saveCSS(const String& path, const String& content) const {
   file.close();
 
   if (written != content.length()) {
-    logger.error(F("CSSService"), F("Vollständiges Schreiben der CSS-Inhalte fehlgeschlagen"));
+    LOG_ERROR(F("CSSService"), F("Vollständiges Schreiben der CSS-Inhalte fehlgeschlagen"));
     return false;
   }
 

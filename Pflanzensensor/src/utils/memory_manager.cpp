@@ -32,7 +32,7 @@ bool MemoryManager::init() {
 
   resetStats();
   m_initialized = true;
-  logger.info(F("MemMgr"), F("Memory manager initialized"));
+  LOG_INFO(F("MemMgr"), F("Memory manager initialized"));
   return true;
 }
 
@@ -97,8 +97,8 @@ void MemoryManager::resetStats() {
   m_trackedAllocations = 0;
   g_allocationHistory.clear();
 
-  logger.debug(F("MemMgr"),
-               String(F("Memory stats reset - Heap: ")) + String(m_minFreeHeap) + F(" bytes"));
+  LOG_DEBUG(F("MemMgr"),
+            String(F("Memory stats reset - Heap: ")) + String(m_minFreeHeap) + F(" bytes"));
 }
 
 void MemoryManager::updateMetrics() {
@@ -130,16 +130,16 @@ void MemoryManager::checkAndAlert(const char* alertType, uint32_t value) {
 
 void MemoryManager::logState(const char* message) const {
   auto metrics = getMetrics();
-  logger.debug(
-      F("MemMgr"),
-      String(F("Memory [")) + String(message ?: "stats") + String(F("]:")) +
-          String(F("\n  Total Heap: ")) + String(metrics.totalHeap) + String(F(" bytes")) +
-          String(F("\n  Free Heap: ")) + String(metrics.freeHeap) + String(F(" bytes")) +
-          String(F("\n  Used Heap: ")) + String(metrics.usedHeap) + String(F(" bytes")) +
-          String(F("\n  Max Block: ")) + String(metrics.maxFreeBlock) + String(F(" bytes")) +
-          String(F("\n  Fragmentation: ")) + String(metrics.fragmentation) + String(F("%")) +
-          String(F("\n  Min Free: ")) + String(metrics.minFreeHeap) + String(F(" bytes")) +
-          String(F("\n  Tracked Allocs: ")) + String(m_trackedAllocations) + String(F(" bytes")));
+  LOG_DEBUG(F("MemMgr"),
+            String(F("Memory [")) + String(message ?: "stats") + String(F("]:")) +
+                String(F("\n  Total Heap: ")) + String(metrics.totalHeap) + String(F(" bytes")) +
+                String(F("\n  Free Heap: ")) + String(metrics.freeHeap) + String(F(" bytes")) +
+                String(F("\n  Used Heap: ")) + String(metrics.usedHeap) + String(F(" bytes")) +
+                String(F("\n  Max Block: ")) + String(metrics.maxFreeBlock) + String(F(" bytes")) +
+                String(F("\n  Fragmentation: ")) + String(metrics.fragmentation) + String(F("%")) +
+                String(F("\n  Min Free: ")) + String(metrics.minFreeHeap) + String(F(" bytes")) +
+                String(F("\n  Tracked Allocs: ")) + String(m_trackedAllocations) +
+                String(F(" bytes")));
 }
 
 bool MemoryManager::checkMemory() {
@@ -148,23 +148,23 @@ bool MemoryManager::checkMemory() {
 
   // Check for critical memory
   if (metrics.freeHeap < 3000) {
-    logger.warning(F("MemMgr"), F("CRITICAL: Free heap below 3KB!"));
+    LOG_WARN(F("MemMgr"), F("CRITICAL: Free heap below 3KB!"));
     issuesFound = true;
     checkAndAlert("CRITICAL_HEAP", metrics.freeHeap);
   }
 
   // Check for high fragmentation
   if (metrics.fragmentation > 50) {
-    logger.warning(F("MemMgr"), String(F("WARNING: High heap fragmentation ")) +
-                                    String(metrics.fragmentation) + F("%"));
+    LOG_WARN(F("MemMgr"), String(F("WARNING: High heap fragmentation ")) +
+                              String(metrics.fragmentation) + F("%"));
     issuesFound = true;
     checkAndAlert("HIGH_FRAGMENTATION", metrics.fragmentation);
   }
 
   // Check for memory leak pattern
   if (m_trackedAllocations > 10000 && m_trackedAllocations > metrics.usedHeap / 2) {
-    logger.warning(F("MemMgr"), String(F("WARNING: Possible memory leak detected. Tracked: ")) +
-                                    String(m_trackedAllocations) + F(" bytes"));
+    LOG_WARN(F("MemMgr"), String(F("WARNING: Possible memory leak detected. Tracked: ")) +
+                              String(m_trackedAllocations) + F(" bytes"));
     issuesFound = true;
     checkAndAlert("POSSIBLE_LEAK", m_trackedAllocations);
   }
@@ -210,14 +210,14 @@ bool MemoryManager::checkAndCleanup(uint32_t threshold) {
   uint32_t freeHeap = ESP.getFreeHeap();
 
   if (freeHeap < threshold) {
-    logger.warning(F("MemMgr"), String(F("Niedriger Heap: ")) + String(freeHeap) +
-                                    String(F(" Bytes (Limit: ")) + String(threshold) +
-                                    F("), starte Notfall-Bereinigung..."));
+    LOG_WARN(F("MemMgr"), String(F("Niedriger Heap: ")) + String(freeHeap) +
+                              String(F(" Bytes (Limit: ")) + String(threshold) +
+                              F("), starte Notfall-Bereinigung..."));
 
     uint32_t freed = emergencyCleanup();
 
-    logger.info(F("MemMgr"), String(F("Nach Bereinigung: ")) + String(ESP.getFreeHeap()) +
-                                 String(F(" Bytes (")) + String(freed) + F(" freigegeben)"));
+    LOG_INFO(F("MemMgr"), String(F("Nach Bereinigung: ")) + String(ESP.getFreeHeap()) +
+                              String(F(" Bytes (")) + String(freed) + F(" freigegeben)"));
 
     return true;
   }

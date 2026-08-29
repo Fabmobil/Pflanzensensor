@@ -7,27 +7,27 @@
 #include "logger/logger.h"
 
 RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
-  logger.debug(F("AdminSensorHandler"), F("Registriere Admin-Sensor-Routen"));
+  LOG_DEBUG(F("AdminSensorHandler"), F("Registriere Admin-Sensor-Routen"));
 
   auto result = router.addRoute(HTTP_GET, "/admin/sensors", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("GET /admin/sensors aufgerufen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("GET /admin/sensors aufgerufen"));
     handleSensorConfig();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 String(F("Registrieren von GET /admin/sensors fehlgeschlagen: ")) +
-                     result.getMessage());
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Registrieren von GET /admin/sensors fehlgeschlagen: ")) +
+                  result.getMessage());
     return result;
   }
 
   result = router.addRoute(HTTP_POST, "/admin/sensors", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /admin/sensors aufgerufen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("POST /admin/sensors aufgerufen"));
     handleSensorUpdate();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 String(F("Registrieren von POST /admin/sensors fehlgeschlagen: ")) +
-                     result.getMessage());
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Registrieren von POST /admin/sensors fehlgeschlagen: ")) +
+                  result.getMessage());
     return result;
   }
 
@@ -35,105 +35,103 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   // with namespace="general", key="flower_sens"
 
   result = router.addRoute(HTTP_POST, "/admin/sensor_update", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /admin/sensor_update aufgerufen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("POST /admin/sensor_update aufgerufen"));
     handleSingleSensorUpdate();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 String(F("Registrieren von POST /admin/sensor_update fehlgeschlagen: ")) +
-                     result.getMessage());
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Registrieren von POST /admin/sensor_update fehlgeschlagen: ")) +
+                  result.getMessage());
     return result;
   }
 
   result = router.addRoute(HTTP_POST, "/admin/measurement_interval", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /admin/measurement_interval aufgerufen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("POST /admin/measurement_interval aufgerufen"));
     handleMeasurementInterval();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 String(F("Registrieren von POST /admin/measurement_interval fehlgeschlagen: ")) +
-                     result.getMessage());
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Registrieren von POST /admin/measurement_interval fehlgeschlagen: ")) +
+                  result.getMessage());
     return result;
   }
 
 #if USE_ANALOG
   result = router.addRoute(HTTP_POST, "/admin/analog_minmax", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /admin/analog_minmax aufgerufen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("POST /admin/analog_minmax aufgerufen"));
     handleAnalogMinMax();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 String(F("Registrieren von POST /admin/analog_minmax fehlgeschlagen: ")) +
-                     result.getMessage());
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Registrieren von POST /admin/analog_minmax fehlgeschlagen: ")) +
+                  result.getMessage());
     return result;
   }
 
   result = router.addRoute(HTTP_POST, "/admin/analog_autocal", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /admin/analog_autocal aufgerufen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("POST /admin/analog_autocal aufgerufen"));
     handleAnalogAutocal();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 String(F("Registrieren von POST /admin/analog_autocal fehlgeschlagen: ")) +
-                     result.getMessage());
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Registrieren von POST /admin/analog_autocal fehlgeschlagen: ")) +
+                  result.getMessage());
     return result;
   }
 
   result = router.addRoute(HTTP_POST, "/admin/analog_autocal_duration", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /admin/analog_autocal_duration aufgerufen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("POST /admin/analog_autocal_duration aufgerufen"));
     handleAnalogAutocalDuration();
   });
   if (!result.isSuccess()) {
-    logger.error(
-        F("AdminSensorHandler"),
-        String(F("Registrieren von POST /admin/analog_autocal_duration fehlgeschlagen: ")) +
-            result.getMessage());
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Registrieren von POST /admin/analog_autocal_duration fehlgeschlagen: ")) +
+                  result.getMessage());
     return result;
   }
 #endif
 
   result = router.addRoute(HTTP_POST, "/admin/thresholds", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /admin/thresholds aufgerufen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("POST /admin/thresholds aufgerufen"));
     handleThresholds();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 String(F("Registrieren von POST /admin/thresholds fehlgeschlagen: ")) +
-                     result.getMessage());
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Registrieren von POST /admin/thresholds fehlgeschlagen: ")) +
+                  result.getMessage());
     return result;
   }
 
   result = router.addRoute(HTTP_POST, "/admin/measurement_name", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /admin/measurement_name aufgerufen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("POST /admin/measurement_name aufgerufen"));
     handleMeasurementName();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 String(F("Registrieren von POST /admin/measurement_name fehlgeschlagen: ")) +
-                     result.getMessage());
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Registrieren von POST /admin/measurement_name fehlgeschlagen: ")) +
+                  result.getMessage());
     return result;
   }
 
   result = router.addRoute(HTTP_POST, "/admin/reset_absolute_minmax", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /admin/reset_absolute_minmax aufgerufen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("POST /admin/reset_absolute_minmax aufgerufen"));
     handleResetAbsoluteMinMax();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 String(F("Registrieren von POST /admin/reset_absolute_minmax fehlgeschlagen: ")) +
-                     result.getMessage());
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Registrieren von POST /admin/reset_absolute_minmax fehlgeschlagen: ")) +
+                  result.getMessage());
     return result;
   }
 
   result = router.addRoute(HTTP_POST, "/admin/reset_absolute_raw_minmax", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /admin/reset_absolute_raw_minmax aufgerufen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("POST /admin/reset_absolute_raw_minmax aufgerufen"));
     handleResetAbsoluteRawMinMax();
   });
   if (!result.isSuccess()) {
-    logger.error(
-        F("AdminSensorHandler"),
-        String(F("Registrieren von POST /admin/reset_absolute_raw_minmax fehlgeschlagen: ")) +
-            result.getMessage());
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Registrieren von POST /admin/reset_absolute_raw_minmax fehlgeschlagen: ")) +
+                  result.getMessage());
     return result;
   }
 
@@ -141,24 +139,24 @@ RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   // Route intentionally not registered to avoid exposing duplicate functionality
 
   result = router.addRoute(HTTP_POST, "/trigger_measurement", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("POST /trigger_measurement aufgerufen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("POST /trigger_measurement aufgerufen"));
     handleTriggerMeasurement();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 String(F("Registrieren von POST /trigger_measurement fehlgeschlagen: ")) +
-                     result.getMessage());
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Registrieren von POST /trigger_measurement fehlgeschlagen: ")) +
+                  result.getMessage());
     return result;
   }
 
   result = router.addRoute(HTTP_GET, "/admin/getSensorConfig", [this]() {
-    logger.debug(F("AdminSensorHandler"), F("GET /admin/getSensorConfig aufgerufen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("GET /admin/getSensorConfig aufgerufen"));
     handleGetSensorConfigJson();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminSensorHandler"),
-                 String(F("Registrieren von GET /admin/getSensorConfig fehlgeschlagen: ")) +
-                     result.getMessage());
+    LOG_ERROR(F("AdminSensorHandler"),
+              String(F("Registrieren von GET /admin/getSensorConfig fehlgeschlagen: ")) +
+                  result.getMessage());
     return result;
   }
 

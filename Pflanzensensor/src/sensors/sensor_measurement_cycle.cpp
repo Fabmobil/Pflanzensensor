@@ -10,8 +10,8 @@ SensorMeasurementCycleManager::SensorMeasurementCycleManager(Sensor* sensor)
       m_lastSlotAttemptTime(0) {
   if (m_sensor) {
     if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("MeasurementCycle"),
-                   String(F("Initialisiere Zyklus-Manager für Sensor: ")) + m_sensor->getName());
+      LOG_DEBUG(F("MeasurementCycle"),
+                String(F("Initialisiere Zyklus-Manager für Sensor: ")) + m_sensor->getName());
     }
 
     // Check warmup requirements
@@ -19,9 +19,9 @@ SensorMeasurementCycleManager::SensorMeasurementCycleManager(Sensor* sensor)
     if (m_state.needsWarmup) {
       m_state.warmupStartTime = millis(); // Starte Aufwärmphase sofort
       if (ConfigMgr.isDebugMeasurementCycle()) {
-        logger.debug(F("MeasurementCycle"), m_sensor->getName() +
-                                                String(F(": Starte Aufwärmphase von ")) +
-                                                String(m_state.warmupTimeNeeded / 1000UL) + F("s"));
+        LOG_DEBUG(F("MeasurementCycle"), m_sensor->getName() +
+                                             String(F(": Starte Aufwärmphase von ")) +
+                                             String(m_state.warmupTimeNeeded / 1000UL) + F("s"));
       }
     }
 
@@ -34,10 +34,10 @@ SensorMeasurementCycleManager::SensorMeasurementCycleManager(Sensor* sensor)
     // Schedule first measurement based on cycle start time
     m_state.scheduleNextMeasurement(m_cycleStartTime, 0); // Start immediately
     if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("MeasurementCycle"), F("Erste Messung für sofortige Ausführung geplant"));
+      LOG_DEBUG(F("MeasurementCycle"), F("Erste Messung für sofortige Ausführung geplant"));
     }
   } else {
-    logger.error(F("MeasurementCycle"), F("Created with null sensor!"));
+    LOG_ERROR(F("MeasurementCycle"), F("Created with null sensor!"));
   }
 }
 
@@ -50,10 +50,10 @@ bool SensorMeasurementCycleManager::updateMeasurementCycle() {
   unsigned long currentInterval = m_sensor->getMeasurementInterval();
   if (currentInterval != m_state.measurementInterval) {
     if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("MeasurementCycle"),
-                   m_sensor->getName() + String(F(": Messintervall aktualisiert von ")) +
-                       String(m_state.measurementInterval) + String(F("ms auf ")) +
-                       String(currentInterval) + F("ms"));
+      LOG_DEBUG(F("MeasurementCycle"),
+                m_sensor->getName() + String(F(": Messintervall aktualisiert von ")) +
+                    String(m_state.measurementInterval) + String(F("ms auf ")) +
+                    String(currentInterval) + F("ms"));
     }
     m_state.measurementInterval = currentInterval;
   }

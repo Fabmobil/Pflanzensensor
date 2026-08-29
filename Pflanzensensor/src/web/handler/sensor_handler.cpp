@@ -16,7 +16,7 @@
 static constexpr size_t MAX_VALUES = 10;
 
 RouterResult SensorHandler::onRegisterRoutes(WebRouter& router) {
-  logger.debug(F("SensorHandler"), F("Registriere Sensor-Routen"));
+  LOG_DEBUG(F("SensorHandler"), F("Registriere Sensor-Routen"));
 
   // Register Latest Values endpoint
   auto latestResult =
@@ -43,8 +43,8 @@ void SensorHandler::handleGetLatestValues() {
   // **CRITICAL FIX 1: Memory check before starting**
   uint32_t freeHeap = ESP.getFreeHeap();
   if (freeHeap < 4096) { // Require at least 4KB free
-    logger.warning(F("SensorHandler"),
-                   String(F("Nicht genügend Speicher für JSON-Antwort: ")) + String(freeHeap));
+    LOG_WARN(F("SensorHandler"),
+             String(F("Nicht genügend Speicher für JSON-Antwort: ")) + String(freeHeap));
     _server.send(503, F("application/json"), F("{\"error\":\"Nicht genügend Speicher\"}"));
     return;
   }
@@ -64,8 +64,8 @@ void SensorHandler::handleGetLatestValues() {
 
   auto managerState = _sensorManager.getState();
   if (managerState != ManagerState::INITIALIZED) {
-    logger.warning(F("SensorHandler"), String(F("Sensormanager nicht initialisiert, Status: ")) +
-                                           String((int)managerState));
+    LOG_WARN(F("SensorHandler"),
+             String(F("Sensormanager nicht initialisiert, Status: ")) + String((int)managerState));
     sendChunk(F("},\"error\":\"Sensormanager nicht initialisiert\"}"));
     endChunkedResponse();
     return;
@@ -75,7 +75,7 @@ void SensorHandler::handleGetLatestValues() {
   const size_t sensorCount = sensors.size();
 
   if (sensorCount == 0) {
-    logger.warning(F("SensorHandler"), F("Keine Sensoren im Sensormanager gefunden"));
+    LOG_WARN(F("SensorHandler"), F("Keine Sensoren im Sensormanager gefunden"));
     sendChunk(F("},\"error\":\"Keine Sensoren verfügbar\"}"));
     endChunkedResponse();
     return;
@@ -86,19 +86,19 @@ void SensorHandler::handleGetLatestValues() {
 
   for (size_t sensorIndex = 0; sensorIndex < sensorCount && sensorIndex < 20; sensorIndex++) {
     if (ESP.getFreeHeap() < 4096) {
-      logger.warning(F("SensorHandler"), F("Wenig Speicher während der Verarbeitung, Abbruch"));
+      LOG_WARN(F("SensorHandler"), F("Wenig Speicher während der Verarbeitung, Abbruch"));
       break;
     }
 
     const auto& sensor = sensors[sensorIndex];
     if (!sensor) {
-      logger.warning(F("SensorHandler"), String(F("Null-Sensor an Index ")) + String(sensorIndex));
+      LOG_WARN(F("SensorHandler"), String(F("Null-Sensor an Index ")) + String(sensorIndex));
       continue;
     }
 
     if (!sensor->isInitialized()) {
-      logger.warning(F("SensorHandler"),
-                     String(F("Überspringe nicht initialisierten Sensor: ")) + sensor->getName());
+      LOG_WARN(F("SensorHandler"),
+               String(F("Überspringe nicht initialisierten Sensor: ")) + sensor->getName());
       continue;
     }
 
@@ -109,7 +109,7 @@ void SensorHandler::handleGetLatestValues() {
     }
 
     if (!sensor->isEnabled()) {
-      logger.debug(F("SensorHandler"), String(F("Sensor ")) + sensorName + F(" ist deaktiviert"));
+      LOG_DEBUG(F("SensorHandler"), String(F("Sensor ")) + sensorName + F(" ist deaktiviert"));
       continue;
     }
 
@@ -117,15 +117,15 @@ void SensorHandler::handleGetLatestValues() {
     measurementData = sensor->getMeasurementData();
 
     if (!measurementData.isValid() || measurementData.activeValues == 0) {
-      logger.warning(F("SensorHandler"), String(F("Ungültige Messdaten für Sensor ")) + sensorName);
+      LOG_WARN(F("SensorHandler"), String(F("Ungültige Messdaten für Sensor ")) + sensorName);
       continue;
     }
 
     // Sensor has never completed a successful measurement yet.
     // Avoid publishing placeholder startup values like 0.0.
     if (sensor->getMeasurementStartTime() == 0) {
-      logger.debug(F("SensorHandler"),
-                   String(F("Überspringe Sensor ohne erfolgreiche Erstmessung: ")) + sensorName);
+      LOG_DEBUG(F("SensorHandler"),
+                String(F("Überspringe Sensor ohne erfolgreiche Erstmessung: ")) + sensorName);
       continue;
     }
 
@@ -136,8 +136,8 @@ void SensorHandler::handleGetLatestValues() {
     for (size_t i = 0; i < safeActiveValues; i++) {
       if (i >= SensorConfig::MAX_MEASUREMENTS || i >= measurementData.values.size() ||
           i >= SensorConfig::MAX_MEASUREMENTS) {
-        logger.warning(F("SensorHandler"),
-                       String(F("Array-Grenzen überschritten für Sensor ")) + sensorName);
+        LOG_WARN(F("SensorHandler"),
+                 String(F("Array-Grenzen überschritten für Sensor ")) + sensorName);
         break;
       }
 
@@ -169,8 +169,8 @@ void SensorHandler::handleGetLatestValues() {
 
       // Never expose 0 ppm as a valid reading.
       if (unit.equalsIgnoreCase("ppm") && value <= 0.0f) {
-        logger.debug(F("SensorHandler"), String(F("Überspringe ungültigen ppm-Wert für Sensor ")) +
-                                             sensorName + String(F(": ")) + String(value, 2));
+        LOG_DEBUG(F("SensorHandler"), String(F("Überspringe ungültigen ppm-Wert für Sensor ")) +
+                                          sensorName + String(F(": ")) + String(value, 2));
         continue;
       }
 

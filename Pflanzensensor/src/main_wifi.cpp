@@ -24,14 +24,14 @@ extern std::unique_ptr<DisplayManager> displayManager;
  * @note This wraps the original ::setupWiFi() to add display feedback
  */
 ResourceResult setupWiFiWithDisplay(bool showDisplay = false) {
-  logger.info(F("main_wifi"), F("WiFi Initialisierung gestartet"));
+  LOG_INFO(F("main_wifi"), F("WiFi Initialisierung gestartet"));
 
 #if USE_WIFI
   // Call original setupWiFi from utils/wifi.h (explicitly avoid this wrapper)
   auto result = ::setupWiFi();
   if (!result.isSuccess()) {
-    logger.error(F("main_wifi"),
-                 String(F("WiFi-Initialisierung fehlgeschlagen: ")) + result.getMessage());
+    LOG_ERROR(F("main_wifi"),
+              String(F("WiFi-Initialisierung fehlgeschlagen: ")) + result.getMessage());
     return ResourceResult::fail(ResourceError::WIFI_ERROR, result.getMessage());
   }
 
@@ -57,7 +57,7 @@ ResourceResult setupWiFiWithDisplay(bool showDisplay = false) {
 
   // Initialize NTP time synchronization
   if (WiFi.status() == WL_CONNECTED && !isCaptivePortalAPActive()) {
-    logger.info(F("main_wifi"), F("NTP-Zeitsynchronisation gestartet"));
+    LOG_INFO(F("main_wifi"), F("NTP-Zeitsynchronisation gestartet"));
 
     logger.initNTP();
     int timeSync = 0;
@@ -70,16 +70,16 @@ ResourceResult setupWiFiWithDisplay(bool showDisplay = false) {
           displayManager->updateLogStatus(F("NTP..."), true);
         }
 #endif
-        logger.info(F("main_wifi"), F("NTP-Zeitsynchronisation erfolgreich"));
+        LOG_INFO(F("main_wifi"), F("NTP-Zeitsynchronisation erfolgreich"));
         return ResourceResult::success();
       }
       delay(1000);
       logger.updateNTP();
       timeSync++;
-      logger.debug(F("main_wifi"), F("Warte auf Zeitsynchronisation..."));
+      LOG_DEBUG(F("main_wifi"), F("Warte auf Zeitsynchronisation..."));
     }
 
-    logger.error(F("main_wifi"), F("NTP-Zeitsynchronisation fehlgeschlagen"));
+    LOG_ERROR(F("main_wifi"), F("NTP-Zeitsynchronisation fehlgeschlagen"));
 #if USE_DISPLAY
     if (showDisplay && displayManager) {
       displayManager->updateLogStatus(F("NTP-Fehler"), true);
@@ -88,12 +88,12 @@ ResourceResult setupWiFiWithDisplay(bool showDisplay = false) {
     return ResourceResult::fail(ResourceError::TIME_SYNC_ERROR,
                                 F("Zeit konnte nicht synchronisiert werden"));
   } else {
-    logger.info(F("main_wifi"),
-                F("WiFi nicht verbunden oder AP-Modus - NTP-Initialisierung übersprungen"));
+    LOG_INFO(F("main_wifi"),
+             F("WiFi nicht verbunden oder AP-Modus - NTP-Initialisierung übersprungen"));
     return ResourceResult::success();
   }
 #else
-  logger.warning(F("main_wifi"), F("WiFi nicht aktiviert - Initialisierung übersprungen"));
+  LOG_WARN(F("main_wifi"), F("WiFi nicht aktiviert - Initialisierung übersprungen"));
   return ResourceResult::success();
 #endif
 }

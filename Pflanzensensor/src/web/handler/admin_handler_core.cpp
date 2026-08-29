@@ -27,10 +27,10 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleAdminPage();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin-Route fehlgeschlagen"));
+    LOG_ERROR(F("AdminHandler"), F("Registrieren der /admin-Route fehlgeschlagen"));
     return result;
   }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin-Route"));
+  LOG_DEBUG(F("AdminHandler"), F("Registrierte /admin-Route"));
 
   // Note: Config updates are now handled by unified /admin/config/setConfigValue
   // Old /admin/updateSettings route has been removed.
@@ -44,10 +44,10 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleConfigReset();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/reset-Route fehlgeschlagen"));
+    LOG_ERROR(F("AdminHandler"), F("Registrieren der /admin/reset-Route fehlgeschlagen"));
     return result;
   }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/reset-Route"));
+  LOG_DEBUG(F("AdminHandler"), F("Registrierte /admin/reset-Route"));
 
   // Register reboot route
   result = router.addRoute(HTTP_POST, "/admin/reboot", [this]() {
@@ -58,10 +58,10 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleReboot();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/reboot-Route fehlgeschlagen"));
+    LOG_ERROR(F("AdminHandler"), F("Registrieren der /admin/reboot-Route fehlgeschlagen"));
     return result;
   }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/reboot-Route"));
+  LOG_DEBUG(F("AdminHandler"), F("Registrierte /admin/reboot-Route"));
 
   // Register config set route
   // Note: /admin/config/set handled by legacy route in WebManager; admin
@@ -75,10 +75,10 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleDownloadLog();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/downloadLog-Route fehlgeschlagen"));
+    LOG_ERROR(F("AdminHandler"), F("Registrieren der /admin/downloadLog-Route fehlgeschlagen"));
     return result;
   }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadLog-Route"));
+  LOG_DEBUG(F("AdminHandler"), F("Registrierte /admin/downloadLog-Route"));
 
   // Register config download route
   result = router.addRoute(HTTP_GET, "/admin/downloadConfig", [this]() {
@@ -89,17 +89,16 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleDownloadConfig();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"),
-                 F("Registrieren der /admin/downloadConfig-Route fehlgeschlagen"));
+    LOG_ERROR(F("AdminHandler"), F("Registrieren der /admin/downloadConfig-Route fehlgeschlagen"));
     return result;
   }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadConfig-Route"));
+  LOG_DEBUG(F("AdminHandler"), F("Registrierte /admin/downloadConfig-Route"));
 
   // Config upload route is registered directly in WebManager::setupRoutes()
   // because it needs file upload support which requires _server.on()
   // See web_manager_routes.cpp for the actual registration
-  logger.debug(F("AdminHandler"),
-               F("Config-Upload-Route wird im WebManager registriert (File-Upload)"));
+  LOG_DEBUG(F("AdminHandler"),
+            F("Config-Upload-Route wird im WebManager registriert (File-Upload)"));
 
   // Register WiFi settings update route
   result = router.addRoute(HTTP_POST, "/admin/updateWiFi", [this]() {
@@ -110,10 +109,10 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleWiFiUpdate();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/updateWiFi-Route fehlgeschlagen"));
+    LOG_ERROR(F("AdminHandler"), F("Registrieren der /admin/updateWiFi-Route fehlgeschlagen"));
     return result;
   }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/updateWiFi-Route"));
+  LOG_DEBUG(F("AdminHandler"), F("Registrierte /admin/updateWiFi-Route"));
 
   logger.logMemoryStats(F("AdminRegisterRoutes"));
   return result;
@@ -133,7 +132,7 @@ HandlerResult AdminHandler::handlePost(const String& uri, const std::map<String,
 // the single AJAX endpoint /admin/updateSettings.
 
 void AdminHandler::handleAdminPage() {
-  logger.debug(F("AdminHandler"), F("handleAdminPage called"));
+  LOG_DEBUG(F("AdminHandler"), F("handleAdminPage called"));
   logger.logMemoryStats(F("AdminPageStart"));
 
   std::vector<String> css = {"admin"};
@@ -153,7 +152,7 @@ void AdminHandler::handleAdminPage() {
         sendChunk(F("</div>"));
       },
       css, js);
-  logger.debug(F("AdminHandler"), F("Adminseite erfolgreich gesendet"));
+  LOG_DEBUG(F("AdminHandler"), F("Adminseite erfolgreich gesendet"));
 }
 
 void AdminHandler::handleDownloadLog() {

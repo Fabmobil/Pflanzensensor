@@ -325,7 +325,7 @@ protected:
    */
   bool requireAjaxRequest() {
     if (!isAjaxRequest()) {
-      logger.warning(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
+      LOG_WARN(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
       sendJsonResponse(400, F("{\"success\":false,\"error\":\"Nur AJAX-Updates werden unterstützt. "
                               "Bitte die Admin-Oberfläche verwenden.\"}"));
       return false;
@@ -342,7 +342,7 @@ protected:
     if (!isAjaxRequest()) {
       if (outError)
         *outError = F("Nur AJAX-Updates werden unterstützt. Bitte die Admin-Oberfläche verwenden.");
-      logger.warning(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
+      LOG_WARN(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
       return false;
     }
     return true;

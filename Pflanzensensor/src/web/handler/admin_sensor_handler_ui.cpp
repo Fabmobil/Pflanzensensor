@@ -14,11 +14,10 @@
 #include "web/core/components.h"
 
 void AdminSensorHandler::handleSensorConfig() {
-  logger.debug(F("AdminSensorHandler"), F("handleSensorConfig() aufgerufen"));
+  LOG_DEBUG(F("AdminSensorHandler"), F("handleSensorConfig() aufgerufen"));
 
   if (!validateRequest()) {
-    logger.debug(F("AdminSensorHandler"),
-                 F("Authentifizierung in handleSensorConfig fehlgeschlagen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("Authentifizierung in handleSensorConfig fehlgeschlagen"));
     this->sendError(401, F("Authentifizierung erforderlich"));
     return;
   }
@@ -44,10 +43,10 @@ void AdminSensorHandler::handleSensorConfig() {
             String id = sensor->getId();
             SensorConfig& config = sensor->mutableConfig();
             if (config.activeMeasurements > SensorConfig::MAX_MEASUREMENTS) {
-              logger.warning(F("AdminSensorHandler"),
-                             String(F("Clamping activeMeasurements for sensor ")) + id +
-                                 String(F(" from ")) + String(config.activeMeasurements) +
-                                 String(F(" to ")) + String(SensorConfig::MAX_MEASUREMENTS));
+              LOG_WARN(F("AdminSensorHandler"),
+                       String(F("Clamping activeMeasurements for sensor ")) + id +
+                           String(F(" from ")) + String(config.activeMeasurements) +
+                           String(F(" to ")) + String(SensorConfig::MAX_MEASUREMENTS));
               config.activeMeasurements = SensorConfig::MAX_MEASUREMENTS;
             }
             size_t nRows = config.activeMeasurements < config.measurements.size()
@@ -421,7 +420,7 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i, si
 }
 
 void AdminSensorHandler::renderFlowerStatusSensorCard() {
-  logger.debug(F("AdminSensorHandler"), F("renderFlowerStatusSensorCard()"));
+  LOG_DEBUG(F("AdminSensorHandler"), F("renderFlowerStatusSensorCard()"));
 
   sendChunk(F("<div class='card'>"));
   sendChunk(F("<h2>Gesicht der Blume</h2>"));

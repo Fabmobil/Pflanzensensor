@@ -77,7 +77,7 @@ struct MeasurementStateInfo {
       if (ConfigMgr.isDebugMeasurementCycle()) {
         String transition = sensorName + String(F(": State ")) + stateToString(state) +
                             String(F(" -> ")) + stateToString(newState);
-        logger.debug(F("MeasurementState"), transition);
+        LOG_DEBUG(F("MeasurementState"), transition);
       }
       state = newState;
       stateStartTime = millis();

@@ -28,24 +28,24 @@ extern WebManager& webManager;
  * 4. Register routes and handlers
  */
 ResourceResult initializeWebServer() {
-  logger.info(F("main_web"), F("Web-Manager Initialisierung gestartet"));
+  LOG_INFO(F("main_web"), F("Web-Manager Initialisierung gestartet"));
 
 #if USE_WEBSERVER
   // Set sensor manager reference
   if (sensorManager && sensorManager->isHealthy()) {
     webManager.setSensorManager(*sensorManager);
-    logger.debug(F("main_web"), F("Sensor-Manager im WebManager gesetzt"));
+    LOG_DEBUG(F("main_web"), F("Sensor-Manager im WebManager gesetzt"));
   } else {
-    logger.error(F("main_web"),
-                 F("Sensor-Manager ist null oder nicht gesund beim Setzen im WebManager"));
+    LOG_ERROR(F("main_web"),
+              F("Sensor-Manager ist null oder nicht gesund beim Setzen im WebManager"));
     return ResourceResult::fail(ResourceError::WEBSERVER_ERROR, F("Sensor manager not available"));
   }
 
   // Initialize web server
   ResourceResult result = webManager.begin();
   if (!result.isSuccess()) {
-    logger.error(F("main_web"),
-                 String(F("Web-Manager Initialisierung fehlgeschlagen: ")) + result.getMessage());
+    LOG_ERROR(F("main_web"),
+              String(F("Web-Manager Initialisierung fehlgeschlagen: ")) + result.getMessage());
 #if USE_DISPLAY
     if (displayManager) {
       displayManager->updateLogStatus(F("Web Fehler"), true);
@@ -54,10 +54,10 @@ ResourceResult initializeWebServer() {
     return ResourceResult::fail(ResourceError::WEBSERVER_INIT_FAILED, result.getMessage());
   }
 
-  logger.info(F("main_web"), F("Web-Manager Initialisierung erfolgreich"));
+  LOG_INFO(F("main_web"), F("Web-Manager Initialisierung erfolgreich"));
   return ResourceResult::success();
 #else
-  logger.info(F("main_web"), F("Webserver nicht aktiviert - Initialisierung übersprungen"));
+  LOG_INFO(F("main_web"), F("Webserver nicht aktiviert - Initialisierung übersprungen"));
   return ResourceResult::success();
 #endif
 }

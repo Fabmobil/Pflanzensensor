@@ -39,14 +39,14 @@ public:
    */
   template <typename F>
   static bool initializeComponent(const __FlashStringHelper* componentName, F initFunc) {
-    logger.info(F("main"), String(F("Initialisiere ")) + componentName);
+    LOG_INFO(F("main"), String(F("Initialisiere ")) + componentName);
     auto result = initFunc();
     if (!result.isSuccess()) {
-      logger.error(F("main"), String(F("Fehler beim Initialisieren von ")) + componentName +
-                                  String(F(": ")) + result.getMessage());
+      LOG_ERROR(F("main"), String(F("Fehler beim Initialisieren von ")) + componentName +
+                               String(F(": ")) + result.getMessage());
       return false;
     }
-    logger.debug(F("main"), String(componentName) + F(" erfolgreich initialisiert"));
+    LOG_DEBUG(F("main"), String(componentName) + F(" erfolgreich initialisiert"));
     return true;
   }
 

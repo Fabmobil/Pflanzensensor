@@ -38,9 +38,9 @@ SensorResult MHZ19Sensor::init() {
   }
 
   pinMode(m_mhz19Config.pwmPin, INPUT);
-  logger.info(getName(), String(F("MHZ19 an Pin ")) + String(m_mhz19Config.pwmPin) +
-                             String(F(", Aufwärmzeit ")) + String(m_mhz19Config.warmupTime / 1000) +
-                             F("s"));
+  LOG_INFO(getName(), String(F("MHZ19 an Pin ")) + String(m_mhz19Config.pwmPin) +
+                          String(F(", Aufwärmzeit ")) + String(m_mhz19Config.warmupTime / 1000) +
+                          F("s"));
   m_initialized = true;
   return SensorResult::success();
 }
@@ -96,30 +96,30 @@ bool MHZ19Sensor::readValue(float& value) {
     if (thRetry > 0 && tlRetry > 0) {
       th = thRetry;
       tl = tlRetry;
-      logger.debug(getName(), F("PWM-Resync erfolgreich"));
+      LOG_DEBUG(getName(), F("PWM-Resync erfolgreich"));
     }
   }
 
   // Always log PWM values for debugging
-  logger.debug(getName(),
-               String(F("PWM: th=")) + String(th) + String(F("µs tl=")) + String(tl) + F("µs"));
+  LOG_DEBUG(getName(),
+            String(F("PWM: th=")) + String(th) + String(F("µs tl=")) + String(tl) + F("µs"));
 
   if (th == 0 || tl == 0) {
-    logger.warning(getName(), String(F("PWM-Lesung fehlgeschlagen (th=")) + String(th) +
-                                  String(F(" tl=")) + String(tl) + F(")"));
+    LOG_WARN(getName(), String(F("PWM-Lesung fehlgeschlagen (th=")) + String(th) +
+                            String(F(" tl=")) + String(tl) + F(")"));
     return false;
   }
 
   value = calculatePPM(th, tl);
 
   if (!validateReading(value)) {
-    logger.warning(getName(), String(F("Ungültiger CO2-Wert: ")) + String(value) +
-                                  String(F(" ppm (th=")) + String(th) + String(F("µs tl=")) +
-                                  String(tl) + F("µs)"));
+    LOG_WARN(getName(), String(F("Ungültiger CO2-Wert: ")) + String(value) +
+                            String(F(" ppm (th=")) + String(th) + String(F("µs tl=")) + String(tl) +
+                            F("µs)"));
     return false;
   }
 
-  logger.debug(getName(), String(F("CO2: ")) + String(value) + F(" ppm"));
+  LOG_DEBUG(getName(), String(F("CO2: ")) + String(value) + F(" ppm"));
   return true;
 }
 
@@ -133,8 +133,8 @@ void MHZ19Sensor::handleSensorError() {
   if (m_errorState.errorCount >= MAX_RETRIES) {
     // Keep MH-Z19 initialized. PWM glitches can happen transiently and the
     // sensor often recovers without full reinitialization.
-    logger.error(getName(), F(": Zu viele MHZ19-Lesefehler, Sensor bleibt "
-                              "aktiv und versucht erneut"));
+    LOG_ERROR(getName(), F(": Zu viele MHZ19-Lesefehler, Sensor bleibt "
+                           "aktiv und versucht erneut"));
     m_errorState.errorCount = 0;
     m_errorState.invalidCount = 0;
     m_errorState.inRetryDelay = false;

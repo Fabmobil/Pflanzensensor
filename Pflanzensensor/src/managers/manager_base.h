@@ -87,7 +87,7 @@ protected:
    */
   void setState(ManagerState state) {
     m_status.setState(state);
-    logger.debug(F("BaseM"), m_name + ": Status gewechselt zu " + stateToString(state));
+    LOG_DEBUG(F("BaseM"), m_name + ": Status gewechselt zu " + stateToString(state));
   }
 
   /**
@@ -97,7 +97,7 @@ protected:
    */
   void setError(const String& message, uint16_t code) {
     m_status.setError(message, code);
-    logger.error(F("BaseM"), m_name + ": " + message + " (Code: " + String(code) + ")");
+    LOG_ERROR(F("BaseM"), m_name + ": " + message + " (Code: " + String(code) + ")");
   }
 
   /**

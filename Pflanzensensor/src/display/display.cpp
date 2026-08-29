@@ -20,7 +20,7 @@ DisplayResult SSD1306Display::begin() {
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!m_display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_ADDRESS)) {
-    logger.error(F("Display"), F("Display konnte nicht initialisiert werden"));
+    LOG_ERROR(F("Display"), F("Display konnte nicht initialisiert werden"));
     return DisplayResult::fail(DisplayError::INITIALIZATION_ERROR,
                                F("Display konnte nicht initialisiert werden"));
   }
@@ -86,14 +86,14 @@ DisplayResult SSD1306Display::showImage(const String& imagePath) {
 
   {
     if (!LittleFS.exists(imagePath)) {
-      logger.error(F("Display"), String(F("Bilddatei nicht gefunden: ")) + imagePath);
+      LOG_ERROR(F("Display"), String(F("Bilddatei nicht gefunden: ")) + imagePath);
       return DisplayResult::fail(DisplayError::FILE_ERROR,
                                  String(F("Bilddatei nicht gefunden: ")) + imagePath);
     }
 
     File imageFile = LittleFS.open(imagePath, "r");
     if (!imageFile) {
-      logger.error(F("Display"), String(F("Öffnen der Bilddatei fehlgeschlagen: ")) + imagePath);
+      LOG_ERROR(F("Display"), String(F("Öffnen der Bilddatei fehlgeschlagen: ")) + imagePath);
       return DisplayResult::fail(DisplayError::FILE_ERROR,
                                  String(F("Öffnen der Bilddatei fehlgeschlagen: ")) + imagePath);
     }
@@ -390,7 +390,7 @@ bool SSD1306Display::updateQrCodeIfNeeded(const String& url) {
     m_cachedQrVersion = 2;
     m_qrcodeValid = true;
     m_lastQrUrl = url;
-    logger.debug(F("DisplayM"), String(F("QR code cached (v2) for: ")) + url);
+    LOG_DEBUG(F("DisplayM"), String(F("QR code cached (v2) for: ")) + url);
     return true;
   }
 
@@ -399,14 +399,14 @@ bool SSD1306Display::updateQrCodeIfNeeded(const String& url) {
     m_cachedQrVersion = 3;
     m_qrcodeValid = true;
     m_lastQrUrl = url;
-    logger.debug(F("DisplayM"), String(F("QR code cached (v3) for: ")) + url);
+    LOG_DEBUG(F("DisplayM"), String(F("QR code cached (v3) for: ")) + url);
     return true;
   }
 
   // Failed to generate QR code
   m_qrcodeValid = false;
   m_lastQrUrl = "";
-  logger.debug(F("DisplayM"), String(F("QR code generation failed for: ")) + url);
+  LOG_DEBUG(F("DisplayM"), String(F("QR code generation failed for: ")) + url);
   return false;
 }
 

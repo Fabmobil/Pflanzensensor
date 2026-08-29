@@ -130,24 +130,31 @@ void Logger::log(LogLevel level, const String& module, const String& message) {
   }
 
   String timestamp = getFormattedTimestamp();
-  String prefix;
+
+  // Präfix als reines Zeichenketten-Literal statt über readProgmemString().
+  // Letzteres legte für drei Zeichen einen 128-Byte-Stackpuffer an und baute
+  // daraus einen Heap-String - pro ausgegebener Logzeile.
+  const char* prefix;
   switch (level) {
   case LogLevel::DEBUG:
-    prefix = readProgmemString(MSG_DEBUG);
+    prefix = ".D.";
     break;
   case LogLevel::INFO:
-    prefix = readProgmemString(MSG_INFO);
+    prefix = ":I:";
     break;
   case LogLevel::WARNING:
-    prefix = readProgmemString(MSG_WARNING);
+    prefix = "!W!";
     break;
   case LogLevel::ERROR:
-    prefix = readProgmemString(MSG_ERROR);
+    prefix = "#E#";
+    break;
+  default:
+    prefix = "???";
     break;
   }
 
   char formattedMessage[128];
-  snprintf(formattedMessage, sizeof(formattedMessage), "%s [%s] %s", prefix.c_str(), module.c_str(),
+  snprintf(formattedMessage, sizeof(formattedMessage), "%s [%s] %s", prefix, module.c_str(),
            safeMessage.c_str());
 
   if (m_useSerial) {

@@ -11,32 +11,32 @@
 
 WebRouter::WebRouter(ESPWebServer& server) : _server(server) {
   if (!hasEnoughMemory()) {
-    logger.error(F("WebRouter"), F("Nicht genügend Speicher für WebRouter-Initialisierung"));
+    LOG_ERROR(F("WebRouter"), F("Nicht genügend Speicher für WebRouter-Initialisierung"));
     return;
   }
 
   _routes.reserve(MAX_ROUTES);
   _middleware.reserve(MAX_MIDDLEWARE);
 
-  logger.debug(F("WebRouter"), F("WebRouter mit Grenzen initialisiert:"));
-  logger.debug(F("WebRouter"), String(F("- Max Routen: ")) + String(MAX_ROUTES));
-  logger.debug(F("WebRouter"), String(F("- Max Middleware: ")) + String(MAX_MIDDLEWARE));
+  LOG_DEBUG(F("WebRouter"), F("WebRouter mit Grenzen initialisiert:"));
+  LOG_DEBUG(F("WebRouter"), String(F("- Max Routen: ")) + String(MAX_ROUTES));
+  LOG_DEBUG(F("WebRouter"), String(F("- Max Middleware: ")) + String(MAX_MIDDLEWARE));
 }
 
 RouterResult WebRouter::addRoute(HTTPMethod method, const String& url, HandlerCallback handler,
                                  const String& handlerType) {
   if (!hasEnoughMemory()) {
-    logger.error(F("WebRouter"), String(F("Nicht genügend Speicher für Route: ")) + url);
+    LOG_ERROR(F("WebRouter"), String(F("Nicht genügend Speicher für Route: ")) + url);
     return RouterResult::fail(RouterError::RESOURCE_ERROR, F("Nicht genügend Speicher"));
   }
 
   if (url.isEmpty() || !handler) {
-    logger.error(F("WebRouter"), String(F("Ungültige Routen-Parameter für: ")) + url);
+    LOG_ERROR(F("WebRouter"), String(F("Ungültige Routen-Parameter für: ")) + url);
     return RouterResult::fail(RouterError::INVALID_ROUTE, F("Ungültige Routen-Parameter"));
   }
 
   if (exceedsRouteLimit()) {
-    logger.error(F("WebRouter"), String(F("Routen-Limit überschritten für: ")) + url);
+    LOG_ERROR(F("WebRouter"), String(F("Routen-Limit überschritten für: ")) + url);
     return RouterResult::fail(RouterError::REGISTRATION_FAILED, F("Routen-Limit überschritten"));
   }
 
@@ -44,8 +44,8 @@ RouterResult WebRouter::addRoute(HTTPMethod method, const String& url, HandlerCa
   for (const auto& route : _routes) {
     if (route.url == url && route.method == method) {
       // Route already exists - update handler if different handlerType
-      logger.debug(F("WebRouter"), String(F("Route bereits registriert: ")) +
-                                       methodToString(method) + String(F(" ")) + url);
+      LOG_DEBUG(F("WebRouter"), String(F("Route bereits registriert: ")) + methodToString(method) +
+                                    String(F(" ")) + url);
       return RouterResult::success();
     }
   }
@@ -65,23 +65,21 @@ RouterResult WebRouter::addRoute(HTTPMethod method, const String& url, HandlerCa
 }
 
 void WebRouter::serveStatic(const String& urlPrefix, fs::FS& fs, const String& path, bool cache) {
-  logger.debug(F("WebRouter"),
-               String(F("Einrichte statische Route: ")) + urlPrefix + " -> " + path);
+  LOG_DEBUG(F("WebRouter"), String(F("Einrichte statische Route: ")) + urlPrefix + " -> " + path);
 
   if (!fs.exists(path)) {
-    logger.warning(F("WebRouter"), String(F("Statische Datei nicht gefunden: ")) + path);
+    LOG_WARN(F("WebRouter"), String(F("Statische Datei nicht gefunden: ")) + path);
   }
 
   // Use ESPWebServer's built-in static file serving
   _server.serveStatic(urlPrefix.c_str(), fs, path.c_str(), cache ? "max-age=3600" : nullptr);
 
-  logger.debug(F("WebRouter"),
-               String(F("Statische Route registriert: ")) + urlPrefix + " -> " + path);
+  LOG_DEBUG(F("WebRouter"), String(F("Statische Route registriert: ")) + urlPrefix + " -> " + path);
 }
 
 bool WebRouter::handleRequest(HTTPMethod method, const String& url) {
   if (!hasEnoughMemory()) {
-    logger.error(F("WebRouter"), F("Wenig Speicher - Anfrage kann nicht verarbeitet werden"));
+    LOG_ERROR(F("WebRouter"), F("Wenig Speicher - Anfrage kann nicht verarbeitet werden"));
     return false;
   }
 
@@ -100,12 +98,12 @@ bool WebRouter::handleRequest(HTTPMethod method, const String& url) {
 
 void WebRouter::addMiddleware(MiddlewareCallback middleware) {
   if (!middleware || !hasEnoughMemory()) {
-    logger.error(F("WebRouter"), F("Ungültige Middleware oder wenig Speicher"));
+    LOG_ERROR(F("WebRouter"), F("Ungültige Middleware oder wenig Speicher"));
     return;
   }
 
   if (exceedsMiddlewareLimit()) {
-    logger.error(F("WebRouter"), F("Middleware-Limit erreicht"));
+    LOG_ERROR(F("WebRouter"), F("Middleware-Limit erreicht"));
     return;
   }
 
@@ -138,7 +136,7 @@ String WebRouter::methodToString(HTTPMethod method) {
 bool WebRouter::executeMiddleware(HTTPMethod method, const String& url) {
   for (const auto& mw : _middleware) {
     if (!mw(method, url)) {
-      logger.debug(F("WebRouter"), String(F("Middleware blockierte Anfrage: ")) + url);
+      LOG_DEBUG(F("WebRouter"), String(F("Middleware blockierte Anfrage: ")) + url);
       return false;
     }
   }
@@ -152,14 +150,14 @@ Route* WebRouter::findRoute(HTTPMethod method, const String& url) {
       return &route;
     }
   }
-  logger.warning(F("WebRouter"), String(F("Keine passende Route gefunden für: ")) +
-                                     methodToString(method) + String(F(" ")) + url);
+  LOG_WARN(F("WebRouter"), String(F("Keine passende Route gefunden für: ")) +
+                               methodToString(method) + String(F(" ")) + url);
   return nullptr;
 }
 
 void WebRouter::logRouteRegistration(HTTPMethod method, const String& url) {
-  logger.debug(F("WebRouter"),
-               String(F("Route erfolgreich registriert: ")) + methodToString(method) + " " + url);
+  LOG_DEBUG(F("WebRouter"),
+            String(F("Route erfolgreich registriert: ")) + methodToString(method) + " " + url);
 }
 
 RouterResult WebRouter::removeRoute(HTTPMethod method, const String& url) {
@@ -169,19 +167,19 @@ RouterResult WebRouter::removeRoute(HTTPMethod method, const String& url) {
 
   if (it != _routes.end()) {
     _routes.erase(it, _routes.end());
-    logger.debug(F("WebRouter"),
-                 String(F("Route entfernt: ")) + methodToString(method) + String(F(" ")) + url);
+    LOG_DEBUG(F("WebRouter"),
+              String(F("Route entfernt: ")) + methodToString(method) + String(F(" ")) + url);
     return RouterResult::success();
   }
 
-  logger.debug(F("WebRouter"), String(F("Route nicht gefunden zum Entfernen: ")) +
-                                   methodToString(method) + String(F(" ")) + url);
+  LOG_DEBUG(F("WebRouter"), String(F("Route nicht gefunden zum Entfernen: ")) +
+                                methodToString(method) + String(F(" ")) + url);
   return RouterResult::fail(RouterError::INVALID_ROUTE, F("Route nicht gefunden"));
 }
 
 void WebRouter::removeHandlerRoutes(const String& handlerType) {
   if (handlerType.isEmpty()) {
-    logger.debug(F("WebRouter"), F("Leerer handlerType - überspringe Route-Entfernung"));
+    LOG_DEBUG(F("WebRouter"), F("Leerer handlerType - überspringe Route-Entfernung"));
     return;
   }
 
@@ -191,9 +189,9 @@ void WebRouter::removeHandlerRoutes(const String& handlerType) {
   if (it != _routes.end()) {
     size_t removedCount = std::distance(it, _routes.end());
     _routes.erase(it, _routes.end());
-    logger.info(F("WebRouter"), String(F("Handler-Routen entfernt: ")) + handlerType +
-                                    String(F(" (")) + String(removedCount) + F(" Routen)"));
+    LOG_INFO(F("WebRouter"), String(F("Handler-Routen entfernt: ")) + handlerType +
+                                 String(F(" (")) + String(removedCount) + F(" Routen)"));
   } else {
-    logger.debug(F("WebRouter"), String(F("Keine Routen gefunden für Handler: ")) + handlerType);
+    LOG_DEBUG(F("WebRouter"), String(F("Keine Routen gefunden für Handler: ")) + handlerType);
   }
 }

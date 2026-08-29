@@ -81,13 +81,13 @@ SensorResult DS18B20Sensor::init() {
 
   uint8_t found = m_sensors->getDeviceCount();
   if (found == 0) {
-    logger.warning(getName(), F("Keine DS18B20 Sensoren gefunden"));
+    LOG_WARN(getName(), F("Keine DS18B20 Sensoren gefunden"));
     return SensorResult::fail(SensorError::INITIALIZATION_ERROR, F("Kein Sensor gefunden"));
   }
 
   if (found < m_sensorCount) {
-    logger.warning(getName(), String(F("Erwartet ")) + String(m_sensorCount) +
-                                  String(F(", gefunden ")) + String(found));
+    LOG_WARN(getName(), String(F("Erwartet ")) + String(m_sensorCount) + String(F(", gefunden ")) +
+                            String(found));
     // Konfiguration an tatsächliche Anzahl anpassen
     mutableConfig().activeMeasurements = found;
     if (m_lastMeasurementData)
@@ -99,8 +99,8 @@ SensorResult DS18B20Sensor::init() {
 
   // Auflösung auf 10 Bit (187ms Konversionszeit) – spart Zeit
   m_sensors->setResolution(10);
-  logger.info(getName(), String(F("DS18B20 initialisiert: ")) + String(found) +
-                             String(F(" Sensor(en) an Pin ")) + String(m_oneWireBus));
+  LOG_INFO(getName(), String(F("DS18B20 initialisiert: ")) + String(found) +
+                          String(F(" Sensor(en) an Pin ")) + String(m_oneWireBus));
   m_initialized = true;
   return SensorResult::success();
 }
@@ -124,7 +124,7 @@ SensorResult DS18B20Sensor::continueMeasurement() {
     return memResult;
 
   if (millis() - m_state.operationStartTime > 5000UL) {
-    logger.error(getName(), F("Messung Timeout"));
+    LOG_ERROR(getName(), F("Messung Timeout"));
     handleSensorError();
     return SensorResult::fail(SensorError::MEASUREMENT_ERROR, F("Timeout"));
   }

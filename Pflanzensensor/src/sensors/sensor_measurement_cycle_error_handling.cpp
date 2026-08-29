@@ -29,9 +29,9 @@
 void SensorMeasurementCycleManager::handleError() {
   // Prüfen ob maximale Fehleranzahl erreicht
   if (m_state.errorCount >= MEASUREMENT_ERROR_COUNT) {
-    logger.warning(F("MeasurementCycle"),
-                   m_sensor->getName() + String(F(": Maximale Fehleranzahl erreicht (")) +
-                       String(m_state.errorCount) + F("), versuche Reinitialisierung"));
+    LOG_WARN(F("MeasurementCycle"),
+             m_sensor->getName() + String(F(": Maximale Fehleranzahl erreicht (")) +
+                 String(m_state.errorCount) + F("), versuche Reinitialisierung"));
 
     // Sensor deinitialisieren falls nötig
     if (m_sensor->isInitialized()) {
@@ -42,9 +42,8 @@ void SensorMeasurementCycleManager::handleError() {
     if (m_sensor->init().isSuccess()) {
       // Erfolg — Fehler zurücksetzen und weitermachen
       if (m_sensor->config().hasPersistentError) {
-        logger.info(F("MeasurementCycle"),
-                    m_sensor->getName() +
-                        F(": Erfolgreich reinitialisiert nach persistentem Fehler"));
+        LOG_INFO(F("MeasurementCycle"),
+                 m_sensor->getName() + F(": Erfolgreich reinitialisiert nach persistentem Fehler"));
         m_sensor->mutableConfig().hasPersistentError = false;
       }
       m_state.errorCount = 0;
@@ -55,14 +54,13 @@ void SensorMeasurementCycleManager::handleError() {
     }
 
     // Reinitialisierung fehlgeschlagen
-    logger.error(F("MeasurementCycle"),
-                 m_sensor->getName() + F(": Reinitialisierung fehlgeschlagen"));
+    LOG_ERROR(F("MeasurementCycle"), m_sensor->getName() + F(": Reinitialisierung fehlgeschlagen"));
     m_sensor->mutableConfig().hasPersistentError = true;
 
     // DS18B20: Neustart weil Hardware-Reset nötig
     if (m_sensor->getSharedHardwareInfo().type == SensorType::DS18B20) {
-      logger.error(F("MeasurementCycle"),
-                   m_sensor->getName() + F(": DS18B20-Fehler, löse Neustart aus"));
+      LOG_ERROR(F("MeasurementCycle"),
+                m_sensor->getName() + F(": DS18B20-Fehler, löse Neustart aus"));
       delay(1000);
       ESP.restart();
       return;
@@ -112,8 +110,7 @@ void SensorMeasurementCycleManager::handleStateError(const String& error) {
       previousState != MeasurementState::WAITING_FOR_SLOT) {
     SensorManagerLimiter::getInstance().releaseSlot(m_sensor->getId());
     if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("MeasurementCycle"),
-                   m_sensor->getName() + F(": Slot wegen Fehler freigegeben"));
+      LOG_DEBUG(F("MeasurementCycle"), m_sensor->getName() + F(": Slot wegen Fehler freigegeben"));
     }
   }
 
@@ -125,11 +122,9 @@ void SensorMeasurementCycleManager::handleStateError(const String& error) {
 
   // Fehler mit passender Priorität protokollieren
   if (previousState == MeasurementState::SENDING_INFLUX) {
-    logger.warning(F("MeasurementCycle"),
-                   m_sensor->getName() + String(F(": Netzwerkfehler: ")) + error);
+    LOG_WARN(F("MeasurementCycle"), m_sensor->getName() + String(F(": Netzwerkfehler: ")) + error);
   } else {
-    logger.error(F("MeasurementCycle"),
-                 m_sensor->getName() + String(F(": Sensorfehler: ")) + error);
+    LOG_ERROR(F("MeasurementCycle"), m_sensor->getName() + String(F(": Sensorfehler: ")) + error);
   }
 }
 
@@ -155,9 +150,9 @@ void SensorMeasurementCycleManager::handleException(const std::exception& e) {
  */
 void SensorMeasurementCycleManager::deactivateSensor() {
   if (m_sensor) {
-    logger.warning(F("MeasurementCycle"), m_sensor->getName() + String(F(": Deaktiviert nach ")) +
-                                              String(m_state.errorCount) +
-                                              F(" aufeinanderfolgenden Fehlern"));
+    LOG_WARN(F("MeasurementCycle"), m_sensor->getName() + String(F(": Deaktiviert nach ")) +
+                                        String(m_state.errorCount) +
+                                        F(" aufeinanderfolgenden Fehlern"));
     m_sensor->setEnabled(false);
   }
 }

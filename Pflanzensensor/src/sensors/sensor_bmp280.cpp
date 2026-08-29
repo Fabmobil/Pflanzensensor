@@ -36,7 +36,7 @@ SensorResult BMP280Sensor::init() {
     return memResult;
 
   if (!m_bmp280->begin(BMP280_I2C_ADDRESS)) {
-    logger.warning(getName(), F("BMP280 nicht gefunden (I2C 0x76)"));
+    LOG_WARN(getName(), F("BMP280 nicht gefunden (I2C 0x76)"));
     return SensorResult::fail(SensorError::INITIALIZATION_ERROR, F("BMP280 nicht gefunden"));
   }
 
@@ -48,7 +48,7 @@ SensorResult BMP280Sensor::init() {
                         Adafruit_BMP280::STANDBY_MS_500 // 500ms Standby
   );
 
-  logger.info(getName(), F("BMP280 initialisiert"));
+  LOG_INFO(getName(), F("BMP280 initialisiert"));
   return SensorResult::success();
 }
 

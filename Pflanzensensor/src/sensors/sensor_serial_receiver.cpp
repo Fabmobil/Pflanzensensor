@@ -106,18 +106,17 @@ void SerialReceiverConfig::configureMeasurements() {
 }
 
 SensorResult SerialReceiverSensor::init() {
-  logger.debug(F("SerialReceiver"), F("Initializing SerialReceiverSensor"));
+  LOG_DEBUG(F("SerialReceiver"), F("Initializing SerialReceiverSensor"));
 
 #if USE_SERIAL_RECEIVER
   serial_ = std::make_unique<SoftwareSerial>(SERIAL_RECEIVER_RX_PIN, SERIAL_RECEIVER_TX_PIN);
   serial_->begin(config_.baudRate);
 
-  logger.info(F("SerialReceiver"),
-              String(F("Initialized on RX=")) + String(SERIAL_RECEIVER_RX_PIN));
+  LOG_INFO(F("SerialReceiver"), String(F("Initialized on RX=")) + String(SERIAL_RECEIVER_RX_PIN));
   m_initialized = true;
   return SensorResult::success();
 #else
-  logger.error(F("SerialReceiver"), F("Serial receiver not enabled in configuration"));
+  LOG_ERROR(F("SerialReceiver"), F("Serial receiver not enabled in configuration"));
   return SensorResult::fail(SensorError::INITIALIZATION_ERROR, F("Serial receiver not enabled"));
 #endif
 }
@@ -126,7 +125,7 @@ SensorResult SerialReceiverSensor::startMeasurement() {
   // Reduced logging - only log errors
 
   if (!m_initialized) {
-    logger.error(F("SerialReceiver"), F("Serial not initialized"));
+    LOG_ERROR(F("SerialReceiver"), F("Serial not initialized"));
     return SensorResult::fail(SensorError::INITIALIZATION_ERROR, F("Serial not initialized"));
   }
 
@@ -139,7 +138,7 @@ SensorResult SerialReceiverSensor::continueMeasurement() {
 }
 
 void SerialReceiverSensor::deinitialize() {
-  logger.debug(F("SerialReceiver"), F("Deinitializing SerialReceiverSensor"));
+  LOG_DEBUG(F("SerialReceiver"), F("Deinitializing SerialReceiverSensor"));
   if (serial_) {
     serial_->end();
     serial_.reset();
@@ -153,8 +152,8 @@ bool SerialReceiverSensor::isValidValue(float value) const {
 
 bool SerialReceiverSensor::isValidValue(float value, size_t measurementIndex) const {
   if (!isValidValue(value)) {
-    logger.error(F("SerialReceiver"),
-                 String(F("Value NaN/inf for index ")) + String(measurementIndex));
+    LOG_ERROR(F("SerialReceiver"),
+              String(F("Value NaN/inf for index ")) + String(measurementIndex));
     return false;
   }
 
@@ -164,46 +163,46 @@ bool SerialReceiverSensor::isValidValue(float value, size_t measurementIndex) co
                    value <= config_.measurements[measurementIndex].maxValue;
 
     if (!isValid) {
-      logger.error(F("SerialReceiver"),
-                   String(F("Value ")) + String(value) + String(F(" for index ")) +
-                       String(measurementIndex) + String(F(" outside range [")) +
-                       String(config_.measurements[measurementIndex].minValue) + String(F(", ")) +
-                       String(config_.measurements[measurementIndex].maxValue) + F("]"));
+      LOG_ERROR(F("SerialReceiver"),
+                String(F("Value ")) + String(value) + String(F(" for index ")) +
+                    String(measurementIndex) + String(F(" outside range [")) +
+                    String(config_.measurements[measurementIndex].minValue) + String(F(", ")) +
+                    String(config_.measurements[measurementIndex].maxValue) + F("]"));
     }
 
     return isValid;
   }
 
-  logger.error(F("SerialReceiver"),
-               String(F("Invalid measurement index: ")) + String(measurementIndex));
+  LOG_ERROR(F("SerialReceiver"),
+            String(F("Invalid measurement index: ")) + String(measurementIndex));
   return false;
 }
 
 bool SerialReceiverSensor::fetchSample(float& value, size_t index) {
   if (index >= config_.activeMeasurements) {
-    logger.error(F("SerialReceiver"), String(F("Invalid measurement index: ")) + String(index));
+    LOG_ERROR(F("SerialReceiver"), String(F("Invalid measurement index: ")) + String(index));
     return false;
   }
 
   // Request the specific measurement from Arduino
   if (!requestMeasurement(index)) {
-    logger.error(F("SerialReceiver"),
-                 String(F("Failed to request measurement index: ")) + String(index));
+    LOG_ERROR(F("SerialReceiver"),
+              String(F("Failed to request measurement index: ")) + String(index));
     return false;
   }
 
   // Read the response
   String response;
   if (!readResponse(response)) {
-    logger.error(F("SerialReceiver"),
-                 String(F("Failed to read response for measurement index: ")) + String(index));
+    LOG_ERROR(F("SerialReceiver"),
+              String(F("Failed to read response for measurement index: ")) + String(index));
     return false;
   }
 
   // Parse the single value
   if (!parseMeasurementValue(response, value)) {
-    logger.error(F("SerialReceiver"),
-                 String(F("Failed to parse value for measurement index: ")) + String(index));
+    LOG_ERROR(F("SerialReceiver"),
+              String(F("Failed to parse value for measurement index: ")) + String(index));
     return false;
   }
 
@@ -213,7 +212,7 @@ bool SerialReceiverSensor::fetchSample(float& value, size_t index) {
 
 bool SerialReceiverSensor::requestMeasurement(size_t measurementIndex) {
   if (!serial_) {
-    logger.error(F("SerialReceiver"), F("Serial not initialized"));
+    LOG_ERROR(F("SerialReceiver"), F("Serial not initialized"));
     return false;
   }
 
@@ -230,7 +229,7 @@ bool SerialReceiverSensor::requestMeasurement(size_t measurementIndex) {
 
 bool SerialReceiverSensor::readResponse(String& response) {
   if (!serial_) {
-    logger.error(F("SerialReceiver"), F("Serial not initialized"));
+    LOG_ERROR(F("SerialReceiver"), F("Serial not initialized"));
     return false;
   }
 
@@ -238,8 +237,8 @@ bool SerialReceiverSensor::readResponse(String& response) {
   unsigned long startTime = millis();
   int bytesReceived = 0;
 
-  logger.debug(F("SerialReceiver"),
-               String(F("Waiting for response (timeout: ")) + String(config_.timeout) + F("ms)"));
+  LOG_DEBUG(F("SerialReceiver"),
+            String(F("Waiting for response (timeout: ")) + String(config_.timeout) + F("ms)"));
 
   // Read complete response with timeout - read until newline
   while (millis() - startTime < config_.timeout) {
@@ -293,7 +292,7 @@ bool SerialReceiverSensor::parseMeasurementValue(const String& response, float& 
   trimmed.trim();
 
   if (trimmed.length() == 0) {
-    logger.warning(F("SerialReceiver"), F("Empty response"));
+    LOG_WARN(F("SerialReceiver"), F("Empty response"));
     return false;
   }
 
@@ -303,14 +302,13 @@ bool SerialReceiverSensor::parseMeasurementValue(const String& response, float& 
 
   // Check if parsing was successful (endptr should point to end of string)
   if (endptr == trimmed.c_str() || *endptr != '\0') {
-    logger.warning(F("SerialReceiver"), String(F("Failed to parse value: '")) + trimmed + F("'"));
+    LOG_WARN(F("SerialReceiver"), String(F("Failed to parse value: '")) + trimmed + F("'"));
     return false;
   }
 
   // Check for NaN or infinite values
   if (isnan(parsedValue) || isinf(parsedValue)) {
-    logger.warning(F("SerialReceiver"),
-                   String(F("Invalid value (NaN/inf): ")) + String(parsedValue));
+    LOG_WARN(F("SerialReceiver"), String(F("Invalid value (NaN/inf): ")) + String(parsedValue));
     return false;
   }
 

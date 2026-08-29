@@ -29,12 +29,12 @@ extern WebManager& webManager;
  * 4. Log status
  */
 ResourceResult initializeSensors() {
-  logger.info(F("main_sensors"), F("Sensor-Manager Initialisierung gestartet"));
+  LOG_INFO(F("main_sensors"), F("Sensor-Manager Initialisierung gestartet"));
 
   auto result = ResourceManager::getInstance().enterCriticalOperation(F("SensorInit"));
   if (!result.isSuccess()) {
-    logger.error(F("main_sensors"),
-                 String(F("Kritischer Operationseintritt fehlgeschlagen: ")) + result.getMessage());
+    LOG_ERROR(F("main_sensors"),
+              String(F("Kritischer Operationseintritt fehlgeschlagen: ")) + result.getMessage());
     return result;
   }
 
@@ -45,8 +45,8 @@ ResourceResult initializeSensors() {
 
   ResourceResult sensorResult = sensorManager->init();
   if (!sensorResult.isSuccess()) {
-    logger.error(F("main_sensors"), String(F("Sensor-Manager Initialisierung fehlgeschlagen: ")) +
-                                        sensorResult.getMessage());
+    LOG_ERROR(F("main_sensors"), String(F("Sensor-Manager Initialisierung fehlgeschlagen: ")) +
+                                     sensorResult.getMessage());
     ResourceManager::getInstance().exitCriticalOperation();
 #if USE_DISPLAY
     if (displayManager) {
@@ -62,7 +62,7 @@ ResourceResult initializeSensors() {
   }
 #endif
 
-  logger.info(F("main_sensors"), F("Sensor-Manager Initialisierung erfolgreich"));
+  LOG_INFO(F("main_sensors"), F("Sensor-Manager Initialisierung erfolgreich"));
   ResourceManager::getInstance().exitCriticalOperation();
 
   return ResourceResult::success();

@@ -93,7 +93,7 @@ public:
       }
 
       m_queue.push_back(sensor);
-      logger.debug(F("SensorQueue"), sensor->getName() + F(": Added to measurement queue"));
+      LOG_DEBUG(F("SensorQueue"), sensor->getName() + F(": Added to measurement queue"));
       return true;
     }
     return false;
@@ -129,7 +129,7 @@ public:
         return;
       }
 
-      logger.debug(F("SensorQueue"), m_activeSensor->getName() + F(": Starting measurement"));
+      LOG_DEBUG(F("SensorQueue"), m_activeSensor->getName() + F(": Starting measurement"));
     }
   }
 
@@ -149,7 +149,7 @@ private:
     if (!m_activeSensor)
       return;
 
-    logger.error(F("SensorQueue"), m_activeSensor->getName() + String(F(": ")) + message);
+    LOG_ERROR(F("SensorQueue"), m_activeSensor->getName() + String(F(": ")) + message);
 
     auto& timing = m_timings[m_activeSensor];
     timing.errorCount++;

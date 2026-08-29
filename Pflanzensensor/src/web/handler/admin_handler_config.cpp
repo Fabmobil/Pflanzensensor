@@ -15,11 +15,11 @@
 #include "managers/manager_resource.h"
 
 void AdminHandler::handleDownloadConfig() {
-  logger.info(F("AdminHandler"), F("Config-Download angefordert"));
+  LOG_INFO(F("AdminHandler"), F("Config-Download angefordert"));
 
   // Generate JSON from current Preferences (reuse existing backup function)
   if (!ConfigPersistence::backupPreferencesToFile()) {
-    logger.error(F("AdminHandler"), F("Config-Generierung fehlgeschlagen"));
+    LOG_ERROR(F("AdminHandler"), F("Config-Generierung fehlgeschlagen"));
     _server.send(500, "text/plain", "Fehler beim Generieren der Konfiguration");
     return;
   }
@@ -27,7 +27,7 @@ void AdminHandler::handleDownloadConfig() {
   // Read the generated JSON file
   File configFile = LittleFS.open("/prefs_backup.json", "r");
   if (!configFile) {
-    logger.error(F("AdminHandler"), F("Config-Datei konnte nicht geöffnet werden"));
+    LOG_ERROR(F("AdminHandler"), F("Config-Datei konnte nicht geöffnet werden"));
     _server.send(500, "text/plain", "Fehler beim Öffnen der Konfigurationsdatei");
     return;
   }
@@ -53,7 +53,7 @@ void AdminHandler::handleDownloadConfig() {
   // Clean up temporary file
   LittleFS.remove("/prefs_backup.json");
 
-  logger.info(F("AdminHandler"), F("Config erfolgreich heruntergeladen"));
+  LOG_INFO(F("AdminHandler"), F("Config erfolgreich heruntergeladen"));
 }
 
 void AdminHandler::handleUploadConfig() {
@@ -63,7 +63,7 @@ void AdminHandler::handleUploadConfig() {
 
   if (upload.status == UPLOAD_FILE_START) {
     String filename = upload.filename;
-    logger.info(F("AdminHandler"), String(F("Config-Upload gestartet: ")) + filename);
+    LOG_INFO(F("AdminHandler"), String(F("Config-Upload gestartet: ")) + filename);
 
     // Remove old upload file and flags if they exist
     LittleFS.remove("/prefs_upload.json");
@@ -73,7 +73,7 @@ void AdminHandler::handleUploadConfig() {
     // Open file for writing
     File uploadFile = LittleFS.open("/prefs_upload.json", "w");
     if (!uploadFile) {
-      logger.error(F("AdminHandler"), F("Konnte Upload-Datei nicht erstellen"));
+      LOG_ERROR(F("AdminHandler"), F("Konnte Upload-Datei nicht erstellen"));
       // Set error flag for POST handler
       File errorFlag = LittleFS.open("/prefs_upload_error.flag", "w");
       if (errorFlag) {
@@ -90,7 +90,7 @@ void AdminHandler::handleUploadConfig() {
       uploadFile.write(upload.buf, upload.currentSize);
       uploadFile.close();
     } else {
-      logger.error(F("AdminHandler"), F("Konnte Upload-Datei nicht im Append-Modus öffnen"));
+      LOG_ERROR(F("AdminHandler"), F("Konnte Upload-Datei nicht im Append-Modus öffnen"));
       // Set error flag
       File errorFlag = LittleFS.open("/prefs_upload_error.flag", "w");
       if (errorFlag) {
@@ -99,12 +99,12 @@ void AdminHandler::handleUploadConfig() {
       }
     }
   } else if (upload.status == UPLOAD_FILE_END) {
-    logger.info(F("AdminHandler"),
-                String(F("Upload abgeschlossen: ")) + String(upload.totalSize) + F(" bytes"));
+    LOG_INFO(F("AdminHandler"),
+             String(F("Upload abgeschlossen: ")) + String(upload.totalSize) + F(" bytes"));
 
     // Check if file exists
     if (!LittleFS.exists("/prefs_upload.json")) {
-      logger.error(F("AdminHandler"), F("Upload-Datei existiert nicht!"));
+      LOG_ERROR(F("AdminHandler"), F("Upload-Datei existiert nicht!"));
       // Set error flag
       File errorFlag = LittleFS.open("/prefs_upload_error.flag", "w");
       if (errorFlag) {
@@ -119,10 +119,10 @@ void AdminHandler::handleUploadConfig() {
     if (doneFlag) {
       doneFlag.println("Upload complete");
       doneFlag.close();
-      logger.info(F("AdminHandler"), F("Upload-Flag gesetzt"));
+      LOG_INFO(F("AdminHandler"), F("Upload-Flag gesetzt"));
     }
   } else if (upload.status == UPLOAD_FILE_ABORTED) {
-    logger.warning(F("AdminHandler"), F("Upload abgebrochen"));
+    LOG_WARN(F("AdminHandler"), F("Upload abgebrochen"));
     LittleFS.remove("/prefs_upload.json");
     LittleFS.remove("/prefs_upload_done.flag");
     LittleFS.remove("/prefs_upload_error.flag");
@@ -132,14 +132,14 @@ void AdminHandler::handleUploadConfig() {
 void AdminHandler::handleUploadConfigRestore() {
   // This is called from POST handler AFTER upload completes
   // HTTP response has already been sent
-  logger.info(F("AdminHandler"), F("Verarbeite hochgeladene Konfiguration..."));
+  LOG_INFO(F("AdminHandler"), F("Verarbeite hochgeladene Konfiguration..."));
 
   // Remove the done flag
   LittleFS.remove("/prefs_upload_done.flag");
 
   File uploadFile = LittleFS.open("/prefs_upload.json", "r");
   if (!uploadFile) {
-    logger.error(F("AdminHandler"), F("Konnte Upload-Datei nicht öffnen"));
+    LOG_ERROR(F("AdminHandler"), F("Konnte Upload-Datei nicht öffnen"));
     LittleFS.remove("/prefs_upload.json");
     // Kein delay - ESP.restart() erfolgt sofort
     ESP.restart();
@@ -147,21 +147,21 @@ void AdminHandler::handleUploadConfigRestore() {
   }
 
   size_t fileSize = uploadFile.size();
-  logger.info(F("AdminHandler"), String(F("Verarbeite Datei: ")) + String(fileSize) + F(" bytes"));
+  LOG_INFO(F("AdminHandler"), String(F("Verarbeite Datei: ")) + String(fileSize) + F(" bytes"));
 
   DynamicJsonDocument doc(2048);
   DeserializationError error = deserializeJson(doc, uploadFile);
   uploadFile.close();
 
   if (error) {
-    logger.error(F("AdminHandler"), String(F("Ungültige JSON-Datei: ")) + String(error.c_str()));
+    LOG_ERROR(F("AdminHandler"), String(F("Ungültige JSON-Datei: ")) + String(error.c_str()));
     LittleFS.remove("/prefs_upload.json");
     // Kein delay - ESP.restart() erfolgt sofort
     ESP.restart();
     return;
   }
 
-  logger.info(F("AdminHandler"), F("Stelle Preferences wieder her..."));
+  LOG_INFO(F("AdminHandler"), F("Stelle Preferences wieder her..."));
 
   // Restore from parsed JSON document (this takes several seconds!)
   bool success = ConfigPersistence::restorePreferencesFromJson(doc);
@@ -170,9 +170,9 @@ void AdminHandler::handleUploadConfigRestore() {
   LittleFS.remove("/prefs_upload.json");
 
   if (success) {
-    logger.info(F("AdminHandler"), F("Wiederherstellung erfolgreich, starte neu..."));
+    LOG_INFO(F("AdminHandler"), F("Wiederherstellung erfolgreich, starte neu..."));
   } else {
-    logger.error(F("AdminHandler"), F("Wiederherstellung fehlgeschlagen, starte trotzdem neu..."));
+    LOG_ERROR(F("AdminHandler"), F("Wiederherstellung fehlgeschlagen, starte trotzdem neu..."));
   }
 
   // Reboot to apply settings

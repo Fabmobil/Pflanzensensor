@@ -21,8 +21,7 @@ void SensorManager::updateMeasurements() {
     auto cycleManager = m_cycleManagers[sensor->getId()].get();
 
     if (!cycleManager) {
-      logger.error(F("SensorManager"),
-                   String(F("Kein Zyklusmanager für Sensor: ")) + sensor->getId());
+      LOG_ERROR(F("SensorManager"), String(F("Kein Zyklusmanager für Sensor: ")) + sensor->getId());
       continue;
     }
 
@@ -33,9 +32,9 @@ void SensorManager::updateMeasurements() {
     stateLog.lastState = currentState;
 
     if (stateChanged && ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("SensorManager"),
-                   String(F("Sensor: ")) + sensor->getId() + String(F(" Zustand: ")) +
-                       String(static_cast<int>(currentState)) + F(" (geändert)"));
+      LOG_DEBUG(F("SensorManager"), String(F("Sensor: ")) + sensor->getId() +
+                                        String(F(" Zustand: ")) +
+                                        String(static_cast<int>(currentState)) + F(" (geändert)"));
       stateLog.lastStateLogTime = now;
     }
 
@@ -49,10 +48,9 @@ void SensorManager::updateMeasurements() {
       stateLog.lastUpdateResult = cycleResult;
 
       if (resultChanged && ConfigMgr.isDebugMeasurementCycle()) {
-        logger.debug(F("SensorManager"),
-                     String(F("Sensor: ")) + sensor->getId() + String(F(" Zyklus: ")) +
-                         (cycleResult ? F("Abgeschlossen") : F("In Bearbeitung")) +
-                         F(" (geändert)"));
+        LOG_DEBUG(F("SensorManager"),
+                  String(F("Sensor: ")) + sensor->getId() + String(F(" Zyklus: ")) +
+                      (cycleResult ? F("Abgeschlossen") : F("In Bearbeitung")) + F(" (geändert)"));
       }
     }
 
@@ -69,15 +67,15 @@ TypedResult<ResourceError, void> SensorManager::initialize() {
   }
 
   if (result.isPartialSuccess()) {
-    logger.warning(F("SensorM"), String(F("Einige Sensoren konnten nicht initialisiert werden: ")) +
-                                     result.getMessage());
+    LOG_WARN(F("SensorM"), String(F("Einige Sensoren konnten nicht initialisiert werden: ")) +
+                               result.getMessage());
   }
 
   bool hasFailedSensors = false;
   for (const auto& sensor : m_sensors) {
     if (sensor && sensor->config().hasPersistentError) {
       if (!sensor->isInitialized()) {
-        logger.debug(
+        LOG_DEBUG(
             F("SensorM"),
             String(F("Zuvor fehlgeschlagener Sensor ")) + sensor->getName() +
                 F(" wurde während der Fabrikprüfung deinitialisiert, Fehlerflag wird entfernt"));
@@ -86,19 +84,19 @@ TypedResult<ResourceError, void> SensorManager::initialize() {
       }
 
       if (sensor->init().isSuccess()) {
-        logger.info(F("SensorM"), String(F("Zuvor fehlgeschlagener Sensor ")) + sensor->getName() +
-                                      F(" ist nach Neustart wieder funktionsfähig"));
+        LOG_INFO(F("SensorM"), String(F("Zuvor fehlgeschlagener Sensor ")) + sensor->getName() +
+                                   F(" ist nach Neustart wieder funktionsfähig"));
         sensor->mutableConfig().hasPersistentError = false;
       } else {
-        logger.error(F("SensorM"), String(F("Zuvor fehlgeschlagener Sensor ")) + sensor->getName() +
-                                       F(" ist nach Neustart weiterhin fehlerhaft"));
+        LOG_ERROR(F("SensorM"), String(F("Zuvor fehlgeschlagener Sensor ")) + sensor->getName() +
+                                    F(" ist nach Neustart weiterhin fehlerhaft"));
         sensor->stop();
         hasFailedSensors = true;
       }
     }
   }
 
-  logger.debug(F("SensorM"), F("Überprüfe aktivierte Sensoren:"));
+  LOG_DEBUG(F("SensorM"), F("Überprüfe aktivierte Sensoren:"));
   for (const auto& sensor : m_sensors) {
     if (sensor) {
       String msg = F("Sensor-ID: ");
@@ -107,7 +105,7 @@ TypedResult<ResourceError, void> SensorManager::initialize() {
       msg += sensor->getName();
       msg += F(", Aktiviert: ");
       msg += sensor->isEnabled() ? F("ja") : F("nein");
-      logger.debug(F("SensorM"), msg);
+      LOG_DEBUG(F("SensorM"), msg);
     }
   }
 
@@ -118,7 +116,7 @@ TypedResult<ResourceError, void> SensorManager::initialize() {
       String sensorId = sensor->getId();
       m_cycleManagers[sensorId] = std::move(cycleManager);
       enabledCount++;
-      logger.debug(F("SensorM"), String(F("Zyklusmanager für Sensor erstellt: ")) + sensorId);
+      LOG_DEBUG(F("SensorM"), String(F("Zyklusmanager für Sensor erstellt: ")) + sensorId);
     }
   }
 
@@ -127,11 +125,11 @@ TypedResult<ResourceError, void> SensorManager::initialize() {
   msg += F(" Zyklusmanager von insgesamt ");
   msg += String(m_sensors.size());
   msg += F(" Sensoren erstellt");
-  logger.debug(F("SensorM"), msg);
+  LOG_DEBUG(F("SensorM"), msg);
 
-  logger.info(F("SensorM"), String(F("Initialisierung des Sensormanagers abgeschlossen mit ")) +
-                                String(m_sensors.size()) + String(F(" Sensoren (")) +
-                                String(enabledCount) + F(" aktiviert)"));
+  LOG_INFO(F("SensorM"), String(F("Initialisierung des Sensormanagers abgeschlossen mit ")) +
+                             String(m_sensors.size()) + String(F(" Sensoren (")) +
+                             String(enabledCount) + F(" aktiviert)"));
 
   setState(ManagerState::INITIALIZED);
   applySensorSettingsFromConfig();
@@ -146,22 +144,22 @@ TypedResult<ResourceError, void> SensorManager::initialize() {
 
 void SensorManager::applySensorSettingsFromConfig() {
   if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorM"), F("Wende Sensoreinstellungen aus der Konfiguration an"));
+    LOG_DEBUG(F("SensorM"), F("Wende Sensoreinstellungen aus der Konfiguration an"));
   }
 
-  logger.info(F("SensorM"), F("Sensoreinstellungen aus der Konfiguration werden angewendet"));
+  LOG_INFO(F("SensorM"), F("Sensoreinstellungen aus der Konfiguration werden angewendet"));
 
   // Load sensor configuration from file
   auto result = SensorPersistence::load();
   if (!result.isSuccess()) {
-    logger.warning(F("SensorM"), String(F("Sensor-Konfiguration konnte nicht geladen werden: ")) +
-                                     result.getMessage());
+    LOG_WARN(F("SensorM"),
+             String(F("Sensor-Konfiguration konnte nicht geladen werden: ")) + result.getMessage());
     return;
   }
 
   if (ConfigMgr.isDebugSensor()) {
-    logger.debug(F("SensorM"), F("Sensor-Konfiguration erfolgreich aus Datei geladen"));
+    LOG_DEBUG(F("SensorM"), F("Sensor-Konfiguration erfolgreich aus Datei geladen"));
   }
 
-  logger.info(F("SensorM"), F("Sensoreinstellungen erfolgreich angewendet"));
+  LOG_INFO(F("SensorM"), F("Sensoreinstellungen erfolgreich angewendet"));
 }

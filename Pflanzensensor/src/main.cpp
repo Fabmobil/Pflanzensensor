@@ -85,7 +85,7 @@ void setup() {
   }
 
   // Filesystem initialized
-  logger.info(F("main"), F("Initialisiere Dateisystem"));
+  LOG_INFO(F("main"), F("Initialisiere Dateisystem"));
 
   // Initialize display (optional, don't fail on error)
 #if USE_DISPLAY
@@ -94,7 +94,7 @@ void setup() {
         return displayManager->init();
       })) {
     // Note: Don't return here - display is optional
-    logger.warning(F("main"), F("Display-Manager Initialisierung fehlgeschlagen, fahre fort"));
+    LOG_WARN(F("main"), F("Display-Manager Initialisierung fehlgeschlagen, fahre fort"));
   } else {
     displayManager->showLogScreen(F("Filesystem..."), true);
   }
@@ -106,9 +106,8 @@ void setup() {
         ledTrafficLightManager = std::make_unique<LedTrafficLightManager>();
         auto result = ledTrafficLightManager->init();
         if (!result.isSuccess()) {
-          logger.warning(F("main"),
-                         String(F("LED-Ampel-Manager Initialisierung fehlgeschlagen: ")) +
-                             result.getMessage());
+          LOG_WARN(F("main"), String(F("LED-Ampel-Manager Initialisierung fehlgeschlagen: ")) +
+                                  result.getMessage());
         }
         return result;
       })) {
@@ -123,8 +122,8 @@ void setup() {
   if (!Helper::initializeComponent(F("configuration"), []() -> ResourceResult {
         auto result = ConfigMgr.loadConfig();
         if (!result.isSuccess()) {
-          logger.error(F("main"), String(F("Konfiguration konnte nicht geladen werden: ")) +
-                                      result.getMessage());
+          LOG_ERROR(F("main"),
+                    String(F("Konfiguration konnte nicht geladen werden: ")) + result.getMessage());
           return ResourceResult::fail(ResourceError::CONFIG_ERROR, result.getMessage());
         }
         return ResourceResult::success();
@@ -148,14 +147,14 @@ void setup() {
   if (LittleFS.exists("/.clear_upgrade_flag")) {
     LittleFS.remove("/.clear_upgrade_flag");
     if (ConfigMgr.getDoFirmwareUpgrade()) {
-      logger.warning(F("main"), F("Boot-Schleife erkannt: Firmware-Upgrade-Flag wird gelöscht"));
+      LOG_WARN(F("main"), F("Boot-Schleife erkannt: Firmware-Upgrade-Flag wird gelöscht"));
       ConfigMgr.setDoFirmwareUpgrade(false);
     }
   }
 
   // **CRITICAL FIX: Check for update mode BEFORE initializing heavy managers**
   if (ConfigMgr.getDoFirmwareUpgrade()) {
-    logger.info(F("main"), F("Firmware-Upgrade-Modus erkannt - wechsle in Minimalmodus"));
+    LOG_INFO(F("main"), F("Firmware-Upgrade-Modus erkannt - wechsle in Minimalmodus"));
 
 #if USE_DISPLAY
     // Inform user about update mode on display
@@ -168,7 +167,7 @@ void setup() {
     // Setup WiFi for update mode
     auto wifiResult = setupWiFiWithDisplay(displayManager != nullptr);
     if (!wifiResult.isSuccess()) {
-      logger.error(F("main"), F("WiFi-Initialisierung für Update-Modus fehlgeschlagen"));
+      LOG_ERROR(F("main"), F("WiFi-Initialisierung für Update-Modus fehlgeschlagen"));
     }
 
 #if USE_DISPLAY
@@ -206,7 +205,7 @@ void setup() {
     }
 #endif
 
-    logger.info(F("main"), F("Minimal-Update-Modus Setup abgeschlossen"));
+    LOG_INFO(F("main"), F("Minimal-Update-Modus Setup abgeschlossen"));
     return; // Exit setup() early - don't initialize other managers
   }
 
@@ -221,8 +220,8 @@ void setup() {
   showBootProgress(F("WiFi..."));
   auto wifiResult = setupWiFiWithDisplay(displayManager != nullptr);
   if (!wifiResult.isSuccess()) {
-    logger.warning(F("main"),
-                   String(F("WiFi-Initialisierung fehlgeschlagen: ")) + wifiResult.getMessage());
+    LOG_WARN(F("main"),
+             String(F("WiFi-Initialisierung fehlgeschlagen: ")) + wifiResult.getMessage());
     // Continue anyway - AP mode may be active for configuration
   }
 
@@ -257,7 +256,7 @@ void setup() {
 
   logger.endMemoryTracking(F("managers_init"));
   logger.logMemoryStats(F("setup_complete"));
-  logger.info(F("main"), F("Setup abgeschlossen"));
+  LOG_INFO(F("main"), F("Setup abgeschlossen"));
 
   // Sensor settings are now applied directly during JSON parsing
   // DO NOT trigger a synchronous initial measurement here - it may block
@@ -301,14 +300,14 @@ void loop() {
 
     // Check for issues
     if (MemoryMgr.isCritical()) {
-      logger.error(F("main"), F("CRITICAL: Heap below 3KB! "));
+      LOG_ERROR(F("main"), F("CRITICAL: Heap below 3KB! "));
       if (sensorManager) {
         sensorManager->cleanup();
       }
     }
 
     if (MemoryMgr.isHighFragmentation()) {
-      logger.warning(F("main"), F("High fragmentation: "));
+      LOG_WARN(F("main"), F("High fragmentation: "));
       MemoryMgr.checkMemory();
     }
 
@@ -319,19 +318,19 @@ void loop() {
   if (ConfigMgr.getDoFirmwareUpgrade()) {
     // Debug: Log update mode recovery state (every 30 seconds)
     if (currentMillis - lastUpdateModeLog >= 30000) {
-      logger.debug(F("main"), F("[UpdateMode] loop: getDoFirmwareUpgrade()=true"));
+      LOG_DEBUG(F("main"), F("[UpdateMode] loop: getDoFirmwareUpgrade()=true"));
       auto& webManager = WebManager::getInstance();
       unsigned long updateStart = webManager.getUpdateModeStartTime();
       unsigned long timeout = webManager.getUpdateModeTimeout();
-      logger.debug(F("main"), String(F("[UpdateMode] loop: currentMillis=")) +
-                                  String(currentMillis) + String(F(", updateStart=")) +
-                                  String(updateStart) + String(F(", timeout=")) + String(timeout));
+      LOG_DEBUG(F("main"), String(F("[UpdateMode] loop: currentMillis=")) + String(currentMillis) +
+                               String(F(", updateStart=")) + String(updateStart) +
+                               String(F(", timeout=")) + String(timeout));
       if (updateStart > 0 && currentMillis - updateStart > timeout) {
-        logger.warning(F("main"), F("Update-Mode Timeout erreicht. Beende "
-                                    "Update-Modus automatisch."));
+        LOG_WARN(F("main"), F("Update-Mode Timeout erreicht. Beende "
+                              "Update-Modus automatisch."));
         ConfigMgr.setUpdateFlags(false, false);
         webManager.resetUpdateModeStartTime();
-        logger.warning(F("main"), F("ESP startet neu."));
+        LOG_WARN(F("main"), F("ESP startet neu."));
         ESP.restart(); // Force reboot to reload config and exit update mode
         return;
       }
@@ -354,7 +353,7 @@ void loop() {
   if (currentMillis - lastWiFiCheck >= 30000) { // Every 30 seconds
 #if USE_WIFI
     if (!isCaptivePortalAPActive()) {
-      logger.debug(F("main"), F("Prüfe WiFi-Verbindung"));
+      LOG_DEBUG(F("main"), F("Prüfe WiFi-Verbindung"));
       checkWiFiConnection();
     } else {
       // Im AP-Modus regelmäßig prüfen, ob das konfigurierte Netz wieder da ist.

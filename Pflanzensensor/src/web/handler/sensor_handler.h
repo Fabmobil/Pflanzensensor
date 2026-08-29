@@ -54,7 +54,7 @@ public:
   SensorHandler(ESPWebServer& server, WebAuth& auth, CSSService& cssService,
                 SensorManager& sensorManager)
       : BaseHandler(server), _auth(auth), _cssService(cssService), _sensorManager(sensorManager) {
-    logger.debug(F("SensorHandler"), F("Initialisiere SensorHandler"));
+    LOG_DEBUG(F("SensorHandler"), F("Initialisiere SensorHandler"));
   }
 
   /**

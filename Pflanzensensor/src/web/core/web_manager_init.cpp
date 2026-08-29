@@ -20,12 +20,12 @@
 
 ResourceResult WebManager::begin(uint16_t port) {
   if (_initialized) {
-    logger.warning(F("WebManager"), F("WebManager bereits initialisiert"));
+    LOG_WARN(F("WebManager"), F("WebManager bereits initialisiert"));
     return ResourceResult::success();
   }
 
   _port = port;
-  logger.info(F("WebManager"), "Initialisiere WebManager auf Port " + String(_port));
+  LOG_INFO(F("WebManager"), "Initialisiere WebManager auf Port " + String(_port));
 
   // Wichtige Dienste zuerst initialisieren
   _server = std::make_unique<ESPWebServer>(_port);
@@ -45,7 +45,7 @@ ResourceResult WebManager::begin(uint16_t port) {
 #if USE_WEBSOCKET
   // WebSocket-Server zuerst initialisieren
   if (!WebSocketService::getInstance().init(81, nullptr)) {
-    logger.error(F("WebManager"), F("WebSocket-Server konnte nicht initialisiert werden"));
+    LOG_ERROR(F("WebManager"), F("WebSocket-Server konnte nicht initialisiert werden"));
     return ResourceResult::fail(ResourceError::WEBSOCKET_ERROR,
                                 F("WebSocket-Server konnte nicht initialisiert werden"));
   }
@@ -85,16 +85,16 @@ ResourceResult WebManager::begin(uint16_t port) {
 }
 
 ResourceResult WebManager::beginUpdateMode() {
-  logger.info(F("WebManager"), F("Wechsel in minimalen Update-Modus"));
+  LOG_INFO(F("WebManager"), F("Wechsel in minimalen Update-Modus"));
 
   // Startzeit für Update-Modus setzen (Timeout-Absicherung)
   m_updateModeStartTime = millis();
-  logger.debug(F("WebManager"),
-               String(F("Update-Modus Startzeit gesetzt: ")) + String(m_updateModeStartTime));
+  LOG_DEBUG(F("WebManager"),
+            String(F("Update-Modus Startzeit gesetzt: ")) + String(m_updateModeStartTime));
 
   // Alle Dienste zuerst stoppen
   if (_sensorManager) {
-    logger.info(F("WebManager"), F("Sensor-Manager wird gestoppt"));
+    LOG_INFO(F("WebManager"), F("Sensor-Manager wird gestoppt"));
     _sensorManager->stopAll();
     _sensorManager = nullptr;
   }
@@ -112,9 +112,8 @@ ResourceResult WebManager::beginUpdateMode() {
   logger.logMemoryStats(F("vor_minimalen_diensten"));
   auto setupResult = setupMinimalServices();
   if (!setupResult.isSuccess()) {
-    logger.error(F("WebManager"),
-                 String(F("Minimale Dienste konnten nicht eingerichtet werden: ")) +
-                     setupResult.getMessage());
+    LOG_ERROR(F("WebManager"), String(F("Minimale Dienste konnten nicht eingerichtet werden: ")) +
+                                   setupResult.getMessage());
     return ResourceResult::fail(ResourceError::WEBSERVER_ERROR,
                                 String(F("Minimale Dienste konnten nicht eingerichtet werden: ")) +
                                     setupResult.getMessage());
@@ -127,7 +126,7 @@ ResourceResult WebManager::beginUpdateMode() {
   setupMinimalRoutes();
 
   _server->begin();
-  logger.info(F("WebManager"), F("Update-Server im Minimalmodus gestartet"));
+  LOG_INFO(F("WebManager"), F("Update-Server im Minimalmodus gestartet"));
   logger.logMemoryStats(F("update_modus_abgeschlossen"));
 
   _initialized = true;
@@ -178,7 +177,7 @@ ResourceResult WebManager::setupMinimalServices() {
   _server->on("/favicon.ico", HTTP_GET,
               [this]() { serveStaticFile("/favicon.ico", "image/x-icon", "max-age=86400"); });
 
-  logger.debug(F("WebManager"), F("Statische Dateien für Update-Modus registriert"));
+  LOG_DEBUG(F("WebManager"), F("Statische Dateien für Update-Modus registriert"));
 
   _server->begin();
 
@@ -259,15 +258,15 @@ ResourceResult WebManager::setupServices() {
   _server->on("/favicon.ico", HTTP_GET,
               [this]() { serveStaticFile("/favicon.ico", "image/x-icon", "max-age=86400"); });
 
-  logger.debug(F("WebManager"), F("Routen für statische Dateien konfiguriert"));
+  LOG_DEBUG(F("WebManager"), F("Routen für statische Dateien konfiguriert"));
 
-  logger.info(F("WebManager"), F("Statische Dateiauslieferung erfolgreich initialisiert"));
+  LOG_INFO(F("WebManager"), F("Statische Dateiauslieferung erfolgreich initialisiert"));
 
   return ResourceResult::success();
 }
 
 void WebManager::setupMiddleware() {
-  logger.debug(F("WebManager"), F("Middleware wird eingerichtet..."));
+  LOG_DEBUG(F("WebManager"), F("Middleware wird eingerichtet..."));
 
   // Middleware: Whitelist statt Blacklist. Nur explizit als öffentlich gelistete
   // Pfade sind ohne Anmeldung erreichbar, alles andere verlangt Authentifizierung.
@@ -289,10 +288,10 @@ void WebManager::setupMiddleware() {
 
   // Logging-Middleware hinzufügen
   _router->addMiddleware([this](HTTPMethod method, String url) {
-    logger.debug(F("WebManager"),
-                 String(F("Anfrage: ")) + methodToString(method) + String(F(" ")) + url);
+    LOG_DEBUG(F("WebManager"),
+              String(F("Anfrage: ")) + methodToString(method) + String(F(" ")) + url);
     return true;
   });
 
-  logger.debug(F("WebManager"), F("Middleware-Konfiguration abgeschlossen"));
+  LOG_DEBUG(F("WebManager"), F("Middleware-Konfiguration abgeschlossen"));
 }
