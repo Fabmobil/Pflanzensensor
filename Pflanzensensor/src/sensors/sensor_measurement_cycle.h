@@ -184,12 +184,6 @@ private:
   void handleStateError(const String& error);
 
   /**
-   * @brief Handles C++ exceptions during processing
-   * @param e The caught exception
-   */
-  void handleException(const std::exception& e);
-
-  /**
    * @brief Deactivates the sensor after fatal errors
    */
   void deactivateSensor();

@@ -129,21 +129,6 @@ void SensorMeasurementCycleManager::handleStateError(const String& error) {
 }
 
 /**
- * @brief Behandelt C++-Ausnahmen während der Verarbeitung
- * @param e Die gefangene Ausnahme
- * @details Leitet an handleStateError weiter, es sei denn es ist ein
- *          DS18B20-Init-Retry (spezielle Ausnahme für Wiederholungslogik).
- */
-void SensorMeasurementCycleManager::handleException(const std::exception& e) {
-  // DS18B20-Init-Retry ist keine echte Ausnahme — Wiederholungslogik fortsetzen
-  if (String(e.what()) == "DS18B20_INIT_RETRY") {
-    return;
-  }
-
-  handleStateError(String(F("Ausnahme im Messzyklus: ")) + String(e.what()));
-}
-
-/**
  * @brief Deaktiviert den Sensor nach fatalen Fehlern
  * @details Setzt den Sensor auf deaktiviert. Wird nur aufgerufen wenn
  *          alle Wiederholungsversuche erschöpft sind.

@@ -1,11 +1,8 @@
 // css_service.cpp
 #include "web/services/css_service.h"
 
-#include <LittleFS.h>
-
 #include "logger/logger.h"
 #include "managers/manager_resource.h"
-#include "utils/critical_section.h"
 #include "web/core/components.h"
 
 CSSService::CSSService(ESPWebServer& server) : BaseHandler(server) {
@@ -31,88 +28,4 @@ HandlerResult CSSService::handleGet(const String& uri, const std::map<String, St
 
 HandlerResult CSSService::handlePost(const String& uri, const std::map<String, String>& params) {
   return HandlerResult::fail(HandlerError::NOT_FOUND, "Unknown endpoint");
-}
-
-bool CSSService::createBackup(const String& path) const {
-
-  if (!LittleFS.exists(path)) {
-    return true; // Nothing to backup
-  }
-
-  String backupPath = path + ".bak";
-  if (LittleFS.exists(backupPath)) {
-    LittleFS.remove(backupPath);
-  }
-
-  File currentFile = LittleFS.open(path, "r");
-  File backupFile = LittleFS.open(backupPath, "w");
-
-  if (!currentFile || !backupFile) {
-    return false;
-  }
-
-  size_t fileSize = currentFile.size();
-  bool success = true;
-
-  // Copy in chunks to avoid memory issues
-  const size_t CHUNK_SIZE = 1024;
-  uint8_t buffer[CHUNK_SIZE];
-
-  while (fileSize > 0) {
-    size_t chunk = std::min(fileSize, CHUNK_SIZE);
-    size_t bytesRead = currentFile.read(buffer, chunk);
-    if (bytesRead != chunk || backupFile.write(buffer, chunk) != chunk) {
-      success = false;
-      break;
-    }
-    fileSize -= chunk;
-  }
-
-  currentFile.close();
-  backupFile.close();
-  return success;
-}
-
-String CSSService::loadCSS(const String& path) const {
-
-  if (!LittleFS.exists(path)) {
-    LOG_WARN(F("CSSService"), String(F("CSS-Datei nicht gefunden: ")) + path);
-    return "";
-  }
-
-  File file = LittleFS.open(path, "r");
-  if (!file) {
-    LOG_ERROR(F("CSSService"), String(F("Öffnen der CSS-Datei fehlgeschlagen: ")) + path);
-    return "";
-  }
-
-  String content = file.readString();
-  file.close();
-  return content;
-}
-
-bool CSSService::saveCSS(const String& path, const String& content) const {
-
-  File file = LittleFS.open(path, "w");
-  if (!file) {
-    LOG_ERROR(F("CSSService"),
-              String(F("Öffnen der CSS-Datei zum Schreiben fehlgeschlagen: ")) + path);
-    return false;
-  }
-
-  size_t written = file.print(content);
-  file.close();
-
-  if (written != content.length()) {
-    LOG_ERROR(F("CSSService"), F("Vollständiges Schreiben der CSS-Inhalte fehlgeschlagen"));
-    return false;
-  }
-
-  return true;
-}
-
-const CSSService::CSSModule* CSSService::getModule(const String& id) const {
-  auto it = std::find_if(_modules.begin(), _modules.end(),
-                         [&id](const CSSModule& m) { return m.id == id; });
-  return it != _modules.end() ? &(*it) : nullptr;
 }

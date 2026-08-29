@@ -25,45 +25,6 @@
 #endif
 
 // Implementation of helper methods
-bool SensorFactory::validateSensorConfig(const Sensor* sensor) {
-  if (!sensor)
-    return false;
-
-  bool valid = true;
-  if (sensor->getId().isEmpty()) {
-    LOG_ERROR(F("SensorFactory"), F("Sensor hat keine ID"));
-    valid = false;
-  }
-
-  if (sensor->getName().isEmpty()) {
-    LOG_ERROR(F("SensorFactory"), String(F("Sensor ")) + sensor->getId() + F(" hat keinen Namen"));
-    valid = false;
-  }
-
-  // Add explicit check for measurement interval
-  if (sensor->getMeasurementInterval() < MEASUREMENT_MINIMUM_DELAY) {
-    LOG_ERROR(F("SensorFactory"), String(F("Sensor ")) + sensor->getId() +
-                                      String(F(" hat ein ungültiges Messintervall: ")) +
-                                      String(sensor->getMeasurementInterval()) +
-                                      String(F(" (Minimum: ")) + String(MEASUREMENT_MINIMUM_DELAY) +
-                                      F(")"));
-    valid = false;
-  }
-
-  return valid;
-}
-
-void SensorFactory::logSensorStatus(const String& phase, const Sensor* sensor) {
-  if (!sensor)
-    return;
-
-  LOG_DEBUG(F("SensorFactory"), phase + String(F(": Sensor ")) + sensor->getName() +
-                                    String(F(" [ID: ")) + sensor->getId() + String(F(", Aktiv: ")) +
-                                    String(sensor->isEnabled() ? "ja" : "nein") +
-                                    String(F(", Fehler: ")) + String(sensor->getErrorCount()) +
-                                    String(F(", Status: ")) + sensor->getStatus() + F("]"));
-}
-
 SensorResult SensorFactory::initializeSensor(std::unique_ptr<Sensor>& sensor) {
   if (!sensor) {
     return SensorResult::fail(SensorError::INITIALIZATION_ERROR, "Null sensor pointer");

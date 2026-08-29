@@ -17,15 +17,6 @@
 #include "display_qrcode.h" // microqrcode
 
 /**
- * @struct SSD1306DisplayStatus
- * @brief Status information for the SSD1306 display
- */
-struct SSD1306DisplayStatus {
-  String activeScreen;
-  bool active;
-};
-
-/**
  * @class SSD1306Display
  * @brief Controls a SSD1306 OLED display
  */
@@ -46,20 +37,6 @@ public:
    * @return DisplayResult indicating success or failure with error details.
    */
   DisplayResult clear();
-
-  /**
-   * @brief Displays the given text on the screen.
-   * @param text The text to display.
-   * @return DisplayResult indicating success or failure with error details.
-   */
-  DisplayResult showText(const String& text);
-
-  /**
-   * @brief Displays an image from the specified path.
-   * @param imagePath The path to the image file.
-   * @return DisplayResult indicating success or failure with error details.
-   */
-  DisplayResult showImage(const String& imagePath);
 
   /**
    * @brief Displays a bitmap image from memory.
@@ -123,13 +100,6 @@ public:
    */
   DisplayResult showBootScreen(const String& header, const String& status);
 
-  /**
-   * @brief Displays a QR code for the given text, scaled by 2x, right-aligned.
-   * @param text The text or URL to encode as a QR code.
-   * @return DisplayResult indicating success or failure with error details.
-   */
-  DisplayResult showQrCode2x(const String& text);
-
 private:
   /**
    * @brief Converts German umlauts and special characters to ASCII equivalents.
@@ -146,19 +116,6 @@ private:
    * @return The truncated string.
    */
   String truncateToFit(const String& text, int maxWidth);
-
-  /**
-   * @brief Draws text centered horizontally at the given y position.
-   * @param text The text to draw.
-   * @param y The y position (row) to draw the text.
-   */
-  void drawCenteredText(const String& text, int y);
-
-  /**
-   * @brief Draws a QR code using microqrcode, scaled by 2x, right-aligned.
-   * @param qrcode The QRCode struct.
-   */
-  void drawQrCode2x(const QRCode& qrcode);
 
   /**
    * @brief Updates the cached QR code if the IP address has changed.

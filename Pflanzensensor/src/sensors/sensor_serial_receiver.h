@@ -18,7 +18,6 @@
 // Include config for pin definitions
 #include "configs/config.h"
 #include "sensors/sensor_config.h"
-#include "sensors/sensor_measurement_types.h"
 #include "sensors/sensors.h"
 
 /**

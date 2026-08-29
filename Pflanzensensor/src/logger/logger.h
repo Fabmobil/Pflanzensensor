@@ -23,15 +23,6 @@
 enum class LogLevel { DEBUG, INFO, WARNING, ERROR };
 
 /**
- * @brief Structure to hold a log entry
- */
-struct LogEntry {
-  LogLevel level;
-  char message[128]; // Fixed-size buffer for log message
-  unsigned long timestamp;
-};
-
-/**
  * @brief Structure to hold memory statistics
  */
 struct MemoryStats {
@@ -253,20 +244,6 @@ private:
    * @param message Message to log
    */
   void log(LogLevel level, const String& module, const String& message);
-
-  /**
-   * @brief Get indentation for log level
-   * @param logLevelStr String representation of log level
-   * @return Indentation string
-   */
-  String getIndent(const String& logLevelStr) const;
-
-  /**
-   * @brief Get color representation of log level for HTML
-   * @param level Log level to convert
-   * @return Color string for HTML
-   */
-  String logLevelToColor(LogLevel level) const;
 
   /**
    * @brief Get current timestamp as a formatted string

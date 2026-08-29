@@ -19,7 +19,6 @@
 #include <vector>
 
 #include "logger/logger.h"
-#include "sensors/sensor_count.h"
 #include "utils/result_types.h"
 
 /// Type alias for router operation results

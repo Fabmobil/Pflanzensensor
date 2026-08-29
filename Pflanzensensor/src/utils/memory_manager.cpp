@@ -15,11 +15,8 @@
 #endif
 
 #include <algorithm>
-#include <vector>
 
 MemoryManager& MemoryMgr = MemoryManager::getInstance();
-static std::vector<std::pair<size_t, uint32_t>> g_allocationHistory;
-static constexpr size_t MAX_HISTORY = 100;
 
 MemoryManager& MemoryManager::getInstance() {
   static MemoryManager instance;
@@ -59,73 +56,15 @@ MemoryMetrics MemoryManager::getMetrics() const {
     metrics.fragmentation = 0;
   }
 
-  metrics.allocatedBlocks =
-      static_cast<uint32_t>(std::count_if(g_allocationHistory.begin(), g_allocationHistory.end(),
-                                          [](const auto& p) { return p.second > 0; }));
-  metrics.freeBlocks =
-      static_cast<uint32_t>(std::count_if(g_allocationHistory.begin(), g_allocationHistory.end(),
-                                          [](const auto& p) { return p.second == 0; }));
-
   return metrics;
-}
-
-bool MemoryManager::trackAllocation(size_t bytes) {
-  if (bytes == 0)
-    return false;
-
-  // Record allocation in history
-  if (g_allocationHistory.size() >= MAX_HISTORY) {
-    g_allocationHistory.erase(g_allocationHistory.begin());
-  }
-  g_allocationHistory.push_back({bytes, millis()});
-
-  m_trackedAllocations += bytes;
-  return true;
-}
-
-bool MemoryManager::trackDeallocation(size_t bytes) {
-  if (bytes == 0 || m_trackedAllocations < bytes)
-    return false;
-
-  m_trackedAllocations -= bytes;
-  return true;
 }
 
 void MemoryManager::resetStats() {
   m_minFreeHeap = ESP.getFreeHeap();
   m_maxFragmentation = 0;
-  m_trackedAllocations = 0;
-  g_allocationHistory.clear();
 
   LOG_DEBUG(F("MemMgr"),
             String(F("Memory stats reset - Heap: ")) + String(m_minFreeHeap) + F(" bytes"));
-}
-
-void MemoryManager::updateMetrics() {
-  uint32_t currentFree = ESP.getFreeHeap();
-  uint8_t currentFrag = 0;
-
-  if (currentFree > 0) {
-#ifdef ESP32
-    uint32_t maxBlock = ESP.getMaxAllocHeap();
-#else
-    uint32_t maxBlock = ESP.getMaxFreeBlockSize();
-#endif
-    currentFrag = static_cast<uint8_t>(
-        100.0f - ((static_cast<float>(maxBlock) / static_cast<float>(currentFree)) * 100.0f));
-  }
-
-  // Track minimum free heap
-  m_minFreeHeap = std::min(m_minFreeHeap, currentFree);
-
-  // Track maximum fragmentation
-  m_maxFragmentation = std::max(m_maxFragmentation, currentFrag);
-}
-
-void MemoryManager::checkAndAlert(const char* alertType, uint32_t value) {
-  if (m_alertCallback) {
-    m_alertCallback(alertType, value);
-  }
 }
 
 void MemoryManager::logState(const char* message) const {
@@ -137,9 +76,7 @@ void MemoryManager::logState(const char* message) const {
                 String(F("\n  Used Heap: ")) + String(metrics.usedHeap) + String(F(" bytes")) +
                 String(F("\n  Max Block: ")) + String(metrics.maxFreeBlock) + String(F(" bytes")) +
                 String(F("\n  Fragmentation: ")) + String(metrics.fragmentation) + String(F("%")) +
-                String(F("\n  Min Free: ")) + String(metrics.minFreeHeap) + String(F(" bytes")) +
-                String(F("\n  Tracked Allocs: ")) + String(m_trackedAllocations) +
-                String(F(" bytes")));
+                String(F("\n  Min Free: ")) + String(metrics.minFreeHeap) + String(F(" bytes")));
 }
 
 bool MemoryManager::checkMemory() {
@@ -150,7 +87,6 @@ bool MemoryManager::checkMemory() {
   if (metrics.freeHeap < 3000) {
     LOG_WARN(F("MemMgr"), F("CRITICAL: Free heap below 3KB!"));
     issuesFound = true;
-    checkAndAlert("CRITICAL_HEAP", metrics.freeHeap);
   }
 
   // Check for high fragmentation
@@ -158,15 +94,6 @@ bool MemoryManager::checkMemory() {
     LOG_WARN(F("MemMgr"), String(F("WARNING: High heap fragmentation ")) +
                               String(metrics.fragmentation) + F("%"));
     issuesFound = true;
-    checkAndAlert("HIGH_FRAGMENTATION", metrics.fragmentation);
-  }
-
-  // Check for memory leak pattern
-  if (m_trackedAllocations > 10000 && m_trackedAllocations > metrics.usedHeap / 2) {
-    LOG_WARN(F("MemMgr"), String(F("WARNING: Possible memory leak detected. Tracked: ")) +
-                              String(m_trackedAllocations) + F(" bytes"));
-    issuesFound = true;
-    checkAndAlert("POSSIBLE_LEAK", m_trackedAllocations);
   }
 
   return issuesFound;

@@ -2,7 +2,6 @@
 
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
-#include "sensors/sensor_count.h"
 #include "sensors/sensor_measurement_cycle.h"
 
 // REMOVE: getOrInitThresholds function and any references to it

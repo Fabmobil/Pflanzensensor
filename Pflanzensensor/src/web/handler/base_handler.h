@@ -121,37 +121,6 @@ protected:
   bool _cleaned = false; ///< Flag indicating if handler has been cleaned up
 
   /**
-   * @brief Render page with standard layout (DEPRECATED)
-   * @param title Page title
-   * @param activeNav Active navigation item
-   * @param content Content generation function
-   * @param additionalCss Additional CSS files
-   * @param additionalScripts Additional JS files
-   *          Renders complete HTML page with:
-   *          - Header with title
-   *          - Navigation menu
-   *          - Content container
-   *          - Footer with version
-   *          - Required scripts
-   */
-  void renderPage(const String& title, const String& activeNav, std::function<void()> content,
-                  const std::vector<String>& additionalCss = std::vector<String>(),
-                  const std::vector<String>& additionalScripts = std::vector<String>()) {
-    if (!Component::beginResponse(_server, title, additionalCss)) {
-      return;
-    }
-
-    Component::sendChunk(_server, F("<div class='main-container'>"));
-    Component::sendChunk(_server, F("<div class='content-container'>"));
-    Component::sendChunk(_server, F("<div class='page-container'>"));
-
-    content();
-
-    Component::sendChunk(_server, F("</div></div></div>"));
-    Component::endResponse(_server, additionalScripts);
-  }
-
-  /**
    * @brief Render start page with pixelated design (flower graphic, sensors)
    * @param title Page title shown in cloud
    * @param activeSection Active navigation section

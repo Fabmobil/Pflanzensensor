@@ -477,31 +477,6 @@ String Logger::logLevelToString(LogLevel level) {
   }
 }
 
-String Logger::getIndent(const String& logLevelStr) const {
-  const int maxLength = 5; // Length of the longest log level string
-  int spaces = maxLength - logLevelStr.length();
-  String indent;
-  for (int i = 0; i < spaces; i++) {
-    indent += ' ';
-  }
-  return indent;
-}
-
-String Logger::logLevelToColor(LogLevel level) const {
-  switch (level) {
-  case LogLevel::DEBUG:
-    return "blue";
-  case LogLevel::INFO:
-    return "green";
-  case LogLevel::WARNING:
-    return "orange";
-  case LogLevel::ERROR:
-    return "red";
-  default:
-    return "black";
-  }
-}
-
 String Logger::getFormattedTimestamp() const {
   if (m_ntpInitialized) {
     time_t epochTime = m_timeClient->getEpochTime();

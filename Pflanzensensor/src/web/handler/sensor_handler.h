@@ -146,7 +146,6 @@ private:
    *          - Control options
    *          - Error states
    */
-  void createSensorListSection() const;
 
   /**
    * @brief Convert string to URL-safe format
