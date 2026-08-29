@@ -15,6 +15,8 @@
 // Maximum number of values per sensor
 static constexpr size_t MAX_VALUES = 10;
 
+bool SensorHandler::ownsUrl(const String& url) { return url == F("/getLatestValues"); }
+
 RouterResult SensorHandler::onRegisterRoutes(WebRouter& router) {
   LOG_DEBUG(F("SensorHandler"), F("Registriere Sensor-Routen"));
 

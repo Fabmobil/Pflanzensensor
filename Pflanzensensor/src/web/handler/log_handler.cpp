@@ -15,6 +15,8 @@
 LogHandler* LogHandler::s_instance = nullptr;
 bool LogHandler::s_initialized = false;
 
+bool LogHandler::ownsUrl(const String& url) { return url == F("/logs"); }
+
 RouterResult LogHandler::onRegisterRoutes(WebRouter& router) {
   if (!isInitialized()) {
     LOG_ERROR(F("LogHandler"),

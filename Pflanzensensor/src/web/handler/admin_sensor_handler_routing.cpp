@@ -6,6 +6,21 @@
 #include "admin_sensor_handler.h"
 #include "logger/logger.h"
 
+// WICHTIG: ownsUrl() und onRegisterRoutes() müssen dieselben Pfade nennen.
+// Sie stehen bewusst direkt untereinander - vorher lag die Liste, für die der
+// Handler geladen wird, in der Lazy-Loading-Middleware des WebManagers. Beide
+// Listen sind auseinandergelaufen: der Handler registrierte 13 Routen, die
+// Middleware lud ihn nur für 3 davon. Die übrigen 9 lieferten nach einem
+// frischen Boot 404, solange niemand vorher /admin/sensors aufgerufen hatte.
+bool AdminSensorHandler::ownsUrl(const String& url) {
+  return url == F("/admin/sensors") || url == F("/admin/sensor_update") ||
+         url == F("/admin/measurement_interval") || url == F("/admin/analog_minmax") ||
+         url == F("/admin/analog_autocal") || url == F("/admin/analog_autocal_duration") ||
+         url == F("/admin/thresholds") || url == F("/admin/measurement_name") ||
+         url == F("/admin/reset_absolute_minmax") || url == F("/admin/reset_absolute_raw_minmax") ||
+         url == F("/trigger_measurement") || url == F("/admin/getSensorConfig");
+}
+
 RouterResult AdminSensorHandler::onRegisterRoutes(WebRouter& router) {
   LOG_DEBUG(F("AdminSensorHandler"), F("Registriere Admin-Sensor-Routen"));
 

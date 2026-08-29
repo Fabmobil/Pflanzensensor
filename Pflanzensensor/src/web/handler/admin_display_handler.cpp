@@ -275,6 +275,10 @@ bool AdminDisplayHandler::validateRequest() const {
   return true;
 }
 
+bool AdminDisplayHandler::ownsUrl(const String& url) {
+  return url == F("/admin/display") || url == F("/admin/display/measurement_toggle");
+}
+
 RouterResult AdminDisplayHandler::onRegisterRoutes(WebRouter& router) {
   LOG_DEBUG(F("AdminDisplayHandler"), F("Registriere Display-Routen"));
 

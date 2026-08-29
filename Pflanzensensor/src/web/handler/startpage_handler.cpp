@@ -256,6 +256,8 @@ const char* StartpageHandler::translateStatus(const char* status) const {
 
 StartpageHandler::~StartpageHandler() = default;
 
+bool StartpageHandler::ownsUrl(const String& url) { return url == F("/"); }
+
 RouterResult StartpageHandler::onRegisterRoutes(WebRouter& router) {
   LOG_DEBUG(F("StartpageHandler"), F("Registering startpage routes"));
 

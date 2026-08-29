@@ -66,6 +66,16 @@ public:
    */
   RouterResult onRegisterRoutes(WebRouter& router) override;
 
+  /**
+   * @brief Gehört diese URL zu diesem Handler?
+   * @param url Angefragter Pfad
+   * @return true wenn der Handler dafür geladen werden muss
+   * @details Wird von der Lazy-Loading-Middleware des WebManagers benutzt. Die
+   *          Liste steht direkt neben onRegisterRoutes(), damit beide nicht
+   *          auseinanderlaufen können.
+   */
+  static bool ownsUrl(const String& url);
+
 protected:
   /**
    * @brief Handle GET requests

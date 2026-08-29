@@ -15,6 +15,17 @@
 #include "utils/wifi.h" // For getActiveWiFiSlot()
 #include "web/handler/admin_handler.h"
 
+// Siehe Hinweis in admin_sensor_handler_routing.cpp: diese Liste muss zu den
+// unten registrierten Routen passen. Bewusst exakte Vergleiche statt eines
+// "/admin"-Präfixes - sonst würde dieser Handler auch Pfade beanspruchen, die
+// dem AdminSensorHandler, dem AdminDisplayHandler oder dem WebManager selbst
+// gehören (/admin/config/*, /admin/update).
+bool AdminHandler::ownsUrl(const String& url) {
+  return url == F("/admin") || url == F("/admin/reset") || url == F("/admin/reboot") ||
+         url == F("/admin/downloadLog") || url == F("/admin/downloadConfig") ||
+         url == F("/admin/updateWiFi");
+}
+
 RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   logger.logMemoryStats(F("AdminRegisterRoutes"));
 

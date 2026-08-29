@@ -334,6 +334,18 @@ private:
   void initializeRemainingHandlers();
 
   /**
+   * @brief Handler bei Bedarf anlegen, Routen registrieren und cachen
+   * @param handlerType Typkennung für Cache und Routenzuordnung
+   * @param factory Erzeugt den Handler, wenn er noch nicht im Cache liegt
+   * @return true wenn die Anfrage weiterlaufen darf
+   * @details Fasst zusammen, was vorher für jeden der sechs Handler einzeln
+   *          ausgeschrieben war (Cache-Abfrage, Erzeugung, Kontext setzen,
+   *          registerRoutes, Fehlerbehandlung, cachen).
+   */
+  bool ensureHandler(const char* handlerType,
+                     std::function<std::unique_ptr<BaseHandler>()> factory);
+
+  /**
    * @brief Cleanup non-essential handlers
    * @details Releases resources for handlers that aren't needed
    *          in minimal operation mode.
