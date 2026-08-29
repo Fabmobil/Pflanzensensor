@@ -335,7 +335,6 @@ public:
    * @brief Set WiFi SSID 1
    */
   ConfigResult setWiFiSSID1(const String& ssid) {
-    ScopedLock lock;
     return updateStringConfig(
         m_configData.wifiSSID1, ssid,
         [](const String& val) {
@@ -351,7 +350,6 @@ public:
    * @brief Set WiFi Password 1
    */
   ConfigResult setWiFiPassword1(const String& pwd) {
-    ScopedLock lock;
     return updateStringConfig(
         m_configData.wifiPassword1, pwd,
         [](const String& val) {
@@ -367,7 +365,6 @@ public:
    * @brief Set WiFi SSID 2
    */
   ConfigResult setWiFiSSID2(const String& ssid) {
-    ScopedLock lock;
     return updateStringConfig(
         m_configData.wifiSSID2, ssid,
         [](const String& val) {
@@ -383,7 +380,6 @@ public:
    * @brief Set WiFi Password 2
    */
   ConfigResult setWiFiPassword2(const String& pwd) {
-    ScopedLock lock;
     return updateStringConfig(
         m_configData.wifiPassword2, pwd,
         [](const String& val) {
@@ -399,7 +395,6 @@ public:
    * @brief Set WiFi SSID 3
    */
   ConfigResult setWiFiSSID3(const String& ssid) {
-    ScopedLock lock;
     return updateStringConfig(
         m_configData.wifiSSID3, ssid,
         [](const String& val) {
@@ -415,7 +410,6 @@ public:
    * @brief Set WiFi Password 3
    */
   ConfigResult setWiFiPassword3(const String& pwd) {
-    ScopedLock lock;
     return updateStringConfig(
         m_configData.wifiPassword3, pwd,
         [](const String& val) {

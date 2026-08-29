@@ -86,7 +86,6 @@ void DisplayManager::logEnabledSensors() {
 
 DisplayResult DisplayManager::loadConfig() {
 #if USE_DISPLAY
-  CriticalSection cs;
 
   // Check if Preferences exist, if not initialize with defaults
   if (!PreferencesManager::namespaceExists(PreferencesNamespaces::DISP)) {
@@ -192,8 +191,6 @@ DisplayResult DisplayManager::saveConfig() {
   if (!validation.isSuccess()) {
     return validation;
   }
-
-  CriticalSection cs;
 
   // Save to Preferences using atomic update helpers
   logger.debug(F("DisplayM"), F("Speichere Display-Konfiguration in Preferences..."));

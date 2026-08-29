@@ -276,27 +276,45 @@ ResourceResult FlashPersistence::saveToFlash() {
   memcpy(header + 9, &crc, 4);
   memset(header + 13, 0, 3);
 
-  // CRITICAL SECTION: Disable interrupts during flash operations
-  // WiFi stays ON, but interrupts are disabled to prevent conflicts
+  // Flash-Operationen: Interrupts werden NUR um den einzelnen Erase- bzw.
+  // Write-Aufruf gesperrt, nicht um die ganze Schleife. Ein Sektor-Erase dauert
+  // 20-40 ms; bleiben die Interrupts über alle Sektoren hinweg gesperrt, kann
+  // weder der Watchdog gefüttert noch der SDK-Timer bedient werden.
+  //
+  // Hier KEIN yield()/delay() verwenden: dieser Pfad wird auch aus dem
+  // OTA-/Webserver-Kontext heraus aufgerufen, in dem der ESP8266-Core bei
+  // yield() mit "Panic core_esp8266_main.cpp __yield" abbricht.
+  // ESP.wdtFeed() ist dagegen in jedem Kontext sicher.
   {
-    CriticalSection cs;
-
-    // Erase sectors (interrupts disabled, safe to do flash ops)
+    // Sektoren löschen
     uint32_t sectorsNeeded = ((dataSize + 16 + FP_FLASH_SECTOR_SIZE - 1) / FP_FLASH_SECTOR_SIZE);
     for (uint32_t i = 0; i < sectorsNeeded; i++) {
       uint32_t sectorAddr = (offset + i * FP_FLASH_SECTOR_SIZE) / FP_FLASH_SECTOR_SIZE;
 
-      if (!ESP.flashEraseSector(sectorAddr)) {
+      bool ok;
+      {
+        CriticalSection cs;
+        ok = ESP.flashEraseSector(sectorAddr);
+      }
+      if (!ok) {
         return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Erase failed"));
+      }
+      ESP.wdtFeed();
+    }
+
+    // Header schreiben
+    {
+      bool ok;
+      {
+        CriticalSection cs;
+        ok = ESP.flashWrite(offset, (uint32_t*)header, 16);
+      }
+      if (!ok) {
+        return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Write header failed"));
       }
     }
 
-    // Write header
-    if (!ESP.flashWrite(offset, (uint32_t*)header, 16)) {
-      return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Write header failed"));
-    }
-
-    // Write data in chunks (textData is in RAM, safe)
+    // Daten in Blöcken schreiben (textData liegt im RAM)
     const char* dataPtr = textData.c_str();
     uint32_t written = 0;
     uint32_t writeOffset = offset + 16;
@@ -307,14 +325,20 @@ ResourceResult FlashPersistence::saveToFlash() {
       memcpy(chunk, dataPtr + written, chunkSize);
       uint32_t alignedSize = (chunkSize + 3) & ~3;
 
-      if (!ESP.flashWrite(writeOffset, chunk, alignedSize)) {
+      bool ok;
+      {
+        CriticalSection cs;
+        ok = ESP.flashWrite(writeOffset, chunk, alignedSize);
+      }
+      if (!ok) {
         return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Write failed"));
       }
 
       written += chunkSize;
       writeOffset += alignedSize;
+      ESP.wdtFeed();
     }
-  } // CriticalSection ends here, interrupts restored
+  }
 
   logger.info(F("FlashPers"), F("Erfolgreich gespeichert"));
   return ResourceResult::success();
@@ -683,26 +707,38 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
   uint32_t sectorsNeeded = ((totalSize + FP_FLASH_SECTOR_SIZE - 1) / FP_FLASH_SECTOR_SIZE);
   logger.debug(F("FlashPers"), String(F("Lösche ")) + String(sectorsNeeded) + F(" Sektoren..."));
 
-  // STEP 4: CRITICAL SECTION - Erase and write header/manifest
+  // Header und Manifest schreiben. Wie oben gilt: Interrupts nur um den
+  // einzelnen Flash-Aufruf sperren, dazwischen Watchdog füttern.
   {
-    CriticalSection cs;
-
-    // Erase all needed sectors
+    // Alle benötigten Sektoren löschen
     for (uint32_t i = 0; i < sectorsNeeded; i++) {
       uint32_t sectorAddr = (offset + i * FP_FLASH_SECTOR_SIZE) / FP_FLASH_SECTOR_SIZE;
-      if (!ESP.flashEraseSector(sectorAddr)) {
+      bool ok;
+      {
+        CriticalSection cs;
+        ok = ESP.flashEraseSector(sectorAddr);
+      }
+      if (!ok) {
         return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("JSON erase failed"));
       }
+      ESP.wdtFeed();
     }
 
-    // Write header
+    // Header schreiben
     uint32_t writeOffset = offset;
-    if (!ESP.flashWrite(writeOffset, (uint32_t*)header, 16)) {
-      return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Header write failed"));
+    {
+      bool ok;
+      {
+        CriticalSection cs;
+        ok = ESP.flashWrite(writeOffset, (uint32_t*)header, 16);
+      }
+      if (!ok) {
+        return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Header write failed"));
+      }
     }
     writeOffset += 16;
 
-    // Write manifest in chunks
+    // Manifest in Blöcken schreiben
     const char* manifestPtr = manifest.c_str();
     uint32_t manifestWritten = 0;
 
@@ -712,21 +748,19 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
       memcpy(chunk, manifestPtr + manifestWritten, chunkSize);
       uint32_t alignedSize = (chunkSize + 3) & ~3;
 
-      if (!ESP.flashWrite(writeOffset, chunk, alignedSize)) {
+      bool ok;
+      {
+        CriticalSection cs;
+        ok = ESP.flashWrite(writeOffset, chunk, alignedSize);
+      }
+      if (!ok) {
         return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Manifest write failed"));
       }
 
       manifestWritten += chunkSize;
       writeOffset += alignedSize;
+      ESP.wdtFeed();
     }
-
-    // STEP 5: Write each JSON file individually in its own critical section
-    // This allows us to read from LittleFS with interrupts enabled between files
-    for (uint8_t fileIdx = 0; fileIdx < fileCount; fileIdx++) {
-      String filepath = "/config/" + files[fileIdx].filename;
-
-      // Exit critical section temporarily to read file
-    } // End of CriticalSection for header/manifest
   }
 
   // STEP 6: Write file contents one by one (each in its own critical section)

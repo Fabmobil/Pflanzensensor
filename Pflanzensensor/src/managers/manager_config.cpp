@@ -31,7 +31,6 @@ ConfigManager& ConfigManager::getInstance() {
 }
 
 ConfigManager::ConfigResult ConfigManager::loadConfig() {
-  ScopedLock lock;
 
   // Load and apply log level from Preferences FIRST, before loading other
   // config This ensures the correct log level is active for all subsequent log
@@ -68,7 +67,6 @@ ConfigManager::ConfigResult ConfigManager::loadConfig() {
 }
 
 ConfigManager::ConfigResult ConfigManager::saveConfig() {
-  ScopedLock lock;
 
   // Sync data from subsystems back to main config
   m_debugConfig.saveToConfigData(m_configData);
@@ -101,7 +99,6 @@ ConfigManager::ConfigResult ConfigManager::saveConfig() {
 }
 
 ConfigManager::ConfigResult ConfigManager::resetToDefaults() {
-  ScopedLock lock;
 
   auto result = ConfigPersistence::resetToDefaults(m_configData);
   if (!result.isSuccess()) {
@@ -128,12 +125,10 @@ ConfigManager::ConfigResult ConfigManager::resetToDefaults() {
 }
 
 ConfigManager::ConfigResult ConfigManager::updateFromWeb(ESPWebServer& server) {
-  ScopedLock lock;
   return m_webHandler.updateFromWebRequest(server);
 }
 
 ConfigManager::ConfigResult ConfigManager::setAdminPassword(const String& password) {
-  ScopedLock lock;
 
   auto validation = ConfigValidator::validatePassword(password);
   if (!validation.isSuccess()) {
@@ -155,7 +150,6 @@ ConfigManager::ConfigResult ConfigManager::setAdminPassword(const String& passwo
 }
 
 ConfigManager::ConfigResult ConfigManager::setMD5Verification(bool enabled) {
-  ScopedLock lock;
   return updateBoolConfig(
       m_configData.md5Verification, enabled,
       [](bool val) {
@@ -166,7 +160,6 @@ ConfigManager::ConfigResult ConfigManager::setMD5Verification(bool enabled) {
 }
 
 ConfigManager::ConfigResult ConfigManager::setCollectdEnabled(bool enabled) {
-  ScopedLock lock;
   return updateBoolConfig(
       m_configData.collectdEnabled, enabled,
       [](bool val) {
@@ -177,7 +170,6 @@ ConfigManager::ConfigResult ConfigManager::setCollectdEnabled(bool enabled) {
 }
 
 ConfigManager::ConfigResult ConfigManager::setFileLoggingEnabled(bool enabled) {
-  ScopedLock lock;
   return updateBoolConfig(
       m_configData.fileLoggingEnabled, enabled,
       [](bool val) {
@@ -187,7 +179,6 @@ ConfigManager::ConfigResult ConfigManager::setFileLoggingEnabled(bool enabled) {
 }
 
 ConfigManager::ConfigResult ConfigManager::setUpdateFlags(bool fileSystem, bool firmware) {
-  ScopedLock lock;
 
   // Only one update type can be active at a time
   if (fileSystem && firmware) {
@@ -240,7 +231,6 @@ bool ConfigManager::getDoFirmwareUpgrade() {
 }
 
 ConfigManager::ConfigResult ConfigManager::setDoFirmwareUpgrade(bool enable) {
-  ScopedLock lock;
   bool fs, fw;
   ConfigPersistence::readUpdateFlagsFromFile(fs, fw);
 
@@ -258,13 +248,11 @@ ConfigManager::ConfigResult ConfigManager::setDoFirmwareUpgrade(bool enable) {
 }
 
 ConfigManager::ConfigResult ConfigManager::setCollectdSendSingleMeasurement(bool enable) {
-  ScopedLock lock;
   notifyConfigChange("collectd_single_measurement", enable ? "true" : "false", true);
   return ConfigResult::success();
 }
 
 ConfigManager::ConfigResult ConfigManager::setLogLevel(const String& level) {
-  ScopedLock lock;
 
   auto validation = ConfigValidator::validateLogLevel(level);
   if (!validation.isSuccess()) {
@@ -292,7 +280,6 @@ String ConfigManager::getLogLevel() const { return logger.logLevelToString(logge
 // Note: Debug setters moved to end of file with DRY helpers
 
 ConfigManager::ConfigResult ConfigManager::setConfigValue(const char* key, const char* value) {
-  ScopedLock lock;
   String keyStr(key);
   String valueStr(value);
 
@@ -371,7 +358,6 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const char* key, const
 ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespaceName,
                                                           const String& key, const String& value,
                                                           ConfigValueType type) {
-  ScopedLock lock;
 
   logger.debug(F("ConfigM"), String(F("setConfigValue: namespace=")) + namespaceName +
                                  String(F(", key=")) + key + String(F(", value=")) + value);

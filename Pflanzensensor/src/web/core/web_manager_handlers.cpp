@@ -79,22 +79,16 @@ void WebManager::handleSetUpdate() {
   if (updateMode) {
     logger.info(F("WebManager"), F("Update-Modus aktiviert, bereite Neustart vor..."));
 
-    // CRITICAL: Give browser time to receive response before reboot.
-    // Some browsers keep connections open; wait up to a short timeout while
-    // processing the server loop so the TCP stack can finish sending data.
-    const unsigned long startWait = millis();
-    const unsigned long maxWait = 5000; // wait up to 5s
-    while (millis() - startWait < maxWait) {
-      _server->handleClient();
-      // If there are no active clients, we can proceed earlier
-      if (!_server->client().connected()) {
-        logger.debug(F("WebManager"), F("Kein aktiver Client mehr - bereit zum Neustart"));
-        break;
-      }
-      delay(50);
-    }
-    // Extra safety margin
-    delay(200);
+    // Die Antwort wurde oben bereits gesendet, geflusht und der Client-Socket
+    // explizit geschlossen - es gibt also nichts mehr abzuwarten.
+    //
+    // Hier stand früher eine Schleife, die erneut _server->handleClient()
+    // aufgerufen hat. Dieser re-entrante Aufruf aus einem Handler heraus, der
+    // selbst aus handleClient() stammt, versetzt den Ablauf in den SYS-Kontext;
+    // das anschließende delay(50) hat den Core dann mit
+    // "Panic core_esp8266_main.cpp __yield" abgebrochen. Der Watchdog-Reset
+    // führte zwar zufällig zum gewünschten Neustart, aber ohne sauberes
+    // Herunterfahren der Dienste.
 
     // Stop non-critical services
     if (_sensorManager) {

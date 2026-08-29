@@ -85,7 +85,6 @@ DisplayResult SSD1306Display::showImage(const String& imagePath) {
   }
 
   {
-    CriticalSection cs;
     if (!LittleFS.exists(imagePath)) {
       logger.error(F("Display"), String(F("Bilddatei nicht gefunden: ")) + imagePath);
       return DisplayResult::fail(DisplayError::FILE_ERROR,

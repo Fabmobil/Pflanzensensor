@@ -5,6 +5,8 @@
 
 #include "log_handler.h"
 
+#include "utils/safe_yield.h"
+
 #include <ArduinoJson.h>
 
 #include "../../managers/manager_resource.h"
@@ -200,7 +202,7 @@ void LogHandler::cleanupLogs() {
     }
   }
 #endif
-  yield();
+  safeYield();
 }
 
 String LogHandler::getLogLevelColor(LogLevel level) const {
@@ -324,7 +326,7 @@ void LogHandler::broadcastLog(LogLevel level, const String& message) {
       // Do not log here to avoid recursion
       it = _clients.erase(it);
       failureCount++;
-      yield();
+      safeYield();
       if (failureCount >= MAX_FAILURES) {
         // Do not log here to avoid recursion
         _clients.clear();
@@ -582,7 +584,7 @@ void LogHandler::handleClientMessage(uint8_t clientNum, const String& type, cons
     }
 
     // Change log level and save config with yield to prevent watchdog
-    yield();
+    safeYield();
 
     // Additional memory check before config save
     if (ESP.getFreeHeap() < 5000) {
@@ -600,7 +602,7 @@ void LogHandler::handleClientMessage(uint8_t clientNum, const String& type, cons
     }
 
     auto saveResult = ConfigMgr.setLogLevel(data);
-    yield();
+    safeYield();
 
     // Send final confirmation if different from initial
     if (!saveResult.isSuccess() && ESP.getFreeHeap() > 4096 && logger.isCallbackEnabled()) {

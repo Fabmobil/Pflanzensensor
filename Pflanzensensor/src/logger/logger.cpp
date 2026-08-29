@@ -75,7 +75,6 @@ Logger::Logger(LogLevel logLevel, bool useSerial, bool fileLoggingEnabled)
   if (fileLoggingEnabled) {
     // Mount filesystem first with critical section
     {
-      CriticalSection cs;
       if (!LittleFS.begin()) {
         if (m_useSerial) {
           Serial.println(F("Dateisystem für Logging konnte nicht eingehängt werden"));
@@ -337,7 +336,6 @@ void Logger::writeToFile(const String& logMessage) {
 
   // Check if filesystem is mounted with critical section
   {
-    CriticalSection cs;
     if (!LittleFS.exists("/")) {
       if (!LittleFS.begin()) {
         m_fileLoggingEnabled = false;
@@ -376,8 +374,6 @@ void Logger::writeToFile(const String& logMessage) {
 void Logger::truncateLogFileIfNeeded() {
   if (!m_fileLoggingEnabled)
     return;
-
-  CriticalSection cs;
 
   File file = LittleFS.open(m_logFileName, "r");
   if (!file)

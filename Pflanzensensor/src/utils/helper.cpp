@@ -49,7 +49,6 @@ time_t Helper::getCurrentTime() {
 }
 
 uint32_t Helper::getRebootCount() {
-  CriticalSection cs;
 
   if (!LittleFS.exists(REBOOT_COUNT_FILE)) {
     return 0;
@@ -82,7 +81,6 @@ String Helper::getFormattedUptime() {
 }
 
 ResourceResult Helper::incrementRebootCount() {
-  CriticalSection cs;
 
   if (!LittleFS.begin()) {
     logger.error(F("Helper"),

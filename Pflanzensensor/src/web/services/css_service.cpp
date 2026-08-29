@@ -34,7 +34,6 @@ HandlerResult CSSService::handlePost(const String& uri, const std::map<String, S
 }
 
 bool CSSService::createBackup(const String& path) const {
-  CriticalSection cs;
 
   if (!LittleFS.exists(path)) {
     return true; // Nothing to backup
@@ -75,7 +74,6 @@ bool CSSService::createBackup(const String& path) const {
 }
 
 String CSSService::loadCSS(const String& path) const {
-  CriticalSection cs;
 
   if (!LittleFS.exists(path)) {
     logger.warning(F("CSSService"), String(F("CSS-Datei nicht gefunden: ")) + path);
@@ -94,7 +92,6 @@ String CSSService::loadCSS(const String& path) const {
 }
 
 bool CSSService::saveCSS(const String& path, const String& content) const {
-  CriticalSection cs;
 
   File file = LittleFS.open(path, "w");
   if (!file) {

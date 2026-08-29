@@ -35,13 +35,30 @@ inline SemaphoreHandle_t& getMutex() {
  *          ESP8266: Disables interrupts (for short operations only)
  *          ESP32: Uses FreeRTOS recursive mutex (safe for NVS, I2C, etc.)
  *
+ * WICHTIG - Einsatzbereich:
+ * Auf dem ESP8266 sperrt diese Klasse ueber xt_rsil(15) ALLE maskierbaren
+ * Interrupts. Solange sie aktiv ist, laeuft weder der SDK-Timer (WiFi) noch
+ * kann der Watchdog gefuettert werden. Sie ist ausschliesslich fuer sehr
+ * kurze Abschnitte gedacht - einzelne Register- oder Flash-Zugriffe.
+ *
+ * NICHT verwenden fuer:
+ *   - Preferences-/NVS-Zugriffe
+ *   - LittleFS-Operationen
+ *   - Serial-Ausgaben (blockierend bei 115200 Baud)
+ *   - Heap-Allokationen oder String-Operationen
+ *   - Schleifen ueber mehrere Flash-Sektoren (Erase dauert 20-40 ms je Sektor)
+ *
+ * Der gesamte Anwendungscode laeuft einthreadig aus loop(); dort schuetzt eine
+ * Interruptsperre vor nichts, kostet aber Stabilitaet.
+ *
  * Example usage:
  * @code
- * void updateSharedResource() {
- *     CriticalSection cs; // Protected section starts
- *     // Modify shared resource safely
- *     // Automatically released when cs goes out of scope
+ * bool ok;
+ * {
+ *     CriticalSection cs;          // nur der eine Flash-Aufruf
+ *     ok = ESP.flashEraseSector(sector);
  * }
+ * ESP.wdtFeed();                   // dazwischen Watchdog fuettern
  * @endcode
  */
 class CriticalSection {

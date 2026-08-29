@@ -1,5 +1,7 @@
 #include "sensor_dht.h"
 
+#include "utils/safe_yield.h"
+
 #include <DHTesp.h>
 
 #include "configs/config.h"
@@ -74,7 +76,7 @@ void DHTSensor::deinitialize() {
 #ifndef ESP32
   ESP.wdtFeed();
 #endif
-  yield();
+  safeYield();
 }
 
 bool DHTSensor::requiresWarmup(unsigned long& warmupTime) const {

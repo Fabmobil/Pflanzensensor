@@ -182,7 +182,6 @@ ResourceResult ResourceManager::initMinimalSystem() {
   yield();
 
   {
-    CriticalSection cs;
     if (!LittleFS.begin()) {
       return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR,
                                   F("Dateisystem konnte nicht eingehängt werden"));

@@ -97,7 +97,6 @@ bool initializeSystem() {
   // We need to restore with the absolute cleanest heap possible
   // Don't even initialize logger yet - heap fragmentation is critical
   {
-    CriticalSection cs;
     if (!LittleFS.begin()) {
       Serial.println(F("FATAL: Dateisystem-Mount fehlgeschlagen"));
       return false;

@@ -17,7 +17,6 @@ PrometheusMetrics& PrometheusMetrics::getInstance() {
 }
 
 void PrometheusMetrics::begin() {
-  CriticalSection cs;
   if (!_initialized) {
     _initialized = true;
     logger.info(F("PromMetrics"), F("Prometheus Metrics exporter initialized"));
@@ -25,13 +24,11 @@ void PrometheusMetrics::begin() {
 }
 
 void PrometheusMetrics::end() {
-  CriticalSection cs;
   _metrics.clear();
   _initialized = false;
 }
 
 void PrometheusMetrics::clearGauges() {
-  CriticalSection cs;
   // Nur Gauge-Metriken entfernen, Counter behalten
   auto it = _metrics.begin();
   while (it != _metrics.end()) {
@@ -78,7 +75,6 @@ int PrometheusMetrics::findMetric(const char* name, const char* labels) {
 }
 
 void PrometheusMetrics::counterInc(const char* name, const char* help, const char* value) {
-  CriticalSection cs;
   int idx = findMetric(name, "");
   if (idx >= 0) {
     _metrics[idx].value += atof(value);
@@ -89,7 +85,6 @@ void PrometheusMetrics::counterInc(const char* name, const char* help, const cha
 
 void PrometheusMetrics::counterIncWithLabels(const char* name, const char* help, const char* labels,
                                              const char* value) {
-  CriticalSection cs;
   int idx = findMetric(name, labels);
   if (idx >= 0) {
     _metrics[idx].value += atof(value);
@@ -99,7 +94,6 @@ void PrometheusMetrics::counterIncWithLabels(const char* name, const char* help,
 }
 
 void PrometheusMetrics::gaugeSet(const char* name, const char* help, float value) {
-  CriticalSection cs;
   int idx = findMetric(name, "");
   if (idx >= 0) {
     _metrics[idx].value = value;
@@ -110,7 +104,6 @@ void PrometheusMetrics::gaugeSet(const char* name, const char* help, float value
 
 void PrometheusMetrics::gaugeSetWithLabels(const char* name, const char* help, const char* labels,
                                            float value) {
-  CriticalSection cs;
   int idx = findMetric(name, labels);
   if (idx >= 0) {
     _metrics[idx].value = value;
@@ -121,7 +114,6 @@ void PrometheusMetrics::gaugeSetWithLabels(const char* name, const char* help, c
 
 void PrometheusMetrics::gaugeInc(const char* name, const char* help, const char* labels,
                                  float value) {
-  CriticalSection cs;
   int idx = findMetric(name, labels);
   if (idx >= 0) {
     _metrics[idx].value += value;
@@ -136,7 +128,6 @@ String PrometheusMetrics::exportMetrics() {
   // darf NICHT mit gesperrten Interrupts laufen — sonst Watchdog-Reset!
   std::vector<MetricEntry> metricsCopy;
   {
-    CriticalSection cs;
     metricsCopy = _metrics;
   }
 

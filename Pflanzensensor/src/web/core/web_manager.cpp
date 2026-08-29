@@ -5,6 +5,8 @@
 
 #include "web/core/web_manager.h"
 
+#include "utils/safe_yield.h"
+
 #include "configs/config.h"
 #include "logger/logger.h"
 #if USE_WEBSOCKET
@@ -114,7 +116,7 @@ void WebManager::stop() {
 
   // Give system time to clean up
   delay(100);
-  yield();
+  safeYield();
 
   logger.debug(F("WebManager"), F("WebManager stopped and cleaned up"));
   logger.endMemoryTracking(F("web_manager_stop"));

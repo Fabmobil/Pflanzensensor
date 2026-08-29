@@ -319,7 +319,6 @@ void WebOTAHandler::handleUpdateUpload() {
     size_t freeSpace;
     if (isFilesystem) {
       {
-        CriticalSection cs;
 #ifdef ESP32
         size_t totalBytes = LittleFS.totalBytes();
         size_t usedBytes = LittleFS.usedBytes();
@@ -645,7 +644,6 @@ String WebOTAHandler::calculateMD5(uint8_t* data, size_t len) {
 
 size_t WebOTAHandler::calculateRequiredSpace(bool isFilesystem) const {
   if (isFilesystem) {
-    CriticalSection cs;
 #ifdef ESP32
     return LittleFS.totalBytes();
 #else
