@@ -60,8 +60,16 @@ void WebManager::handleClientInternal() {
   static size_t lastHandlerCount = 0;
   const unsigned long currentTime = millis();
 
-  // Memory monitoring
+  // Speicherüberwachung
+  //
+  // WICHTIG: lastMemoryCheck wird IMMER gesetzt, auch im Low-Memory-Zweig.
+  // Vorher stand die Zuweisung hinter dem frühen return - bei wenig Heap blieb
+  // der Zeitstempel also alt, die Prüfung feuerte in jedem loop()-Durchlauf
+  // erneut und riss jedes Mal ein delay(100) mit. Genau dann, wenn es eng
+  // wurde, war das Gerät damit praktisch unbedienbar.
   if (currentTime - lastMemoryCheck > 10000) {
+    lastMemoryCheck = currentTime;
+
     const uint32_t freeHeap = ESP.getFreeHeap();
     const size_t currentHandlerCount = m_handlerCache.size();
 
@@ -73,12 +81,12 @@ void WebManager::handleClientInternal() {
     }
 
     if (freeHeap < 4096) {
-      logger.warning(F("WebManager"), "Low memory in web handler: " + String(freeHeap));
+      logger.warning(F("WebManager"),
+                     String(F("Wenig Speicher im Web-Handler: ")) + String(freeHeap) + F(" Bytes"));
+      // Handler-Cache leeren gibt Heap frei; danach ganz normal weiterarbeiten,
+      // damit der Webserver bedienbar bleibt.
       cleanupNonEssentialHandlers();
-      delay(100);
-      return;
     }
-    lastMemoryCheck = currentTime;
   }
 
   // Handle web server and WebSocket
