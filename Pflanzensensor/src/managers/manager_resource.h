@@ -50,7 +50,6 @@ private:
   static const unsigned long MEMORY_CHECK_INTERVAL = 10000; // 10 seconds
   uint8_t m_failureCount = 0;
   static const uint8_t MAX_FAILURES = 3;
-  std::unique_ptr<SensorManager> m_sensorManager;
 
   // Private constructor for singleton
   ResourceManager() = default;

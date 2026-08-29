@@ -110,59 +110,40 @@ void ResourceManager::exitCriticalOperation() {
 
   logger.info(F("ResourceM"), String(F("Beende kritische Operation: ")) + m_currentOperation);
 
-  // Decrement nesting level
+  // Verschachtelungsebene abbauen
   m_nestingLevel--;
   if (m_nestingLevel < 0) {
-    m_nestingLevel = 0; // Safety: prevent negative nesting
+    m_nestingLevel = 0; // Sicherheitsnetz gegen negative Verschachtelung
     logger.error(F("ResourceM"), F("Fehler: Nesting-Level negativ! Möglicher Logic-Fehler"));
   }
 
-  // Reset flag when we're back to top level
+  // Zustand erst auf oberster Ebene zurücksetzen.
+  //
+  // Vorher wurden m_inCriticalOperation und m_currentOperation am Ende der
+  // Funktion bedingungslos zurückgesetzt. Damit war die gesamte darüber
+  // stehende Nesting-Logik wirkungslos: schon das Verlassen einer inneren
+  // Operation gab die äußere frei.
   if (m_nestingLevel == 0) {
     m_inCriticalOperation = false;
-  }
-  if (!ConfigMgr.getDoFirmwareUpgrade()) {
-    // Only recreate sensor manager if neither the global nor the local one exists.
-    // During boot, initializeSensors() creates the global sensorManager - don't duplicate it.
-    extern std::unique_ptr<SensorManager> sensorManager;
-    if (!m_sensorManager && !sensorManager) {
-      logger.debug(F("ResourceM"), F("Sensor-Manager neu erstellen"));
-      try {
-        m_sensorManager = std::make_unique<SensorManager>();
-        if (m_sensorManager) {
-          auto initResult = m_sensorManager->init();
-          if (initResult.isSuccess()) {
-            logger.info(F("ResourceM"), F("Sensor-Manager erfolgreich reinitialisiert"));
-          } else {
-            logger.error(F("ResourceM"),
-                         String(F("Reinitialisierung des Sensor-Managers fehlgeschlagen: ")) +
-                             initResult.getMessage());
-            m_sensorManager.reset();
-          }
-        } else {
-          logger.error(F("ResourceM"), F("Zuweisung des Sensor-Managers fehlgeschlagen"));
-        }
-      } catch (const std::exception& e) {
-        logger.error(F("ResourceM"),
-                     String(F("Ausnahme bei Erstellung des Sensor-Managers: ")) + e.what());
-        m_sensorManager.reset();
-      }
-    }
+    m_currentOperation = "";
   }
 
-  // Clear operation info
-  m_inCriticalOperation = false;
-  m_currentOperation = "";
+  // Hier stand früher ein Block, der bei Bedarf einen ZWEITEN SensorManager
+  // anlegte (ResourceManager::m_sensorManager parallel zum globalen
+  // sensorManager). Das hätte sämtliche Sensorobjekte samt ihrer
+  // Messkonfiguration doppelt im RAM gehalten und zwei Quellen der Wahrheit
+  // erzeugt. Der Member ist entfernt; der globale sensorManager ist die
+  // einzige Instanz.
 }
 
 ResourceResult ResourceManager::initMinimalSystem() {
   logger.info(F("ResourceM"), F("Initialisiere minimales System..."));
 
-  // Stop all sensors first
-  if (m_sensorManager) {
-    logger.debug(F("ResourceM"), F("Stopping all sensors"));
-    m_sensorManager->stopAll();
-    m_sensorManager.reset();
+  // Sensoren zuerst stoppen (globale Instanz - es gibt nur diese eine)
+  extern std::unique_ptr<SensorManager> sensorManager;
+  if (sensorManager) {
+    logger.debug(F("ResourceM"), F("Stoppe alle Sensoren"));
+    sensorManager->stopAll();
   }
 
 #if USE_WEBSERVER
@@ -284,11 +265,11 @@ void ResourceManager::cleanup() {
     exitCriticalOperation();
   }
 
-  // Reset all services
-  if (m_sensorManager) {
+  // Dienste zurücksetzen (globale Sensor-Instanz)
+  extern std::unique_ptr<SensorManager> sensorManager;
+  if (sensorManager) {
     logger.debug(F("ResourceM"), F("Beende Sensor-Manager"));
-    m_sensorManager->stopAll();
-    m_sensorManager.reset();
+    sensorManager->stopAll();
   }
 
   // Clear memory
