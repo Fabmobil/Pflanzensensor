@@ -52,13 +52,26 @@ static const uint32_t crc32_table[256] PROGMEM = {
     0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605, 0xcdd70693, 0x54de5729, 0x23d967bf,
     0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d};
 
-uint32_t FlashPersistence::calculateCRC32(const uint8_t* data, size_t length) {
-  uint32_t crc = 0xFFFFFFFF;
+uint32_t FlashPersistence::crc32Update(uint32_t crc, const uint8_t* data, size_t length) {
   for (size_t i = 0; i < length; i++) {
     uint8_t index = (crc ^ data[i]) & 0xFF;
     crc = (crc >> 8) ^ pgm_read_dword(&crc32_table[index]);
   }
-  return ~crc;
+  return crc;
+}
+
+uint32_t FlashPersistence::calculateCRC32(const uint8_t* data, size_t length) {
+  return ~crc32Update(0xFFFFFFFF, data, length);
+}
+
+bool FlashPersistence::isChecksumVerificationEnabled() {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::GENERAL, true)) {
+    return false; // Keine Konfiguration vorhanden - nichts zu prüfen
+  }
+  bool enabled = prefs.getBool("md5_verify", false);
+  prefs.end();
+  return enabled;
 }
 
 uint32_t FlashPersistence::getSafeOffset() {
@@ -387,10 +400,50 @@ ResourceResult FlashPersistence::restoreFromFlash() {
   Serial.print(dataSize);
   Serial.println(F(" Bytes..."));
 
-  //  CRITICAL: Don't malloc the entire buffer - heap fragmentation!
-  // CRC check skipped - we rely on magic number + version for validation
-  // Instead, read and parse line-by-line in small chunks
-  // Instead, read and parse line-by-line in small chunks
+  // Prüfsumme verifizieren, BEVOR irgendetwas in die Preferences geschrieben
+  // wird. Der Datenblock wird dafür in einem eigenen Durchgang gelesen und die
+  // CRC32 fortlaufend mitgeführt - ohne den kompletten Puffer zu allokieren.
+  //
+  // Vorher wurde die CRC beim Speichern berechnet und abgelegt, beim
+  // Wiederherstellen aber ausdrücklich übersprungen ("CRC check skipped").
+  // Die 1-KB-Tabelle im Flash diente damit einem Wert, den nie jemand geprüft
+  // hat, und beschädigte Konfigurationsdaten wären ungefiltert in die
+  // Preferences gewandert.
+  if (isChecksumVerificationEnabled()) {
+    uint32_t running = 0xFFFFFFFF;
+    uint32_t verifyOffset = offset + 16;
+    uint32_t verified = 0;
+
+    while (verified < dataSize) {
+      char chunk[256];
+      uint32_t chunkSize = min((uint32_t)256, dataSize - verified);
+      uint32_t alignedSize = (chunkSize + 3) & ~3;
+
+      if (!ESP.flashRead(verifyOffset, (uint32_t*)chunk, alignedSize)) {
+        Serial.println(F("[FlashPers] FEHLER: Lesen für Prüfsumme fehlgeschlagen"));
+        return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("CRC read failed"));
+      }
+
+      running = crc32Update(running, (const uint8_t*)chunk, chunkSize);
+      verified += chunkSize;
+      verifyOffset += alignedSize;
+      ESP.wdtFeed();
+    }
+
+    uint32_t computed = ~running;
+    if (computed != storedCRC) {
+      Serial.print(F("[FlashPers] FEHLER: Pruefsumme falsch - erwartet 0x"));
+      Serial.print(storedCRC, HEX);
+      Serial.print(F(", berechnet 0x"));
+      Serial.println(computed, HEX);
+      return ResourceResult::fail(ResourceError::DATA_CORRUPTION, F("CRC mismatch"));
+    }
+    Serial.println(F("[FlashPers] Pruefsumme OK"));
+  } else {
+    Serial.println(F("[FlashPers] Pruefsummen-Verifikation deaktiviert"));
+  }
+
+  // Daten zeilenweise in kleinen Blöcken lesen und parsen (kein großer Puffer)
   Preferences prefs;
   int lineCount = 0;
   char currentNs[32] = "";
@@ -700,12 +753,36 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
   uint32_t manifestSize = manifest.length();
 
   // STEP 3: Prepare header (WiFi ON, safe)
+  // Prüfsumme über Manifest + alle Dateiinhalte in einem Vorlauf berechnen.
+  // Vorher stand hier eine feste 0 als Platzhalter - die Prüfsumme war damit
+  // wertlos. Der Vorlauf liest die Dateien einmal zusätzlich aus LittleFS;
+  // bei gut einem Kilobyte Gesamtdaten fällt das nicht ins Gewicht und
+  // erspart es, den Header nachträglich an einer nicht ausgerichteten
+  // Adresse überschreiben zu müssen.
+  uint32_t running = crc32Update(0xFFFFFFFF, (const uint8_t*)manifest.c_str(), manifestSize);
+  for (uint8_t i = 0; i < fileCount; i++) {
+    File cf = LittleFS.open("/config/" + files[i].filename, "r");
+    if (!cf) {
+      continue;
+    }
+    uint8_t buf[128];
+    while (cf.available()) {
+      size_t got = cf.read(buf, sizeof(buf));
+      if (got == 0) {
+        break;
+      }
+      running = crc32Update(running, buf, got);
+    }
+    cf.close();
+    ESP.wdtFeed();
+  }
+  const uint32_t jsonCrc = ~running;
+
   uint8_t header[16];
   memcpy(header, &FP_MAGIC_NUMBER, 4);
   header[4] = FP_VERSION;
   memcpy(header + 5, &manifestSize, 4);
-  uint32_t placeholder_crc = 0;
-  memcpy(header + 9, &placeholder_crc, 4);
+  memcpy(header + 9, &jsonCrc, 4);
   memset(header + 13, 0, 3);
 
   uint32_t sectorsNeeded = ((totalSize + FP_FLASH_SECTOR_SIZE - 1) / FP_FLASH_SECTOR_SIZE);
@@ -849,8 +926,9 @@ ResourceResult FlashPersistence::restoreJsonFromFlash() {
     return ResourceResult::success(); // Not an error, just no backup
   }
 
-  uint32_t manifestSize;
+  uint32_t manifestSize, storedJsonCRC;
   memcpy(&manifestSize, header + 5, 4);
+  memcpy(&storedJsonCRC, header + 9, 4);
 
   if (manifestSize == 0 || manifestSize > 4096) {
     Serial.println(F("[FlashPers] Ungültige Manifest-Größe"));
@@ -883,6 +961,57 @@ ResourceResult FlashPersistence::restoreJsonFromFlash() {
 
     bytesRead += chunkSize;
     readOffset += alignedSize;
+  }
+
+  // Gespeicherte Prüfsumme über Manifest + Dateiinhalte verifizieren, bevor
+  // irgendetwas nach LittleFS geschrieben wird.
+  //
+  // WICHTIG: Die Dateien liegen im Flash NICHT lückenlos hintereinander. Beim
+  // Schreiben wird jeder Block auf 4 Byte aufgerundet (ESP.flashWrite verlangt
+  // ausgerichtete Längen), die letzte Portion jeder Datei also mit 0xFF
+  // aufgefüllt. Die Prüfsumme läuft nur über die echten Dateibytes, deshalb
+  // muss hier dieselbe blockweise Schrittfolge nachvollzogen werden wie beim
+  // Schreiben und beim eigentlichen Wiederherstellen.
+  if (isChecksumVerificationEnabled()) {
+    uint32_t running = crc32Update(0xFFFFFFFF, (const uint8_t*)manifest.c_str(), manifestSize);
+    uint32_t scanOffset = readOffset;
+
+    int ls = manifest.indexOf('\n') + 1;
+    while (ls > 0 && ls < (int)manifest.length()) {
+      int le = manifest.indexOf('\n', ls);
+      if (le == -1) {
+        break;
+      }
+      int pipe = manifest.indexOf('|', ls);
+      if (pipe > 0 && pipe < le) {
+        size_t fileSize = manifest.substring(pipe + 1, le).toInt();
+        size_t fileRead = 0;
+        while (fileRead < fileSize) {
+          uint32_t alignedBuffer[32];
+          size_t chunkSize = (fileSize - fileRead > 128) ? 128 : (fileSize - fileRead);
+          uint32_t alignedSize = (chunkSize + 3) & ~3;
+          if (!ESP.flashRead(scanOffset, alignedBuffer, alignedSize)) {
+            Serial.println(F("[FlashPers] FEHLER: Lesen für JSON-Pruefsumme fehlgeschlagen"));
+            return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("JSON CRC read failed"));
+          }
+          running = crc32Update(running, (const uint8_t*)alignedBuffer, chunkSize);
+          fileRead += chunkSize;
+          scanOffset += alignedSize;
+          ESP.wdtFeed();
+        }
+      }
+      ls = le + 1;
+    }
+
+    uint32_t computed = ~running;
+    if (computed != storedJsonCRC) {
+      Serial.print(F("[FlashPers] FEHLER: JSON-Pruefsumme falsch - erwartet 0x"));
+      Serial.print(storedJsonCRC, HEX);
+      Serial.print(F(", berechnet 0x"));
+      Serial.println(computed, HEX);
+      return ResourceResult::fail(ResourceError::DATA_CORRUPTION, F("JSON CRC mismatch"));
+    }
+    Serial.println(F("[FlashPers] JSON-Pruefsumme OK"));
   }
 
   // Parse manifest: first line = file count, then filename|size

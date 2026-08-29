@@ -102,12 +102,20 @@ void AdminHandler::generateAndSendSystemSettingsCard() {
   sendChunk(F("<input type='text' name='device_name' maxlength='32' value='"));
   sendChunk(ConfigMgr.getDeviceName());
   sendChunk(F("' autocomplete='off'></div>"));
-  // MD5 verification checkbox
-  // sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
-  // sendChunk(F("<input type='checkbox' name='md5_verification'"));
-  // if (ConfigMgr.isMD5Verification())
-  //   sendChunk(F(" checked"));
-  // sendChunk(F("> MD5-Überprüfung für Updates aktivieren</label></div>"));
+  // Prüfsummen-Verifikation.
+  //
+  // Die Checkbox war auskommentiert - die Einstellung war damit gar nicht
+  // erreichbar, obwohl sie ausgewertet wird. Sie steuert zweierlei:
+  //   - beim Firmware-Update wird ein Prüfsummenfeld eingeblendet und der
+  //     Wert an Update.setMD5() übergeben
+  //   - beim Wiederherstellen der Konfiguration aus dem Flash wird die
+  //     gespeicherte CRC32 tatsächlich geprüft
+  sendChunk(F("<div class='form-group'><label class='checkbox-label'>"));
+  sendChunk(F("<input type='checkbox' name='md5_verification' value='true'"));
+  if (ConfigMgr.isMD5Verification())
+    sendChunk(F(" checked"));
+  sendChunk(F("> Prüfsummen verifizieren (Firmware-Update und "
+              "Konfigurations-Wiederherstellung)</label></div>"));
   // Admin password change (entered twice, saved via explicit button)
   sendChunk(F("<div class='form-group'>"));
   sendChunk(F("<label>Administrator Passwort:</label>"));
