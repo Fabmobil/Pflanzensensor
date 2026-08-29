@@ -173,28 +173,37 @@ bool MemoryManager::checkMemory() {
 }
 
 uint32_t MemoryManager::emergencyCleanup() {
-  // Force garbage collection
+  // Einzige Notfall-Bereinigung des Systems.
+  //
+  // Es gab hier früher zwei konkurrierende Implementierungen - diese und
+  // ResourceManager::performEmergencyCleanup() - die beide destruktiv waren:
+  // die eine rief WiFi.reconnect(), die andere trennte WiFi komplett UND
+  // zerstörte den SensorManager. Beide wurden ausgelöst, wenn der Heap knapp
+  // wurde, also genau dann, wenn eine stabile Verbindung und laufende Sensorik
+  // am wichtigsten sind. Ein voller Reconnect kostet zudem selbst erst einmal
+  // Heap und dauert Sekunden.
+  //
+  // Die Bereinigung ist deshalb jetzt nicht-destruktiv: sie gibt nur Speicher
+  // frei, der sich jederzeit neu aufbauen lässt. Netzwerk und Sensorik bleiben
+  // unangetastet.
+  const uint32_t before = ESP.getFreeHeap();
+
 #ifndef ESP32
   ESP.wdtFeed();
 #endif
-  delay(10);
 
-  // Clear allocation history
-  uint32_t before = m_trackedAllocations;
-  g_allocationHistory.clear();
-  m_trackedAllocations = 0;
+  // Registrierte Aufräumroutine ausführen (der WebManager gibt hier seinen
+  // Handler-Cache frei - das ist der mit Abstand größte freigebbare Block).
+  if (m_cleanupHandler) {
+    m_cleanupHandler();
+  }
 
-// Reconnect WiFi to free connection buffers
-#if USE_WIFI
-  WiFi.reconnect();
-#endif
-
-  delay(10);
 #ifndef ESP32
   ESP.wdtFeed();
 #endif
 
-  return before;
+  const uint32_t after = ESP.getFreeHeap();
+  return (after > before) ? (after - before) : 0;
 }
 
 bool MemoryManager::checkAndCleanup(uint32_t threshold) {
@@ -205,10 +214,10 @@ bool MemoryManager::checkAndCleanup(uint32_t threshold) {
                                     String(F(" Bytes (Limit: ")) + String(threshold) +
                                     F("), starte Notfall-Bereinigung..."));
 
-    emergencyCleanup();
+    uint32_t freed = emergencyCleanup();
 
-    uint32_t after = ESP.getFreeHeap();
-    logger.info(F("MemMgr"), String(F("Nach Bereinigung: ")) + String(after) + F(" Bytes"));
+    logger.info(F("MemMgr"), String(F("Nach Bereinigung: ")) + String(ESP.getFreeHeap()) +
+                                 String(F(" Bytes (")) + String(freed) + F(" freigegeben)"));
 
     return true;
   }

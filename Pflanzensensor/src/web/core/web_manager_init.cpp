@@ -15,6 +15,7 @@
 #if USE_PROMETHEUS_METRICS
 #include "web/handler/web_metrics_handler.h"
 #endif
+#include "utils/memory_manager.h"
 #include "utils/wifi.h"
 
 ResourceResult WebManager::begin(uint16_t port) {
@@ -60,6 +61,11 @@ ResourceResult WebManager::begin(uint16_t port) {
       }
     });
 #endif
+
+    // Aufräumroutine für Speichernot registrieren: der Handler-Cache ist der
+    // mit Abstand größte Block, der sich gefahrlos freigeben lässt (die Handler
+    // werden bei Bedarf ohnehin neu geladen).
+    MemoryMgr.setCleanupHandler([]() { WebManager::getInstance().cleanupNonEssentialHandlers(); });
 
     // Middleware und Basisrouten einrichten
     setupMiddleware();

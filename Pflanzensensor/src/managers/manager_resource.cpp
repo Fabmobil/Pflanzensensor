@@ -18,6 +18,7 @@
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
 #include "utils/critical_section.h"
+#include "utils/memory_manager.h"
 #include "utils/wifi.h"
 #include "web/core/web_manager.h"
 #include "web/handler/web_ota_handler.h"
@@ -307,32 +308,17 @@ void ResourceManager::cleanup() {
 }
 
 bool ResourceManager::performEmergencyCleanup() {
-  logger.warning(F("ResourceM"), F("Führe Notfall-Bereinigung durch..."));
+  // Delegiert an die einzige Notfall-Bereinigung des Systems.
+  //
+  // Diese Funktion hatte früher eine eigene, deutlich destruktivere
+  // Implementierung: sie stoppte alle Sensoren, zerstörte den SensorManager
+  // und trennte WiFi, um es danach neu zu verbinden. Ausgelöst wurde das bei
+  // knappem Heap - also genau dann, wenn laufende Sensorik und eine stabile
+  // Verbindung am wichtigsten sind. Nach so einer "Bereinigung" lieferte das
+  // Gerät bis zum nächsten Neustart keine Messwerte mehr.
+  uint32_t freed = MemoryMgr.emergencyCleanup();
 
-  // Stop all sensors
-  if (m_sensorManager) {
-    m_sensorManager->stopAll();
-    m_sensorManager.reset();
-  }
-
-  // Disconnect WiFi temporarily
-  WiFi.disconnect(true);
-  delay(100);
-
-  // Clear any pending operations
-  m_inCriticalOperation = false;
-  m_currentOperation = "";
-
-  // Force garbage collection
-#ifndef ESP32
-  ESP.wdtFeed();
-#endif
-  delay(100);
-
-  // Reconnect WiFi
-  WiFi.reconnect();
-  delay(100);
-
-  logger.info(F("ResourceM"), F("Notfall-Bereinigung abgeschlossen"));
+  logger.info(F("ResourceM"),
+              String(F("Notfall-Bereinigung abgeschlossen, ")) + String(freed) + F(" Bytes frei"));
   return true;
 }

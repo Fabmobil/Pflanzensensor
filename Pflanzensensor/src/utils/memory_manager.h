@@ -143,8 +143,22 @@ public:
   void resetStats();
 
   /**
-   * @brief Emergency cleanup - attempt to free memory
-   * @return Bytes freed, or 0 if no memory available to free
+   * @brief Aufräumroutine registrieren, die bei Speichernot ausgeführt wird
+   * @param handler Funktionszeiger; nullptr deaktiviert die Routine
+   * @details Der WebManager registriert hier das Leeren seines Handler-Caches.
+   *          Über den Zeiger bleibt der MemoryManager frei von Abhängigkeiten
+   *          zur Web-Schicht.
+   */
+  using CleanupHandler = void (*)();
+  void setCleanupHandler(CleanupHandler handler) { m_cleanupHandler = handler; }
+
+  /**
+   * @brief Notfall-Bereinigung bei knappem Heap
+   * @return Tatsächlich freigegebene Bytes
+   * @details Nicht-destruktiv: gibt ausschließlich Speicher frei, der sich
+   *          jederzeit neu aufbauen lässt. WiFi-Verbindung und Sensorik bleiben
+   *          unangetastet. Dies ist die einzige Notfall-Bereinigung im System;
+   *          ResourceManager::performEmergencyCleanup() delegiert hierher.
    */
   uint32_t emergencyCleanup();
 
@@ -165,6 +179,7 @@ private:
   uint8_t m_maxFragmentation;
   uint32_t m_trackedAllocations;
   std::function<void(const char*, uint32_t)> m_alertCallback;
+  CleanupHandler m_cleanupHandler{nullptr};
   bool m_initialized;
 
   void updateMetrics();
