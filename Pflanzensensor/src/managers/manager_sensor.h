@@ -16,6 +16,7 @@
 #include "configs/config_validation_rules.h"
 #include "managers/manager_base.h"
 #include "managers/manager_config.h"
+#include "managers/manager_sensor_preemption.h"
 #include "sensors/sensor_factory.h"
 #include "sensors/sensor_measurement_cycle.h"
 #include "sensors/sensors.h"
@@ -105,39 +106,16 @@ public:
    * @brief Forces the next measurement for a sensor ASAP
    * @param id The unique identifier of the sensor
    * @return true if successful, false otherwise
+   * @details Die eigentliche Entscheidungslogik (wer wird ggf. verdrängt)
+   *          steckt in SensorPreemption::forceImmediateMeasurement() - eigene,
+   *          hardwareunabhängige Datei, siehe dort. Diese Methode ist nur
+   *          noch ein dünner Wrapper, der zusätzlich das Sammelkennzeichen
+   *          für main.cpp pflegt.
    */
   bool forceImmediateMeasurement(const String& id) {
-    Sensor* sensor = getSensor(id);
-    if (!sensor || !sensor->cycleManager())
+    if (!SensorPreemption::forceImmediateMeasurement(m_sensors, id)) {
       return false;
-
-    auto& limiter = SensorManagerLimiter::getInstance();
-    // Kopie, nicht Referenz: abortCycle()/releaseSlot() leeren das Member.
-    const String holder = limiter.getCurrentSensor();
-
-    if (!holder.isEmpty() && holder != id) {
-      // Es misst gerade ein anderer Sensor. Warten würde je nach Sensor
-      // zehn Sekunden und mehr dauern, deshalb wird dessen Zyklus abgebrochen.
-      Sensor* other = getSensor(holder);
-      if (other && other->cycleManager()) {
-        LOG_INFO(F("SensorManager"),
-                 String(F("Messung von ")) + holder +
-                     String(F(" wird für die manuell ausgelöste Messung von ")) + id +
-                     F(" abgebrochen"));
-        other->cycleManager()->abortCycle();
-      } else {
-        // Halter existiert nicht mehr (Sensor entfernt/deaktiviert) — Slot
-        // wäre sonst bis zum Timeout blockiert.
-        LOG_WARN(F("SensorManager"),
-                 String(F("Messslot war von unbekanntem Sensor ")) + holder + F(" belegt"));
-        limiter.releaseSlot(holder);
-      }
     }
-
-    sensor->cycleManager()->forceImmediateMeasurement();
-    // Slot direkt zuteilen, damit die Messung im selben Schleifendurchlauf
-    // beginnen kann statt erst beim nächsten Slot-Versuch.
-    limiter.forceTakeSlot(id);
     m_forcedMeasurementActive = true;
     return true;
   }
