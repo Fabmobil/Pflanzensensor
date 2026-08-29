@@ -171,6 +171,87 @@ ResourceResult checkWiFiConnection() {
   return ResourceResult::fail(ResourceError::WIFI_ERROR, F("Wiederverbindung gestartet"));
 }
 
+/**
+ * @brief Nicht-blockierender Rückweg aus dem AP-Modus
+ * @return ResourceResult::success() sobald wieder eine STA-Verbindung steht
+ * @details Bisher war der AP-Modus eine Sackgasse: startAPMode() setzte
+ *          apModeActive=true, loop() übersprang daraufhin dauerhaft
+ *          checkWiFiConnection(), und nichts setzte das Flag je zurück. Ein
+ *          Router-Neustart zum falschen Zeitpunkt strandete das Gerät bis zum
+ *          nächsten Stromausfall im AP-Modus.
+ *
+ *          Diese Funktion probiert im Hintergrund weiter, das konfigurierte
+ *          Netz zu erreichen. Sie blockiert nicht - der AP bleibt währenddessen
+ *          nutzbar, damit die WiFi-Konfiguration über die Admin-Seite möglich
+ *          bleibt. Erst wenn eine Verbindung tatsächlich steht, wird der AP
+ *          abgeschaltet.
+ */
+ResourceResult checkAPModeRecovery() {
+  static int retrySlot = 0;              // nächster zu probierender Slot (0-2)
+  static unsigned long attemptStart = 0; // Zeitpunkt des laufenden WiFi.begin()
+  static unsigned long lastAttempt = 0;  // Ende des letzten Versuchs
+
+  if (!apModeActive) {
+    return ResourceResult::success();
+  }
+
+  unsigned long now = millis();
+
+  // Läuft gerade ein Versuch? Dann Ergebnis prüfen.
+  if (attemptStart > 0) {
+    if (WiFi.status() == WL_CONNECTED) {
+      g_activeWiFiSlot = (retrySlot + 2) % 3; // der zuletzt gestartete Slot
+      logger.info(F("WiFi"),
+                  String(F("Netz wieder erreichbar, verlasse AP-Modus: ")) + WiFi.SSID());
+      logger.info(F("WiFi"), String(F("IP-Adresse: ")) + WiFi.localIP().toString());
+
+      WiFi.softAPdisconnect(true);
+      WiFi.mode(WIFI_STA);
+      apModeActive = false;
+      attemptStart = 0;
+      return ResourceResult::success();
+    }
+
+    // Versuch noch jung? Weiter warten.
+    if (now - attemptStart < AP_RECOVERY_ATTEMPT_MS) {
+      return ResourceResult::fail(ResourceError::WIFI_ERROR, F("AP-Rückweg: Versuch läuft"));
+    }
+
+    // Fehlgeschlagen - Pause bis zum nächsten Versuch
+    attemptStart = 0;
+    lastAttempt = now;
+    WiFi.mode(WIFI_AP); // STA wieder abschalten, AP bleibt bestehen
+    return ResourceResult::fail(ResourceError::WIFI_ERROR, F("AP-Rückweg: Versuch erfolglos"));
+  }
+
+  // Zwischen zwei Versuchen warten, damit der AP nicht dauernd gestört wird
+  if (lastAttempt != 0 && now - lastAttempt < AP_RECOVERY_INTERVAL_MS) {
+    return ResourceResult::fail(ResourceError::WIFI_ERROR, F("AP-Rückweg: Wartezeit"));
+  }
+
+  // Nächsten konfigurierten Slot suchen
+  for (int i = 0; i < 3; i++) {
+    int slot = (retrySlot + i) % 3;
+    String ssid = ConfigMgr.getWiFiSSID(slot + 1);
+    String pwd = ConfigMgr.getWiFiPassword(slot + 1);
+    if (ssid.isEmpty() || pwd.isEmpty()) {
+      continue;
+    }
+
+    logger.info(F("WiFi"),
+                String(F("AP-Modus aktiv - probiere Slot ")) + String(slot + 1) + F(" erneut"));
+
+    // AP weiterlaufen lassen, damit die Konfiguration erreichbar bleibt
+    WiFi.mode(WIFI_AP_STA);
+    WiFi.begin(ssid.c_str(), pwd.c_str());
+    retrySlot = (slot + 1) % 3;
+    attemptStart = now;
+    return ResourceResult::fail(ResourceError::WIFI_ERROR, F("AP-Rückweg: Versuch gestartet"));
+  }
+
+  return ResourceResult::fail(ResourceError::WIFI_ERROR, F("Keine Zugangsdaten konfiguriert"));
+}
+
 TypedResult<ResourceError, int> getWiFiSignalStrength() {
   if (WiFi.status() != WL_CONNECTED) {
     return TypedResult<ResourceError, int>::fail(ResourceError::WIFI_ERROR,

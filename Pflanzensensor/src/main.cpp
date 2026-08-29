@@ -357,8 +357,11 @@ void loop() {
       logger.debug(F("main"), F("Prüfe WiFi-Verbindung"));
       checkWiFiConnection();
     } else {
-      logger.debug(F("main"), F("AP-Modus aktiv, überspringe erneute WiFi-Verbindungsversuche"));
-      yield();
+      // Im AP-Modus regelmäßig prüfen, ob das konfigurierte Netz wieder da ist.
+      // Der Versuch läuft nicht-blockierend und lässt den AP weiterlaufen, damit
+      // die WiFi-Konfiguration über die Admin-Seite erreichbar bleibt.
+      // Das gesamte Timing steckt in checkAPModeRecovery().
+      checkAPModeRecovery();
     }
 #endif
     lastWiFiCheck = currentMillis;
