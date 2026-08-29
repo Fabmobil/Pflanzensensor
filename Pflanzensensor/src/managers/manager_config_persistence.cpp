@@ -168,9 +168,9 @@ ConfigPersistence::PersistenceResult ConfigPersistence::resetToDefaults(ConfigDa
 #else
     Dir dir = LittleFS.openDir("/config");
     while (dir.next()) {
-      String filename = dir.fileName();
-      if (filename.startsWith("sensor_") && filename.endsWith(".json")) {
-        String path = String("/config/") + filename;
+      String entryName = dir.fileName();
+      if (entryName.startsWith("sensor_") && entryName.endsWith(".json")) {
+        String path = String("/config/") + entryName;
         if (LittleFS.remove(path)) {
           LOG_INFO(F("ConfigP"), String(F("Gelöscht: ")) + path);
         } else {

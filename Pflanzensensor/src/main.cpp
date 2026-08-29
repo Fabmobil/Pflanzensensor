@@ -174,8 +174,7 @@ void setup() {
 
     // Initialize minimal web server for OTA updates
     if (!Helper::initializeComponent(F("minimal web server"), []() -> ResourceResult {
-          auto& webManager = WebManager::getInstance();
-          if (!webManager.beginUpdateMode()) {
+          if (!WebManager::getInstance().beginUpdateMode()) {
             return ResourceResult::fail(ResourceError::WEBSERVER_ERROR,
                                         F("Initialisierung des minimalen "
                                           "Webservers fehlgeschlagen"));
@@ -277,8 +276,6 @@ void loop() {
     // Notfall-Bereinigung bei niedrigem Heap
     MemoryMgr.checkAndCleanup(4000);
 
-    auto metrics = MemoryMgr.getMetrics();
-
     // Log detailed memory state every 2 minutes
     if (currentMillis - lastMemoryLog >= 120000) {
       MemoryMgr.logState("loop");
@@ -306,9 +303,9 @@ void loop() {
     // Debug: Log update mode recovery state (every 30 seconds)
     if (currentMillis - lastUpdateModeLog >= 30000) {
       LOG_DEBUG(F("main"), F("[UpdateMode] loop: getDoFirmwareUpgrade()=true"));
-      auto& webManager = WebManager::getInstance();
-      unsigned long updateStart = webManager.getUpdateModeStartTime();
-      unsigned long timeout = webManager.getUpdateModeTimeout();
+      auto& web = WebManager::getInstance();
+      unsigned long updateStart = web.getUpdateModeStartTime();
+      unsigned long timeout = web.getUpdateModeTimeout();
       LOG_DEBUG(F("main"), String(F("[UpdateMode] loop: currentMillis=")) + String(currentMillis) +
                                String(F(", updateStart=")) + String(updateStart) +
                                String(F(", timeout=")) + String(timeout));
@@ -316,7 +313,7 @@ void loop() {
         LOG_WARN(F("main"), F("Update-Mode Timeout erreicht. Beende "
                               "Update-Modus automatisch."));
         ConfigMgr.setUpdateFlags(false, false);
-        webManager.resetUpdateModeStartTime();
+        web.resetUpdateModeStartTime();
         LOG_WARN(F("main"), F("ESP startet neu."));
         ESP.restart(); // Force reboot to reload config and exit update mode
         return;

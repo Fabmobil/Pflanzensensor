@@ -293,7 +293,7 @@ void WebOTAHandler::handleUpdateUpload() {
 
   switch (upload.status) {
   case UPLOAD_FILE_START: {
-    String filename = upload.filename;
+    String uploadName = upload.filename;
     isFilesystem = _server.hasArg("mode") && _server.arg("mode") == "fs";
 #ifdef ESP32
     size_t contentLength = upload.totalSize;
@@ -302,9 +302,9 @@ void WebOTAHandler::handleUpdateUpload() {
 #endif
     errorReported = false;
 
-    LOG_INFO(F("WebOTAHandler"), String(F("Upload gestartet: ")) + filename + String(F(" (Typ: ")) +
-                                     String(isFilesystem ? F("Dateisystem") : F("Firmware")) +
-                                     F(")"));
+    LOG_INFO(F("WebOTAHandler"),
+             String(F("Upload gestartet: ")) + uploadName + String(F(" (Typ: ")) +
+                 String(isFilesystem ? F("Dateisystem") : F("Firmware")) + F(")"));
     LOG_DEBUG(F("WebOTAHandler"), String(F("Inhaltlänge: ")) + String(contentLength) + F(" Bytes"));
 
     // FLASH-BASED PERSISTENCE: Config backup was already created BEFORE reboot

@@ -486,10 +486,14 @@ ResourceResult FlashPersistence::restoreFromFlash() {
                   if (isNumber) {
                     long val = atol(value);
 
-                    // Decide between UChar, UInt, and Int based on value
+                    // long ist auf dieser Plattform 32 Bit, die frühere obere
+                    // Schranke (val <= 4294967295L) war deshalb immer wahr und
+                    // der else-Zweig unerreichbar - negative Werte landeten
+                    // trotzdem korrekt dort, weil val >= 0 zuerst geprüft wird.
+                    // Jetzt ohne die tote Vergleichshälfte.
                     if (val >= 0 && val <= 255) {
                       prefs.putUChar(key, (uint8_t)val);
-                    } else if (val >= 0 && val <= 4294967295L) {
+                    } else if (val >= 0) {
                       prefs.putUInt(key, (uint32_t)val);
                     } else {
                       prefs.putInt(key, (int32_t)val);

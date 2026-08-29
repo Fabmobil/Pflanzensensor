@@ -62,8 +62,8 @@ void AdminHandler::handleUploadConfig() {
   HTTPUpload& upload = _server.upload();
 
   if (upload.status == UPLOAD_FILE_START) {
-    String filename = upload.filename;
-    LOG_INFO(F("AdminHandler"), String(F("Config-Upload gestartet: ")) + filename);
+    String uploadName = upload.filename;
+    LOG_INFO(F("AdminHandler"), String(F("Config-Upload gestartet: ")) + uploadName);
 
     // Remove old upload file and flags if they exist
     LittleFS.remove("/prefs_upload.json");

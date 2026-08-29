@@ -455,10 +455,10 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
       return;
     }
 
-    String type = String(typeStr);
+    String msgType = String(typeStr);
     String data = dataStr ? String(dataStr) : "";
 
-    handleClientMessage(num, type, data);
+    handleClientMessage(num, msgType, data);
     break;
   }
 

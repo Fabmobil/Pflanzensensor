@@ -130,16 +130,16 @@ ResourceResult Helper::initializeUpgradeMode() {
 }
 
 #if USE_DISPLAY
-void Helper::displayWiFiConnectionAttempts(DisplayManager* displayManager,
-                                           const String& attemptsInfo, bool isBootMode) {
-  if (!displayManager || attemptsInfo.length() == 0) {
+void Helper::displayWiFiConnectionAttempts(DisplayManager* display, const String& attemptsInfo,
+                                           bool isBootMode) {
+  if (!display || attemptsInfo.length() == 0) {
     return;
   }
 
   // Match the WiFi module's German phrasing for missing credentials
   if (attemptsInfo.indexOf("Keine WiFi-Zugangsdaten") >= 0 ||
       attemptsInfo.indexOf("Keine Credentials") >= 0) {
-    displayManager->updateLogStatus(F("Keine WiFi-Zugangsdaten konfiguriert"), isBootMode);
+    display->updateLogStatus(F("Keine WiFi-Zugangsdaten konfiguriert"), isBootMode);
   } else {
     // Split the long info into multiple lines for better readability
     int startPos = 0;
@@ -148,7 +148,7 @@ void Helper::displayWiFiConnectionAttempts(DisplayManager* displayManager,
       String line = attemptsInfo.substring(startPos, commaPos);
       line.trim();
       if (line.length() > 0) {
-        displayManager->updateLogStatus(line, isBootMode);
+        display->updateLogStatus(line, isBootMode);
       }
       startPos = commaPos + 1;
       commaPos = attemptsInfo.indexOf(',', startPos);
@@ -157,7 +157,7 @@ void Helper::displayWiFiConnectionAttempts(DisplayManager* displayManager,
     String lastLine = attemptsInfo.substring(startPos);
     lastLine.trim();
     if (lastLine.length() > 0) {
-      displayManager->updateLogStatus(lastLine, isBootMode);
+      display->updateLogStatus(lastLine, isBootMode);
     }
   }
 }
