@@ -2,7 +2,11 @@
 /* sketch @0x40200000 (~1575KB) (1613824B) */
 /* ota    @0x40389000 (~1575KB) (1613824B) */
 /* spiffs @0x40512000 (~1000KB) (1024000B) */
-/* eeprom @0x405FB000 (4KB) */
+/* eeprom @0x405FB000 (4KB) - vom Projekt NICHT genutzt.
+   Die Preferences-Bibliothek legt ihre Daten auf dem ESP8266 unter /nvs im
+   LittleFS ab (NVS_USE_LITTLEFS), nicht im EEPROM-Sektor. Deshalb überleben
+   Preferences ein Dateisystem-Update nicht - dafür gibt es FlashPersistence,
+   das sie vorher in den freien Bereich hinter dem Sketch sichert. */
 /* rfcal  @0x405FC000 (4KB) */
 /* wifi   @0x405FD000 (12KB) */
 
