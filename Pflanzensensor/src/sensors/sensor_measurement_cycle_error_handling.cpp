@@ -15,6 +15,51 @@
 
 #include "sensor_measurement_cycle.h"
 
+namespace {
+/**
+ * Zähler für Neustarts, die wegen eines Sensorfehlers ausgelöst wurden.
+ *
+ * Liegt in .noinit und übersteht damit einen Warmstart durch ESP.restart(),
+ * nicht aber einen Kaltstart. Ob der Inhalt gültig ist, entscheidet die
+ * Kennung - .noinit-Speicher ist nach dem Einschalten beliebig belegt.
+ */
+struct SensorRestartGuard {
+  uint32_t magic;
+  uint32_t count;
+};
+SensorRestartGuard g_restartGuard __attribute__((section(".noinit")));
+
+constexpr uint32_t RESTART_GUARD_MAGIC = 0x50534731UL; // "PSG1"
+constexpr uint32_t MAX_SENSOR_RESTARTS = 3;
+/// Läuft das Gerät so lange durch, gilt der letzte Neustart als geglückt und
+/// der Zähler beginnt von vorn. In einer Neustartschleife wird diese Grenze
+/// nie erreicht, dort greift die Obergrenze also zuverlässig.
+constexpr unsigned long RESTART_GUARD_STABLE_UPTIME = 600000UL; // 10 Minuten
+} // namespace
+
+bool SensorMeasurementCycleManager::mayRestartForSensorFault() {
+  if (g_restartGuard.magic != RESTART_GUARD_MAGIC) {
+    // Kaltstart: Speicher enthält Zufallswerte
+    g_restartGuard.magic = RESTART_GUARD_MAGIC;
+    g_restartGuard.count = 0;
+  } else if (millis() >= RESTART_GUARD_STABLE_UPTIME) {
+    g_restartGuard.count = 0;
+  }
+
+  if (g_restartGuard.count >= MAX_SENSOR_RESTARTS) {
+    LOG_ERROR(F("MeasurementCycle"), String(F("Bereits ")) + String(g_restartGuard.count) +
+                                         F(" Neustarts wegen Sensorfehlern - kein weiterer, "
+                                           "das Gerät bleibt erreichbar"));
+    return false;
+  }
+
+  g_restartGuard.count++;
+  LOG_WARN(F("MeasurementCycle"), String(F("Neustart wegen Sensorfehler (")) +
+                                      String(g_restartGuard.count) + String(F(" von ")) +
+                                      String(MAX_SENSOR_RESTARTS) + F(")"));
+  return true;
+}
+
 /**
  * @brief Behandelt den ERROR-Zustand
  * @details Entscheidet basierend auf Fehleranzahl über Wiederholung oder
@@ -57,8 +102,10 @@ void SensorMeasurementCycleManager::handleError() {
     LOG_ERROR(F("MeasurementCycle"), m_sensor->getName() + F(": Reinitialisierung fehlgeschlagen"));
     m_sensor->mutableConfig().hasPersistentError = true;
 
-    // DS18B20: Neustart weil Hardware-Reset nötig
-    if (m_sensor->getSharedHardwareInfo().type == SensorType::DS18B20) {
+    // DS18B20: Neustart weil Hardware-Reset nötig - aber begrenzt, sonst
+    // startet ein dauerhaft defekter Sensor das Gerät endlos neu.
+    if (m_sensor->getSharedHardwareInfo().type == SensorType::DS18B20 &&
+        mayRestartForSensorFault()) {
       LOG_ERROR(F("MeasurementCycle"),
                 m_sensor->getName() + F(": DS18B20-Fehler, löse Neustart aus"));
       delay(1000);

@@ -67,7 +67,7 @@ void SensorMeasurementCycleManager::handleInitializing() {
 #if USE_DS18B20
   if (m_sensor->getSharedHardwareInfo().type == SensorType::DS18B20) {
     const DS18B20Sensor* ds18b20 = static_cast<const DS18B20Sensor*>(m_sensor);
-    if (ds18b20->isRestartRequested()) {
+    if (ds18b20->isRestartRequested() && mayRestartForSensorFault()) {
       LOG_WARN(F("MeasurementCycle"),
                m_sensor->getName() +
                    F(": Neustart vom Sensor angefordert, führe sauberen Neustart aus"));

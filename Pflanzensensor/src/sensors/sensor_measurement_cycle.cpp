@@ -58,6 +58,27 @@ bool SensorMeasurementCycleManager::updateMeasurementCycle() {
     m_state.measurementInterval = currentInterval;
   }
 
+  // Sicherheitsnetz 1: Zeitschranke des aktuellen Zustands
+  const unsigned long stateLimit = stateTimeoutFor(m_state.state);
+  if (stateLimit > 0 && millis() - m_state.stateStartTime >= stateLimit) {
+    handleStateError(String(F("Zeitüberschreitung im Zustand ")) +
+                     MeasurementStateInfo::stateToString(m_state.state) + String(F(" nach ")) +
+                     String(stateLimit) + F(" ms"));
+    return false;
+  }
+
+  // Sicherheitsnetz 2: Wir glauben zu messen, halten den Slot aber nicht mehr.
+  // Das passiert, wenn der Limiter ihn wegen Zeitüberschreitung zwangsweise
+  // freigegeben hat - ohne diesen Abbruch würde parallel zu einem anderen
+  // Sensor weitergemessen, auf gemeinsamer Hardware also mit falschen Werten.
+  if (holdsSlotInState(m_state.state) &&
+      !SensorManagerLimiter::getInstance().hasSlot(m_sensor->getId())) {
+    LOG_WARN(F("MeasurementCycle"),
+             m_sensor->getName() + F(": Messslot verloren, Zyklus wird abgebrochen"));
+    abortCycle();
+    return false;
+  }
+
   switch (m_state.state) {
   case MeasurementState::WAITING_FOR_DUE:
     return handleWaitingForDue();
@@ -120,6 +141,42 @@ void SensorMeasurementCycleManager::tick() {
               m_sensor->getId() + String(F(" Zyklus: ")) +
                   (cycleResult ? String(F("Abgeschlossen")) : String(F("In Bearbeitung"))) +
                   F(" (geändert)"));
+  }
+}
+
+bool SensorMeasurementCycleManager::holdsSlotInState(MeasurementState state) {
+  switch (state) {
+  case MeasurementState::INITIALIZING:
+  case MeasurementState::WAITING_FOR_DELAY:
+  case MeasurementState::WARMUP:
+  case MeasurementState::MEASURING:
+  case MeasurementState::PROCESSING:
+  case MeasurementState::DEINITIALIZING:
+    return true;
+  default:
+    return false;
+  }
+}
+
+unsigned long SensorMeasurementCycleManager::stateTimeoutFor(MeasurementState state) const {
+  switch (state) {
+  case MeasurementState::INITIALIZING:
+    return STATE_TIMEOUT_INIT;
+  case MeasurementState::WAITING_FOR_DELAY:
+    return STATE_TIMEOUT_DELAY;
+  case MeasurementState::WARMUP:
+    // Die Aufwärmzeit ist sensorabhängig, deshalb relativ dazu.
+    return m_state.warmupTimeNeeded + STATE_TIMEOUT_WARMUP_MARGIN;
+  case MeasurementState::MEASURING:
+    return MEASURE_TIMEOUT;
+  case MeasurementState::PROCESSING:
+    return STATE_TIMEOUT_PROCESSING;
+  case MeasurementState::DEINITIALIZING:
+    return STATE_TIMEOUT_DEINIT;
+  default:
+    // WAITING_FOR_DUE (einmalige Aufwärmphase), WAITING_FOR_SLOT (eigene
+    // Behandlung über SLOT_TIMEOUT) und ERROR (eigene Wiederholungslogik)
+    return 0;
   }
 }
 

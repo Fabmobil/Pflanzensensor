@@ -111,7 +111,22 @@ private:
   static constexpr unsigned long DEBUG_INTERVAL = 5000; ///< Interval between debug logs (5 seconds)
   static constexpr unsigned long SLOT_RETRY_DELAY =
       50; ///< Delay between slot attempts (50ms, reduced from 100ms)
-  static constexpr unsigned long SLOT_TIMEOUT = 50000; ///< Maximum slot hold time (50 seconds)
+  /// Wie lange ein Sensor auf einen freien Messslot wartet, bevor er aufgibt.
+  /// Muss unter SensorManagerLimiter::SLOT_TIMEOUT_MS (45 s) liegen, sonst
+  /// griffe immer erst die Zwangsfreigabe des Limiters.
+  static constexpr unsigned long SLOT_TIMEOUT = 40000;
+
+  /// Zeitschranken für Zustände, die den Messslot halten. Sie fangen einen
+  /// hängenden Sensor ab, bevor der Limiter den Slot nach 45 s zwangsweise
+  /// freigibt - denn diese Freigabe benachrichtigt den Halter nicht, sodass
+  /// zwei Sensoren gleichzeitig zu messen glaubten.
+  static constexpr unsigned long STATE_TIMEOUT_INIT = 10000;
+  static constexpr unsigned long STATE_TIMEOUT_DELAY = 10000;
+  static constexpr unsigned long STATE_TIMEOUT_PROCESSING = 15000;
+  static constexpr unsigned long STATE_TIMEOUT_DEINIT = 15000;
+  /// Zuschlag auf die sensoreigene Aufwärmzeit (die je nach Sensor sehr
+  /// unterschiedlich ausfällt, z.B. SDS011).
+  static constexpr unsigned long STATE_TIMEOUT_WARMUP_MARGIN = 10000;
 
   /// Obergrenze für den Abstand zwischen zwei Versuchen eines dauerhaft
   /// fehlerhaften Sensors (30 Minuten).
@@ -133,6 +148,16 @@ private:
   unsigned long m_lastSlotAttemptTime{0};  ///< Last attempt to acquire measurement slot
   unsigned long m_slotRequestStartTime{0}; ///< When current slot request started
   bool m_forced{false}; ///< Manuell ausgelöste Messung: ohne Wartezeit durchziehen
+  /**
+   * @brief Darf wegen eines Sensorfehlers neu gestartet werden?
+   * @return true wenn ein Neustart zulässig ist
+   * @details Der DS18B20-Pfad löst bei Fehlern ESP.restart() aus - bisher ohne
+   *          jede Begrenzung. Ein dauerhaft defekter Sensor startete das Gerät
+   *          damit endlos neu und machte auch das Webinterface unerreichbar.
+   *          Der Zähler liegt in .noinit und übersteht deshalb einen Warmstart.
+   */
+  static bool mayRestartForSensorFault();
+
   /// Verdopplungsstufe des Wiederholungsabstands, 0 = normaler Messtakt.
   /// Wächst mit jeder erschöpften Versuchsreihe, wird bei jeder erfolgreichen
   /// Messung wieder auf 0 gesetzt.
@@ -228,6 +253,26 @@ private:
    *          einen Kanal still, sichtbar allein an einer Logzeile.
    */
   void scheduleRetryWithBackoff();
+
+  /**
+   * @brief Zeitschranke für einen Zustand
+   * @return Schranke in ms, 0 = unbegrenzt
+   * @details INIT_TIMEOUT und MEASURE_TIMEOUT waren zwar deklariert, wurden
+   *          aber nirgends ausgewertet. Blieb performMeasurementCycle()
+   *          dauerhaft bei PENDING, hing der Sensor unbegrenzt in MEASURING
+   *          und hielt dabei den Messslot.
+   *
+   *          WAITING_FOR_DUE bleibt unbegrenzt: dort läuft die einmalige
+   *          Aufwärmphase mancher Sensoren (MH-Z19 mehrere Minuten).
+   *          WAITING_FOR_SLOT hat mit SLOT_TIMEOUT eine eigene, aussagekräftigere
+   *          Behandlung.
+   */
+  unsigned long stateTimeoutFor(MeasurementState state) const;
+
+  /**
+   * @brief Hält dieser Zustand den Messslot?
+   */
+  static bool holdsSlotInState(MeasurementState state);
 
   /**
    * @brief Checks if the slot request has timed out
