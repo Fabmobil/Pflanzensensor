@@ -277,25 +277,49 @@ ConfigPersistence::PersistenceResult ConfigPersistence::save(const ConfigData& c
   return PersistenceResult::success();
 }
 
+// RAM-Cache der Update-Flags.
+//
+// Die Flags werden aus loop() heraus mehrfach pro Durchlauf abgefragt
+// (main.cpp und WebManager::handleClient()). Jede Abfrage war vorher ein
+// LittleFS.open()/readStringUntil()/close() plus eine String-Allokation -
+// bei einigen hundert Durchläufen pro Sekunde also permanente Dateisystem-
+// last und ein Dauertreiber der Heap-Fragmentierung.
+//
+// Die Datei bleibt die Quelle der Wahrheit über einen Neustart hinweg; im
+// laufenden Betrieb wird sie genau einmal gelesen und danach nur noch beim
+// Schreiben aktualisiert.
+static bool s_updateFlagsCached = false;
+static bool s_updateFlagFs = false;
+static bool s_updateFlagFw = false;
+
 void ConfigPersistence::writeUpdateFlagsToFile(bool fs, bool fw) {
   File f = LittleFS.open("/update_flags.txt", "w");
   if (f) {
     f.printf("fs:%d,fw:%d\n", fs ? 1 : 0, fw ? 1 : 0);
     f.close();
   }
+  // Cache mitziehen, damit Datei und RAM nicht auseinanderlaufen
+  s_updateFlagFs = fs;
+  s_updateFlagFw = fw;
+  s_updateFlagsCached = true;
 }
 
 void ConfigPersistence::readUpdateFlagsFromFile(bool& fs, bool& fw) {
-  File f = LittleFS.open("/update_flags.txt", "r");
-  if (f) {
-    String line = f.readStringUntil('\n');
-    fs = line.indexOf("fs:1") != -1;
-    fw = line.indexOf("fw:1") != -1;
-    f.close();
-  } else {
-    fs = false;
-    fw = false;
+  if (!s_updateFlagsCached) {
+    File f = LittleFS.open("/update_flags.txt", "r");
+    if (f) {
+      String line = f.readStringUntil('\n');
+      s_updateFlagFs = line.indexOf("fs:1") != -1;
+      s_updateFlagFw = line.indexOf("fw:1") != -1;
+      f.close();
+    } else {
+      s_updateFlagFs = false;
+      s_updateFlagFw = false;
+    }
+    s_updateFlagsCached = true;
   }
+  fs = s_updateFlagFs;
+  fw = s_updateFlagFw;
 }
 
 bool ConfigPersistence::backupPreferencesToFile() {
