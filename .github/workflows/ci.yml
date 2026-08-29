@@ -1,0 +1,69 @@
+name: CI
+
+# Baut die Firmware und führt die nativen Unit-Tests aus.
+#
+# Bisher gab es keinerlei automatische Prüfung: jede Änderung wurde von Hand
+# geflasht und im seriellen Log kontrolliert. Schon der reine Bau fängt Fehler
+# ab, die dabei durchrutschen können - etwa eine Funktion, die ein Refactoring
+# versehentlich mitgelöscht hat.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tests:
+    name: Native Unit-Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: PlatformIO installieren
+        run: pip install --upgrade platformio
+
+      - name: Zwischenspeicher
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-native-${{ hashFiles('platformio.ini') }}
+
+      - name: Tests ausführen
+        run: pio test -e native
+
+  firmware:
+    name: Firmware bauen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: PlatformIO installieren
+        run: pip install --upgrade platformio
+
+      - name: Zwischenspeicher
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-esp8266-${{ hashFiles('platformio.ini') }}
+
+      # configs/config_pflanzensensor.h ist geräteabhängig und absichtlich nicht
+      # versioniert. Für den Bau genügt die mitgelieferte Beispielkonfiguration.
+      - name: Beispielkonfiguration bereitstellen
+        run: |
+          cp Pflanzensensor/src/configs/config_example.h \
+             Pflanzensensor/src/configs/config_pflanzensensor.h
+
+      - name: Firmware bauen
+        run: pio run -e Pflanzensensor
+
+      - name: Warnungen im eigenen Quelltext prüfen
+        run: ./check_warnings.sh
