@@ -59,6 +59,26 @@ ResourceResult beginResponse(ESPWebServer& server, const String& title,
 void sendChunk(ESPWebServer& server, const String& chunk);
 
 /**
+ * @brief Chunk direkt aus dem Flash senden (keine Heap-Allokation)
+ * @param server Referenz auf den Webserver
+ * @param chunk Flash-String, üblicherweise aus F("...")
+ * @details Diese Überladung greift automatisch für alle sendChunk(F("..."))-
+ *          Aufrufe. Vorher wurde das Flash-Literal implizit in einen
+ *          Heap-String konvertiert; jetzt geht es über sendContent_P() direkt
+ *          aus dem Flash an den Client.
+ */
+void sendChunk(ESPWebServer& server, const __FlashStringHelper* chunk);
+
+/**
+ * @brief Chunk aus einem nullterminierten RAM-Puffer senden
+ * @param server Referenz auf den Webserver
+ * @param chunk Zeiger auf die zu sendenden Zeichen
+ * @details Vermeidet den Umweg über einen temporären String bei
+ *          Zeichenketten-Literalen und char-Puffern.
+ */
+void sendChunk(ESPWebServer& server, const char* chunk);
+
+/**
  * @brief Send pixelated footer with navigation and system info
  * @param server Reference to web server
  * @param version Version string

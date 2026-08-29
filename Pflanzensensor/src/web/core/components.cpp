@@ -92,27 +92,48 @@ ResourceResult beginResponse(ESPWebServer& server, const String& title,
   return ResourceResult::success();
 }
 
-void sendChunk(ESPWebServer& server, const String& chunk) {
-  static char buffer[128]; // Reuse buffer
-  size_t remaining = chunk.length();
-  size_t offset = 0;
-  static unsigned long lastYield = 0;
-  const unsigned long YIELD_INTERVAL = 100; // Yield every 100ms
+// sendChunk() ist die mit Abstand meistgenutzte Funktion im Web-Layer
+// (über 900 Aufrufstellen). Die frühere Implementierung nahm ausschließlich
+// einen const String& entgegen und kostete pro Aufruf drei Heap-Allokationen:
+//
+//   1. sendChunk(server, F("...")) konvertierte das Flash-Literal implizit in
+//      einen Heap-String - die F()-Ersparnis war damit zur Laufzeit wieder weg
+//   2. chunk.substring() legte pro 127-Byte-Block einen weiteren String an
+//      (nur um in einen statischen 128-Byte-Puffer zu kopieren)
+//   3. server.sendContent(const char*) baute daraus erneut einen String
+//
+// Beim Aufbau einer Admin-Seite ergab das mehrere hundert kurzlebige
+// Allokationen - der Hauptgrund für die Heap-Fragmentierung.
+//
+// Die Überladungen greifen automatisch für alle bestehenden Aufrufstellen:
+// F("...") trifft jetzt die Flash-Variante (ganz ohne Heap), Zeichenketten-
+// Literale die const char*-Variante.
 
-  while (remaining > 0) {
-    size_t toSend =
-        std::min<size_t>(remaining, sizeof(buffer) - 1); // Leave space for null terminator
-    chunk.substring(offset, offset + toSend).toCharArray(buffer, sizeof(buffer));
-    server.sendContent(buffer);
-    remaining -= toSend;
-    offset += toSend;
-
-    // Yield periodically to prevent watchdog timeouts
-    if (millis() - lastYield > YIELD_INTERVAL) {
-      yield();
-      lastYield = millis();
-    }
+void sendChunk(ESPWebServer& server, const __FlashStringHelper* chunk) {
+  if (!chunk) {
+    return;
   }
+  PGM_P p = reinterpret_cast<PGM_P>(chunk);
+  size_t len = strlen_P(p);
+  if (len > 0) {
+    server.sendContent_P(p, len); // direkt aus dem Flash, keine Allokation
+  }
+  optimistic_yield(1000);
+}
+
+void sendChunk(ESPWebServer& server, const char* chunk) {
+  if (!chunk || chunk[0] == '\0') {
+    return;
+  }
+  server.sendContent(chunk, strlen(chunk));
+  optimistic_yield(1000);
+}
+
+void sendChunk(ESPWebServer& server, const String& chunk) {
+  if (chunk.length() > 0) {
+    server.sendContent(chunk.c_str(), chunk.length());
+  }
+  optimistic_yield(1000);
 }
 
 void sendPixelatedFooter(ESPWebServer& server, const String& version, const String& buildDate,

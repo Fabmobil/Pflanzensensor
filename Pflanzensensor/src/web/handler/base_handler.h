@@ -439,6 +439,20 @@ protected:
   void sendChunk(const String& chunk) { Component::sendChunk(_server, chunk); }
 
   /**
+   * @brief Chunk direkt aus dem Flash senden (keine Heap-Allokation)
+   * @param chunk Flash-String, üblicherweise aus F("...")
+   * @details Ohne diese Überladung würde jedes sendChunk(F("...")) in den
+   *          Handlern zuerst einen Heap-String erzeugen.
+   */
+  void sendChunk(const __FlashStringHelper* chunk) { Component::sendChunk(_server, chunk); }
+
+  /**
+   * @brief Chunk aus einem nullterminierten RAM-Puffer senden
+   * @param chunk Zeiger auf die zu sendenden Zeichen
+   */
+  void sendChunk(const char* chunk) { Component::sendChunk(_server, chunk); }
+
+  /**
    * @brief End chunked response
    * @details Finalizes chunked response:
    *          - Sends empty chunk
