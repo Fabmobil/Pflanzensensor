@@ -120,12 +120,7 @@ void SensorMeasurementCycleManager::handleStateError(const String& error) {
   // Zustand auf ERROR setzen
   m_state.setState(MeasurementState::ERROR, m_sensor->getName());
 
-  // Fehler mit passender Priorität protokollieren
-  if (previousState == MeasurementState::SENDING_INFLUX) {
-    LOG_WARN(F("MeasurementCycle"), m_sensor->getName() + String(F(": Netzwerkfehler: ")) + error);
-  } else {
-    LOG_ERROR(F("MeasurementCycle"), m_sensor->getName() + String(F(": Sensorfehler: ")) + error);
-  }
+  LOG_ERROR(F("MeasurementCycle"), m_sensor->getName() + String(F(": Sensorfehler: ")) + error);
 }
 
 /**

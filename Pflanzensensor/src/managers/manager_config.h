@@ -22,7 +22,6 @@
 #include "manager_config_sensor_tracker.h"
 #include "manager_config_types.h"
 #include "manager_config_validator.h"
-#include "manager_config_web_handler.h"
 
 // Forward declarations
 class ResourceManager;
@@ -67,13 +66,6 @@ public:
   ConfigResult resetToDefaults();
 
   // Web interface
-  /**
-   * @brief Update configuration from web server
-   * @param server Reference to the ESP8266 web server
-   * @return Result of the update operation
-   */
-  ConfigResult updateFromWeb(ESPWebServer& server);
-
   // Main configuration setters
   /**
    * @brief Set the admin password
@@ -90,25 +82,11 @@ public:
   ConfigResult setMD5Verification(bool enabled);
 
   /**
-   * @brief Set the Collectd status
-   * @param enabled True to enable Collectd, false to disable
-   * @return Result of the set operation
-   */
-  ConfigResult setCollectdEnabled(bool enabled);
-
-  /**
    * @brief Set the file logging status
    * @param enabled True to enable file logging, false to disable
    * @return Result of the set operation
    */
   ConfigResult setFileLoggingEnabled(bool enabled);
-
-  /**
-   * @brief Set the Collectd single measurement sending status
-   * @param enable True to enable sending single measurements, false to disable
-   * @return Result of the set operation
-   */
-  ConfigResult setCollectdSendSingleMeasurement(bool enable);
 
   /**
    * @brief Set a configuration value by key (legacy method)
@@ -142,12 +120,6 @@ public:
    * @return True if MD5 verification is enabled, false otherwise
    */
   inline bool isMD5Verification() const { return m_configData.md5Verification; }
-
-  /**
-   * @brief Check if Collectd is enabled
-   * @return True if Collectd is enabled, false otherwise
-   */
-  inline bool isCollectdEnabled() const { return m_configData.collectdEnabled; }
 
   /**
    * @brief Check if file logging is enabled
@@ -524,7 +496,6 @@ private:
   ConfigManager& operator=(const ConfigManager&) = delete;
 
   ConfigData m_configData;
-  ConfigWebHandler m_webHandler;
   ConfigNotifier m_notifier;
   DebugConfig m_debugConfig;
   SensorErrorTracker m_sensorErrorTracker;

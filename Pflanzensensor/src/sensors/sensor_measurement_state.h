@@ -28,7 +28,6 @@ enum class MeasurementState {
   WARMUP,            /**< Sensor is warming up (if needed) */
   MEASURING,         /**< Taking measurements */
   PROCESSING,        /**< Processing measurement results */
-  SENDING_INFLUX,    /**< Sending data to InfluxDB */
   DEINITIALIZING,    /**< Sensor is being deinitialized */
   ERROR              /**< Error state */
 };
@@ -181,8 +180,6 @@ struct MeasurementStateInfo {
       return "MEASURING";
     case MeasurementState::PROCESSING:
       return "PROCESSING";
-    case MeasurementState::SENDING_INFLUX:
-      return "SENDING_INFLUX";
     case MeasurementState::DEINITIALIZING:
       return "DEINITIALIZING";
     case MeasurementState::ERROR:

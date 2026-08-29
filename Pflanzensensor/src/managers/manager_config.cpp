@@ -22,8 +22,7 @@
 extern std::unique_ptr<DisplayManager> displayManager;
 #endif
 
-ConfigManager::ConfigManager()
-    : m_webHandler(*this), m_debugConfig(m_notifier), m_sensorErrorTracker(m_notifier) {}
+ConfigManager::ConfigManager() : m_debugConfig(m_notifier), m_sensorErrorTracker(m_notifier) {}
 
 ConfigManager& ConfigManager::getInstance() {
   static ConfigManager instance;
@@ -124,10 +123,6 @@ ConfigManager::ConfigResult ConfigManager::resetToDefaults() {
   return ConfigResult::success();
 }
 
-ConfigManager::ConfigResult ConfigManager::updateFromWeb(ESPWebServer& server) {
-  return m_webHandler.updateFromWebRequest(server);
-}
-
 ConfigManager::ConfigResult ConfigManager::setAdminPassword(const String& password) {
 
   auto validation = ConfigValidator::validatePassword(password);
@@ -157,16 +152,6 @@ ConfigManager::ConfigResult ConfigManager::setMD5Verification(bool enabled) {
                                                    val);
       },
       "md5_verification", true);
-}
-
-ConfigManager::ConfigResult ConfigManager::setCollectdEnabled(bool enabled) {
-  return updateBoolConfig(
-      m_configData.collectdEnabled, enabled,
-      [](bool val) {
-        return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "collectd_en",
-                                                   val);
-      },
-      "collectd_enabled", true);
 }
 
 ConfigManager::ConfigResult ConfigManager::setFileLoggingEnabled(bool enabled) {
@@ -247,11 +232,6 @@ ConfigManager::ConfigResult ConfigManager::setDoFirmwareUpgrade(bool enable) {
   return ConfigResult::success();
 }
 
-ConfigManager::ConfigResult ConfigManager::setCollectdSendSingleMeasurement(bool enable) {
-  notifyConfigChange("collectd_single_measurement", enable ? "true" : "false", true);
-  return ConfigResult::success();
-}
-
 ConfigManager::ConfigResult ConfigManager::setLogLevel(const String& level) {
 
   auto validation = ConfigValidator::validateLogLevel(level);
@@ -295,14 +275,6 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const char* key, const
     bool newValue = (valueStr == "true" || valueStr == "1");
     if (m_configData.md5Verification != newValue) {
       auto result = setMD5Verification(newValue);
-      if (!result.isSuccess()) {
-        return result;
-      }
-    }
-  } else if (keyStr == "collectd_enabled") {
-    bool newValue = (valueStr == "true" || valueStr == "1");
-    if (m_configData.collectdEnabled != newValue) {
-      auto result = setCollectdEnabled(newValue);
       if (!result.isSuccess()) {
         return result;
       }
@@ -389,14 +361,6 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
       auto result = setFileLoggingEnabled(enabled);
       if (result.isSuccess()) {
         LOG_INFO(F("ConfigM"), String(F("Einstellung geändert: file_log = ")) +
-                                   (enabled ? F("true") : F("false")));
-      }
-      return result;
-    } else if (key == "collectd_enabled") {
-      bool enabled = (value == "true" || value == "1");
-      auto result = setCollectdEnabled(enabled);
-      if (result.isSuccess()) {
-        LOG_INFO(F("ConfigM"), String(F("Einstellung geändert: collectd_enabled = ")) +
                                    (enabled ? F("true") : F("false")));
       }
       return result;

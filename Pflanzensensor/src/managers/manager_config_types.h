@@ -63,7 +63,6 @@ struct Thresholds {
 struct ConfigData {
   String adminPassword;
   bool md5Verification;
-  bool collectdEnabled;
   bool fileLoggingEnabled;
   // Removed: bool doFirmwareUpgrade;
   // Removed: bool fileSystemUpdatePending;

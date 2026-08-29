@@ -334,7 +334,6 @@ bool ConfigPersistence::backupPreferencesToFile() {
     general["device_name"] = prefs.getString("device_name", "Pflanzensensor");
     general["admin_pwd"] = prefs.getString("admin_pwd", "admin");
     general["md5_verify"] = prefs.getBool("md5_verify", true);
-    general["collectd_en"] = prefs.getBool("collectd_en", false);
     general["file_log"] = prefs.getBool("file_log", false);
     general["flower_sens"] = prefs.getString("flower_sens", "");
     prefs.end();
@@ -528,8 +527,6 @@ bool ConfigPersistence::restorePreferencesFromJson(const DynamicJsonDocument& do
         prefs.putString("admin_pwd", general["admin_pwd"].as<String>().c_str());
       if (general.containsKey("md5_verify"))
         prefs.putBool("md5_verify", general["md5_verify"]);
-      if (general.containsKey("collectd_en"))
-        prefs.putBool("collectd_en", general["collectd_en"]);
       if (general.containsKey("file_log"))
         prefs.putBool("file_log", general["file_log"]);
       if (general.containsKey("flower_sens"))

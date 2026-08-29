@@ -151,11 +151,6 @@ private:
   void handleProcessing();
 
   /**
-   * @brief Handles the SENDING_INFLUX state
-   */
-  void handleSendingInflux();
-
-  /**
    * @brief Handles the DEINITIALIZING state
    */
   void handleDeinitializing();

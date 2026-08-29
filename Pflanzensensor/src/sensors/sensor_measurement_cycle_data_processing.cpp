@@ -126,28 +126,8 @@ void SensorMeasurementCycleManager::handleProcessing() {
   // NOTE: Slot will be released in handleDeinitializing() AFTER all cleanup
   // to prevent other sensors from interfering while we're still cleaning up
 
-#if USE_INFLUXDB
-  m_state.setState(MeasurementState::SENDING_INFLUX, m_sensor->getName());
-#else
-  m_state.setState(MeasurementState::DEINITIALIZING, m_sensor->getName());
-#endif
-}
-void SensorMeasurementCycleManager::handleSendingInflux() {
-#if USE_INFLUXDB
-
-  auto result = influxdbSendMeasurement(m_sensor, m_sensor->getMeasurementData());
-  if (!result.isSuccess()) {
-    LOG_ERROR(F("MeasurementCycle"),
-              String(F("Fehler beim Senden der Daten an InfluxDB: ")) + result.getMessage());
-    m_state.setState(MeasurementState::DEINITIALIZING, m_sensor->getName());
-    return;
-  }
-
-#endif
-
   m_state.setState(MeasurementState::DEINITIALIZING, m_sensor->getName());
 }
-
 void SensorMeasurementCycleManager::handleDeinitializing() {
   // CRITICAL: Flush pending updates for THIS sensor immediately after measurement cycle
   // This ensures data is persisted right away instead of waiting for periodic flush

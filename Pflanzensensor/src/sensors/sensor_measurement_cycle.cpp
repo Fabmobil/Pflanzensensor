@@ -79,9 +79,6 @@ bool SensorMeasurementCycleManager::updateMeasurementCycle() {
   case MeasurementState::PROCESSING:
     handleProcessing();
     break;
-  case MeasurementState::SENDING_INFLUX:
-    handleSendingInflux();
-    break;
   case MeasurementState::DEINITIALIZING:
     handleDeinitializing();
     break;

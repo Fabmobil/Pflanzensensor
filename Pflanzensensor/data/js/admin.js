@@ -18,7 +18,6 @@ const CONFIG_KEY_NAMES = {
   'device_name': 'Gerätename',
   'admin_pwd': 'Administrator-Passwort',
   'md5_verify': 'MD5-Überprüfung',
-  'collectd_enabled': 'InfluxDB/Collectd',
   'file_log': 'Datei-Logging',
   'flower_sens': 'Flower-Status Sensor',
 
@@ -343,7 +342,6 @@ function mapFieldToConfig(fieldName, section) {
     const mapping = {
       'device_name': { namespace: 'general', key: 'device_name', type: 'string' },
       'md5_verification': { namespace: 'general', key: 'md5_verify', type: 'bool' },
-      'collectd_enabled': { namespace: 'general', key: 'collectd_enabled', type: 'bool' },
       'admin_password': { namespace: 'general', key: 'admin_pwd', type: 'string' }
     };
     return mapping[fieldName] || null;
