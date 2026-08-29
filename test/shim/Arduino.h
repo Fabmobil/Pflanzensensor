@@ -15,6 +15,8 @@
 #ifndef NATIVE_TEST_ARDUINO_H
 #define NATIVE_TEST_ARDUINO_H
 
+#include <algorithm>
+#include <climits>
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -42,6 +44,10 @@ inline void advanceMillis(unsigned long delta) { native_test::g_millis += delta;
 inline void delay(unsigned long) {}
 inline void yield() {}
 inline void randomSeed(unsigned long) {}
+
+using std::isnan;
+using std::max;
+using std::min;
 
 // ------------------------------------------------------------ PROGMEM
 
@@ -84,6 +90,7 @@ public:
   const char* c_str() const { return m_data.c_str(); }
   size_t length() const { return m_data.size(); }
   bool isEmpty() const { return m_data.empty(); }
+  bool startsWith(const char* prefix) const { return m_data.rfind(prefix, 0) == 0; }
   void clear() { m_data.clear(); }
 
   bool operator==(const String& other) const { return m_data == other.m_data; }
@@ -117,5 +124,24 @@ private:
 
 using boolean = bool;
 using byte = uint8_t;
+
+// -------------------------------------------------------------- ESP-Objekt
+
+/**
+ * @brief Nachbau der globalen ESP-Instanz des Arduino-Cores
+ * @details Nur getFreeHeap() und restart() werden von der getesteten Logik
+ *          benutzt. getFreeHeap() liefert testbar einen festen, ausreichend
+ *          großen Wert; restart() zählt nur, ob es aufgerufen wurde - ein
+ *          echter Neustart ist im Testprozess weder möglich noch gewollt.
+ */
+class ESPClass {
+public:
+  uint32_t freeHeap = 40000;
+  unsigned restartCount = 0;
+
+  uint32_t getFreeHeap() const { return freeHeap; }
+  void restart() { restartCount++; }
+};
+inline ESPClass ESP;
 
 #endif // NATIVE_TEST_ARDUINO_H
