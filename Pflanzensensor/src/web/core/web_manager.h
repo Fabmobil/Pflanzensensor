@@ -396,6 +396,21 @@ private:
    */
   void serveStaticFile(const String& path, const String& contentType, const String& cacheControl);
 
+  /**
+   * @brief Statische Datei ausliefern, falls die URL auf ein Asset zeigt
+   * @param uri Angefragter Pfad
+   * @return true wenn die Datei ausgeliefert wurde
+   * @details Ersetzt die früheren 25 Einzelregistrierungen per _server->on()
+   *          für jede CSS-, JS- und Bilddatei. Jede davon war ein
+   *          RequestHandler-Knoten mit eigenem String-URI und std::function im
+   *          Heap - zusammen rund 1,3 KB, nur um Dateien auszuliefern, deren
+   *          Pfad direkt aus der URL folgt.
+   *
+   *          Bedient /css/, /js/, /img/ und /favicon.ico. Pfade mit ".." oder
+   *          Backslash werden abgewiesen.
+   */
+  bool tryServeStaticFile(const String& uri);
+
   // Utility methods (web_manager_utils.cpp)
   /**
    * @brief Check if device is in captive portal AP mode

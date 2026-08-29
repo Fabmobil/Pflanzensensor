@@ -133,6 +133,12 @@ void WebManager::setupRoutes() {
     String uri = _server->uri();
     HTTPMethod method = _server->method();
 
+    // Statische Assets zuerst: /css/, /js/, /img/ und /favicon.ico kommen
+    // direkt aus LittleFS, ohne dafür je eine eigene Route zu registrieren.
+    if (method == HTTP_GET && tryServeStaticFile(uri)) {
+      return;
+    }
+
     // Let router handle the request (will run middleware and find routes)
     if (_router && _router->handleRequest(method, uri)) {
       // Request was handled by router
@@ -203,6 +209,11 @@ void WebManager::setupMinimalRoutes() {
                                           : method == HTTP_POST ? F("POST")
                                                                 : F("OTHER")) +
                                    String(F(" ")) + uri);
+
+    // Statische Assets auch im Minimalmodus (Update-Seite braucht CSS und JS)
+    if (method == HTTP_GET && tryServeStaticFile(uri)) {
+      return;
+    }
 
     // Let router handle the request
     if (_router && _router->handleRequest(method, uri)) {

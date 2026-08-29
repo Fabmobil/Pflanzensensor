@@ -160,24 +160,8 @@ ResourceResult WebManager::setupMinimalServices() {
                                 F("OTA-Handler konnte nicht angelegt werden"));
   }
 
-  // Register essential static files for OTA update page
-  // CSS files needed for update page
-  _server->on("/css/style.css", HTTP_GET,
-              [this]() { serveStaticFile("/css/style.css", "text/css", "max-age=86400"); });
-
-  _server->on("/css/admin.css", HTTP_GET,
-              [this]() { serveStaticFile("/css/admin.css", "text/css", "max-age=86400"); });
-
-  // JavaScript file for OTA functionality
-  _server->on("/js/ota.js", HTTP_GET, [this]() {
-    serveStaticFile("/js/ota.js", "application/javascript", "max-age=86400");
-  });
-
-  // Favicon (often requested by browsers)
-  _server->on("/favicon.ico", HTTP_GET,
-              [this]() { serveStaticFile("/favicon.ico", "image/x-icon", "max-age=86400"); });
-
-  LOG_DEBUG(F("WebManager"), F("Statische Dateien für Update-Modus registriert"));
+  // Statische Dateien laufen auch im Minimalmodus über tryServeStaticFile()
+  // im onNotFound-Handler (siehe setupMinimalRoutes()).
 
   _server->begin();
 
@@ -185,83 +169,17 @@ ResourceResult WebManager::setupMinimalServices() {
 }
 
 ResourceResult WebManager::setupServices() {
-  // CSS files
-  _server->on("/css/style.css", HTTP_GET,
-              [this]() { serveStaticFile("/css/style.css", "text/css", "max-age=86400"); });
-
-  _server->on("/css/start.css", HTTP_GET,
-              [this]() { serveStaticFile("/css/start.css", "text/css", "max-age=86400"); });
-
-  _server->on("/css/admin.css", HTTP_GET,
-              [this]() { serveStaticFile("/css/admin.css", "text/css", "max-age=86400"); });
-
-  _server->on("/css/logs.css", HTTP_GET,
-              [this]() { serveStaticFile("/css/logs.css", "text/css", "max-age=86400"); });
-
-  // JavaScript files
-  _server->on("/js/sensors.js", HTTP_GET, [this]() {
-    serveStaticFile("/js/sensors.js", "application/javascript", "max-age=86400");
-  });
-
-  _server->on("/js/admin.js", HTTP_GET, [this]() {
-    serveStaticFile("/js/admin.js", "application/javascript", "max-age=86400");
-  });
-
-  _server->on("/js/logs.js", HTTP_GET, [this]() {
-    serveStaticFile("/js/logs.js", "application/javascript", "max-age=86400");
-  });
-
-  _server->on("/js/ota.js", HTTP_GET, [this]() {
-    serveStaticFile("/js/ota.js", "application/javascript", "max-age=86400");
-  });
-
-  _server->on("/js/admin_sensors.js", HTTP_GET, [this]() {
-    serveStaticFile("/js/admin_sensors.js", "application/javascript", "max-age=86400");
-  });
-
-  _server->on("/js/admin_display.js", HTTP_GET, [this]() {
-    serveStaticFile("/js/admin_display.js", "application/javascript", "max-age=86400");
-  });
-
-  // Images
-  _server->on("/img/cloud_big.png", HTTP_GET,
-              [this]() { serveStaticFile("/img/cloud_big.png", "image/png", "max-age=86400"); });
-
-  _server->on("/img/flower_big.gif", HTTP_GET,
-              [this]() { serveStaticFile("/img/flower_big.gif", "image/gif", "max-age=86400"); });
-
-  _server->on("/img/face-happy.gif", HTTP_GET,
-              [this]() { serveStaticFile("/img/face-happy.gif", "image/gif", "max-age=86400"); });
-
-  _server->on("/img/face-neutral.gif", HTTP_GET,
-              [this]() { serveStaticFile("/img/face-neutral.gif", "image/gif", "max-age=86400"); });
-
-  _server->on("/img/face-sad.gif", HTTP_GET,
-              [this]() { serveStaticFile("/img/face-sad.gif", "image/gif", "max-age=86400"); });
-
-  _server->on("/img/face-error.gif", HTTP_GET,
-              [this]() { serveStaticFile("/img/face-error.gif", "image/gif", "max-age=86400"); });
-
-  _server->on("/img/sensor-leaf.png", HTTP_GET,
-              [this]() { serveStaticFile("/img/sensor-leaf.png", "image/png", "max-age=86400"); });
-
-  _server->on("/img/sensor-stem.png", HTTP_GET,
-              [this]() { serveStaticFile("/img/sensor-stem.png", "image/png", "max-age=86400"); });
-
-  _server->on("/img/earth.png", HTTP_GET,
-              [this]() { serveStaticFile("/img/earth.png", "image/png", "max-age=86400"); });
-
-  _server->on("/img/fabmobil.png", HTTP_GET,
-              [this]() { serveStaticFile("/img/fabmobil.png", "image/png", "max-age=86400"); });
-
-  // Favicon
-  _server->on("/favicon.ico", HTTP_GET,
-              [this]() { serveStaticFile("/favicon.ico", "image/x-icon", "max-age=86400"); });
-
-  LOG_DEBUG(F("WebManager"), F("Routen für statische Dateien konfiguriert"));
-
-  LOG_INFO(F("WebManager"), F("Statische Dateiauslieferung erfolgreich initialisiert"));
-
+  // Statische Dateien werden nicht mehr einzeln registriert.
+  //
+  // Hier standen 21 Aufrufe von _server->on() - je einer pro CSS-, JS- und
+  // Bilddatei. Jeder davon legt im ESP8266WebServer einen RequestHandler an:
+  // ein Listenknoten mit eigenem String-URI und einer std::function, zusammen
+  // rund 1,3 KB Heap, nur um Dateien auszuliefern, deren Pfad direkt aus der
+  // URL folgt.
+  //
+  // Die Auslieferung übernimmt jetzt tryServeStaticFile() im
+  // onNotFound-Handler (siehe setupRoutes() bzw. setupMinimalRoutes()).
+  LOG_INFO(F("WebManager"), F("Statische Dateien werden über den Asset-Handler ausgeliefert"));
   return ResourceResult::success();
 }
 
