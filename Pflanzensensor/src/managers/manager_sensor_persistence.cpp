@@ -14,6 +14,7 @@
 #include "managers/manager_config_preferences.h"
 #include "managers/manager_resource.h"
 #include "managers/manager_sensor.h"
+#include "managers/pending_update_queue.h"
 #include "sensors/sensors.h"
 #if USE_ANALOG
 #include "sensors/sensor_analog.h"
@@ -23,41 +24,11 @@
 // Write-behind cache: Instead of writing immediately, we collect all changes
 // in RAM and flush them periodically (e.g., every 60 seconds). This drastically
 // reduces flash wear and eliminates blocking writes during measurements.
-enum class PendingUpdateType {
-  RAW_MIN_MAX,        // int absoluteRawMin, absoluteRawMax
-  ABSOLUTE_MIN_MAX,   // float absoluteMin, absoluteMax
-  CALIBRATED_MIN_MAX, // int minValue, maxValue, bool inverted
-  LAST_VALUE          // float lastValue, int lastRawValue
-};
-
-struct PendingUpdate {
-  PendingUpdateType type;
-  String sensorId;
-  size_t measurementIndex;
-  unsigned long timestamp; // When this update was queued
-
-  // Union to save memory - only one set of values is active at a time
-  union {
-    struct {
-      int absoluteRawMin;
-      int absoluteRawMax;
-    } raw;
-    struct {
-      float absoluteMin;
-      float absoluteMax;
-    } absolute;
-    struct {
-      int minValue;
-      int maxValue;
-      bool inverted;
-    } calibrated;
-    struct {
-      float lastValue;
-      int lastRawValue;
-    } last;
-  } data;
-};
-
+//
+// PendingUpdate/PendingUpdateType und die Kernlogik der Warteschlange
+// (Duplikate zusammenfassen, bei Überlauf den ältesten Eintrag verdrängen)
+// stehen in pending_update_queue.h - hardwareunabhängig und deshalb nativ
+// testbar, siehe dort.
 static std::vector<PendingUpdate> g_pendingUpdates;
 
 SensorPersistence::PersistenceResult SensorPersistence::load() {
@@ -365,40 +336,34 @@ SensorPersistence::updateAnalogRawMinMax(const String& sensorId, size_t measurem
 }
 
 /**
- * @brief Ältesten Eintrag aus der Warteschlange entfernen und auf Flash schreiben
- * @details Wird aufgerufen wenn die Warteschlange voll ist (MAX_PENDING erreicht).
- *          Schreibt den ältesten Eintrag sofort auf Flash, um Platz für neue zu schaffen.
+ * @brief Einen einzelnen Eintrag auf Flash schreiben
+ * @details Reine I/O-Dispatch-Funktion, keine Warteschlangenlogik - die steckt
+ *          in pending_update_queue.h. Aufgerufen für einen Eintrag, den
+ *          PendingUpdateQueue::enqueue() wegen Überlaufs verdrängt hat.
  */
-static void flushOldestPendingUpdate() {
-  if (g_pendingUpdates.empty())
-    return;
-
-  LOG_WARN(F("SensorP"), F("Warteschlange voll, ältesten Eintrag schreiben"));
-  PendingUpdate oldest = g_pendingUpdates.front();
-  g_pendingUpdates.erase(g_pendingUpdates.begin());
-
-  switch (oldest.type) {
+static void writeUpdateToFlash(const PendingUpdate& update) {
+  switch (update.type) {
   case PendingUpdateType::RAW_MIN_MAX:
-    SensorPersistence::updateAnalogRawMinMax(oldest.sensorId, oldest.measurementIndex,
-                                             oldest.data.raw.absoluteRawMin,
-                                             oldest.data.raw.absoluteRawMax);
+    SensorPersistence::updateAnalogRawMinMax(update.sensorId, update.measurementIndex,
+                                             update.data.raw.absoluteRawMin,
+                                             update.data.raw.absoluteRawMax);
     break;
   case PendingUpdateType::ABSOLUTE_MIN_MAX:
-    SensorPersistence::updateAbsoluteMinMax(oldest.sensorId, oldest.measurementIndex,
-                                            oldest.data.absolute.absoluteMin,
-                                            oldest.data.absolute.absoluteMax);
+    SensorPersistence::updateAbsoluteMinMax(update.sensorId, update.measurementIndex,
+                                            update.data.absolute.absoluteMin,
+                                            update.data.absolute.absoluteMax);
     break;
   case PendingUpdateType::CALIBRATED_MIN_MAX:
     SensorPersistence::updateAnalogMinMaxIntegerNoReload(
-        oldest.sensorId, oldest.measurementIndex, oldest.data.calibrated.minValue,
-        oldest.data.calibrated.maxValue, oldest.data.calibrated.inverted);
+        update.sensorId, update.measurementIndex, update.data.calibrated.minValue,
+        update.data.calibrated.maxValue, update.data.calibrated.inverted);
     break;
   case PendingUpdateType::LAST_VALUE: {
     DynamicJsonDocument doc(128);
     JsonObject settings = doc.to<JsonObject>();
-    settings["lastValue"] = oldest.data.last.lastValue;
-    settings["lastRawValue"] = oldest.data.last.lastRawValue;
-    SensorPersistence::updateMeasurementSettings(oldest.sensorId, oldest.measurementIndex,
+    settings["lastValue"] = update.data.last.lastValue;
+    settings["lastRawValue"] = update.data.last.lastRawValue;
+    SensorPersistence::updateMeasurementSettings(update.sensorId, update.measurementIndex,
                                                  settings);
     break;
   }
@@ -407,28 +372,19 @@ static void flushOldestPendingUpdate() {
 
 /**
  * @brief Neuen Eintrag in die Warteschlange einreihen
- * @details Prüft auf vorhandene Einträge desselben Typs/Sensors/Index und
- *          aktualisiert diese statt neue hinzuzufügen. Bei voller Warteschlange
- *          wird der älteste Eintrag zuerst auf Flash geschrieben.
+ * @details Die eigentliche Entscheidung (Duplikat zusammenfassen, bei
+ *          Überlauf ältesten Eintrag verdrängen) trifft
+ *          PendingUpdateQueue::enqueue() - hier nur noch die Reaktion auf
+ *          einen verdrängten Eintrag: sofort auf Flash schreiben, um Platz
+ *          geschaffen zu haben.
  */
 static void enqueuePendingUpdate(PendingUpdate&& update) {
-  // Vorhandenen Eintrag desselben Typs aktualisieren statt neuen hinzufügen
-  for (auto& u : g_pendingUpdates) {
-    if (u.type == update.type && u.sensorId == update.sensorId &&
-        u.measurementIndex == update.measurementIndex) {
-      u.data = update.data;
-      u.timestamp = millis();
-      return;
-    }
-  }
-
-  // Warteschlange voll → ältesten Eintrag schreiben
   constexpr size_t MAX_PENDING = 32;
-  if (g_pendingUpdates.size() >= MAX_PENDING) {
-    flushOldestPendingUpdate();
+  auto evicted = PendingUpdateQueue::enqueue(g_pendingUpdates, std::move(update), MAX_PENDING);
+  if (evicted) {
+    LOG_WARN(F("SensorP"), F("Warteschlange voll, ältesten Eintrag schreiben"));
+    writeUpdateToFlash(*evicted);
   }
-
-  g_pendingUpdates.push_back(std::move(update));
 }
 
 void SensorPersistence::enqueueAnalogRawMinMax(const String& sensorId, size_t measurementIndex,
