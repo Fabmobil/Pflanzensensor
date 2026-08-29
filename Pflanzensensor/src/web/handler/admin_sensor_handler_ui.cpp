@@ -140,7 +140,16 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i, si
   sendChunk(String(i));
   sendChunk(F("' value='"));
   sendChunk(config.measurements[i].name);
-  sendChunk(F("' placeholder='Messwert Name'></div>"));
+  sendChunk(F("' placeholder='Messwert Name'> "));
+  // Messen button next to the sensor name, so calibrating thresholds
+  // does not require scrolling back up to the sensor-wide button.
+  // Triggers a full-sensor measurement (no data-measurement-index), same
+  // as the button in the sensor header.
+  sendChunk(F("<button type='button' class='button-primary measure-button' "
+              "data-sensor='"));
+  sendChunk(id);
+  sendChunk(F("'>Messen</button>"));
+  sendChunk(F("</div>"));
 
 // Inverted scale checkbox
 #if USE_ANALOG
