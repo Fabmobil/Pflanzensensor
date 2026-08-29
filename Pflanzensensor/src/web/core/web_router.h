@@ -69,10 +69,18 @@ struct Route {
 class WebRouter {
 public:
   // Configuration constants
-  /// Maximum total routes - with lazy-loading and route cleanup, only active handlers'
-  /// routes are in memory. Typical usage: ~10-15 routes per handler * 4 cached handlers = 40-60.
-  /// Set to 50 with safety margin.
-  static constexpr size_t MAX_ROUTES = 50;
+  /// Maximale Anzahl gleichzeitig registrierter Routen.
+  ///
+  /// Der Wert bestimmt direkt, wie viel Heap der Router beim Start reserviert
+  /// (_routes.reserve(MAX_ROUTES)). Ein Route-Eintrag umfasst zwei Strings, ein
+  /// std::function und die Methode, also grob 64 Byte.
+  ///
+  /// 32 ist die Gesamtzahl der addRoute()-Aufrufe im gesamten Projekt - mehr
+  /// Routen kann es also nie gleichzeitig geben, selbst wenn alle Handler
+  /// zugleich im LRU-Cache lägen. Kleinere Werte sind nicht sicher: mit 25
+  /// scheiterte im Test die Registrierung von /admin/display und
+  /// /getLatestValues mit "Routen-Limit überschritten".
+  static constexpr size_t MAX_ROUTES = 32;
   /// Maximum number of middleware functions
   static constexpr size_t MAX_MIDDLEWARE = 8;
   /// Minimum required heap space for operation

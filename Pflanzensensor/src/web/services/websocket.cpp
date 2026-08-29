@@ -61,27 +61,6 @@ void WebSocketService::stop() {
 
 WebSocketService::~WebSocketService() { stop(); }
 
-bool WebSocketService::RingBuffer::write(const char* data, size_t len) {
-  if (len > RING_BUFFER_SIZE - ((writePos - readPos) % RING_BUFFER_SIZE)) {
-    return false;
-  }
-  for (size_t i = 0; i < len; i++) {
-    buffer[writePos % RING_BUFFER_SIZE] = data[i];
-    writePos++;
-  }
-  return true;
-}
-
-size_t WebSocketService::RingBuffer::read(char* data, size_t maxLen) {
-  size_t available = (writePos - readPos) % RING_BUFFER_SIZE;
-  size_t len = min(available, maxLen);
-  for (size_t i = 0; i < len; i++) {
-    data[i] = buffer[readPos % RING_BUFFER_SIZE];
-    readPos++;
-  }
-  return len;
-}
-
 void WebSocketService::loop() {
   if (_wsServer) {
     _wsServer->loop();

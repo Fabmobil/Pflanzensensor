@@ -17,8 +17,6 @@
 class WebSocketService {
 public:
   static constexpr size_t MAX_CLIENTS = 1;
-  // Reduced ring buffer to save RAM on ESP8266
-  static constexpr size_t RING_BUFFER_SIZE = 512;
   // Keep messages reasonably sized to avoid large static buffers
   static constexpr size_t MAX_MESSAGE_SIZE = 256;
 
@@ -56,18 +54,12 @@ private:
   WebSocketService(const WebSocketService&) = delete;
   WebSocketService& operator=(const WebSocketService&) = delete;
 
-  struct RingBuffer {
-    char buffer[RING_BUFFER_SIZE];
-    size_t readPos = 0;
-    size_t writePos = 0;
-
-    bool write(const char* data, size_t len);
-    size_t read(char* data, size_t maxLen);
-  };
+  // Hier lag ein RingBuffer mit 512 Byte Puffer. Weder write() noch read()
+  // wurden je aufgerufen - die 512 Byte waren dauerhaft belegter RAM ohne
+  // Funktion. Entfernt.
 
   std::unique_ptr<WebSocketsServer> _wsServer;
   WebSocketEventHandler _eventHandler;
-  RingBuffer m_ringBuffer;
   // Use a wider bitmask to safely support multiple client ids without UB
   // when shifting bits. Keep memory small but sufficient for expected clients.
   uint32_t m_connectedClients = 0;
