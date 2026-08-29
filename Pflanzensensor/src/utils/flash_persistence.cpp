@@ -139,12 +139,15 @@ ResourceResult FlashPersistence::saveToFlash() {
     // For general namespace
     if (strcmp(ns, PreferencesNamespaces::GENERAL) == 0) {
       textData += String(ns) + ":initialized=1\n"; // Marker key for namespace existence
-      textData += String(ns) + ":device_name=" + prefs.getString("device_name", "") + "\n";
-      textData += String(ns) + ":admin_pwd=" + prefs.getString("admin_pwd", "") + "\n";
+      // Vorgaben identisch zum Ladepfad halten - ein leerer Rückfallwert würde
+      // beim Wiederherstellen nach einem Dateisystem-Update ein leeres
+      // Adminpasswort setzen, falls der Schlüssel nie explizit geschrieben wurde.
+      textData += String(ns) + ":device_name=" + prefs.getString("device_name", DEVICE_NAME) + "\n";
+      textData += String(ns) + ":admin_pwd=" + prefs.getString("admin_pwd", ADMIN_PASSWORD) + "\n";
       textData += String(ns) +
                   ":md5_verify=" + String(prefs.getBool("md5_verify", false) ? "1" : "0") + "\n";
-      textData +=
-          String(ns) + ":file_log=" + String(prefs.getBool("file_log", false) ? "1" : "0") + "\n";
+      textData += String(ns) + ":file_log=" +
+                  String(prefs.getBool("file_log", FILE_LOGGING_ENABLED) ? "1" : "0") + "\n";
       textData += String(ns) + ":flower_sens=" + prefs.getString("flower_sens", "") + "\n";
     }
     // For WiFi namespaces

@@ -331,10 +331,16 @@ bool ConfigPersistence::backupPreferencesToFile() {
   // Backup general namespace
   if (prefs.begin(PreferencesNamespaces::GENERAL, true)) {
     JsonObject general = doc.createNestedObject("general");
-    general["device_name"] = prefs.getString("device_name", "Pflanzensensor");
-    general["admin_pwd"] = prefs.getString("admin_pwd", "admin");
-    general["md5_verify"] = prefs.getBool("md5_verify", true);
-    general["file_log"] = prefs.getBool("file_log", false);
+    // Die Vorgabewerte MÜSSEN mit dem Ladepfad (loadConfig, oben) und der
+    // Erstinitialisierung in manager_config_preferences.cpp übereinstimmen.
+    // Vorher standen hier eigene Werte ("Pflanzensensor", "admin", md5_verify=true):
+    // war ein Schlüssel in den Preferences nicht gesetzt, schrieb die Sicherung
+    // etwas anderes als den geltenden Standard - ein Zurückspielen änderte damit
+    // stillschweigend Gerätename und Adminpasswort.
+    general["device_name"] = prefs.getString("device_name", DEVICE_NAME);
+    general["admin_pwd"] = prefs.getString("admin_pwd", ADMIN_PASSWORD);
+    general["md5_verify"] = prefs.getBool("md5_verify", false);
+    general["file_log"] = prefs.getBool("file_log", FILE_LOGGING_ENABLED);
     general["flower_sens"] = prefs.getString("flower_sens", "");
     prefs.end();
   }
