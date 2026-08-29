@@ -296,20 +296,20 @@ ResourceResult WebManager::setupServices() {
 void WebManager::setupMiddleware() {
   logger.debug(F("WebManager"), F("Middleware wird eingerichtet..."));
 
-  // Middleware: Öffentliche Assets und Startseite sind zugänglich; Admin-Routen benötigen Authentifizierung.
+  // Middleware: Whitelist statt Blacklist. Nur explizit als öffentlich gelistete
+  // Pfade sind ohne Anmeldung erreichbar, alles andere verlangt Authentifizierung.
+  // Vorher wurde nur /admin* geprüft — dadurch war z.B. /logs frei zugänglich.
   _router->addMiddleware([this](HTTPMethod method, String url) {
-    // Öffentliche Routen
+    // Öffentliche Routen: Startseite, deren Live-Daten und statische Assets
     if (url == "/" || url == "/getLatestValues" || url.startsWith("/css/") ||
         url.startsWith("/js/") || url.startsWith("/img/") || url.startsWith("/favicon")) {
       return true;
     }
 
-    // Admin-Routen benötigen Authentifizierung
-    if (url.startsWith("/admin")) {
-      if (!_server->authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
-        _server->requestAuthentication();
-        return false;
-      }
+    // Alles Übrige benötigt Authentifizierung
+    if (!_server->authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
+      _server->requestAuthentication();
+      return false;
     }
     return true;
   });

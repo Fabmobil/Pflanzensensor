@@ -83,12 +83,9 @@ void LogHandler::handleLogs() {
   this->renderAdminPage(
       ConfigMgr.getDeviceName(), "logs",
       [this]() {
-#if USE_WEBSOCKET
-        // Add WebSocket authentication script first
-        sendChunk(F("<script>window.wsAuth = '"));
-        sendChunk(ConfigMgr.getAdminPassword());
-        sendChunk(F("';</script>"));
-#endif
+        // SICHERHEIT: Hier wurde früher das Admin-Passwort als window.wsAuth in die
+        // Seite geschrieben. Das Frontend hat es nie ausgewertet (logs.js verbindet
+        // sich fest mit Port 81), die Seite war aber öffentlich abrufbar. Entfernt.
 
         // Controls row with two cards
         sendChunk(F("<div class='log-controls-row'>"));
@@ -161,9 +158,6 @@ void LogHandler::handleLogs() {
         sendChunk(F("Initializing log viewer..."));
         sendChunk(F("</div>"));
         sendChunk(F("</div>"));
-
-        // Add WebSocket port information for the client
-        sendChunk(F("<script>window.wsPort = 81;</script>"));
 #else
         // Static log container for non-WebSocket mode
         sendChunk(F("<div class='log-container'>"));
