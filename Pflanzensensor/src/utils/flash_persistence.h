@@ -79,18 +79,11 @@ private:
    */
   static bool isChecksumVerificationEnabled();
 
-  /**
-   * @brief CRC32 fortlaufend über weitere Daten aktualisieren
-   * @param crc Bisheriger Zwischenstand (Startwert 0xFFFFFFFF)
-   * @param data Zu berücksichtigende Bytes
-   * @param length Anzahl Bytes
-   * @return Neuer Zwischenstand (am Ende mit ~crc abschließen)
-   */
-  static uint32_t crc32Update(uint32_t crc, const uint8_t* data, size_t length);
+  // CRC32-Berechnung: siehe utils/crc32.h - eigene Datei, damit der
+  // hardwareunabhängige Algorithmus ohne WiFi/LittleFS/Preferences testbar ist.
 
   static uint32_t getSafeOffset();
   static uint32_t getJsonStorageOffset(); // Second area for JSON files
-  static uint32_t calculateCRC32(const uint8_t* data, size_t length);
 
   // Helper methods for JSON storage
   static ResourceResult saveJsonToFlash();
