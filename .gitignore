@@ -47,5 +47,5 @@ logs/*
 # vscode
 .vscode
 
-# python .venv
-.venv
+# direnv
+.direnv
