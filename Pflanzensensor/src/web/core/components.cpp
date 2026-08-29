@@ -49,10 +49,7 @@ String getDisplaySSID() {
 
 ResourceResult beginResponse(ESPWebServer& server, const String& title,
                              const std::vector<String>& additionalCss) {
-  static const char CONTENT_TYPE[] PROGMEM = "Content-Type";
   static const char TEXT_HTML[] PROGMEM = "text/html";
-  static const char CONNECTION[] PROGMEM = "Connection";
-  static const char CLOSE[] PROGMEM = "close";
   static const char CACHE_CONTROL[] PROGMEM = "Cache-Control";
   static const char NO_CACHE[] PROGMEM = "no-cache";
 
@@ -65,8 +62,14 @@ ResourceResult beginResponse(ESPWebServer& server, const String& title,
   }
 
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.sendHeader(FPSTR(CONTENT_TYPE), FPSTR(TEXT_HTML));
-  server.sendHeader(FPSTR(CONNECTION), FPSTR(CLOSE));
+  // Weder Content-Type noch Connection hier per sendHeader() setzen:
+  // Content-Type setzt send() unten, Connection verwaltet der Webserver selbst.
+  // Vorher lieferte jede Seite beide Header doppelt und dabei sogar
+  // widersprüchlich aus:
+  //   Content-Type: text/html
+  //   Content-Type: text/html
+  //   Connection: close
+  //   Connection: keep-alive
   server.sendHeader(FPSTR(CACHE_CONTROL), FPSTR(NO_CACHE));
   server.send(200, FPSTR(TEXT_HTML), F(""));
 

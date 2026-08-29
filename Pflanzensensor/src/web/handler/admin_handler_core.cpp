@@ -180,10 +180,10 @@ void AdminHandler::handleDownloadLog() {
     return;
   }
 
-  _server.sendHeader(F("Content-Type"), F("text/plain"));
+  // Content-Type und Content-Length werden von setContentLength()/send() gesetzt;
+  // sie hier zusätzlich per sendHeader() zu senden, lieferte beide doppelt aus.
   _server.sendHeader(F("Content-Disposition"), F("attachment; filename=log.txt"));
   _server.sendHeader(F("Connection"), F("close"));
-  _server.sendHeader(F("Content-Length"), String(fileSize));
   _server.setContentLength(fileSize);
   _server.send(200, F("text/plain"), ""); // Send headers
 

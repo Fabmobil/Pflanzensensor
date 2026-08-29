@@ -34,9 +34,9 @@ void AdminHandler::handleDownloadConfig() {
 
   // Send as downloadable file
   _server.setContentLength(configFile.size());
-  _server.sendHeader("Content-Type", "application/json");
   _server.sendHeader("Content-Disposition", "attachment; filename=config.json");
-  _server.send(200);
+  // Content-Type über send() statt zusätzlich per sendHeader() (sonst doppelt)
+  _server.send(200, F("application/json"), F(""));
 
   // Stream file content
   const size_t bufferSize = 1024;

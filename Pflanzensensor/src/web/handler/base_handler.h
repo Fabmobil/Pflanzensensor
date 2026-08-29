@@ -420,13 +420,9 @@ protected:
    *          - Sends initial response
    */
   bool beginChunkedResponse(const String& contentType) {
-    static const char CONTENT_TYPE[] PROGMEM = "Content-Type";
-    static const char CONNECTION[] PROGMEM = "Connection";
-    static const char CLOSE[] PROGMEM = "close";
-
     _server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-    _server.sendHeader(FPSTR(CONTENT_TYPE), contentType);
-    _server.sendHeader(FPSTR(CONNECTION), FPSTR(CLOSE));
+    // Content-Type setzt send() unten bereits, Connection verwaltet der
+    // Webserver selbst - beide zusätzlich zu senden lieferte sie doppelt aus.
     _server.send(200, contentType, F(""));
     return true;
   }
