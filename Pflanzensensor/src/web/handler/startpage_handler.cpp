@@ -31,7 +31,7 @@ HandlerResult StartpageHandler::handlePost(const String& uri,
 }
 
 void StartpageHandler::handleRoot() {
-  logger.debug(F("StartpageHandler"), F("Startseite angefordert"));
+  LOG_DEBUG(F("StartpageHandler"), F("Startseite angefordert"));
   _cleaned = false;
   std::vector<String> css = {"start"};
   std::vector<String> js = {"sensors"};
@@ -71,7 +71,7 @@ void StartpageHandler::handleRoot() {
   // End response with scripts
   Component::endResponse(_server, js);
 
-  logger.debug(F("StartpageHandler"), F("Startseite erfolgreich gesendet"));
+  LOG_DEBUG(F("StartpageHandler"), F("Startseite erfolgreich gesendet"));
 }
 
 void StartpageHandler::generateAndSendSensorGrid() {
@@ -106,8 +106,8 @@ void StartpageHandler::generateAndSendSensorGrid() {
       }
 
       if (!hasValidData) {
-        logger.debug(F("StartpageHandler"),
-                     F("Skipping sensor with no data: ") + sensor->getName());
+        LOG_DEBUG(F("StartpageHandler"),
+                  String(F("Skipping sensor with no data: ")) + sensor->getName());
         continue;
       }
 
@@ -154,7 +154,7 @@ void StartpageHandler::generateSensorBox(const Sensor* sensor, float value, cons
                                          size_t measurementIndex, size_t sensorIndex) {
   // Safety check: ensure sensor exists
   if (!sensor) {
-    logger.warning(F("StartpageHandler"), F("Attempted to generate sensor box for null sensor"));
+    LOG_WARN(F("StartpageHandler"), F("Attempted to generate sensor box for null sensor"));
     return;
   }
 
@@ -256,8 +256,10 @@ const char* StartpageHandler::translateStatus(const char* status) const {
 
 StartpageHandler::~StartpageHandler() = default;
 
+bool StartpageHandler::ownsUrl(const String& url) { return url == F("/"); }
+
 RouterResult StartpageHandler::onRegisterRoutes(WebRouter& router) {
-  logger.debug(F("StartpageHandler"), F("Registering startpage routes"));
+  LOG_DEBUG(F("StartpageHandler"), F("Registering startpage routes"));
 
   auto result = router.addRoute(HTTP_GET, "/", [this]() { handleRoot(); });
   if (!result.isSuccess()) {

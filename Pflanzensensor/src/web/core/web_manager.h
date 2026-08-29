@@ -10,8 +10,8 @@
 #ifndef WEB_MANAGER_H
 #define WEB_MANAGER_H
 
+#include "utils/platform_compat.h"
 #include <ArduinoJson.h>
-#include <ESP8266WebServer.h>
 
 #include <memory>
 #include <vector>
@@ -27,6 +27,7 @@
 #include "web/handler/log_handler.h"
 #include "web/handler/sensor_handler.h"
 #include "web/handler/startpage_handler.h"
+#include "web/handler/web_metrics_handler.h"
 #include "web/handler/web_ota_handler.h"
 #include "web/services/css_service.h"
 
@@ -63,7 +64,14 @@ public:
    * @brief Set sensor manager reference
    * @param sensorManager Reference to sensor manager instance
    */
-  void setSensorManager(SensorManager& sensorManager) { _sensorManager = &sensorManager; }
+  void setSensorManager(SensorManager& sensorManager) {
+    _sensorManager = &sensorManager;
+#if USE_PROMETHEUS_METRICS
+    if (_metricsHandler) {
+      _metricsHandler->setSensorManager(sensorManager);
+    }
+#endif
+  }
 
   /**
    * @brief Get sensor manager reference
@@ -107,13 +115,13 @@ public:
 
   /**
    * @brief Get reference to underlying web server
-   * @return Reference to ESP8266WebServer instance
+   * @return Reference to ESPWebServer instance
    * @note Direct server access should be used with caution
    * @details Provides access to the underlying web server instance.
    *          Should be used carefully to avoid bypassing WebManager's
    *          security and routing mechanisms.
    */
-  ESP8266WebServer& getServer() { return *_server; }
+  ESPWebServer& getServer() { return *_server; }
 
   /**
    * @brief Check if a route exists for given path and method
@@ -326,6 +334,18 @@ private:
   void initializeRemainingHandlers();
 
   /**
+   * @brief Handler bei Bedarf anlegen, Routen registrieren und cachen
+   * @param handlerType Typkennung für Cache und Routenzuordnung
+   * @param factory Erzeugt den Handler, wenn er noch nicht im Cache liegt
+   * @return true wenn die Anfrage weiterlaufen darf
+   * @details Fasst zusammen, was vorher für jeden der sechs Handler einzeln
+   *          ausgeschrieben war (Cache-Abfrage, Erzeugung, Kontext setzen,
+   *          registerRoutes, Fehlerbehandlung, cachen).
+   */
+  bool ensureHandler(const char* handlerType,
+                     std::function<std::unique_ptr<BaseHandler>()> factory);
+
+  /**
    * @brief Cleanup non-essential handlers
    * @details Releases resources for handlers that aren't needed
    *          in minimal operation mode.
@@ -388,6 +408,21 @@ private:
    */
   void serveStaticFile(const String& path, const String& contentType, const String& cacheControl);
 
+  /**
+   * @brief Statische Datei ausliefern, falls die URL auf ein Asset zeigt
+   * @param uri Angefragter Pfad
+   * @return true wenn die Datei ausgeliefert wurde
+   * @details Ersetzt die früheren 25 Einzelregistrierungen per _server->on()
+   *          für jede CSS-, JS- und Bilddatei. Jede davon war ein
+   *          RequestHandler-Knoten mit eigenem String-URI und std::function im
+   *          Heap - zusammen rund 1,3 KB, nur um Dateien auszuliefern, deren
+   *          Pfad direkt aus der URL folgt.
+   *
+   *          Bedient /css/, /js/, /img/ und /favicon.ico. Pfade mit ".." oder
+   *          Backslash werden abgewiesen.
+   */
+  bool tryServeStaticFile(const String& uri);
+
   // Utility methods (web_manager_utils.cpp)
   /**
    * @brief Check if device is in captive portal AP mode
@@ -408,13 +443,16 @@ private:
   static constexpr size_t BUFFER_SIZE = 256; ///< Response buffer size
   static char s_responseBuffer[BUFFER_SIZE]; ///< Static response buffer
 
-  bool m_handlersInitialized{false};                         ///< Handler initialization flag
-  std::unique_ptr<ESP8266WebServer> _server;                 ///< Web server instance
-  std::unique_ptr<WebRouter> _router;                        ///< URL router
-  std::unique_ptr<WebAuth> _auth;                            ///< Authentication service
-  std::unique_ptr<CSSService> _cssService;                   ///< CSS management service
-  std::unique_ptr<WebOTAHandler> _otaHandler;                ///< OTA update handler
+  bool m_handlersInitialized{false};          ///< Handler initialization flag
+  bool m_configUploadAuthorized{false};       ///< Auth-Ergebnis des laufenden Config-Uploads
+                                              ///< (/admin/uploadConfig umgeht die Middleware)
+  std::unique_ptr<ESPWebServer> _server;      ///< Web server instance
+  std::unique_ptr<WebRouter> _router;         ///< URL router
+  std::unique_ptr<WebAuth> _auth;             ///< Authentication service
+  std::unique_ptr<CSSService> _cssService;    ///< CSS management service
+  std::unique_ptr<WebOTAHandler> _otaHandler; ///< OTA update handler
   std::unique_ptr<AdminMinimalHandler> _minimalAdminHandler; ///< Minimal admin interface
+  std::unique_ptr<WebMetricsHandler> _metricsHandler;        ///< Prometheus metrics handler
   SensorManager* _sensorManager;                             ///< Sensor management
 
   // Note: All request handlers are now managed via LRU cache (m_handlerCache)

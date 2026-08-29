@@ -12,8 +12,8 @@
 
 #pragma once
 
+#include "utils/platform_compat.h"
 #include <ArduinoJson.h>
-#include <ESP8266WebServer.h>
 
 #include <memory>
 
@@ -61,7 +61,7 @@ public:
    * @details Initializes the OTA handler with required dependencies
    * @throws None
    */
-  WebOTAHandler(ESP8266WebServer& server, WebAuth& auth);
+  WebOTAHandler(ESPWebServer& server, WebAuth& auth);
 
   // Prevent copying
   WebOTAHandler(const WebOTAHandler&) = delete;
@@ -261,12 +261,22 @@ private:
    * @return true if backup successful
    * @details Saves all config data to RAM before LittleFS update
    */
-  
+
   // Removed obsolete RAM-based backup/restore methods and PreferencesBackup struct.
   // Now using file-based backup exclusively (see ConfigPersistence::backupPreferencesToFile).
 
-  String _backupFileContent; ///< REMOVED - not used, caused memory issues
-  WebAuth& _auth;    ///< Reference to authentication manager
-  OTAStatus _status; ///< Current update status
-};
+  String _backupFileContent;     ///< REMOVED - not used, caused memory issues
+  WebAuth& _auth;                ///< Reference to authentication manager
+  OTAStatus _status;             ///< Current update status
+  bool _uploadAuthorized{false}; ///< Auth-Ergebnis des laufenden Uploads (siehe requireUploadAuth)
 
+  /**
+   * @brief Authentifizierung für den /update-Upload prüfen
+   * @return true wenn der Aufrufer als admin angemeldet ist
+   * @details /update wird über _server.on() registriert und umgeht damit die
+   *          Router-Middleware. Ohne diese Prüfung könnte jeder im Netz eine
+   *          Firmware aufspielen. Das Ergebnis wird für die Dauer des Uploads
+   *          gemerkt, damit nicht jeder Chunk erneut prüfen muss.
+   */
+  bool requireUploadAuth();
+};

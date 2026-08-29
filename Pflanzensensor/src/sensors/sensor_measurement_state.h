@@ -28,7 +28,6 @@ enum class MeasurementState {
   WARMUP,            /**< Sensor is warming up (if needed) */
   MEASURING,         /**< Taking measurements */
   PROCESSING,        /**< Processing measurement results */
-  SENDING_INFLUX,    /**< Sending data to InfluxDB */
   DEINITIALIZING,    /**< Sensor is being deinitialized */
   ERROR              /**< Error state */
 };
@@ -52,6 +51,17 @@ struct MeasurementStateInfo {
   bool measurementStarted{false};    /**< Flag indicating if measurement process has started */
   unsigned long warmupTimeNeeded{0}; /**< Required warmup time in milliseconds */
   unsigned long warmupStartTime{0};  /**< Timestamp when warmup period started */
+  /**
+   * @brief Aufwärmphase dieses Messzyklus bereits absolviert?
+   * @details Muss getrennt von warmupStartTime geführt werden: diese dient
+   *          gleichzeitig der einmaligen Aufwärmphase nach dem Einschalten und
+   *          wird von handleWarmup() am Ende wieder auf 0 gesetzt. Wurde sie
+   *          zusätzlich als "Aufwärmen steht noch aus" gelesen, wechselten
+   *          Sensoren mit Aufwärmphase endlos zwischen WARMUP und
+   *          WAITING_FOR_DELAY und hielten dabei den Messslot bis zum Timeout
+   *          nach 45 s fest.
+   */
+  bool warmupDoneThisCycle{false};
 
   // Timing information
   unsigned long lastMeasurementTime{0}; /**< Timestamp of the last successful measurement */
@@ -75,9 +85,9 @@ struct MeasurementStateInfo {
   void setState(MeasurementState newState, const String& sensorName = "") {
     if (state != newState) {
       if (ConfigMgr.isDebugMeasurementCycle()) {
-        String transition =
-            sensorName + F(": State ") + stateToString(state) + F(" -> ") + stateToString(newState);
-        logger.debug(F("MeasurementState"), transition);
+        String transition = sensorName + String(F(": State ")) + stateToString(state) +
+                            String(F(" -> ")) + stateToString(newState);
+        LOG_DEBUG(F("MeasurementState"), transition);
       }
       state = newState;
       stateStartTime = millis();
@@ -154,6 +164,7 @@ struct MeasurementStateInfo {
     lastError = "";
     needsInitialization = true;
     warmupStartTime = 0;
+    warmupDoneThisCycle = false;
     lastErrorTime = 0;
     measurementStarted = false;
     // Note: measurementInterval is not reset to persist across cycles
@@ -181,8 +192,6 @@ struct MeasurementStateInfo {
       return "MEASURING";
     case MeasurementState::PROCESSING:
       return "PROCESSING";
-    case MeasurementState::SENDING_INFLUX:
-      return "SENDING_INFLUX";
     case MeasurementState::DEINITIALIZING:
       return "DEINITIALIZING";
     case MeasurementState::ERROR:

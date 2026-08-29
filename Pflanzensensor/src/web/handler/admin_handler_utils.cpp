@@ -5,6 +5,7 @@
  *          authentication, and configuration value handling
  */
 
+#include "web/core/web_auth.h"
 #include <LittleFS.h>
 
 #include "configs/config.h"
@@ -14,10 +15,10 @@
 
 String AdminHandler::formatMemorySize(size_t bytes) const {
   if (bytes < 1024)
-    return String(bytes) + F(" B");
+    return String(bytes) + String(F(" B"));
   if (bytes < 1024 * 1024)
-    return String(bytes / 1024.0, 1) + F(" KB");
-  return String(bytes / 1024.0 / 1024.0, 1) + F(" MB");
+    return String(bytes / 1024.0, 1) + String(F(" KB"));
+  return String(bytes / 1024.0 / 1024.0, 1) + String(F(" MB"));
 }
 
 String AdminHandler::formatUptime() const {
@@ -35,17 +36,17 @@ String AdminHandler::formatUptime() const {
 
   String formatted;
   if (days > 0)
-    formatted += String(days) + F("d ");
+    formatted += String(days) + String(F("d "));
   if (hours > 0)
-    formatted += String(hours) + F("h ");
-  formatted += String(minutes) + F("m ");
-  formatted += String(seconds) + F("s");
+    formatted += String(hours) + String(F("h "));
+  formatted += String(minutes) + String(F("m "));
+  formatted += String(seconds) + String(F("s"));
 
   return formatted;
 }
 
 bool AdminHandler::validateRequest() const {
-  if (!_server.authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
+  if (!WebAuth::checkAdminCredentials(_server)) {
     return false;
   }
   return true;

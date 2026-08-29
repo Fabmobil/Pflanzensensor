@@ -428,8 +428,10 @@ static void drawFunctionPatterns(BitBucket* modules, BitBucket* isFunction, uint
 
     alignPosition[0] = 6;
 
-    uint8_t size = version * 4 + 17;
-    for (uint8_t i = 0, pos = size - 7; i < alignCount - 1; i++, pos -= step) {
+    // Umbenannt von 'size': verdeckte die gleichnamige Variable der Funktion
+    // (Zeile 398). Wert und Verhalten unverändert.
+    uint8_t alignSize = version * 4 + 17;
+    for (uint8_t i = 0, pos = alignSize - 7; i < alignCount - 1; i++, pos -= step) {
       alignPosition[alignPositionIndex--] = pos;
     }
 
@@ -865,7 +867,8 @@ int8_t qrcode_initText(QRCode* qrcode, uint8_t* modules, uint8_t version, uint8_
 }
 
 bool qrcode_getModule(QRCode* qrcode, uint8_t x, uint8_t y) {
-  if (x < 0 || x >= qrcode->size || y < 0 || y >= qrcode->size) {
+  // x und y sind uint8_t, ein Test auf < 0 kann nie zutreffen (-Wtype-limits)
+  if (x >= qrcode->size || y >= qrcode->size) {
     return false;
   }
 

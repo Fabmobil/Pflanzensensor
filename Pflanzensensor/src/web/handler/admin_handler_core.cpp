@@ -15,6 +15,17 @@
 #include "utils/wifi.h" // For getActiveWiFiSlot()
 #include "web/handler/admin_handler.h"
 
+// Siehe Hinweis in admin_sensor_handler_routing.cpp: diese Liste muss zu den
+// unten registrierten Routen passen. Bewusst exakte Vergleiche statt eines
+// "/admin"-Präfixes - sonst würde dieser Handler auch Pfade beanspruchen, die
+// dem AdminSensorHandler, dem AdminDisplayHandler oder dem WebManager selbst
+// gehören (/admin/config/*, /admin/update).
+bool AdminHandler::ownsUrl(const String& url) {
+  return url == F("/admin") || url == F("/admin/reset") || url == F("/admin/reboot") ||
+         url == F("/admin/downloadLog") || url == F("/admin/downloadConfig") ||
+         url == F("/admin/updateWiFi");
+}
+
 RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   logger.logMemoryStats(F("AdminRegisterRoutes"));
 
@@ -27,10 +38,10 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleAdminPage();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin-Route fehlgeschlagen"));
+    LOG_ERROR(F("AdminHandler"), F("Registrieren der /admin-Route fehlgeschlagen"));
     return result;
   }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin-Route"));
+  LOG_DEBUG(F("AdminHandler"), F("Registrierte /admin-Route"));
 
   // Note: Config updates are now handled by unified /admin/config/setConfigValue
   // Old /admin/updateSettings route has been removed.
@@ -44,10 +55,10 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleConfigReset();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/reset-Route fehlgeschlagen"));
+    LOG_ERROR(F("AdminHandler"), F("Registrieren der /admin/reset-Route fehlgeschlagen"));
     return result;
   }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/reset-Route"));
+  LOG_DEBUG(F("AdminHandler"), F("Registrierte /admin/reset-Route"));
 
   // Register reboot route
   result = router.addRoute(HTTP_POST, "/admin/reboot", [this]() {
@@ -58,10 +69,10 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleReboot();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/reboot-Route fehlgeschlagen"));
+    LOG_ERROR(F("AdminHandler"), F("Registrieren der /admin/reboot-Route fehlgeschlagen"));
     return result;
   }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/reboot-Route"));
+  LOG_DEBUG(F("AdminHandler"), F("Registrierte /admin/reboot-Route"));
 
   // Register config set route
   // Note: /admin/config/set handled by legacy route in WebManager; admin
@@ -75,10 +86,10 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleDownloadLog();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/downloadLog-Route fehlgeschlagen"));
+    LOG_ERROR(F("AdminHandler"), F("Registrieren der /admin/downloadLog-Route fehlgeschlagen"));
     return result;
   }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadLog-Route"));
+  LOG_DEBUG(F("AdminHandler"), F("Registrierte /admin/downloadLog-Route"));
 
   // Register config download route
   result = router.addRoute(HTTP_GET, "/admin/downloadConfig", [this]() {
@@ -89,17 +100,16 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleDownloadConfig();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"),
-                 F("Registrieren der /admin/downloadConfig-Route fehlgeschlagen"));
+    LOG_ERROR(F("AdminHandler"), F("Registrieren der /admin/downloadConfig-Route fehlgeschlagen"));
     return result;
   }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/downloadConfig-Route"));
+  LOG_DEBUG(F("AdminHandler"), F("Registrierte /admin/downloadConfig-Route"));
 
   // Config upload route is registered directly in WebManager::setupRoutes()
   // because it needs file upload support which requires _server.on()
   // See web_manager_routes.cpp for the actual registration
-  logger.debug(F("AdminHandler"),
-               F("Config-Upload-Route wird im WebManager registriert (File-Upload)"));
+  LOG_DEBUG(F("AdminHandler"),
+            F("Config-Upload-Route wird im WebManager registriert (File-Upload)"));
 
   // Register WiFi settings update route
   result = router.addRoute(HTTP_POST, "/admin/updateWiFi", [this]() {
@@ -110,10 +120,10 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
     handleWiFiUpdate();
   });
   if (!result.isSuccess()) {
-    logger.error(F("AdminHandler"), F("Registrieren der /admin/updateWiFi-Route fehlgeschlagen"));
+    LOG_ERROR(F("AdminHandler"), F("Registrieren der /admin/updateWiFi-Route fehlgeschlagen"));
     return result;
   }
-  logger.debug(F("AdminHandler"), F("Registrierte /admin/updateWiFi-Route"));
+  LOG_DEBUG(F("AdminHandler"), F("Registrierte /admin/updateWiFi-Route"));
 
   logger.logMemoryStats(F("AdminRegisterRoutes"));
   return result;
@@ -133,7 +143,7 @@ HandlerResult AdminHandler::handlePost(const String& uri, const std::map<String,
 // the single AJAX endpoint /admin/updateSettings.
 
 void AdminHandler::handleAdminPage() {
-  logger.debug(F("AdminHandler"), F("handleAdminPage called"));
+  LOG_DEBUG(F("AdminHandler"), F("handleAdminPage called"));
   logger.logMemoryStats(F("AdminPageStart"));
 
   std::vector<String> css = {"admin"};
@@ -153,7 +163,7 @@ void AdminHandler::handleAdminPage() {
         sendChunk(F("</div>"));
       },
       css, js);
-  logger.debug(F("AdminHandler"), F("Adminseite erfolgreich gesendet"));
+  LOG_DEBUG(F("AdminHandler"), F("Adminseite erfolgreich gesendet"));
 }
 
 void AdminHandler::handleDownloadLog() {
@@ -181,10 +191,10 @@ void AdminHandler::handleDownloadLog() {
     return;
   }
 
-  _server.sendHeader(F("Content-Type"), F("text/plain"));
+  // Content-Type und Content-Length werden von setContentLength()/send() gesetzt;
+  // sie hier zusätzlich per sendHeader() zu senden, lieferte beide doppelt aus.
   _server.sendHeader(F("Content-Disposition"), F("attachment; filename=log.txt"));
   _server.sendHeader(F("Connection"), F("close"));
-  _server.sendHeader(F("Content-Length"), String(fileSize));
   _server.setContentLength(fileSize);
   _server.send(200, F("text/plain"), ""); // Send headers
 

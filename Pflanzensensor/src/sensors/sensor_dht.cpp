@@ -1,5 +1,7 @@
 #include "sensor_dht.h"
 
+#include "utils/safe_yield.h"
+
 #include <DHTesp.h>
 
 #include "configs/config.h"
@@ -46,16 +48,16 @@ DHTSensor::~DHTSensor() {
 }
 
 void DHTSensor::logDebugDetails() const {
-  logDebug(F("DHT-Konfig: pin=") + String(m_pin) + F(", typ=") + String(m_type));
+  logDebug(String(F("DHT-Konfig: pin=")) + String(m_pin) + String(F(", typ=")) + String(m_type));
 }
 
 SensorResult DHTSensor::init() {
-  logDebug(F("Initialisiere DHT-Sensor an Pin ") + String(m_pin));
+  logDebug(String(F("Initialisiere DHT-Sensor an Pin ")) + String(m_pin));
   DHTesp::DHT_MODEL_t dhtModel = (m_type == 22) ? DHTesp::DHT22 : DHTesp::DHT11;
   m_dhtesp.setup(m_pin, dhtModel);
   m_initialized = true;
-  logger.debug(getName(), F("DHTesp-Initialisierung abgeschlossen (Typ: ") +
-                              String((m_type == 22) ? "DHT22" : "DHT11") + F(")"));
+  LOG_DEBUG(getName(), String(F("DHTesp-Initialisierung abgeschlossen (Typ: ")) +
+                           String((m_type == 22) ? "DHT22" : "DHT11") + F(")"));
   return SensorResult::success();
 }
 
@@ -71,8 +73,10 @@ void DHTSensor::deinitialize() {
   m_initialized = false;
 
   // Memory cleanup
+#ifndef ESP32
   ESP.wdtFeed();
-  yield();
+#endif
+  safeYield();
 }
 
 bool DHTSensor::requiresWarmup(unsigned long& warmupTime) const {
@@ -94,9 +98,9 @@ bool DHTSensor::canAccessHardware() const {
  * @return true if successful, false if hardware error
  */
 bool DHTSensor::fetchSample(float& value, size_t index) {
-  logDebug(F("Lese DHT-Probe für Index ") + String(index));
+  logDebug(String(F("Lese DHT-Probe für Index ")) + String(index));
   if (!m_initialized) {
-    logger.error(getName(), F("DHTSensor nicht in fetchSample initialisiert"));
+    LOG_ERROR(getName(), F("DHTSensor nicht in fetchSample initialisiert"));
     return false;
   }
   if (index == 0) {
@@ -107,7 +111,7 @@ bool DHTSensor::fetchSample(float& value, size_t index) {
     value = NAN;
     return false;
   }
-  logDebug(F("Gelesener Wert: ") + String(value));
+  logDebug(String(F("Gelesener Wert: ")) + String(value));
   return !isnan(value);
 }
 

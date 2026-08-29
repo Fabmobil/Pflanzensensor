@@ -6,12 +6,14 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define VERSION "2.26.16" // Software version
+#define VERSION "2.28.0" // Software version
 
 #ifdef CONFIG_FILE
 #include CONFIG_FILE
 #else
 #error "No CONFIG_FILE defined. Please define it in your build environment."
 #endif
+
+#include "metrics/prometheus_metrics.h"
 
 #endif // CONFIG_H

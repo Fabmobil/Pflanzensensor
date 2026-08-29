@@ -68,6 +68,26 @@ private:
   static constexpr uint32_t FP_PREFS_MAX_SIZE = 8 * 1024; // 8KB for Preferences
   static constexpr uint32_t FP_JSON_MAX_SIZE = 32 * 1024; // 32KB for JSON configs
 
+  /**
+   * @brief Ist die Prüfsummen-Verifikation eingeschaltet?
+   * @return true wenn beim Wiederherstellen die CRC32 geprüft werden soll
+   * @details Liest general/md5_verify direkt aus den Preferences. Der
+   *          ConfigManager ist zum Zeitpunkt der Wiederherstellung (ganz früh
+   *          im Boot) noch nicht geladen, deshalb hier der Direktzugriff.
+   *          Dieselbe Einstellung steuert auch die MD5-Prüfung beim
+   *          Firmware-Upload.
+   */
+  static bool isChecksumVerificationEnabled();
+
+  /**
+   * @brief CRC32 fortlaufend über weitere Daten aktualisieren
+   * @param crc Bisheriger Zwischenstand (Startwert 0xFFFFFFFF)
+   * @param data Zu berücksichtigende Bytes
+   * @param length Anzahl Bytes
+   * @return Neuer Zwischenstand (am Ende mit ~crc abschließen)
+   */
+  static uint32_t crc32Update(uint32_t crc, const uint8_t* data, size_t length);
+
   static uint32_t getSafeOffset();
   static uint32_t getJsonStorageOffset(); // Second area for JSON files
   static uint32_t calculateCRC32(const uint8_t* data, size_t length);

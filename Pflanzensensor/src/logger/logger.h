@@ -23,15 +23,6 @@
 enum class LogLevel { DEBUG, INFO, WARNING, ERROR };
 
 /**
- * @brief Structure to hold a log entry
- */
-struct LogEntry {
-  LogLevel level;
-  char message[128]; // Fixed-size buffer for log message
-  unsigned long timestamp;
-};
-
-/**
  * @brief Structure to hold memory statistics
  */
 struct MemoryStats {
@@ -88,6 +79,15 @@ public:
    * @return The current log level
    */
   LogLevel getLogLevel() const;
+
+  /**
+   * @brief Prüfen, ob eine Meldung dieses Levels überhaupt ausgegeben würde
+   * @param level Zu prüfendes Level
+   * @return true wenn die Meldung ausgegeben wird
+   * @details Wird von den LOG_*-Makros genutzt, um den Aufbau der Argumente zu
+   *          überspringen, wenn die Meldung ohnehin verworfen würde.
+   */
+  inline bool isLevelEnabled(LogLevel level) const { return level >= m_logLevel; }
 
   /**
    * @brief Log a debug message with module name
@@ -246,20 +246,6 @@ private:
   void log(LogLevel level, const String& module, const String& message);
 
   /**
-   * @brief Get indentation for log level
-   * @param logLevelStr String representation of log level
-   * @return Indentation string
-   */
-  String getIndent(const String& logLevelStr) const;
-
-  /**
-   * @brief Get color representation of log level for HTML
-   * @param level Log level to convert
-   * @return Color string for HTML
-   */
-  String logLevelToColor(LogLevel level) const;
-
-  /**
    * @brief Get current timestamp as a formatted string
    * @return Formatted timestamp string
    */
@@ -307,5 +293,48 @@ private:
 };
 
 extern Logger logger;
+
+/**
+ * @name Logging-Makros mit vorgezogener Level-Prüfung
+ *
+ * Die Logger-Methoden nehmen const String& entgegen. Ein Aufruf wie
+ *
+ *   logger.debug(F("Sensor"), String(F("Rohwert: ")) + String(raw));
+ *
+ * baut deshalb ZUERST beide Strings auf dem Heap auf - und erst danach
+ * verwirft Logger::log() die Meldung, wenn das Level nicht passt. Bei
+ * LOG_LEVEL=INFO wurde der gesamte Formatierungsaufwand für jede
+ * Debug-Zeile also trotzdem bezahlt: Allokation, Konkatenation, Freigabe -
+ * pro Zeile mehrere kurzlebige Heap-Blöcke.
+ *
+ * Die Makros ziehen die Level-Prüfung vor den Argumentaufbau. Ist das Level
+ * nicht aktiv, werden die Argumente nie ausgewertet.
+ *
+ * @{
+ */
+#define LOG_DEBUG(tag, msg)                                                                        \
+  do {                                                                                             \
+    if (logger.isLevelEnabled(LogLevel::DEBUG))                                                    \
+      logger.debug(tag, msg);                                                                      \
+  } while (0)
+
+#define LOG_INFO(tag, msg)                                                                         \
+  do {                                                                                             \
+    if (logger.isLevelEnabled(LogLevel::INFO))                                                     \
+      logger.info(tag, msg);                                                                       \
+  } while (0)
+
+#define LOG_WARN(tag, msg)                                                                         \
+  do {                                                                                             \
+    if (logger.isLevelEnabled(LogLevel::WARNING))                                                  \
+      logger.warning(tag, msg);                                                                    \
+  } while (0)
+
+#define LOG_ERROR(tag, msg)                                                                        \
+  do {                                                                                             \
+    if (logger.isLevelEnabled(LogLevel::ERROR))                                                    \
+      logger.error(tag, msg);                                                                      \
+  } while (0)
+/** @} */
 
 #endif // LOGGER_H

@@ -104,11 +104,13 @@ struct DS18B20SensorDefaults {
  * in the config file
  */
 #define DS18B20_SENSOR_DEFAULT(N)                                                                  \
-  {                                                                                                \
-    DS18B20_##N##_NAME, DS18B20_##N##_FIELD_NAME, DS18B20_##N##_YELLOW_LOW,                        \
-        DS18B20_##N##_GREEN_LOW, DS18B20_##N##_GREEN_HIGH, DS18B20_##N##_YELLOW_HIGH,              \
-        DS18B20_##N##_MEASUREMENT_INTERVAL * 1000                                                  \
-  }
+  {DS18B20_##N##_NAME,                                                                             \
+   DS18B20_##N##_FIELD_NAME,                                                                       \
+   DS18B20_##N##_YELLOW_LOW,                                                                       \
+   DS18B20_##N##_GREEN_LOW,                                                                        \
+   DS18B20_##N##_GREEN_HIGH,                                                                       \
+   DS18B20_##N##_YELLOW_HIGH,                                                                      \
+   DS18B20_##N##_MEASUREMENT_INTERVAL * 1000}
 
 // Ensure we have the required configuration defines
 #ifndef ANALOG_SENSOR_COUNT

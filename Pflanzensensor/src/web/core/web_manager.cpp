@@ -5,6 +5,8 @@
 
 #include "web/core/web_manager.h"
 
+#include "utils/safe_yield.h"
+
 #include "configs/config.h"
 #include "logger/logger.h"
 #if USE_WEBSOCKET
@@ -58,25 +60,33 @@ void WebManager::handleClientInternal() {
   static size_t lastHandlerCount = 0;
   const unsigned long currentTime = millis();
 
-  // Memory monitoring
+  // Speicherüberwachung
+  //
+  // WICHTIG: lastMemoryCheck wird IMMER gesetzt, auch im Low-Memory-Zweig.
+  // Vorher stand die Zuweisung hinter dem frühen return - bei wenig Heap blieb
+  // der Zeitstempel also alt, die Prüfung feuerte in jedem loop()-Durchlauf
+  // erneut und riss jedes Mal ein delay(100) mit. Genau dann, wenn es eng
+  // wurde, war das Gerät damit praktisch unbedienbar.
   if (currentTime - lastMemoryCheck > 10000) {
+    lastMemoryCheck = currentTime;
+
     const uint32_t freeHeap = ESP.getFreeHeap();
     const size_t currentHandlerCount = m_handlerCache.size();
 
     // Only log if handler count has changed
     if (currentHandlerCount != lastHandlerCount) {
-      logger.debug(F("WebManager"), F("Active handlers: ") + String(currentHandlerCount) + F("/") +
-                                        String(MAX_ACTIVE_HANDLERS));
+      LOG_DEBUG(F("WebManager"), String(F("Active handlers: ")) + String(currentHandlerCount) +
+                                     String(F("/")) + String(MAX_ACTIVE_HANDLERS));
       lastHandlerCount = currentHandlerCount;
     }
 
     if (freeHeap < 4096) {
-      logger.warning(F("WebManager"), "Low memory in web handler: " + String(freeHeap));
+      LOG_WARN(F("WebManager"),
+               String(F("Wenig Speicher im Web-Handler: ")) + String(freeHeap) + F(" Bytes"));
+      // Handler-Cache leeren gibt Heap frei; danach ganz normal weiterarbeiten,
+      // damit der Webserver bedienbar bleibt.
       cleanupNonEssentialHandlers();
-      delay(100);
-      return;
     }
-    lastMemoryCheck = currentTime;
   }
 
   // Handle web server and WebSocket
@@ -114,9 +124,9 @@ void WebManager::stop() {
 
   // Give system time to clean up
   delay(100);
-  yield();
+  safeYield();
 
-  logger.debug(F("WebManager"), F("WebManager stopped and cleaned up"));
+  LOG_DEBUG(F("WebManager"), F("WebManager stopped and cleaned up"));
   logger.endMemoryTracking(F("web_manager_stop"));
 }
 
@@ -166,6 +176,6 @@ void WebManager::cleanup() {
 ResourceResult WebManager::setFirmwareUpgradeFlag(bool enabled) {
   // Implementation would depend on your config system
   // This is a placeholder
-  logger.info(F("WebManager"), "Setting firmware upgrade flag to: " + String(enabled));
+  LOG_INFO(F("WebManager"), "Setting firmware upgrade flag to: " + String(enabled));
   return ResourceResult::success();
 }

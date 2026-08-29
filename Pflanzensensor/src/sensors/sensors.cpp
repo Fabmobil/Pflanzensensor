@@ -2,7 +2,7 @@
 
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
-#include "sensors/sensor_count.h"
+#include "sensors/sensor_measurement_cycle.h"
 
 // REMOVE: getOrInitThresholds function and any references to it
 // Instead, thresholds are now loaded directly into each sensor's measurement
@@ -35,8 +35,15 @@ Sensor::Sensor(const SensorConfig& config, SensorManager* sensorManager)
 }
 
 Sensor::~Sensor() {
+  // Destruktor hier definiert (nicht inline im Header), damit der
+  // unique_ptr<SensorMeasurementCycleManager> den vollständigen Typ sieht.
+  m_cycleManager.reset();
   m_lastMeasurementData.reset();
   m_measurementDataValid = false;
+}
+
+void Sensor::setCycleManager(std::unique_ptr<SensorMeasurementCycleManager> manager) {
+  m_cycleManager = std::move(manager);
 }
 
 void Sensor::deinitialize() {
@@ -60,7 +67,7 @@ void Sensor::deinitialize() {
 void Sensor::handleSensorError() {
   m_errorState.errorCount++;
   if (m_errorState.errorCount >= MAX_RETRIES) {
-    logger.error(getName(), F(": Maximale Anzahl von Wiederholungen überschritten"));
+    LOG_ERROR(getName(), F(": Maximale Anzahl von Wiederholungen überschritten"));
     deinitialize();
   }
 }
@@ -77,10 +84,10 @@ SensorResult Sensor::handleInvalidReading(float value) {
   } else {
     valueStr = String(value);
   }
-  logger.error(getName(), F(": Ungültige Messung: ") + valueStr);
+  LOG_ERROR(getName(), String(F(": Ungültige Messung: ")) + valueStr);
 
   if (m_errorState.invalidCount >= MAX_INVALID_READINGS) {
-    logger.error(getName(), F("Zu viele ungültige Messwerte, behandle als Sensorfehler"));
+    LOG_ERROR(getName(), F("Zu viele ungültige Messwerte, behandle als Sensorfehler"));
     handleSensorError();
     return SensorResult::fail(SensorError::MEASUREMENT_ERROR, F("Zu viele ungültige Messwerte"));
   }
@@ -172,33 +179,33 @@ bool Sensor::shouldRetry() const { return m_errorState.errorCount < MAX_RETRIES;
 SensorResult Sensor::validateMemoryState() const {
   // Check if measurement data is marked as valid
   if (!m_measurementDataValid) {
-    logger.debug(getName(), F(": Measurement data marked as invalid, attempting recovery"));
+    LOG_DEBUG(getName(), F(": Measurement data marked as invalid, attempting recovery"));
     return SensorResult::fail(SensorError::RESOURCE_ERROR,
                               F("Measurement data invalid (deinitialized)"));
   }
 
   // Check if the measurement data pointer is valid (not null)
   if (!m_lastMeasurementData) {
-    logger.error(getName(), F(": Null measurement data pointer"));
+    LOG_ERROR(getName(), F(": Null measurement data pointer"));
     return SensorResult::fail(SensorError::RESOURCE_ERROR, F("Null measurement data pointer"));
   }
 
   // Check if measurement data structure is valid
   if (!m_lastMeasurementData->isValid()) {
-    logger.error(getName(), F(": Invalid measurement data structure"));
+    LOG_ERROR(getName(), F(": Invalid measurement data structure"));
     return SensorResult::fail(SensorError::RESOURCE_ERROR, F("Invalid measurement data structure"));
   }
 
   // Check if measurement data arrays are properly sized
   if (SensorConfig::MAX_MEASUREMENTS != m_lastMeasurementData->values.size()) {
-    logger.error(getName(), F(": Measurement data array size mismatch"));
+    LOG_ERROR(getName(), F(": Measurement data array size mismatch"));
     return SensorResult::fail(SensorError::RESOURCE_ERROR,
                               F("Measurement data array size mismatch"));
   }
 
   // Check if active values count is reasonable
   if (m_lastMeasurementData->activeValues > m_lastMeasurementData->values.size()) {
-    logger.error(getName(), F(": Invalid active values count"));
+    LOG_ERROR(getName(), F(": Invalid active values count"));
     return SensorResult::fail(SensorError::RESOURCE_ERROR, F("Invalid active values count"));
   }
 
@@ -206,7 +213,7 @@ SensorResult Sensor::validateMemoryState() const {
 }
 
 SensorResult Sensor::resetMemoryState() {
-  logger.warning(getName(), F(": Attempting memory state reset"));
+  LOG_WARN(getName(), F(": Attempting memory state reset"));
 
   // With pointer-based approach, we just reinitialize the existing data
   if (m_lastMeasurementData) {
@@ -230,12 +237,12 @@ SensorResult Sensor::resetMemoryState() {
   // Validate the reset memory state
   auto validationResult = validateMemoryState();
   if (!validationResult.isSuccess()) {
-    logger.error(getName(),
-                 F(": Zurücksetzen des Speicherzustands hat die Validierung nicht bestanden"));
+    LOG_ERROR(getName(),
+              F(": Zurücksetzen des Speicherzustands hat die Validierung nicht bestanden"));
     return validationResult;
   }
 
-  logger.info(getName(), F(": Zurücksetzen des Speicherzustands erfolgreich"));
+  LOG_INFO(getName(), F(": Zurücksetzen des Speicherzustands erfolgreich"));
   return SensorResult::success();
 }
 
@@ -243,13 +250,14 @@ void Sensor::initMeasurement(size_t index, const String& name, const String& fie
                              const String& unit, float yellowLow, float greenLow, float greenHigh,
                              float yellowHigh) {
   if (index >= SensorConfig::MAX_MEASUREMENTS) {
-    logger.error(F("Sensor"), F("initMeasurement: Index außerhalb des Bereichs: ") + String(index));
+    LOG_ERROR(F("Sensor"),
+              String(F("initMeasurement: Index außerhalb des Bereichs: ")) + String(index));
     return;
   }
   if (!m_lastMeasurementData || index >= SensorConfig::MAX_MEASUREMENTS) {
-    logger.error(F("Sensor"),
-                 F("initMeasurement: Index außerhalb des MeasurementData-Array-Bereichs: ") +
-                     String(index));
+    LOG_ERROR(F("Sensor"),
+              String(F("initMeasurement: Index außerhalb des MeasurementData-Array-Bereichs: ")) +
+                  String(index));
     return;
   }
   mutableConfig().measurements[index].name = name;
@@ -352,18 +360,18 @@ String Sensor::determineSensorStatus(float value, const SensorLimits& limits, bo
 
 void Sensor::updateMeasurementData(const MeasurementData& data) {
   if (!isInitialized()) {
-    logger.error(getName(), F(": updateMeasurementData called on uninitialized sensor!"));
+    LOG_ERROR(getName(), F(": updateMeasurementData called on uninitialized sensor!"));
     return;
   }
   if (!data.isValid()) {
-    logger.error(getName(), F(": updateMeasurementData called with invalid data!"));
+    LOG_ERROR(getName(), F(": updateMeasurementData called with invalid data!"));
     return;
   }
   // Defensive: Clamp activeValues to MAX_MEASUREMENTS
   MeasurementData safeData = data;
   if (safeData.activeValues > SensorConfig::MAX_MEASUREMENTS) {
-    logger.error(getName(), F(": updateMeasurementData: activeValues > "
-                              "MAX_MEASUREMENTS, clamping."));
+    LOG_ERROR(getName(), F(": updateMeasurementData: activeValues > "
+                           "MAX_MEASUREMENTS, clamping."));
     safeData.activeValues = SensorConfig::MAX_MEASUREMENTS;
   }
   *m_lastMeasurementData = safeData;
@@ -375,16 +383,16 @@ SensorResult Sensor::init() {
     m_lastMeasurementData->activeValues = config().activeMeasurements;
     // Clamp activeMeasurements and activeValues
     if (config().activeMeasurements > SensorConfig::MAX_MEASUREMENTS) {
-      logger.warning(F("Sensor"), F("Clamping activeMeasurements from ") +
-                                      String(config().activeMeasurements) + F(" to ") +
-                                      String(SensorConfig::MAX_MEASUREMENTS));
+      LOG_WARN(F("Sensor"), String(F("Clamping activeMeasurements from ")) +
+                                String(config().activeMeasurements) + String(F(" to ")) +
+                                String(SensorConfig::MAX_MEASUREMENTS));
       // Note: We can't modify the config directly anymore, but this is just a
       // warning
     }
     if (m_lastMeasurementData->activeValues > SensorConfig::MAX_MEASUREMENTS) {
-      logger.warning(F("Sensor"), F("Clamping activeValues from ") +
-                                      String(m_lastMeasurementData->activeValues) + F(" to ") +
-                                      String(SensorConfig::MAX_MEASUREMENTS));
+      LOG_WARN(F("Sensor"), String(F("Clamping activeValues from ")) +
+                                String(m_lastMeasurementData->activeValues) + String(F(" to ")) +
+                                String(SensorConfig::MAX_MEASUREMENTS));
       m_lastMeasurementData->activeValues = SensorConfig::MAX_MEASUREMENTS;
     }
     size_t maxFields = SensorConfig::MAX_MEASUREMENTS;
@@ -407,7 +415,7 @@ SensorResult Sensor::init() {
  */
 SensorResult Sensor::performMeasurementCycle() {
   if (!isInitialized()) {
-    logger.error(getName(), F(": performMeasurementCycle called on uninitialized sensor!"));
+    LOG_ERROR(getName(), F(": performMeasurementCycle called on uninitialized sensor!"));
     return SensorResult::fail(SensorError::INITIALIZATION_ERROR, F("Sensor not initialized"));
   }
   constexpr size_t NUM_SAMPLES = MEASUREMENT_AVERAGE_COUNT; // Use config macro
@@ -415,20 +423,20 @@ SensorResult Sensor::performMeasurementCycle() {
 
   // Defensive checks
   if (numMeasurements == 0) {
-    logger.error(getName(), F(": getNumMeasurements() returned 0! This "
-                              "indicates a configuration issue."));
+    LOG_ERROR(getName(), F(": getNumMeasurements() returned 0! This "
+                           "indicates a configuration issue."));
     return SensorResult::fail(SensorError::INITIALIZATION_ERROR, F("No measurements configured"));
   }
 
   if (numMeasurements > SensorConfig::MAX_MEASUREMENTS) {
-    logger.error(getName(), F(": getNumMeasurements() returned more than "
-                              "MAX_MEASUREMENTS! Clamping."));
+    LOG_ERROR(getName(), F(": getNumMeasurements() returned more than "
+                           "MAX_MEASUREMENTS! Clamping."));
     numMeasurements = SensorConfig::MAX_MEASUREMENTS;
   }
 
   if (ESP.getFreeHeap() < 2048) { // Ensure we have at least 2KB free
-    logger.error(getName(), F(": Insufficient memory for measurement cycle. Free heap: ") +
-                                String(ESP.getFreeHeap()));
+    LOG_ERROR(getName(), String(F(": Insufficient memory for measurement cycle. Free heap: ")) +
+                             String(ESP.getFreeHeap()));
     return SensorResult::fail(SensorError::MEMORY_ERROR, F("Insufficient memory"));
   }
 
@@ -438,21 +446,15 @@ SensorResult Sensor::performMeasurementCycle() {
     m_state.operationStartTime = millis();
     m_state.sampleCount = 0;
     m_state.samples.clear();
-    try {
-      m_state.samples.resize(numMeasurements);
-      // Pre-allocate inner vectors to avoid heap allocations during the
-      // time-critical fetchSample() calls which can trigger mallocs and
-      // contribute to watchdog resets. Reserve NUM_SAMPLES elements for
-      // each channel ahead of time.
-      for (size_t i = 0; i < m_state.samples.size(); ++i) {
-        m_state.samples[i].reserve(NUM_SAMPLES);
-      }
-    } catch (const std::exception& e) {
-      logger.error(getName(), F(": Failed to resize samples vector: ") + String(e.what()));
-      m_state.readInProgress = false;
-      return SensorResult::fail(SensorError::MEMORY_ERROR,
-                                F("Failed to allocate measurement memory"));
+    m_state.samples.resize(numMeasurements);
+    // Pre-allocate inner vectors to avoid heap allocations during the
+    // time-critical fetchSample() calls which can trigger mallocs and
+    // contribute to watchdog resets. Reserve NUM_SAMPLES elements for
+    // each channel ahead of time.
+    for (size_t i = 0; i < m_state.samples.size(); ++i) {
+      m_state.samples[i].reserve(NUM_SAMPLES);
     }
+
     m_state.measurementIndex = 0;
     m_state.sampleIndex = 0;
     m_state.measurementStarted = true;
@@ -500,7 +502,7 @@ SensorResult Sensor::performMeasurementCycle() {
       validCount++;
   }
   if (validCount == 0) {
-    logger.error(getName(), F(": All measurement results are invalid (NaN)"));
+    LOG_ERROR(getName(), F(": All measurement results are invalid (NaN)"));
     return SensorResult::fail(SensorError::MEASUREMENT_ERROR,
                               F("All measurement results are invalid (NaN)"));
   }
@@ -573,7 +575,7 @@ size_t Sensor::getNumMeasurements() const {
   // **CRITICAL FIX: Ensure we never return 0 measurements**
   size_t count = config().activeMeasurements;
   if (count == 0) {
-    logger.warning(getName(), F(": getNumMeasurements() would return 0, using 1"));
+    LOG_WARN(getName(), F(": getNumMeasurements() would return 0, using 1"));
     return 1;
   }
   return count;

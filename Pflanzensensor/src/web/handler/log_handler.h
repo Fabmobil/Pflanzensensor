@@ -55,7 +55,7 @@ public:
    *          - CSS management
    *          - Internal state
    */
-  LogHandler(ESP8266WebServer& server, WebAuth& auth, CSSService& cssService)
+  LogHandler(ESPWebServer& server, WebAuth& auth, CSSService& cssService)
       : BaseHandler(server),
         _auth(auth),
         _cssService(cssService),
@@ -89,7 +89,7 @@ public:
    *          - Returns existing instance
    *          - Ensures single point of access
    */
-  static LogHandler* getInstance(ESP8266WebServer& server, WebAuth& auth, CSSService& cssService) {
+  static LogHandler* getInstance(ESPWebServer& server, WebAuth& auth, CSSService& cssService) {
     if (!s_instance) {
       s_instance = new LogHandler(server, auth, cssService);
       if (s_instance) {
@@ -117,6 +117,16 @@ public:
    * @note Override onRegisterRoutes for custom logic.
    */
   RouterResult onRegisterRoutes(WebRouter& router) override;
+
+  /**
+   * @brief Gehört diese URL zu diesem Handler?
+   * @param url Angefragter Pfad
+   * @return true wenn der Handler dafür geladen werden muss
+   * @details Wird von der Lazy-Loading-Middleware des WebManagers benutzt. Die
+   *          Liste steht direkt neben onRegisterRoutes(), damit beide nicht
+   *          auseinanderlaufen können.
+   */
+  static bool ownsUrl(const String& url);
 
   /**
    * @brief Handle GET requests

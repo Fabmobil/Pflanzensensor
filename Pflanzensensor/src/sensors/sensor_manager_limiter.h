@@ -52,10 +52,18 @@ public:
   bool acquireSlot(const String& sensorId) {
     unsigned long now = millis();
 
+    // Der anfragende Sensor hält den Slot bereits. Ohne diesen Zweig lieferte
+    // acquireSlot() hier false und der Sensor blockierte sich selbst, bis
+    // SLOT_TIMEOUT_MS (45 s) abgelaufen war — genau das passierte bei einer
+    // manuell ausgelösten Messung mitten im laufenden Zyklus.
+    if (m_currentSensor == sensorId) {
+      return true;
+    }
+
     // Check if current holder has timed out
     if (!m_currentSensor.isEmpty() && (now - m_slotAcquiredTime >= SLOT_TIMEOUT_MS)) {
-      logger.warning(F("SensorLimiter"), F("Erzwinge Freigabe des Slots von ") + m_currentSensor +
-                                             F(" wegen Zeitüberschreitung"));
+      LOG_WARN(F("SensorLimiter"), String(F("Erzwinge Freigabe des Slots von ")) + m_currentSensor +
+                                       String(F(" wegen Zeitüberschreitung")));
       m_currentSensor = "";
     }
 
@@ -63,15 +71,16 @@ public:
       m_currentSensor = sensorId;
       m_slotAcquiredTime = now;
       if (ConfigMgr.isDebugMeasurementCycle()) {
-        logger.debug(F("SensorLimiter"), F("Slot wurde von ") + sensorId + F(" belegt"));
+        LOG_DEBUG(F("SensorLimiter"),
+                  String(F("Slot wurde von ")) + sensorId + String(F(" belegt")));
       }
       return true;
     }
 
     if (ConfigMgr.isDebugMeasurementCycle() && m_lastBlockingSensor != m_currentSensor) {
-      logger.debug(F("SensorLimiter"), F("Slot-Anforderung von ") + sensorId +
-                                           F(" fehlgeschlagen - aktuell belegt von: ") +
-                                           m_currentSensor);
+      LOG_DEBUG(F("SensorLimiter"), String(F("Slot-Anforderung von ")) + sensorId +
+                                        String(F(" fehlgeschlagen - aktuell belegt von: ")) +
+                                        m_currentSensor);
       m_lastBlockingSensor = m_currentSensor;
     }
     return false;
@@ -86,15 +95,30 @@ public:
   void releaseSlot(const String& sensorId) {
     if (m_currentSensor == sensorId) {
       if (ConfigMgr.isDebugMeasurementCycle()) {
-        logger.debug(F("SensorLimiter"), F("Slot wurde von ") + sensorId + F(" freigegeben"));
+        LOG_DEBUG(F("SensorLimiter"),
+                  String(F("Slot wurde von ")) + sensorId + String(F(" freigegeben")));
       }
       m_currentSensor = "";
       m_slotAcquiredTime = 0;
     } else if (!m_currentSensor.isEmpty()) {
-      logger.warning(F("SensorLimiter"), F("Versuch von ") + sensorId +
-                                             F(" den Slot freizugeben, aber aktuell belegt von: ") +
-                                             m_currentSensor);
+      LOG_WARN(F("SensorLimiter"),
+               String(F("Versuch von ")) + sensorId +
+                   String(F(" den Slot freizugeben, aber aktuell belegt von: ")) + m_currentSensor);
     }
+  }
+
+  /**
+   * @brief Weist den Slot ohne Rücksicht auf den bisherigen Halter zu
+   * @param sensorId Sensor, der den Slot ab sofort hält
+   * @details Nur für manuell ausgelöste Messungen gedacht. Der Aufrufer muss
+   *          den bisherigen Halter vorher sauber abbrechen (Zyklus zurücksetzen,
+   *          Sensor deinitialisieren) — der Limiter kennt die Sensoren nicht und
+   *          kann das nicht selbst tun.
+   */
+  void forceTakeSlot(const String& sensorId) {
+    m_currentSensor = sensorId;
+    m_slotAcquiredTime = millis();
+    m_lastBlockingSensor = "";
   }
 
   /**

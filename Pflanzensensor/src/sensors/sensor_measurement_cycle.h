@@ -39,6 +39,15 @@ public:
   bool updateMeasurementCycle();
 
   /**
+   * @brief Einen Durchlauf der Zustandsmaschine ausführen
+   * @details Kapselt, was früher im SensorManager stand: prüfen ob etwas zu
+   *          tun ist, den Zyklus weiterschalten und Zustandswechsel für die
+   *          Debug-Ausgabe verfolgen. Die dafür nötigen Zustände liegen jetzt
+   *          hier statt in einer std::map<String, SensorStateLog>.
+   */
+  void tick();
+
+  /**
    * @brief Resets the measurement cycle to its initial state
    */
   void reset();
@@ -62,13 +71,34 @@ public:
   bool isDue() const { return m_state.isDue(); }
 
   /**
-   * @brief Forces the next measurement for this sensor ASAP
+   * @brief Startet sofort eine Messung, ohne Wartezeit
+   * @details Bricht einen eventuell laufenden eigenen Zyklus sauber ab, gibt
+   *          den Slot frei und setzt den Sensor auf "sofort fällig". Das
+   *          gesetzte Kennzeichen isForced() sorgt dafür, dass die
+   *          Zustandsmaschine anschließend in jedem Schleifendurchlauf
+   *          weitergeschaltet wird statt nur einmal pro Sekunde, und dass die
+   *          Wartezeit nach der Initialisierung entfällt.
+   *
+   *          Vorher wurde hier nur der Zustand zurückgesetzt. Steckte der
+   *          Sensor noch mitten im Zyklus, behielt er dabei seinen Messslot —
+   *          und blockierte sich dann selbst, bis der Slot nach 45 s
+   *          zwangsweise freigegeben wurde.
    */
-  void forceImmediateMeasurement() {
-    unsigned long now = millis();
-    m_state.setState(MeasurementState::WAITING_FOR_DUE, m_sensor ? m_sensor->getId() : "");
-    m_state.nextDueTime = now;
-  }
+  void forceImmediateMeasurement();
+
+  /**
+   * @brief Bricht einen laufenden Messzyklus ab und gibt den Slot frei
+   * @details Deinitialisiert den Sensor, falls er für diesen Zyklus
+   *          initialisiert wurde, gibt einen gehaltenen Messslot frei und
+   *          setzt die Zustandsmaschine auf WAITING_FOR_DUE zurück. Der
+   *          nächste reguläre Messzeitpunkt bleibt unverändert.
+   */
+  void abortCycle();
+
+  /**
+   * @brief Läuft gerade eine manuell ausgelöste Messung?
+   */
+  bool isForced() const { return m_forced; }
 
 private:
   // Timeouts and delays
@@ -81,7 +111,28 @@ private:
   static constexpr unsigned long DEBUG_INTERVAL = 5000; ///< Interval between debug logs (5 seconds)
   static constexpr unsigned long SLOT_RETRY_DELAY =
       50; ///< Delay between slot attempts (50ms, reduced from 100ms)
-  static constexpr unsigned long SLOT_TIMEOUT = 50000; ///< Maximum slot hold time (50 seconds)
+  /// Wie lange ein Sensor auf einen freien Messslot wartet, bevor er aufgibt.
+  /// Muss unter SensorManagerLimiter::SLOT_TIMEOUT_MS (45 s) liegen, sonst
+  /// griffe immer erst die Zwangsfreigabe des Limiters.
+  static constexpr unsigned long SLOT_TIMEOUT = 40000;
+
+  /// Zeitschranken für Zustände, die den Messslot halten. Sie fangen einen
+  /// hängenden Sensor ab, bevor der Limiter den Slot nach 45 s zwangsweise
+  /// freigibt - denn diese Freigabe benachrichtigt den Halter nicht, sodass
+  /// zwei Sensoren gleichzeitig zu messen glaubten.
+  static constexpr unsigned long STATE_TIMEOUT_INIT = 10000;
+  static constexpr unsigned long STATE_TIMEOUT_DELAY = 10000;
+  static constexpr unsigned long STATE_TIMEOUT_PROCESSING = 15000;
+  static constexpr unsigned long STATE_TIMEOUT_DEINIT = 15000;
+  /// Zuschlag auf die sensoreigene Aufwärmzeit (die je nach Sensor sehr
+  /// unterschiedlich ausfällt, z.B. SDS011).
+  static constexpr unsigned long STATE_TIMEOUT_WARMUP_MARGIN = 10000;
+
+  /// Obergrenze für den Abstand zwischen zwei Versuchen eines dauerhaft
+  /// fehlerhaften Sensors (30 Minuten).
+  static constexpr unsigned long MAX_RETRY_BACKOFF = 1800000UL;
+  /// Obergrenze für die Verdopplungsstufe, damit der Zähler nicht wegläuft.
+  static constexpr uint8_t MAX_RETRY_LEVEL = 8;
 
   // Member variables
   Sensor* m_sensor;                    ///< Pointer to the managed sensor
@@ -90,10 +141,27 @@ private:
   std::vector<float> m_currentResults; ///< Current measurement results
   // **CRITICAL FIX: Remove local MeasurementData copy to prevent memory
   // corruption** We'll work directly with the sensor's MeasurementData instead
+  MeasurementState m_lastLoggedState{MeasurementState::WAITING_FOR_DUE}; ///< für Debug-Ausgabe
+  bool m_lastUpdateResult{false};                                        ///< für Debug-Ausgabe
   unsigned long m_lastDebugTime{0};        ///< Last debug message timestamp
   unsigned long m_cycleStartTime{0};       ///< Start time of current measurement cycle
   unsigned long m_lastSlotAttemptTime{0};  ///< Last attempt to acquire measurement slot
   unsigned long m_slotRequestStartTime{0}; ///< When current slot request started
+  bool m_forced{false}; ///< Manuell ausgelöste Messung: ohne Wartezeit durchziehen
+  /**
+   * @brief Darf wegen eines Sensorfehlers neu gestartet werden?
+   * @return true wenn ein Neustart zulässig ist
+   * @details Der DS18B20-Pfad löst bei Fehlern ESP.restart() aus - bisher ohne
+   *          jede Begrenzung. Ein dauerhaft defekter Sensor startete das Gerät
+   *          damit endlos neu und machte auch das Webinterface unerreichbar.
+   *          Der Zähler liegt in .noinit und übersteht deshalb einen Warmstart.
+   */
+  static bool mayRestartForSensorFault();
+
+  /// Verdopplungsstufe des Wiederholungsabstands, 0 = normaler Messtakt.
+  /// Wächst mit jeder erschöpften Versuchsreihe, wird bei jeder erfolgreichen
+  /// Messung wieder auf 0 gesetzt.
+  uint8_t m_retryLevel{0};
 
   // State handlers (defined in separate files)
 
@@ -140,11 +208,6 @@ private:
   void handleProcessing();
 
   /**
-   * @brief Handles the SENDING_INFLUX state
-   */
-  void handleSendingInflux();
-
-  /**
    * @brief Handles the DEINITIALIZING state
    */
   void handleDeinitializing();
@@ -173,15 +236,43 @@ private:
   void handleStateError(const String& error);
 
   /**
-   * @brief Handles C++ exceptions during processing
-   * @param e The caught exception
-   */
-  void handleException(const std::exception& e);
-
-  /**
    * @brief Deactivates the sensor after fatal errors
    */
-  void deactivateSensor();
+  /**
+   * @brief Plant den nächsten Versuch mit wachsendem Abstand
+   * @details Ersetzt die frühere dauerhafte Abschaltung des Sensors. Der
+   *          Sensor bleibt aktiviert; nur der Abstand zwischen zwei Versuchen
+   *          verdoppelt sich mit jeder erschöpften Versuchsreihe, gedeckelt
+   *          auf MAX_RETRY_BACKOFF. Eine erfolgreiche Messung setzt die Stufe
+   *          zurück.
+   *
+   *          Vorher rief handleError() hier setEnabled(false) auf.
+   *          SensorManager::updateMeasurements() überspringt deaktivierte
+   *          Sensoren, und zurück auf true kam der Sensor nur über das
+   *          Webinterface oder einen Neustart - ein Wackelkontakt legte damit
+   *          einen Kanal still, sichtbar allein an einer Logzeile.
+   */
+  void scheduleRetryWithBackoff();
+
+  /**
+   * @brief Zeitschranke für einen Zustand
+   * @return Schranke in ms, 0 = unbegrenzt
+   * @details INIT_TIMEOUT und MEASURE_TIMEOUT waren zwar deklariert, wurden
+   *          aber nirgends ausgewertet. Blieb performMeasurementCycle()
+   *          dauerhaft bei PENDING, hing der Sensor unbegrenzt in MEASURING
+   *          und hielt dabei den Messslot.
+   *
+   *          WAITING_FOR_DUE bleibt unbegrenzt: dort läuft die einmalige
+   *          Aufwärmphase mancher Sensoren (MH-Z19 mehrere Minuten).
+   *          WAITING_FOR_SLOT hat mit SLOT_TIMEOUT eine eigene, aussagekräftigere
+   *          Behandlung.
+   */
+  unsigned long stateTimeoutFor(MeasurementState state) const;
+
+  /**
+   * @brief Hält dieser Zustand den Messslot?
+   */
+  static bool holdsSlotInState(MeasurementState state);
 
   /**
    * @brief Checks if the slot request has timed out

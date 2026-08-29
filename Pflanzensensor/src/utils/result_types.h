@@ -10,23 +10,8 @@
 #include <Arduino.h>
 
 #include <functional>
+#include <optional>
 #include <vector>
-
-/**
- * @class ErrorBase
- * @brief Base class for error enums
- * @details Provides a common interface for all error types,
- *          requiring string conversion functionality.
- */
-class ErrorBase {
-public:
-  /**
-   * @brief Returns the error description as a String
-   * @return String containing the error description
-   */
-  virtual String toString() const = 0;
-  virtual ~ErrorBase() = default;
-};
 
 /**
  * @enum ResourceError
@@ -504,46 +489,3 @@ using HandlerResult = TypedResult<HandlerError, void>;
 using SensorResult = TypedResult<SensorError, void>;
 using ResourceResult = TypedResult<ResourceError, void>;
 using DisplayResult = TypedResult<DisplayError, void>;
-
-/**
- * @brief Helper class for collecting multiple errors
- * @tparam ErrorType Type of the error enum
- */
-template <typename ErrorType> class ErrorCollector {
-public:
-  /**
-   * @brief Adds an error to the collection.
-   * @param error The error to be added.
-   * @param message An optional error message.
-   */
-  void addError(ErrorType error, const String& message = "") {
-    errors_.push_back({error, message});
-  }
-
-  /**
-   * @brief Checks if there are any errors.
-   * @return true if there are errors; otherwise false.
-   */
-  bool hasErrors() const { return !errors_.empty(); }
-
-  /**
-   * @brief Returns the collected errors.
-   * @return A reference to the collected errors.
-   */
-  const std::vector<std::pair<ErrorType, String>>& getErrors() const { return errors_; }
-
-  /**
-   * @brief Converts the collected errors into a TypedResult.
-   * @return A TypedResult representing the first error or success.
-   */
-  TypedResult<ErrorType, void> toResult() const {
-    if (!hasErrors()) {
-      return TypedResult<ErrorType, void>::success();
-    }
-    const auto& firstError = errors_.front();
-    return TypedResult<ErrorType, void>::fail(firstError.first, firstError.second);
-  }
-
-private:
-  std::vector<std::pair<ErrorType, String>> errors_;
-};

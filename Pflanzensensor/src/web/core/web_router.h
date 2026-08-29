@@ -12,14 +12,13 @@
 #ifndef WEB_ROUTER_H
 #define WEB_ROUTER_H
 
-#include <ESP8266WebServer.h>
+#include "utils/platform_compat.h"
 
 #include <functional>
 #include <memory>
 #include <vector>
 
 #include "logger/logger.h"
-#include "sensors/sensor_count.h"
 #include "utils/result_types.h"
 
 /// Type alias for router operation results
@@ -69,10 +68,18 @@ struct Route {
 class WebRouter {
 public:
   // Configuration constants
-  /// Maximum total routes - with lazy-loading and route cleanup, only active handlers'
-  /// routes are in memory. Typical usage: ~10-15 routes per handler * 4 cached handlers = 40-60.
-  /// Set to 50 with safety margin.
-  static constexpr size_t MAX_ROUTES = 50;
+  /// Maximale Anzahl gleichzeitig registrierter Routen.
+  ///
+  /// Der Wert bestimmt direkt, wie viel Heap der Router beim Start reserviert
+  /// (_routes.reserve(MAX_ROUTES)). Ein Route-Eintrag umfasst zwei Strings, ein
+  /// std::function und die Methode, also grob 64 Byte.
+  ///
+  /// 32 ist die Gesamtzahl der addRoute()-Aufrufe im gesamten Projekt - mehr
+  /// Routen kann es also nie gleichzeitig geben, selbst wenn alle Handler
+  /// zugleich im LRU-Cache lägen. Kleinere Werte sind nicht sicher: mit 25
+  /// scheiterte im Test die Registrierung von /admin/display und
+  /// /getLatestValues mit "Routen-Limit überschritten".
+  static constexpr size_t MAX_ROUTES = 32;
   /// Maximum number of middleware functions
   static constexpr size_t MAX_MIDDLEWARE = 8;
   /// Minimum required heap space for operation
@@ -80,11 +87,11 @@ public:
 
   /**
    * @brief Constructor
-   * @param server Reference to ESP8266WebServer instance
+   * @param server Reference to ESPWebServer instance
    * @details Initializes router with server reference and
    *          prepares internal data structures
    */
-  explicit WebRouter(ESP8266WebServer& server);
+  explicit WebRouter(ESPWebServer& server);
 
   /**
    * @brief Convert HTTP method to string representation
@@ -134,7 +141,7 @@ public:
    * @details Removes a previously registered route:
    *          - Finds matching route in collection
    *          - Removes from internal routes vector
-   *          - Note: Cannot unregister from ESP8266WebServer (limitation)
+   *          - Note: Cannot unregister from ESPWebServer (limitation)
    */
   RouterResult removeRoute(HTTPMethod method, const String& url);
 
@@ -215,7 +222,12 @@ public:
    *          - Ensures system stability
    */
   bool isHealthy() const {
+#ifdef ESP32
+    // ESP32 doesn't have getHeapFragmentation - just check free heap
+    return ESP.getFreeHeap() >= MIN_FREE_HEAP;
+#else
     return ESP.getFreeHeap() >= MIN_FREE_HEAP && ESP.getHeapFragmentation() < 70;
+#endif
   }
 
   /**
@@ -234,13 +246,13 @@ public:
    *          - Memory status
    */
   void logRouteStats() const {
-    logger.info(F("WebRouter"), F("Routen: ") + String(_routes.size()) + F("/") +
-                                    String(MAX_ROUTES) + F(" (") +
-                                    String((_routes.size() * 100) / MAX_ROUTES) + F("%)"));
+    LOG_INFO(F("WebRouter"), String(F("Routen: ")) + String(_routes.size()) + String(F("/")) +
+                                 String(MAX_ROUTES) + String(F(" (")) +
+                                 String((_routes.size() * 100) / MAX_ROUTES) + String(F("%)")));
   }
 
 private:
-  ESP8266WebServer& _server;                   ///< Reference to web server
+  ESPWebServer& _server;                       ///< Reference to web server
   std::vector<Route> _routes;                  ///< Collection of registered routes
   std::vector<MiddlewareCallback> _middleware; ///< Registered middleware functions
   String _currentHandlerType; ///< Current handler type context for route registration

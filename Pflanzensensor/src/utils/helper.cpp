@@ -4,6 +4,7 @@
 #include <LittleFS.h>
 
 #include "logger/logger.h"
+#include "main_wifi.h"
 #include "utils/critical_section.h"
 
 // Forward declaration for the static helper in wifi.cpp
@@ -48,7 +49,6 @@ time_t Helper::getCurrentTime() {
 }
 
 uint32_t Helper::getRebootCount() {
-  CriticalSection cs;
 
   if (!LittleFS.exists(REBOOT_COUNT_FILE)) {
     return 0;
@@ -81,11 +81,10 @@ String Helper::getFormattedUptime() {
 }
 
 ResourceResult Helper::incrementRebootCount() {
-  CriticalSection cs;
 
   if (!LittleFS.begin()) {
-    logger.error(F("Helper"),
-                 F("Dateisystem konnte zum Lesen des Neustartzählers nicht eingehängt werden"));
+    LOG_ERROR(F("Helper"),
+              F("Dateisystem konnte zum Lesen des Neustartzählers nicht eingehängt werden"));
     return ResourceResult::fail(ResourceError::FILESYSTEM_ERROR);
   }
 
@@ -105,33 +104,24 @@ ResourceResult Helper::incrementRebootCount() {
 
   file.println(count);
   file.close();
-  logger.debug(F("Helper"), F("Neustartzähler erhöht auf: ") + String(count));
+  LOG_DEBUG(F("Helper"), String(F("Neustartzähler erhöht auf: ")) + String(count));
   return ResourceResult::success();
 }
 
 ResourceResult Helper::initializeUpgradeMode() {
-  WiFi.mode(WIFI_STA);
-  if (!tryAllWiFiCredentials()) {
-    return ResourceResult::fail(
-        ResourceError::WIFI_ERROR,
-        F("Verbindung mit WLAN im Upgrade-Modus fehlgeschlagen (alle Credentials)"));
-  }
-  logger.info(F("Helper"), F("WLAN im Upgrade-Modus verbunden"));
-  logger.info(F("Helper"), F("IP: ") + WiFi.localIP().toString());
+  LOG_INFO(F("Helper"), F("Upgrade-Modus: WiFi-Initialisierung"));
 
-  // Initialize time synchronization
-  logger.info(F("Helper"), F("Initialisiere NTP im Minimalmodus..."));
-  logger.initNTP();
-  // Wait for time sync
-  int retries = 0;
-  while (retries < 10) {
-    if (logger.getSynchronizedTime() > 24 * 3600) { // Time is after Jan 1, 1970
-      break;
-    }
-    delay(1000);
-    logger.updateNTP();
-    retries++;
+  // Use consolidated WiFi+NTP setup (includes NTP synchronization)
+  auto wifiResult = setupWiFiWithDisplay(false);
+  if (!wifiResult.isSuccess()) {
+    LOG_ERROR(F("Helper"),
+              String(F("WiFi-Initialisierung fehlgeschlagen: ")) + wifiResult.getMessage());
+    return ResourceResult::fail(ResourceError::WIFI_ERROR, wifiResult.getMessage());
   }
+
+  LOG_INFO(F("Helper"), F("WLAN im Upgrade-Modus verbunden"));
+  LOG_INFO(F("Helper"), String(F("IP: ")) + WiFi.localIP().toString());
+
   if (!WebManager::getInstance().beginUpdateMode()) {
     return ResourceResult::fail(ResourceError::OPERATION_FAILED,
                                 F("Starten des WebManagers im Update-Modus fehlgeschlagen"));
@@ -140,16 +130,16 @@ ResourceResult Helper::initializeUpgradeMode() {
 }
 
 #if USE_DISPLAY
-void Helper::displayWiFiConnectionAttempts(DisplayManager* displayManager,
-                                           const String& attemptsInfo, bool isBootMode) {
-  if (!displayManager || attemptsInfo.length() == 0) {
+void Helper::displayWiFiConnectionAttempts(DisplayManager* display, const String& attemptsInfo,
+                                           bool isBootMode) {
+  if (!display || attemptsInfo.length() == 0) {
     return;
   }
 
   // Match the WiFi module's German phrasing for missing credentials
   if (attemptsInfo.indexOf("Keine WiFi-Zugangsdaten") >= 0 ||
       attemptsInfo.indexOf("Keine Credentials") >= 0) {
-    displayManager->updateLogStatus(F("Keine WiFi-Zugangsdaten konfiguriert"), isBootMode);
+    display->updateLogStatus(F("Keine WiFi-Zugangsdaten konfiguriert"), isBootMode);
   } else {
     // Split the long info into multiple lines for better readability
     int startPos = 0;
@@ -158,7 +148,7 @@ void Helper::displayWiFiConnectionAttempts(DisplayManager* displayManager,
       String line = attemptsInfo.substring(startPos, commaPos);
       line.trim();
       if (line.length() > 0) {
-        displayManager->updateLogStatus(line, isBootMode);
+        display->updateLogStatus(line, isBootMode);
       }
       startPos = commaPos + 1;
       commaPos = attemptsInfo.indexOf(',', startPos);
@@ -167,7 +157,7 @@ void Helper::displayWiFiConnectionAttempts(DisplayManager* displayManager,
     String lastLine = attemptsInfo.substring(startPos);
     lastLine.trim();
     if (lastLine.length() > 0) {
-      displayManager->updateLogStatus(lastLine, isBootMode);
+      display->updateLogStatus(lastLine, isBootMode);
     }
   }
 }

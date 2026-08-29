@@ -12,8 +12,8 @@
 #ifndef SENSOR_HANDLER_H
 #define SENSOR_HANDLER_H
 
+#include "utils/platform_compat.h"
 #include <Arduino.h>
-#include <ESP8266WebServer.h>
 
 #include <map>
 
@@ -51,10 +51,10 @@ public:
    *          - CSS management
    *          - Sensor management
    */
-  SensorHandler(ESP8266WebServer& server, WebAuth& auth, CSSService& cssService,
+  SensorHandler(ESPWebServer& server, WebAuth& auth, CSSService& cssService,
                 SensorManager& sensorManager)
       : BaseHandler(server), _auth(auth), _cssService(cssService), _sensorManager(sensorManager) {
-    logger.debug(F("SensorHandler"), F("Initialisiere SensorHandler"));
+    LOG_DEBUG(F("SensorHandler"), F("Initialisiere SensorHandler"));
   }
 
   /**
@@ -75,6 +75,16 @@ public:
    * @note Override onRegisterRoutes for custom logic.
    */
   RouterResult onRegisterRoutes(WebRouter& router) override;
+
+  /**
+   * @brief Gehört diese URL zu diesem Handler?
+   * @param url Angefragter Pfad
+   * @return true wenn der Handler dafür geladen werden muss
+   * @details Wird von der Lazy-Loading-Middleware des WebManagers benutzt. Die
+   *          Liste steht direkt neben onRegisterRoutes(), damit beide nicht
+   *          auseinanderlaufen können.
+   */
+  static bool ownsUrl(const String& url);
 
 protected:
   /**
@@ -146,7 +156,6 @@ private:
    *          - Control options
    *          - Error states
    */
-  void createSensorListSection() const;
 
   /**
    * @brief Convert string to URL-safe format

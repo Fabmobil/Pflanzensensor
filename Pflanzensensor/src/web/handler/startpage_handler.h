@@ -40,9 +40,9 @@ public:
    *          - Prepares CSS handling
    *          - Initializes logging
    */
-  StartpageHandler(ESP8266WebServer& server, WebAuth& auth, CSSService& cssService)
+  StartpageHandler(ESPWebServer& server, WebAuth& auth, CSSService& cssService)
       : BaseHandler(server), _auth(auth), _cssService(cssService) {
-    logger.debug(F("StartpageHandler"), F("Initialisiere StartpageHandler"));
+    LOG_DEBUG(F("StartpageHandler"), F("Initialisiere StartpageHandler"));
     logger.logMemoryStats(F("StartpageHandler"));
   }
 
@@ -64,6 +64,16 @@ public:
    * @note Override onRegisterRoutes for custom logic.
    */
   RouterResult onRegisterRoutes(WebRouter& router) override;
+
+  /**
+   * @brief Gehört diese URL zu diesem Handler?
+   * @param url Angefragter Pfad
+   * @return true wenn der Handler dafür geladen werden muss
+   * @details Wird von der Lazy-Loading-Middleware des WebManagers benutzt. Die
+   *          Liste steht direkt neben onRegisterRoutes(), damit beide nicht
+   *          auseinanderlaufen können.
+   */
+  static bool ownsUrl(const String& url);
 
   /**
    * @brief Handle GET requests

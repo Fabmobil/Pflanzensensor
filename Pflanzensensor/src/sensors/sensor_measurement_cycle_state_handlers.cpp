@@ -1,79 +1,98 @@
+/**
+ * @file sensor_measurement_cycle_state_handlers.cpp
+ * @brief Zustandshandler für den Messzyklus
+ * @details Implementiert die Zustandsübergänge der Messzyklus-Zustandsmaschine:
+ *          WAITING_FOR_DUE → WAITING_FOR_SLOT → INITIALIZING → WAITING_FOR_DELAY
+ *          → [WARMUP → WAITING_FOR_DELAY] → MEASURING → PROCESSING
+ */
+
 #include "sensor_measurement_cycle.h"
 
+/**
+ * @brief Behandelt den WAITING_FOR_DUE-Zustand
+ * @return false (Zyklus nie als abgeschlossen melden — der Aufrufer prüft isDue())
+ * @details Wartet auf den nächsten Messzeitpunkt. Prüft auch initiale
+ *          Aufwärmphase bei Sensoren, die nach dem Einschalten Zeit brauchen.
+ */
 bool SensorMeasurementCycleManager::handleWaitingForDue() {
   unsigned long now = millis();
 
-  // Check if sensor is still in warmup
+  // Initiale Aufwärmphase prüfen (nur beim ersten Start, nicht pro Messzyklus)
   if (m_state.needsWarmup) {
     unsigned long warmupElapsed = now - m_state.warmupStartTime;
     if (warmupElapsed < m_state.warmupTimeNeeded) {
-      // Still in warmup period
+      // Aufwärmphase läuft noch. Auch eine manuell ausgelöste Messung muss
+      // hier warten — der Sensor liefert vor Ablauf der Aufwärmzeit schlicht
+      // keine gültigen Werte. Damit das nicht wie ein Hänger aussieht, wird
+      // es in dem Fall unabhängig vom Debug-Schalter protokolliert.
+      if (m_forced && (now - m_lastDebugTime >= DEBUG_INTERVAL)) {
+        LOG_INFO(
+            F("MeasurementCycle"),
+            m_sensor->getName() + String(F(": Messung angefordert, Sensor wärmt noch auf - ")) +
+                String((m_state.warmupTimeNeeded - warmupElapsed) / 1000UL) + F(" s verbleibend"));
+        m_lastDebugTime = now;
+      }
       if (ConfigMgr.isDebugMeasurementCycle() && (now - m_lastDebugTime >= DEBUG_INTERVAL)) {
         unsigned long remaining = (m_state.warmupTimeNeeded - warmupElapsed) / 1000UL;
-        logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Aufwärmphase läuft, ") +
-                                                String(remaining) + F(" s verbleibend"));
+        LOG_DEBUG(F("MeasurementCycle"), m_sensor->getName() + String(F(": Aufwärmphase läuft, ")) +
+                                             String(remaining) + F(" s verbleibend"));
         m_lastDebugTime = now;
       }
       return false;
     }
-    // Warmup complete
+    // Aufwärmphase abgeschlossen
     m_state.needsWarmup = false;
     if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Aufwärmen abgeschlossen"));
+      LOG_DEBUG(F("MeasurementCycle"), m_sensor->getName() + F(": Aufwärmen abgeschlossen"));
     }
   }
 
+  // Messzeitpunkt noch nicht erreicht
   if (!m_state.isDue()) {
-    // Not time yet, check if we should log debug info
-    if (ConfigMgr.isDebugMeasurementCycle() && (now - m_lastDebugTime >= DEBUG_INTERVAL)) {
-      logger.debug(F("MeasurementCycle"),
-                   m_sensor->getName() + F(": Nächste Messung in ") +
-                       String((m_state.nextDueTime > now) ? (m_state.nextDueTime - now) : 0) +
-                       F(" ms fällig"));
-      m_lastDebugTime = now;
-    }
     return false;
   }
 
-  // Record the start time of this measurement cycle
+  // Messzyklusbeginn protokollieren
   m_cycleStartTime = now;
 
   if (ConfigMgr.isDebugMeasurementCycle()) {
-    logger.debug(F("MeasurementCycle"),
-                 m_sensor->getName() + F(": Messintervall abgelaufen, fordere Slot an"));
+    LOG_DEBUG(F("MeasurementCycle"),
+              m_sensor->getName() + F(": Messintervall abgelaufen, fordere Slot an"));
   }
 
+  m_state.warmupDoneThisCycle = false;
   m_state.setState(MeasurementState::WAITING_FOR_SLOT, m_sensor->getName());
-  return true;
+  return false; // Zyklus ist NICHT abgeschlossen — er beginnt gerade erst
 }
 
+/**
+ * @brief Behandelt den WAITING_FOR_SLOT-Zustand
+ * @details Versucht einen Messslot zu reservieren. Bei Timeout zurück zu WAITING_FOR_DUE.
+ *          Verwendet Instanzvariablen statt statischer Variablen, damit mehrere
+ *          Sensorinstanzen sich nicht gegenseitig beeinflussen.
+ */
 void SensorMeasurementCycleManager::handleWaitingForSlot() {
-  static constexpr unsigned long SLOT_RETRY_DELAY = 50; // Reduced from 100ms
   unsigned long now = millis();
 
-  // Only log first attempt and state changes
-  static bool firstAttempt = true;
-  static bool lastSlotResult = false;
-
-  // Check for slot timeout
+  // Timeout-Prüfung: Slot konnte nicht rechtzeitig reserviert werden
   if (m_slotRequestStartTime > 0 && now - m_slotRequestStartTime >= SLOT_TIMEOUT) {
     if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.warning(F("MeasurementCycle"), m_sensor->getName() +
-                                                F(": Slot-Anfrage: Zeitüberschreitung nach ") +
-                                                String(SLOT_TIMEOUT) + F(" ms"));
+      LOG_WARN(F("MeasurementCycle"), m_sensor->getName() +
+                                          String(F(": Slot-Anfrage Zeitüberschreitung nach ")) +
+                                          String(SLOT_TIMEOUT) + F(" ms"));
     }
-    // Reset slot request time and go back to waiting for due
     m_slotRequestStartTime = 0;
+    // Nächste Messung sofort erneut versuchen
     m_state.setState(MeasurementState::WAITING_FOR_DUE, m_sensor->getName());
     return;
   }
 
-  unsigned long timeSinceLastTry = now - m_lastSlotAttemptTime;
-  if (timeSinceLastTry < SLOT_RETRY_DELAY) {
+  // Wartezeit zwischen Versuchen einhalten
+  if (now - m_lastSlotAttemptTime < SLOT_RETRY_DELAY) {
     return;
   }
 
-  // Initialize slot request start time on first attempt
+  // Ersten Versuch initialisieren
   if (m_slotRequestStartTime == 0) {
     m_slotRequestStartTime = now;
   }
@@ -81,74 +100,103 @@ void SensorMeasurementCycleManager::handleWaitingForSlot() {
   m_lastSlotAttemptTime = now;
   bool slotAcquired = SensorManagerLimiter::getInstance().acquireSlot(m_sensor->getId());
 
-  // Log only on first attempt or when result changes
-  if (firstAttempt || slotAcquired != lastSlotResult) {
-    if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("MeasurementCycle"),
-                   m_sensor->getName() + F(": Slot-Anforderung ") +
-                       (slotAcquired ? F("erfolgreich") : F("fehlgeschlagen")) + F(" nach ") +
-                       String(now - m_slotRequestStartTime) + F(" ms"));
-    }
-    firstAttempt = false;
-    lastSlotResult = slotAcquired;
-  }
-
   if (slotAcquired) {
     if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Starte Initialisierung"));
+      LOG_DEBUG(F("MeasurementCycle"), m_sensor->getName() + String(F(": Slot reserviert nach ")) +
+                                           String(now - m_slotRequestStartTime) + F(" ms"));
     }
+    m_slotRequestStartTime = 0;
     m_state.setState(MeasurementState::INITIALIZING, m_sensor->getName());
-    firstAttempt = true;        // Reset for next cycle
-    m_slotRequestStartTime = 0; // Reset slot request time
   }
 }
 
+/**
+ * @brief Behandelt den WAITING_FOR_DELAY-Zustand
+ * @details Wartet minimale Verzögerung ab (nach Init oder Warmup).
+ *          Entscheidet basierend auf Sensor-Anforderungen, ob Warmup oder
+ *          Messung als nächstes kommt.
+ */
 void SensorMeasurementCycleManager::handleWaitingForDelay() {
   if (!m_state.isMinimumDelayElapsed()) {
     return;
   }
 
-  if (m_state.needsWarmup && m_state.warmupStartTime == 0) {
+  // Nach Initialisierung: Prüfen ob Sensor pro Messzyklus ein Warmup braucht
+  if (m_sensor->isMeasurementWarmupSensor() && !m_state.warmupDoneThisCycle) {
     m_state.setState(MeasurementState::WARMUP, m_sensor->getName());
   } else {
     m_state.setState(MeasurementState::MEASURING, m_sensor->getName());
   }
 }
 
+/**
+ * @brief Behandelt den WARMUP-Zustand
+ * @details Führt die sensorspezifische Aufwärmphase durch (z.B. DS18B20 braucht
+ *          750ms nach Initialisierung). Nach Abschluss mit kurzer Verzögerung
+ *          zum Messzustand weiter.
+ */
 void SensorMeasurementCycleManager::handleWarmup() {
   if (m_state.warmupStartTime == 0) {
     m_state.warmupStartTime = millis();
     if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Starte Aufwärmphase"));
+      LOG_DEBUG(F("MeasurementCycle"), m_sensor->getName() + F(": Starte Aufwärmphase"));
     }
   }
 
   if (millis() - m_state.warmupStartTime >= m_state.warmupTimeNeeded) {
     if (ConfigMgr.isDebugMeasurementCycle()) {
-      logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Aufwärmen abgeschlossen"));
+      LOG_DEBUG(F("MeasurementCycle"), m_sensor->getName() + F(": Aufwärmen abgeschlossen"));
     }
     m_state.warmupStartTime = 0;
+    m_state.warmupDoneThisCycle = true;
     m_state.setMinimumDelay(WARMUP_DELAY);
     m_state.setState(MeasurementState::WAITING_FOR_DELAY, m_sensor->getName());
   }
 }
 
+/**
+ * @brief Behandelt den MEASURING-Zustand
+ * @details Führt den Messzyklus des Sensors durch. Unterstützt asynchrone
+ *          Messungen (PENDING-Status) für langsame Sensoren.
+ *          Bei Erfolg werden die gemittelten Ergebnisse gespeichert und
+ *          der Zeitstempel der letzten Messung aktualisiert.
+ */
 void SensorMeasurementCycleManager::handleMeasuring() {
-  // [CHANGED: Use new performMeasurementCycle() method on sensor]
   auto result = m_sensor->performMeasurementCycle();
+
+  // Asynchrone Messung noch nicht fertig
   if (result.error().has_value() && result.error().value() == SensorError::PENDING) {
-    // Still in progress, wait for next call
     return;
   }
+
+  // Messung fehlgeschlagen
   if (!result.isSuccess()) {
-    handleStateError(F("Messung in performMeasurementCycle fehlgeschlagen"));
+    handleStateError(String(F("Messung fehlgeschlagen: ")) + result.getMessage());
     return;
   }
-  m_currentResults = m_sensor->getAveragedResults(); // Use DRY base method
-  // Record the completion time immediately so the UI shows the most
-  // accurate 'last measurement' timestamp. This avoids delays introduced
-  // by processing / persistence steps.
+
+  // Ergebnisse sichern
+  m_currentResults = m_sensor->getAveragedResults();
+
+  // Erfolg hebt die Fehlerhistorie auf.
+  //
+  // MEASUREMENT_ERROR_COUNT ist als "Anzahl aufeinanderfolgender
+  // Fehlmessungen" dokumentiert, errorCount wurde bei einer erfolgreichen
+  // Messung aber nirgends zurückgesetzt - nur nach geglückter
+  // Reinitialisierung. Ein Sensor, der gelegentlich eine Messung verpatzt
+  // (beim DHT völlig normal), summierte die Fehler über Stunden auf und lief
+  // in die Fehlerbehandlung, obwohl er funktionierte.
+  m_state.errorCount = 0;
+  m_state.fatalError = false;
+  m_retryLevel = 0;
+  if (m_sensor->config().hasPersistentError) {
+    LOG_INFO(F("MeasurementCycle"), m_sensor->getName() + F(": Liefert wieder Messwerte"));
+    m_sensor->mutableConfig().hasPersistentError = false;
+  }
+
+  // Zeitstempel der erfolgreichen Messung aktualisieren (nur hier, nicht in Processing)
   m_sensor->updateLastMeasurementTime();
-  logger.debug(F("MeasurementCycle"), m_sensor->getName() + F(": Wechsel in Verarbeitungszustand"));
+
+  LOG_DEBUG(F("MeasurementCycle"), m_sensor->getName() + F(": Wechsel in Verarbeitungszustand"));
   m_state.setState(MeasurementState::PROCESSING, m_sensor->getName());
 }

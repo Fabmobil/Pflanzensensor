@@ -13,7 +13,7 @@
 #ifndef ADMIN_DISPLAY_HANDLER_H
 #define ADMIN_DISPLAY_HANDLER_H
 
-#include <ESP8266WebServer.h>
+#include "utils/platform_compat.h"
 
 #include "managers/manager_display.h"
 #include "managers/manager_sensor.h"
@@ -45,7 +45,7 @@ public:
    *          - Prepares display management
    *          - Configures routing
    */
-  explicit AdminDisplayHandler(ESP8266WebServer& server);
+  explicit AdminDisplayHandler(ESPWebServer& server);
 
   /**
    * @brief Destructor
@@ -65,6 +65,16 @@ public:
    * @note Override onRegisterRoutes for custom logic.
    */
   RouterResult onRegisterRoutes(WebRouter& router) override;
+
+  /**
+   * @brief Gehört diese URL zu diesem Handler?
+   * @param url Angefragter Pfad
+   * @return true wenn der Handler dafür geladen werden muss
+   * @details Wird von der Lazy-Loading-Middleware des WebManagers benutzt. Die
+   *          Liste steht direkt neben onRegisterRoutes(), damit beide nicht
+   *          auseinanderlaufen können.
+   */
+  static bool ownsUrl(const String& url);
 
 protected:
   /**

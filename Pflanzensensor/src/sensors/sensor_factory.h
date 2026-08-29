@@ -21,6 +21,24 @@
 #if USE_DHT
 #include "sensors/sensor_dht.h"
 #endif
+#if USE_DS18B20
+#include "sensors/sensor_ds18b20.h"
+#endif
+#if USE_SDS011
+#include "sensors/sensor_sds011.h"
+#endif
+#if USE_MHZ19
+#include "sensors/sensor_mhz19.h"
+#endif
+#if USE_HX711
+#include "sensors/sensor_hx711.h"
+#endif
+#if USE_BMP280
+#include "sensors/sensor_bmp280.h"
+#endif
+#if USE_SERIAL_RECEIVER
+#include "sensors/sensor_serial_receiver.h"
+#endif
 #include "sensors/sensors.h"
 
 /**
@@ -85,37 +103,54 @@ private:
    * @details Handles the complete initialization sequence for a sensor,
    *          including validation, hardware initialization, and initial
    * testing.
-   * @see validateSensorConfig()
+   *
    */
   static SensorResult initializeSensor(std::unique_ptr<Sensor>& sensor);
-
-  /**
-   * @brief Validates the configuration of a sensor
-   * @param sensor Pointer to the sensor to validate
-   * @return true if the configuration is valid, false otherwise
-   * @details Checks all required configuration parameters and ensures
-   *          they are within valid ranges. Logs any validation errors.
-   */
-  static bool validateSensorConfig(const Sensor* sensor);
-
-  /**
-   * @brief Logs the current status of a sensor
-   * @param phase Description of the current operation phase
-   * @param sensor Pointer to the sensor being processed
-   * @details Provides detailed logging of sensor operations for debugging
-   *          and monitoring purposes.
-   */
-  static void logSensorStatus(const String& phase, const Sensor* sensor);
 
   // Memory-optimized sensor creation helper functions
 #if USE_DHT
   static void addDHTSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
                             SensorManager* sensorManager, std::vector<String>& errors);
 #endif
-
 #if USE_ANALOG
   static void addAnalogSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
                                SensorManager* sensorManager, std::vector<String>& errors);
+#endif
+#if USE_DS18B20
+  static SensorResult createDS18B20Sensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                           SensorManager* sensorManager);
+  static void addDS18B20Sensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                SensorManager* sensorManager, std::vector<String>& errors);
+#endif
+#if USE_SDS011
+  static SensorResult createSDS011Sensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                          SensorManager* sensorManager);
+  static void addSDS011Sensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                               SensorManager* sensorManager, std::vector<String>& errors);
+#endif
+#if USE_MHZ19
+  static SensorResult createMHZ19Sensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                         SensorManager* sensorManager);
+  static void addMHZ19Sensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                              SensorManager* sensorManager, std::vector<String>& errors);
+#endif
+#if USE_HX711
+  static SensorResult createHX711Sensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                         SensorManager* sensorManager);
+  static void addHX711Sensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                              SensorManager* sensorManager, std::vector<String>& errors);
+#endif
+#if USE_BMP280
+  static SensorResult createBMP280Sensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                          SensorManager* sensorManager);
+  static void addBMP280Sensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                               SensorManager* sensorManager, std::vector<String>& errors);
+#endif
+#if USE_SERIAL_RECEIVER
+  static SensorResult createSerialReceiverSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                                  SensorManager* sensorManager);
+  static void addSerialReceiverSensors(std::vector<std::unique_ptr<Sensor>>& sensors,
+                                       SensorManager* sensorManager, std::vector<String>& errors);
 #endif
 
   // Prevent instantiation

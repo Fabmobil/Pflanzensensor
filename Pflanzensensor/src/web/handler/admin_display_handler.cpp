@@ -19,8 +19,8 @@ extern std::unique_ptr<DisplayManager> displayManager;
 
 AdminDisplayHandler::~AdminDisplayHandler() = default;
 
-AdminDisplayHandler::AdminDisplayHandler(ESP8266WebServer& server) : BaseHandler(server) {
-  logger.debug(F("AdminDisplayHandler"), F("Initialisiere AdminDisplayHandler"));
+AdminDisplayHandler::AdminDisplayHandler(ESPWebServer& server) : BaseHandler(server) {
+  LOG_DEBUG(F("AdminDisplayHandler"), F("Initialisiere AdminDisplayHandler"));
 }
 
 void AdminDisplayHandler::handleDisplayConfig() {
@@ -221,7 +221,7 @@ void AdminDisplayHandler::handleMeasurementDisplayToggle() {
     // rotation logic can read it.
     if (_server.hasArg("measurement_index")) {
       int index = _server.arg("measurement_index").toInt();
-      if (index < 0) {
+      if (index < 0 || static_cast<size_t>(index) >= sensor->config().activeMeasurements) {
         sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültiger Messungsindex\"}"));
         return;
       }
@@ -268,15 +268,19 @@ void AdminDisplayHandler::handleMeasurementDisplayToggle() {
 }
 
 bool AdminDisplayHandler::validateRequest() const {
-  if (!_server.authenticate("admin", ConfigMgr.getAdminPassword().c_str())) {
+  if (!WebAuth::checkAdminCredentials(_server)) {
     _server.requestAuthentication();
     return false;
   }
   return true;
 }
 
+bool AdminDisplayHandler::ownsUrl(const String& url) {
+  return url == F("/admin/display") || url == F("/admin/display/measurement_toggle");
+}
+
 RouterResult AdminDisplayHandler::onRegisterRoutes(WebRouter& router) {
-  logger.debug(F("AdminDisplayHandler"), F("Registriere Display-Routen"));
+  LOG_DEBUG(F("AdminDisplayHandler"), F("Registriere Display-Routen"));
 
   auto result = router.addRoute(HTTP_GET, "/admin/display", [this]() { handleDisplayConfig(); });
   if (!result.isSuccess())

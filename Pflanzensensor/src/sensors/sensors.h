@@ -16,8 +16,9 @@
 #include "sensor_types.h"
 #include "utils/result_types.h"
 
-// Forward declaration
+// Forward declarations
 class SensorManager;
+class SensorMeasurementCycleManager;
 
 // --- Threshold utility declarations ---
 struct ThresholdDefaults {
@@ -342,7 +343,7 @@ public:
    */
   const MeasurementData& getMeasurementData() const {
     if (!m_measurementDataValid || !m_lastMeasurementData) {
-      logger.error(getName(), F(": getMeasurementData() called after deinit!"));
+      LOG_ERROR(getName(), F(": getMeasurementData() called after deinit!"));
       static MeasurementData invalidData;
       invalidData.invalidate();
       return invalidData;
@@ -432,6 +433,22 @@ public:
    */
   void updateLastMeasurementTime();
 
+  /**
+   * @brief Zyklus-Manager dieses Sensors setzen
+   * @param manager Eigentümerschaft geht an den Sensor über
+   * @details Der Manager lag früher in einer
+   *          std::map<String, unique_ptr<...>> im SensorManager. Jeder
+   *          Zugriff kostete damit eine Rot-Schwarz-Baum-Suche mit
+   *          String-Vergleich - und das im Sekundentakt für jeden Sensor.
+   */
+  void setCycleManager(std::unique_ptr<SensorMeasurementCycleManager> manager);
+
+  /**
+   * @brief Zyklus-Manager dieses Sensors
+   * @return Zeiger auf den Manager oder nullptr
+   */
+  SensorMeasurementCycleManager* cycleManager() const { return m_cycleManager.get(); }
+
 protected:
   /**
    * @brief Log a debug message if sensor debug is enabled
@@ -439,7 +456,7 @@ protected:
    */
   inline void logDebug(const String& msg) const {
     if (ConfigMgr.isDebugSensor()) {
-      logger.debug(getName(), msg);
+      LOG_DEBUG(getName(), msg);
     }
   }
 
@@ -487,6 +504,10 @@ protected:
   std::vector<float> averageSamples() const;
 
   SensorMeasurementState m_state; ///< Generic measurement state
+
+private:
+  /// Messzyklus-Zustandsmaschine dieses Sensors (Eigentum des Sensors)
+  std::unique_ptr<SensorMeasurementCycleManager> m_cycleManager;
 };
 
 #endif // SENSORS_H

@@ -3,6 +3,10 @@ Dokumentation/Workshop\ Unterlagen/2\ Tage/*
 Dokumentation/Workshop\ Unterlagen/3\ Tage/*
 logs/*
 .github/*
+# Ausnahme: die CI-Workflows gehoeren ins Repository, sonst laufen sie auf
+# GitHub nie. Alles andere unter .github/ bleibt lokal.
+!.github/workflows/
+!.github/workflows/*
 
 # Prerequisites
 *.d

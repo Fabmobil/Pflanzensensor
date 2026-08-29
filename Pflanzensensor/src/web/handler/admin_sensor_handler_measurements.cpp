@@ -22,8 +22,9 @@ void AdminSensorHandler::handleMeasurementInterval() {
   unsigned long intervalSeconds = _server.arg("interval").toInt();
   unsigned long intervalMilliseconds = intervalSeconds * 1000;
 
-  logger.debug(F("AdminSensorHandler"), F("handleMeasurementInterval: sensor=") + sensorId +
-                                            F(", interval=") + String(intervalSeconds) + F("s"));
+  LOG_DEBUG(F("AdminSensorHandler"), String(F("handleMeasurementInterval: sensor=")) + sensorId +
+                                         String(F(", interval=")) + String(intervalSeconds) +
+                                         F("s"));
 
   // Validate interval
   if (intervalSeconds < 10 || intervalSeconds > 3600) {
@@ -55,8 +56,8 @@ void AdminSensorHandler::handleMeasurementInterval() {
     // Use atomic update for measurement interval
     auto result = SensorPersistence::updateMeasurementInterval(sensorId, intervalMilliseconds);
     if (!result.isSuccess()) {
-      logger.error(F("AdminSensorHandler"),
-                   F("Failed to update measurement interval: ") + result.getMessage());
+      LOG_ERROR(F("AdminSensorHandler"),
+                String(F("Failed to update measurement interval: ")) + result.getMessage());
       sendJsonResponse(500, F("{\"success\":false,\"error\":\"Failed to save interval\"}"));
       return;
     }

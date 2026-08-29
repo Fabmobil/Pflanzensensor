@@ -22,21 +22,24 @@ class SensorPersistence;
  * including pin assignments, multiplexer settings, and calibration values.
  */
 struct AnalogConfig : public SensorConfig {
-  uint8_t pin;                ///< The analog input pin to read from
-  bool useMultiplexer;        ///< Whether to use multiplexer for multiple inputs
-  unsigned long minimumDelay; ///< Minimum delay between readings
+  // ACHTUNG: pin und minimumDelay NICHT hier deklarieren - beide existieren
+  // bereits in SensorConfig. Eigene Member gleichen Namens hätten die
+  // Basis-Member verdeckt: der Konstruktor hätte die abgeleiteten gesetzt,
+  // während Sensor::m_tempConfig = config beim Slicing nur die Basis kopiert -
+  // und die wäre auf 0 geblieben. Genau das war der Fall: die konfigurierten
+  // 500 ms Mindestabstand zwischen Einzelmessungen wurden bei Analogsensoren
+  // stillschweigend ignoriert, weil Sensor::performMeasurementCycle() auf
+  // config().minimumDelay == 0 traf.
+  bool useMultiplexer; ///< Whether to use multiplexer for multiple inputs
 
   /**
    * @brief Default constructor for AnalogConfig
    * @details Sets id to 'ANALOG'.
    */
-  AnalogConfig()
-      : SensorConfig(),
-        pin(ANALOG_PIN),
-        useMultiplexer(USE_MULTIPLEXER),
-        minimumDelay(ANALOG_MINIMUM_DELAY) {
+  AnalogConfig() : SensorConfig(), useMultiplexer(USE_MULTIPLEXER) {
     name = F("Analog Sensor");
     id = F("ANALOG"); // Unified ID
+    pin = ANALOG_PIN;
     activeMeasurements = ANALOG_SENSOR_COUNT;
     if (measurementInterval == 0)
       measurementInterval = ANALOG_MEASUREMENT_INTERVAL * 1000;
@@ -58,6 +61,7 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_1_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_1_YELLOW_HIGH;
         break;
+#if ANALOG_SENSOR_COUNT > 1
       case 1:
         measurements[i].name = ANALOG_2_NAME;
         measurements[i].fieldName = ANALOG_2_FIELD_NAME;
@@ -71,6 +75,8 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_2_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_2_YELLOW_HIGH;
         break;
+#endif
+#if ANALOG_SENSOR_COUNT > 2
       case 2:
         measurements[i].name = ANALOG_3_NAME;
         measurements[i].fieldName = ANALOG_3_FIELD_NAME;
@@ -84,6 +90,8 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_3_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_3_YELLOW_HIGH;
         break;
+#endif
+#if ANALOG_SENSOR_COUNT > 3
       case 3:
         measurements[i].name = ANALOG_4_NAME;
         measurements[i].fieldName = ANALOG_4_FIELD_NAME;
@@ -97,6 +105,8 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_4_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_4_YELLOW_HIGH;
         break;
+#endif
+#if ANALOG_SENSOR_COUNT > 4
       case 4:
         measurements[i].name = ANALOG_5_NAME;
         measurements[i].fieldName = ANALOG_5_FIELD_NAME;
@@ -110,6 +120,8 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_5_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_5_YELLOW_HIGH;
         break;
+#endif
+#if ANALOG_SENSOR_COUNT > 5
       case 5:
         measurements[i].name = ANALOG_6_NAME;
         measurements[i].fieldName = ANALOG_6_FIELD_NAME;
@@ -123,6 +135,8 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_6_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_6_YELLOW_HIGH;
         break;
+#endif
+#if ANALOG_SENSOR_COUNT > 6
       case 6:
         measurements[i].name = ANALOG_7_NAME;
         measurements[i].fieldName = ANALOG_7_FIELD_NAME;
@@ -136,6 +150,8 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_7_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_7_YELLOW_HIGH;
         break;
+#endif
+#if ANALOG_SENSOR_COUNT > 7
       case 7:
         measurements[i].name = ANALOG_8_NAME;
         measurements[i].fieldName = ANALOG_8_FIELD_NAME;
@@ -149,6 +165,7 @@ struct AnalogConfig : public SensorConfig {
         measurements[i].limits.greenHigh = ANALOG_8_GREEN_HIGH;
         measurements[i].limits.yellowHigh = ANALOG_8_YELLOW_HIGH;
         break;
+#endif
       default:
         measurements[i].name = "";
         measurements[i].fieldName = "";
@@ -238,7 +255,7 @@ public:
    * @override
    */
   SharedHardwareInfo getSharedHardwareInfo() const override {
-    return SharedHardwareInfo(SensorType::ANALOG, m_analogConfig.pin, m_analogConfig.minimumDelay);
+    return SharedHardwareInfo(SensorType::ANALOG_SENSOR, config().pin, config().minimumDelay);
   }
 
   /**
@@ -271,15 +288,12 @@ public:
    * @return Minimum value
    */
   inline float getMinValue(size_t idx) const {
-    if (idx < m_analogConfig.measurements.size()) {
-      const auto& m = m_analogConfig.measurements[idx];
-      // Use runtime autocal if either the sensor's runtime copy or the
-      // persistent config indicates calibrationMode is active. This
-      // prevents transient races between persistence and runtime state.
-      bool cfgCal = false;
-      if (idx < this->config().measurements.size())
-        cfgCal = this->config().measurements[idx].calibrationMode;
-      if (m.calibrationMode || cfgCal)
+    if (idx < config().measurements.size()) {
+      const auto& m = config().measurements[idx];
+      // Bei aktiver Autokalibrierung gilt die laufend angepasste Untergrenze.
+      // (Früher wurde hier zusätzlich eine zweite Config gegengeprüft, weil der
+      // Sensor eine eigene Kopie hielt und beide auseinanderlaufen konnten.)
+      if (m.calibrationMode)
         return static_cast<float>(m.autocal.min_value);
       return m.minValue;
     }
@@ -291,8 +305,8 @@ public:
    * @param v Minimum value to set
    */
   inline void setMinValue(size_t idx, float v) {
-    if (idx < m_analogConfig.measurements.size())
-      m_analogConfig.measurements[idx].minValue = v;
+    if (idx < mutableConfig().measurements.size())
+      mutableConfig().measurements[idx].minValue = v;
   }
   /**
    * @brief Get the maximum value for a given channel
@@ -300,12 +314,9 @@ public:
    * @return Maximum value
    */
   inline float getMaxValue(size_t idx) const {
-    if (idx < m_analogConfig.measurements.size()) {
-      const auto& m = m_analogConfig.measurements[idx];
-      bool cfgCal = false;
-      if (idx < this->config().measurements.size())
-        cfgCal = this->config().measurements[idx].calibrationMode;
-      if (m.calibrationMode || cfgCal)
+    if (idx < config().measurements.size()) {
+      const auto& m = config().measurements[idx];
+      if (m.calibrationMode)
         return static_cast<float>(m.autocal.max_value);
       return m.maxValue;
     }
@@ -317,8 +328,8 @@ public:
    * @param v Maximum value to set
    */
   inline void setMaxValue(size_t idx, float v) {
-    if (idx < m_analogConfig.measurements.size())
-      m_analogConfig.measurements[idx].maxValue = v;
+    if (idx < mutableConfig().measurements.size())
+      mutableConfig().measurements[idx].maxValue = v;
   }
   /**
    * @brief Get the last raw ADC value for a given channel
@@ -335,8 +346,8 @@ public:
    * @param rawMin Absolute raw minimum value to set
    */
   inline void setAbsoluteRawMin(size_t idx, int rawMin) {
-    if (idx < m_analogConfig.measurements.size())
-      m_analogConfig.measurements[idx].absoluteRawMin = rawMin;
+    if (idx < mutableConfig().measurements.size())
+      mutableConfig().measurements[idx].absoluteRawMin = rawMin;
   }
 
   /**
@@ -345,8 +356,8 @@ public:
    * @param rawMax Absolute raw maximum value to set
    */
   inline void setAbsoluteRawMax(size_t idx, int rawMax) {
-    if (idx < m_analogConfig.measurements.size())
-      m_analogConfig.measurements[idx].absoluteRawMax = rawMax;
+    if (idx < mutableConfig().measurements.size())
+      mutableConfig().measurements[idx].absoluteRawMax = rawMax;
   }
 
   /**
@@ -355,8 +366,8 @@ public:
    * @param cal AutoCal struct to set
    */
   inline void setAutoCalibration(size_t idx, const AutoCal& cal) {
-    if (idx < m_analogConfig.measurements.size())
-      m_analogConfig.measurements[idx].autocal = cal;
+    if (idx < mutableConfig().measurements.size())
+      mutableConfig().measurements[idx].autocal = cal;
   }
 
   /**
@@ -366,16 +377,16 @@ public:
    * observes the calibration mode immediately.
    */
   inline void setCalibrationMode(size_t idx, bool enabled) {
-    if (idx < m_analogConfig.measurements.size())
-      m_analogConfig.measurements[idx].calibrationMode = enabled;
+    if (idx < mutableConfig().measurements.size())
+      mutableConfig().measurements[idx].calibrationMode = enabled;
   }
 
   /**
    * @brief Get the autocalibration state for a given channel
    */
   inline AutoCal getAutoCalibration(size_t idx) const {
-    if (idx < m_analogConfig.measurements.size())
-      return m_analogConfig.measurements[idx].autocal;
+    if (idx < config().measurements.size())
+      return config().measurements[idx].autocal;
     return AutoCal();
   }
 
@@ -383,13 +394,13 @@ public:
    * @brief Get autocal min/max quickly (uint16_t)
    */
   inline uint16_t getAutoCalMin(size_t idx) const {
-    if (idx < m_analogConfig.measurements.size())
-      return m_analogConfig.measurements[idx].autocal.min_value;
+    if (idx < config().measurements.size())
+      return config().measurements[idx].autocal.min_value;
     return 0;
   }
   inline uint16_t getAutoCalMax(size_t idx) const {
-    if (idx < m_analogConfig.measurements.size())
-      return m_analogConfig.measurements[idx].autocal.max_value;
+    if (idx < config().measurements.size())
+      return config().measurements[idx].autocal.max_value;
     return 1023;
   }
 
@@ -399,25 +410,27 @@ protected:
    * to MAX_MEASUREMENTS)
    */
   size_t getNumMeasurements() const override {
-    return std::min(m_analogConfig.activeMeasurements,
+    return std::min(config().activeMeasurements,
                     static_cast<size_t>(SensorConfig::MAX_MEASUREMENTS));
   }
 
 private:
-  // Store our own copy of the config
-  AnalogConfig m_analogConfig;
+  // Es gibt bewusst KEINE eigene AnalogConfig-Kopie mehr.
+  //
+  // AnalogSensor hielt früher zusätzlich zu Sensor::m_tempConfig eine eigene
+  // vollständige AnalogConfig - inklusive des std::array<MeasurementConfig, 8>,
+  // also rund 900 Byte samt 24 Heap-Strings. Beide Kopien mussten von Hand
+  // synchron gehalten werden, was sich durch den ganzen Sensor zog
+  // (doppelte Schreibvorgänge in fetchSample(), Abgleiche wie
+  // "m.calibrationMode || cfgCal"). Jetzt ist config()/mutableConfig() der
+  // Basisklasse die einzige Quelle der Wahrheit.
+  bool m_useMultiplexer; ///< Ob ein Multiplexer verwendet wird (kein Basis-Member)
 
   // Hardware interface
 #if USE_MULTIPLEXER
   std::unique_ptr<Multiplexer> m_multiplexer;
 #endif
 
-  // Per-channel minimum values for analog sensors (for validation/UI)
-  std::vector<float> m_minValues;
-  /**
-   * @brief Per-channel maximum values for analog sensors (for validation/UI)
-   */
-  std::vector<float> m_maxValues;
   // Store last raw ADC value per channel
   std::vector<int> m_lastRawValues;
   // Track if clamping warning was already shown in this measurement cycle

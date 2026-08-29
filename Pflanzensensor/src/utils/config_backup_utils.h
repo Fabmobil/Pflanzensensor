@@ -21,15 +21,15 @@ namespace ConfigBackupUtils {
  * firmware flash so it survives both LittleFS and NVS erasure.
  */
 inline bool backupConfigFiles() {
-  logger.info(F("ConfigBackup"), F("Sichere Preferences + Config-Dateien in Firmware-Flash..."));
+  LOG_INFO(F("ConfigBackup"), F("Sichere Preferences + Config-Dateien in Firmware-Flash..."));
 
   auto result = FlashPersistence::saveAllToFlash();
   if (!result.isSuccess()) {
-    logger.error(F("ConfigBackup"), F("Flash-Backup fehlgeschlagen: ") + result.getMessage());
+    LOG_ERROR(F("ConfigBackup"), String(F("Flash-Backup fehlgeschlagen: ")) + result.getMessage());
     return false;
   }
 
-  logger.info(F("ConfigBackup"), F("Erfolgreich in Firmware-Flash gesichert"));
+  LOG_INFO(F("ConfigBackup"), F("Erfolgreich in Firmware-Flash gesichert"));
   return true;
 }
 
@@ -41,16 +41,17 @@ inline bool backupConfigFiles() {
  * previously backed up Preferences and sensor configurations from firmware flash.
  */
 inline bool restoreConfigFiles() {
-  logger.info(F("ConfigRestore"),
-              F("Stelle Preferences + Config-Dateien aus Firmware-Flash wieder her..."));
+  LOG_INFO(F("ConfigRestore"),
+           F("Stelle Preferences + Config-Dateien aus Firmware-Flash wieder her..."));
 
   auto result = FlashPersistence::restoreAllFromFlash();
   if (!result.isSuccess()) {
-    logger.error(F("ConfigRestore"), F("Flash-Restore fehlgeschlagen: ") + result.getMessage());
+    LOG_ERROR(F("ConfigRestore"),
+              String(F("Flash-Restore fehlgeschlagen: ")) + result.getMessage());
     return false;
   }
 
-  logger.info(F("ConfigRestore"), F("Erfolgreich aus Firmware-Flash wiederhergestellt"));
+  LOG_INFO(F("ConfigRestore"), F("Erfolgreich aus Firmware-Flash wiederhergestellt"));
   return true;
 }
 

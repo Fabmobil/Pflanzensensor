@@ -3,7 +3,11 @@
 #if USE_DISPLAY
 
 #include <ArduinoJson.h>
+#ifdef ESP32
+#include <WiFi.h>
+#else
 #include <ESP8266WiFi.h>
+#endif
 #include <LittleFS.h>
 #include <time.h>
 
@@ -27,7 +31,7 @@ extern Logger logger;
 
 TypedResult<ResourceError, void> DisplayManager::initialize() {
 #if USE_DISPLAY
-  logger.debug(F("DisplayM"), F("Initialisiere DisplayManager"));
+  LOG_DEBUG(F("DisplayM"), F("Initialisiere DisplayManager"));
 
   m_display = std::make_unique<SSD1306Display>();
   if (!m_display) {
@@ -42,7 +46,7 @@ TypedResult<ResourceError, void> DisplayManager::initialize() {
 
   auto loadResult = loadConfig();
   if (!loadResult.isSuccess()) {
-    logger.warning(F("DisplayM"), F("Verwende Standard-Displaykonfiguration"));
+    LOG_WARN(F("DisplayM"), F("Verwende Standard-Displaykonfiguration"));
     m_config.showIpScreen = true;
     m_config.showClock = true;
     m_config.showFlowerImage = true;
@@ -52,7 +56,7 @@ TypedResult<ResourceError, void> DisplayManager::initialize() {
     // Do not access sensorManager here!
   }
 
-  logger.info(F("DisplayM"), F("DisplayManager erfolgreich initialisiert"));
+  LOG_INFO(F("DisplayM"), F("DisplayManager erfolgreich initialisiert"));
   // Do not access sensorManager here!
   return TypedResult<ResourceError, void>::success();
 #endif
@@ -69,35 +73,34 @@ void DisplayManager::logEnabledSensors() {
     return;
   String sensorCount =
       String(F("Anzahl aktivierter Sensoren: ")) + String(sensorManager->getSensors().size());
-  logger.debug(F("DisplayM"), sensorCount);
+  LOG_DEBUG(F("DisplayM"), sensorCount);
   for (const auto& sensorPtr : sensorManager->getSensors()) {
     if (!sensorPtr || !sensorPtr->isEnabled())
       continue;
     String sensorId = sensorPtr->getId();
     String sensorMsg = String(F("Aktiver Sensor: ")) + sensorId;
-    logger.debug(F("DisplayM"), sensorMsg);
+    LOG_DEBUG(F("DisplayM"), sensorMsg);
   }
 #endif
 }
 
 DisplayResult DisplayManager::loadConfig() {
 #if USE_DISPLAY
-  CriticalSection cs;
 
   // Check if Preferences exist, if not initialize with defaults
   if (!PreferencesManager::namespaceExists(PreferencesNamespaces::DISP)) {
-    logger.info(F("DisplayM"),
-                F("Keine Display-Konfiguration gefunden, initialisiere mit Standardwerten..."));
+    LOG_INFO(F("DisplayM"),
+             F("Keine Display-Konfiguration gefunden, initialisiere mit Standardwerten..."));
     auto initResult = PreferencesManager::initDisplayNamespace();
     if (!initResult.isSuccess()) {
-      logger.warning(F("DisplayM"), F("Fehler beim Initialisieren der Display-Preferences"));
+      LOG_WARN(F("DisplayM"), F("Fehler beim Initialisieren der Display-Preferences"));
       // Use defaults from constructor
       return DisplayResult::success();
     }
   }
 
   // Load from Preferences
-  logger.debug(F("DisplayM"), F("Lade Display-Konfiguration aus Preferences..."));
+  LOG_DEBUG(F("DisplayM"), F("Lade Display-Konfiguration aus Preferences..."));
 
   // Load each setting using generic getters
   m_config.showIpScreen = PreferencesManager::getBool(PreferencesNamespaces::DISP, "show_ip", true);
@@ -143,11 +146,11 @@ DisplayResult DisplayManager::loadConfig() {
       }
       sensorStart = semicolonPos + 1;
     }
-    logger.debug(F("DisplayM"), String(F("Sensor-Anzeigeeinstellungen geladen: ")) +
-                                    String(m_config.sensorDisplays.size()) + F(" Sensoren"));
+    LOG_DEBUG(F("DisplayM"), String(F("Sensor-Anzeigeeinstellungen geladen: ")) +
+                                 String(m_config.sensorDisplays.size()) + F(" Sensoren"));
   }
 
-  logger.info(F("DisplayM"), F("Display-Konfiguration aus Preferences geladen"));
+  LOG_INFO(F("DisplayM"), F("Display-Konfiguration aus Preferences geladen"));
   {
 
     String configMsg =
@@ -157,7 +160,7 @@ DisplayResult DisplayManager::loadConfig() {
         String(m_config.showFabmobilImage) + String(F(", QR-Screen: ")) +
         String(m_config.showQrCode) + String(F(", Dauer: ")) + String(m_config.screenDuration) +
         String(F(", Format: ")) + m_config.clockFormat;
-    logger.debug(F("DisplayM"), configMsg);
+    LOG_DEBUG(F("DisplayM"), configMsg);
   }
 
 #endif
@@ -189,10 +192,8 @@ DisplayResult DisplayManager::saveConfig() {
     return validation;
   }
 
-  CriticalSection cs;
-
   // Save to Preferences using atomic update helpers
-  logger.debug(F("DisplayM"), F("Speichere Display-Konfiguration in Preferences..."));
+  LOG_DEBUG(F("DisplayM"), F("Speichere Display-Konfiguration in Preferences..."));
 
   auto r1 = PreferencesManager::updateBoolValue(PreferencesNamespaces::DISP, "show_ip",
                                                 m_config.showIpScreen);
@@ -228,15 +229,15 @@ DisplayResult DisplayManager::saveConfig() {
 
   if (!r1.isSuccess() || !r2.isSuccess() || !r3.isSuccess() || !r4.isSuccess() || !r5.isSuccess() ||
       !r6.isSuccess() || !r7.isSuccess() || !r8.isSuccess()) {
-    logger.error(F("DisplayM"), F("Fehler beim Speichern der Display-Konfiguration"));
+    LOG_ERROR(F("DisplayM"), F("Fehler beim Speichern der Display-Konfiguration"));
     return DisplayResult::fail(
         DisplayError::FILE_ERROR,
         F("Speichern der Display-Konfiguration in Preferences fehlgeschlagen"));
   }
 
-  logger.info(F("DisplayM"), F("Display-Konfiguration erfolgreich in Preferences gespeichert"));
-  logger.debug(F("DisplayM"),
-               String(F("Sensor-Anzeigeeinstellungen gespeichert: ")) + sensorDisplayStr);
+  LOG_INFO(F("DisplayM"), F("Display-Konfiguration erfolgreich in Preferences gespeichert"));
+  LOG_DEBUG(F("DisplayM"),
+            String(F("Sensor-Anzeigeeinstellungen gespeichert: ")) + sensorDisplayStr);
 
   // Note: Sensor-specific display settings (sensorDisplays) are now persisted above
   // through the admin interface and saved atomically when changed
@@ -261,7 +262,7 @@ void DisplayManager::rotateScreen() {
   if (!m_display)
     return;
   if (!sensorManager) {
-    logger.warning(F("DisplayM"), F("sensorManager is null in rotateScreen"));
+    LOG_WARN(F("DisplayM"), F("sensorManager is null in rotateScreen"));
     return;
   }
 
@@ -306,7 +307,7 @@ void DisplayManager::rotateScreen() {
   // Show static screens
   if (m_config.showIpScreen && currentIndex == 0) {
     if (ConfigMgr.isDebugDisplay()) {
-      logger.debug(F("DisplayM"), F("IP-Anzeige wird angezeigt"));
+      LOG_DEBUG(F("DisplayM"), F("IP-Anzeige wird angezeigt"));
     }
     IPAddress ip;
     // Show softAP IP if we're in AP mode (manual AP started on failure)
@@ -319,9 +320,11 @@ void DisplayManager::rotateScreen() {
     }
     String ipStr = (ip[0] == 0) ? F("(IP nicht gesetzt)") : ip.toString();
     m_display->showInfoScreen(ipStr);
+#if USE_LED_TRAFFIC_LIGHT
     if (ledTrafficLightManager) {
       ledTrafficLightManager->handleDisplayUpdate();
     }
+#endif
     m_currentScreenIndex++;
     if (m_currentScreenIndex >= totalScreens)
       m_currentScreenIndex = 0;
@@ -333,13 +336,15 @@ void DisplayManager::rotateScreen() {
   if (m_config.showClock && currentIndex == idx) {
     if (logger.isNTPInitialized()) {
       if (ConfigMgr.isDebugDisplay()) {
-        logger.debug(F("DisplayM"), F("Uhr-Anzeige wird gezeigt"));
+        LOG_DEBUG(F("DisplayM"), F("Uhr-Anzeige wird gezeigt"));
       }
       showClock();
     }
+#if USE_LED_TRAFFIC_LIGHT
     if (ledTrafficLightManager) {
       ledTrafficLightManager->handleDisplayUpdate();
     }
+#endif
     m_currentScreenIndex++;
     if (m_currentScreenIndex >= totalScreens)
       m_currentScreenIndex = 0;
@@ -349,12 +354,14 @@ void DisplayManager::rotateScreen() {
     idx++;
   if (m_config.showQrCode && currentIndex == idx) {
     if (ConfigMgr.isDebugDisplay()) {
-      logger.debug(F("DisplayM"), F("QR-Code-Seite wird gezeigt"));
+      LOG_DEBUG(F("DisplayM"), F("QR-Code-Seite wird gezeigt"));
     }
     m_display->showQrCodeScreen();
+#if USE_LED_TRAFFIC_LIGHT
     if (ledTrafficLightManager) {
       ledTrafficLightManager->handleDisplayUpdate();
     }
+#endif
     m_currentScreenIndex++;
     if (m_currentScreenIndex >= totalScreens)
       m_currentScreenIndex = 0;
@@ -364,12 +371,14 @@ void DisplayManager::rotateScreen() {
     idx++;
   if (m_config.showFlowerImage && currentIndex == idx) {
     if (ConfigMgr.isDebugDisplay()) {
-      logger.debug(F("DisplayM"), F("Blumenbild wird gezeigt"));
+      LOG_DEBUG(F("DisplayM"), F("Blumenbild wird gezeigt"));
     }
     showImage(displayImageFlower);
+#if USE_LED_TRAFFIC_LIGHT
     if (ledTrafficLightManager) {
       ledTrafficLightManager->handleDisplayUpdate();
     }
+#endif
     m_currentScreenIndex++;
     if (m_currentScreenIndex >= totalScreens)
       m_currentScreenIndex = 0;
@@ -379,12 +388,14 @@ void DisplayManager::rotateScreen() {
     idx++;
   if (m_config.showFabmobilImage && currentIndex == idx) {
     if (ConfigMgr.isDebugDisplay()) {
-      logger.debug(F("DisplayM"), F("Fabmobil-Bild wird gezeigt"));
+      LOG_DEBUG(F("DisplayM"), F("Fabmobil-Bild wird gezeigt"));
     }
     showImage(displayImageFabmobil);
+#if USE_LED_TRAFFIC_LIGHT
     if (ledTrafficLightManager) {
       ledTrafficLightManager->handleDisplayUpdate();
     }
+#endif
     m_currentScreenIndex++;
     if (m_currentScreenIndex >= totalScreens)
       m_currentScreenIndex = 0;
@@ -405,8 +416,8 @@ void DisplayManager::rotateScreen() {
         if (config.measurements[i].enabled && isSensorMeasurementShown(sensorPtr->getId(), i)) {
           if (currentMeasurementIdx == measurementIdx) {
             if (ConfigMgr.isDebugDisplay()) {
-              logger.debug(F("DisplayM"), String(F("Zeige Messung ")) + sensorPtr->getId() +
-                                              String(F(":")) + String(i));
+              LOG_DEBUG(F("DisplayM"), String(F("Zeige Messung ")) + sensorPtr->getId() +
+                                           String(F(":")) + String(i));
             }
             showSensorData(sensorPtr->getId(), i);
             m_currentScreenIndex++;
@@ -443,7 +454,7 @@ void DisplayManager::showImage(const unsigned char* image) {
 void DisplayManager::showSensorData(const String& sensorId, size_t measurementIndex) {
 #if USE_DISPLAY
   if (!sensorManager) {
-    logger.warning(F("DisplayM"), F("sensorManager ist null in showSensorData"));
+    LOG_WARN(F("DisplayM"), F("sensorManager ist null in showSensorData"));
     return;
   }
   if (auto sensor = sensorManager->getSensor(sensorId)) {
@@ -451,9 +462,9 @@ void DisplayManager::showSensorData(const String& sensorId, size_t measurementIn
     if (measurementData.isValid()) {
       // Clamp activeValues
       if (measurementData.activeValues > SensorConfig::MAX_MEASUREMENTS) {
-        logger.warning(F("DisplayM"), F("Clamping activeValues from ") +
-                                          String(measurementData.activeValues) + F(" to ") +
-                                          String(SensorConfig::MAX_MEASUREMENTS));
+        LOG_WARN(F("DisplayM"), String(F("Clamping activeValues from ")) +
+                                    String(measurementData.activeValues) + String(F(" to ")) +
+                                    String(SensorConfig::MAX_MEASUREMENTS));
       }
       size_t safeActiveValues =
           std::min(measurementData.activeValues, SensorConfig::MAX_MEASUREMENTS);
@@ -471,7 +482,7 @@ void DisplayManager::showSensorData(const String& sensorId, size_t measurementIn
                            String(F(", Wert=")) + String(measurementData.values[measurementIndex]) +
                            String(F(", Einheit=")) + measurementData.units[measurementIndex];
         if (ConfigMgr.isDebugDisplay()) {
-          logger.debug(F("DisplayM"), sensorMsg);
+          LOG_DEBUG(F("DisplayM"), sensorMsg);
         }
 
         m_display->showMeasurementValue(measurementName, measurementData.values[measurementIndex],
@@ -480,6 +491,7 @@ void DisplayManager::showSensorData(const String& sensorId, size_t measurementIn
         // Update sensor status and control LED traffic light
         sensor->updateStatus(measurementIndex);
 
+#if USE_LED_TRAFFIC_LIGHT
         if (ledTrafficLightManager) {
           uint8_t mode = ConfigMgr.getLedTrafficLightMode();
 
@@ -496,24 +508,25 @@ void DisplayManager::showSensorData(const String& sensorId, size_t measurementIn
                                                          sensor->getStatus(measurementIndex));
           }
         }
+#endif
 
         if (ConfigMgr.isDebugDisplay()) {
-          logger.debug(F("DisplayM"),
-                       "Sensor status: " + sensor->getStatus(measurementIndex) +
-                           " für Wert: " + String(measurementData.values[measurementIndex]));
+          LOG_DEBUG(F("DisplayM"),
+                    "Sensor status: " + sensor->getStatus(measurementIndex) +
+                        " für Wert: " + String(measurementData.values[measurementIndex]));
         }
       } else {
         String warningMsg = String(F("Ungültiger Messindex ")) + String(measurementIndex) +
                             String(F(" für Sensor ")) + sensorId;
-        logger.warning(F("DisplayM"), warningMsg);
+        LOG_WARN(F("DisplayM"), warningMsg);
       }
     } else {
       String warningMsg = String(F("Ungültige Messdaten für Sensor ")) + sensorId;
-      logger.warning(F("DisplayM"), warningMsg);
+      LOG_WARN(F("DisplayM"), warningMsg);
     }
   } else {
     String warningMsg = String(F("Sensor nicht gefunden: ")) + sensorId;
-    logger.warning(F("DisplayM"), warningMsg);
+    LOG_WARN(F("DisplayM"), warningMsg);
   }
 #endif
 }
@@ -716,14 +729,14 @@ void DisplayManager::showClock() {
   String timeStr = Helper::getFormattedTime(m_config.clockFormat == "24h");
 
   if (dateStr == "Time not synced" || timeStr == "Time not synced") {
-    logger.warning(F("DisplayM"), F("NTP nicht initialisiert, Uhr kann nicht angezeigt werden"));
+    LOG_WARN(F("DisplayM"), F("NTP nicht initialisiert, Uhr kann nicht angezeigt werden"));
     return;
   }
 
   m_display->showClock(dateStr, timeStr);
 
   if (ConfigMgr.isDebugDisplay()) {
-    logger.debug(F("DisplayM"), F("Zeige Uhr: ") + dateStr + " " + timeStr);
+    LOG_DEBUG(F("DisplayM"), String(F("Zeige Uhr: ")) + dateStr + " " + timeStr);
   }
 #endif
 }
@@ -747,9 +760,9 @@ void DisplayManager::addLogLine(const String& status, bool isBootMode) {
   if (m_display) {
     String header;
     if (isBootMode) {
-      header = ConfigMgr.getDeviceName() + F(" startet:");
+      header = ConfigMgr.getDeviceName() + String(F(" startet:"));
     } else {
-      header = ConfigMgr.getDeviceName() + F(" Update:");
+      header = ConfigMgr.getDeviceName() + String(F(" Update:"));
     }
 
     // Convert to std::vector<String> for display API
@@ -775,9 +788,9 @@ void DisplayManager::showLogScreen(const String& status, bool isBootMode) {
   if (m_display) {
     String header;
     if (isBootMode) {
-      header = ConfigMgr.getDeviceName() + F(" startet:");
+      header = ConfigMgr.getDeviceName() + String(F(" startet:"));
     } else {
-      header = ConfigMgr.getDeviceName() + F(" Update:");
+      header = ConfigMgr.getDeviceName() + String(F(" Update:"));
     }
 
     std::vector<String> lines(m_logLines, m_logLines + m_logLineCount);

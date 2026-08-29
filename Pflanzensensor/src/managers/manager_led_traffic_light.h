@@ -32,7 +32,8 @@ public:
 #if USE_LED_TRAFFIC_LIGHT
         m_ledLights(nullptr),
 #endif
-        m_lastStatus("") {
+        m_lastStatus(""),
+        m_lastOnlyRed(false) {
   }
 
   /**
@@ -107,6 +108,7 @@ private:
   std::unique_ptr<LedLights> m_ledLights;
 #endif
   String m_lastStatus; ///< Last set status for tracking
+  bool m_lastOnlyRed;  ///< Last known onlyRed flag for cache invalidation
 };
 
 /**

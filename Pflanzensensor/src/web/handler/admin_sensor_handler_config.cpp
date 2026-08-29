@@ -25,12 +25,12 @@ void AdminSensorHandler::handleSingleSensorUpdate() {
     return;
   }
   String id = _server.arg("sensor_id");
-  logger.debug(F("AdminSensorHandler"),
-               F("handleSingleSensorUpdate: empfangene sensor_id = ") + id);
+  LOG_DEBUG(F("AdminSensorHandler"),
+            String(F("handleSingleSensorUpdate: empfangene sensor_id = ")) + id);
   // Log all POST arguments
   for (int i = 0; i < _server.args(); ++i) {
-    logger.debug(F("AdminSensorHandler"),
-                 F("POST arg: ") + _server.argName(i) + F(" = ") + _server.arg(i));
+    LOG_DEBUG(F("AdminSensorHandler"),
+              String(F("POST arg: ")) + _server.argName(i) + String(F(" = ")) + _server.arg(i));
   }
   if (!_sensorManager.isHealthy()) {
     sendJsonResponse(500,
@@ -54,9 +54,10 @@ void AdminSensorHandler::handleSingleSensorUpdate() {
     if (_server.hasArg(nameArg)) {
       String newName = _server.arg(nameArg);
       if (newName != config.measurements[i].name) {
-        logger.info(F("AdminSensorHandler"), F("Ändere Name für ") + id + F("[") + String(i) +
-                                                 F("] von '") + config.measurements[i].name +
-                                                 F("' zu '") + newName + F("'"));
+        LOG_INFO(F("AdminSensorHandler"), String(F("Ändere Name für ")) + id + String(F("[")) +
+                                              String(i) + String(F("] von '")) +
+                                              config.measurements[i].name + String(F("' zu '")) +
+                                              newName + F("'"));
         config.measurements[i].name = newName;
         changesOccurred = true;
       }
@@ -71,12 +72,12 @@ void AdminSensorHandler::handleSingleSensorUpdate() {
         auto& limits = config.measurements[i].limits;
         if (limits.yellowLow != vals[0] || limits.greenLow != vals[1] ||
             limits.greenHigh != vals[2] || limits.yellowHigh != vals[3]) {
-          logger.info(F("AdminSensorHandler"),
-                      F("Ändere Schwellenwerte für ") + id + F("[") + String(i) + F("] von ") +
-                          String(limits.yellowLow) + "," + String(limits.greenLow) + "," +
-                          String(limits.greenHigh) + "," + String(limits.yellowHigh) + F(" zu ") +
-                          String(vals[0]) + "," + String(vals[1]) + "," + String(vals[2]) + "," +
-                          String(vals[3]));
+          LOG_INFO(F("AdminSensorHandler"),
+                   String(F("Ändere Schwellenwerte für ")) + id + String(F("[")) + String(i) +
+                       String(F("] von ")) + String(limits.yellowLow) + "," +
+                       String(limits.greenLow) + "," + String(limits.greenHigh) + "," +
+                       String(limits.yellowHigh) + String(F(" zu ")) + String(vals[0]) + "," +
+                       String(vals[1]) + "," + String(vals[2]) + "," + String(vals[3]));
           limits.yellowLow = vals[0];
           limits.greenLow = vals[1];
           limits.greenHigh = vals[2];
@@ -117,8 +118,8 @@ void AdminSensorHandler::handleSingleSensorUpdate() {
 #endif
     // Thresholds (legacy/individual fields, fallback)
     if (processThresholds(sensor, i)) {
-      logger.info(F("AdminSensorHandler"),
-                  F("Schwellenwerte geändert f\u00fcr ") + id + F("[") + String(i) + F("]"));
+      LOG_INFO(F("AdminSensorHandler"), String(F("Schwellenwerte geändert f\u00fcr ")) + id +
+                                            String(F("[")) + String(i) + F("]"));
       changesOccurred = true;
     }
     // Persist thresholds
@@ -136,10 +137,10 @@ void AdminSensorHandler::handleSingleSensorUpdate() {
   // Enabled state
   bool newEnabled = _server.hasArg("enabled_" + id);
   if (newEnabled != sensor->isEnabled()) {
-    logger.info(F("AdminSensorHandler"), F("Aktivierungszustand f\u00fcr ") + id + F(" von ") +
-                                             (sensor->isEnabled() ? F("aktiv") : F("inaktiv")) +
-                                             F(" nach ") +
-                                             (newEnabled ? F("aktiv") : F("inaktiv")));
+    LOG_INFO(F("AdminSensorHandler"),
+             String(F("Aktivierungszustand f\u00fcr ")) + id + String(F(" von ")) +
+                 (sensor->isEnabled() ? F("aktiv") : F("inaktiv")) + String(F(" nach ")) +
+                 (newEnabled ? F("aktiv") : F("inaktiv")));
     sensor->setEnabled(newEnabled);
     changesOccurred = true;
   }
@@ -147,8 +148,8 @@ void AdminSensorHandler::handleSingleSensorUpdate() {
   if (changesOccurred) {
     // Use atomic sensor updates instead of full config save
     auto saveResult = SensorPersistence::save();
-    logger.info(F("AdminSensorHandler"),
-                F("SensorPersistence::save() called, result: ") + saveResult.getMessage());
+    LOG_INFO(F("AdminSensorHandler"),
+             String(F("SensorPersistence::save() called, result: ")) + saveResult.getMessage());
     if (!saveResult.isSuccess()) {
       sendJsonResponse(
           500,
@@ -156,7 +157,7 @@ void AdminSensorHandler::handleSingleSensorUpdate() {
       return;
     }
   } else {
-    logger.info(F("AdminSensorHandler"), F("Keine Änderungen f\u00fcr Sensor ") + id);
+    LOG_INFO(F("AdminSensorHandler"), String(F("Keine Änderungen f\u00fcr Sensor ")) + id);
   }
   sendJsonResponse(200, F("{\"success\":true}"));
 }
@@ -179,9 +180,10 @@ void AdminSensorHandler::handleMeasurementName() {
   size_t measurementIndex = _server.arg("measurement_index").toInt();
   String newName = _server.arg("name");
 
-  logger.debug(F("AdminSensorHandler"), F("handleMeasurementName: sensor_id=") + id +
-                                            F(", measurement_index=") + String(measurementIndex) +
-                                            F(", name='") + newName + F("'"));
+  LOG_DEBUG(F("AdminSensorHandler"), String(F("handleMeasurementName: sensor_id=")) + id +
+                                         String(F(", measurement_index=")) +
+                                         String(measurementIndex) + String(F(", name='")) +
+                                         newName + F("'"));
 
   if (!_sensorManager.isHealthy()) {
     sendJsonResponse(500, F("{\"success\":false,\"error\":\"Sensor manager not healthy\"}"));
@@ -206,9 +208,10 @@ void AdminSensorHandler::handleMeasurementName() {
 
   SensorConfig& config = sensor->mutableConfig();
   if (config.measurements[measurementIndex].name != newName) {
-    logger.info(F("AdminSensorHandler"),
-                F("Changing name for ") + id + F("[") + String(measurementIndex) + F("] from '") +
-                    config.measurements[measurementIndex].name + F("' to '") + newName + F("'"));
+    LOG_INFO(F("AdminSensorHandler"), String(F("Changing name for ")) + id + String(F("[")) +
+                                          String(measurementIndex) + String(F("] from '")) +
+                                          config.measurements[measurementIndex].name +
+                                          String(F("' to '")) + newName + F("'"));
 
     config.measurements[measurementIndex].name = newName;
 
@@ -219,8 +222,8 @@ void AdminSensorHandler::handleMeasurementName() {
       return;
     }
 
-    logger.info(F("AdminSensorHandler"), F("Successfully updated name for ") + id + F("[") +
-                                             String(measurementIndex) + F("]"));
+    LOG_INFO(F("AdminSensorHandler"), String(F("Successfully updated name for ")) + id +
+                                          String(F("[")) + String(measurementIndex) + F("]"));
   }
 
   sendJsonResponse(200, F("{\"success\":true}"));

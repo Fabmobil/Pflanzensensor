@@ -9,7 +9,9 @@
 #include <ArduinoJson.h>
 #include <LittleFS.h>
 #include <time.h> // For timezone support
+#ifndef ESP32
 #include <umm_malloc/umm_malloc.h>
+#endif
 
 #include "configs/config.h"
 #include "managers/manager_config.h"
@@ -73,7 +75,6 @@ Logger::Logger(LogLevel logLevel, bool useSerial, bool fileLoggingEnabled)
   if (fileLoggingEnabled) {
     // Mount filesystem first with critical section
     {
-      CriticalSection cs;
       if (!LittleFS.begin()) {
         if (m_useSerial) {
           Serial.println(F("Dateisystem für Logging konnte nicht eingehängt werden"));
@@ -129,24 +130,31 @@ void Logger::log(LogLevel level, const String& module, const String& message) {
   }
 
   String timestamp = getFormattedTimestamp();
-  String prefix;
+
+  // Präfix als reines Zeichenketten-Literal statt über readProgmemString().
+  // Letzteres legte für drei Zeichen einen 128-Byte-Stackpuffer an und baute
+  // daraus einen Heap-String - pro ausgegebener Logzeile.
+  const char* prefix;
   switch (level) {
   case LogLevel::DEBUG:
-    prefix = readProgmemString(MSG_DEBUG);
+    prefix = ".D.";
     break;
   case LogLevel::INFO:
-    prefix = readProgmemString(MSG_INFO);
+    prefix = ":I:";
     break;
   case LogLevel::WARNING:
-    prefix = readProgmemString(MSG_WARNING);
+    prefix = "!W!";
     break;
   case LogLevel::ERROR:
-    prefix = readProgmemString(MSG_ERROR);
+    prefix = "#E#";
+    break;
+  default:
+    prefix = "???";
     break;
   }
 
   char formattedMessage[128];
-  snprintf(formattedMessage, sizeof(formattedMessage), "%s [%s] %s", prefix.c_str(), module.c_str(),
+  snprintf(formattedMessage, sizeof(formattedMessage), "%s [%s] %s", prefix, module.c_str(),
            safeMessage.c_str());
 
   if (m_useSerial) {
@@ -194,19 +202,22 @@ LogLevel Logger::getLogLevel() const { return m_logLevel; }
 MemoryStats Logger::getMemoryStats() {
   MemoryStats stats;
   stats.freeHeap = ESP.getFreeHeap();
+
+#ifdef ESP32
+  stats.maxFreeBlock = ESP.getMaxAllocHeap();
+  stats.fragmentation = 0; // ESP32 doesn't have getHeapFragmentation
+  stats.freeContStack = 0; // Not available on ESP32
+  stats.freeStack = uxTaskGetStackHighWaterMark(NULL);
+  stats.totalHeap = ESP.getHeapSize();
+  stats.totalStack = CONFIG_ARDUINO_LOOP_STACK_SIZE;
+#else
   stats.maxFreeBlock = ESP.getMaxFreeBlockSize();
   stats.fragmentation = static_cast<uint8_t>(ESP.getHeapFragmentation());
   stats.freeContStack = ESP.getFreeContStack();
   stats.freeStack = ESP.getFreeHeap() - ESP.getMaxFreeBlockSize();
-
-// Get total heap size - ESP8266 doesn't have getHeapSize()
-#ifdef ESP32
-  stats.totalHeap = ESP.getHeapSize();
-#else
   stats.totalHeap = 81920; // ESP8266 typically has 80KB heap
-#endif
-
   stats.totalStack = ESP.getFreeContStack() + (ESP.getFreeHeap() - ESP.getMaxFreeBlockSize());
+#endif
 
   // Update peak values
   updatePeakStats(stats);
@@ -238,8 +249,8 @@ void Logger::beginMemoryTracking(const String& sectionName) {
     return;
 
   if (m_currentTracking.isTracking) {
-    warning("Memory",
-            F("Previous memory tracking section not closed: ") + m_currentTracking.sectionName);
+    warning("Memory", String(F("Previous memory tracking section not closed: ")) +
+                          m_currentTracking.sectionName);
     endMemoryTracking(m_currentTracking.sectionName);
   }
 
@@ -262,8 +273,8 @@ void Logger::endMemoryTracking(const String& sectionName) {
   }
 
   if (sectionName != m_currentTracking.sectionName) {
-    warning("Memory", F("Memory tracking section mismatch! Expected: ") +
-                          m_currentTracking.sectionName + F(" Got: ") + sectionName);
+    warning("Memory", String(F("Memory tracking section mismatch! Expected: ")) +
+                          m_currentTracking.sectionName + String(F(" Got: ")) + sectionName);
     return;
   }
 
@@ -280,7 +291,7 @@ void Logger::endMemoryTracking(const String& sectionName) {
   snprintf_P(buffer, sizeof(buffer), MSG_MEMORY_CHANGES, sectionName.c_str(), heapDiff, blockDiff,
              stackDiff, fragDiff);
 
-  info("Memory", String(buffer) + F(" (") + duration + F("ms)"));
+  info("Memory", String(buffer) + String(F(" (")) + String(duration) + String(F("ms)")));
   logMemoryStats(readProgmemString(MSG_AFTER));
 
   m_currentTracking.isTracking = false;
@@ -332,7 +343,6 @@ void Logger::writeToFile(const String& logMessage) {
 
   // Check if filesystem is mounted with critical section
   {
-    CriticalSection cs;
     if (!LittleFS.exists("/")) {
       if (!LittleFS.begin()) {
         m_fileLoggingEnabled = false;
@@ -372,8 +382,6 @@ void Logger::truncateLogFileIfNeeded() {
   if (!m_fileLoggingEnabled)
     return;
 
-  CriticalSection cs;
-
   File file = LittleFS.open(m_logFileName, "r");
   if (!file)
     return;
@@ -389,7 +397,7 @@ void Logger::truncateLogFileIfNeeded() {
   // original file with the temp file. This avoids allocating a large buffer
   // on the heap (important on ESP8266) and keeps newer log entries.
   size_t fileSize = file.size();
-  info(F("Logger"), String(F("Logdatei prüfen: Größe=")) + fileSize + F(" Bytes, Limit=") +
+  info(F("Logger"), String(F("Logdatei prüfen: Größe=")) + fileSize + String(F(" Bytes, Limit=")) +
                         m_maxFileSize + F(" Bytes"));
   // Try to keep the newer half, but don't exceed the configured maximum
   size_t keepSize = min(fileSize / 2, static_cast<size_t>(m_maxFileSize));
@@ -420,7 +428,7 @@ void Logger::truncateLogFileIfNeeded() {
   size_t remaining = keepSize;
   file.seek(startPos);
   debug(F("Logger"), String(F("Beginne Kopieren ab Position ")) + startPos +
-                         F(" (Bytes zu kopieren: ") + keepSize + F(")"));
+                         String(F(" (Bytes zu kopieren: ")) + keepSize + F(")"));
   while (remaining > 0) {
     size_t toRead = (remaining > BUF_SIZE) ? BUF_SIZE : remaining;
     size_t r = file.readBytes(reinterpret_cast<char*>(buffer), toRead);
@@ -466,26 +474,6 @@ String Logger::logLevelToString(LogLevel level) {
     return "ERROR";
   default:
     return "UNKNOWN";
-  }
-}
-
-String Logger::getIndent(const String& logLevelStr) const {
-  const int maxLength = 5; // Length of the longest log level string
-  return String(' ', maxLength - logLevelStr.length());
-}
-
-String Logger::logLevelToColor(LogLevel level) const {
-  switch (level) {
-  case LogLevel::DEBUG:
-    return "blue";
-  case LogLevel::INFO:
-    return "green";
-  case LogLevel::WARNING:
-    return "orange";
-  case LogLevel::ERROR:
-    return "red";
-  default:
-    return "black";
   }
 }
 

@@ -5,7 +5,11 @@
 
 #include "web/core/components.h"
 
+#ifdef ESP32
+#include <WiFi.h>
+#else
 #include <ESP8266WiFi.h>
+#endif
 #include <algorithm>
 
 #include "logger/logger.h"
@@ -43,12 +47,9 @@ String getDisplaySSID() {
   return ssid;
 }
 
-ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
+ResourceResult beginResponse(ESPWebServer& server, const String& title,
                              const std::vector<String>& additionalCss) {
-  static const char CONTENT_TYPE[] PROGMEM = "Content-Type";
   static const char TEXT_HTML[] PROGMEM = "text/html";
-  static const char CONNECTION[] PROGMEM = "Connection";
-  static const char CLOSE[] PROGMEM = "close";
   static const char CACHE_CONTROL[] PROGMEM = "Cache-Control";
   static const char NO_CACHE[] PROGMEM = "no-cache";
 
@@ -61,8 +62,14 @@ ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
   }
 
   server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-  server.sendHeader(FPSTR(CONTENT_TYPE), FPSTR(TEXT_HTML));
-  server.sendHeader(FPSTR(CONNECTION), FPSTR(CLOSE));
+  // Weder Content-Type noch Connection hier per sendHeader() setzen:
+  // Content-Type setzt send() unten, Connection verwaltet der Webserver selbst.
+  // Vorher lieferte jede Seite beide Header doppelt und dabei sogar
+  // widersprüchlich aus:
+  //   Content-Type: text/html
+  //   Content-Type: text/html
+  //   Connection: close
+  //   Connection: keep-alive
   server.sendHeader(FPSTR(CACHE_CONTROL), FPSTR(NO_CACHE));
   server.send(200, FPSTR(TEXT_HTML), F(""));
 
@@ -88,30 +95,51 @@ ResourceResult beginResponse(ESP8266WebServer& server, const String& title,
   return ResourceResult::success();
 }
 
-void sendChunk(ESP8266WebServer& server, const String& chunk) {
-  static char buffer[128]; // Reuse buffer
-  size_t remaining = chunk.length();
-  size_t offset = 0;
-  static unsigned long lastYield = 0;
-  const unsigned long YIELD_INTERVAL = 100; // Yield every 100ms
+// sendChunk() ist die mit Abstand meistgenutzte Funktion im Web-Layer
+// (über 900 Aufrufstellen). Die frühere Implementierung nahm ausschließlich
+// einen const String& entgegen und kostete pro Aufruf drei Heap-Allokationen:
+//
+//   1. sendChunk(server, F("...")) konvertierte das Flash-Literal implizit in
+//      einen Heap-String - die F()-Ersparnis war damit zur Laufzeit wieder weg
+//   2. chunk.substring() legte pro 127-Byte-Block einen weiteren String an
+//      (nur um in einen statischen 128-Byte-Puffer zu kopieren)
+//   3. server.sendContent(const char*) baute daraus erneut einen String
+//
+// Beim Aufbau einer Admin-Seite ergab das mehrere hundert kurzlebige
+// Allokationen - der Hauptgrund für die Heap-Fragmentierung.
+//
+// Die Überladungen greifen automatisch für alle bestehenden Aufrufstellen:
+// F("...") trifft jetzt die Flash-Variante (ganz ohne Heap), Zeichenketten-
+// Literale die const char*-Variante.
 
-  while (remaining > 0) {
-    size_t toSend =
-        std::min<size_t>(remaining, sizeof(buffer) - 1); // Leave space for null terminator
-    chunk.substring(offset, offset + toSend).toCharArray(buffer, sizeof(buffer));
-    server.sendContent(buffer);
-    remaining -= toSend;
-    offset += toSend;
-
-    // Yield periodically to prevent watchdog timeouts
-    if (millis() - lastYield > YIELD_INTERVAL) {
-      yield();
-      lastYield = millis();
-    }
+void sendChunk(ESPWebServer& server, const __FlashStringHelper* chunk) {
+  if (!chunk) {
+    return;
   }
+  PGM_P p = reinterpret_cast<PGM_P>(chunk);
+  size_t len = strlen_P(p);
+  if (len > 0) {
+    server.sendContent_P(p, len); // direkt aus dem Flash, keine Allokation
+  }
+  optimistic_yield(1000);
 }
 
-void sendPixelatedFooter(ESP8266WebServer& server, const String& version, const String& buildDate,
+void sendChunk(ESPWebServer& server, const char* chunk) {
+  if (!chunk || chunk[0] == '\0') {
+    return;
+  }
+  server.sendContent(chunk, strlen(chunk));
+  optimistic_yield(1000);
+}
+
+void sendChunk(ESPWebServer& server, const String& chunk) {
+  if (chunk.length() > 0) {
+    server.sendContent(chunk.c_str(), chunk.length());
+  }
+  optimistic_yield(1000);
+}
+
+void sendPixelatedFooter(ESPWebServer& server, const String& version, const String& buildDate,
                          const String& activeSection) {
   sendChunk(server, F("<div class='footer'>"));
   sendChunk(server, F("<div class='base'>"));
@@ -253,7 +281,7 @@ void sendPixelatedFooter(ESP8266WebServer& server, const String& version, const 
   sendChunk(server, F("</div>"));    // Close footer
 }
 
-void endResponse(ESP8266WebServer& server, const std::vector<String>& additionalScripts) {
+void endResponse(ESPWebServer& server, const std::vector<String>& additionalScripts) {
   // Add each additional script
   for (const auto& script : additionalScripts) {
     if (!script.isEmpty()) {
@@ -267,7 +295,7 @@ void endResponse(ESP8266WebServer& server, const std::vector<String>& additional
   server.sendContent(F("")); // Final empty chunk to signify end of response
 }
 
-void formGroup(ESP8266WebServer& server, const String& label, const String& content) {
+void formGroup(ESPWebServer& server, const String& label, const String& content) {
   sendChunk(server, F("<div class='form-group'>"));
   sendChunk(server, F("<label>"));
   sendChunk(server, label);
@@ -276,8 +304,8 @@ void formGroup(ESP8266WebServer& server, const String& label, const String& cont
   sendChunk(server, F("</div>"));
 }
 
-void button(ESP8266WebServer& server, const String& text, const String& type,
-            const String& className, bool disabled, const String& id) {
+void button(ESPWebServer& server, const String& text, const String& type, const String& className,
+            bool disabled, const String& id) {
   sendChunk(server, F("<button type='"));
   sendChunk(server, type);
   sendChunk(server, F("' class='button "));
@@ -299,13 +327,13 @@ void button(ESP8266WebServer& server, const String& text, const String& type,
   sendChunk(server, F("</button>"));
 }
 
-void beginPixelatedPage(ESP8266WebServer& server, const String& statusClass) {
+void beginPixelatedPage(ESPWebServer& server, const String& statusClass) {
   sendChunk(server, F("<div class='box "));
   sendChunk(server, statusClass);
   sendChunk(server, F("'><div class='group'>"));
 }
 
-void sendCloudTitle(ESP8266WebServer& server, const String& title) {
+void sendCloudTitle(ESPWebServer& server, const String& title) {
   sendChunk(server, F("<div class='cloud' aria-label='"));
   sendChunk(server, title);
   sendChunk(server, F("'>"));
@@ -315,7 +343,7 @@ void sendCloudTitle(ESP8266WebServer& server, const String& title) {
   sendChunk(server, F("</div></div>"));
 }
 
-void beginContentBox(ESP8266WebServer& server, const String& section) {
+void beginContentBox(ESPWebServer& server, const String& section) {
   sendChunk(server, F("<div class='admin-content-box'"));
   if (!section.isEmpty()) {
     sendChunk(server, F(" data-section='"));
@@ -325,9 +353,9 @@ void beginContentBox(ESP8266WebServer& server, const String& section) {
   sendChunk(server, F(">"));
 }
 
-void endContentBox(ESP8266WebServer& server) { sendChunk(server, F("</div>")); }
+void endContentBox(ESPWebServer& server) { sendChunk(server, F("</div>")); }
 
-void endPixelatedPage(ESP8266WebServer& server) {
+void endPixelatedPage(ESPWebServer& server) {
   sendChunk(server, F("</div></div>")); // Close group and box
 }
 

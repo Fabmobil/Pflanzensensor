@@ -11,8 +11,8 @@
 
 #pragma once
 
+#include "utils/platform_compat.h"
 #include <Arduino.h>
-#include <ESP8266WebServer.h>
 
 #include <map>
 #include <string>
@@ -40,7 +40,7 @@ public:
    * @param server Reference to web server instance
    * @details Initializes handler with server reference
    */
-  explicit BaseHandler(ESP8266WebServer& server) : _server(server) {}
+  explicit BaseHandler(ESPWebServer& server) : _server(server) {}
 
   // Prevent copying
   BaseHandler(const BaseHandler&) = delete;
@@ -117,39 +117,8 @@ public:
   virtual RouterResult onRegisterRoutes(WebRouter& router) = 0;
 
 protected:
-  ESP8266WebServer& _server; ///< Protected server reference
-  bool _cleaned = false;     ///< Flag indicating if handler has been cleaned up
-
-  /**
-   * @brief Render page with standard layout (DEPRECATED)
-   * @param title Page title
-   * @param activeNav Active navigation item
-   * @param content Content generation function
-   * @param additionalCss Additional CSS files
-   * @param additionalScripts Additional JS files
-   *          Renders complete HTML page with:
-   *          - Header with title
-   *          - Navigation menu
-   *          - Content container
-   *          - Footer with version
-   *          - Required scripts
-   */
-  void renderPage(const String& title, const String& activeNav, std::function<void()> content,
-                  const std::vector<String>& additionalCss = std::vector<String>(),
-                  const std::vector<String>& additionalScripts = std::vector<String>()) {
-    if (!Component::beginResponse(_server, title, additionalCss)) {
-      return;
-    }
-
-    Component::sendChunk(_server, F("<div class='main-container'>"));
-    Component::sendChunk(_server, F("<div class='content-container'>"));
-    Component::sendChunk(_server, F("<div class='page-container'>"));
-
-    content();
-
-    Component::sendChunk(_server, F("</div></div></div>"));
-    Component::endResponse(_server, additionalScripts);
-  }
+  ESPWebServer& _server; ///< Protected server reference
+  bool _cleaned = false; ///< Flag indicating if handler has been cleaned up
 
   /**
    * @brief Render start page with pixelated design (flower graphic, sensors)
@@ -325,7 +294,7 @@ protected:
    */
   bool requireAjaxRequest() {
     if (!isAjaxRequest()) {
-      logger.warning(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
+      LOG_WARN(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
       sendJsonResponse(400, F("{\"success\":false,\"error\":\"Nur AJAX-Updates werden unterstützt. "
                               "Bitte die Admin-Oberfläche verwenden.\"}"));
       return false;
@@ -342,7 +311,7 @@ protected:
     if (!isAjaxRequest()) {
       if (outError)
         *outError = F("Nur AJAX-Updates werden unterstützt. Bitte die Admin-Oberfläche verwenden.");
-      logger.warning(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
+      LOG_WARN(F("AJAX"), F("Abgelehnt: Nicht-AJAX-Aufruf"));
       return false;
     }
     return true;
@@ -420,13 +389,9 @@ protected:
    *          - Sends initial response
    */
   bool beginChunkedResponse(const String& contentType) {
-    static const char CONTENT_TYPE[] PROGMEM = "Content-Type";
-    static const char CONNECTION[] PROGMEM = "Connection";
-    static const char CLOSE[] PROGMEM = "close";
-
     _server.setContentLength(CONTENT_LENGTH_UNKNOWN);
-    _server.sendHeader(FPSTR(CONTENT_TYPE), contentType);
-    _server.sendHeader(FPSTR(CONNECTION), FPSTR(CLOSE));
+    // Content-Type setzt send() unten bereits, Connection verwaltet der
+    // Webserver selbst - beide zusätzlich zu senden lieferte sie doppelt aus.
     _server.send(200, contentType, F(""));
     return true;
   }
@@ -437,6 +402,20 @@ protected:
    * @details Sends part of chunked response
    */
   void sendChunk(const String& chunk) { Component::sendChunk(_server, chunk); }
+
+  /**
+   * @brief Chunk direkt aus dem Flash senden (keine Heap-Allokation)
+   * @param chunk Flash-String, üblicherweise aus F("...")
+   * @details Ohne diese Überladung würde jedes sendChunk(F("...")) in den
+   *          Handlern zuerst einen Heap-String erzeugen.
+   */
+  void sendChunk(const __FlashStringHelper* chunk) { Component::sendChunk(_server, chunk); }
+
+  /**
+   * @brief Chunk aus einem nullterminierten RAM-Puffer senden
+   * @param chunk Zeiger auf die zu sendenden Zeichen
+   */
+  void sendChunk(const char* chunk) { Component::sendChunk(_server, chunk); }
 
   /**
    * @brief End chunked response

@@ -20,100 +20,9 @@ String g_wifiAttemptsInfo = "";
 /**
  * @brief Attempt to connect to WiFi using up to 3 credentials.
  * @details Tries each SSID/PASSWORD pair in order. Returns true if connected,
- * false otherwise.
+ * false otherwise. Delegates to tryAllWiFiCredentialsWithDisplay with no callback.
  */
-bool tryAllWiFiCredentials() {
-  // Keep String objects alive for the duration of the function
-  String ssid1 = ConfigMgr.getWiFiSSID1();
-  String ssid2 = ConfigMgr.getWiFiSSID2();
-  String ssid3 = ConfigMgr.getWiFiSSID3();
-  String pwd1 = ConfigMgr.getWiFiPassword1();
-  String pwd2 = ConfigMgr.getWiFiPassword2();
-  String pwd3 = ConfigMgr.getWiFiPassword3();
-
-  const char* ssids[] = {ssid1.c_str(), ssid2.c_str(), ssid3.c_str()};
-  const char* passwords[] = {pwd1.c_str(), pwd2.c_str(), pwd3.c_str()};
-  const int numCredentials = 3;
-
-  // Reset connection attempts info
-  g_wifiAttemptsInfo = "";
-
-  // Check if any credentials are configured
-  bool hasCredentials = false;
-  for (int i = 0; i < numCredentials; ++i) {
-    if (strlen(ssids[i]) > 0 && strlen(passwords[i]) > 0) {
-      hasCredentials = true;
-      break;
-    }
-  }
-
-  if (!hasCredentials) {
-    g_wifiAttemptsInfo = F("Keine WiFi-Zugangsdaten konfiguriert");
-    return false;
-  }
-
-  for (int i = 0; i < numCredentials; ++i) {
-    if (strlen(ssids[i]) == 0 || strlen(passwords[i]) == 0) {
-      // Add empty slot info
-      if (g_wifiAttemptsInfo.length() > 0) {
-        g_wifiAttemptsInfo += ", ";
-      }
-      g_wifiAttemptsInfo += String(F("Slot ")) + String(i + 1) + F(": leer");
-      continue; // Skip empty credentials
-    }
-
-    WiFi.begin(ssids[i], passwords[i]);
-    logger.info(F("WiFi"), F("Verbinde mit WiFi: ") + String(ssids[i]));
-
-    // Add to attempts info
-    if (g_wifiAttemptsInfo.length() > 0) {
-      g_wifiAttemptsInfo += F(", ");
-    }
-    g_wifiAttemptsInfo += String(F("Versuch ")) + String(i + 1) + F(": ") + String(ssids[i]);
-
-    int attempts = 0;
-    const int MAX_ATTEMPTS = 20; // 10 seconds (20 * 500ms)
-    while (WiFi.status() != WL_CONNECTED && attempts < MAX_ATTEMPTS) {
-      delay(500);
-      logger.debug(F("WiFi"), F("."));
-      attempts++;
-
-      // Update display every 2 seconds (every 4 attempts)
-      if (attempts % 4 == 0 && attempts > 0) {
-        // This will be handled by the main loop calling updateDisplay
-      }
-    }
-
-    if (WiFi.status() == WL_CONNECTED) {
-      g_activeWiFiSlot = i;
-      logger.info(F("WiFi"), F("Mit WiFi verbunden: %s") + String(ssids[i]));
-      logger.info(F("WiFi"), F("IP-Adresse: %s") + WiFi.localIP().toString());
-
-      // Update attempts info to show success
-      g_wifiAttemptsInfo += F(" ✓");
-
-      // Add final result for successful connection
-      g_wifiAttemptsInfo += F(" → Verbindung erfolgreich");
-
-      return true;
-    } else {
-      logger.warning(F("WiFi"), F("Verbindung mit WiFi fehlgeschlagen: ") + String(ssids[i]));
-
-      // Update attempts info to show failure and reason
-      g_wifiAttemptsInfo += F(" ✗ (Timeout)");
-    }
-  }
-
-  g_activeWiFiSlot = -1;
-  logger.error(F("WiFi"), F("Verbindung zu keinem konfigurierten WiFi-Netzwerk möglich"));
-
-  // Add final result to attempts info
-  if (g_wifiAttemptsInfo.length() > 0) {
-    g_wifiAttemptsInfo += F(" → Alle Versuche fehlgeschlagen");
-  }
-
-  return false;
-}
+bool tryAllWiFiCredentials() { return tryAllWiFiCredentialsWithDisplay(nullptr); }
 
 /**
  * @brief Start WiFi Access Point for manual configuration
@@ -143,9 +52,9 @@ void startAPMode() {
   IPAddress apIP = WiFi.softAPIP();
 
   apModeActive = true;
-  logger.warning(F("WiFi"), F("AP-Modus gestartet: ") + deviceName);
-  logger.info(F("WiFi"), F("AP IP-Adresse: ") + apIP.toString());
-  logger.info(F("WiFi"), F("WiFi-Setup erreichbar unter: ") + apIP.toString());
+  LOG_WARN(F("WiFi"), String(F("AP-Modus gestartet: ")) + deviceName);
+  LOG_INFO(F("WiFi"), String(F("AP IP-Adresse: ")) + apIP.toString());
+  LOG_INFO(F("WiFi"), String(F("WiFi-Setup erreichbar unter: ")) + apIP.toString());
 }
 
 /**
@@ -166,13 +75,21 @@ ResourceResult setupWiFi() {
   IPAddress secondaryDNS(SECONDARY_DNS);
 
   if (!WiFi.config(ip, gateway, subnet, primaryDNS, secondaryDNS)) {
-    logger.error(F("WiFi"), F("Statische IP-Konfiguration fehlgeschlagen"));
+    LOG_ERROR(F("WiFi"), F("Statische IP-Konfiguration fehlgeschlagen"));
     return ResourceResult::fail(ResourceError::WIFI_ERROR, F("Static IP configuration failed"));
   }
 #endif
 
   if (tryAllWiFiCredentials()) {
     apModeActive = false;
+#ifdef ESP32
+    // Configure DNS explicitly for ESP32-C6 (OpenThread DNS64 conflict workaround)
+    // Use Google DNS and Cloudflare as fallback
+    IPAddress dns1(8, 8, 8, 8); // Google DNS
+    IPAddress dns2(1, 1, 1, 1); // Cloudflare DNS
+    WiFi.config(WiFi.localIP(), WiFi.gatewayIP(), WiFi.subnetMask(), dns1, dns2);
+    LOG_DEBUG(F("WiFi"), F("DNS konfiguriert: 8.8.8.8, 1.1.1.1"));
+#endif
     return ResourceResult::success();
   } else {
     // Wenn keine Verbindung hergestellt werden kann, starte den Access Point
@@ -184,18 +101,153 @@ ResourceResult setupWiFi() {
   }
 }
 
+/**
+ * @brief Nicht-blockierende WiFi-Verbindungsprüfung und Wiederherstellung
+ * @details Verwendet eine Zustandsmaschine statt blockierender delay()-Schleifen.
+ *          Wird alle 30s aus loop() aufgerufen. Bei Verbindungsverlust:
+ *          1. WiFi.begin() mit letzten bekannten Zugangsdaten starten
+ *          2. Beim nächsten Aufruf (30s später) prüfen ob verbunden
+ *          3. Falls nicht verbunden: nächsten Credential-Slot versuchen
+ *          4. Nach allen Slots: AP-Modus als Fallback
+ *
+ * WICHTIG: Blockiert NICHT den Web-Server. Jeder Aufruf kehrt sofort zurück.
+ */
 ResourceResult checkWiFiConnection() {
-  if (WiFi.status() != WL_CONNECTED) {
-    logger.warning(F("WiFi"), F("WiFi-Verbindung verloren. Stelle erneut her..."));
-    WiFi.disconnect();
-    if (tryAllWiFiCredentials()) {
-      return ResourceResult::success();
-    } else {
-      return ResourceResult::fail(ResourceError::WIFI_ERROR,
-                                  F("Erneutes Verbindungs-Timeout für alle Zugangsdaten"));
+  // Zustandsvariablen für nicht-blockierende Wiederverbindung
+  static int reconnectSlot = -1;           // Aktuell versuchter Credential-Slot (-1 = kein Versuch)
+  static unsigned long reconnectStart = 0; // Zeitpunkt des WiFi.begin()-Aufrufs
+
+  if (WiFi.status() == WL_CONNECTED) {
+    // Verbindung steht — Zustand zurücksetzen
+    if (reconnectSlot >= 0) {
+      LOG_INFO(F("WiFi"), String(F("Verbindung wiederhergestellt: ")) + WiFi.SSID());
+      LOG_INFO(F("WiFi"), String(F("IP-Adresse: ")) + WiFi.localIP().toString());
+      reconnectSlot = -1;
+    }
+    return ResourceResult::success();
+  }
+
+  // --- Verbindung verloren ---
+
+  unsigned long now = millis();
+
+  // Erster Aufruf nach Verbindungsverlust: Letzten bekannten Slot versuchen
+  if (reconnectSlot < 0) {
+    reconnectSlot = (g_activeWiFiSlot >= 0) ? g_activeWiFiSlot : 0;
+    LOG_WARN(F("WiFi"), String(F("Verbindung verloren. Starte Wiederherstellung ab Slot ")) +
+                            String(reconnectSlot + 1));
+  }
+
+  // Prüfen ob letzter Versuch schon lange genug läuft (mind. 10s warten)
+  if (reconnectStart > 0 && (now - reconnectStart) < 10000) {
+    return ResourceResult::fail(ResourceError::WIFI_ERROR, F("Wiederverbindung läuft..."));
+  }
+
+  // Nächsten Slot versuchen
+  bool foundCredentials = false;
+  for (int attempt = 0; attempt < 3; attempt++) {
+    int slot = (reconnectSlot + attempt) % 3;
+    String ssid = ConfigMgr.getWiFiSSID(slot + 1);
+    String pwd = ConfigMgr.getWiFiPassword(slot + 1);
+
+    if (!ssid.isEmpty() && !pwd.isEmpty()) {
+      LOG_INFO(F("WiFi"), String(F("Versuche Slot ")) + String(slot + 1) + String(F(": ")) + ssid);
+      WiFi.begin(ssid.c_str(), pwd.c_str());
+      reconnectSlot = (slot + 1) % 3; // Nächster Slot beim nächsten Aufruf
+      reconnectStart = now;
+      foundCredentials = true;
+      break;
     }
   }
-  return ResourceResult::success();
+
+  if (!foundCredentials) {
+    LOG_ERROR(F("WiFi"), F("Keine WiFi-Zugangsdaten konfiguriert"));
+    reconnectSlot = -1;
+    reconnectStart = 0;
+    return ResourceResult::fail(ResourceError::WIFI_ERROR, F("Keine Zugangsdaten konfiguriert"));
+  }
+
+  return ResourceResult::fail(ResourceError::WIFI_ERROR, F("Wiederverbindung gestartet"));
+}
+
+/**
+ * @brief Nicht-blockierender Rückweg aus dem AP-Modus
+ * @return ResourceResult::success() sobald wieder eine STA-Verbindung steht
+ * @details Bisher war der AP-Modus eine Sackgasse: startAPMode() setzte
+ *          apModeActive=true, loop() übersprang daraufhin dauerhaft
+ *          checkWiFiConnection(), und nichts setzte das Flag je zurück. Ein
+ *          Router-Neustart zum falschen Zeitpunkt strandete das Gerät bis zum
+ *          nächsten Stromausfall im AP-Modus.
+ *
+ *          Diese Funktion probiert im Hintergrund weiter, das konfigurierte
+ *          Netz zu erreichen. Sie blockiert nicht - der AP bleibt währenddessen
+ *          nutzbar, damit die WiFi-Konfiguration über die Admin-Seite möglich
+ *          bleibt. Erst wenn eine Verbindung tatsächlich steht, wird der AP
+ *          abgeschaltet.
+ */
+ResourceResult checkAPModeRecovery() {
+  static int retrySlot = 0;              // nächster zu probierender Slot (0-2)
+  static unsigned long attemptStart = 0; // Zeitpunkt des laufenden WiFi.begin()
+  static unsigned long lastAttempt = 0;  // Ende des letzten Versuchs
+
+  if (!apModeActive) {
+    return ResourceResult::success();
+  }
+
+  unsigned long now = millis();
+
+  // Läuft gerade ein Versuch? Dann Ergebnis prüfen.
+  if (attemptStart > 0) {
+    if (WiFi.status() == WL_CONNECTED) {
+      g_activeWiFiSlot = (retrySlot + 2) % 3; // der zuletzt gestartete Slot
+      LOG_INFO(F("WiFi"), String(F("Netz wieder erreichbar, verlasse AP-Modus: ")) + WiFi.SSID());
+      LOG_INFO(F("WiFi"), String(F("IP-Adresse: ")) + WiFi.localIP().toString());
+
+      WiFi.softAPdisconnect(true);
+      WiFi.mode(WIFI_STA);
+      apModeActive = false;
+      attemptStart = 0;
+      return ResourceResult::success();
+    }
+
+    // Versuch noch jung? Weiter warten.
+    if (now - attemptStart < AP_RECOVERY_ATTEMPT_MS) {
+      return ResourceResult::fail(ResourceError::WIFI_ERROR, F("AP-Rückweg: Versuch läuft"));
+    }
+
+    // Fehlgeschlagen - Pause bis zum nächsten Versuch
+    attemptStart = 0;
+    lastAttempt = now;
+    WiFi.mode(WIFI_AP); // STA wieder abschalten, AP bleibt bestehen
+    return ResourceResult::fail(ResourceError::WIFI_ERROR, F("AP-Rückweg: Versuch erfolglos"));
+  }
+
+  // Zwischen zwei Versuchen warten, damit der AP nicht dauernd gestört wird
+  if (lastAttempt != 0 && now - lastAttempt < AP_RECOVERY_INTERVAL_MS) {
+    return ResourceResult::fail(ResourceError::WIFI_ERROR, F("AP-Rückweg: Wartezeit"));
+  }
+
+  // Nächsten konfigurierten Slot suchen
+  for (int i = 0; i < 3; i++) {
+    int slot = (retrySlot + i) % 3;
+    String ssid = ConfigMgr.getWiFiSSID(slot + 1);
+    String pwd = ConfigMgr.getWiFiPassword(slot + 1);
+    if (ssid.isEmpty() || pwd.isEmpty()) {
+      continue;
+    }
+
+    LOG_INFO(F("WiFi"),
+             String(F("AP-Modus aktiv - probiere Slot ")) + String(slot + 1) + F(" erneut"));
+
+    // AP weiterlaufen lassen, damit die Konfiguration erreichbar bleibt
+    WiFi.mode(WIFI_AP_STA);
+    WiFi.begin(ssid.c_str(), pwd.c_str());
+    retrySlot = (slot + 1) % 3;
+    attemptStart = now;
+    return ResourceResult::fail(ResourceError::WIFI_ERROR, F("AP-Rückweg: Versuch gestartet"));
+  }
+
+  return ResourceResult::fail(ResourceError::WIFI_ERROR, F("Keine Zugangsdaten konfiguriert"));
 }
 
 TypedResult<ResourceError, int> getWiFiSignalStrength() {
@@ -212,17 +264,18 @@ TypedResult<ResourceError, bool> checkPort(uint16_t port) {
                                                   F("WiFi nicht verbunden"));
   }
 
-  try {
-    WiFiServer testServer(port);
-    testServer.begin();
-    delay(100);
-    bool isAvailable = testServer.status() != CLOSED;
-    testServer.close();
-    return TypedResult<ResourceError, bool>::success(isAvailable);
-  } catch (...) {
-    return TypedResult<ResourceError, bool>::fail(ResourceError::OPERATION_FAILED,
-                                                  F("Port check failed"));
-  }
+  WiFiServer testServer(port);
+  testServer.begin();
+  delay(100);
+#ifdef ESP32
+  // ESP32 WiFiServer doesn't have status() method
+  bool isAvailable = true; // Assume available if begin() didn't throw
+  testServer.end();
+#else
+  bool isAvailable = testServer.status() != CLOSED;
+  testServer.close();
+#endif
+  return TypedResult<ResourceError, bool>::success(isAvailable);
 }
 
 int getActiveWiFiSlot() { return g_activeWiFiSlot; }
@@ -287,7 +340,7 @@ bool tryAllWiFiCredentialsWithDisplay(std::function<void(const String&, bool)> d
     }
 
     WiFi.begin(ssids[i], passwords[i]);
-    logger.info(F("WiFi"), F("Verbinde mit WiFi: %s") + String(ssids[i]));
+    LOG_INFO(F("WiFi"), String(F("Verbinde mit WiFi: ")) + String(ssids[i]));
 
     // Show connection attempt immediately
     if (displayCallback) {
@@ -304,7 +357,7 @@ bool tryAllWiFiCredentialsWithDisplay(std::function<void(const String&, bool)> d
     const int MAX_ATTEMPTS = 20; // 10 seconds (20 * 500ms)
     while (WiFi.status() != WL_CONNECTED && attempts < MAX_ATTEMPTS) {
       delay(500);
-      logger.debug(F("WiFi"), F("."));
+      LOG_DEBUG(F("WiFi"), F("."));
       attempts++;
 
       // Show progress every 2 seconds
@@ -317,8 +370,8 @@ bool tryAllWiFiCredentialsWithDisplay(std::function<void(const String&, bool)> d
 
     if (WiFi.status() == WL_CONNECTED) {
       g_activeWiFiSlot = i;
-      logger.info(F("WiFi"), F("Mit WiFi verbunden: %s") + String(ssids[i]));
-      logger.info(F("WiFi"), F("IP-Adresse: %s") + WiFi.localIP().toString());
+      LOG_INFO(F("WiFi"), String(F("Mit WiFi verbunden: ")) + String(ssids[i]));
+      LOG_INFO(F("WiFi"), String(F("IP-Adresse: ")) + WiFi.localIP().toString());
 
       // Show success immediately
       if (displayCallback) {
@@ -331,7 +384,7 @@ bool tryAllWiFiCredentialsWithDisplay(std::function<void(const String&, bool)> d
 
       return true;
     } else {
-      logger.warning(F("WiFi"), F("Verbindung mit WiFi fehlgeschlagen: %s") + String(ssids[i]));
+      LOG_WARN(F("WiFi"), String(F("Verbindung mit WiFi fehlgeschlagen: ")) + String(ssids[i]));
 
       // Show failure immediately
       if (displayCallback) {
@@ -344,7 +397,7 @@ bool tryAllWiFiCredentialsWithDisplay(std::function<void(const String&, bool)> d
   }
 
   g_activeWiFiSlot = -1;
-  logger.error(F("WiFi"), F("Verbindung zu keinem konfigurierten WiFi-Netzwerk möglich"));
+  LOG_ERROR(F("WiFi"), F("Verbindung zu keinem konfigurierten WiFi-Netzwerk möglich"));
 
   // Show final failure
   if (displayCallback) {

@@ -34,8 +34,8 @@ public:
    *          - Configures authentication
    *          - Initializes logging
    */
-  AdminMinimalHandler(ESP8266WebServer& server, WebAuth& auth) : BaseHandler(server), _auth(auth) {
-    logger.debug(F("AdminMinimalHandler"), F("Initialisiere AdminMinimalHandler"));
+  AdminMinimalHandler(ESPWebServer& server, WebAuth& auth) : BaseHandler(server), _auth(auth) {
+    LOG_DEBUG(F("AdminMinimalHandler"), F("Initialisiere AdminMinimalHandler"));
   }
 
   /**
@@ -53,7 +53,7 @@ public:
     if (!result.isSuccess()) {
       return result;
     }
-    logger.debug(F("AdminMinimalHandler"), F("Reboot Route registriert"));
+    LOG_DEBUG(F("AdminMinimalHandler"), F("Reboot Route registriert"));
     return RouterResult::success();
   }
 
@@ -110,7 +110,7 @@ public:
                    "'/'; }, 10000);</script>"));
 
     delay(500); // Give time to send response
-    logger.warning(F("AdminMinimalHandler"), F("Starte Sensor neu"));
+    LOG_WARN(F("AdminMinimalHandler"), F("Starte Sensor neu"));
     ESP.restart();
   }
 

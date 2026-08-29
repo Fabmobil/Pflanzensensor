@@ -7,9 +7,13 @@
 #include "../logger/logger.h"
 #include "../managers/manager_config_preferences.h"
 #include "critical_section.h"
+#ifdef ESP32
+#include <WiFi.h>
+#else
 #include <ESP8266WiFi.h>
+#endif
 
-#ifdef USE_WEBSERVER
+#if USE_WEBSERVER
 #include <LittleFS.h>
 #endif
 
@@ -48,13 +52,26 @@ static const uint32_t crc32_table[256] PROGMEM = {
     0xbdbdf21c, 0xcabac28a, 0x53b39330, 0x24b4a3a6, 0xbad03605, 0xcdd70693, 0x54de5729, 0x23d967bf,
     0xb3667a2e, 0xc4614ab8, 0x5d681b02, 0x2a6f2b94, 0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d};
 
-uint32_t FlashPersistence::calculateCRC32(const uint8_t* data, size_t length) {
-  uint32_t crc = 0xFFFFFFFF;
+uint32_t FlashPersistence::crc32Update(uint32_t crc, const uint8_t* data, size_t length) {
   for (size_t i = 0; i < length; i++) {
     uint8_t index = (crc ^ data[i]) & 0xFF;
     crc = (crc >> 8) ^ pgm_read_dword(&crc32_table[index]);
   }
-  return ~crc;
+  return crc;
+}
+
+uint32_t FlashPersistence::calculateCRC32(const uint8_t* data, size_t length) {
+  return ~crc32Update(0xFFFFFFFF, data, length);
+}
+
+bool FlashPersistence::isChecksumVerificationEnabled() {
+  Preferences prefs;
+  if (!prefs.begin(PreferencesNamespaces::GENERAL, true)) {
+    return false; // Keine Konfiguration vorhanden - nichts zu prüfen
+  }
+  bool enabled = prefs.getBool("md5_verify", false);
+  prefs.end();
+  return enabled;
 }
 
 uint32_t FlashPersistence::getSafeOffset() {
@@ -65,7 +82,7 @@ uint32_t FlashPersistence::getSafeOffset() {
 
   uint32_t sketchEnd = ESP.getFreeSketchSpace() + sketchSize;
   if (safeOffset + FP_PREFS_MAX_SIZE > sketchEnd) {
-    logger.error(F("FlashPers"), F("Nicht genug Flash-Speicher"));
+    LOG_ERROR(F("FlashPers"), F("Nicht genug Flash-Speicher"));
     return 0;
   }
 
@@ -85,7 +102,7 @@ uint32_t FlashPersistence::getJsonStorageOffset() {
   uint32_t sketchEnd = ESP.getFreeSketchSpace() + sketchSize;
 
   if (jsonOffset + FP_JSON_MAX_SIZE > sketchEnd) {
-    logger.error(F("FlashPers"), F("Nicht genug Flash für JSON-Speicher"));
+    LOG_ERROR(F("FlashPers"), F("Nicht genug Flash für JSON-Speicher"));
     return 0;
   }
 
@@ -93,7 +110,7 @@ uint32_t FlashPersistence::getJsonStorageOffset() {
 }
 
 ResourceResult FlashPersistence::saveToFlash() {
-  logger.info(F("FlashPers"), F("Speichere Preferences als Text..."));
+  LOG_INFO(F("FlashPers"), F("Speichere Preferences als Text..."));
 
   uint32_t offset = getSafeOffset();
   if (offset == 0) {
@@ -122,12 +139,15 @@ ResourceResult FlashPersistence::saveToFlash() {
     // For general namespace
     if (strcmp(ns, PreferencesNamespaces::GENERAL) == 0) {
       textData += String(ns) + ":initialized=1\n"; // Marker key for namespace existence
-      textData += String(ns) + ":device_name=" + prefs.getString("device_name", "") + "\n";
-      textData += String(ns) + ":admin_pwd=" + prefs.getString("admin_pwd", "") + "\n";
+      // Vorgaben identisch zum Ladepfad halten - ein leerer Rückfallwert würde
+      // beim Wiederherstellen nach einem Dateisystem-Update ein leeres
+      // Adminpasswort setzen, falls der Schlüssel nie explizit geschrieben wurde.
+      textData += String(ns) + ":device_name=" + prefs.getString("device_name", DEVICE_NAME) + "\n";
+      textData += String(ns) + ":admin_pwd=" + prefs.getString("admin_pwd", ADMIN_PASSWORD) + "\n";
       textData += String(ns) +
                   ":md5_verify=" + String(prefs.getBool("md5_verify", false) ? "1" : "0") + "\n";
-      textData +=
-          String(ns) + ":file_log=" + String(prefs.getBool("file_log", false) ? "1" : "0") + "\n";
+      textData += String(ns) + ":file_log=" +
+                  String(prefs.getBool("file_log", FILE_LOGGING_ENABLED) ? "1" : "0") + "\n";
       textData += String(ns) + ":flower_sens=" + prefs.getString("flower_sens", "") + "\n";
     }
     // For WiFi namespaces
@@ -255,7 +275,7 @@ ResourceResult FlashPersistence::saveToFlash() {
   }
 
   uint32_t dataSize = textData.length();
-  logger.info(F("FlashPers"), F("Textgröße: ") + String(dataSize) + F(" Bytes"));
+  LOG_INFO(F("FlashPers"), String(F("Textgröße: ")) + String(dataSize) + F(" Bytes"));
 
   if (dataSize == 0 || dataSize > FP_MAX_CONFIG_SIZE - 16) {
     return ResourceResult::fail(ResourceError::VALIDATION_ERROR, F("Invalid data size"));
@@ -272,27 +292,45 @@ ResourceResult FlashPersistence::saveToFlash() {
   memcpy(header + 9, &crc, 4);
   memset(header + 13, 0, 3);
 
-  // CRITICAL SECTION: Disable interrupts during flash operations
-  // WiFi stays ON, but interrupts are disabled to prevent conflicts
+  // Flash-Operationen: Interrupts werden NUR um den einzelnen Erase- bzw.
+  // Write-Aufruf gesperrt, nicht um die ganze Schleife. Ein Sektor-Erase dauert
+  // 20-40 ms; bleiben die Interrupts über alle Sektoren hinweg gesperrt, kann
+  // weder der Watchdog gefüttert noch der SDK-Timer bedient werden.
+  //
+  // Hier KEIN yield()/delay() verwenden: dieser Pfad wird auch aus dem
+  // OTA-/Webserver-Kontext heraus aufgerufen, in dem der ESP8266-Core bei
+  // yield() mit "Panic core_esp8266_main.cpp __yield" abbricht.
+  // ESP.wdtFeed() ist dagegen in jedem Kontext sicher.
   {
-    CriticalSection cs;
-
-    // Erase sectors (interrupts disabled, safe to do flash ops)
+    // Sektoren löschen
     uint32_t sectorsNeeded = ((dataSize + 16 + FP_FLASH_SECTOR_SIZE - 1) / FP_FLASH_SECTOR_SIZE);
     for (uint32_t i = 0; i < sectorsNeeded; i++) {
       uint32_t sectorAddr = (offset + i * FP_FLASH_SECTOR_SIZE) / FP_FLASH_SECTOR_SIZE;
 
-      if (!ESP.flashEraseSector(sectorAddr)) {
+      bool ok;
+      {
+        CriticalSection cs;
+        ok = ESP.flashEraseSector(sectorAddr);
+      }
+      if (!ok) {
         return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Erase failed"));
+      }
+      ESP.wdtFeed();
+    }
+
+    // Header schreiben
+    {
+      bool ok;
+      {
+        CriticalSection cs;
+        ok = ESP.flashWrite(offset, (uint32_t*)header, 16);
+      }
+      if (!ok) {
+        return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Write header failed"));
       }
     }
 
-    // Write header
-    if (!ESP.flashWrite(offset, (uint32_t*)header, 16)) {
-      return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Write header failed"));
-    }
-
-    // Write data in chunks (textData is in RAM, safe)
+    // Daten in Blöcken schreiben (textData liegt im RAM)
     const char* dataPtr = textData.c_str();
     uint32_t written = 0;
     uint32_t writeOffset = offset + 16;
@@ -303,16 +341,22 @@ ResourceResult FlashPersistence::saveToFlash() {
       memcpy(chunk, dataPtr + written, chunkSize);
       uint32_t alignedSize = (chunkSize + 3) & ~3;
 
-      if (!ESP.flashWrite(writeOffset, chunk, alignedSize)) {
+      bool ok;
+      {
+        CriticalSection cs;
+        ok = ESP.flashWrite(writeOffset, chunk, alignedSize);
+      }
+      if (!ok) {
         return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Write failed"));
       }
 
       written += chunkSize;
       writeOffset += alignedSize;
+      ESP.wdtFeed();
     }
-  } // CriticalSection ends here, interrupts restored
+  }
 
-  logger.info(F("FlashPers"), F("Erfolgreich gespeichert"));
+  LOG_INFO(F("FlashPers"), F("Erfolgreich gespeichert"));
   return ResourceResult::success();
 }
 
@@ -359,10 +403,50 @@ ResourceResult FlashPersistence::restoreFromFlash() {
   Serial.print(dataSize);
   Serial.println(F(" Bytes..."));
 
-  //  CRITICAL: Don't malloc the entire buffer - heap fragmentation!
-  // CRC check skipped - we rely on magic number + version for validation
-  // Instead, read and parse line-by-line in small chunks
-  // Instead, read and parse line-by-line in small chunks
+  // Prüfsumme verifizieren, BEVOR irgendetwas in die Preferences geschrieben
+  // wird. Der Datenblock wird dafür in einem eigenen Durchgang gelesen und die
+  // CRC32 fortlaufend mitgeführt - ohne den kompletten Puffer zu allokieren.
+  //
+  // Vorher wurde die CRC beim Speichern berechnet und abgelegt, beim
+  // Wiederherstellen aber ausdrücklich übersprungen ("CRC check skipped").
+  // Die 1-KB-Tabelle im Flash diente damit einem Wert, den nie jemand geprüft
+  // hat, und beschädigte Konfigurationsdaten wären ungefiltert in die
+  // Preferences gewandert.
+  if (isChecksumVerificationEnabled()) {
+    uint32_t running = 0xFFFFFFFF;
+    uint32_t verifyOffset = offset + 16;
+    uint32_t verified = 0;
+
+    while (verified < dataSize) {
+      char chunk[256];
+      uint32_t chunkSize = min((uint32_t)256, dataSize - verified);
+      uint32_t alignedSize = (chunkSize + 3) & ~3;
+
+      if (!ESP.flashRead(verifyOffset, (uint32_t*)chunk, alignedSize)) {
+        Serial.println(F("[FlashPers] FEHLER: Lesen für Prüfsumme fehlgeschlagen"));
+        return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("CRC read failed"));
+      }
+
+      running = crc32Update(running, (const uint8_t*)chunk, chunkSize);
+      verified += chunkSize;
+      verifyOffset += alignedSize;
+      ESP.wdtFeed();
+    }
+
+    uint32_t computed = ~running;
+    if (computed != storedCRC) {
+      Serial.print(F("[FlashPers] FEHLER: Pruefsumme falsch - erwartet 0x"));
+      Serial.print(storedCRC, HEX);
+      Serial.print(F(", berechnet 0x"));
+      Serial.println(computed, HEX);
+      return ResourceResult::fail(ResourceError::DATA_CORRUPTION, F("CRC mismatch"));
+    }
+    Serial.println(F("[FlashPers] Pruefsumme OK"));
+  } else {
+    Serial.println(F("[FlashPers] Pruefsummen-Verifikation deaktiviert"));
+  }
+
+  // Daten zeilenweise in kleinen Blöcken lesen und parsen (kein großer Puffer)
   Preferences prefs;
   int lineCount = 0;
   char currentNs[32] = "";
@@ -458,10 +542,14 @@ ResourceResult FlashPersistence::restoreFromFlash() {
                   if (isNumber) {
                     long val = atol(value);
 
-                    // Decide between UChar, UInt, and Int based on value
+                    // long ist auf dieser Plattform 32 Bit, die frühere obere
+                    // Schranke (val <= 4294967295L) war deshalb immer wahr und
+                    // der else-Zweig unerreichbar - negative Werte landeten
+                    // trotzdem korrekt dort, weil val >= 0 zuerst geprüft wird.
+                    // Jetzt ohne die tote Vergleichshälfte.
                     if (val >= 0 && val <= 255) {
                       prefs.putUChar(key, (uint8_t)val);
-                    } else if (val >= 0 && val <= 4294967295L) {
+                    } else if (val >= 0) {
                       prefs.putUInt(key, (uint32_t)val);
                     } else {
                       prefs.putInt(key, (int32_t)val);
@@ -504,7 +592,7 @@ ResourceResult FlashPersistence::restoreFromFlash() {
 }
 
 ResourceResult FlashPersistence::clearFlash() {
-  logger.info(F("FlashPers"), F("Lösche Flash..."));
+  LOG_INFO(F("FlashPers"), F("Lösche Flash..."));
 
   uint32_t offset = getSafeOffset();
   if (offset == 0) {
@@ -516,7 +604,7 @@ ResourceResult FlashPersistence::clearFlash() {
     return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Erase failed"));
   }
 
-  logger.info(F("FlashPers"), F("Gelöscht"));
+  LOG_INFO(F("FlashPers"), F("Gelöscht"));
   return ResourceResult::success();
 }
 
@@ -535,7 +623,7 @@ bool FlashPersistence::hasValidConfig() {
 // ==================== NEW: Combined Preferences + Config Files ====================
 
 ResourceResult FlashPersistence::saveAllToFlash() {
-  logger.info(F("FlashPers"), F("Sichere Preferences + Config-Dateien..."));
+  LOG_INFO(F("FlashPers"), F("Sichere Preferences + Config-Dateien..."));
 
   // NEW SIMPLIFIED ARCHITECTURE:
   // WiFi stays ON throughout the entire process. We use CriticalSection
@@ -553,11 +641,11 @@ ResourceResult FlashPersistence::saveAllToFlash() {
   // No delay needed - CriticalSection handles everything safely
   auto jsonResult = saveJsonToFlash();
   if (!jsonResult.isSuccess()) {
-    logger.warning(F("FlashPers"), F("JSON-Sicherung fehlgeschlagen"));
+    LOG_WARN(F("FlashPers"), F("JSON-Sicherung fehlgeschlagen"));
     return jsonResult;
   }
 
-  logger.info(F("FlashPers"), F("Erfolgreich gespeichert (Preferences + JSON-Configs)"));
+  LOG_INFO(F("FlashPers"), F("Erfolgreich gespeichert (Preferences + JSON-Configs)"));
   return ResourceResult::success();
 }
 
@@ -586,7 +674,7 @@ ResourceResult FlashPersistence::restoreAllFromFlash() {
 // Helper methods for JSON storage in separate flash area
 
 ResourceResult FlashPersistence::saveJsonToFlash() {
-  logger.info(F("FlashPers"), F("Sichere JSON-Configs in Flash..."));
+  LOG_INFO(F("FlashPers"), F("Sichere JSON-Configs in Flash..."));
 
 #ifndef USE_WEBSERVER
   return ResourceResult::success(); // Nothing to do without web support
@@ -604,6 +692,27 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
   FileInfo files[16]; // Max 16 JSON files
   uint8_t fileCount = 0;
 
+#ifdef ESP32
+  File root = LittleFS.open("/config");
+  if (root && root.isDirectory()) {
+    File entry = root.openNextFile();
+    while (entry && fileCount < 16) {
+      String filename = String(entry.name());
+      int lastSlash = filename.lastIndexOf('/');
+      if (lastSlash >= 0) {
+        filename = filename.substring(lastSlash + 1);
+      }
+      if (filename.endsWith(".json") && !filename.endsWith(".example")) {
+        files[fileCount].filename = filename;
+        files[fileCount].size = entry.size();
+        fileCount++;
+      }
+      entry.close();
+      entry = root.openNextFile();
+    }
+    root.close();
+  }
+#else
   Dir dir = LittleFS.openDir("/config");
   while (dir.next() && fileCount < 16) {
     String filename = dir.fileName();
@@ -617,13 +726,14 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
       }
     }
   }
+#endif
 
   if (fileCount == 0) {
-    logger.info(F("FlashPers"), F("Keine JSON-Dateien zum Sichern"));
+    LOG_INFO(F("FlashPers"), F("Keine JSON-Dateien zum Sichern"));
     return ResourceResult::success();
   }
 
-  logger.info(F("FlashPers"), String(fileCount) + F(" JSON-Dateien gefunden"));
+  LOG_INFO(F("FlashPers"), String(fileCount) + F(" JSON-Dateien gefunden"));
 
   // STEP 2: Build manifest (WiFi ON, safe)
   String manifest;
@@ -637,7 +747,7 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
   }
   totalSize += manifest.length();
 
-  logger.info(F("FlashPers"), F("JSON Gesamt: ") + String(totalSize) + F(" Bytes"));
+  LOG_INFO(F("FlashPers"), String(F("JSON Gesamt: ")) + String(totalSize) + F(" Bytes"));
 
   if (totalSize > FP_JSON_MAX_SIZE) {
     return ResourceResult::fail(ResourceError::INSUFFICIENT_SPACE, F("JSON too large"));
@@ -646,37 +756,73 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
   uint32_t manifestSize = manifest.length();
 
   // STEP 3: Prepare header (WiFi ON, safe)
+  // Prüfsumme über Manifest + alle Dateiinhalte in einem Vorlauf berechnen.
+  // Vorher stand hier eine feste 0 als Platzhalter - die Prüfsumme war damit
+  // wertlos. Der Vorlauf liest die Dateien einmal zusätzlich aus LittleFS;
+  // bei gut einem Kilobyte Gesamtdaten fällt das nicht ins Gewicht und
+  // erspart es, den Header nachträglich an einer nicht ausgerichteten
+  // Adresse überschreiben zu müssen.
+  uint32_t running = crc32Update(0xFFFFFFFF, (const uint8_t*)manifest.c_str(), manifestSize);
+  for (uint8_t i = 0; i < fileCount; i++) {
+    File cf = LittleFS.open("/config/" + files[i].filename, "r");
+    if (!cf) {
+      continue;
+    }
+    uint8_t buf[128];
+    while (cf.available()) {
+      size_t got = cf.read(buf, sizeof(buf));
+      if (got == 0) {
+        break;
+      }
+      running = crc32Update(running, buf, got);
+    }
+    cf.close();
+    ESP.wdtFeed();
+  }
+  const uint32_t jsonCrc = ~running;
+
   uint8_t header[16];
   memcpy(header, &FP_MAGIC_NUMBER, 4);
   header[4] = FP_VERSION;
   memcpy(header + 5, &manifestSize, 4);
-  uint32_t placeholder_crc = 0;
-  memcpy(header + 9, &placeholder_crc, 4);
+  memcpy(header + 9, &jsonCrc, 4);
   memset(header + 13, 0, 3);
 
   uint32_t sectorsNeeded = ((totalSize + FP_FLASH_SECTOR_SIZE - 1) / FP_FLASH_SECTOR_SIZE);
-  logger.debug(F("FlashPers"), F("Lösche ") + String(sectorsNeeded) + F(" Sektoren..."));
+  LOG_DEBUG(F("FlashPers"), String(F("Lösche ")) + String(sectorsNeeded) + F(" Sektoren..."));
 
-  // STEP 4: CRITICAL SECTION - Erase and write header/manifest
+  // Header und Manifest schreiben. Wie oben gilt: Interrupts nur um den
+  // einzelnen Flash-Aufruf sperren, dazwischen Watchdog füttern.
   {
-    CriticalSection cs;
-
-    // Erase all needed sectors
+    // Alle benötigten Sektoren löschen
     for (uint32_t i = 0; i < sectorsNeeded; i++) {
       uint32_t sectorAddr = (offset + i * FP_FLASH_SECTOR_SIZE) / FP_FLASH_SECTOR_SIZE;
-      if (!ESP.flashEraseSector(sectorAddr)) {
+      bool ok;
+      {
+        CriticalSection cs;
+        ok = ESP.flashEraseSector(sectorAddr);
+      }
+      if (!ok) {
         return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("JSON erase failed"));
       }
+      ESP.wdtFeed();
     }
 
-    // Write header
+    // Header schreiben
     uint32_t writeOffset = offset;
-    if (!ESP.flashWrite(writeOffset, (uint32_t*)header, 16)) {
-      return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Header write failed"));
+    {
+      bool ok;
+      {
+        CriticalSection cs;
+        ok = ESP.flashWrite(writeOffset, (uint32_t*)header, 16);
+      }
+      if (!ok) {
+        return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Header write failed"));
+      }
     }
     writeOffset += 16;
 
-    // Write manifest in chunks
+    // Manifest in Blöcken schreiben
     const char* manifestPtr = manifest.c_str();
     uint32_t manifestWritten = 0;
 
@@ -686,21 +832,19 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
       memcpy(chunk, manifestPtr + manifestWritten, chunkSize);
       uint32_t alignedSize = (chunkSize + 3) & ~3;
 
-      if (!ESP.flashWrite(writeOffset, chunk, alignedSize)) {
+      bool ok;
+      {
+        CriticalSection cs;
+        ok = ESP.flashWrite(writeOffset, chunk, alignedSize);
+      }
+      if (!ok) {
         return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("Manifest write failed"));
       }
 
       manifestWritten += chunkSize;
       writeOffset += alignedSize;
+      ESP.wdtFeed();
     }
-
-    // STEP 5: Write each JSON file individually in its own critical section
-    // This allows us to read from LittleFS with interrupts enabled between files
-    for (uint8_t fileIdx = 0; fileIdx < fileCount; fileIdx++) {
-      String filepath = "/config/" + files[fileIdx].filename;
-
-      // Exit critical section temporarily to read file
-    } // End of CriticalSection for header/manifest
   }
 
   // STEP 6: Write file contents one by one (each in its own critical section)
@@ -712,7 +856,7 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
     // Open and read file (WiFi ON, interrupts enabled, safe for LittleFS)
     File f = LittleFS.open(filepath, "r");
     if (!f) {
-      logger.warning(F("FlashPers"), F("Konnte nicht öffnen: ") + files[fileIdx].filename);
+      LOG_WARN(F("FlashPers"), String(F("Konnte nicht öffnen: ")) + files[fileIdx].filename);
       continue;
     }
 
@@ -742,7 +886,7 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
         if (!ESP.flashWrite(writeOffset, alignedChunk, alignedSize)) {
           f.close();
           return ResourceResult::fail(ResourceError::OPERATION_FAILED,
-                                      F("File write failed: ") + files[fileIdx].filename);
+                                      String(F("File write failed: ")) + files[fileIdx].filename);
         }
       }
 
@@ -751,10 +895,10 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
     }
 
     f.close();
-    logger.debug(F("FlashPers"), F("Gesichert: ") + files[fileIdx].filename);
+    LOG_DEBUG(F("FlashPers"), String(F("Gesichert: ")) + files[fileIdx].filename);
   }
 
-  logger.info(F("FlashPers"), F("JSON-Configs erfolgreich in Flash gesichert"));
+  LOG_INFO(F("FlashPers"), F("JSON-Configs erfolgreich in Flash gesichert"));
   return ResourceResult::success();
 #endif
 }
@@ -785,8 +929,9 @@ ResourceResult FlashPersistence::restoreJsonFromFlash() {
     return ResourceResult::success(); // Not an error, just no backup
   }
 
-  uint32_t manifestSize;
+  uint32_t manifestSize, storedJsonCRC;
   memcpy(&manifestSize, header + 5, 4);
+  memcpy(&storedJsonCRC, header + 9, 4);
 
   if (manifestSize == 0 || manifestSize > 4096) {
     Serial.println(F("[FlashPers] Ungültige Manifest-Größe"));
@@ -819,6 +964,57 @@ ResourceResult FlashPersistence::restoreJsonFromFlash() {
 
     bytesRead += chunkSize;
     readOffset += alignedSize;
+  }
+
+  // Gespeicherte Prüfsumme über Manifest + Dateiinhalte verifizieren, bevor
+  // irgendetwas nach LittleFS geschrieben wird.
+  //
+  // WICHTIG: Die Dateien liegen im Flash NICHT lückenlos hintereinander. Beim
+  // Schreiben wird jeder Block auf 4 Byte aufgerundet (ESP.flashWrite verlangt
+  // ausgerichtete Längen), die letzte Portion jeder Datei also mit 0xFF
+  // aufgefüllt. Die Prüfsumme läuft nur über die echten Dateibytes, deshalb
+  // muss hier dieselbe blockweise Schrittfolge nachvollzogen werden wie beim
+  // Schreiben und beim eigentlichen Wiederherstellen.
+  if (isChecksumVerificationEnabled()) {
+    uint32_t running = crc32Update(0xFFFFFFFF, (const uint8_t*)manifest.c_str(), manifestSize);
+    uint32_t scanOffset = readOffset;
+
+    int ls = manifest.indexOf('\n') + 1;
+    while (ls > 0 && ls < (int)manifest.length()) {
+      int le = manifest.indexOf('\n', ls);
+      if (le == -1) {
+        break;
+      }
+      int pipe = manifest.indexOf('|', ls);
+      if (pipe > 0 && pipe < le) {
+        size_t fileSize = manifest.substring(pipe + 1, le).toInt();
+        size_t fileRead = 0;
+        while (fileRead < fileSize) {
+          uint32_t alignedBuffer[32];
+          size_t chunkSize = (fileSize - fileRead > 128) ? 128 : (fileSize - fileRead);
+          uint32_t alignedSize = (chunkSize + 3) & ~3;
+          if (!ESP.flashRead(scanOffset, alignedBuffer, alignedSize)) {
+            Serial.println(F("[FlashPers] FEHLER: Lesen für JSON-Pruefsumme fehlgeschlagen"));
+            return ResourceResult::fail(ResourceError::OPERATION_FAILED, F("JSON CRC read failed"));
+          }
+          running = crc32Update(running, (const uint8_t*)alignedBuffer, chunkSize);
+          fileRead += chunkSize;
+          scanOffset += alignedSize;
+          ESP.wdtFeed();
+        }
+      }
+      ls = le + 1;
+    }
+
+    uint32_t computed = ~running;
+    if (computed != storedJsonCRC) {
+      Serial.print(F("[FlashPers] FEHLER: JSON-Pruefsumme falsch - erwartet 0x"));
+      Serial.print(storedJsonCRC, HEX);
+      Serial.print(F(", berechnet 0x"));
+      Serial.println(computed, HEX);
+      return ResourceResult::fail(ResourceError::DATA_CORRUPTION, F("JSON CRC mismatch"));
+    }
+    Serial.println(F("[FlashPers] JSON-Pruefsumme OK"));
   }
 
   // Parse manifest: first line = file count, then filename|size

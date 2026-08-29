@@ -12,36 +12,28 @@ WebSocketService& WebSocketService::getInstance() {
 
 bool WebSocketService::init(uint16_t port, WebSocketEventHandler handler) {
   if (_wsServer) {
-    logger.debug(F("Websocket"), F("WebSocket-Server bereits initialisiert"));
+    LOG_DEBUG(F("Websocket"), F("WebSocket-Server bereits initialisiert"));
     return true;
   }
 
-  try {
-    _eventHandler = std::move(handler);
-    _wsServer = std::make_unique<WebSocketsServer>(port);
+  _eventHandler = std::move(handler);
+  _wsServer = std::make_unique<WebSocketsServer>(port);
 
-    if (!_wsServer) {
-      logger.error(F("Websocket"), F("WebSocket-Server konnte nicht erstellt werden"));
-      return false;
-    }
-
-    // Enable heartbeat with 15s interval, timeout after 3s, and 2 missed pings
-    _wsServer->enableHeartbeat(15000, 3000, 2);
-
-    _wsServer->onEvent([this](uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
-      handleEvent(num, type, payload, length);
-    });
-
-    _wsServer->begin();
-    logger.info(F("Websocket"), F("WebSocket-Server erfolgreich gestartet"));
-    return true;
-
-  } catch (const std::exception& e) {
-    logger.error(F("Websocket"),
-                 String(F("WebSocket-Initialisierung fehlgeschlagen: ")) + String(e.what()));
-    stop();
+  if (!_wsServer) {
+    LOG_ERROR(F("Websocket"), F("WebSocket-Server konnte nicht erstellt werden"));
     return false;
   }
+
+  // Enable heartbeat with 15s interval, timeout after 3s, and 2 missed pings
+  _wsServer->enableHeartbeat(15000, 3000, 2);
+
+  _wsServer->onEvent([this](uint8_t num, WStype_t type, uint8_t* payload, size_t length) {
+    handleEvent(num, type, payload, length);
+  });
+
+  _wsServer->begin();
+  LOG_INFO(F("Websocket"), F("WebSocket-Server erfolgreich gestartet"));
+  return true;
 }
 
 void WebSocketService::stop() {
@@ -55,32 +47,11 @@ void WebSocketService::stop() {
     _wsServer->close();
     _wsServer.reset();
     m_connectedClients = 0;
-    logger.info(F("Websocket"), F("WebSocket-Server gestoppt"));
+    LOG_INFO(F("Websocket"), F("WebSocket-Server gestoppt"));
   }
 }
 
 WebSocketService::~WebSocketService() { stop(); }
-
-bool WebSocketService::RingBuffer::write(const char* data, size_t len) {
-  if (len > RING_BUFFER_SIZE - ((writePos - readPos) % RING_BUFFER_SIZE)) {
-    return false;
-  }
-  for (size_t i = 0; i < len; i++) {
-    buffer[writePos % RING_BUFFER_SIZE] = data[i];
-    writePos++;
-  }
-  return true;
-}
-
-size_t WebSocketService::RingBuffer::read(char* data, size_t maxLen) {
-  size_t available = (writePos - readPos) % RING_BUFFER_SIZE;
-  size_t len = min(available, maxLen);
-  for (size_t i = 0; i < len; i++) {
-    data[i] = buffer[readPos % RING_BUFFER_SIZE];
-    readPos++;
-  }
-  return len;
-}
 
 void WebSocketService::loop() {
   if (_wsServer) {
@@ -95,8 +66,7 @@ bool WebSocketService::sendTXT(uint8_t num, const String& text) {
 
   size_t len = text.length();
   if (len >= MAX_MESSAGE_SIZE) {
-    logger.warning(F("Websocket"),
-                   String(F("Nachricht zu lang: ")) + String(len) + String(F(" Bytes")));
+    LOG_WARN(F("Websocket"), String(F("Nachricht zu lang: ")) + String(len) + String(F(" Bytes")));
     return false;
   }
 
@@ -112,8 +82,8 @@ bool WebSocketService::sendBIN(uint8_t num, const uint8_t* data, size_t len) {
   }
 
   if (len >= MAX_MESSAGE_SIZE) {
-    logger.warning(F("Websocket"),
-                   String(F("Binärnachricht zu lang: ")) + String(len) + String(F(" Bytes")));
+    LOG_WARN(F("Websocket"),
+             String(F("Binärnachricht zu lang: ")) + String(len) + String(F(" Bytes")));
     return false;
   }
 
@@ -160,17 +130,17 @@ void WebSocketService::handleEvent(uint8_t num, WStype_t type, uint8_t* payload,
   case WStype_CONNECTED: {
     // Validate client id is within supported range
     if (num >= MAX_CLIENTS || countConnectedClients() >= MAX_CLIENTS) {
-      logger.warning(F("Websocket"),
-                     F("Maximale Anzahl WebSocket-Clients erreicht, Verbindung abgelehnt"));
+      LOG_WARN(F("Websocket"),
+               F("Maximale Anzahl WebSocket-Clients erreicht, Verbindung abgelehnt"));
       _wsServer->disconnect(num);
       return;
     }
 
     IPAddress ip = remoteIP(num);
-    logger.info(F("Websocket"), String(F("WebSocket-Client ")) + String(num) +
-                                    String(F(" verbunden von ")) + ip.toString() + String(F(" (")) +
-                                    String(countConnectedClients() + 1) + String(F("/")) +
-                                    String(MAX_CLIENTS) + String(F(" aktiv)")));
+    LOG_INFO(F("Websocket"), String(F("WebSocket-Client ")) + String(num) +
+                                 String(F(" verbunden von ")) + ip.toString() + String(F(" (")) +
+                                 String(countConnectedClients() + 1) + String(F("/")) +
+                                 String(MAX_CLIENTS) + String(F(" aktiv)")));
 
     setClientConnected(num, true);
     if (_eventHandler) {
@@ -181,8 +151,8 @@ void WebSocketService::handleEvent(uint8_t num, WStype_t type, uint8_t* payload,
 
   case WStype_DISCONNECTED: {
     if (num < MAX_CLIENTS && isClientConnected(num)) {
-      logger.info(F("Websocket"),
-                  String(F("WebSocket-Client ")) + String(num) + String(F(" getrennt")));
+      LOG_INFO(F("Websocket"),
+               String(F("WebSocket-Client ")) + String(num) + String(F(" getrennt")));
       setClientConnected(num, false);
       if (_eventHandler) {
         _eventHandler(num, type, payload, length);

@@ -6,7 +6,7 @@ pkgs.mkShell {
     git
     pre-commit
     zsh
-    clang-tools_14
+    clang-tools
     pandoc
     cppcheck
   ];

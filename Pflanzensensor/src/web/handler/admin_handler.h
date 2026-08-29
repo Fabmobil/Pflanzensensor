@@ -40,10 +40,10 @@ public:
    *          - Initializes CSS handling
    *          - Sets up logging
    */
-  AdminHandler(ESP8266WebServer& server, [[maybe_unused]] WebAuth& auth,
+  AdminHandler(ESPWebServer& server, [[maybe_unused]] WebAuth& auth,
                [[maybe_unused]] CSSService& cssService)
       : BaseHandler(server) { // We only use the server parameter
-    logger.debug(F("AdminHandler"), F("Initialisiere AdminHandler"));
+    LOG_DEBUG(F("AdminHandler"), F("Initialisiere AdminHandler"));
     logger.logMemoryStats(F("Admihandler"));
   }
 
@@ -59,6 +59,16 @@ public:
    * @note Override onRegisterRoutes for custom logic.
    */
   RouterResult onRegisterRoutes(WebRouter& router) override;
+
+  /**
+   * @brief Gehört diese URL zu diesem Handler?
+   * @param url Angefragter Pfad
+   * @return true wenn der Handler dafür geladen werden muss
+   * @details Wird von der Lazy-Loading-Middleware des WebManagers benutzt. Die
+   *          Liste steht direkt neben onRegisterRoutes(), damit beide nicht
+   *          auseinanderlaufen können.
+   */
+  static bool ownsUrl(const String& url);
 
   // Config API methods
   /**

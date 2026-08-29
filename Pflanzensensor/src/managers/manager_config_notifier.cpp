@@ -12,7 +12,7 @@ void ConfigNotifier::addChangeCallback(ChangeCallback callback) { m_callbacks.pu
 void ConfigNotifier::notifyChange(const String& key, const String& value, bool updateSensors) {
   // Note: Logging moved to ConfigManager::setConfigValue for consistency
   // All config changes are logged there with user-friendly German messages
-  
+
   // Notify all registered callbacks
   for (const auto& callback : m_callbacks) {
     callback(key, value);

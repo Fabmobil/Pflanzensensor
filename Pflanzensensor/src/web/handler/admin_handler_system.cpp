@@ -43,12 +43,11 @@ void AdminHandler::handleConfigReset() {
         sendChunk(F("</div>"));
       },
       css, js);
-  // Give the web response time to be sent to the client, then reboot.
-  // This avoids the device immediately rebooting before the admin sees the
-  // confirmation page. 2000ms is a reasonable short delay.
-  delay(2000);
+  // Kurze Pause damit Admin die Bestätigung sieht, dann Neustart.
+  // 500ms sollte reichen für Rendern der Seite.
+  delay(500);
   if (result.isSuccess()) {
-    logger.warning(F("AdminHandler"), F("Neustart nach Zurücksetzen der Konfiguration"));
+    LOG_WARN(F("AdminHandler"), F("Neustart nach Zurücksetzen der Konfiguration"));
     ESP.restart();
   }
 }
@@ -68,7 +67,7 @@ void AdminHandler::handleReboot() {
 
   // Verzögerter Neustart
   delay(200);
-  logger.warning(F("AdminHandler"), F("Starte ESP neu"));
+  LOG_WARN(F("AdminHandler"), F("Starte ESP neu"));
   ESP.restart();
 }
 

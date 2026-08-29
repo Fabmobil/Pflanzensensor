@@ -14,11 +14,10 @@
 #include "web/core/components.h"
 
 void AdminSensorHandler::handleSensorConfig() {
-  logger.debug(F("AdminSensorHandler"), F("handleSensorConfig() aufgerufen"));
+  LOG_DEBUG(F("AdminSensorHandler"), F("handleSensorConfig() aufgerufen"));
 
   if (!validateRequest()) {
-    logger.debug(F("AdminSensorHandler"),
-                 F("Authentifizierung in handleSensorConfig fehlgeschlagen"));
+    LOG_DEBUG(F("AdminSensorHandler"), F("Authentifizierung in handleSensorConfig fehlgeschlagen"));
     this->sendError(401, F("Authentifizierung erforderlich"));
     return;
   }
@@ -44,10 +43,10 @@ void AdminSensorHandler::handleSensorConfig() {
             String id = sensor->getId();
             SensorConfig& config = sensor->mutableConfig();
             if (config.activeMeasurements > SensorConfig::MAX_MEASUREMENTS) {
-              logger.warning(F("AdminSensorHandler"),
-                             F("Clamping activeMeasurements for sensor ") + id + F(" from ") +
-                                 String(config.activeMeasurements) + F(" to ") +
-                                 String(SensorConfig::MAX_MEASUREMENTS));
+              LOG_WARN(F("AdminSensorHandler"),
+                       String(F("Clamping activeMeasurements for sensor ")) + id +
+                           String(F(" from ")) + String(config.activeMeasurements) +
+                           String(F(" to ")) + String(SensorConfig::MAX_MEASUREMENTS));
               config.activeMeasurements = SensorConfig::MAX_MEASUREMENTS;
             }
             size_t nRows = config.activeMeasurements < config.measurements.size()
@@ -78,8 +77,8 @@ void AdminSensorHandler::handleSensorConfig() {
             sendChunk(F("'> Sekunden"));
 
             // Messen button for the whole sensor
-            sendChunk(
-                F(" <button type='button' class='button-primary measure-button' data-sensor='"));
+            sendChunk(F(" <button type='button' class='button-primary "
+                        "measure-button' data-sensor='"));
             sendChunk(id);
             sendChunk(F("'>"));
             sendChunk(F("Messen</button>"));
@@ -212,7 +211,8 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i, si
   }
   sendChunk(F("'> "));
   sendChunk(measurementData.units[i]);
-  sendChunk(F(" <button type='button' class='button-secondary reset-minmax-button warning' "
+  sendChunk(F(" <button type='button' class='button-secondary reset-minmax-button "
+              "warning' "
               "data-sensor-id='"));
   sendChunk(id);
   sendChunk(F("' data-measurement-index='"));
@@ -291,9 +291,11 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i, si
     sendChunk(id);
     sendChunk(F("' data-measurement-index='"));
     sendChunk(String(i));
-    // Disable manual editing when autocalibration is enabled for this measurement
+    // Disable manual editing when autocalibration is enabled for this
+    // measurement
     if (config.measurements[i].calibrationMode) {
-      sendChunk(F("' disabled> | Letzter: <input readonly class='readonly-value' value='"));
+      sendChunk(F("' disabled> | Letzter: <input readonly class='readonly-value' "
+                  "value='"));
     } else {
       sendChunk(F("'> | Letzter: <input readonly class='readonly-value' value='"));
     }
@@ -325,7 +327,8 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i, si
       sendChunk(F("'>"));
     }
 
-    // Autokalibrierung checkbox and reset button (no separate persisted autocal fields)
+    // Autokalibrierung checkbox and reset button (no separate persisted autocal
+    // fields)
     sendChunk(F("<div class='card-section autocal-section'>"));
     sendChunk(F("<label><input type='checkbox' name='autocal_"));
     sendChunk(id);
@@ -344,7 +347,8 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i, si
                 "automatische-Kalibrierung\" target=\"_blank\">❔</a></label>"));
     sendChunk(F("</div>"));
 
-    // Autocal duration select (6h,12h,1d,3d,1w,1M) — only show when autocal active
+    // Autocal duration select (6h,12h,1d,3d,1w,1M) — only show when autocal
+    // active
     if (config.measurements[i].calibrationMode) {
       sendChunk(F("<div class='card-section autocal-duration-section'>"));
       sendChunk(F("<label>Halbwertszeit: "));
@@ -400,7 +404,8 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i, si
     } else {
       sendChunk(F("--"));
     }
-    sendChunk(F("'> <button type='button' class='button-secondary reset-raw-minmax-button warning' "
+    sendChunk(F("'> <button type='button' class='button-secondary "
+                "reset-raw-minmax-button warning' "
                 "data-sensor-id='"));
     sendChunk(id);
     sendChunk(F("' data-measurement-index='"));
@@ -415,11 +420,12 @@ void AdminSensorHandler::renderSensorMeasurementRow(Sensor* sensor, size_t i, si
 }
 
 void AdminSensorHandler::renderFlowerStatusSensorCard() {
-  logger.debug(F("AdminSensorHandler"), F("renderFlowerStatusSensorCard()"));
+  LOG_DEBUG(F("AdminSensorHandler"), F("renderFlowerStatusSensorCard()"));
 
   sendChunk(F("<div class='card'>"));
   sendChunk(F("<h2>Gesicht der Blume</h2>"));
-  sendChunk(F("<p>Wähle den Sensor, der das Gesicht der Blume auf der Startseite steuert:</p>"));
+  sendChunk(F("<p>Wähle den Sensor, der das Gesicht der Blume auf der Startseite "
+              "steuert:</p>"));
 
   sendChunk(F("<div class='form-group'>"));
   sendChunk(F("<label for='flower-status-sensor'>Sensor:</label>"));
@@ -444,8 +450,8 @@ void AdminSensorHandler::renderFlowerStatusSensorCard() {
                          : config.measurements.size();
 
       for (size_t i = 0; i < nRows; ++i) {
-        String optionValue = sensorId + F("_") + String(i);
-        String displayName = sensorId + F(" - ") + config.measurements[i].name;
+        String optionValue = sensorId + String(F("_")) + String(i);
+        String displayName = sensorId + String(F(" - ")) + config.measurements[i].name;
 
         sendChunk(F("<option value='"));
         sendChunk(optionValue);
@@ -545,7 +551,19 @@ void AdminSensorHandler::generateAndSendLedTrafficLightSettingsCard() {
   sendChunk(F("</select>"));
   sendChunk(F("</div>"));
 
-  // Save handled automatically via AJAX; keep form for fallback but remove visible submit button
+  // "Only red" option
+  sendChunk(F("<div class='form-group'>"));
+  sendChunk(F("<label>"));
+  sendChunk(F("<input type='checkbox' name='led_traffic_light_only_red'"));
+  if (ConfigMgr.getLedTrafficLightOnlyRed())
+    sendChunk(F(" checked"));
+  sendChunk(F(">"));
+  sendChunk(F(" Nur Rot anzeigen (Gelb/Gr\u00fcn schalten LEDs aus)"));
+  sendChunk(F("</label>"));
+  sendChunk(F("</div>"));
+
+  // Save handled automatically via AJAX; keep form for fallback but remove
+  // visible submit button
   sendChunk(F("</form>"));
 
   // Add JavaScript to show/hide measurement selection based on mode

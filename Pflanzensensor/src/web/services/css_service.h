@@ -27,7 +27,7 @@ public:
    * @param server Reference to web server instance
    * @details Initializes the CSS service and sets up required modules
    */
-  explicit CSSService(ESP8266WebServer& server);
+  explicit CSSService(ESPWebServer& server);
 
   /**
    * @brief Register CSS service routes with router
@@ -64,31 +64,6 @@ public:
    */
   HandlerResult handlePost(const String& uri, const std::map<String, String>& params) override;
 
-  /**
-   * @brief Get custom CSS content
-   * @return String containing the custom CSS content
-   * @details Retrieves the current custom CSS content from storage.
-   *          Returns empty string if no custom CSS exists.
-   */
-  String getCustomCSS();
-
-  /**
-   * @brief Update custom CSS content
-   * @param css New CSS content to store
-   * @return true if update was successful, false on error
-   * @details Validates and stores the new CSS content.
-   *          Creates a backup of existing CSS before update.
-   */
-  bool updateCustomCSS(const String& css);
-
-  /**
-   * @brief Get default CSS content
-   * @return String containing the default CSS content
-   * @details Returns the built-in default CSS content.
-   *          This content cannot be modified.
-   */
-  String getDefaultCSS();
-
 private:
   /**
    * @struct CSSModule
@@ -118,57 +93,6 @@ private:
    *          Called during service initialization.
    */
   void initModules();
-
-  /**
-   * @brief Handle CSS editor page requests
-   * @details Serves the CSS editor interface with current CSS content
-   *          and editing controls.
-   */
-  void handleEditor();
-
-  /**
-   * @brief Handle CSS save requests
-   * @details Processes CSS content updates, performs validation,
-   *          and manages backups.
-   */
-  void handleSave();
-
-  /**
-   * @brief Create backup of CSS file
-   * @param path Path to CSS file to backup
-   * @return true if backup was successful, false on error
-   * @details Creates a timestamped backup copy of the specified CSS file.
-   *          Maintains a limited number of backups.
-   */
-  bool createBackup(const String& path) const;
-
-  /**
-   * @brief Load CSS content from file
-   * @param path Path to CSS file to load
-   * @return CSS content or empty string on error
-   * @details Reads and returns the contents of a CSS file.
-   *          Handles file system errors gracefully.
-   */
-  String loadCSS(const String& path) const;
-
-  /**
-   * @brief Save CSS content to file
-   * @param path Path where CSS content should be saved
-   * @param content CSS content to save
-   * @return true if save was successful, false on error
-   * @details Writes CSS content to the specified file.
-   *          Creates parent directories if needed.
-   */
-  bool saveCSS(const String& path, const String& content) const;
-
-  /**
-   * @brief Get module by ID
-   * @param id Module identifier to search for
-   * @return Pointer to module if found, nullptr otherwise
-   * @details Searches the modules collection for a module matching
-   *          the specified identifier.
-   */
-  const CSSModule* getModule(const String& id) const;
 };
 
 #endif // CSS_SERVICE_H

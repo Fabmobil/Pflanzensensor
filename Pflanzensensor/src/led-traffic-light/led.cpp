@@ -7,7 +7,7 @@
 
 // led.cpp
 ResourceResult LedLights::init() {
-  logger.debug(F("LED"), F("Initialisiere LED-Pins"));
+  LOG_DEBUG(F("LED"), F("Initialisiere LED-Pins"));
 
   pinMode(LED_RED_PIN, OUTPUT);
   pinMode(LED_YELLOW_PIN, OUTPUT);
@@ -31,9 +31,9 @@ LedStatus LedLights::getStatus() const {
 
 ResourceResult LedLights::switchLedOn(int color) {
   if (!isValidColor(color)) {
-    logger.warning(F("LED"), F("Ungültige LED-Farbe: ") + String(color));
+    LOG_WARN(F("LED"), String(F("Ungültige LED-Farbe: ")) + String(color));
     return ResourceResult::fail(ResourceError::VALIDATION_ERROR,
-                                F("Ungültige LED-Farbe: ") + String(color));
+                                String(F("Ungültige LED-Farbe: ")) + String(color));
   }
 
   switch (color) {
@@ -48,15 +48,15 @@ ResourceResult LedLights::switchLedOn(int color) {
     break;
   }
 
-  // logger.debug(F("LED"), F("LED ") + String(color) + F(" switched on"));
+  // LOG_DEBUG(F("LED"), String(F("LED ")) + String(color) + F(" switched on"));
   return ResourceResult::success();
 }
 
 ResourceResult LedLights::switchLedOff(int color) {
   if (!isValidColor(color)) {
-    logger.warning(F("LED"), F("Ungültige LED-Farbe: ") + String(color));
+    LOG_WARN(F("LED"), String(F("Ungültige LED-Farbe: ")) + String(color));
     return ResourceResult::fail(ResourceError::VALIDATION_ERROR,
-                                F("Ungültige LED-Farbe: ") + String(color));
+                                String(F("Ungültige LED-Farbe: ")) + String(color));
   }
 
   switch (color) {
@@ -71,7 +71,7 @@ ResourceResult LedLights::switchLedOff(int color) {
     break;
   }
 
-  // logger.debug(F("LED"), F("LED ") + String(color) + F(" switched off"));
+  // LOG_DEBUG(F("LED"), String(F("LED ")) + String(color) + F(" switched off"));
   return ResourceResult::success();
 }
 

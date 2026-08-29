@@ -5,6 +5,8 @@
 
 #include "log_handler.h"
 
+#include "utils/safe_yield.h"
+
 #include <ArduinoJson.h>
 
 #include "../../managers/manager_resource.h"
@@ -13,17 +15,19 @@
 LogHandler* LogHandler::s_instance = nullptr;
 bool LogHandler::s_initialized = false;
 
+bool LogHandler::ownsUrl(const String& url) { return url == F("/logs"); }
+
 RouterResult LogHandler::onRegisterRoutes(WebRouter& router) {
   if (!isInitialized()) {
-    logger.error(F("LogHandler"),
-                 F("Kann Routen nicht registrieren - LogHandler nicht initialisiert"));
+    LOG_ERROR(F("LogHandler"),
+              F("Kann Routen nicht registrieren - LogHandler nicht initialisiert"));
     return RouterResult::fail(RouterError::INITIALIZATION_ERROR,
                               F("LogHandler nicht initialisiert"));
   }
 
-  logger.debug(F("LogHandler"), F("Registriere Log-Routen"));
+  LOG_DEBUG(F("LogHandler"), F("Registriere Log-Routen"));
   auto result = router.addRoute(HTTP_GET, "/logs", [this]() {
-    logger.debug(F("LogHandler"), F("Log route handler called"));
+    LOG_DEBUG(F("LogHandler"), F("Log route handler called"));
     handleLogs();
   });
   if (!result.isSuccess())
@@ -40,8 +44,8 @@ RouterResult LogHandler::onRegisterRoutes(WebRouter& router) {
 
 HandlerResult LogHandler::handleGet(const String& uri, const std::map<String, String>& query) {
   if (!isInitialized()) {
-    logger.error(F("LogHandler"),
-                 F("Kann GET-Anfrage nicht verarbeiten - LogHandler nicht initialisiert"));
+    LOG_ERROR(F("LogHandler"),
+              F("Kann GET-Anfrage nicht verarbeiten - LogHandler nicht initialisiert"));
     return HandlerResult::fail(HandlerError::INITIALIZATION_ERROR,
                                F("LogHandler nicht initialisiert"));
   }
@@ -50,8 +54,8 @@ HandlerResult LogHandler::handleGet(const String& uri, const std::map<String, St
 
 HandlerResult LogHandler::handlePost(const String& uri, const std::map<String, String>& params) {
   if (!isInitialized()) {
-    logger.error(F("LogHandler"),
-                 F("Kann POST-Anfrage nicht verarbeiten - LogHandler nicht initialisiert"));
+    LOG_ERROR(F("LogHandler"),
+              F("Kann POST-Anfrage nicht verarbeiten - LogHandler nicht initialisiert"));
     return HandlerResult::fail(HandlerError::INITIALIZATION_ERROR,
                                F("LogHandler nicht initialisiert"));
   }
@@ -60,17 +64,17 @@ HandlerResult LogHandler::handlePost(const String& uri, const std::map<String, S
 
 void LogHandler::handleLogs() {
   if (!isInitialized()) {
-    logger.error(F("LogHandler"), F("Cannot handle logs - LogHandler not properly initialized"));
+    LOG_ERROR(F("LogHandler"), F("Cannot handle logs - LogHandler not properly initialized"));
     _server.send(500, F("text/plain"), F("LogHandler not initialized"));
     return;
   }
 
-  logger.debug(F("LogHandler"), F("Verarbeite Logseiten-Anfrage"));
+  LOG_DEBUG(F("LogHandler"), F("Verarbeite Logseiten-Anfrage"));
   _cleaned = false;
 
   // Check memory before proceeding
   if (ESP.getFreeHeap() < 6000) { // Higher threshold for log handling
-    logger.warning(F("LogHandler"), F("Wenig Speicher, liefere minimale Log-Seite"));
+    LOG_WARN(F("LogHandler"), F("Wenig Speicher, liefere minimale Log-Seite"));
     _server.send(200, F("text/html"),
                  F("<!DOCTYPE html><html><body><h1>Wenig Speicher</h1>"
                    "<p>Bitte versuchen Sie es in wenigen Momenten erneut.</p></body></html>"));
@@ -83,12 +87,9 @@ void LogHandler::handleLogs() {
   this->renderAdminPage(
       ConfigMgr.getDeviceName(), "logs",
       [this]() {
-#if USE_WEBSOCKET
-        // Add WebSocket authentication script first
-        sendChunk(F("<script>window.wsAuth = '"));
-        sendChunk(ConfigMgr.getAdminPassword());
-        sendChunk(F("';</script>"));
-#endif
+        // SICHERHEIT: Hier wurde früher das Admin-Passwort als window.wsAuth in die
+        // Seite geschrieben. Das Frontend hat es nie ausgewertet (logs.js verbindet
+        // sich fest mit Port 81), die Seite war aber öffentlich abrufbar. Entfernt.
 
         // Controls row with two cards
         sendChunk(F("<div class='log-controls-row'>"));
@@ -161,9 +162,6 @@ void LogHandler::handleLogs() {
         sendChunk(F("Initializing log viewer..."));
         sendChunk(F("</div>"));
         sendChunk(F("</div>"));
-
-        // Add WebSocket port information for the client
-        sendChunk(F("<script>window.wsPort = 81;</script>"));
 #else
         // Static log container for non-WebSocket mode
         sendChunk(F("<div class='log-container'>"));
@@ -176,7 +174,7 @@ void LogHandler::handleLogs() {
       },
       css, js);
 
-  logger.debug(F("LogHandler"), F("Log-Seite erfolgreich gesendet"));
+  LOG_DEBUG(F("LogHandler"), F("Log-Seite erfolgreich gesendet"));
 }
 
 void LogHandler::cleanupLogs() {
@@ -206,7 +204,7 @@ void LogHandler::cleanupLogs() {
     }
   }
 #endif
-  yield();
+  safeYield();
 }
 
 String LogHandler::getLogLevelColor(LogLevel level) const {
@@ -227,18 +225,18 @@ String LogHandler::getLogLevelColor(LogLevel level) const {
 #if USE_WEBSOCKET
 bool LogHandler::initWebSocket() {
   if (!isInitialized()) {
-    logger.error(F("LogHandler"),
-                 F("Cannot initialize WebSocket - LogHandler not properly initialized"));
+    LOG_ERROR(F("LogHandler"),
+              F("Cannot initialize WebSocket - LogHandler not properly initialized"));
     return false;
   }
 
   auto& ws = WebSocketService::getInstance();
   if (!ws.isInitialized()) {
-    logger.error(F("LogHandler"), F("WebSocket server not initialized"));
+    LOG_ERROR(F("LogHandler"), F("WebSocket server not initialized"));
     return false;
   }
 
-  logger.debug(F("LogHandler"), F("WebSocket server already initialized"));
+  LOG_DEBUG(F("LogHandler"), F("WebSocket server already initialized"));
 
   // Register logger callback for broadcasting logs
   logger.setCallback([](LogLevel level, const String& message) {
@@ -330,7 +328,7 @@ void LogHandler::broadcastLog(LogLevel level, const String& message) {
       // Do not log here to avoid recursion
       it = _clients.erase(it);
       failureCount++;
-      yield();
+      safeYield();
       if (failureCount >= MAX_FAILURES) {
         // Do not log here to avoid recursion
         _clients.clear();
@@ -366,7 +364,7 @@ void LogHandler::cleanupAllClients() {
   _content.clear();
   _cleaned = false;
 
-  logger.debug(F("LogHandler"), F("All WebSocket clients cleaned up"));
+  LOG_DEBUG(F("LogHandler"), F("All WebSocket clients cleaned up"));
 #if USE_WEBSOCKET
   // Unregister logger callback to free std::function memory
   logger.setCallback(nullptr);
@@ -391,8 +389,8 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
   case WStype_CONNECTED: {
     IPAddress ip = ws.remoteIP(num);
     if (ConfigMgr.isDebugWebSocket()) {
-      logger.debug(F("LogHandler"),
-                   "WebSocket client " + String(num) + " connected from " + ip.toString());
+      LOG_DEBUG(F("LogHandler"),
+                "WebSocket client " + String(num) + " connected from " + ip.toString());
     }
     // Only add if not already present
     if (std::find(_clients.begin(), _clients.end(), num) == _clients.end()) {
@@ -412,7 +410,7 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
   }
   case WStype_DISCONNECTED: {
     if (ConfigMgr.isDebugWebSocket()) {
-      logger.debug(F("LogHandler"), "WebSocket client " + String(num) + " disconnected");
+      LOG_DEBUG(F("LogHandler"), "WebSocket client " + String(num) + " disconnected");
     }
     // Remove only the disconnected client
     _clients.remove(num);
@@ -423,7 +421,7 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
   case WStype_TEXT: {
     if (length > WebSocketService::MAX_MESSAGE_SIZE) {
       if (ConfigMgr.isDebugWebSocket()) {
-        logger.warning(F("LogHandler"), F("Message too large, ignoring"));
+        LOG_WARN(F("LogHandler"), F("Message too large, ignoring"));
       }
       return;
     }
@@ -431,7 +429,7 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
     // Additional memory check before JSON parsing
     if (ESP.getFreeHeap() < 4000) {
       if (ConfigMgr.isDebugWebSocket()) {
-        logger.warning(F("LogHandler"), F("Low memory, skipping message"));
+        LOG_WARN(F("LogHandler"), F("Low memory, skipping message"));
       }
       return;
     }
@@ -443,8 +441,7 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
 
     if (error) {
       if (ConfigMgr.isDebugWebSocket()) {
-        logger.error(F("LogHandler"),
-                     "Failed to parse WebSocket message: " + String(error.c_str()));
+        LOG_ERROR(F("LogHandler"), "Failed to parse WebSocket message: " + String(error.c_str()));
       }
       return;
     }
@@ -455,21 +452,21 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
 
     if (!typeStr) {
       if (ConfigMgr.isDebugWebSocket()) {
-        logger.warning(F("LogHandler"), F("Message missing type field"));
+        LOG_WARN(F("LogHandler"), F("Message missing type field"));
       }
       return;
     }
 
-    String type = String(typeStr);
+    String msgType = String(typeStr);
     String data = dataStr ? String(dataStr) : "";
 
-    handleClientMessage(num, type, data);
+    handleClientMessage(num, msgType, data);
     break;
   }
 
   case WStype_ERROR: {
     if (ConfigMgr.isDebugWebSocket()) {
-      logger.error(F("LogHandler"), "WebSocket error on client " + String(num));
+      LOG_ERROR(F("LogHandler"), "WebSocket error on client " + String(num));
     }
     cleanupClientResources(num);
     _clients.remove(num);
@@ -490,7 +487,7 @@ void LogHandler::handleWebSocketEvent(uint8_t num, WStype_t type, uint8_t* paylo
   default:
     if (ConfigMgr.isDebugWebSocket()) {
       if (type != WStype_PING) { // Don't log PING events
-        logger.debug(F("LogHandler"), "Unhandled WebSocket event type: " + String(type));
+        LOG_DEBUG(F("LogHandler"), "Unhandled WebSocket event type: " + String(type));
       }
     }
     break;
@@ -560,19 +557,7 @@ void LogHandler::handleClientMessage(uint8_t clientNum, const String& type, cons
     }
 
     // Validate log level before changing
-    try {
-      Logger::stringToLogLevel(data);
-    } catch (const std::exception& e) {
-      StaticJsonDocument<64> response;
-      response["type"] = "error";
-      response["message"] = F("Invalid level");
-      String jsonResponse;
-      serializeJson(response, jsonResponse);
-      if (ESP.getFreeHeap() > 4000 && logger.isCallbackEnabled()) {
-        ws.sendTXT(clientNum, jsonResponse);
-      }
-      return;
-    }
+    Logger::stringToLogLevel(data);
 
     // Send immediate confirmation to prevent timeout
     StaticJsonDocument<96> response;
@@ -588,7 +573,7 @@ void LogHandler::handleClientMessage(uint8_t clientNum, const String& type, cons
     }
 
     // Change log level and save config with yield to prevent watchdog
-    yield();
+    safeYield();
 
     // Additional memory check before config save
     if (ESP.getFreeHeap() < 5000) {
@@ -606,7 +591,7 @@ void LogHandler::handleClientMessage(uint8_t clientNum, const String& type, cons
     }
 
     auto saveResult = ConfigMgr.setLogLevel(data);
-    yield();
+    safeYield();
 
     // Send final confirmation if different from initial
     if (!saveResult.isSuccess() && ESP.getFreeHeap() > 4096 && logger.isCallbackEnabled()) {

@@ -159,6 +159,20 @@ public:
                                          int minValue, int maxValue, bool inverted);
 
   /**
+   * @brief Letzten Messwert (und Rohwert) zum verzögerten Schreiben einreihen
+   * @param sensorId Sensor-ID
+   * @param measurementIndex Index der Messung
+   * @param lastValue Zuletzt gemessener Wert
+   * @param lastRawValue Zuletzt gelesener Rohwert (-1 wenn nicht analog)
+   * @details Der Wert steht sofort im RAM (MeasurementConfig::lastValue); das
+   *          Schreiben übernimmt der reguläre Flush zusammen mit den übrigen
+   *          ausstehenden Änderungen derselben Messung - also ein einziger
+   *          Lade-/Speicher-Zyklus statt eines eigenen pro Feld.
+   */
+  static void enqueueLastValue(const String& sensorId, size_t measurementIndex, float lastValue,
+                               int lastRawValue);
+
+  /**
    * @brief Flush pending updates for a specific sensor immediately after measurement cycle.
    * This is the preferred method - each sensor flushes its own data right after measurement.
    * @param sensorId Sensor ID to flush updates for

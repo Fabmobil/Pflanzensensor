@@ -9,10 +9,10 @@
 #pragma once
 
 #include <Arduino.h>
-#include <ESP8266WebServer.h>
 
-#include "../configs/config_pflanzensensor.h"
+#include "../configs/config.h" // Verwendet CONFIG_FILE aus Build-Flags
 #include "../utils/critical_section.h"
+#include "../utils/platform_compat.h"
 #include "../utils/result_types.h"
 #include "../web/handler/web_ota_handler.h"
 #include "manager_config_debug.h"
@@ -22,7 +22,6 @@
 #include "manager_config_sensor_tracker.h"
 #include "manager_config_types.h"
 #include "manager_config_validator.h"
-#include "manager_config_web_handler.h"
 
 // Forward declarations
 class ResourceManager;
@@ -67,13 +66,6 @@ public:
   ConfigResult resetToDefaults();
 
   // Web interface
-  /**
-   * @brief Update configuration from web server
-   * @param server Reference to the ESP8266 web server
-   * @return Result of the update operation
-   */
-  ConfigResult updateFromWeb(ESP8266WebServer& server);
-
   // Main configuration setters
   /**
    * @brief Set the admin password
@@ -90,25 +82,11 @@ public:
   ConfigResult setMD5Verification(bool enabled);
 
   /**
-   * @brief Set the Collectd status
-   * @param enabled True to enable Collectd, false to disable
-   * @return Result of the set operation
-   */
-  ConfigResult setCollectdEnabled(bool enabled);
-
-  /**
    * @brief Set the file logging status
    * @param enabled True to enable file logging, false to disable
    * @return Result of the set operation
    */
   ConfigResult setFileLoggingEnabled(bool enabled);
-
-  /**
-   * @brief Set the Collectd single measurement sending status
-   * @param enable True to enable sending single measurements, false to disable
-   * @return Result of the set operation
-   */
-  ConfigResult setCollectdSendSingleMeasurement(bool enable);
 
   /**
    * @brief Set a configuration value by key (legacy method)
@@ -120,7 +98,8 @@ public:
 
   /**
    * @brief Set a configuration value with namespace and type
-   * @param namespaceName The namespace (e.g., "general", "wifi", "display", "debug", "s_ANALOG_1")
+   * @param namespaceName The namespace (e.g., "general", "wifi", "display",
+   * "debug", "s_ANALOG_1")
    * @param key The configuration key to set
    * @param value The value to set as string
    * @param type The type of the value (BOOL, INT, UINT, FLOAT, STRING)
@@ -141,12 +120,6 @@ public:
    * @return True if MD5 verification is enabled, false otherwise
    */
   inline bool isMD5Verification() const { return m_configData.md5Verification; }
-
-  /**
-   * @brief Check if Collectd is enabled
-   * @return True if Collectd is enabled, false otherwise
-   */
-  inline bool isCollectdEnabled() const { return m_configData.collectdEnabled; }
 
   /**
    * @brief Check if file logging is enabled
@@ -334,7 +307,6 @@ public:
    * @brief Set WiFi SSID 1
    */
   ConfigResult setWiFiSSID1(const String& ssid) {
-    ScopedLock lock;
     return updateStringConfig(
         m_configData.wifiSSID1, ssid,
         [](const String& val) {
@@ -350,7 +322,6 @@ public:
    * @brief Set WiFi Password 1
    */
   ConfigResult setWiFiPassword1(const String& pwd) {
-    ScopedLock lock;
     return updateStringConfig(
         m_configData.wifiPassword1, pwd,
         [](const String& val) {
@@ -366,7 +337,6 @@ public:
    * @brief Set WiFi SSID 2
    */
   ConfigResult setWiFiSSID2(const String& ssid) {
-    ScopedLock lock;
     return updateStringConfig(
         m_configData.wifiSSID2, ssid,
         [](const String& val) {
@@ -382,7 +352,6 @@ public:
    * @brief Set WiFi Password 2
    */
   ConfigResult setWiFiPassword2(const String& pwd) {
-    ScopedLock lock;
     return updateStringConfig(
         m_configData.wifiPassword2, pwd,
         [](const String& val) {
@@ -398,7 +367,6 @@ public:
    * @brief Set WiFi SSID 3
    */
   ConfigResult setWiFiSSID3(const String& ssid) {
-    ScopedLock lock;
     return updateStringConfig(
         m_configData.wifiSSID3, ssid,
         [](const String& val) {
@@ -414,13 +382,49 @@ public:
    * @brief Set WiFi Password 3
    */
   ConfigResult setWiFiPassword3(const String& pwd) {
-    ScopedLock lock;
     return updateStringConfig(
         m_configData.wifiPassword3, pwd,
         [](const String& val) {
           return PreferencesManager::updateStringValue(PreferencesNamespaces::WIFI3, "pwd", val);
         },
         "wifi_pwd_3", false);
+  }
+
+  // Indexed WiFi methods (1-based)
+  /**
+   * @brief Get WiFi SSID by index (1, 2, or 3)
+   * @param index WiFi slot number (1-3)
+   * @return SSID string or empty string if invalid index
+   */
+  inline String getWiFiSSID(int index) const {
+    switch (index) {
+    case 1:
+      return m_configData.wifiSSID1;
+    case 2:
+      return m_configData.wifiSSID2;
+    case 3:
+      return m_configData.wifiSSID3;
+    default:
+      return "";
+    }
+  }
+
+  /**
+   * @brief Get WiFi Password by index (1, 2, or 3)
+   * @param index WiFi slot number (1-3)
+   * @return Password string or empty string if invalid index
+   */
+  inline String getWiFiPassword(int index) const {
+    switch (index) {
+    case 1:
+      return m_configData.wifiPassword1;
+    case 2:
+      return m_configData.wifiPassword2;
+    case 3:
+      return m_configData.wifiPassword3;
+    default:
+      return "";
+    }
   }
 
   // LED Traffic Light configuration
@@ -454,6 +458,20 @@ public:
    */
   ConfigResult setLedTrafficLightSelectedMeasurement(const String& measurementId);
 
+  /**
+   * @brief Get LED traffic light "only red" flag
+   * @return true if only the red LED should light up (yellow/green turn off)
+   */
+  inline bool getLedTrafficLightOnlyRed() const { return m_configData.ledTrafficLightOnlyRed; }
+
+  /**
+   * @brief Set LED traffic light "only red" flag
+   * @param onlyRed When true, only the red LED lights up; yellow/green stages
+   * turn off all LEDs
+   * @return ConfigResult indicating success or failure
+   */
+  ConfigResult setLedTrafficLightOnlyRed(bool onlyRed);
+
   // Flower Status configuration (for startpage display)
   /**
    * @brief Get the sensor that controls the flower face status
@@ -478,7 +496,6 @@ private:
   ConfigManager& operator=(const ConfigManager&) = delete;
 
   ConfigData m_configData;
-  ConfigWebHandler m_webHandler;
   ConfigNotifier m_notifier;
   DebugConfig m_debugConfig;
   SensorErrorTracker m_sensorErrorTracker;

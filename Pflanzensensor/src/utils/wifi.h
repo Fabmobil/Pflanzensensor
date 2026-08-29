@@ -8,7 +8,11 @@
 #ifndef WIFI_H
 #define WIFI_H
 
+#ifdef ESP32
+#include <WiFi.h>
+#else
 #include <ESP8266WiFi.h>
+#endif
 
 #include <functional>
 
@@ -22,6 +26,26 @@
  * @return ResourceResult Success if connected, error otherwise
  */
 ResourceResult setupWiFi();
+
+/**
+ * @brief Wartezeit eines einzelnen Verbindungsversuchs im AP-Rückweg (ms)
+ */
+constexpr unsigned long AP_RECOVERY_ATTEMPT_MS = 15000;
+
+/**
+ * @brief Abstand zwischen zwei Verbindungsversuchen im AP-Rückweg (ms)
+ */
+constexpr unsigned long AP_RECOVERY_INTERVAL_MS = 300000; // 5 Minuten
+
+/**
+ * @brief Nicht-blockierender Rückweg aus dem AP-Modus
+ * @return ResourceResult::success() sobald wieder eine STA-Verbindung steht
+ * @details Probiert im Hintergrund weiter, das konfigurierte Netz zu erreichen,
+ *          ohne den AP abzuschalten. Erst bei erfolgreicher Verbindung wird der
+ *          AP beendet und apModeActive zurückgesetzt. Ohne diese Funktion war
+ *          der AP-Modus eine Sackgasse bis zum nächsten Stromausfall.
+ */
+ResourceResult checkAPModeRecovery();
 
 /**
  * @brief Check WiFi connection and reconnect if necessary
