@@ -173,6 +173,14 @@ public:
    */
   bool isFileLoggingEnabled() const;
 
+  /**
+   * @brief Gepufferte Logzeilen in die Logdatei schreiben
+   * @details Logzeilen sammeln sich im RAM und landen ausschließlich hier im
+   *          Flash. Darf nur aus loop() gerufen werden - niemals aus einem
+   *          Interrupt oder einem SDK-Callback.
+   */
+  void flushFileLog();
+
   bool isNTPInitialized() const { return m_ntpInitialized && m_timeClient != nullptr; }
 
   time_t getSynchronizedTime() const {
@@ -227,8 +235,19 @@ private:
   NTPClient* m_timeClient;
   bool m_ntpInitialized;
   bool m_fileLoggingEnabled;
+  bool m_fsMounted = false;
+  String m_fileBuffer; ///< Noch nicht geschriebene Logzeilen
+  unsigned long m_lastFlush = 0;
+  uint16_t m_droppedLines = 0; ///< Wegen vollem Puffer verworfene Zeilen
   const char* m_logFileName = "/log.txt";
   const size_t m_maxFileSize = MAX_LOG_FILE_SIZE; // in bytes
+
+  /// Ab dieser Puffergröße wird vorzeitig geschrieben
+  static const size_t FILE_FLUSH_THRESHOLD = 512;
+  /// Darüber hinaus wächst der Puffer nicht - Zeilen werden verworfen
+  static const size_t FILE_BUFFER_MAX = 1024;
+  /// Mindestabstand zwischen zwei Schreibvorgängen aus loop()
+  static const unsigned long FILE_FLUSH_INTERVAL_MS = 5000;
   unsigned long lastErrorLogTime = 0;
   const unsigned long errorLogInterval = 5000; // 5 seconds
   int errorCount = 0;
@@ -252,13 +271,24 @@ private:
   String getFormattedTimestamp() const;
 
   /**
-   * @brief Write a log message to the log file
-   * @param logMessage Message to write
+   * @brief Logzeile an den RAM-Puffer anhängen
+   * @param logMessage Zu schreibende Meldung
+   * @details Rührt den Flash nicht an. Ist der Puffer voll, wird die Zeile
+   *          verworfen und in flushFileLog() als Verlust vermerkt.
    */
-  void writeToFile(const String& logMessage);
+  void bufferForFile(const String& logMessage);
+
+  /**
+   * @brief LittleFS einhängen, falls noch nicht geschehen
+   * @return true wenn das Dateisystem nutzbar ist
+   */
+  bool ensureFilesystem();
 
   /**
    * @brief Truncate the log file if it exceeds the maximum size
+   * @details Protokolliert bewusst über Serial statt über den Logger: die
+   *          Funktion läuft innerhalb von flushFileLog() und würde diesen
+   *          sonst erneut betreten.
    */
   void truncateLogFileIfNeeded();
 

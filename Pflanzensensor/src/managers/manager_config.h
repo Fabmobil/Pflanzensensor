@@ -504,6 +504,23 @@ private:
   bool m_configLoaded = false;
 
   /**
+   * @name Zwischenspeicher der Update-Flags
+   *
+   * getDoFirmwareUpgrade() wird in jedem loop()-Durchlauf gerufen und las
+   * bisher jedes Mal die Flag-Datei neu ein - ein LittleFS-Zugriff pro
+   * Durchlauf, nur um zwei bool zu erfahren. Geschrieben werden die Flags
+   * ausschließlich in setUpdateFlags() und setDoFirmwareUpgrade(), die den
+   * Zwischenspeicher mitpflegen; er kann also nicht veralten.
+   *
+   * mutable, weil die Lesezugriffe const sind und beim ersten Aufruf füllen.
+   * @{
+   */
+  mutable bool m_cachedFsUpdate = false;
+  mutable bool m_cachedFwUpdate = false;
+  mutable bool m_updateFlagsCached = false;
+  /** @} */
+
+  /**
    * @brief Generic helper to update a boolean config value atomically
    * @param currentValue Reference to the current value in RAM
    * @param newValue The new value to set

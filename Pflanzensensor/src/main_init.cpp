@@ -78,6 +78,18 @@ static void checkBootLoop() {
       flagFile.close();
     }
 
+    // Das Datei-Logging schreibt in denselben Flash, aus dem das Gerät bootet,
+    // und ist damit ein plausibler Auslöser einer Boot-Schleife. Abschalten,
+    // damit sich das Gerät von selbst fängt; im Webinterface wieder
+    // einschaltbar.
+    File logFlag = LittleFS.open("/.disable_file_log", "w");
+    if (logFlag) {
+      logFlag.print("1");
+      logFlag.close();
+    }
+    LittleFS.remove("/log.txt");
+    LittleFS.remove("/log.txt.tmp");
+
     Serial.println(F("Boot loop recovery flag written. Continuing normal boot."));
   }
 }

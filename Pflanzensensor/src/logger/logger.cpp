@@ -15,7 +15,6 @@
 
 #include "configs/config.h"
 #include "managers/manager_config.h"
-#include "utils/critical_section.h"
 #if USE_WEBSOCKET
 #include "web/handler/log_handler.h"
 #endif
@@ -71,35 +70,12 @@ Logger::Logger(LogLevel logLevel, bool useSerial, bool fileLoggingEnabled)
     Serial.begin(115200);
   }
 
-  // Initialize file logging if requested
-  if (fileLoggingEnabled) {
-    // Mount filesystem first with critical section
-    {
-      if (!LittleFS.begin()) {
-        if (m_useSerial) {
-          Serial.println(F("Dateisystem für Logging konnte nicht eingehängt werden"));
-        }
-        return;
-      }
-
-      // Create log file if it doesn't exist
-      if (!LittleFS.exists(m_logFileName)) {
-        File file = LittleFS.open(m_logFileName, "w");
-        if (file) {
-          file.println(F("Logdatei erstellt"));
-          file.close();
-        } else if (m_useSerial) {
-          Serial.println(F("Initiale Logdatei konnte nicht erstellt werden"));
-          return;
-        }
-      }
-    }
-
-    m_fileLoggingEnabled = true;
-    if (m_useSerial) {
-      Serial.println(F("Dateilogs erfolgreich initialisiert"));
-    }
-  }
+  // Dateilogging wird hier bewusst NICHT gestartet: der Logger ist ein globales
+  // Objekt, sein Konstruktor läuft also vor setup(). LittleFS ist zu diesem
+  // Zeitpunkt nicht eingehängt, und Flash-I/O vor dem Hochlauf des SDK ist
+  // genau der Zugriff, den diese Klasse sonst vermeidet. Eingeschaltet wird
+  // über enableFileLogging(), sobald ConfigManager::loadConfig() gelaufen ist.
+  (void)fileLoggingEnabled;
 }
 
 void Logger::debug(const String& module, const String& message) {
@@ -182,8 +158,7 @@ void Logger::log(LogLevel level, const String& module, const String& message) {
   }
 
   if (m_fileLoggingEnabled) {
-    String plainMessage = timestamp + " " + formattedMessage;
-    writeToFile(plainMessage);
+    bufferForFile(timestamp + " " + formattedMessage);
   }
 
   // Call the log callback if set
@@ -298,88 +273,118 @@ void Logger::endMemoryTracking(const String& sectionName) {
 }
 
 void Logger::enableFileLogging(bool enable) {
+  // Kein Flash-Zugriff an dieser Stelle: der Aufruf kommt unter anderem aus
+  // einem Web-Handler mitten in der Anfragebearbeitung. Eingehängt wird erst
+  // beim ersten Schreiben in flushFileLog().
   if (enable && !m_fileLoggingEnabled) {
-    // Mount filesystem if needed
-    if (!LittleFS.exists("/")) {
-      if (!LittleFS.begin()) {
-        if (m_useSerial) {
-          Serial.println(
-              F("Dateisystem konnte beim Aktivieren des Loggings nicht eingehängt werden"));
-        }
-        return;
-      }
-    }
-
-    // Create log file if it doesn't exist
-    if (!LittleFS.exists(m_logFileName)) {
-      File file = LittleFS.open(m_logFileName, "w");
-      if (!file || !file.println(F("Logdatei erstellt"))) {
-        if (m_useSerial) {
-          Serial.println(F("Logdatei konnte nicht erstellt werden"));
-        }
-        return;
-      }
-      file.close();
-    }
-
+    m_fileBuffer = "";
+    m_fileBuffer.reserve(FILE_FLUSH_THRESHOLD + 128);
+    m_droppedLines = 0;
+    m_lastFlush = millis();
     m_fileLoggingEnabled = true;
     info(F("Logger"), F("Dateilogs aktiviert"));
   } else if (!enable && m_fileLoggingEnabled) {
     m_fileLoggingEnabled = false;
+    m_fileBuffer = "";
     info(F("Logger"), F("Dateilogs deaktiviert"));
   }
 }
 
 bool Logger::isFileLoggingEnabled() const { return m_fileLoggingEnabled; }
 
-void Logger::writeToFile(const String& logMessage) {
-  static bool inWriteToFile = false; // Prevent recursive calls
+bool Logger::ensureFilesystem() {
+  if (m_fsMounted)
+    return true;
+  if (!LittleFS.begin()) {
+    if (m_useSerial) {
+      Serial.println(F("Dateisystem für Logging konnte nicht eingehängt werden"));
+    }
+    return false;
+  }
+  m_fsMounted = true;
+  return true;
+}
 
-  if (!m_fileLoggingEnabled || inWriteToFile) {
+void Logger::bufferForFile(const String& logMessage) {
+  if (!m_fileLoggingEnabled)
+    return;
+
+  if (m_fileBuffer.length() + logMessage.length() + 2 > FILE_BUFFER_MAX) {
+    // Puffer voll. Hier NICHT in den Flash schreiben: log() ist aus beliebigem
+    // Kontext erreichbar, auch aus einem SDK-Callback, und ein Flash-Schreiben
+    // von dort legt den WiFi-Stack lahm. Stattdessen Zeile verwerfen und den
+    // Verlust in flushFileLog() vermerken.
+    if (m_droppedLines < 0xFFFF)
+      m_droppedLines++;
     return;
   }
 
-  inWriteToFile = true;
+  m_fileBuffer += logMessage;
+  m_fileBuffer += '\n';
+}
 
-  // Check if filesystem is mounted with critical section
-  {
-    if (!LittleFS.exists("/")) {
-      if (!LittleFS.begin()) {
-        m_fileLoggingEnabled = false;
-        if (m_useSerial) {
-          Serial.println(F("Dateisystem für Logging konnte nicht eingehängt werden"));
-        }
-        inWriteToFile = false;
-        return;
-      }
-    }
+void Logger::flushFileLog() {
+  static bool inFlush = false; // Prevent recursive calls
 
-    File file = LittleFS.open(m_logFileName, "a");
-    if (!file) {
-      m_fileLoggingEnabled = false;
-      if (m_useSerial) {
-        Serial.println(F("Logdatei konnte nicht zum Schreiben geöffnet werden"));
-      }
-      inWriteToFile = false;
-      return;
-    }
-
-    file.println(logMessage);
-    file.close();
+  if (!m_fileLoggingEnabled || inFlush || m_fileBuffer.length() == 0) {
+    return;
   }
+
+  // Nur schreiben, wenn genug aufgelaufen ist oder das Intervall abgelaufen ist
+  if (m_fileBuffer.length() < FILE_FLUSH_THRESHOLD &&
+      millis() - m_lastFlush < FILE_FLUSH_INTERVAL_MS) {
+    return;
+  }
+
+  inFlush = true;
+  m_lastFlush = millis();
+
+  // Bewusst OHNE CriticalSection: SPI-Flash-Schreibvorgänge brauchen
+  // eingeschaltete Interrupts. Werden sie über einen LittleFS-Commit hinweg
+  // maskiert, verhungert der SDK-/WiFi-Task - Exception 2 im sys-Kontext mit
+  // anschließendem WDT-Reset.
+  if (!ensureFilesystem()) {
+    m_fileLoggingEnabled = false;
+    m_fileBuffer = "";
+    inFlush = false;
+    return;
+  }
+
+  File file = LittleFS.open(m_logFileName, "a");
+  if (!file) {
+    m_fileLoggingEnabled = false;
+    m_fileBuffer = "";
+    if (m_useSerial) {
+      Serial.println(F("Logdatei konnte nicht zum Schreiben geöffnet werden"));
+    }
+    inFlush = false;
+    return;
+  }
+
+  if (m_droppedLines > 0) {
+    file.print(F("--- "));
+    file.print(m_droppedLines);
+    file.println(F(" Logzeilen verworfen (Puffer voll) ---"));
+    m_droppedLines = 0;
+  }
+
+  file.print(m_fileBuffer);
+  file.close();
+  m_fileBuffer = "";
+  yield();
 
   // Only check size occasionally to reduce filesystem operations
   static uint32_t lastCheck = 0;
-  if (millis() - lastCheck > 30000) { // Check every 30 seconds
+  if (millis() - lastCheck > 60000) { // Check every 60 seconds
     lastCheck = millis();
     truncateLogFileIfNeeded();
   }
 
-  inWriteToFile = false;
+  inFlush = false;
 }
 
 void Logger::truncateLogFileIfNeeded() {
-  if (!m_fileLoggingEnabled)
+  if (!m_fileLoggingEnabled || !m_fsMounted)
     return;
 
   File file = LittleFS.open(m_logFileName, "r");
@@ -397,8 +402,10 @@ void Logger::truncateLogFileIfNeeded() {
   // original file with the temp file. This avoids allocating a large buffer
   // on the heap (important on ESP8266) and keeps newer log entries.
   size_t fileSize = file.size();
-  info(F("Logger"), String(F("Logdatei prüfen: Größe=")) + fileSize + String(F(" Bytes, Limit=")) +
-                        m_maxFileSize + F(" Bytes"));
+  if (m_useSerial) {
+    Serial.print(F("Logdatei wird gekürzt, Größe="));
+    Serial.println(fileSize);
+  }
   // Try to keep the newer half, but don't exceed the configured maximum
   size_t keepSize = min(fileSize / 2, static_cast<size_t>(m_maxFileSize));
   size_t startPos = (fileSize > keepSize) ? (fileSize - keepSize) : 0;
@@ -407,8 +414,9 @@ void Logger::truncateLogFileIfNeeded() {
   File tmp = LittleFS.open(tmpName.c_str(), "w");
   if (!tmp) {
     // If temp file can't be created, fallback to simple truncation
-    warning(F("Logger"), F("Temporäre Logdatei konnte nicht erstellt werden, falle auf "
-                           "vollständige Kürzung zurück"));
+    if (m_useSerial) {
+      Serial.println(F("Temporäre Logdatei fehlgeschlagen, kürze vollständig"));
+    }
     file.close();
     LittleFS.remove(m_logFileName);
     File nf = LittleFS.open(m_logFileName, "w");
@@ -422,13 +430,12 @@ void Logger::truncateLogFileIfNeeded() {
   // Write header indicating truncation
   tmp.println(F("--- Vorherige Einträge wurden aufgrund des Größenlimits entfernt ---"));
 
-  // Copy the tail of the original file in small chunks
-  const size_t BUF_SIZE = 512;
+  // Copy the tail of the original file in small chunks, yielding between
+  // chunks so the SDK/WiFi task and the software watchdog stay serviced.
+  const size_t BUF_SIZE = 256;
   uint8_t buffer[BUF_SIZE];
   size_t remaining = keepSize;
   file.seek(startPos);
-  debug(F("Logger"), String(F("Beginne Kopieren ab Position ")) + startPos +
-                         String(F(" (Bytes zu kopieren: ")) + keepSize + F(")"));
   while (remaining > 0) {
     size_t toRead = (remaining > BUF_SIZE) ? BUF_SIZE : remaining;
     size_t r = file.readBytes(reinterpret_cast<char*>(buffer), toRead);
@@ -436,10 +443,8 @@ void Logger::truncateLogFileIfNeeded() {
       break; // read error or EOF
     tmp.write(buffer, r);
     remaining -= r;
+    yield();
   }
-
-  size_t copied = keepSize - remaining;
-  info(F("Logger"), String(F("Kopiert ")) + copied + F(" Bytes in temporäre Datei"));
 
   file.close();
   tmp.close();
@@ -448,11 +453,11 @@ void Logger::truncateLogFileIfNeeded() {
   // Remove original first to ensure rename succeeds on platforms that don't
   // support overwrite-rename.
   LittleFS.remove(m_logFileName);
-  if (LittleFS.rename(tmpName.c_str(), m_logFileName)) {
-    info(F("Logger"), F("Logdatei erfolgreich gekürzt; ältere Einträge entfernt"));
-  } else {
+  if (!LittleFS.rename(tmpName.c_str(), m_logFileName)) {
     // Rename failed — try fallback: create a fresh file with header only
-    warning(F("Logger"), F("Umbenennen der temporären Logdatei fehlgeschlagen, fallback aktiv"));
+    if (m_useSerial) {
+      Serial.println(F("Umbenennen der temporären Logdatei fehlgeschlagen"));
+    }
     LittleFS.remove(tmpName.c_str());
     File nf = LittleFS.open(m_logFileName, "w");
     if (nf) {

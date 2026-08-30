@@ -199,6 +199,9 @@ ConfigManager::ConfigResult ConfigManager::setUpdateFlags(bool fileSystem, bool 
   }
 
   ConfigPersistence::writeUpdateFlagsToFile(fileSystem, firmware);
+  m_cachedFsUpdate = fileSystem;
+  m_cachedFwUpdate = firmware;
+  m_updateFlagsCached = true;
 
   notifyConfigChange("update_flags", "fs:" + String(fileSystem) + ",fw:" + String(firmware), true);
 
@@ -206,35 +209,44 @@ ConfigManager::ConfigResult ConfigManager::setUpdateFlags(bool fileSystem, bool 
 }
 
 bool ConfigManager::isFileSystemUpdatePending() const {
-  bool fs, fw;
-  ConfigPersistence::readUpdateFlagsFromFile(fs, fw);
-  return fs;
+  if (!m_updateFlagsCached) {
+    ConfigPersistence::readUpdateFlagsFromFile(m_cachedFsUpdate, m_cachedFwUpdate);
+    m_updateFlagsCached = true;
+  }
+  return m_cachedFsUpdate;
 }
 
 bool ConfigManager::isFirmwareUpdatePending() const {
-  bool fs, fw;
-  ConfigPersistence::readUpdateFlagsFromFile(fs, fw);
-  return fw;
+  if (!m_updateFlagsCached) {
+    ConfigPersistence::readUpdateFlagsFromFile(m_cachedFsUpdate, m_cachedFwUpdate);
+    m_updateFlagsCached = true;
+  }
+  return m_cachedFwUpdate;
 }
 
 bool ConfigManager::getDoFirmwareUpgrade() {
-  bool fs, fw;
-  ConfigPersistence::readUpdateFlagsFromFile(fs, fw);
+  if (!m_updateFlagsCached) {
+    ConfigPersistence::readUpdateFlagsFromFile(m_cachedFsUpdate, m_cachedFwUpdate);
+    m_updateFlagsCached = true;
+  }
   // Update mode is active if either filesystem or firmware update is pending
-  return fs || fw;
+  return m_cachedFsUpdate || m_cachedFwUpdate;
 }
 
 ConfigManager::ConfigResult ConfigManager::setDoFirmwareUpgrade(bool enable) {
-  bool fs, fw;
-  ConfigPersistence::readUpdateFlagsFromFile(fs, fw);
-
   if (enable) {
     // If enabling update mode, set firmware update pending (default choice)
     ConfigPersistence::writeUpdateFlagsToFile(false, true);
+    m_cachedFsUpdate = false;
+    m_cachedFwUpdate = true;
+    m_updateFlagsCached = true;
     notifyConfigChange("do_firmware_upgrade", "true", true);
   } else {
     // If disabling update mode, clear all update flags
     ConfigPersistence::writeUpdateFlagsToFile(false, false);
+    m_cachedFsUpdate = false;
+    m_cachedFwUpdate = false;
+    m_updateFlagsCached = true;
     notifyConfigChange("do_firmware_upgrade", "false", true);
   }
 

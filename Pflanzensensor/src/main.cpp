@@ -132,6 +132,16 @@ void setup() {
   // Increase reboot count
   Helper::incrementRebootCount();
 
+  // Handle boot loop recovery: turn off flash file logging if stuck
+  if (LittleFS.exists("/.disable_file_log")) {
+    LittleFS.remove("/.disable_file_log");
+    logger.enableFileLogging(false);
+    if (ConfigMgr.isFileLoggingEnabled()) {
+      LOG_WARN(F("main"), F("Boot-Schleife erkannt: Datei-Logging wird deaktiviert"));
+      ConfigMgr.setFileLoggingEnabled(false);
+    }
+  }
+
   // Handle boot loop recovery: clear firmware upgrade flag if stuck
   if (LittleFS.exists("/.clear_upgrade_flag")) {
     LittleFS.remove("/.clear_upgrade_flag");
@@ -213,10 +223,19 @@ void setup() {
     // Continue anyway - AP mode may be active for configuration
   }
 
+  // Zwischendurch schreiben: loop() läuft erst nach setup(), und allein die
+  // WiFi-Einrichtung dauert bis zu 15 s. Ohne diese Aufrufe läuft der
+  // Logpuffer während des Hochlaufs über und verwirft genau die Zeilen, die
+  // man beim Nachvollziehen einer Boot-Schleife braucht.
+  logger.flushFileLog();
+
   // Initialize all major subsystems
   initializeLedTrafficLight();
+  logger.flushFileLog();
   initializeSensors();
+  logger.flushFileLog();
   initializeWebServer();
+  logger.flushFileLog();
 
 #if USE_PROMETHEUS_METRICS
   // Initialize Prometheus metrics system
@@ -245,6 +264,7 @@ void setup() {
   logger.endMemoryTracking(F("managers_init"));
   logger.logMemoryStats(F("setup_complete"));
   LOG_INFO(F("main"), F("Setup abgeschlossen"));
+  logger.flushFileLog();
 
   // Sensor settings are now applied directly during JSON parsing
   // DO NOT trigger a synchronous initial measurement here - it may block
@@ -387,6 +407,11 @@ void loop() {
       lastMeasurementUpdate = currentMillis;
     }
   }
+
+  // Gepufferte Logzeilen in den Flash schreiben. Das ist die EINZIGE Stelle,
+  // an der das Dateilogging den Flash anfasst - nie aus einem SDK-Callback
+  // und nie mit abgeschalteten Interrupts.
+  logger.flushFileLog();
 
   // Basic system maintenance
   yield();
