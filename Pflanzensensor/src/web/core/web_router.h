@@ -74,10 +74,11 @@ public:
   /// (_routes.reserve(MAX_ROUTES)). Ein Route-Eintrag umfasst zwei Strings, ein
   /// std::function und die Methode, also grob 64 Byte.
   ///
-  /// 32 ist die Gesamtzahl der addRoute()-Aufrufe im gesamten Projekt - mehr
-  /// Routen kann es also nie gleichzeitig geben, selbst wenn alle Handler
-  /// zugleich im LRU-Cache lägen. Kleinere Werte sind nicht sicher: mit 25
-  /// scheiterte im Test die Registrierung von /admin/display und
+  /// Das Projekt hat aktuell 31 addRoute()-Aufrufe - mehr Routen kann es also
+  /// nie gleichzeitig geben, selbst wenn alle Handler zugleich im LRU-Cache
+  /// lägen. Der Puffer beträgt damit genau eine Route: die nächste neue
+  /// verlangt eine Anhebung dieses Werts. Kleinere Werte sind nicht sicher: mit
+  /// 25 scheiterte im Test die Registrierung von /admin/display und
   /// /getLatestValues mit "Routen-Limit überschritten".
   static constexpr size_t MAX_ROUTES = 32;
   /// Maximum number of middleware functions
