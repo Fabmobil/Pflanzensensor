@@ -887,6 +887,19 @@ var ThresholdSliderInitializer = (function () {
     // but the threshold slider always displays the RELATIVE 0-100% scale.
   // Do NOT extend slider range to absolute min/max; only use calculated min/max for threshold bar
     if (minThreshold < min || maxThreshold > max) { Logger.warn(sensor.id + '_' + index + ': Thresholds (' + minThreshold + '-' + maxThreshold + ') don\'t fit in scale (' + min + '-' + max + '). Adjusting.'); min = Math.min(min, minThreshold - 5); max = Math.max(max, maxThreshold + 5); }
+
+    // Stehen alle vier Schwellen auf demselben Wert, ist der Puffer null und
+    // min gleich max. toPercent() teilt dann durch (max - min) = 0 und liefert
+    // NaN oder Infinity - der Regler zeigt seine Marken gar nicht mehr oder
+    // klebt sie an den Rand. Kommt bei frisch angelegten Sensoren vor, deren
+    // Schwellen noch alle auf 0 stehen.
+    if (!(max > min)) {
+      Logger.warn(sensor.id + '_' + index + ': Schwellen ergeben keinen Bereich (' + min +
+                  '), weite auf +/-1 auf');
+      min = min - 1;
+      max = max + 1;
+    }
+
     return { min: min, max: max };
   }
 
@@ -898,10 +911,22 @@ var ThresholdSliderInitializer = (function () {
 // ------------------------------
 var SensorUpdater = (function () {
   var updateInterval = 5000, timerId = null;
-  function start() { update(); timerId = setInterval(update, updateInterval); Logger.info('Sensor updater started'); }
+  function start() {
+    update();
+    timerId = setInterval(update, updateInterval);
+    // Im verborgenen Tab pausieren: der Sensor beantwortet nur eine Verbindung
+    // zugleich und baut je Abfrage das komplette JSON aller Sensoren auf. Alle
+    // 5 s aus einem Tab, den niemand ansieht, ist reine Last. Beim Zurück-
+    // kehren einmal sofort nachziehen.
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible') update();
+    });
+    Logger.info('Sensor updater started');
+  }
   function stop() { if (timerId) { clearInterval(timerId); timerId = null; } }
 
   function update() {
+    if (document.visibilityState === 'hidden') return;
     if (typeof fetch === 'function') {
       fetch('/getLatestValues', { credentials: 'include' }).then(function (r) { return parseJsonResponse(r); }).then(function (data) { if (data && data.sensors) handleLatestValues(data.sensors); }).catch(function (err) { Logger.debug('Sensor update failed:', err); });
     } else {

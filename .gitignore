@@ -49,3 +49,6 @@ logs/*
 
 # direnv
 .direnv
+
+# Bauartefakte von compress_assets.py (werden beim buildfs erzeugt)
+Pflanzensensor/data/**/*.gz

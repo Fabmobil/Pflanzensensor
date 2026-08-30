@@ -33,6 +33,24 @@ static const char* contentTypeFor(const String& path) {
   return "text/plain";
 }
 
+void WebManager::collectStaticHeaders() {
+  // Variadische Fassung: die Feld-Überladung verlangt size_t und verliert
+  // sonst die Überladungsauflösung gegen das Template.
+  _server->collectHeaders(F("Accept-Encoding"));
+}
+
+/**
+ * @brief Verträgt der anfragende Browser gzip?
+ * @details Praktisch jeder tut das, geraten wird trotzdem nicht: eine
+ *          gzip-Antwort an einen Empfänger, der sie nicht auspackt, ist
+ *          unlesbarer Binärmüll.
+ */
+static bool acceptsGzip(ESPWebServer& server) {
+  String enc = server.header(F("Accept-Encoding"));
+  enc.toLowerCase();
+  return enc.indexOf(F("gzip")) >= 0;
+}
+
 bool WebManager::tryServeStaticFile(const String& uri) {
   // Nur die bekannten Asset-Verzeichnisse ausliefern
   if (!(uri.startsWith(F("/css/")) || uri.startsWith(F("/js/")) || uri.startsWith(F("/img/")) ||
@@ -44,6 +62,19 @@ bool WebManager::tryServeStaticFile(const String& uri) {
   if (uri.indexOf(F("..")) >= 0 || uri.indexOf('\\') >= 0) {
     LOG_WARN(F("WebManager"), String(F("Abgewiesener Asset-Pfad: ")) + uri);
     return false;
+  }
+
+  // Vorzugsweise die vorkomprimierte Fassung ausliefern. compress_assets.py
+  // legt sie beim Bau des Abbilds an; für JS und CSS sind das rund 25 % der
+  // ursprünglichen Größe. /admin/sensors schrumpft damit von etwa 130 KB auf
+  // gut 30 KB - spürbar auf einem Gerät, das jeweils nur eine Verbindung
+  // bedient. Der Content-Type bleibt der der Originaldatei; nur die Kodierung
+  // ändert sich.
+  const String gz = uri + F(".gz");
+  if (acceptsGzip(*_server) && LittleFS.exists(gz)) {
+    _server->sendHeader(F("Content-Encoding"), F("gzip"));
+    serveStaticFile(gz, contentTypeFor(uri), F("max-age=86400"));
+    return true;
   }
 
   if (!LittleFS.exists(uri)) {

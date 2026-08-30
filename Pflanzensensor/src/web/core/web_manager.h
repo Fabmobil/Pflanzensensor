@@ -177,6 +177,15 @@ public:
   void resetUpdateModeStartTime() { m_updateModeStartTime = 0; }
 
   /**
+   * @brief Kopfzeilen anfordern, die der Server sonst verwirft
+   * @details ESP8266WebServer speichert nur ausdrücklich angeforderte
+   *          Kopfzeilen. Gebraucht wird Accept-Encoding, um statische Dateien
+   *          nur dann gzip-komprimiert auszuliefern, wenn der Browser das auch
+   *          versteht.
+   */
+  void collectStaticHeaders();
+
+  /**
    * @brief Frist des Update-Modus verlängern, solange Daten ankommen
    * @details Der Update-Modus beendet sich nach m_updateModeTimeout selbst,
    *          damit ein versehentlich hineingeratenes Gerät nicht dort

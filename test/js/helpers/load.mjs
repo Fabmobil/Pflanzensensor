@@ -158,3 +158,39 @@ export function fakeResponse({ status = 200, contentType = 'application/json', b
     json: async () => JSON.parse(body)
   };
 }
+
+/**
+ * Lädt data/js/admin_sensors.js kopflos und gibt window.AdminSensors zurück.
+ *
+ * Die Datei exportiert ihre Module ausdrücklich "for testing" - hier wird
+ * genau das benutzt. Die Initialisierung am Dateiende hängt sich über
+ * onDomReady() an DOMContentLoaded; mit readyState "loading" und einem
+ * addEventListener, das nichts tut, läuft sie nicht an. Getestet werden
+ * dadurch die reinen Rechenteile, ohne dass Poller oder Ereignisbindungen
+ * starten.
+ */
+export function loadAdminSensors() {
+  const doc = makeDocument();
+  doc.readyState = 'loading';
+  doc.visibilityState = 'visible';
+  const fetches = [];
+  const sandbox = {
+    console,
+    setTimeout: (fn, ms) => setTimeout(fn, Math.min(ms ?? 0, 5)),
+    clearTimeout, setInterval: () => 0, clearInterval: () => {},
+    document: doc,
+    URLSearchParams,
+    FormData: globalThis.FormData,
+    fetch: async (url) => { fetches.push(url); return { ok: true, status: 200,
+      headers: { get: () => 'application/json' }, json: async () => ({ sensors: {} }),
+      text: async () => '{}' }; },
+    location: { host: 'testgerät', reload() {} }
+  };
+  sandbox.window = sandbox;
+  sandbox.globalThis = sandbox;
+  sandbox.window.addEventListener = () => {};
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(JS_DIR, 'admin_sensors.js'), 'utf8'), sandbox,
+                  { filename: 'admin_sensors.js' });
+  return Object.assign(sandbox.AdminSensors, { _document: doc, _fetches: fetches });
+}

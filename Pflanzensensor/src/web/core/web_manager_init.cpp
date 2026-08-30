@@ -30,6 +30,11 @@ ResourceResult WebManager::begin(uint16_t port) {
 
   // Wichtige Dienste zuerst initialisieren
   _server = std::make_unique<ESPWebServer>(_port);
+  // ESP8266WebServer hebt nur ausdrücklich angeforderte Kopfzeilen auf. Ohne
+  // das hier liefert server.header("Accept-Encoding") immer eine leere
+  // Zeichenkette, und tryServeStaticFile() könnte nicht erkennen, ob der
+  // Browser gzip verträgt.
+  collectStaticHeaders();
   _auth = std::make_unique<WebAuth>(*_server);
   _router = std::make_unique<WebRouter>(*_server);
   _cssService = std::make_unique<CSSService>(*_server);
@@ -137,6 +142,11 @@ ResourceResult WebManager::beginUpdateMode() {
 ResourceResult WebManager::setupMinimalServices() {
   // Dienste in bestimmter Reihenfolge anlegen
   _server = std::make_unique<ESPWebServer>(_port);
+  // ESP8266WebServer hebt nur ausdrücklich angeforderte Kopfzeilen auf. Ohne
+  // das hier liefert server.header("Accept-Encoding") immer eine leere
+  // Zeichenkette, und tryServeStaticFile() könnte nicht erkennen, ob der
+  // Browser gzip verträgt.
+  collectStaticHeaders();
   if (!_server) {
     return ResourceResult::fail(ResourceError::RESOURCE_ERROR,
                                 F("Webserver konnte nicht angelegt werden"));

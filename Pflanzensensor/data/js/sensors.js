@@ -13,11 +13,28 @@ window.addEventListener('DOMContentLoaded', () => {
   const earth = document.querySelector('.earth');
 
   // Start sensor value updates
+  //
+  // Im verborgenen Tab wird NICHT abgefragt. Der Sensor beantwortet jeweils
+  // nur eine Verbindung und baut für /getLatestValues das komplette JSON aller
+  // Sensoren auf - ein vergessener Hintergrundtab hätte ihn sonst dauerhaft
+  // alle 10 s beschäftigt, ohne dass jemand hinsieht. Beim Zurückkehren wird
+  // sofort einmal aktualisiert, damit nichts Veraltetes stehen bleibt.
   updateSensorValues();
-  setInterval(updateSensorValues, 10000); // Update every 10 seconds
+  setInterval(() => {
+    if (document.visibilityState !== 'hidden') updateSensorValues();
+  }, 10000);
 
-  // Update countdown timers more frequently
-  setInterval(updateCountdowns, 1000); // Update every second
+  // Update countdown timers more frequently (rein lokal, keine Anfragen)
+  setInterval(() => {
+    if (document.visibilityState !== 'hidden') updateCountdowns();
+  }, 1000);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      updateSensorValues();
+      updateCountdowns();
+    }
+  });
 
   // Animate cloud (gentle floating effect)
   if (cloud) {
