@@ -158,7 +158,16 @@ ConfigManager::ConfigResult ConfigManager::setFileLoggingEnabled(bool enabled) {
   return updateBoolConfig(
       m_configData.fileLoggingEnabled, enabled,
       [](bool val) {
-        return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "file_log", val);
+        auto result =
+            PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "file_log", val);
+        if (result.isSuccess()) {
+          // Persistierter Wert allein reicht nicht - ohne diesen Aufruf bleibt
+          // der laufende Logger unverändert und schreibt erst nach einem Neustart
+          // in die Logdatei (m_fileLoggingEnabled wird sonst nur in loadConfig()
+          // beim Boot gesetzt).
+          logger.enableFileLogging(val);
+        }
+        return result;
       },
       "file_logging_enabled", true);
 }
