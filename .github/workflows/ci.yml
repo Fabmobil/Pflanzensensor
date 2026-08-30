@@ -81,3 +81,119 @@ jobs:
 
       - name: Warnungen im eigenen Quelltext prüfen
         run: ./check_warnings.sh
+
+  # ---------------------------------------------------------------------------
+  # Veroeffentlichung
+  # ---------------------------------------------------------------------------
+  # Laeuft nur auf main und nur, wenn Tests und Firmwarebau durch sind. Ausgeloest
+  # wird ueber die VERSION in configs/config.h: existiert zu ihr noch kein Tag,
+  # entsteht einer samt Release.
+  #
+  # Gebaut wird bewusst gegen config_example.h, also OHNE Zugangsdaten. Der
+  # Grund ist handfest: Zeichenketten aus der Konfiguration landen im Abbild und
+  # lassen sich mit "strings firmware.bin" wieder herausholen - WLAN-Passwort,
+  # SSID und Admin-Passwort inklusive. Ein oeffentliches Release, das gegen eine
+  # echte Geraetekonfiguration gebaut waere, wuerde diese Zugangsdaten
+  # veroeffentlichen. Geraete aus so einem Release finden kein WLAN, oeffnen
+  # ihren eigenen Zugangspunkt und werden ueber das Webinterface eingerichtet.
+  release:
+    name: Release veroeffentlichen
+    runs-on: ubuntu-latest
+    needs: [tests, js-tests, firmware]
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Tags und Commit-Text werden gebraucht
+
+      - name: Version und Tag bestimmen
+        id: version
+        run: |
+          version=$(grep -oP '#define VERSION "\K[^"]+' Pflanzensensor/src/configs/config.h)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if git rev-parse -q --verify "refs/tags/v$version" >/dev/null; then
+            echo "Tag v$version existiert bereits - kein Release."
+            echo "needed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Neue Version $version - Release wird erstellt."
+            echo "needed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.version.outputs.needed == 'true'
+        with:
+          python-version: "3.12"
+
+      - name: PlatformIO installieren
+        if: steps.version.outputs.needed == 'true'
+        run: pip install --upgrade platformio
+
+      - name: Zwischenspeicher
+        if: steps.version.outputs.needed == 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/.platformio
+          key: pio-esp8266-${{ hashFiles('platformio.ini') }}
+
+      # Sicherheitsnetz: die Geraetekonfiguration ist per .gitignore
+      # ausgeschlossen. Taucht sie hier trotzdem auf, wuerde gegen echte
+      # Zugangsdaten gebaut - dann lieber abbrechen als sie veroeffentlichen.
+      - name: Keine echte Geraetekonfiguration im Checkout
+        if: steps.version.outputs.needed == 'true'
+        run: |
+          for f in config_pflanzensensor.h config_pflanzensensor_fabmobil.h; do
+            if [ -f "Pflanzensensor/src/configs/$f" ]; then
+              echo "::error::$f liegt im Checkout - Release abgebrochen."
+              exit 1
+            fi
+          done
+          cp Pflanzensensor/src/configs/config_example.h \
+             Pflanzensensor/src/configs/config_pflanzensensor.h
+
+      - name: Firmware und Dateisystem bauen
+        if: steps.version.outputs.needed == 'true'
+        run: |
+          pio run -e Pflanzensensor
+          pio run -e Pflanzensensor -t buildfs
+
+      # generate_md5.py schreibt die Pruefsummen ueber einen atexit-Haken, also
+      # erst wenn PlatformIO fertig ist. Hier wird nur noch nachgesehen, ob sie
+      # zum Abbild passen - eine falsche Pruefsumme im Release wuerde beim
+      # OTA-Upload zur Zurueckweisung fuehren.
+      - name: Pruefsummen kontrollieren
+        if: steps.version.outputs.needed == 'true'
+        run: |
+          cd .pio/build/Pflanzensensor
+          for f in firmware.bin littlefs.bin; do
+            ist=$(md5sum "$f" | cut -d' ' -f1)
+            soll=$(cat "$f.md5")
+            if [ "$ist" != "$soll" ]; then
+              echo "::error::Pruefsumme fuer $f passt nicht ($ist vs $soll)"
+              exit 1
+            fi
+            echo "$f: $ist"
+          done
+
+      - name: Release anlegen
+        if: steps.version.outputs.needed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          B=.pio/build/Pflanzensensor
+          {
+            git log -1 --pretty=%B
+            echo
+            echo "| Datei | MD5 |"
+            echo "| --- | --- |"
+            echo "| firmware.bin | \`$(cat $B/firmware.bin.md5)\` |"
+            echo "| littlefs.bin | \`$(cat $B/littlefs.bin.md5)\` |"
+          } > notes.md
+          gh release create "v$VERSION" \
+            --title "v$VERSION" \
+            --notes-file notes.md \
+            --target "$GITHUB_SHA" \
+            "$B/firmware.bin" "$B/firmware.bin.md5" \
+            "$B/littlefs.bin" "$B/littlefs.bin.md5"
