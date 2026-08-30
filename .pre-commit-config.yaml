@@ -1,3 +1,16 @@
+# Reihenfolge zaehlt: Hooks, die Dateien anfassen (clang-format, Versions-
+# anhebung), laufen vor "Require Clean Working Tree" - sonst meldet der
+# saubere Arbeitsbaum genau die Aenderung, die eben erst entstanden ist.
+#
+# Die Tests sind ueber files:-Muster eingegrenzt. Ein Commit, der nur
+# JavaScript anfasst, soll nicht den nativen C++-Testlauf mitschleppen (und
+# umgekehrt) - sonst kostet jeder Commit eine halbe Minute.
+#
+# Die Web-Assets werden hier bewusst NICHT komprimiert: compress_assets.py
+# haengt als extra_script an der Erzeugung von littlefs.bin und laeuft damit
+# bei jedem buildfs/uploadfs von selbst. Die .gz-Dateien sind Bauartefakte und
+# werden ohnehin nicht versioniert - ein zweiter Aufruf beim Commit brächte
+# nichts.
 repos:
 -   repo: https://github.com/pocc/pre-commit-hooks
     rev: v1.3.5
@@ -5,8 +18,36 @@ repos:
     -   id: clang-format
         args: [-i]  # -i means in-place modification
         types_or: [c++, c, cuda]
+
 -   repo: local
     hooks:
+    # --- Version -----------------------------------------------------------
+    -   id: bump-version
+        name: Patch-Version anheben (bei C++-Aenderungen)
+        entry: python3 bump_version.py
+        language: system
+        pass_filenames: false
+        files: ^Pflanzensensor/src/.*\.(cpp|h|hpp|ino)$
+        stages: [pre-commit]
+
+    # --- Tests -------------------------------------------------------------
+    -   id: native-tests
+        name: Native Unit-Tests (pio test -e native)
+        entry: pio test -e native
+        language: system
+        pass_filenames: false
+        files: ^(Pflanzensensor/src/|test/(?!js/)|platformio\.ini)
+        stages: [pre-commit]
+
+    -   id: js-tests
+        name: JavaScript-Tests
+        entry: ./run_js_tests.sh
+        language: system
+        pass_filenames: false
+        files: ^(Pflanzensensor/data/js/|test/js/)
+        stages: [pre-commit]
+
+    # --- Zuletzt: nichts Unvorgemerktes zurueckgelassen --------------------
     -   id: require-clean-working-tree
         name: Require Clean Working Tree
         entry: git diff --exit-code
