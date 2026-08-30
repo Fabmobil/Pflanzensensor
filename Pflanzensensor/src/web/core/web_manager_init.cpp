@@ -207,8 +207,14 @@ void WebManager::setupMiddleware() {
     // Zurücksetzen, das Admin-Passwort und WLAN-Zugangsdaten mit zurücksetzt und
     // eine angemeldete Abfrage damit unmöglich macht. Im Minimalmodus ist /status
     // ohnehin schon frei, weil beginUpdateMode() keine Middleware einrichtet.
-    if (url == "/" || url == "/status" || url == "/getLatestValues" || url.startsWith("/css/") ||
-        url.startsWith("/js/") || url.startsWith("/img/") || url.startsWith("/favicon")) {
+    // /measure ist ebenfalls bewusst offen: ein Klick auf ein Sensorblatt der
+    // Startseite zieht die nächste Messung dieses Sensors vor. Das ändert keine
+    // Konfiguration und legt nichts offen, was /getLatestValues nicht ohnehin
+    // zeigt; gegen Dauerbeschuss schützt die Drossel in
+    // SensorHandler::handleMeasure().
+    if (url == "/" || url == "/status" || url == "/getLatestValues" || url == "/measure" ||
+        url.startsWith("/css/") || url.startsWith("/js/") || url.startsWith("/img/") ||
+        url.startsWith("/favicon")) {
       return true;
     }
 

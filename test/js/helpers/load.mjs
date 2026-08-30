@@ -201,3 +201,199 @@ export function loadAdminSensors() {
                   { filename: 'admin_sensors.js' });
   return Object.assign(sandbox.AdminSensors, { _document: doc, _fetches: fetches });
 }
+
+// === Reicheres Fake-DOM für sensors.js ===
+//
+// makeDocument() oben reicht für devicewait.js und admin.js, kennt aber weder
+// classList noch dataset noch querySelector. sensors.js lebt genau davon: es
+// sucht Zeilen über Attributselektoren, schaltet Statusklassen um und merkt
+// sich Zeitstempel im Datensatz. Deshalb hier ein zweiter, etwas
+// ausführlicherer Nachbau - bewusst nur so viel, wie die Datei benutzt.
+
+/** "data-last-measurement" -> "lastMeasurement" */
+function datasetKey(attr) {
+  return attr.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+}
+
+function getAttr(el, name) {
+  if (name.startsWith('data-')) return el.dataset[datasetKey(name)];
+  if (name === 'class') return [...el.classList._set].join(' ');
+  return el._attrs[name];
+}
+
+/** Einfacher Teilselektor: tag, .klasse(n), [attr], [attr="wert"] - kombinierbar. */
+function matchesSimple(el, part) {
+  const attrRe = /\[([a-zA-Z0-9_-]+)(?:=["']?([^"'\]]*)["']?)?\]/g;
+  let rest = part;
+  let m;
+  while ((m = attrRe.exec(part)) !== null) {
+    const value = getAttr(el, m[1]);
+    if (value === undefined || value === null || value === '') return false;
+    if (m[2] !== undefined && String(value) !== m[2]) return false;
+  }
+  rest = rest.replace(attrRe, '');
+
+  const classes = [...rest.matchAll(/\.([a-zA-Z0-9_-]+)/g)].map((c) => c[1]);
+  if (classes.some((c) => !el.classList.contains(c))) return false;
+
+  const tag = rest.replace(/\.[a-zA-Z0-9_-]+/g, '');
+  if (tag && el.tagName !== tag.toUpperCase()) return false;
+  return true;
+}
+
+/** Nachfahrenkette wie ".sensor .interval span" - von rechts nach links geprüft. */
+function matchesSelector(el, selector) {
+  const parts = selector.trim().split(/\s+/);
+  if (!matchesSimple(el, parts[parts.length - 1])) return false;
+  let node = el.parentNode;
+  for (let i = parts.length - 2; i >= 0; i--) {
+    while (node && !matchesSimple(node, parts[i])) node = node.parentNode;
+    if (!node) return false;
+    node = node.parentNode;
+  }
+  return true;
+}
+
+function descendants(root) {
+  const out = [];
+  (function walk(n) { n.children.forEach((c) => { out.push(c); walk(c); }); })(root);
+  return out;
+}
+
+export function makeElement(tag = 'div', classNames = []) {
+  const set = new Set(classNames);
+  const el = {
+    tagName: tag.toUpperCase(),
+    children: [],
+    parentNode: null,
+    dataset: {},
+    _attrs: {},
+    _listeners: {},
+    textContent: '',
+    classList: {
+      _set: set,
+      add: (...c) => c.forEach((x) => set.add(x)),
+      remove: (...c) => c.forEach((x) => set.delete(x)),
+      contains: (c) => set.has(c)
+    },
+    appendChild(child) { child.parentNode = el; el.children.push(child); return child; },
+    setAttribute(name, value) { el._attrs[name] = String(value); },
+    removeAttribute(name) { delete el._attrs[name]; },
+    getAttribute(name) { return getAttr(el, name); },
+    addEventListener(type, fn) { (el._listeners[type] ||= []).push(fn); },
+    querySelector(sel) { return descendants(el).find((n) => matchesSelector(n, sel)) || null; },
+    querySelectorAll(sel) { return descendants(el).filter((n) => matchesSelector(n, sel)); },
+    closest(sel) {
+      let node = el;
+      while (node) { if (matchesSelector(node, sel)) return node; node = node.parentNode; }
+      return null;
+    },
+    /** Ereignis auslösen und wie im Browser nach oben durchreichen - nur so
+     *  erreicht ein Klick auf das Blatt den Zuhörer am Container. */
+    dispatch(type, init = {}) {
+      const event = { type, target: el, defaultPrevented: false, ...init,
+                      preventDefault() { event.defaultPrevented = true; } };
+      let node = el;
+      while (node) {
+        (node._listeners[type] || []).slice().forEach((fn) => fn(event));
+        node = node.parentNode;
+      }
+      return event;
+    }
+  };
+  return el;
+}
+
+/**
+ * Baut den Sensorbereich der Startseite so nach, wie generateSensorBox() ihn
+ * liefert: .sensors-container > .sensor[data-sensor][data-sensor-id] >
+ * (.leaf-wrap > .leaf, .card > (.value>span, .status>span, .interval>span)).
+ */
+export function makeSensorDocument(rows) {
+  const root = makeElement('div', ['page']);
+  const container = makeElement('div', ['sensors-container']);
+  root.appendChild(container);
+
+  const box = makeElement('div', ['box', 'status-unknown']);
+  root.appendChild(box);
+  box.appendChild(makeElement('img', ['face']));
+
+  rows.forEach((row) => {
+    const sensor = makeElement('div', ['sensor', row.side || 'left',
+                                       `sensor-status-${row.status || 'green'}`]);
+    sensor.dataset.sensor = row.key;
+    if (row.sensorId !== null) sensor.dataset.sensorId = row.sensorId ?? row.key.replace(/_\d+$/, '');
+    const wrap = makeElement('span', ['leaf-wrap']);
+    wrap.appendChild(makeElement('img', ['leaf']));
+    sensor.appendChild(makeElement('img', ['stem']));
+    sensor.appendChild(wrap);
+    const card = makeElement('div', ['card']);
+    ['value', 'status', 'interval'].forEach((name) => {
+      const field = makeElement('div', [name]);
+      field.appendChild(makeElement('span'));
+      card.appendChild(field);
+    });
+    sensor.appendChild(card);
+    container.appendChild(sensor);
+  });
+
+  return {
+    root,
+    readyState: 'loading',
+    visibilityState: 'visible',
+    body: root,
+    createElement: (tag) => makeElement(tag),
+    getElementById: (id) => descendants(root).find((n) => n._attrs.id === id) || null,
+    querySelector: (sel) => root.querySelector(sel),
+    querySelectorAll: (sel) => root.querySelectorAll(sel),
+    addEventListener: () => {}
+  };
+}
+
+/**
+ * Lädt data/js/sensors.js kopflos und gibt window.Sensors zurück.
+ *
+ * Wie bei loadAdminSensors() verhindert ein window.addEventListener, das nichts
+ * tut, dass der DOMContentLoaded-Block mit seinen Zeitgebern anläuft - geprüft
+ * werden die einzelnen Funktionen, nicht der Aufbau der Seite.
+ *
+ * @param {object} o
+ * @param {Array}  o.rows     Zeilen für makeSensorDocument()
+ * @param {Function} o.respond (url, options) => {ok, status, body} | wirft
+ * @param {object} o.clock    Uhr aus makeClock()
+ */
+export function loadSensors({ rows = [], respond = () => ({ ok: true, status: 200, body: {} }),
+                              clock = makeClock() } = {}) {
+  const doc = makeSensorDocument(rows);
+  const fetches = [];
+  const sandbox = {
+    console: { log() {}, error() {}, warn() {} }, // Testausgabe nicht zumüllen
+    setTimeout: (fn, ms) => setTimeout(fn, Math.min(ms ?? 0, 5)),
+    clearTimeout,
+    setInterval: () => 0,
+    clearInterval: () => {},
+    Date: new Proxy(Date, { get: (t, p) => (p === 'now' ? () => clock.now : Reflect.get(t, p)) }),
+    document: doc,
+    location: { pathname: '/', host: 'testgerät', reload() {} },
+    performance: { now: () => clock.now },
+    requestAnimationFrame: () => 0,
+    fetch: async (url, options = {}) => {
+      fetches.push({ url, options });
+      const answer = respond(url, options); // darf werfen: Netzwerkfehler
+      return {
+        ok: answer.ok !== false,
+        status: answer.status ?? 200,
+        json: async () => structuredClone(answer.body ?? {})
+      };
+    }
+  };
+  sandbox.window = sandbox;
+  sandbox.globalThis = sandbox;
+  sandbox.window.addEventListener = () => {};
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(JS_DIR, 'sensors.js'), 'utf8'), sandbox,
+                  { filename: 'sensors.js' });
+
+  return Object.assign(sandbox.Sensors, { _document: doc, _fetches: fetches, _clock: clock,
+                                          _window: sandbox });
+}

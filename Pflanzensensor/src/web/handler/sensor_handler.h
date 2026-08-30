@@ -20,6 +20,7 @@
 #include "managers/manager_sensor.h"
 #include "utils/result_types.h"
 #include "web/core/components.h"
+#include "web/core/request_throttle.h"
 #include "web/core/web_auth.h"
 #include "web/core/web_router.h"
 #include "web/handler/base_handler.h"
@@ -38,6 +39,11 @@
 class SensorHandler : public BaseHandler {
 public:
   static constexpr size_t MAX_VALUES = 10; // Maximum number of values per sensor
+
+  /// Mindestabstand zwischen zwei über POST /measure ausgelösten Messungen.
+  /// Gilt global, nicht pro Sensor: der Sensormanager hat ohnehin nur einen
+  /// Messslot, und der Endpunkt ist ohne Anmeldung erreichbar.
+  static constexpr uint32_t MEASURE_MIN_INTERVAL_MS = 2000;
 
   /**
    * @brief Constructor for sensor handler
@@ -126,6 +132,20 @@ private:
    *          - Updates cache
    */
   void handleGetLatestValues();
+
+  /**
+   * @brief Sofortmessung eines Sensors auslösen (POST /measure)
+   * @details Öffentlicher Endpunkt der Startseite: ein Klick auf ein
+   *          Sensorblatt zieht die nächste Messung dieses Sensors vor. Die
+   *          eigentliche Arbeit macht SensorManager::forceImmediateMeasurement(),
+   *          dieselbe Funktion wie hinter dem "Messen"-Knopf im Admin-Bereich.
+   *
+   *          Antwortet immer JSON, bewusst nicht über sendError(): das
+   *          entscheidet anhand von Anfrage-Headern, die der Server gar nicht
+   *          sammelt (collectHeaders() kennt nur "Accept-Encoding"), und
+   *          schickte einem fetch()-Aufruf sonst eine HTML-Fehlerseite.
+   */
+  void handleMeasure();
 
   /**
    * @brief Create login redirect URL

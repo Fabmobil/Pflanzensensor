@@ -174,11 +174,26 @@ void StartpageHandler::generateSensorBox(const Sensor* sensor, float value, cons
   sendChunk(sensor->getId());
   sendChunk(F("_"));
   sendChunk(String(measurementIndex));
-  sendChunk(F("'>"));
+  // data-sensor-id zusätzlich zum Schlüssel: POST /measure will die reine
+  // Sensor-ID, der Schlüssel oben ist "<ID>_<Messindex>" - und IDs enthalten
+  // selbst Unterstriche (ANALOG_1 -> ANALOG_1_0). Das JS soll den Index nicht
+  // wieder abschneiden müssen.
+  //
+  // role/tabindex gehören ins gelieferte HTML und nicht ins JS: sonst ist die
+  // Zeile bis zum ersten Skriptlauf weder fokussierbar noch als bedienbar
+  // angekündigt.
+  sendChunk(F("' data-sensor-id='"));
+  sendChunk(sensor->getId());
+  sendChunk(F("' role='button' tabindex='0' title='Klicken für eine Sofortmessung'>"));
 
   // Stem und Leaf Bilder (separate für Animation)
   sendChunk(F("<img class='stem' src='/img/sensor-stem.png' alt='' />"));
-  sendChunk(F("<img class='leaf' src='/img/sensor-leaf.png' alt='' />"));
+  // Das Blatt steckt in einem Wrapper: auf .leaf liegt bereits eine seiten- und
+  // statusabhängige transform-Kaskade (gespiegelt, gekippt), die eine
+  // Wackelanimation überschreiben würde. Die Animation läuft deshalb auf
+  // .leaf-wrap, siehe start.css.
+  sendChunk(
+      F("<span class='leaf-wrap'><img class='leaf' src='/img/sensor-leaf.png' alt='' /></span>"));
 
   // Card with sensor data
   sendChunk(F("<div class='card'>"));

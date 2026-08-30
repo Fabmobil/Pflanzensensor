@@ -15,7 +15,12 @@
 // Maximum number of values per sensor
 static constexpr size_t MAX_VALUES = 10;
 
-bool SensorHandler::ownsUrl(const String& url) { return url == F("/getLatestValues"); }
+bool SensorHandler::ownsUrl(const String& url) {
+  // Muss synchron zu onRegisterRoutes() bleiben: die Lazy-Loading-Middleware
+  // lädt den Handler nur für hier genannte Pfade, sonst läuft die Anfrage ins
+  // 404 statt in die registrierte Route.
+  return url == F("/getLatestValues") || url == F("/measure");
+}
 
 RouterResult SensorHandler::onRegisterRoutes(WebRouter& router) {
   LOG_DEBUG(F("SensorHandler"), F("Registriere Sensor-Routen"));
@@ -26,7 +31,106 @@ RouterResult SensorHandler::onRegisterRoutes(WebRouter& router) {
   if (!latestResult.isSuccess())
     return latestResult;
 
+  // Sofortmessung von der Startseite aus (ohne Anmeldung, siehe handleMeasure).
+  // Bewusst hier und nicht im AdminSensorHandler: dieser Handler liegt wegen
+  // /getLatestValues ohnehin im Handler-Cache, solange jemand die Startseite
+  // ansieht. Der AdminSensorHandler müsste bei jedem Klick neu gebaut werden
+  // und verdrängte dabei andere Handler aus dem Dreier-Cache.
+  auto measureResult = router.addRoute(HTTP_POST, "/measure", [this]() { handleMeasure(); });
+  if (!measureResult.isSuccess())
+    return measureResult;
+
   return RouterResult::success();
+}
+
+void SensorHandler::handleMeasure() {
+  // Die Drossel ist funktionslokal statisch, kein Member: der Handler wird vom
+  // LRU-Cache des WebManagers jederzeit zerstört und neu gebaut, ein Member
+  // vergäße die Sperre dabei und der Endpunkt wäre unbegrenzt aufrufbar.
+  static RequestThrottle throttle(MEASURE_MIN_INTERVAL_MS);
+
+  uint32_t freeHeap = ESP.getFreeHeap();
+  if (freeHeap < 4096) {
+    LOG_WARN(F("SensorHandler"),
+             String(F("Nicht genügend Speicher für Sofortmessung: ")) + String(freeHeap));
+    sendJsonResponse(503, F("{\"success\":false,\"error\":\"Nicht genügend Speicher\"}"));
+    return;
+  }
+
+  String sensorId = _server.arg("sensor");
+  if (sensorId.length() == 0) {
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Fehlende Sensor-ID\"}"));
+    return;
+  }
+
+  // Der Endpunkt ist offen, die ID landet im Log und in der Antwort: alles
+  // außer dem Format der echten Sensor-IDs wird gar nicht erst weitergereicht.
+  if (sensorId.length() > 32) {
+    sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültige Sensor-ID\"}"));
+    return;
+  }
+  for (size_t i = 0; i < sensorId.length(); i++) {
+    char c = sensorId[i];
+    bool erlaubt = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') ||
+                   c == '_' || c == '-';
+    if (!erlaubt) {
+      sendJsonResponse(400, F("{\"success\":false,\"error\":\"Ungültige Sensor-ID\"}"));
+      return;
+    }
+  }
+
+  if (!_sensorManager.isHealthy()) {
+    sendJsonResponse(503,
+                     F("{\"success\":false,\"error\":\"Sensor-Manager nicht betriebsbereit\"}"));
+    return;
+  }
+
+  Sensor* sensor = _sensorManager.getSensor(sensorId);
+  if (!sensor) {
+    LOG_WARN(F("SensorHandler"), String(F("Sofortmessung: Sensor nicht gefunden: ")) + sensorId);
+    sendJsonResponse(404, F("{\"success\":false,\"error\":\"Sensor nicht gefunden\"}"));
+    return;
+  }
+
+  // forceImmediateMeasurement() prüft das nicht - ohne diesen Zweig meldete der
+  // Server Erfolg und die Oberfläche wartete auf einen Wert, der nie kommt.
+  if (!sensor->isEnabled() || !sensor->isInitialized()) {
+    sendJsonResponse(409, F("{\"success\":false,\"error\":\"Sensor ist nicht betriebsbereit\"}"));
+    return;
+  }
+
+  // Eine erzwungene Messung verdrängt den aktuellen Slot-Halter (siehe
+  // SensorPreemption). Läuft schon eine, wird nicht noch eine hinterhergeschoben
+  // - sonst könnten dauernde Aufrufe die regulären Intervallmessungen aushungern.
+  if (_sensorManager.hasForcedMeasurement()) {
+    _server.sendHeader(F("Retry-After"), F("5"));
+    sendJsonResponse(429, F("{\"success\":false,\"error\":\"Es läuft bereits eine "
+                            "Sofortmessung\",\"retryAfterMs\":5000}"));
+    return;
+  }
+
+  // Die Drossel wird ganz zuletzt gezogen: sie soll die Messung begrenzen, nicht
+  // die Fehlerfälle. Ein Aufruf mit unbekannter Sensor-ID sperrt so den nächsten
+  // gültigen nicht aus.
+  if (!throttle.tryAcquire(millis())) {
+    uint32_t restMs = throttle.remaining(millis());
+    _server.sendHeader(F("Retry-After"), F("2"));
+    sendJsonResponse(429, String(F("{\"success\":false,\"error\":\"Zu viele Anfragen\","
+                                   "\"retryAfterMs\":")) +
+                              String(restMs) + F("}"));
+    return;
+  }
+
+  if (!_sensorManager.forceImmediateMeasurement(sensorId)) {
+    LOG_ERROR(F("SensorHandler"),
+              String(F("Sofortmessung konnte nicht geplant werden: ")) + sensorId);
+    sendJsonResponse(500, F("{\"success\":false,\"error\":\"Fehler beim Planen der Messung\"}"));
+    return;
+  }
+
+  LOG_INFO(F("SensorHandler"), String(F("Sofortmessung von der Startseite: ")) + sensorId);
+  sendJsonResponse(200, String(F("{\"success\":true,\"sensor\":\"")) + sensorId +
+                            F("\",\"cooldownMs\":") + String(MEASURE_MIN_INTERVAL_MS) + F("}"));
 }
 
 HandlerResult SensorHandler::handleGet(const String& /*uri*/,
