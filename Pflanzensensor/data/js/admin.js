@@ -530,83 +530,6 @@ window.addEventListener('load', () => {
   // No legacy redirect handling required: uploads return JSON now.
 });
 
-// --- Reboot modal for config upload ---
-function showRebootModal(seconds, message, redirectTo = '/admin') {
-    // Create modal elements if not present
-    let modal = document.getElementById('reboot-modal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'reboot-modal';
-        modal.style.position = 'fixed';
-        modal.style.left = '0';
-        modal.style.top = '0';
-        modal.style.width = '100%';
-        modal.style.height = '100%';
-        modal.style.background = 'rgba(0,0,0,0.6)';
-        modal.style.display = 'flex';
-        modal.style.alignItems = 'center';
-        modal.style.justifyContent = 'center';
-        modal.style.zIndex = '9999';
-
-        const box = document.createElement('div');
-        box.id = 'reboot-box';
-        box.style.background = '#fff';
-        box.style.color = '#000';
-        box.style.padding = '30px';
-        box.style.borderRadius = '8px';
-        box.style.maxWidth = '480px';
-        box.style.textAlign = 'center';
-        box.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)';
-
-        const h = document.createElement('h3');
-        h.id = 'reboot-title';
-        h.style.marginTop = '0';
-        box.appendChild(h);
-
-        const p = document.createElement('p');
-        p.id = 'reboot-message';
-        p.style.whiteSpace = 'pre-wrap';
-        p.style.marginBottom = '20px';
-        box.appendChild(p);
-
-        const counter = document.createElement('div');
-        counter.id = 'reboot-counter';
-        counter.style.fontSize = '20px';
-        counter.style.fontWeight = 'bold';
-        counter.style.marginTop = '12px';
-        box.appendChild(counter);
-
-        modal.appendChild(box);
-        document.body.appendChild(modal);
-    }
-
-    // Update title based on redirect target
-    const titleEl = document.getElementById('reboot-title');
-    if (redirectTo === '/') {
-        titleEl.textContent = 'System wird neu gestartet...';
-    } else {
-        titleEl.textContent = 'Konfiguration wird angewendet';
-    }
-
-    document.getElementById('reboot-message').textContent = message;
-    let remaining = seconds;
-    const counterEl = document.getElementById('reboot-counter');
-    counterEl.textContent = `Weiterleitung in ${remaining} Sekunden...`;
-
-    const interval = setInterval(() => {
-        remaining--;
-        if (remaining <= 0) {
-            clearInterval(interval);
-            // Remove modal and redirect
-            const m = document.getElementById('reboot-modal');
-            if (m) m.parentNode.removeChild(m);
-            window.location.href = redirectTo;
-            return;
-        }
-        counterEl.textContent = `Weiterleitung in ${remaining} Sekunden...`;
-    }, 1000);
-}
-
 // --- Config upload handler (auto-initialized) ---
 (function initConfigUpload() {
     const fileInput = document.getElementById('configFile');
@@ -624,11 +547,24 @@ function showRebootModal(seconds, message, redirectTo = '/admin') {
                         return r.json();
                     })
                     .then(data => {
-                        if (data.success && data.rebootPending) {
-                            showRebootModal(60, data.message || 'Konfiguration wird wiederhergestellt...', '/');
-                        } else {
+                        if (!data.success || !data.rebootPending) {
                             alert('Fehler: ' + (data.message || 'Unbekannter Fehler'));
+                            return;
                         }
+                        if (!window.DeviceWait) {
+                            // Altes Dateisystem ohne devicewait.js - wie bisher
+                            // blind warten, statt gar nichts zu tun.
+                            alert(data.message || 'Konfiguration wird wiederhergestellt...');
+                            return;
+                        }
+                        // Der Neustart läuft bereits, es gibt nichts mehr
+                        // auszulösen - nur noch warten.
+                        DeviceWait.runReboot({
+                            trigger: null,
+                            title: 'Konfiguration wird angewendet',
+                            message: data.message || 'Konfiguration wird wiederhergestellt...',
+                            timeoutMs: 180000
+                        });
                     })
                     .catch(err => {
                         alert('Netzwerkfehler: ' + err.message);
@@ -637,5 +573,57 @@ function showRebootModal(seconds, message, redirectTo = '/admin') {
                 e.target.value = ''; // Clear selection if cancelled
             }
         }
+    });
+})();
+
+// --- Systemaktionen: Neustart und Zurücksetzen ---
+// Fängt die beiden Formulare ab, damit der Nutzer auf /admin bleibt. Der
+// frühere Formular-POST wechselte auf eine Antwortseite, die ihrerseits
+// /css/*.css und /js/admin.js nachladen wollte - was nie klappte, weil das
+// Gerät 200 ms später neu startete. Hier bleiben Skript und Styles geladen.
+(function initSystemActions() {
+    // Ohne devicewait.js (altes Dateisystem, neue Firmware) passiert hier
+    // nichts und der gewöhnliche Formular-POST wirkt weiter.
+    if (!window.DeviceWait) return;
+
+    function bind(formId, opts) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!confirm(opts.confirm)) return;
+            DeviceWait.runReboot({
+                trigger: function () {
+                    return fetch(form.action + '?ajax=1', {
+                        method: 'POST',
+                        credentials: 'same-origin'
+                    });
+                },
+                title: opts.title,
+                message: opts.message,
+                timeoutMs: opts.timeoutMs,
+                failureHint: opts.failureHint
+            });
+        });
+    }
+
+    bind('rebootForm', {
+        confirm: 'Gerät wirklich neu starten?',
+        title: 'Gerät startet neu...',
+        message: 'Die Seite lädt automatisch neu, sobald das Gerät wieder antwortet.',
+        timeoutMs: 90000
+    });
+
+    bind('resetForm', {
+        confirm: 'Wirklich alle Einstellungen zurücksetzen?\n\n'
+               + 'Auch WLAN-Zugangsdaten und Admin-Passwort werden auf die '
+               + 'Werkseinstellungen zurückgesetzt. Das Gerät ist danach '
+               + 'möglicherweise nicht mehr unter dieser Adresse erreichbar.',
+        title: 'Einstellungen werden zurückgesetzt...',
+        message: 'Die Seite lädt automatisch neu, sobald das Gerät wieder antwortet.',
+        timeoutMs: 120000,
+        failureHint: 'Beim Zurücksetzen ist das zu erwarten: das Gerät nutzt jetzt '
+                   + 'wieder die voreingestellten WLAN-Zugangsdaten, und das '
+                   + 'Admin-Passwort steht auf dem Standardwert.'
     });
 })();

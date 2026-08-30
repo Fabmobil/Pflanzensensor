@@ -878,3 +878,49 @@ button.warning:hover,
 .stats-labels .nav-item {
   font-size: clamp(0.6em, 1.8vw + 0.2em, 1.1em);
 }
+
+/* === Warten auf das Gerät nach einem Neustart (devicewait.js) === */
+/* Ersetzt das frühere showRebootModal, das seine ~20 Stilangaben inline im JS
+   trug und mit weißem Kasten auf schwarzem Text aus dem dunklen Thema fiel. */
+.devicewait-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1em;
+}
+
+.devicewait-box {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  color: #f2f2f2;
+  padding: 1.8em;
+  max-width: 520px;
+  width: 100%;
+  text-align: center;
+}
+
+.devicewait-title {
+  margin-top: 0;
+  margin-bottom: 0.6em;
+}
+
+.devicewait-message {
+  white-space: pre-wrap;
+  margin-bottom: 1em;
+}
+
+.devicewait-detail {
+  font-weight: 600;
+  min-height: 1.4em;
+  color: #bbdefb;
+}
+
+.devicewait-actions:not(:empty) {
+  margin-top: 1.2em;
+}

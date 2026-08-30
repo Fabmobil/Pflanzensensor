@@ -210,6 +210,14 @@ private:
    */
   void handleReboot();
 
+  /**
+   * @brief Antwort abschließen und Gerät neu starten
+   * @details Drückt die bereits gesendete Antwort raus, schließt die
+   *          Verbindung und startet erst dann neu. Gemeinsam genutzt von
+   *          handleReboot() und handleConfigReset().
+   */
+  void finishAndRestart();
+
   // Utility methods - implemented in admin_handler_utils.cpp
   /**
    * @brief Processes configuration updates from form submission

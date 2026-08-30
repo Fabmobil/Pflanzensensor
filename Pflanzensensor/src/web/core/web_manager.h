@@ -176,6 +176,24 @@ public:
    */
   void resetUpdateModeStartTime() { m_updateModeStartTime = 0; }
 
+  /**
+   * @brief Frist des Update-Modus verlängern, solange Daten ankommen
+   * @details Der Update-Modus beendet sich nach m_updateModeTimeout selbst,
+   *          damit ein versehentlich hineingeratenes Gerät nicht dort
+   *          festhängt. Gemessen wurde die Frist aber ab dem Eintritt in den
+   *          Modus - und ein Dateisystem-Abbild von knapp einem Megabyte
+   *          braucht über WLAN länger als die Frist. Die Abschaltung schlug
+   *          dann mitten im laufenden Upload zu und startete das Gerät neu,
+   *          womit das Update genau dann scheiterte, wenn die Verbindung
+   *          langsam war. Jedes ankommende Paket schiebt die Frist deshalb
+   *          weiter: sie wirkt jetzt als Leerlauf-, nicht als Gesamtfrist.
+   */
+  void noteUpdateModeActivity() {
+    if (m_updateModeStartTime != 0) {
+      m_updateModeStartTime = millis();
+    }
+  }
+
 private:
   static const size_t MAX_ACTIVE_HANDLERS = 3; ///< Maximum number of cached handlers
 

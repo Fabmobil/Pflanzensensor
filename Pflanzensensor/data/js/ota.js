@@ -37,6 +37,11 @@ async function startUpdate() {
     }
 
     try {
+        // Zustand VOR dem Neustart merken - daran erkennt DeviceWait später,
+        // ob das Gerät wirklich neu gestartet ist oder nur noch kurz auf der
+        // alten Instanz antwortet.
+        const baseline = await DeviceWait.getStatus();
+
         // Setze Update-Flags
         showStatus('Setze Update-Flags...', 'info');
 
@@ -62,17 +67,22 @@ async function startUpdate() {
             console.log('Update flags request failed (expected if device is rebooting):', flagsError.message);
         }
 
-        // Warte kurz, damit der ESP Zeit hat, die Flags zu verarbeiten und neu zu starten
-        showStatus('Update-Flags gesetzt, warte auf Neustart...', 'info');
-        await new Promise(r => setTimeout(r, 2000)); // 2 Sekunden warten
-
-        // Warte bis Gerät im Update-Modus ist (poll /status). Wenn das Gerät
-        // etwas länger zum Umbau in den Update-Modus braucht, vermeiden wir
-        // so ein vorzeitiges Abbrechen des Uploads. Erhöhe Timeout auf 90s.
+        // Warten, bis das Gerät neu gestartet UND im Update-Modus ist. Die
+        // feste Wartezeit von vorher steckt jetzt in settleMs.
         showStatus('Warte, bis Gerät in den Update-Modus wechselt...', 'info');
-        const waitOk = await waitForUpdateMode(90000, 1000);
-        if (!waitOk) {
-            throw new Error('Timeout waiting for device to enter update mode (90s)');
+        const entered = await DeviceWait.waitForDevice({
+            // Kein Neustartnachweis: inUpdateMode ist selbst der Zustand, auf
+            // den gewartet wird. Beim Dateisystem-Update sichert
+            // setUpdateFlags() vorher den Flash und antwortet dabei fast eine
+            // Minute nicht - das Gerät ist dann längst neu gestartet, bevor
+            // hier der erste Poll läuft.
+            requireReboot: false,
+            until: s => s.inUpdateMode === true,
+            timeoutMs: 90000,
+            onProgress: otaProgress(0, 20)
+        });
+        if (!entered.ok) {
+            throw new Error('Gerät ist nicht in den Update-Modus gewechselt (90 s)');
         }
 
         showStatus('Update-Modus aktiv, bereit für Upload', 'success');
@@ -107,49 +117,80 @@ async function startUpdate() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 300000); // 5 minutes
 
+        // Ob der Upload geklappt hat, entscheidet NICHT die Antwort auf den
+        // Upload: das Gerät setzt sich unmittelbar nach dem Schreiben selbst
+        // zurück ("Sofortiger Reset wird erzwungen"), und die Antwort geht
+        // dabei oft unterwegs verloren. Am Gerät ließ sich das direkt
+        // nachlesen - "Update erfolgreich: 744256 Bytes", danach ein sauberer
+        // Reset, während der Browser auf eine Antwort wartete, die nie kam.
+        // Früher wurde daraus eine Fehlermeldung, obwohl das Update lief.
+        //
+        // Entschieden wird stattdessen danach, ob das Gerät wieder hochkommt
+        // und den Update-Modus verlassen hat. Ist der Upload wirklich
+        // gescheitert, bleibt das Gerät im Update-Modus und die Wartefrist
+        // läuft ab - dann ist es ein echter Fehler.
+        let result = null;
         try {
             const response = await fetch(uploadUrl, {
                 method: 'POST',
                 body: formData,
                 signal: controller.signal
             });
-
             clearTimeout(timeoutId);
-
-            if (!response.ok) {
-                throw new Error(`Upload failed: ${response.statusText}`);
-            }
-
-            // Parse response to check for restore pending
-            const result = await response.json().catch(() => ({ success: true }));
-
-            if (result.restorePending) {
-                // Update progress to 40% when upload complete
-                updateProgress(40);
-                showStatus('Filesystem aktualisiert...', 'success');
-
-                // Show restore pending message with countdown in status area
-                // Device will reboot twice - first to restore config, then normal boot
-                setTimeout(() => {
-                    updateProgress(70);
-                    showRestoreCountdown(45, result.message || 'Einstellungen werden nach Neustart wiederhergestellt.');
-                }, 500);
+            if (response.ok) {
+                result = await response.json().catch(() => ({ success: true }));
             } else {
-                // Standard success handling
-                showStatus('Update erfolgreich! Gerät startet neu...', 'success');
-                updateProgress(100);
-
-                // Warte auf Neustart und Redirect
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 10000);
+                console.log('Upload-Antwort war ' + response.status + ' - Gerät wird trotzdem geprüft');
             }
-        } catch (fetchError) {
+        } catch (uploadError) {
             clearTimeout(timeoutId);
-            if (fetchError.name === 'AbortError') {
+            if (uploadError.name === 'AbortError') {
                 throw new Error('Upload-Timeout (5 Minuten überschritten)');
             }
-            throw fetchError;
+            console.log('Verbindung beim Upload abgerissen (Gerät setzt sich vermutlich gerade zurück):',
+                        uploadError.message);
+        }
+        result = result || {};
+
+        {
+            // Nach dem Upload startet das Gerät neu - beim Dateisystem-Update
+            // sogar zweimal (erst der Restore-Boot, dann der Normalboot).
+            // Gewartet wird deshalb nicht auf eine Uhr, sondern darauf, dass
+            // das Gerät wieder antwortet UND den Update-Modus verlassen hat.
+            // Das ist das eigentliche Fertig-Signal: es weist auch ein Gerät
+            // zurück, das schon antwortet, aber noch im Update-Modus steht -
+            // und deckt den doppelten Neustart damit konstruktiv ab statt
+            // zufällig über eine passend gewählte Wartezeit.
+            if (result.restorePending) {
+                showStatus(result.message || 'Dateisystem aktualisiert, Einstellungen werden wiederhergestellt...', 'info');
+            } else {
+                showStatus('Upload abgeschlossen, warte auf Neustart...', 'info');
+            }
+            updateProgress(70);
+
+            const done = await DeviceWait.waitForDevice({
+                // Hier ist der Neustart Pflicht: das Gerät wird gerade neu
+                // beschrieben und geht dabei sicher weg. Der Basiswert ist der
+                // Zustand aus dem Update-Modus - ohne ihn würde schon ein
+                // einsekündiger Netzaussetzer als "wieder da" durchgehen und
+                // ein fehlgeschlagenes Update als Erfolg gemeldet.
+                baseline: entered.status,
+                until: s => !s.inUpdateMode,
+                timeoutMs: isFileSystem ? 180000 : 120000,
+                onProgress: otaProgress(70, 99)
+            });
+
+            if (done.ok) {
+                updateProgress(100);
+                showStatus('Update abgeschlossen, Gerät ist wieder da.', 'success');
+                window.location.href = '/';
+            } else {
+                showStatus('Das Gerät hat sich nicht zurückgemeldet und den Update-Modus '
+                         + 'nicht verlassen - das Update ist vermutlich fehlgeschlagen. '
+                         + 'Prüfe die auf dem Display angezeigte IP-Adresse; das Gerät '
+                         + 'bleibt über /admin/update erreichbar, um es erneut zu '
+                         + 'versuchen.', 'error');
+            }
         }
 
     } catch (error) {
@@ -157,69 +198,6 @@ async function startUpdate() {
         console.error('Update error:', error);
         uploadInProgress = false;
     }
-}
-
-// Poll /status until device reports inUpdateMode or timeout.
-// timeoutMs: maximum time to wait, intervalMs: poll interval
-async function waitForUpdateMode(timeoutMs = 15000, intervalMs = 1000) {
-    const deadline = Date.now() + timeoutMs;
-    let consecutiveErrors = 0;
-    const maxConsecutiveErrors = 5; // Maximal 5 Fehler hintereinander, dann aufgeben
-    let deviceResponded = false; // Track if device ever responded
-
-    while (Date.now() < deadline) {
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s Timeout pro Request
-
-            const resp = await fetch('/status', {
-                signal: controller.signal,
-                cache: 'no-cache',  // Prevent caching
-                headers: {
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache'
-                }
-            });
-            clearTimeout(timeoutId);
-
-            if (resp.ok) {
-                deviceResponded = true;
-                const json = await resp.json().catch(e => {
-                    console.log('Failed to parse JSON:', e);
-                    return null;
-                });
-
-                if (json && json.inUpdateMode) {
-                    console.log('Device is in update mode');
-                    return true;
-                }
-
-                // Device responded but not in update mode yet
-                console.log('Device responded, not in update mode yet. Uptime:', json?.uptime);
-                consecutiveErrors = 0;
-            } else {
-                console.log('Status check returned non-OK status:', resp.status);
-                consecutiveErrors++;
-            }
-        } catch (e) {
-            // Network error or timeout - device might be rebooting
-            consecutiveErrors++;
-
-            // If we never got a response, be more lenient with errors (device might still be booting)
-            const errorThreshold = deviceResponded ? maxConsecutiveErrors : 10;
-
-            console.log(`Status check failed (${consecutiveErrors}/${errorThreshold}): ${e.message}`);
-
-            // If too many consecutive errors AFTER device responded once, something is wrong
-            if (consecutiveErrors >= errorThreshold) {
-                console.error('Too many consecutive errors, giving up');
-                return false;
-            }
-        }
-        await new Promise(r => setTimeout(r, intervalMs));
-    }
-    console.error('Timeout waiting for update mode');
-    return false;
 }
 
 // Hilfsfunktionen für die UI
@@ -287,98 +265,16 @@ if (window.XMLHttpRequest) {
     window.XMLHttpRequest = newXHR;
 }
 
-// Show restore countdown in status area (not modal)
-function showRestoreCountdown(seconds, message) {
-    const statusDiv = document.getElementById('status');
-    if (!statusDiv) return;
-
-    let remaining = seconds;
-
-    const updateCountdown = () => {
-        statusDiv.className = 'status-success';
-        statusDiv.innerHTML = `
-            <strong>Einstellungen werden wiederhergestellt</strong><br>
-            ${message}<br><br>
-            <strong style="font-size:1.2em">Neustart in ${remaining} Sekunden...</strong>
-        `;
+/**
+ * Bildet die Phasen von DeviceWait.waitForDevice auf die vorhandene
+ * Fortschrittsanzeige der OTA-Seite ab (#status und #progress).
+ * @param {number} from Balkenstand zu Beginn des Wartens
+ * @param {number} to   Balkenstand am Ende der Wartefrist
+ */
+function otaProgress(from, to) {
+    return function (p) {
+        showStatus(DeviceWait.phaseText(p), p.phase === 'ready' ? 'success' : 'info');
+        const frac = Math.min(p.elapsedMs / p.timeoutMs, 1);
+        updateProgress(from + Math.round(frac * (to - from)));
     };
-
-    updateCountdown();
-
-    const interval = setInterval(() => {
-        remaining--;
-        if (remaining <= 0) {
-            clearInterval(interval);
-            statusDiv.innerHTML = 'Lade neu...';
-            window.location.href = '/';
-            return;
-        }
-        updateCountdown();
-    }, 1000);
 }
-
-    // --- Old modal version (kept for compatibility but not used) ---
-    function showRestoreModal(seconds, message) {
-        // Create modal elements if not present
-        let modal = document.getElementById('restore-modal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.id = 'restore-modal';
-            modal.style.position = 'fixed';
-            modal.style.left = '0';
-            modal.style.top = '0';
-            modal.style.width = '100%';
-            modal.style.height = '100%';
-            modal.style.background = 'rgba(0,0,0,0.6)';
-            modal.style.display = 'flex';
-            modal.style.alignItems = 'center';
-            modal.style.justifyContent = 'center';
-            modal.style.zIndex = 9999;
-
-            const box = document.createElement('div');
-            box.id = 'restore-box';
-            box.style.background = '#fff';
-            box.style.color = '#000';
-            box.style.padding = '20px';
-            box.style.borderRadius = '8px';
-            box.style.maxWidth = '480px';
-            box.style.textAlign = 'center';
-            box.style.boxShadow = '0 8px 24px rgba(0,0,0,0.3)';
-
-            const h = document.createElement('h3');
-            h.textContent = 'Einstellungen werden wiederhergestellt';
-            box.appendChild(h);
-
-            const p = document.createElement('p');
-            p.id = 'restore-message';
-            p.style.whiteSpace = 'pre-wrap';
-            box.appendChild(p);
-
-            const counter = document.createElement('div');
-            counter.id = 'restore-counter';
-            counter.style.fontSize = '20px';
-            counter.style.marginTop = '12px';
-            box.appendChild(counter);
-
-            modal.appendChild(box);
-            document.body.appendChild(modal);
-        }
-
-        document.getElementById('restore-message').textContent = message;
-        let remaining = seconds;
-        const counterEl = document.getElementById('restore-counter');
-        counterEl.textContent = `Neustart in ${remaining} Sekunden...`;
-
-        const interval = setInterval(() => {
-            remaining--;
-            if (remaining <= 0) {
-                clearInterval(interval);
-                // Remove modal and reload start page
-                const m = document.getElementById('restore-modal');
-                if (m) m.parentNode.removeChild(m);
-                window.location.href = '/';
-                return;
-            }
-            counterEl.textContent = `Neustart in ${remaining} Sekunden...`;
-        }, 1000);
-    }

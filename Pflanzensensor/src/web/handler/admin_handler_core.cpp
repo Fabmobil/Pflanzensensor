@@ -147,7 +147,10 @@ void AdminHandler::handleAdminPage() {
   logger.logMemoryStats(F("AdminPageStart"));
 
   std::vector<String> css = {"admin"};
-  std::vector<String> js = {"admin"};
+  // devicewait zuerst: Component::endResponse() gibt die Skripte in
+  // Vektorreihenfolge aus, window.DeviceWait muss also stehen, bevor
+  // das Seitenskript läuft.
+  std::vector<String> js = {"devicewait", "admin"};
   renderAdminPage(
       ConfigMgr.getDeviceName(), "admin",
       [this]() {

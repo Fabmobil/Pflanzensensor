@@ -140,13 +140,17 @@ void AdminHandler::generateAndSendSystemSettingsCard() {
 void AdminHandler::generateAndSendSystemActionsCard() {
   sendChunk(F("<div class='card'><h3>Systemaktionen</h3>"));
   sendChunk(F("<div class='button-group'>"));
-  sendChunk(F("<form action='/admin/reset' method='POST' class='inline'>"));
-  sendChunk(F("<button type='submit' onclick='return confirm(\"Wirklich alle "
-              "Einstellungen zurücksetzen?\")' class='button "
+  // Die Formulare bleiben als Rückfallebene ohne JavaScript bestehen. Ist
+  // /js/devicewait.js da, fängt admin.js das Absenden ab, bleibt auf dieser
+  // Seite und wartet dort auf das Gerät (initSystemActions). Die Rückfrage
+  // steckt deshalb nicht mehr in einem onclick: sie gehört zum JS-Ablauf,
+  // damit ein Abbruch kein halboffenes Overlay hinterlässt und der Text beim
+  // Zurücksetzen die Folgen für WLAN und Passwort nennen kann.
+  sendChunk(F("<form action='/admin/reset' method='POST' class='inline' id='resetForm'>"));
+  sendChunk(F("<button type='submit' class='button "
               "button-danger'>Einstellungen zurücksetzen</button></form>"));
-  sendChunk(F("<form action='/admin/reboot' method='POST' class='inline'>"));
-  sendChunk(F("<button type='submit' onclick='return confirm(\"Gerät wirklich neu "
-              "starten?\")' class='button button-warning'>Neustart "
+  sendChunk(F("<form action='/admin/reboot' method='POST' class='inline' id='rebootForm'>"));
+  sendChunk(F("<button type='submit' class='button button-warning'>Neustart "
               "durchführen</button></form>"));
   if (ConfigMgr.isFileLoggingEnabled()) {
     sendChunk(F("<form action='/admin/downloadLog' method='GET' class='inline'>"));

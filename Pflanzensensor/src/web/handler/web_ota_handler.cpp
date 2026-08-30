@@ -5,6 +5,7 @@
 
 #include "web_ota_handler.h"
 #include "web/core/web_auth.h"
+#include "web/core/web_manager.h"
 
 #include <ArduinoJson.h>
 #include <LittleFS.h>
@@ -110,7 +111,10 @@ void WebOTAHandler::handleUpdatePage() {
   // Bindung: jede weitere Definition gleichen Namens in einer anderen
   // Übersetzungseinheit wäre ein ODR-Verstoß gewesen.
   const std::vector<String> css = {"admin"};
-  const std::vector<String> js = {"ota"};
+  // devicewait zuerst: Component::endResponse() gibt die Skripte in
+  // Vektorreihenfolge aus, window.DeviceWait muss also stehen, bevor
+  // das Seitenskript läuft.
+  const std::vector<String> js = {"devicewait", "ota"};
 
   renderAdminPage(
       ConfigMgr.getDeviceName(), "admin/update",
@@ -430,6 +434,9 @@ void WebOTAHandler::handleUpdateUpload() {
   case UPLOAD_FILE_WRITE: {
     if (!_status.inProgress)
       return;
+
+    // Solange Daten ankommen, läuft der Update-Modus nicht ab.
+    WebManager::getInstance().noteUpdateModeActivity();
 
     if (Update.write(upload.buf, upload.currentSize) != upload.currentSize) {
       if (!errorReported) {

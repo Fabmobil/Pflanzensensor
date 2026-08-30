@@ -320,24 +320,31 @@ void loop() {
 
   // Handle update mode if active
   if (ConfigMgr.getDoFirmwareUpgrade()) {
+    auto& web = WebManager::getInstance();
+    unsigned long updateStart = web.getUpdateModeStartTime();
+    unsigned long timeout = web.getUpdateModeTimeout();
+
+    // Die Frist wird in JEDEM Durchlauf geprüft, nicht mehr nur alle 30 s
+    // zusammen mit der Debug-Ausgabe. Vorher konnte eine 60-Sekunden-Frist
+    // erst nach bis zu 90 s auffallen. Sie ist außerdem eine Leerlauffrist:
+    // noteUpdateModeActivity() schiebt sie bei jedem Upload-Paket weiter, ein
+    // laufender Upload wird also nicht mehr mittendrin abgebrochen.
+    if (updateStart > 0 && currentMillis - updateStart > timeout) {
+      LOG_WARN(F("main"), F("Update-Mode Timeout erreicht. Beende "
+                            "Update-Modus automatisch."));
+      ConfigMgr.setUpdateFlags(false, false);
+      web.resetUpdateModeStartTime();
+      LOG_WARN(F("main"), F("ESP startet neu."));
+      ESP.restart(); // Force reboot to reload config and exit update mode
+      return;
+    }
+
     // Debug: Log update mode recovery state (every 30 seconds)
     if (currentMillis - lastUpdateModeLog >= 30000) {
       LOG_DEBUG(F("main"), F("[UpdateMode] loop: getDoFirmwareUpgrade()=true"));
-      auto& web = WebManager::getInstance();
-      unsigned long updateStart = web.getUpdateModeStartTime();
-      unsigned long timeout = web.getUpdateModeTimeout();
       LOG_DEBUG(F("main"), String(F("[UpdateMode] loop: currentMillis=")) + String(currentMillis) +
                                String(F(", updateStart=")) + String(updateStart) +
                                String(F(", timeout=")) + String(timeout));
-      if (updateStart > 0 && currentMillis - updateStart > timeout) {
-        LOG_WARN(F("main"), F("Update-Mode Timeout erreicht. Beende "
-                              "Update-Modus automatisch."));
-        ConfigMgr.setUpdateFlags(false, false);
-        web.resetUpdateModeStartTime();
-        LOG_WARN(F("main"), F("ESP startet neu."));
-        ESP.restart(); // Force reboot to reload config and exit update mode
-        return;
-      }
       lastUpdateModeLog = currentMillis;
     }
     WebManager::getInstance().handleClient();

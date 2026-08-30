@@ -191,8 +191,13 @@ void WebManager::setupMiddleware() {
   // Pfade sind ohne Anmeldung erreichbar, alles andere verlangt Authentifizierung.
   // Vorher wurde nur /admin* geprüft — dadurch war z.B. /logs frei zugänglich.
   _router->addMiddleware([this](HTTPMethod method, String url) {
-    // Öffentliche Routen: Startseite, deren Live-Daten und statische Assets
-    if (url == "/" || url == "/getLatestValues" || url.startsWith("/css/") ||
+    // Öffentliche Routen: Startseite, deren Live-Daten und statische Assets.
+    // /status ist bewusst dabei: die Oberfläche pollt es nach jedem Neustart, um
+    // festzustellen, wann das Gerät wieder da ist - unter anderem nach dem
+    // Zurücksetzen, das Admin-Passwort und WLAN-Zugangsdaten mit zurücksetzt und
+    // eine angemeldete Abfrage damit unmöglich macht. Im Minimalmodus ist /status
+    // ohnehin schon frei, weil beginUpdateMode() keine Middleware einrichtet.
+    if (url == "/" || url == "/status" || url == "/getLatestValues" || url.startsWith("/css/") ||
         url.startsWith("/js/") || url.startsWith("/img/") || url.startsWith("/favicon")) {
       return true;
     }
