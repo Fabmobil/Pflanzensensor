@@ -1,4 +1,20 @@
 /**
+ * admin.js - Grundlage aller Admin-Seiten.
+ *
+ * Diese Datei definiert die seitenübergreifenden Helfer showSuccessMessage(),
+ * showErrorMessage() und parseJsonResponse(). admin_display.js und
+ * admin_sensors.js benutzen sie, ohne sie selbst zu definieren, und werden
+ * deshalb IMMER zusammen mit dieser Datei geladen - siehe die js-Vektoren in
+ * den Handlern, etwa {"admin", "admin_display"}.
+ *
+ * Die Reihenfolge dort ist bindend: Component::endResponse() gibt die Skripte
+ * in Vektorreihenfolge aus, admin.js muss also zuerst kommen. Wer hier einen
+ * Helfer ergänzt, darf ihn in den anderen Dateien nicht erneut definieren -
+ * die später geladene Definition gewinnt sonst stillschweigend für die ganze
+ * Seite. Genau so hatte admin_display.js die robustere parseJsonResponse()
+ * von hier verdrängt.
+ */
+/**
  * @fileoverview Admin panel functionality
  */
 
@@ -124,20 +140,6 @@ function setConfigValue(namespace, key, value, type) {
   });
 }
 
-function confirmReboot() {
-  if(confirm('Gerät wirklich neu starten?')) {
-    window.location.href = '/admin/reboot';
-  }
-  return false;
-}
-
-function confirmReset() {
-  if(confirm('Wirklich alle Einstellungen zurücksetzen?')) {
-    window.location.href = '/admin/reset';
-  }
-  return false;
-}
-
 /**
  * Updates the navigation to show active items and handle dropdowns
  */
@@ -214,8 +216,6 @@ window.addEventListener('load', () => {
 });
 
 // NOTE: Upload form handling removed - configuration now in Preferences (EEPROM)
-// OLD REMOVED: Upload form event listener for upload-config-form
-
 // --- Global AJAX Message Functions (shared across admin pages) ---
 function showSuccessMessage(message) {
   let messageElement = document.getElementById('ajax-message');
@@ -527,7 +527,6 @@ window.addEventListener('load', () => {
         });
       });
     }
-  // No legacy redirect handling required: uploads return JSON now.
 });
 
 // --- Config upload handler (auto-initialized) ---

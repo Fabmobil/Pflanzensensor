@@ -1,3 +1,11 @@
+/**
+ * admin_sensors.js - Sensor-Verwaltung.
+ *
+ * Setzt admin.js voraus (js-Vektor {"admin", "admin_sensors"}) und nutzt von
+ * dort showErrorMessage(), showSuccessMessage() und parseJsonResponse(). Diese
+ * Helfer hier nicht erneut definieren - die später geladene Definition würde
+ * die aus admin.js für die ganze Seite verdrängen.
+ */
 /*
  * admin_sensors.js (ES5-compatible refactor)
  * - avoids ES6+ syntax (no class, no arrow functions, no template strings)
@@ -907,9 +915,9 @@ var SensorUpdater = (function () {
       var sensorData = sensors[sensorKey];
       updateMeasuredValue(sensorKey, sensorData);
       updateRawValue(sensorKey, sensorData);
-      updateAbsoluteMinMax(sensorKey, sensorData);
-      updateAbsoluteRawMinMax(sensorKey, sensorData);
-      updateCalibrationMode(sensorKey, sensorData);
+      applyAbsoluteMinMax(sensorKey, sensorData);
+      applyAbsoluteRawMinMax(sensorKey, sensorData);
+      applyCalibrationMode(sensorKey, sensorData);
       // If server emitted minmax (calculation limits), update them in the UI
       try {
         if (sensorData.minmax && typeof sensorData.minmax.min !== 'undefined' && typeof sensorData.minmax.max !== 'undefined') {
@@ -959,9 +967,43 @@ var SensorUpdater = (function () {
     if (typeof sensorData.raw === 'undefined') return; var m = sensorKey.match(/^(.*)_(\d+)$/); if (!m) return; var sensorId = m[1], measurementIndex = m[2]; var minInput = DOMUtils.querySelector('.minmax-section input.analog-min-input[data-sensor-id="' + sensorId + '"][data-measurement-index="' + measurementIndex + '"]'); if (!minInput) return; var minmaxRow = minInput.closest ? minInput.closest('.minmax-section') : (function(){ var el = minInput; while (el && el.className && el.className.indexOf('minmax-section') === -1) el = el.parentNode; return el; })(); if (!minmaxRow) return; var rawInput = minmaxRow.querySelector('input.readonly-value'); if (rawInput && rawInput.value !== String(sensorData.raw)) rawInput.value = sensorData.raw;
   }
 
-  function updateAbsoluteMinMax(sensorKey, sensorData) { var m = sensorKey.match(/^(.*)_(\d+)$/); if (!m) return; var sensorId = m[1], measurementIndex = parseInt(m[2], 10); if (typeof sensorData.absoluteMin === 'undefined' && typeof sensorData.absoluteMax === 'undefined') return; DisplayUpdater.updateAbsoluteMinMax(sensorId, measurementIndex, sensorData.absoluteMin, sensorData.absoluteMax); }
-  function updateAbsoluteRawMinMax(sensorKey, sensorData) { var m = sensorKey.match(/^(.*)_(\d+)$/); if (!m) return; var sensorId = m[1], measurementIndex = parseInt(m[2], 10); if (typeof sensorData.absoluteRawMin === 'undefined' && typeof sensorData.absoluteRawMax === 'undefined') return; DisplayUpdater.updateAbsoluteRawMinMax(sensorId, measurementIndex, sensorData.absoluteRawMin, sensorData.absoluteRawMax); }
-  function updateCalibrationMode(sensorKey, sensorData) { if (typeof sensorData.calibrationMode === 'undefined') return; var m = sensorKey.match(/^(.*)_(\d+)$/); if (!m) return; var sensorId = m[1], measurementIndex = parseInt(m[2], 10); DisplayUpdater.updateCalibrationMode(sensorId, measurementIndex, sensorData.calibrationMode); }
+  // Diese drei hießen wie die Methoden von DisplayUpdater, an die sie
+  // delegieren - gleicher Name, andere Signatur, anderer Gültigkeitsbereich.
+  // Korrekt, aber beim Lesen kaum auseinanderzuhalten. Sie heißen jetzt
+  // apply*, weil sie einen gepollten Datensatz auf die Anzeige anwenden.
+
+  /** Sensorschlüssel "ANALOG_0" in Id und Messwertindex zerlegen. */
+  function splitSensorKey(sensorKey) {
+    var m = sensorKey.match(/^(.*)_(\d+)$/);
+    if (!m) return null;
+    return { sensorId: m[1], measurementIndex: parseInt(m[2], 10) };
+  }
+
+  function applyAbsoluteMinMax(sensorKey, sensorData) {
+    if (typeof sensorData.absoluteMin === 'undefined' &&
+        typeof sensorData.absoluteMax === 'undefined') return;
+    var k = splitSensorKey(sensorKey);
+    if (!k) return;
+    DisplayUpdater.updateAbsoluteMinMax(k.sensorId, k.measurementIndex,
+                                        sensorData.absoluteMin, sensorData.absoluteMax);
+  }
+
+  function applyAbsoluteRawMinMax(sensorKey, sensorData) {
+    if (typeof sensorData.absoluteRawMin === 'undefined' &&
+        typeof sensorData.absoluteRawMax === 'undefined') return;
+    var k = splitSensorKey(sensorKey);
+    if (!k) return;
+    DisplayUpdater.updateAbsoluteRawMinMax(k.sensorId, k.measurementIndex,
+                                           sensorData.absoluteRawMin, sensorData.absoluteRawMax);
+  }
+
+  function applyCalibrationMode(sensorKey, sensorData) {
+    if (typeof sensorData.calibrationMode === 'undefined') return;
+    var k = splitSensorKey(sensorKey);
+    if (!k) return;
+    DisplayUpdater.updateCalibrationMode(k.sensorId, k.measurementIndex,
+                                         sensorData.calibrationMode);
+  }
 
   return { start: start, stop: stop };
 }());

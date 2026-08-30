@@ -21,6 +21,9 @@
             cppcheck
             python312
             platformio
+            # Für ./run_js_tests.sh - node bringt Testläufer und
+            # Zusicherungen selbst mit, es gibt keine npm-Abhängigkeiten.
+            nodejs_22
           ];
 
           shellHook = ''

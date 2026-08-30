@@ -1,4 +1,13 @@
 /**
+ * admin_display.js - Anzeige-Einstellungen.
+ *
+ * Setzt admin.js voraus (js-Vektor {"admin", "admin_display"}) und nutzt von
+ * dort showErrorMessage(), showSuccessMessage() und parseJsonResponse().
+ * Hier stand vorher eine eigene, schwächere parseJsonResponse(): weil diese
+ * Datei NACH admin.js geladen wird, verdrängte sie die robustere Fassung von
+ * dort für die gesamte Seite - auch für Aufrufe aus admin.js selbst.
+ */
+/**
  * @file admin_display.js
  * @brief Display configuration page AJAX handlers
  */
@@ -16,24 +25,6 @@ document.addEventListener('DOMContentLoaded', function() {
 /**
  * Helper to parse JSON responses and surface auth / non-JSON errors
  */
-function parseJsonResponse(response) {
-  if (response.status === 401) {
-    // Authentication required - show a clear message
-    showErrorMessage('Authentifizierung erforderlich');
-    // Throw to jump to catch block in the fetch chain
-    throw new Error('Unauthorized');
-  }
-
-  const contentType = response.headers.get('content-type') || '';
-  if (!contentType.includes('application/json')) {
-    // Try to include server response text in the error message for diagnostics
-    return response.text().then(text => {
-      throw new Error('Ungültige Server-Antwort: ' + (text || '<leer>'));
-    });
-  }
-
-  return response.json();
-}
 
 /**
  * Initialize screen duration input handler

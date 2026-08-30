@@ -1,6 +1,5 @@
 // Globale Variablen für Upload-Status
 let uploadInProgress = false;
-let lastProgress = 0;
 
 // DOM Elemente
 const updateForm = document.getElementById('update-form');
@@ -246,24 +245,6 @@ function formatBytes(bytes, decimals = 2) {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(decimals)) + ' ' + sizes[i];
 }
 
-// Event Listener für XHR Upload Progress
-if (window.XMLHttpRequest) {
-    const oldXHR = window.XMLHttpRequest;
-    function newXHR() {
-        const xhr = new oldXHR();
-        xhr.addEventListener('progress', function(e) {
-            if (e.lengthComputable && uploadInProgress) {
-                const percentComplete = (e.loaded / e.total) * 100;
-                if (percentComplete !== lastProgress) {
-                    lastProgress = percentComplete;
-                    updateProgress(Math.round(percentComplete));
-                }
-            }
-        });
-        return xhr;
-    }
-    window.XMLHttpRequest = newXHR;
-}
 
 /**
  * Bildet die Phasen von DeviceWait.waitForDevice auf die vorhandene
