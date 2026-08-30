@@ -178,6 +178,13 @@ export function loadAdminSensors() {
     console,
     setTimeout: (fn, ms) => setTimeout(fn, Math.min(ms ?? 0, 5)),
     clearTimeout, setInterval: () => 0, clearInterval: () => {},
+    // admin_sensors.js setzt admin.js voraus und benutzt dessen Helfer. Ohne
+    // sie laeuft der Poller zwar, verschluckt sich aber an einem
+    // ReferenceError - die Zusicherung auf die Zahl der Abrufe hielte zwar,
+    // die Testausgabe waere aber voller irrefuehrender Fehler.
+    parseJsonResponse: (r) => r.json(),
+    showErrorMessage: () => {},
+    showSuccessMessage: () => {},
     document: doc,
     URLSearchParams,
     FormData: globalThis.FormData,
