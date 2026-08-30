@@ -15,6 +15,9 @@
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
             git
+            # Fuer den Blick auf die CI-Laeufe nach einem Push
+            # (gh run list / gh run view) und die uebrige GitHub-Arbeit.
+            gh
             pre-commit
             clang-tools
             pandoc
