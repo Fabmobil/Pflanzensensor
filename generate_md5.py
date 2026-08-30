@@ -1,26 +1,62 @@
-Import('env')
+"""
+Schreibt zu jedem gebauten Abbild eine .md5-Datei daneben.
+
+Die Pruefsummen werden im Webinterface beim OTA-Upload abgefragt; steht dort
+ein falscher Wert, weist das Geraet den Upload zurueck.
+
+Warum atexit statt AddPostAction:
+
+  Die nachgelagerten SCons-Aktionen waren nicht verlaesslich. Am Alias-Ziel
+  ("buildfs") feuerte die Aktion, BEVOR das Abbild geschrieben war - die
+  .md5-Datei beschrieb dann den vorigen Bau. Haengt man sie stattdessen an die
+  Datei ($BUILD_DIR/littlefs.bin), feuert sie mal und mal nicht: in
+  aufeinanderfolgenden, voellig gleichen Durchlaeufen einmal ja, einmal nein.
+  Das laesst sich auch ohne die Asset-Komprimierung nachstellen, ist also keine
+  Folge anderer Skripte hier.
+
+  atexit haengt an nichts davon. Der Haken laeuft, wenn PlatformIO fertig ist -
+  dann stehen alle Abbilder endgueltig auf der Platte. Berechnet wird die
+  Pruefsumme aus der Datei selbst, sie kann also gar nicht veralten; das
+  einzige Risiko waere, gar nicht zu laufen, und genau das schliesst atexit aus.
+"""
+
+import atexit
 import hashlib
 import os
 
-def generate_md5(source, target, env):
-    try:
-        input_file = str(target[0])
-        if not os.path.exists(input_file):
-            print(f"Warning: File not found: {input_file}")
-            return
+Import("env")  # noqa: F821 - von PlatformIO bereitgestellt
 
-        with open(input_file, 'rb') as f:
-            file_md5 = hashlib.md5(f.read()).hexdigest()
+IMAGES = ("${PROGNAME}.bin", "littlefs.bin")
 
-        md5_path = input_file + '.md5'
-        with open(md5_path, 'w') as f:
-            f.write(file_md5)
 
-        print(f"MD5 hash generated for {os.path.basename(input_file)}: {file_md5}")
+def _md5(path):
+    digest = hashlib.md5()
+    with open(path, "rb") as handle:
+        for block in iter(lambda: handle.read(65536), b""):
+            digest.update(block)
+    return digest.hexdigest()
 
-    except Exception as e:
-        print(f"Error generating MD5: {str(e)}")
 
-# Add post-action for both firmware and filesystem
-env.AddPostAction("$BUILD_DIR/${PROGNAME}.bin", generate_md5)
-env.AddPostAction("buildfs", lambda *a, **kw: generate_md5(None, [env.File("$BUILD_DIR/littlefs.bin")], env))
+def write_checksums():
+    build_dir = env.subst("$BUILD_DIR")  # noqa: F821
+    for name in IMAGES:
+        image = os.path.join(build_dir, env.subst(name))  # noqa: F821
+        if not os.path.exists(image):
+            continue
+
+        checksum = _md5(image)
+        target = image + ".md5"
+
+        # Nur schreiben, wenn sich etwas geaendert hat - sonst rauscht jeder
+        # Lauf die Ausgabe voll.
+        if os.path.exists(target):
+            with open(target, "r", encoding="ascii") as handle:
+                if handle.read().strip() == checksum:
+                    continue
+
+        with open(target, "w", encoding="ascii") as handle:
+            handle.write(checksum)
+        print("MD5 fuer %s: %s" % (os.path.basename(image), checksum))
+
+
+atexit.register(write_checksums)
