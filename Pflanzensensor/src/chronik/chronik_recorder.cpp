@@ -85,9 +85,16 @@ int channelIndexOf(const String& sensorId, size_t measurementIndex) {
   return gefunden;
 }
 
-size_t writeChannelTable(uint8_t* dst, size_t space, uint32_t epoch) {
+size_t writeChannelTable(uint8_t* dst, size_t space, uint32_t epoch, uint8_t fromChannel,
+                         uint8_t* nextChannel) {
   ChronikFormat::TableBuilder builder(dst, space, epoch);
+  uint8_t next = fromChannel;
+  bool voll = false;
+
   forEachChannel([&](uint8_t channel, const Sensor* sensor, size_t index) {
+    if (channel < fromChannel || voll) {
+      return;
+    }
     const SensorConfig& config = sensor->config();
     const MeasurementConfig& measurement = config.measurements[index];
 
@@ -101,11 +108,19 @@ size_t writeChannelTable(uint8_t* dst, size_t space, uint32_t epoch) {
       name = sensor->getMeasurementName(index);
     }
 
-    builder.addChannel(channel, isAnalogSensor(sensor), key.c_str(), name.c_str(),
-                       measurement.unit.c_str(), measurement.limits.yellowLow,
-                       measurement.limits.greenLow, measurement.limits.greenHigh,
-                       measurement.limits.yellowHigh);
+    if (!builder.addChannel(channel, isAnalogSensor(sensor), key.c_str(), name.c_str(),
+                            measurement.unit.c_str(), measurement.limits.yellowLow,
+                            measurement.limits.greenLow, measurement.limits.greenHigh,
+                            measurement.limits.yellowHigh)) {
+      voll = true; // passt nicht mehr - kommt in den nächsten Rahmen
+      return;
+    }
+    next = static_cast<uint8_t>(channel + 1);
   });
+
+  if (nextChannel) {
+    *nextChannel = next;
+  }
   if (g_skipped > 0) {
     LOG_WARN(F("Chronik"),
              String(g_skipped) + F(" Messkanäle passen nicht mehr in die Chronik (Grenze: 16)"));

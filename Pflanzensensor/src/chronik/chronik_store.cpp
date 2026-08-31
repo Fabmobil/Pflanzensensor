@@ -248,6 +248,40 @@ void ChronikStore::flushIfDue() {
   }
 }
 
+/**
+ * @brief Die Kanaltabelle so oft abrufen, bis alle Kanäle geschrieben sind
+ * @details Bei vielen angeschlossenen Sensoren passt sie nicht in einen
+ *          Rahmen. Die Schleife bricht ab, sobald der Rückgeber nicht mehr
+ *          vorankommt - sonst liefe sie endlos, wenn ein einzelner Kanal schon
+ *          allein zu groß wäre.
+ */
+bool ChronikStore::writeTableFrames(const std::function<bool(const uint8_t*, size_t)>& write) {
+  if (!m_tableProvider) {
+    return true;
+  }
+
+  // Helper::getCurrentTime() statt time(nullptr): der ESP hat keine gestellte
+  // Systemuhr, time() liefert die Laufzeit seit dem Start. Als Kopfzeile eines
+  // Segments ist dieser Zeitstempel aber genau das, woran streamFrom() erkennt,
+  // ob ein Segment vor der ?seit=-Grenze liegt.
+  const uint32_t epoch = static_cast<uint32_t>(Helper::getCurrentTime());
+
+  uint8_t table[MAX_FRAME_SIZE];
+  uint8_t from = 0;
+  for (uint8_t runde = 0; runde <= MAX_CHANNELS; runde++) {
+    uint8_t next = from;
+    const size_t length = m_tableProvider(table, sizeof(table), epoch, from, &next);
+    if (length == 0 || next <= from) {
+      break;
+    }
+    if (!write(table, length)) {
+      return false;
+    }
+    from = next;
+  }
+  return true;
+}
+
 bool ChronikStore::startNewSegment() {
   uint32_t index = m_range.nextIndex();
   char name[NAME_BUFFER];
@@ -275,20 +309,18 @@ bool ChronikStore::startNewSegment() {
   // lesbar: keine Zuordnungsdatei im Flash, und ein später umbenannter oder
   // entfernter Sensor macht ältere Segmente nicht unbrauchbar.
   size_t tableLength = 0;
-  if (m_tableProvider) {
-    uint8_t table[MAX_FRAME_SIZE];
-    // Helper::getCurrentTime() statt time(nullptr): der ESP hat keine gestellte
-    // Systemuhr, time() liefert die Laufzeit seit dem Start. Als Kopfzeile
-    // eines Segments ist dieser Zeitstempel aber genau das, woran streamFrom()
-    // erkennt, ob ein Segment vor der ?seit=-Grenze liegt.
-    tableLength =
-        m_tableProvider(table, sizeof(table), static_cast<uint32_t>(Helper::getCurrentTime()));
-    if (tableLength > 0 && file.write(table, tableLength) != tableLength) {
-      LOG_ERROR(F("Chronik"), F("Kanaltabelle unvollständig geschrieben"));
-      file.close();
-      LittleFS.remove(name);
+  const bool tabelleOk = writeTableFrames([&](const uint8_t* daten, size_t length) {
+    if (file.write(daten, length) != length) {
       return false;
     }
+    tableLength += length;
+    return true;
+  });
+  if (!tabelleOk) {
+    LOG_ERROR(F("Chronik"), F("Kanaltabelle unvollständig geschrieben"));
+    file.close();
+    LittleFS.remove(name);
+    return false;
   }
   file.close();
 
@@ -412,13 +444,9 @@ bool ChronikStore::streamFrom(uint32_t sinceEpoch, Sink sink, void* context) {
   // und der Browser hätte nur nackte Kanalnummern. Und weil der Leser Tabellen
   // in der Reihenfolge anwendet, in der sie kommen, beschreibt die letzte
   // genau die Rahmen, die ihr folgen: die aus dem Puffer.
-  if (m_tableProvider) {
-    uint8_t table[MAX_FRAME_SIZE];
-    const size_t length =
-        m_tableProvider(table, sizeof(table), static_cast<uint32_t>(Helper::getCurrentTime()));
-    if (length > 0 && !sink(context, table, length)) {
-      return false;
-    }
+  if (!writeTableFrames(
+          [&](const uint8_t* daten, size_t length) { return sink(context, daten, length); })) {
+    return false;
   }
 
   // Der RAM-Puffer gehört zum Datenbestand, darf hier aber NICHT geschrieben

@@ -165,6 +165,104 @@ test('parseStream baut Tabelle und Reihen auf', () => {
   assert.equal(daten.reihen.get(2).v.length, 2);
 });
 
+test('parseStream führt eine über mehrere Rahmen verteilte Tabelle zusammen', () => {
+  // Bei vielen angeschlossenen Sensoren schickt das Gerät die Kanaltabelle in
+  // mehreren Rahmen - der Leser muss sie zusammensetzen.
+  const strom = verkette(
+    tabellenRahmen(1756612000, [
+      { kanal: 0, analog: true, schluessel: 'ANALOG_0', name: 'Lichtstärke', einheit: '%' },
+      { kanal: 1, analog: true, schluessel: 'ANALOG_1', name: 'Bodenfeuchte', einheit: '%' }
+    ]),
+    tabellenRahmen(1756612000, [
+      { kanal: 2, analog: false, schluessel: 'MHZ19_0', name: 'CO2', einheit: 'ppm' },
+      { kanal: 3, analog: false, schluessel: 'SDS011_0', name: 'PM10', einheit: 'µg/m³' },
+      { kanal: 4, analog: false, schluessel: 'BMP280_1', name: 'Luftdruck', einheit: 'hPa' }
+    ]),
+    messRahmen(1756612060, [
+      { kanal: 0, wert: 30, roh: 600 }, { kanal: 1, wert: 33, roh: 655 },
+      { kanal: 2, wert: 900 }, { kanal: 3, wert: 12.5 }, { kanal: 4, wert: 1013.25 }
+    ])
+  );
+
+  const daten = C.parseStream(strom, null);
+  assert.equal(daten.verworfen, 0);
+  assert.equal(daten.tabelle.size, 5, 'alle Kanäle aus beiden Rahmen');
+  assert.equal(daten.tabelle.get(2).name, 'CO2');
+  assert.equal(daten.tabelle.get(3).einheit, 'µg/m³', 'Mehrbytezeichen bleiben heil');
+  assert.equal(daten.tabelle.get(4).einheit, 'hPa');
+
+  // CO2 und Luftdruck müssen den half-Bereich unbeschadet überstehen
+  assert.equal(daten.reihen.get(2).v[0], 900);
+  assert.ok(Math.abs(daten.reihen.get(4).v[0] - 1013.25) <= 0.5);
+});
+
+test('ein konfigurierter, aber nicht angeschlossener Sensor bleibt aus der Legende', () => {
+  // Ist ein Sensortyp einkompiliert, aber keine Hardware da, liefert er keine
+  // gültigen Werte. Sein Kanal steht dann zwar in der Tabelle, hat aber keine
+  // Reihe - er darf die Legende nicht mit einem leeren Eintrag zumüllen.
+  const daten = C.parseStream(verkette(
+    tabellenRahmen(1756612000, [
+      { kanal: 0, analog: true, schluessel: 'ANALOG_0', name: 'Licht', einheit: '%' },
+      { kanal: 1, analog: false, schluessel: 'MHZ19_0', name: 'CO2', einheit: 'ppm' }
+    ]),
+    // nur Kanal 0 misst
+    messRahmen(1756612060, [{ kanal: 0, wert: 30, roh: 600 }])
+  ), null);
+
+  const spuren = C.tracks(daten, new Set());
+  assert.deepEqual(alsWerte(spuren.map(s => s.id)), ['0', '0r'],
+                   'CO2 taucht ohne Messwerte nicht auf');
+});
+
+test('viele Einheiten ergeben viele Achsen, keine wird weggelassen', () => {
+  const daten = C.parseStream(verkette(
+    tabellenRahmen(1756612000, [
+      { kanal: 0, analog: true, schluessel: 'ANALOG_0', name: 'Licht', einheit: '%' },
+      { kanal: 1, analog: false, schluessel: 'DHT_0', name: 'Temperatur', einheit: '°C' },
+      { kanal: 2, analog: false, schluessel: 'MHZ19_0', name: 'CO2', einheit: 'ppm' },
+      { kanal: 3, analog: false, schluessel: 'SDS011_0', name: 'PM10', einheit: 'µg/m³' },
+      { kanal: 4, analog: false, schluessel: 'BMP280_1', name: 'Luftdruck', einheit: 'hPa' }
+    ]),
+    messRahmen(1756612060, [
+      { kanal: 0, wert: 30, roh: 600 }, { kanal: 1, wert: 22 }, { kanal: 2, wert: 900 },
+      { kanal: 3, wert: 12.5 }, { kanal: 4, wert: 1013.25 }
+    ])
+  ), null);
+
+  const spuren = C.tracks(daten, new Set());
+  // fünf Messwerte plus die Rohspur des einen Analogkanals
+  assert.equal(spuren.length, 6);
+
+  const gruppen = alsWerte(C.axisGroups(spuren.filter(s => !s.roh)));
+  assert.equal(gruppen.length, 5, 'jede Einheit bekommt eine eigene Achse');
+  assert.deepEqual(gruppen.map(g => g.seite), ['links', 'rechts', 'links', 'rechts', 'links']);
+  assert.deepEqual(gruppen.map(g => g.ebene), [0, 0, 1, 1, 2]);
+});
+
+test('ein Diagramm mit fünf Sensoren zeichnet ohne Fehler', () => {
+  const K = loadChronik();
+  K.state.daten = K.parseStream(verkette(
+    tabellenRahmen(1756612000, [
+      { kanal: 0, analog: true, schluessel: 'ANALOG_0', name: 'Licht', einheit: '%' },
+      { kanal: 1, analog: false, schluessel: 'MHZ19_0', name: 'CO2', einheit: 'ppm' },
+      { kanal: 2, analog: false, schluessel: 'BMP280_1', name: 'Luftdruck', einheit: 'hPa' }
+    ]),
+    messRahmen(1756612060, [{ kanal: 0, wert: 30, roh: 600 }, { kanal: 1, wert: 800 }, { kanal: 2, wert: 1013 }]),
+    messRahmen(1756612120, [{ kanal: 0, wert: 35, roh: 620 }, { kanal: 1, wert: 950 }, { kanal: 2, wert: 1012.5 }])
+  ), null);
+  K.state.grenzen = { von: 1756612060, bis: 1756612120 };
+  K.state.view = { von: 1756612060, bis: 1756612120 };
+
+  K.zeichne();
+
+  const beschriftungen = K._canvas._ctx._calls.filter(c => c[0] === 'fillText').map(c => c[1]);
+  assert.ok(beschriftungen.includes('%'), 'Einheit % wird beschriftet');
+  assert.ok(beschriftungen.includes('ppm'));
+  assert.ok(beschriftungen.includes('hPa'));
+  // vier Legendeneinträge: drei Messwerte plus eine Rohspur
+  assert.equal(K._elemente['chronik-legend'].children.length, 4);
+});
+
 test('parseStream setzt nach Müll wieder auf', () => {
   const muell = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]);
   const strom = verkette(
