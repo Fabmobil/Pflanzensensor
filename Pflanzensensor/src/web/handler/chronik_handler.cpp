@@ -239,7 +239,8 @@ void ChronikHandler::handlePage() {
                     "der Legende blendet eine Reihe ein oder aus; die Rohwerte der Analogkanäle "
                     "stehen dort als eigene Einträge und sind anfangs ausgeblendet. Ein Rohwert "
                     "ist das letzte Einzelsample, der Messwert daneben das Mittel aus "
-                    "mehreren.</div>"));
+                    "mehreren. Bleibt genau eine Messreihe übrig, zeigt das Diagramm ihre "
+                    "Schwellwerte als Linien und den grünen Bereich als Fläche.</div>"));
         sendChunk(F("</div>"));
 
         // Speicherzustand - macht das rollende Fenster nachvollziehbar

@@ -23,6 +23,9 @@ const REFRESH_MS = 60000;
 const STATUS_NAMES = ['green', 'yellow', 'red', 'error', 'unknown', 'warmup'];
 const COLORS = ['#5ac85a', '#4aa3ff', '#ffb020', '#ff6f91', '#9b7bff', '#22c7c7'];
 const RAW_COLOR = '#c9c9c9';
+const ZONE_ROT = '#ff6f6f';
+const ZONE_GELB = '#ffd24a';
+const ZONE_GRUEN = '#5ac85a';
 
 // === Reine Funktionen: Format ===
 
@@ -95,7 +98,9 @@ function readFrame(bytes, off) {
     for (let i = 0; i < count; i++) {
       if (at + 2 > bytes.length) return null;
       const kanal = bytes[at++];
-      const analog = (bytes[at++] & 0x01) !== 0;
+      const flags = bytes[at++];
+      const analog = (flags & 0x01) !== 0;
+      const einseitig = (flags & 0x02) !== 0;
       const texte = [];
       for (let t = 0; t < 3; t++) {
         if (at >= bytes.length) return null;
@@ -113,7 +118,7 @@ function readFrame(bytes, off) {
         at += 2;
       }
       eintraege.push({
-        kanal, analog, schluessel: texte[0], name: texte[1], einheit: texte[2],
+        kanal, analog, einseitig, schluessel: texte[0], name: texte[1], einheit: texte[2],
         limits: { yellowLow: limits[0], greenLow: limits[1], greenHigh: limits[2], yellowHigh: limits[3] }
       });
     }
@@ -356,6 +361,43 @@ function formatTime(epoch, schritt) {
 }
 
 /**
+ * Schwellwertlinien eines Kanals.
+ *
+ * Die Grenzen stehen in der Kanaltabelle, also so, wie sie zum Messzeitpunkt
+ * galten. Die Farbe ist die der Zone, die hinter der Linie beginnt - genau wie
+ * das Gerät den Status bildet (Sensor::determineSensorStatus): unter yellowLow
+ * und über yellowHigh ist rot, dazwischen bis greenLow bzw. ab greenHigh gelb,
+ * in der Mitte grün.
+ *
+ * Bei einseitigen Sensoren (Feinstaub, CO2) werden die unteren Grenzen gar
+ * nicht ausgewertet - eine Linie dort widerspräche dem gemeldeten Status und
+ * bleibt deshalb weg. Sind alle Grenzen null, ist nichts eingestellt.
+ */
+function thresholdLines(info) {
+  if (!info || !info.limits) return [];
+  const l = info.limits;
+  const alleNull = !l.yellowLow && !l.greenLow && !l.greenHigh && !l.yellowHigh;
+  if (alleNull) return [];
+
+  const linien = [];
+  if (!info.einseitig) {
+    if (l.yellowLow !== l.greenLow) linien.push({ wert: l.yellowLow, farbe: ZONE_ROT, name: 'kritisch ab' });
+    linien.push({ wert: l.greenLow, farbe: ZONE_GELB, name: 'Warnung ab' });
+  }
+  linien.push({ wert: l.greenHigh, farbe: ZONE_GELB, name: 'Warnung ab' });
+  if (l.yellowHigh !== l.greenHigh) linien.push({ wert: l.yellowHigh, farbe: ZONE_ROT, name: 'kritisch ab' });
+  return linien;
+}
+
+/** Grüner Bereich des Kanals, oder null wenn keiner eingestellt ist. */
+function greenBand(info) {
+  if (!info || !info.limits) return null;
+  const l = info.limits;
+  if (!(l.greenHigh > l.greenLow)) return null;
+  return { von: info.einseitig ? null : l.greenLow, bis: l.greenHigh };
+}
+
+/**
  * Aus Kanälen die zeichenbaren Spuren machen.
  *
  * Jeder Kanal liefert eine Wertespur; Analogkanäle zusätzlich eine Rohwertspur.
@@ -446,6 +488,18 @@ const state = {
 /** Breite eines Achsenstreifens am Rand. */
 const AXIS_WIDTH = 42;
 
+/**
+ * Die eine sichtbare Messreihe - oder null, wenn es mehrere sind.
+ *
+ * Nur dann werden Schwellwerte gezeichnet: bei mehreren Reihen gehörten die
+ * Linien zu verschiedenen Kanälen und man wüsste nicht mehr, welche zu welcher.
+ * Rohwertspuren zählen nicht mit, sie haben keine Schwellen.
+ */
+function einzelneSpur(spuren) {
+  const sichtbar = spuren.filter(spur => !spur.aus && !spur.roh);
+  return sichtbar.length === 1 ? sichtbar[0] : null;
+}
+
 /** Wertebereich je Achsengruppe aus den sichtbaren Spuren bestimmen. */
 function achsenBereiche(spuren, gruppen) {
   const bereiche = {};
@@ -459,6 +513,18 @@ function achsenBereiche(spuren, gruppen) {
       if (max === null || mm.max > max) max = mm.max;
     });
     if (min === null) { min = 0; max = 1; }
+
+    // Ist nur eine Reihe sichtbar, werden ihre Schwellwerte gezeichnet - dann
+    // müssen sie auch in den Wertebereich passen. Sonst lägen sie genau dann
+    // außerhalb des Bildes, wenn der Messwert schön in der Mitte liegt.
+    const einzeln = einzelneSpur(spuren);
+    if (einzeln && einzeln.einheit === gruppe.einheit) {
+      thresholdLines(state.daten.tabelle.get(einzeln.kanal)).forEach(linie => {
+        if (linie.wert < min) min = linie.wert;
+        if (linie.wert > max) max = linie.wert;
+      });
+    }
+
     const rand = (max - min) * 0.08 || 1;
     const skala = niceTicks(min - rand, max + rand, 5);
     bereiche[gruppe.einheit] = {
@@ -537,6 +603,12 @@ function zeichne() {
     ctx.fillText(gruppe.einheit || '–', gruppe.seite === 'links' ? x - 4 : x + 4, 10);
   });
 
+  // Schwellwerte der einen sichtbaren Reihe, hinter die Kurven gezeichnet
+  const einzeln = einzelneSpur(spuren);
+  if (einzeln && bereiche[einzeln.einheit]) {
+    zeichneSchwellen(ctx, s, rect, state.daten.tabelle.get(einzeln.kanal), bereiche[einzeln.einheit]);
+  }
+
   // Spuren
   spuren.forEach(spur => {
     if (spur.aus) return;
@@ -565,6 +637,45 @@ function kurz(wert, schritt) {
   // Schritt 0,05 braucht zwei, Schritt 20 keine.
   const stellen = schritt > 0 ? Math.max(0, Math.min(3, Math.ceil(-Math.log10(schritt)))) : 1;
   return wert.toFixed(stellen);
+}
+
+/**
+ * Grünen Bereich hinterlegen und die Schwellwertlinien ziehen.
+ *
+ * So sieht man auf einen Blick, wann der Wert aus dem Rahmen gelaufen ist,
+ * ohne die Zahlen im Kopf vergleichen zu müssen.
+ */
+function zeichneSchwellen(ctx, s, rect, info, achse) {
+  const band = greenBand(info);
+  if (band) {
+    const oben = s.yToPixel(band.bis, achse);
+    const unten = band.von === null ? rect.unten : s.yToPixel(band.von, achse);
+    const y = Math.max(rect.oben, Math.min(oben, unten));
+    const hoehe = Math.min(rect.unten, Math.max(oben, unten)) - y;
+    if (hoehe > 0) {
+      ctx.fillStyle = 'rgba(90, 200, 90, 0.10)';
+      ctx.fillRect(rect.links, y, rect.rechts - rect.links, hoehe);
+    }
+  }
+
+  const linien = thresholdLines(info);
+  if (!linien.length) return;
+
+  ctx.textAlign = 'left';
+  if (ctx.setLineDash) ctx.setLineDash([5, 4]);
+  linien.forEach(linie => {
+    const y = s.yToPixel(linie.wert, achse);
+    if (y < rect.oben || y > rect.unten) return;
+    ctx.strokeStyle = linie.farbe;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(rect.links, y);
+    ctx.lineTo(rect.rechts, y);
+    ctx.stroke();
+    ctx.fillStyle = linie.farbe;
+    ctx.fillText(kurz(linie.wert, achse.schritt), rect.links + 4, y - 3);
+  });
+  if (ctx.setLineDash) ctx.setLineDash([]);
 }
 
 function zeichneReihe(ctx, s, rect, t, werte, achse, farbe, gestrichelt) {
@@ -830,7 +941,8 @@ if (typeof window !== 'undefined') {
   window.Chronik = {
     crc8, halfToFloat, readFrame, findMagic, parseStream,
     scale, clampView, zoom, pan, bucketize, windowMinMax, gaps,
-    niceTicks, timeTicks, tracks, axisGroups, gapThreshold, kurz, zeichne, wire, lade, state,
+    niceTicks, timeTicks, tracks, axisGroups, gapThreshold, kurz,
+    thresholdLines, greenBand, einzelneSpur, zeichne, wire, lade, state,
     versteckeNeueRohspuren,
     MIN_SPAN_S
   };

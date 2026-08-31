@@ -167,8 +167,8 @@ void test_messrahmen_roundtrip_mit_allen_statuswerten() {
 void test_kanaltabelle_roundtrip() {
   uint8_t puffer[256] = {0};
   TableBuilder builder(puffer, sizeof(puffer), 1756612345UL);
-  builder.addChannel(0, true, "ANALOG_0", "Lichtstaerke", "%", 10.0f, 20.0f, 80.0f, 90.0f);
-  builder.addChannel(2, false, "DHT_0", "Lufttemperatur",
+  builder.addChannel(0, true, false, "ANALOG_0", "Lichtstaerke", "%", 10.0f, 20.0f, 80.0f, 90.0f);
+  builder.addChannel(2, false, false, "DHT_0", "Lufttemperatur",
                      "\xC2\xB0"
                      "C",
                      10.0f, 15.0f, 25.0f, 30.0f);
@@ -204,8 +204,8 @@ void test_kanaltabelle_roundtrip() {
 void test_kaputte_kanaltabelle_meldet_nichts() {
   uint8_t puffer[256] = {0};
   TableBuilder builder(puffer, sizeof(puffer), 1756612345UL);
-  builder.addChannel(0, true, "ANALOG_0", "Lichtstaerke", "%", 10.0f, 20.0f, 80.0f, 90.0f);
-  builder.addChannel(1, true, "ANALOG_1", "Bodenfeuchte", "%", 10.0f, 20.0f, 80.0f, 90.0f);
+  builder.addChannel(0, true, false, "ANALOG_0", "Lichtstaerke", "%", 10.0f, 20.0f, 80.0f, 90.0f);
+  builder.addChannel(1, true, false, "ANALOG_1", "Bodenfeuchte", "%", 10.0f, 20.0f, 80.0f, 90.0f);
   const size_t n = builder.finish();
 
   puffer[20] ^= 0x04; // ein Bit im zweiten Eintrag kippen
@@ -215,11 +215,158 @@ void test_kaputte_kanaltabelle_meldet_nichts() {
   TEST_ASSERT_EQUAL_UINT8(0, gelesen.anzahl);
 }
 
+/// Feinstaub und CO2 werten nur die obere Grenze aus. Ohne dieses Kennzeichen
+/// zeichnete die Chronik eine rote Linie bei MHZ19_YELLOW_LOW = 400 ppm - und
+/// widerspräche damit dem Status, den das Gerät selbst meldet.
+void test_einseitige_grenzen_werden_mitgefuehrt() {
+  uint8_t puffer[256] = {0};
+  TableBuilder builder(puffer, sizeof(puffer), 1756612345UL);
+  builder.addChannel(0, false, true, "MHZ19_0", "CO2", "ppm", 400.0f, 600.0f, 1200.0f, 2000.0f);
+  builder.addChannel(1, true, false, "ANALOG_0", "Bodenfeuchte", "%", 10.0f, 20.0f, 80.0f, 90.0f);
+  const size_t n = builder.finish();
+
+  Gelesen gelesen;
+  TEST_ASSERT_EQUAL_UINT32(n, readTable(puffer, n, sammle, &gelesen));
+  TEST_ASSERT_TRUE(gelesen.eintraege[0].oneSided);
+  TEST_ASSERT_FALSE(gelesen.eintraege[0].analog);
+  TEST_ASSERT_FALSE(gelesen.eintraege[1].oneSided);
+  TEST_ASSERT_TRUE(gelesen.eintraege[1].analog);
+
+  // Die beiden Kennzeichen dürfen sich nicht ins Gehege kommen
+  TableBuilder beides(puffer, sizeof(puffer), 1756612345UL);
+  beides.addChannel(0, true, true, "X_0", "Beides", "%", 1.0f, 2.0f, 3.0f, 4.0f);
+  const size_t m = beides.finish();
+  Gelesen zwei;
+  TEST_ASSERT_EQUAL_UINT32(m, readTable(puffer, m, sammle, &zwei));
+  TEST_ASSERT_TRUE(zwei.eintraege[0].analog);
+  TEST_ASSERT_TRUE(zwei.eintraege[0].oneSided);
+}
+
+/// Bei vielen angeschlossenen Sensoren passt die Tabelle nicht in einen
+/// Rahmen. Sie muss sich dann aufteilen lassen, ohne dass ein Kanal verloren
+/// geht - sonst stünden im Diagramm nackte Kanalnummern statt Namen.
+void test_kanaltabelle_ueber_mehrere_rahmen() {
+  // Sechzehn Kanäle mit realistischen Namen sprengen jeden einzelnen Rahmen.
+  const char* namen[MAX_CHANNELS] = {"Lichtstaerke",   "Bodenfeuchte",   "Lufttemperatur",
+                                     "Luftfeuchte",    "DS18B20_1",      "DS18B20_2",
+                                     "PM10",           "PM2.5",          "CO2",
+                                     "Gewicht",        "Temperatur",     "Luftdruck",
+                                     "Zusatzkanal_13", "Zusatzkanal_14", "Zusatzkanal_15",
+                                     "Zusatzkanal_16"};
+
+  uint8_t strom[2048] = {0};
+  size_t geschrieben = 0;
+  uint8_t von = 0;
+  uint8_t rahmenzahl = 0;
+
+  // Genau die Schleife, die ChronikStore::writeTableFrames() fährt
+  while (von < MAX_CHANNELS && rahmenzahl < 10) {
+    uint8_t puffer[MAX_FRAME_SIZE] = {0};
+    TableBuilder builder(puffer, sizeof(puffer), 1756612345UL);
+    uint8_t naechster = von;
+    for (uint8_t k = von; k < MAX_CHANNELS; k++) {
+      char key[16];
+      snprintf(key, sizeof(key), "SENSOR_%u", static_cast<unsigned>(k));
+      if (!builder.addChannel(k, k < 2, false, key, namen[k],
+                              "\xC2\xB5"
+                              "g/m\xC2\xB3",
+                              10.0f, 20.0f, 80.0f, 90.0f)) {
+        break; // passt nicht mehr - nächster Rahmen
+      }
+      naechster = static_cast<uint8_t>(k + 1);
+    }
+    const size_t n = builder.finish();
+    TEST_ASSERT_GREATER_THAN_UINT32(0, n);
+    TEST_ASSERT_GREATER_THAN_UINT8(von, naechster); // es muss vorangehen
+    memcpy(strom + geschrieben, puffer, n);
+    geschrieben += n;
+    von = naechster;
+    rahmenzahl++;
+  }
+
+  TEST_ASSERT_GREATER_THAN_UINT8(1, rahmenzahl); // sonst prüft der Test nichts
+  TEST_ASSERT_EQUAL_UINT8(MAX_CHANNELS, von);
+
+  // Alle Rahmen hintereinander gelesen ergeben wieder alle sechzehn Kanäle
+  Gelesen gelesen;
+  size_t at = 0;
+  while (at < geschrieben) {
+    const size_t n = readTable(strom + at, geschrieben - at, sammle, &gelesen);
+    TEST_ASSERT_GREATER_THAN_UINT32(0, n);
+    at += n;
+  }
+  TEST_ASSERT_EQUAL_UINT8(MAX_CHANNELS, gelesen.anzahl);
+  TEST_ASSERT_EQUAL_STRING("Lichtstaerke", gelesen.texte[0][1]);
+  TEST_ASSERT_EQUAL_STRING("Zusatzkanal_16", gelesen.texte[15][1]);
+  TEST_ASSERT_EQUAL_UINT8(15, gelesen.eintraege[15].channel);
+}
+
+/// Messwertnamen sind im Adminbereich frei änderbar. Wird bei 31 Byte glatt
+/// abgeschnitten, kann das eine UTF-8-Folge zerteilen - im Browser stünden
+/// dann kaputte Zeichen.
+void test_kuerzung_zerschneidet_kein_utf8_zeichen() {
+  // 30 ASCII-Zeichen, dann ein Umlaut: der Schnitt bei 31 Byte träfe mitten
+  // in die Zweibytefolge.
+  const char* lang = "123456789012345678901234567890\xC3\xA4rger";
+
+  uint8_t puffer[256] = {0};
+  TableBuilder builder(puffer, sizeof(puffer), 1756612345UL);
+  TEST_ASSERT_TRUE(builder.addChannel(0, false, false, "K", lang, "%", 0, 0, 0, 0));
+  const size_t n = builder.finish();
+  TEST_ASSERT_GREATER_THAN_UINT32(0, n);
+
+  Gelesen gelesen;
+  TEST_ASSERT_EQUAL_UINT32(n, readTable(puffer, n, sammle, &gelesen));
+  const char* name = gelesen.texte[0][1];
+  TEST_ASSERT_EQUAL_UINT32(30, strlen(name)); // nur die 30 vollständigen Zeichen
+  TEST_ASSERT_EQUAL_STRING("123456789012345678901234567890", name);
+
+  // Passt der Text vollständig, wird nichts abgeschnitten
+  TableBuilder zweiter(puffer, sizeof(puffer), 1756612345UL);
+  zweiter.addChannel(0, false, false, "K",
+                     "\xC2\xB5"
+                     "g/m\xC2\xB3",
+                     "%", 0, 0, 0, 0);
+  const size_t m = zweiter.finish();
+  Gelesen ganz;
+  TEST_ASSERT_EQUAL_UINT32(m, readTable(puffer, m, sammle, &ganz));
+  TEST_ASSERT_EQUAL_STRING("\xC2\xB5"
+                           "g/m\xC2\xB3",
+                           ganz.texte[0][1]);
+}
+
+/// Werte der übrigen Sensoren müssen durch das half-Format passen: CO2 bis
+/// 5000 ppm, Gewicht bis 10 kg, Luftdruck um 1013 hPa, Feinstaub in µg/m³.
+void test_wertebereiche_der_uebrigen_sensoren() {
+  const float werte[] = {5000.0f, 2000.0f, 10000.0f, 1013.25f, 35.0f, 0.5f, -20.0f};
+  const float toleranzen[] = {1.0f, 1.0f, 8.0f, 0.5f, 0.05f, 0.001f, 0.02f};
+  for (size_t i = 0; i < sizeof(werte) / sizeof(werte[0]); i++) {
+    const float zurueck = floatFromHalf(halfFromFloat(werte[i]));
+    TEST_ASSERT_FLOAT_WITHIN(toleranzen[i], werte[i], zurueck);
+  }
+
+  // Ein voller Messrahmen mit sechzehn Kanälen bleibt weit unter der
+  // Rahmengrenze - sonst ginge er beim Schreiben verloren.
+  SampleFrame frame;
+  frame.epoch = 1756612345UL;
+  frame.count = MAX_CHANNELS;
+  for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
+    frame.values[i] = {i, STATUS_GREEN, 1013.25f, true, 512};
+  }
+  TEST_ASSERT_LESS_THAN_UINT32(MAX_FRAME_SIZE, sampleFrameSize(frame));
+
+  uint8_t puffer[MAX_FRAME_SIZE] = {0};
+  const size_t n = writeSample(frame, puffer, sizeof(puffer));
+  SampleFrame zurueck;
+  TEST_ASSERT_EQUAL_UINT32(n, readSample(puffer, n, zurueck));
+  TEST_ASSERT_EQUAL_UINT8(MAX_CHANNELS, zurueck.count);
+}
+
 /// Reicht der Platz nicht, darf finish() keinen Rahmen ausgeben.
 void test_kanaltabelle_ohne_platz() {
   uint8_t puffer[24] = {0};
   TableBuilder builder(puffer, sizeof(puffer), 1756612345UL);
-  builder.addChannel(0, true, "ANALOG_0", "Lichtstaerke", "%", 10.0f, 20.0f, 80.0f, 90.0f);
+  builder.addChannel(0, true, false, "ANALOG_0", "Lichtstaerke", "%", 10.0f, 20.0f, 80.0f, 90.0f);
   TEST_ASSERT_EQUAL_UINT32(0, builder.finish());
 
   // Ohne einen einzigen Kanal ebenfalls nicht
@@ -344,6 +491,10 @@ int main(int, char**) {
   RUN_TEST(test_kanaltabelle_roundtrip);
   RUN_TEST(test_kaputte_kanaltabelle_meldet_nichts);
   RUN_TEST(test_kanaltabelle_ohne_platz);
+  RUN_TEST(test_einseitige_grenzen_werden_mitgefuehrt);
+  RUN_TEST(test_kanaltabelle_ueber_mehrere_rahmen);
+  RUN_TEST(test_kuerzung_zerschneidet_kein_utf8_zeichen);
+  RUN_TEST(test_wertebereiche_der_uebrigen_sensoren);
   RUN_TEST(test_zu_kleiner_puffer_schreibt_nichts);
   RUN_TEST(test_jedes_praefix_wird_abgelehnt);
   RUN_TEST(test_bitfehler_werden_erkannt);

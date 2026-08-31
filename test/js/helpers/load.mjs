@@ -410,6 +410,7 @@ export function makeCanvas(width = 640, height = 320) {
     _calls: calls,
     font: '', lineWidth: 1, strokeStyle: '', fillStyle: '', textAlign: '',
     setTransform: record('setTransform'), clearRect: record('clearRect'),
+    fillRect: record('fillRect'), strokeRect: record('strokeRect'),
     beginPath: record('beginPath'), closePath: record('closePath'),
     moveTo: record('moveTo'), lineTo: record('lineTo'), arc: record('arc'),
     stroke: record('stroke'), fill: record('fill'), fillText: record('fillText'),

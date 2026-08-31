@@ -310,10 +310,7 @@ void Sensor::updateStatus(size_t measurementIndex) {
   const auto& limits = config().measurements[measurementIndex].limits;
 
   // Determine if this is a one-sided sensor
-  bool isOneSided = false;
-  if (getId().startsWith("SDS011") || getId().startsWith("MHZ19")) {
-    isOneSided = true; // PM and CO2 sensors use one-sided limits
-  }
+  const bool isOneSided = usesOneSidedLimits();
 
   // Ensure statuses vector is large enough
   if (measurementIndex >= m_statuses.size()) {

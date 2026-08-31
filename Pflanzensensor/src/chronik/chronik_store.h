@@ -21,6 +21,8 @@
 
 #include <Arduino.h>
 
+#include <functional>
+
 #include "utils/chronik_budget.h"
 #include "utils/chronik_format.h"
 #include "utils/chronik_segments.h"
@@ -39,9 +41,11 @@ public:
   /// Flash-Zugriff an.
   static constexpr uint32_t FLUSH_INTERVAL_MS = 300000;
 
-  /// Liefert die Kanaltabelle für ein neues Segment.
-  /// @return geschriebene Bytes, 0 wenn keine Tabelle gebaut werden konnte
-  using TableProvider = size_t (*)(uint8_t* dst, size_t space, uint32_t epoch);
+  /// Liefert die Kanaltabelle stückweise - bei vielen Sensoren passt sie nicht
+  /// in einen Rahmen. Siehe ChronikRecorder::writeChannelTable().
+  /// @return geschriebene Bytes, 0 wenn nichts mehr folgt
+  using TableProvider = size_t (*)(uint8_t* dst, size_t space, uint32_t epoch, uint8_t fromChannel,
+                                   uint8_t* nextChannel);
 
   /// Nimmt die Bytes des Datenstroms entgegen. false bricht ab.
   using Sink = bool (*)(void* context, const uint8_t* data, size_t length);
@@ -95,6 +99,9 @@ private:
   void enforceBudget();
   bool appendBuffer();
   bool startNewSegment();
+  /// Ruft den Rückgeber so oft auf, bis die ganze Tabelle geschrieben ist.
+  /// @param write Empfänger je Rahmen; false bricht ab
+  bool writeTableFrames(const std::function<bool(const uint8_t*, size_t)>& write);
   uint32_t firstEpochOf(uint32_t index) const;
 
   ChronikSegments::SegmentRange m_range;

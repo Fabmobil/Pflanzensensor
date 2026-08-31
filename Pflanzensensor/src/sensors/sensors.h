@@ -278,6 +278,19 @@ public:
   inline bool isEnabled() const { return m_enabled; }
 
   /**
+   * @brief Wertet dieser Sensor nur eine obere Grenze aus?
+   * @details Feinstaub und CO2 kennen kein "zu wenig" - für sie gilt allein
+   *          greenHigh/yellowHigh, die unteren Schwellen bleiben unbeachtet
+   *          (siehe determineSensorStatus()). Die Regel steht hier statt
+   *          zweimal als Präfixvergleich im Code: die Chronik muss sie kennen,
+   *          sonst zeichnete sie Schwellwertlinien, die dem tatsächlich
+   *          gemeldeten Status widersprechen.
+   */
+  inline bool usesOneSidedLimits() const {
+    return getId().startsWith("SDS011") || getId().startsWith("MHZ19");
+  }
+
+  /**
    * @brief Gets current sensor status for a specific measurement
    * @param measurementIndex Index of the measurement (defaults to 0 for
    * backward compatibility)

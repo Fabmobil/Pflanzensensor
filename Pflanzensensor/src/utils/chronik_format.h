@@ -348,19 +348,29 @@ public:
     detail::putU8(m_dst, m_at, 0); // Anzahl wird in finish() nachgetragen
   }
 
-  void addChannel(uint8_t channel, bool analog, const char* key, const char* name, const char* unit,
-                  float yellowLow, float greenLow, float greenHigh, float yellowHigh) {
+  /**
+   * @brief Einen Kanal anfügen
+   * @return false, wenn er nicht mehr hineinpasst - der Rahmen bleibt dann
+   *         unverändert und der Aufrufer beginnt einen neuen. Genau so
+   *         verteilt ChronikRecorder eine große Kanaltabelle auf mehrere
+   *         Rahmen, statt sie ab einer bestimmten Sensorzahl still fallen zu
+   *         lassen.
+   */
+  bool addChannel(uint8_t channel, bool analog, bool oneSided, const char* key, const char* name,
+                  const char* unit, float yellowLow, float greenLow, float greenHigh,
+                  float yellowHigh) {
     if (!m_ok || m_count >= MAX_CHANNELS) {
-      m_ok = false;
-      return;
+      return false;
     }
     const size_t needed = 2 + textSize(key) + textSize(name) + textSize(unit) + 8;
     if (m_at + needed + 1 > m_space) { // +1 für die Prüfsumme
-      m_ok = false;
-      return;
+      return false;
     }
     detail::putU8(m_dst, m_at, channel);
-    detail::putU8(m_dst, m_at, analog ? 0x01 : 0x00);
+    // Bit1 kam später dazu; ältere Daten haben dort eine Null, und das ist für
+    // die damals unterstützten Sensoren genau richtig (zweiseitige Grenzen).
+    detail::putU8(m_dst, m_at,
+                  static_cast<uint8_t>((analog ? 0x01 : 0x00) | (oneSided ? 0x02 : 0x00)));
     putText(key);
     putText(name);
     putText(unit);
@@ -369,6 +379,7 @@ public:
     detail::putU16(m_dst, m_at, halfFromFloat(greenHigh));
     detail::putU16(m_dst, m_at, halfFromFloat(yellowHigh));
     m_count++;
+    return true;
   }
 
   /// @return Länge des Rahmens, 0 wenn er nicht gebaut werden konnte
@@ -384,10 +395,33 @@ public:
   uint8_t count() const { return m_count; }
 
 private:
-  static size_t textSize(const char* text) { return 1 + (text ? strnlen(text, MAX_TEXT) : 0); }
+  /**
+   * @brief Länge eines Textes, auf MAX_TEXT gekürzt - aber nie mitten in einem
+   *        UTF-8-Zeichen
+   * @details Messwertnamen sind im Adminbereich frei änderbar. Ein glatter
+   *          Schnitt bei 31 Byte könnte eine Mehrbytefolge zerteilen ("µg/m³",
+   *          Umlaute), und der Browser bekäme kaputte Zeichen zu sehen.
+   */
+  static size_t textLength(const char* text) {
+    if (!text) {
+      return 0;
+    }
+    size_t len = strnlen(text, MAX_TEXT);
+    if (text[len] == '\0') {
+      return len; // vollständig, nichts zu kürzen
+    }
+    // Auf den Anfang des letzten angeschnittenen Zeichens zurückgehen:
+    // Folgebytes einer UTF-8-Sequenz haben das Bitmuster 10xxxxxx.
+    while (len > 0 && (static_cast<uint8_t>(text[len]) & 0xC0) == 0x80) {
+      len--;
+    }
+    return len;
+  }
+
+  static size_t textSize(const char* text) { return 1 + textLength(text); }
 
   void putText(const char* text) {
-    const size_t len = text ? strnlen(text, MAX_TEXT) : 0;
+    const size_t len = textLength(text);
     m_dst[m_at++] = static_cast<uint8_t>(len);
     for (size_t i = 0; i < len; i++) {
       m_dst[m_at++] = static_cast<uint8_t>(text[i]);
@@ -408,6 +442,9 @@ private:
 struct TableEntry {
   uint8_t channel{0};
   bool analog{false};
+  /// Nur obere Grenzen ausgewertet (Feinstaub, CO2) - siehe
+  /// Sensor::usesOneSidedLimits().
+  bool oneSided{false};
   const char* key{nullptr};
   uint8_t keyLength{0};
   const char* name{nullptr};
@@ -468,7 +505,9 @@ inline size_t readTable(const uint8_t* src, size_t length, TableEntryCallback ca
   for (uint8_t i = 0; i < count; i++) {
     TableEntry entry;
     entry.channel = src[at++];
-    entry.analog = (src[at++] & 0x01) != 0;
+    const uint8_t flags = src[at++];
+    entry.analog = (flags & 0x01) != 0;
+    entry.oneSided = (flags & 0x02) != 0;
 
     const char** texts[3] = {&entry.key, &entry.name, &entry.unit};
     uint8_t* lengths[3] = {&entry.keyLength, &entry.nameLength, &entry.unitLength};

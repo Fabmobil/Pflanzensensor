@@ -32,10 +32,18 @@ namespace ChronikRecorder {
 void onMeasurementDone(Sensor& sensor);
 
 /**
- * @brief Kanaltabelle für ein neues Segment schreiben
- * @return geschriebene Bytes, 0 wenn keine Tabelle gebaut werden konnte
+ * @brief Ein Stück der Kanaltabelle schreiben
+ * @param fromChannel Erster Kanal, der noch fehlt (beim ersten Aufruf 0)
+ * @param nextChannel Erhält den ersten Kanal, der nicht mehr hineinpasste
+ * @return geschriebene Bytes, 0 wenn nichts mehr zu schreiben ist
+ * @details Bei vielen angeschlossenen Sensoren passt die Tabelle nicht in
+ *          einen Rahmen: zwölf Kanäle brauchen schon rund 400 Byte, und
+ *          Messwertnamen sind im Adminbereich frei änderbar. Statt sie ab
+ *          einer bestimmten Größe still fallen zu lassen, wird sie auf mehrere
+ *          Rahmen verteilt - der Leser führt sie ohnehin zusammen.
  */
-size_t writeChannelTable(uint8_t* dst, size_t space, uint32_t epoch);
+size_t writeChannelTable(uint8_t* dst, size_t space, uint32_t epoch, uint8_t fromChannel,
+                         uint8_t* nextChannel);
 
 /**
  * @brief Laufende Kanalnummer eines Messkanals

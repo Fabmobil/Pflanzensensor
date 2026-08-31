@@ -35,12 +35,12 @@ function tabellenRahmen(epoch, kanaele) {
   bytes.push(epoch & 0xff, (epoch >> 8) & 0xff, (epoch >> 16) & 0xff, (epoch >>> 24) & 0xff);
   bytes.push(kanaele.length);
   for (const k of kanaele) {
-    bytes.push(k.kanal, k.analog ? 1 : 0);
+    bytes.push(k.kanal, (k.analog ? 1 : 0) | (k.einseitig ? 2 : 0));
     for (const text of [k.schluessel, k.name, k.einheit]) {
       const roh = Buffer.from(text, 'utf8');
       bytes.push(roh.length, ...roh);
     }
-    for (const grenze of [10, 20, 80, 90]) {
+    for (const grenze of (k.grenzen || [10, 20, 80, 90])) {
       const h = floatZuHalb(grenze);
       bytes.push(h & 0xff, (h >> 8) & 0xff);
     }
@@ -163,6 +163,104 @@ test('parseStream baut Tabelle und Reihen auf', () => {
   assert.deepEqual(alsWerte(reihe.t), [1756612060, 1756612120]);
   assert.equal(reihe.roh[1], 662);
   assert.equal(daten.reihen.get(2).v.length, 2);
+});
+
+test('parseStream führt eine über mehrere Rahmen verteilte Tabelle zusammen', () => {
+  // Bei vielen angeschlossenen Sensoren schickt das Gerät die Kanaltabelle in
+  // mehreren Rahmen - der Leser muss sie zusammensetzen.
+  const strom = verkette(
+    tabellenRahmen(1756612000, [
+      { kanal: 0, analog: true, schluessel: 'ANALOG_0', name: 'Lichtstärke', einheit: '%' },
+      { kanal: 1, analog: true, schluessel: 'ANALOG_1', name: 'Bodenfeuchte', einheit: '%' }
+    ]),
+    tabellenRahmen(1756612000, [
+      { kanal: 2, analog: false, schluessel: 'MHZ19_0', name: 'CO2', einheit: 'ppm' },
+      { kanal: 3, analog: false, schluessel: 'SDS011_0', name: 'PM10', einheit: 'µg/m³' },
+      { kanal: 4, analog: false, schluessel: 'BMP280_1', name: 'Luftdruck', einheit: 'hPa' }
+    ]),
+    messRahmen(1756612060, [
+      { kanal: 0, wert: 30, roh: 600 }, { kanal: 1, wert: 33, roh: 655 },
+      { kanal: 2, wert: 900 }, { kanal: 3, wert: 12.5 }, { kanal: 4, wert: 1013.25 }
+    ])
+  );
+
+  const daten = C.parseStream(strom, null);
+  assert.equal(daten.verworfen, 0);
+  assert.equal(daten.tabelle.size, 5, 'alle Kanäle aus beiden Rahmen');
+  assert.equal(daten.tabelle.get(2).name, 'CO2');
+  assert.equal(daten.tabelle.get(3).einheit, 'µg/m³', 'Mehrbytezeichen bleiben heil');
+  assert.equal(daten.tabelle.get(4).einheit, 'hPa');
+
+  // CO2 und Luftdruck müssen den half-Bereich unbeschadet überstehen
+  assert.equal(daten.reihen.get(2).v[0], 900);
+  assert.ok(Math.abs(daten.reihen.get(4).v[0] - 1013.25) <= 0.5);
+});
+
+test('ein konfigurierter, aber nicht angeschlossener Sensor bleibt aus der Legende', () => {
+  // Ist ein Sensortyp einkompiliert, aber keine Hardware da, liefert er keine
+  // gültigen Werte. Sein Kanal steht dann zwar in der Tabelle, hat aber keine
+  // Reihe - er darf die Legende nicht mit einem leeren Eintrag zumüllen.
+  const daten = C.parseStream(verkette(
+    tabellenRahmen(1756612000, [
+      { kanal: 0, analog: true, schluessel: 'ANALOG_0', name: 'Licht', einheit: '%' },
+      { kanal: 1, analog: false, schluessel: 'MHZ19_0', name: 'CO2', einheit: 'ppm' }
+    ]),
+    // nur Kanal 0 misst
+    messRahmen(1756612060, [{ kanal: 0, wert: 30, roh: 600 }])
+  ), null);
+
+  const spuren = C.tracks(daten, new Set());
+  assert.deepEqual(alsWerte(spuren.map(s => s.id)), ['0', '0r'],
+                   'CO2 taucht ohne Messwerte nicht auf');
+});
+
+test('viele Einheiten ergeben viele Achsen, keine wird weggelassen', () => {
+  const daten = C.parseStream(verkette(
+    tabellenRahmen(1756612000, [
+      { kanal: 0, analog: true, schluessel: 'ANALOG_0', name: 'Licht', einheit: '%' },
+      { kanal: 1, analog: false, schluessel: 'DHT_0', name: 'Temperatur', einheit: '°C' },
+      { kanal: 2, analog: false, schluessel: 'MHZ19_0', name: 'CO2', einheit: 'ppm' },
+      { kanal: 3, analog: false, schluessel: 'SDS011_0', name: 'PM10', einheit: 'µg/m³' },
+      { kanal: 4, analog: false, schluessel: 'BMP280_1', name: 'Luftdruck', einheit: 'hPa' }
+    ]),
+    messRahmen(1756612060, [
+      { kanal: 0, wert: 30, roh: 600 }, { kanal: 1, wert: 22 }, { kanal: 2, wert: 900 },
+      { kanal: 3, wert: 12.5 }, { kanal: 4, wert: 1013.25 }
+    ])
+  ), null);
+
+  const spuren = C.tracks(daten, new Set());
+  // fünf Messwerte plus die Rohspur des einen Analogkanals
+  assert.equal(spuren.length, 6);
+
+  const gruppen = alsWerte(C.axisGroups(spuren.filter(s => !s.roh)));
+  assert.equal(gruppen.length, 5, 'jede Einheit bekommt eine eigene Achse');
+  assert.deepEqual(gruppen.map(g => g.seite), ['links', 'rechts', 'links', 'rechts', 'links']);
+  assert.deepEqual(gruppen.map(g => g.ebene), [0, 0, 1, 1, 2]);
+});
+
+test('ein Diagramm mit fünf Sensoren zeichnet ohne Fehler', () => {
+  const K = loadChronik();
+  K.state.daten = K.parseStream(verkette(
+    tabellenRahmen(1756612000, [
+      { kanal: 0, analog: true, schluessel: 'ANALOG_0', name: 'Licht', einheit: '%' },
+      { kanal: 1, analog: false, schluessel: 'MHZ19_0', name: 'CO2', einheit: 'ppm' },
+      { kanal: 2, analog: false, schluessel: 'BMP280_1', name: 'Luftdruck', einheit: 'hPa' }
+    ]),
+    messRahmen(1756612060, [{ kanal: 0, wert: 30, roh: 600 }, { kanal: 1, wert: 800 }, { kanal: 2, wert: 1013 }]),
+    messRahmen(1756612120, [{ kanal: 0, wert: 35, roh: 620 }, { kanal: 1, wert: 950 }, { kanal: 2, wert: 1012.5 }])
+  ), null);
+  K.state.grenzen = { von: 1756612060, bis: 1756612120 };
+  K.state.view = { von: 1756612060, bis: 1756612120 };
+
+  K.zeichne();
+
+  const beschriftungen = K._canvas._ctx._calls.filter(c => c[0] === 'fillText').map(c => c[1]);
+  assert.ok(beschriftungen.includes('%'), 'Einheit % wird beschriftet');
+  assert.ok(beschriftungen.includes('ppm'));
+  assert.ok(beschriftungen.includes('hPa'));
+  // vier Legendeneinträge: drei Messwerte plus eine Rohspur
+  assert.equal(K._elemente['chronik-legend'].children.length, 4);
 });
 
 test('parseStream setzt nach Müll wieder auf', () => {
@@ -428,6 +526,102 @@ test('Rohspuren sind anfangs ausgeblendet, ein Einschalten überlebt das Auffris
   // Auffrischen darf sie nicht wieder ausblenden
   K.versteckeNeueRohspuren();
   assert.ok(!K.state.versteckt.has('0r'));
+});
+
+// === Schwellwerte ===
+
+test('thresholdLines färbt die Grenzen wie das Gerät den Status bildet', () => {
+  const info = { einseitig: false, limits: { yellowLow: 10, greenLow: 20, greenHigh: 80, yellowHigh: 90 } };
+  const linien = alsWerte(C.thresholdLines(info));
+
+  assert.deepEqual(linien.map(l => l.wert), [10, 20, 80, 90]);
+  // Rot dort, wo es kritisch wird; gelb an den Rändern des grünen Bereichs
+  assert.equal(linien[0].farbe, linien[3].farbe, 'beide äußeren Linien gleich');
+  assert.equal(linien[1].farbe, linien[2].farbe, 'beide inneren Linien gleich');
+  assert.notEqual(linien[0].farbe, linien[1].farbe);
+});
+
+test('einseitige Sensoren bekommen keine untere Linie', () => {
+  // MHZ19 hat ein YELLOW_LOW von 400 ppm, das Gerät wertet es aber nicht aus.
+  // Eine rote Linie dort widerspräche dem gemeldeten Status.
+  const co2 = { einseitig: true, limits: { yellowLow: 400, greenLow: 600, greenHigh: 1200, yellowHigh: 2000 } };
+  const linien = alsWerte(C.thresholdLines(co2));
+
+  assert.deepEqual(linien.map(l => l.wert), [1200, 2000]);
+  const band = alsWerte(C.greenBand(co2));
+  assert.equal(band.von, null, 'nach unten offen');
+  assert.equal(band.bis, 1200);
+});
+
+test('ohne eingestellte Grenzen wird nichts gezeichnet', () => {
+  assert.equal(C.thresholdLines({ einseitig: false, limits: { yellowLow: 0, greenLow: 0, greenHigh: 0, yellowHigh: 0 } }).length, 0);
+  assert.equal(C.thresholdLines(null).length, 0);
+  assert.equal(C.thresholdLines({}).length, 0);
+  assert.equal(C.greenBand({ limits: { greenLow: 50, greenHigh: 50 } }), null);
+});
+
+test('einzelneSpur greift nur bei genau einer sichtbaren Messreihe', () => {
+  const spur = (id, aus, roh) => ({ id, aus, roh, kanal: 0, einheit: '%' });
+
+  assert.equal(C.einzelneSpur([spur('0', false, false), spur('1', false, false)]), null);
+  assert.equal(C.einzelneSpur([spur('0', false, false), spur('1', true, false)]).id, '0');
+  // Eine eingeblendete Rohspur zählt nicht mit - sie hat keine Schwellwerte
+  assert.equal(C.einzelneSpur([spur('0', false, false), spur('0r', false, true)]).id, '0');
+  assert.equal(C.einzelneSpur([spur('0', true, false)]), null);
+});
+
+test('Schwellwertlinien erscheinen nur bei einer Reihe im Bild', () => {
+  const bauen = () => {
+    const K = loadChronik();
+    K.state.daten = K.parseStream(verkette(
+      tabellenRahmen(1756612000, [
+        { kanal: 0, analog: false, schluessel: 'DHT_0', name: 'Temperatur', einheit: '°C',
+          grenzen: [10, 15, 25, 30] },
+        { kanal: 1, analog: false, schluessel: 'DHT_1', name: 'Feuchte', einheit: '%',
+          grenzen: [20, 30, 80, 90] }
+      ]),
+      messRahmen(1756612060, [{ kanal: 0, wert: 22 }, { kanal: 1, wert: 60 }]),
+      messRahmen(1756612120, [{ kanal: 0, wert: 23 }, { kanal: 1, wert: 62 }])
+    ), null);
+    K.state.grenzen = { von: 1756612060, bis: 1756612120 };
+    K.state.view = { von: 1756612060, bis: 1756612120 };
+    return K;
+  };
+
+  const beide = bauen();
+  beide.zeichne();
+  const mitBeiden = beide._canvas._ctx._calls.filter(c => c[0] === 'fillRect').length;
+  assert.equal(mitBeiden, 0, 'bei zwei Reihen kein grüner Bereich');
+
+  const eine = bauen();
+  eine.state.versteckt.add('1');
+  eine.zeichne();
+  const calls = eine._canvas._ctx._calls;
+  assert.ok(calls.some(c => c[0] === 'fillRect'), 'grüner Bereich wird hinterlegt');
+  const texte = calls.filter(c => c[0] === 'fillText').map(c => c[1]);
+  // Die vier Grenzen des Temperaturkanals werden beschriftet
+  ['10', '15', '25', '30'].forEach(w => assert.ok(texte.includes(w), 'Grenze ' + w + ' fehlt'));
+});
+
+test('die Achse macht Platz für Schwellwerte außerhalb der Messwerte', () => {
+  // Liegt der Messwert schön mittig, lägen die Grenzen sonst außerhalb des
+  // Bildes - also genau dann unsichtbar, wenn alles in Ordnung ist.
+  const K = loadChronik();
+  K.state.daten = K.parseStream(verkette(
+    tabellenRahmen(1756612000, [
+      { kanal: 0, analog: false, schluessel: 'DHT_0', name: 'Temperatur', einheit: '°C',
+        grenzen: [10, 15, 25, 30] }
+    ]),
+    messRahmen(1756612060, [{ kanal: 0, wert: 22 }]),
+    messRahmen(1756612120, [{ kanal: 0, wert: 22.5 }])
+  ), null);
+  K.state.grenzen = { von: 1756612060, bis: 1756612120 };
+  K.state.view = { von: 1756612060, bis: 1756612120 };
+  K.zeichne();
+
+  const texte = K._canvas._ctx._calls.filter(c => c[0] === 'fillText').map(c => String(c[1]));
+  assert.ok(texte.includes('30'), 'die obere Grenze muss im Bild liegen');
+  assert.ok(texte.includes('10'), 'die untere Grenze ebenso');
 });
 
 // === Zeichnen und Legende gegen den Fake-Canvas ===

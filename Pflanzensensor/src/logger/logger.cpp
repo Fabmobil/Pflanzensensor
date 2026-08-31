@@ -495,6 +495,13 @@ String Logger::getFormattedTimestamp() const {
 }
 
 void Logger::initNTP() {
+  // Zweimal aufrufen würde den vorigen Client verlieren, ohne ihn freizugeben.
+  // Das passiert seit der stündlichen Nachführung in loop() nicht mehr von
+  // allein, aber der Aufruf ist von außen erreichbar - also hier abfangen.
+  if (m_ntpInitialized) {
+    return;
+  }
+
   m_timeClient = new NTPClient(m_ntpUDP, "pool.ntp.org", 0, 60000);
   m_timeClient->begin();
   m_ntpInitialized = true;
