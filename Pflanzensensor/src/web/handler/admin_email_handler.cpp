@@ -234,8 +234,8 @@ void AdminEmailHandler::handlePage() {
         sendChunk(F("</div>"));
 
         sendChunk(F("<div class='mail-hinweis'>Verschlüsselung ist Pflicht: das Gerät verbindet "
-                    "sich nur über TLS. Zertifikate von Let's Encrypt werden geprüft, bei allen "
-                    "anderen Anbietern wird ungeprüft verschlüsselt gesendet. Der Versand läuft "
+                    "sich nur über TLS. Die Echtheit des Servers wird dabei nicht geprüft - dafür "
+                    "reicht der Speicher dieses Geräts nicht. Der Versand läuft "
                     "im Hintergrund - das Ergebnis erscheint hier nach ein paar Sekunden.</div>"));
         sendChunk(F("</div>"));
 
