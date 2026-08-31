@@ -20,6 +20,7 @@
 #include <Wire.h>
 
 // System Components
+#include "chronik/chronik_store.h"
 #include "configs/config.h"
 #include "utils/helper.h"
 #include "utils/result_types.h"
@@ -419,6 +420,11 @@ void loop() {
   // an der das Dateilogging den Flash anfasst - nie aus einem SDK-Callback
   // und nie mit abgeschalteten Interrupts.
   logger.flushFileLog();
+
+  // Chronik direkt nach dem Log-Flush: eine fällige Log-Rotation braucht
+  // kurzzeitig die anderthalbfache Dateigröße und soll den Platz zuerst
+  // bekommen. Auch das ist die EINZIGE Stelle, an der die Chronik schreibt.
+  ChronikStore::instance().flushIfDue();
 
   // Basic system maintenance
   yield();

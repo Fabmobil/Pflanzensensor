@@ -123,6 +123,14 @@ void SensorMeasurementCycleManager::handleProcessing() {
   }
   logMeasurementResults();
 
+  // Chronik-Haken. Genau hier stehen Messwerte, Rohwerte, Status und
+  // Zeitstempel konsistent beieinander - eine Zeile früher fehlten die Status,
+  // eine Zustandsstufe später wäre der Slot schon wieder frei.
+  // Der Empfänger fasst nur RAM an; geschrieben wird aus loop().
+  if (s_measurementDone) {
+    s_measurementDone(*m_sensor);
+  }
+
   // NOTE: Slot will be released in handleDeinitializing() AFTER all cleanup
   // to prevent other sensors from interfering while we're still cleaning up
 

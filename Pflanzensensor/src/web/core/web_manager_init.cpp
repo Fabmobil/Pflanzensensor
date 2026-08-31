@@ -212,9 +212,13 @@ void WebManager::setupMiddleware() {
     // Konfiguration und legt nichts offen, was /getLatestValues nicht ohnehin
     // zeigt; gegen Dauerbeschuss schützt die Drossel in
     // SensorHandler::handleMeasure().
+    // /chronik zeigt den Verlauf derselben Messwerte, die die Startseite ohnehin
+    // öffentlich anzeigt - ein Passwortdialog davor verhinderte vor allem die
+    // spontane Nutzung am Gerät. Der teuerste der drei Pfade, /chronik/export.csv,
+    // ist in ChronikHandler::handleExport() gedrosselt.
     if (url == "/" || url == "/status" || url == "/getLatestValues" || url == "/measure" ||
-        url.startsWith("/css/") || url.startsWith("/js/") || url.startsWith("/img/") ||
-        url.startsWith("/favicon")) {
+        url.startsWith("/chronik") || url.startsWith("/css/") || url.startsWith("/js/") ||
+        url.startsWith("/img/") || url.startsWith("/favicon")) {
       return true;
     }
 

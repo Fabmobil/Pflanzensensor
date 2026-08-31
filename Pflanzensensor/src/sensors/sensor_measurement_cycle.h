@@ -25,6 +25,21 @@
 class SensorMeasurementCycleManager {
 public:
   /**
+   * @brief Wird gerufen, sobald eine Messung fertig verarbeitet ist
+   * @details Bewusst ein nackter Funktionszeiger und kein std::function: das
+   *          spart Heap, und vor allem darf diese Datei nichts über den
+   *          Empfänger wissen. Der Aufhängepunkt liegt in
+   *          sensor_measurement_cycle_data_processing.cpp, und die Datei steht
+   *          im build_src_filter von [env:native] - ein Include der Chronik
+   *          (LittleFS) bräche dort die Tests, für die es keinen
+   *          Dateisystem-Ersatz gibt. Ohne gesetzten Rückruf passiert nichts.
+   */
+  using MeasurementDoneCallback = void (*)(Sensor&);
+  static void setMeasurementDoneCallback(MeasurementDoneCallback callback) {
+    s_measurementDone = callback;
+  }
+
+  /**
    * @brief Constructor for the measurement cycle manager
    * @param sensor Pointer to the sensor to manage
    */
@@ -101,6 +116,9 @@ public:
   bool isForced() const { return m_forced; }
 
 private:
+  /// Rückruf für fertige Messungen; siehe setMeasurementDoneCallback().
+  static MeasurementDoneCallback s_measurementDone;
+
   // Timeouts and delays
   static constexpr unsigned long INIT_TIMEOUT = 5000; ///< Timeout for initialization (5 seconds)
   static constexpr unsigned long MEASURE_TIMEOUT = 30000; ///< Timeout for measurement (30 seconds)

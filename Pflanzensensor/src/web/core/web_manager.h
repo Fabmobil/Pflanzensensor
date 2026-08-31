@@ -24,6 +24,7 @@
 #include "web/handler/admin_handler.h"
 #include "web/handler/admin_minimal_handler.h"
 #include "web/handler/admin_sensor_handler.h"
+#include "web/handler/chronik_handler.h"
 #include "web/handler/log_handler.h"
 #include "web/handler/sensor_handler.h"
 #include "web/handler/startpage_handler.h"

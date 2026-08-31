@@ -7,12 +7,15 @@
 
 #include <Arduino.h>
 
+#include "chronik/chronik_recorder.h"
+#include "chronik/chronik_store.h"
 #include "configs/config.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "managers/manager_display.h"
 #include "managers/manager_resource.h"
 #include "managers/manager_sensor.h"
+#include "sensors/sensor_measurement_cycle.h"
 
 // Forward declarations for globals defined in main.cpp
 extern std::unique_ptr<SensorManager> sensorManager;
@@ -61,6 +64,13 @@ ResourceResult initializeSensors() {
     displayManager->logEnabledSensors();
   }
 #endif
+
+  // Chronik ankoppeln: der Messzyklus kennt nur einen Funktionszeiger, der
+  // Empfänger sitzt hier. Erst nach der Sensorinitialisierung, weil die
+  // Kanaltabelle die fertig aufgebauten Sensoren braucht.
+  SensorMeasurementCycleManager::setMeasurementDoneCallback(&ChronikRecorder::onMeasurementDone);
+  ChronikStore::instance().setTableProvider(&ChronikRecorder::writeChannelTable);
+  ChronikStore::instance().begin();
 
   LOG_INFO(F("main_sensors"), F("Sensor-Manager Initialisierung erfolgreich"));
   ResourceManager::getInstance().exitCriticalOperation();

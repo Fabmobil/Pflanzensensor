@@ -41,6 +41,12 @@ void WebManager::initializeRemainingHandlers() {
       });
     }
 
+    if (ChronikHandler::ownsUrl(url)) {
+      return ensureHandler("chronik", [this]() -> std::unique_ptr<BaseHandler> {
+        return std::make_unique<ChronikHandler>(*_server, *_auth, *_cssService);
+      });
+    }
+
     if (AdminSensorHandler::ownsUrl(url)) {
       if (!_sensorManager) {
         return true; // ohne Sensor-Manager gibt es nichts zu registrieren
