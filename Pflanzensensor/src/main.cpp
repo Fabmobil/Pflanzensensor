@@ -283,6 +283,7 @@ void loop() {
   static unsigned long lastMeasurementUpdate = 0;
   static unsigned long lastUpdateModeLog = 0;
   static unsigned long lastMemoryLog = 0;
+  static unsigned long lastNtpSync = 0;
   static bool bootLoopCounterCleared = false;
   const unsigned long currentMillis = millis();
 
@@ -376,6 +377,47 @@ void loop() {
     }
 #endif
     lastWiFiCheck = currentMillis;
+  }
+
+  // NTP nachführen.
+  //
+  // Ohne das wird die Uhr genau einmal beim Start gestellt und läuft danach auf
+  // ESP-Quarzgenauigkeit weiter - über Tage driftet sie merklich, und genau
+  // diese Zeitstempel tragen die Chronik. Höchstens stündlich, weil
+  // NTPClient::update() bis zu einer Sekunde auf die UDP-Antwort wartet und in
+  // dieser Zeit auch der Webserver steht.
+  //
+  // Ist noch gar keine Uhr da, wird häufiger versucht: das Gerät kann ohne
+  // WLAN gestartet sein und es erst später bekommen. Bis dahin zeichnet die
+  // Chronik nichts auf, weil Rahmen ohne plausible Zeit verworfen werden.
+  {
+    static constexpr unsigned long NTP_RESYNC_INTERVAL = 3600000UL; // 1 Stunde
+    static constexpr unsigned long NTP_RETRY_INTERVAL = 60000UL;    // 1 Minute
+    const unsigned long ntpInterval =
+        logger.isNTPInitialized() ? NTP_RESYNC_INTERVAL : NTP_RETRY_INTERVAL;
+
+    if (currentMillis - lastNtpSync >= ntpInterval) {
+      lastNtpSync = currentMillis;
+#if USE_WIFI
+      if (WiFi.status() == WL_CONNECTED && !isCaptivePortalAPActive()) {
+        const bool warSchonDa = logger.isNTPInitialized();
+        const time_t vorher = Helper::getCurrentTime();
+
+        logger.initNTP(); // fängt sich selbst ab, wenn schon initialisiert
+        logger.updateNTP();
+
+        const time_t nachher = Helper::getCurrentTime();
+        if (!warSchonDa) {
+          LOG_INFO(F("main"), F("NTP nachträglich initialisiert"));
+        } else if (nachher > 0 && vorher > 0) {
+          // Die Abweichung ist die eigentlich interessante Zahl: an ihr sieht
+          // man, wie weit der Quarz in einer Stunde davonläuft.
+          LOG_INFO(F("main"), String(F("NTP nachgeführt, Abweichung: ")) +
+                                  String(static_cast<long>(nachher - vorher)) + F(" s"));
+        }
+      }
+#endif
+    }
   }
 
   // Handle web server requests
