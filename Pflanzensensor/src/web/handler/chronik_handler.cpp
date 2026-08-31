@@ -226,7 +226,7 @@ void ChronikHandler::handlePage() {
         sendChunk(
             F("<button type='button' class='button-secondary' data-range='0'>Alles</button>"));
         sendChunk(F("</div>"));
-        sendChunk(F("<a class='button-secondary' href='/chronik/export.csv'>CSV</a>"));
+        sendChunk(F("<a class='button button-secondary' href='/chronik/export.csv'>CSV</a>"));
         sendChunk(F("</div>"));
 
         sendChunk(F("<div class='chronik-canvas-wrap'>"));

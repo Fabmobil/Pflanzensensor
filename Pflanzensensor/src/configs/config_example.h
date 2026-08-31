@@ -231,6 +231,10 @@
 #define MAIL_FROM "pflanzensensor@fabmobil.org"
 #define MAIL_TO ""
 #define MAIL_WARN_INTERVAL_HOURS 4
+// Ab welchem Zustand gewarnt wird: 1 = gelb, 2 = rot. Gelb ist die
+// aufmerksamere Vorgabe - wer nur bei echtem Notstand gestoert werden will,
+// stellt im Webinterface auf rot.
+#define MAIL_WARN_FROM 1
 #define MAIL_ALIVE_ENABLED false
 #define MAIL_ALIVE_INTERVAL_HOURS 24
 #define MAIL_BOOT_ENABLED false

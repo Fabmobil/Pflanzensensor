@@ -28,6 +28,9 @@ namespace MailVorlage {
 static constexpr size_t ZEILE_MAX = 256;
 /// Betreff: mehr passt nicht sauber in eine nach RFC 2047 gefaltete Kopfzeile.
 static constexpr size_t BETREFF_MAX = 120;
+/// Gemeinsames CSS. Reicht für ein paar Dutzend Regeln; die Grenze hält den
+/// POST klein und die Datei sicher unter einem 8-KB-Block.
+constexpr size_t STIL_MAX = 1200;
 /// Rumpf je Vorlage. Die Grenze kommt nicht vom Flash, sondern vom POST: der
 /// Webserver hält den urlencodierten Rumpf dreifach im Heap, und jedes \r\n
 /// wird dabei zu %0D%0A.
@@ -188,6 +191,47 @@ inline size_t trennstelle(const char* text, size_t length, size_t max) {
   return schnitt > 0 ? schnitt : max;
 }
 
+/**
+ * @brief Trennstelle nach vorn schieben, bis sie ausserhalb von Tags liegt
+ * @details Der Text ist ab hier maschinell erzeugtes HTML. Ein Umbruch mitten
+ *          in `<strong>` oder in `&amp;` waere fuer den Empfaenger sichtbarer
+ *          Schrott - beim Tag, weil das Attribut zerfaellt, bei der Entitaet,
+ *          weil sie ohne Semikolon nicht mehr aufgeloest wird. Innerhalb eines
+ *          Tags waere ein Umbruch nach HTML zwar erlaubt, aber die Zeile geht
+ *          durch SMTP, und dort ist CRLF eine Zeilengrenze.
+ */
+inline size_t ausserhalbMarkup(const char* text, size_t schnitt) {
+  size_t offen = 0; // Position des zuletzt geoeffneten < oder &
+  bool imTag = false;
+  bool inEntitaet = false;
+  for (size_t i = 0; i < schnitt; i++) {
+    const char c = text[i];
+    if (imTag) {
+      if (c == '>')
+        imTag = false;
+      continue;
+    }
+    if (inEntitaet) {
+      // Ein & ohne Semikolon ist keine Entitaet; nach ein paar Zeichen aufgeben,
+      // sonst haelt ein einzelnes kaufmaennisches Und die halbe Zeile fest.
+      if (c == ';' || i - offen > 8)
+        inEntitaet = false;
+      continue;
+    }
+    if (c == '<') {
+      imTag = true;
+      offen = i;
+    } else if (c == '&') {
+      inEntitaet = true;
+      offen = i;
+    }
+  }
+  if ((imTag || inEntitaet) && offen > 0) {
+    return offen;
+  }
+  return schnitt;
+}
+
 namespace detail {
 
 /**
@@ -231,7 +275,13 @@ public:
 
 private:
   void gibZeileAus() {
-    const size_t schnitt = trennstelle(m_puffer, m_at, ZEILE_MAX);
+    size_t schnitt = trennstelle(m_puffer, m_at, ZEILE_MAX);
+    const size_t sicher = ausserhalbMarkup(m_puffer, schnitt);
+    // Nur uebernehmen, wenn dabei etwas uebrig bleibt: eine Trennstelle bei 0
+    // wuerde die Schleife in schiebe() nie beenden.
+    if (sicher > 0) {
+      schnitt = sicher;
+    }
     m_aus(m_puffer, schnitt, m_context);
     memmove(m_puffer, m_puffer + schnitt, m_at - schnitt);
     m_at -= schnitt;
@@ -248,14 +298,178 @@ private:
 
 } // namespace detail
 
+namespace detail {
+
+/// @brief Ein Zeichen ausgeben, HTML-Sonderzeichen als Entität
+inline void schiebeMaskiert(Ausgeber& aus, char c) {
+  switch (c) {
+  case '&':
+    aus.schiebe("&amp;", 5);
+    break;
+  case '<':
+    aus.schiebe("&lt;", 4);
+    break;
+  case '>':
+    aus.schiebe("&gt;", 4);
+    break;
+  case '"':
+    aus.schiebe("&quot;", 6);
+    break;
+  default:
+    aus.schiebe(c);
+  }
+}
+
 /**
- * @brief Eine Vorlagenzeile expandieren und ausgeben
- * @details Kann mehrere Zeilen erzeugen: durch einen Blockplatzhalter oder
- *          weil die expandierte Zeile zu lang wurde.
+ * @brief Platzhalter ersetzen, sonst nichts
+ * @details Für den Betreff: er landet als RFC-2047-Kopfzeile in der Mail und
+ *          ist dort Klartext. Eine Maskierung würde der Empfänger wörtlich als
+ *          "&amp;" lesen.
+ */
+inline void schiebeKlartext(Ausgeber& aus, const char* p, const Umgebung& u) {
+  while (*p) {
+    if (p[0] == '{' && p[1] == '{') {
+      aus.schiebe('{');
+      p += 2;
+      continue;
+    }
+    if (*p == '{') {
+      const char* start = p + 1;
+      const char* zu = start;
+      while (istNamensZeichen(*zu)) {
+        zu++;
+      }
+      const size_t len = static_cast<size_t>(zu - start);
+      const char* wert = (len > 0 && *zu == '}') ? wertVon(u, start, len) : nullptr;
+      if (wert) {
+        aus.schiebe(wert, strlen(wert));
+        p = zu + 1;
+        continue;
+      }
+    }
+    aus.schiebe(*p);
+    p++;
+  }
+}
+
+/**
+ * @brief Klartext mit Platzhaltern ausgeben
+ * @details Der Vorlagentext ist kein HTML mehr, also wird alles maskiert - der
+ *          eingesetzte Wert genauso wie das Getippte. Ein Gerätename mit einem
+ *          spitzen Klammeraffen darf die Mail nicht zerlegen.
  *
  *          Unbekannte Platzhalter bleiben wörtlich stehen, samt Klammern. So
  *          sieht der Nutzer seinen Tippfehler in der Mail, statt sich über
  *          eine unerklärliche Lücke zu wundern.
+ */
+inline void schiebeText(Ausgeber& aus, const char* p, const char* ende, const Umgebung& u) {
+  while (p < ende) {
+    if (p[0] == '{' && p + 1 < ende && p[1] == '{') {
+      aus.schiebe('{');
+      p += 2;
+      continue;
+    }
+    if (*p == '{') {
+      const char* start = p + 1;
+      const char* zu = start;
+      while (zu < ende && istNamensZeichen(*zu)) {
+        zu++;
+      }
+      const size_t len = static_cast<size_t>(zu - start);
+      const char* wert = (len > 0 && zu < ende && *zu == '}') ? wertVon(u, start, len) : nullptr;
+      if (wert) {
+        for (const char* w = wert; *w; w++) {
+          schiebeMaskiert(aus, *w);
+        }
+        p = zu + 1;
+        continue;
+      }
+    }
+    schiebeMaskiert(aus, *p);
+    p++;
+  }
+}
+
+/// Nur diese Anfänge werden zu einem Link. Alles andere - allen voran
+/// `javascript:` - bleibt Text; ein Mailprogramm soll aus unserer Vorlage
+/// nichts ausführen können.
+inline bool istErlaubteAdresse(const char* p, const char* ende) {
+  const size_t len = static_cast<size_t>(ende - p);
+  return (len > 7 && strncmp(p, "http://", 7) == 0) ||
+         (len > 8 && strncmp(p, "https://", 8) == 0) || (len > 7 && strncmp(p, "mailto:", 7) == 0);
+}
+
+/**
+ * @brief Auszeichnung innerhalb einer Zeile: **fett** und [Text](Adresse)
+ * @details Bewusst winzig gehalten. Ohne schließende Zeichen bleibt alles
+ *          Text - wer einen Stern schreibt, soll einen Stern sehen.
+ */
+inline void schiebeAuszeichnung(Ausgeber& aus, const char* p, const Umgebung& u) {
+  const char* ende = p + strlen(p);
+  const char* text = p;
+
+  while (*p) {
+    if (p[0] == '*' && p[1] == '*') {
+      const char* zu = strstr(p + 2, "**");
+      if (zu) {
+        schiebeText(aus, text, p, u);
+        aus.schiebe("<strong>", 8);
+        schiebeText(aus, p + 2, zu, u);
+        aus.schiebe("</strong>", 9);
+        p = zu + 2;
+        text = p;
+        continue;
+      }
+    }
+
+    if (*p == '[') {
+      const char* txtEnde = strchr(p + 1, ']');
+      if (txtEnde && txtEnde[1] == '(') {
+        const char* adrEnde = strchr(txtEnde + 2, ')');
+        if (adrEnde && istErlaubteAdresse(txtEnde + 2, adrEnde)) {
+          schiebeText(aus, text, p, u);
+          aus.schiebe("<a href=\"", 9);
+          schiebeText(aus, txtEnde + 2, adrEnde, u);
+          aus.schiebe("\">", 2);
+          schiebeText(aus, p + 1, txtEnde, u);
+          aus.schiebe("</a>", 4);
+          p = adrEnde + 1;
+          text = p;
+          continue;
+        }
+      }
+    }
+
+    p++;
+  }
+  schiebeText(aus, text, ende, u);
+}
+
+} // namespace detail
+
+/// @brief Besteht die Zeile nur aus Leerraum?
+inline bool istLeerzeile(const char* zeile) {
+  for (const char* p = zeile; *p; p++) {
+    if (*p != ' ' && *p != '\t') {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * @brief Eine Vorlagenzeile in HTML umsetzen und ausgeben
+ * @details Kann mehrere Zeilen erzeugen: durch einen Blockplatzhalter oder
+ *          weil die expandierte Zeile zu lang wurde.
+ *
+ *          Der Vorlagentext enthält kein HTML mehr, sondern Klartext mit einer
+ *          winzigen Auszeichnung: `# ` macht eine Überschrift, `**` fettet,
+ *          `[Text](Adresse)` verlinkt. Die Gestaltung kommt aus dem
+ *          gemeinsamen Stil, nicht aus dem Text - sonst müsste jeder, der ein
+ *          Wort ändern will, HTML lesen können.
+ *
+ *          Jede nichtleere Zeile wird ein Absatz. Leere Zeilen dienen im
+ *          Editor der Übersicht und erzeugen nichts; Abstände macht der Stil.
  */
 inline void expandiereZeile(const char* zeile, const Umgebung& u, ZeilenSenke aus, void* context) {
   if (!zeile || !aus) {
@@ -269,7 +483,9 @@ inline void expandiereZeile(const char* zeile, const Umgebung& u, ZeilenSenke au
       // Ohne Blockgeber bleibt der Platzhalter wörtlich stehen - dann sieht man
       // in der Vorschau, dass dort etwas eingesetzt würde.
       detail::Ausgeber roh(aus, context);
-      roh.schiebe(zeile, strlen(zeile));
+      roh.schiebe("<p>", 3);
+      detail::schiebeText(roh, zeile, zeile + strlen(zeile), u);
+      roh.schiebe("</p>", 4);
       roh.fertig();
       return;
     }
@@ -281,37 +497,21 @@ inline void expandiereZeile(const char* zeile, const Umgebung& u, ZeilenSenke au
     return;
   }
 
-  detail::Ausgeber ausgeber(aus, context);
-  const char* p = zeile;
-
-  while (*p) {
-    if (p[0] == '{' && p[1] == '{') {
-      ausgeber.schiebe('{');
-      p += 2;
-      continue;
-    }
-
-    if (*p == '{') {
-      const char* start = p + 1;
-      const char* ende = start;
-      while (istNamensZeichen(*ende)) {
-        ende++;
-      }
-      const size_t len = static_cast<size_t>(ende - start);
-      const char* wert = (len > 0 && *ende == '}') ? wertVon(u, start, len) : nullptr;
-      if (wert) {
-        ausgeber.schiebe(wert, strlen(wert));
-        p = ende + 1;
-        continue;
-      }
-      // Unbekannt oder unabgeschlossen: die Klammer bleibt stehen und der Rest
-      // läuft normal weiter.
-    }
-
-    ausgeber.schiebe(*p);
-    p++;
+  // Leerzeilen sind Gliederung im Editor, kein Inhalt der Mail.
+  if (istLeerzeile(zeile)) {
+    return;
   }
 
+  const char* p = zeile;
+  const bool ueberschrift = (p[0] == '#' && p[1] == ' ');
+  if (ueberschrift) {
+    p += 2;
+  }
+
+  detail::Ausgeber ausgeber(aus, context);
+  ausgeber.schiebe(ueberschrift ? "<h1>" : "<p>", ueberschrift ? 4 : 3);
+  detail::schiebeAuszeichnung(ausgeber, p, u);
+  ausgeber.schiebe(ueberschrift ? "</h1>" : "</p>", ueberschrift ? 5 : 4);
   ausgeber.fertig();
 }
 
@@ -346,7 +546,11 @@ inline size_t expandiereBetreff(const char* zeile, const Umgebung& u, char* out,
     }
   };
 
-  expandiereZeile(zeile, ohneBloecke, senke, &ziel);
+  {
+    detail::Ausgeber ausgeber(senke, &ziel);
+    detail::schiebeKlartext(ausgeber, zeile, ohneBloecke);
+    ausgeber.fertig();
+  }
   out[ziel.at] = '\0';
   return ziel.at;
 }
@@ -355,7 +559,10 @@ inline size_t expandiereBetreff(const char* zeile, const Umgebung& u, char* out,
 
 /// Kopfzeile. Fehlt sie, gilt die Datei als fremd und die Standardvorlagen
 /// greifen - ein späterer Formatwechsel braucht dann keinen Migrationscode.
-static constexpr const char* DATEI_KOPF = "#MV1";
+// MV2: die Rümpfe sind seit v2.32.0 Klartext mit Mini-Auszeichnung, kein HTML
+// mehr. Eine MV1-Datei wird dadurch als fremd erkannt und der Standard greift -
+// das ist gewollt, ihr HTML stünde sonst maskiert in der Mail.
+static constexpr const char* DATEI_KOPF = "#MV2";
 
 enum class Abschnitt : uint8_t {
   Keiner,
@@ -365,6 +572,7 @@ enum class Abschnitt : uint8_t {
   WarnRumpf,
   AliveBetreff,
   AliveRumpf,
+  Stil,     ///< gemeinsames CSS für alle drei Mailarten
   Unbekannt ///< sieht aus wie eine Marke, ist aber keine bekannte
 };
 
@@ -382,6 +590,8 @@ inline const char* markeVon(Abschnitt a) {
     return "[alive.betreff]";
   case Abschnitt::AliveRumpf:
     return "[alive.rumpf]";
+  case Abschnitt::Stil:
+    return "[stil]";
   default:
     return "";
   }
@@ -409,7 +619,8 @@ inline Abschnitt erkenneMarke(const char* zeile) {
   }
 
   const Abschnitt alle[] = {Abschnitt::BootBetreff, Abschnitt::BootRumpf,    Abschnitt::WarnBetreff,
-                            Abschnitt::WarnRumpf,   Abschnitt::AliveBetreff, Abschnitt::AliveRumpf};
+                            Abschnitt::WarnRumpf,   Abschnitt::AliveBetreff, Abschnitt::AliveRumpf,
+                            Abschnitt::Stil};
   for (Abschnitt a : alle) {
     if (strcmp(zeile, markeVon(a)) == 0) {
       return a;

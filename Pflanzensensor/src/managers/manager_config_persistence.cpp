@@ -79,6 +79,8 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
     config.mailSensors = PreferencesManager::getString(generalPrefs, "mail_sens", "");
     config.mailWarnHours = static_cast<uint16_t>(
         PreferencesManager::getUInt(generalPrefs, "mail_warn_h", MAIL_WARN_INTERVAL_HOURS));
+    config.mailWarnFrom = static_cast<uint8_t>(
+        PreferencesManager::getUInt(generalPrefs, "mail_warn_ab", MAIL_WARN_FROM));
     config.mailAliveEnabled =
         PreferencesManager::getBool(generalPrefs, "mail_alive", MAIL_ALIVE_ENABLED);
     config.mailAliveHours = static_cast<uint16_t>(

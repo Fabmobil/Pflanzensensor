@@ -46,6 +46,12 @@ public:
   /// @brief Vorlage auf den mitgelieferten Standard zurücksetzen
   static bool setzeZurueck(Mail::Kind kind, String& fehler);
 
+  /// @brief Gemeinsames CSS zeilenweise ausgeben - für den <style>-Block der
+  ///        Mail und für die Weboberfläche
+  static void sendeStil(MailVorlage::ZeilenSenke aus, void* context);
+  static bool speichereStil(const String& css, String& fehler);
+  static bool setzeStilZurueck(String& fehler);
+
   /// @brief Steht für diese Art eine eigene Vorlage in der Datei?
   static bool istAngepasst(Mail::Kind kind);
 

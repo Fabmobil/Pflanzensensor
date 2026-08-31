@@ -39,6 +39,8 @@ const char* standardFuer(Abschnitt a) {
     return MailVorlagenStandard::ALIVE_BETREFF;
   case Abschnitt::AliveRumpf:
     return MailVorlagenStandard::ALIVE_RUMPF;
+  case Abschnitt::Stil:
+    return MailVorlagenStandard::STIL;
   default:
     return nullptr;
   }
@@ -197,10 +199,11 @@ const char* ampel(const String& status) {
 }
 
 /**
- * @brief Erzeugt die Tabellenzeilen für {messwerte} und {auffaellige}
- * @details Die Optik dieser Zeile ist bewusst nicht im Web änderbar: sie müsste
- *          aus derselben Datei gelesen werden, die gerade gestreamt wird, und
- *          zwei Lesepositionen gleichzeitig gibt es nicht.
+ * @brief Erzeugt die Werttabelle für {messwerte} und {auffaellige}
+ * @details Erzeugt die vollständige Tabelle samt <table>, nicht nur die Zeilen:
+ *          im Vorlagentext steht kein HTML mehr, das der Nutzer aufmachen und
+ *          wieder schließen könnte. Gestaltet wird über die Klassen im Stil -
+ *          table.werte, td.name, td.wert.
  */
 void gibMesswerte(const char* name, MailVorlage::ZeilenSenke aus, void* senkeContext, void*) {
   const bool nurAuffaellige = (strcmp(name, MailVorlage::BLOCK_AUFFAELLIGE) == 0);
@@ -210,6 +213,9 @@ void gibMesswerte(const char* name, MailVorlage::ZeilenSenke aus, void* senkeCon
 
   char zeile[MailVorlage::ZEILE_MAX + 1];
   bool etwasGezeigt = false;
+
+  const char* auf = "<table class=\"werte\">";
+  aus(auf, strlen(auf), senkeContext);
 
   for (const auto& sensor : sensorManager->getSensors()) {
     if (!sensor || !sensor->isEnabled()) {
@@ -222,7 +228,11 @@ void gibMesswerte(const char* name, MailVorlage::ZeilenSenke aus, void* senkeCon
         continue;
       }
       const String status = sensor->getStatus(i);
-      const bool auffaellig = (status == F("yellow") || status == F("red"));
+      // Dieselbe Regel wie beim Auslösen der Warnmail. Zwei Regeln wären eine
+      // Warnung, in der nichts Auffälliges steht.
+      const bool auffaellig = Mail::istAuffaellig(
+          Mail::levelVonText(status.c_str()),
+          ConfigMgr.getMailWarnFrom() == 2 ? Mail::Level::Red : Mail::Level::Yellow);
       const bool ueberwacht = ConfigMgr.isMailSensorWatched(sensor->getId() + "_" + String(i));
       if (nurAuffaellige && (!auffaellig || !ueberwacht)) {
         continue;
@@ -238,9 +248,8 @@ void gibMesswerte(const char* name, MailVorlage::ZeilenSenke aus, void* senkeCon
       }
 
       snprintf(zeile, sizeof(zeile),
-               "<tr><td style=\"padding:5px 0\">%s %s</td>"
-               "<td style=\"padding:5px 0;text-align:right\"><b>%s</b></td></tr>",
-               ampel(status), bezeichnung.c_str(), wert.c_str());
+               "<tr><td class=\"name\">%s %s</td><td class=\"wert\">%s</td></tr>", ampel(status),
+               bezeichnung.c_str(), wert.c_str());
       aus(zeile, strlen(zeile), senkeContext);
       etwasGezeigt = true;
       optimistic_yield(1000);
@@ -249,10 +258,13 @@ void gibMesswerte(const char* name, MailVorlage::ZeilenSenke aus, void* senkeCon
 
   if (nurAuffaellige && !etwasGezeigt) {
     // Eine leere Tabelle in der Mail sähe nach einem Fehler aus.
-    const char* entwarnung = "<tr><td colspan=\"2\" style=\"padding:5px 0\">"
+    const char* entwarnung = "<tr><td class=\"name\" colspan=\"2\">"
                              "\xE2\x9C\x85 Jetzt ist wieder alles im grünen Bereich!</td></tr>";
     aus(entwarnung, strlen(entwarnung), senkeContext);
   }
+
+  const char* zu = "</table>";
+  aus(zu, strlen(zu), senkeContext);
 }
 
 /// Weiterreichen an die eigentliche Senke, für leseAbschnitt().
@@ -376,13 +388,27 @@ void schreibeText(File& datei, const String& text) {
 
 } // namespace
 
-bool MailVorlagen::speichere(Mail::Kind kind, const String& betreffText, const String& rumpfText,
-                             String& fehler) {
-  const Abschnitt zielBetreff = abschnittFuer(kind, true);
-  const Abschnitt zielRumpf = abschnittFuer(kind, false);
+namespace {
 
-  const String neu = String(PFAD) + ".neu";
-  File aus = LittleFS.open(neu, "w");
+/// Ein Abschnitt, der neu geschrieben werden soll. text == nullptr heißt:
+/// entfernen, damit beim Lesen wieder der Standard greift.
+struct Neuschrift {
+  Abschnitt abschnitt;
+  const String* text;
+  bool eineZeile; ///< Betreff: Umbrüche werden zu Leerzeichen
+};
+
+/**
+ * @brief Datei neu schreiben: die genannten Abschnitte ersetzen, den Rest
+ *        unverändert übernehmen
+ * @details Ein einziger Durchlauf über die alte Datei, atomar über eine
+ *          Zwischendatei und rename() - dasselbe Muster wie saveJsonFile() in
+ *          utils/json_file_utils.h. Speichern und Zurücksetzen sind derselbe
+ *          Vorgang; der Unterschied ist nur, ob ein Text mitkommt.
+ */
+bool schreibeDateiNeu(const Neuschrift* neue, size_t anzahl, String& fehler) {
+  const String neuerPfad = String(MailVorlagen::PFAD) + ".neu";
+  File aus = LittleFS.open(neuerPfad, "w");
   if (!aus) {
     fehler = F("Vorlagendatei nicht anlegbar");
     return false;
@@ -390,29 +416,31 @@ bool MailVorlagen::speichere(Mail::Kind kind, const String& betreffText, const S
   aus.print(MailVorlage::DATEI_KOPF);
   aus.print('\n');
 
-  // Die zu speichernde Art zuerst, danach die übrigen aus der alten Datei -
-  // so genügt ein Durchlauf über die alte Datei.
-  aus.print(MailVorlage::markeVon(zielBetreff));
-  aus.print('\n');
-  {
-    String eineZeile = betreffText;
-    eineZeile.replace("\r", "");
-    eineZeile.replace("\n", " ");
-    schreibeZeile(aus, eineZeile.c_str());
+  // Die neuen Abschnitte zuerst, danach die übrigen aus der alten Datei.
+  for (size_t i = 0; i < anzahl; i++) {
+    if (!neue[i].text) {
+      continue;
+    }
+    aus.print(MailVorlage::markeVon(neue[i].abschnitt));
+    aus.print('\n');
+    if (neue[i].eineZeile) {
+      String eine = *neue[i].text;
+      eine.replace("\r", "");
+      eine.replace("\n", " ");
+      schreibeZeile(aus, eine.c_str());
+    } else {
+      schreibeText(aus, *neue[i].text);
+    }
   }
-  aus.print(MailVorlage::markeVon(zielRumpf));
-  aus.print('\n');
-  schreibeText(aus, rumpfText);
 
-  if (LittleFS.exists(PFAD)) {
-    File alt = LittleFS.open(PFAD, "r");
+  if (LittleFS.exists(MailVorlagen::PFAD)) {
+    File alt = LittleFS.open(MailVorlagen::PFAD, "r");
     if (alt) {
       char zeile[ZEILE_PUFFER];
       size_t n = alt.readBytesUntil('\n', zeile, sizeof(zeile) - 1);
       zeile[n] = '\0';
       const bool kopfOk = (strcmp(zeile, MailVorlage::DATEI_KOPF) == 0);
 
-      Abschnitt aktuell = Abschnitt::Keiner;
       bool uebernehmen = false;
       while (kopfOk && alt.available()) {
         n = alt.readBytesUntil('\n', zeile, sizeof(zeile) - 1);
@@ -423,16 +451,19 @@ bool MailVorlagen::speichere(Mail::Kind kind, const String& betreffText, const S
 
         const Abschnitt marke = MailVorlage::erkenneMarke(zeile);
         if (marke != Abschnitt::Keiner) {
-          aktuell = marke;
-          uebernehmen =
-              (marke != zielBetreff && marke != zielRumpf && marke != Abschnitt::Unbekannt);
+          uebernehmen = (marke != Abschnitt::Unbekannt);
+          for (size_t i = 0; i < anzahl && uebernehmen; i++) {
+            if (marke == neue[i].abschnitt) {
+              uebernehmen = false;
+            }
+          }
           if (uebernehmen) {
             aus.print(MailVorlage::markeVon(marke));
             aus.print('\n');
           }
           continue;
         }
-        if (uebernehmen && aktuell != Abschnitt::Keiner) {
+        if (uebernehmen) {
           // Unverändert übernehmen: die Zeile ist in der alten Datei schon
           // entwertet, sie darf nicht ein zweites Mal entwertet werden.
           aus.print(zeile);
@@ -447,13 +478,34 @@ bool MailVorlagen::speichere(Mail::Kind kind, const String& betreffText, const S
   aus.close();
 
   // Erst löschen, dann umbenennen - dasselbe Muster wie saveJsonFile()
-  LittleFS.remove(PFAD);
-  if (!LittleFS.rename(neu, PFAD)) {
+  LittleFS.remove(MailVorlagen::PFAD);
+  if (!LittleFS.rename(neuerPfad, MailVorlagen::PFAD)) {
     fehler = F("Vorlagendatei konnte nicht ersetzt werden");
-    LittleFS.remove(neu);
+    LittleFS.remove(neuerPfad);
+    return false;
+  }
+  return true;
+}
+
+} // namespace
+
+bool MailVorlagen::speichere(Mail::Kind kind, const String& betreffText, const String& rumpfText,
+                             String& fehler) {
+  const Neuschrift neue[] = {{abschnittFuer(kind, true), &betreffText, true},
+                             {abschnittFuer(kind, false), &rumpfText, false}};
+  if (!schreibeDateiNeu(neue, 2, fehler)) {
     return false;
   }
   LOG_INFO(F("Vorlagen"), F("Vorlage gespeichert"));
+  return true;
+}
+
+bool MailVorlagen::speichereStil(const String& css, String& fehler) {
+  const Neuschrift neue[] = {{Abschnitt::Stil, &css, false}};
+  if (!schreibeDateiNeu(neue, 1, fehler)) {
+    return false;
+  }
+  LOG_INFO(F("Vorlagen"), F("Stil gespeichert"));
   return true;
 }
 
@@ -463,61 +515,39 @@ bool MailVorlagen::setzeZurueck(Mail::Kind kind, String& fehler) {
   if (!LittleFS.exists(PFAD)) {
     return true; // schon Standard
   }
-
-  const Abschnitt zielBetreff = abschnittFuer(kind, true);
-  const Abschnitt zielRumpf = abschnittFuer(kind, false);
-
-  const String neu = String(PFAD) + ".neu";
-  File aus = LittleFS.open(neu, "w");
-  File alt = LittleFS.open(PFAD, "r");
-  if (!aus || !alt) {
-    fehler = F("Vorlagendatei nicht lesbar");
-    if (aus)
-      aus.close();
-    if (alt)
-      alt.close();
+  const Neuschrift weg[] = {{abschnittFuer(kind, true), nullptr, true},
+                            {abschnittFuer(kind, false), nullptr, false}};
+  if (!schreibeDateiNeu(weg, 2, fehler)) {
     return false;
   }
-
-  aus.print(MailVorlage::DATEI_KOPF);
-  aus.print('\n');
-
-  char zeile[ZEILE_PUFFER];
-  size_t n = alt.readBytesUntil('\n', zeile, sizeof(zeile) - 1);
-  zeile[n] = '\0';
-  const bool kopfOk = (strcmp(zeile, MailVorlage::DATEI_KOPF) == 0);
-
-  bool uebernehmen = false;
-  while (kopfOk && alt.available()) {
-    n = alt.readBytesUntil('\n', zeile, sizeof(zeile) - 1);
-    zeile[n] = '\0';
-    while (n > 0 && zeile[n - 1] == '\r') {
-      zeile[--n] = '\0';
-    }
-    const Abschnitt marke = MailVorlage::erkenneMarke(zeile);
-    if (marke != Abschnitt::Keiner) {
-      uebernehmen = (marke != zielBetreff && marke != zielRumpf && marke != Abschnitt::Unbekannt);
-      if (uebernehmen) {
-        aus.print(MailVorlage::markeVon(marke));
-        aus.print('\n');
-      }
-      continue;
-    }
-    if (uebernehmen) {
-      aus.print(zeile);
-      aus.print('\n');
-    }
-    optimistic_yield(1000);
-  }
-
-  alt.close();
-  aus.close();
-  LittleFS.remove(PFAD);
-  if (!LittleFS.rename(neu, PFAD)) {
-    fehler = F("Vorlagendatei konnte nicht ersetzt werden");
-    LittleFS.remove(neu);
-    return false;
-  }
-  LOG_INFO(F("Vorlagen"), F("Vorlage auf Standard zurueckgesetzt"));
+  LOG_INFO(F("Vorlagen"), F("Vorlage auf Standard zurückgesetzt"));
   return true;
+}
+
+bool MailVorlagen::setzeStilZurueck(String& fehler) {
+  if (!LittleFS.exists(PFAD)) {
+    return true;
+  }
+  const Neuschrift weg[] = {{Abschnitt::Stil, nullptr, false}};
+  if (!schreibeDateiNeu(weg, 1, fehler)) {
+    return false;
+  }
+  LOG_INFO(F("Vorlagen"), F("Stil auf Standard zurückgesetzt"));
+  return true;
+}
+
+void MailVorlagen::sendeStil(MailVorlage::ZeilenSenke aus, void* context) {
+  struct Ziel {
+    MailVorlage::ZeilenSenke aus;
+    void* context;
+  } ziel{aus, context};
+
+  leseAbschnitt(
+      Abschnitt::Stil,
+      [](const char* zeile, void* zielZeiger) {
+        Ziel* z = static_cast<Ziel*>(zielZeiger);
+        z->aus(zeile, strlen(zeile), z->context);
+        return true;
+      },
+      &ziel);
 }

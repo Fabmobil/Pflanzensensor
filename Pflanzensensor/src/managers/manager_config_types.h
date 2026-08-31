@@ -99,6 +99,9 @@ struct ConfigData {
   /// Kommagetrennte Kanalschlüssel ("ANALOG_0,DHT_1"); leer = alle
   String mailSensors;
   uint16_t mailWarnHours;
+  /// Ab welchem Zustand gewarnt wird: 1 = gelb, 2 = rot. Zahlen statt eines
+  /// Aufzählungstyps, weil Preferences hier nur Ganzzahlen speichert.
+  uint8_t mailWarnFrom;
   bool mailAliveEnabled;
   uint16_t mailAliveHours;
   bool mailBootEnabled;

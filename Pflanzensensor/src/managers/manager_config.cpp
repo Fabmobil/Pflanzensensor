@@ -261,6 +261,16 @@ ConfigManager::ConfigResult ConfigManager::setMailWarnHours(uint16_t hours) {
                             : ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
 }
 
+ConfigManager::ConfigResult ConfigManager::setMailWarnFrom(uint8_t level) {
+  // Nur gelb oder rot; alles andere käme aus einem verbogenen Formular.
+  const uint8_t sauber = (level == 2) ? 2 : 1;
+  m_configData.mailWarnFrom = sauber;
+  auto result =
+      PreferencesManager::updateUIntValue(PreferencesNamespaces::GENERAL, "mail_warn_ab", sauber);
+  return result.isSuccess() ? ConfigResult::success()
+                            : ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
+}
+
 ConfigManager::ConfigResult ConfigManager::setMailAliveEnabled(bool enabled) {
   return updateBoolConfig(
       m_configData.mailAliveEnabled, enabled,

@@ -234,6 +234,34 @@ void test_startzeitpunkt_wird_nachgetragen() {
   TEST_ASSERT_EQUAL(Kind::Alive, s.due(T0 + 24 * STUNDE));
 }
 
+/// Warnschwelle Rot: gelbe Werte lösen dann keine Mail mehr aus
+void test_warnschwelle_rot() {
+  SchedulerConfig c = standard();
+  c.warnFrom = Level::Red;
+
+  Scheduler s;
+  s.begin(c, T0);
+  s.reportLevel(1, Level::Yellow, true);
+  TEST_ASSERT_EQUAL(Kind::None, s.due(T0 + 200));
+
+  s.reportLevel(1, Level::Red, true);
+  TEST_ASSERT_EQUAL(Kind::Warning, s.due(T0 + 200));
+}
+
+/// Vorgabe bleibt Gelb - das ist das bisherige Verhalten
+void test_warnschwelle_vorgabe_ist_gelb() {
+  TEST_ASSERT_EQUAL(Level::Yellow, SchedulerConfig{}.warnFrom);
+
+  TEST_ASSERT_TRUE(istAuffaellig(Level::Yellow, Level::Yellow));
+  TEST_ASSERT_TRUE(istAuffaellig(Level::Red, Level::Yellow));
+  TEST_ASSERT_FALSE(istAuffaellig(Level::Green, Level::Yellow));
+  TEST_ASSERT_FALSE(istAuffaellig(Level::Yellow, Level::Red));
+
+  // Ein Sensor ohne Messwert ist kein Alarm, obwohl Unknown numerisch kleiner
+  // ist als alles andere
+  TEST_ASSERT_FALSE(istAuffaellig(Level::Unknown, Level::Yellow));
+}
+
 void setUp() {}
 void tearDown() {}
 
@@ -254,5 +282,7 @@ int main(int, char**) {
   RUN_TEST(test_sensorauswahl);
   RUN_TEST(test_stunden_werden_begrenzt);
   RUN_TEST(test_kanalgrenze);
+  RUN_TEST(test_warnschwelle_rot);
+  RUN_TEST(test_warnschwelle_vorgabe_ist_gelb);
   return UNITY_END();
 }

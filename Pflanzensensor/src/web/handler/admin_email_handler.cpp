@@ -167,6 +167,19 @@ void AdminEmailHandler::handlePage() {
         sendeSensorAuswahl();
         sendChunk(F("<div class='mail-hinweis'>Ohne Auswahl werden alle überwacht.</div>"));
 
+        sendChunk(F("<div><label>Warnen ab <select name='warn_ab'>"));
+        sendChunk(F("<option value='1'"));
+        if (ConfigMgr.getMailWarnFrom() != 2)
+          sendChunk(F(" selected"));
+        sendChunk(F(">\xF0\x9F\x9F\xA1 gelb - sobald ein Wert aus dem Wohlfühlbereich "
+                    "wandert</option>"));
+        sendChunk(F("<option value='2'"));
+        if (ConfigMgr.getMailWarnFrom() == 2)
+          sendChunk(F(" selected"));
+        sendChunk(F(">\xF0\x9F\x94\xB4 rot - erst wenn es der Pflanze wirklich schlecht "
+                    "geht</option>"));
+        sendChunk(F("</select></label></div>"));
+
         sendChunk(F("<div><label>Höchstens eine Warnung alle <input type='number' name='warn_h' "
                     "min='1' max='720' style='width:5em' value='"));
         sendChunk(String(ConfigMgr.getMailWarnHours()));
@@ -202,7 +215,7 @@ void AdminEmailHandler::handlePage() {
                     "<button type='submit' class='button-secondary'>Nur Testmail senden "
                     "(ohne Speichern)</button></form>"));
 
-        sendChunk(F("<div style='margin-top:0.8em'><a class='button-secondary' "
+        sendChunk(F("<div style='margin-top:0.8em'><a class='button button-secondary' "
                     "href='/admin/email/vorlagen'>\xE2\x9C\x8F\xEF\xB8\x8F Mailtexte "
                     "bearbeiten</a></div>"));
 
@@ -280,6 +293,8 @@ void AdminEmailHandler::handleSave() {
     }
   }
   ConfigMgr.setMailSensors(auswahl);
+
+  ConfigMgr.setMailWarnFrom(_server.arg("warn_ab") == "2" ? 2 : 1);
 
   const long warnH = _server.arg("warn_h").toInt();
   if (warnH > 0) {

@@ -183,15 +183,7 @@ void meldeSpeicher(const __FlashStringHelper* wann) {
                            F(" B, Fragmentierung ") + String(ESP.getHeapFragmentation()) + F(" %"));
 }
 
-Mail::Level levelVon(const String& status) {
-  if (status == F("green"))
-    return Mail::Level::Green;
-  if (status == F("yellow"))
-    return Mail::Level::Yellow;
-  if (status == F("red"))
-    return Mail::Level::Red;
-  return Mail::Level::Unknown;
-}
+Mail::Level levelVon(const String& status) { return Mail::levelVonText(status.c_str()); }
 
 /// Eine Zeile bis CRLF lesen. Gibt false bei Zeitüberschreitung zurück.
 bool leseZeile(WiFiClient& client, String& zeile) {
@@ -323,6 +315,7 @@ void MailSender::reloadConfig() {
   c.bootMail = ConfigMgr.isMailBootEnabled();
   c.aliveMail = ConfigMgr.isMailAliveEnabled();
   c.warnIntervalSeconds = Mail::hoursToSeconds(ConfigMgr.getMailWarnHours());
+  c.warnFrom = ConfigMgr.getMailWarnFrom() == 2 ? Mail::Level::Red : Mail::Level::Yellow;
   c.aliveIntervalSeconds = Mail::hoursToSeconds(ConfigMgr.getMailAliveHours());
 
   const uint32_t jetzt = static_cast<uint32_t>(Helper::getCurrentTime());
@@ -646,8 +639,24 @@ bool MailSender::sende(Mail::Kind kind, String& fehler) {
       // Rumpf zeilenweise aus der Vorlage. Die Datei wird erst hier geöffnet
       // und gleich wieder geschlossen: ein offenes Dateihandle hält einen
       // Cachepuffer, der nicht mit der Handshake-Spitze zusammenfallen darf.
+      //
+      // Rahmen und Stil kommen von hier, nicht aus der Vorlage: im Vorlagentext
+      // steht kein HTML mehr, das jemand aufmachen und zu schließen vergessen
+      // könnte.
       SendeZiel ziel{&tlsClient};
+      static const char AUF[] = "<!DOCTYPE html><html><head>"
+                                "<meta charset=\"utf-8\">"
+                                "<meta name=\"viewport\" content=\"width=device-width\">"
+                                "<style>";
+      sendeRumpfZeile(AUF, strlen(AUF), &ziel);
+      MailVorlagen::sendeStil(sendeRumpfZeile, &ziel);
+      static const char MITTE[] = "</style></head><body>";
+      sendeRumpfZeile(MITTE, strlen(MITTE), &ziel);
+
       MailVorlagen::sendeRumpf(kind, sendeRumpfZeile, &ziel);
+
+      static const char ZU[] = "</body></html>";
+      sendeRumpfZeile(ZU, strlen(ZU), &ziel);
 
       tlsClient.print(F(".\r\n"));
       break;

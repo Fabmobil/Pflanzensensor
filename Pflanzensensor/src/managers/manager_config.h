@@ -141,6 +141,8 @@ public:
   inline const String& getMailTo() const { return m_configData.mailTo; }
   inline const String& getMailSensors() const { return m_configData.mailSensors; }
   inline uint16_t getMailWarnHours() const { return m_configData.mailWarnHours; }
+  /// @brief Ab welchem Zustand gewarnt wird: 1 = gelb, 2 = rot
+  inline uint8_t getMailWarnFrom() const { return m_configData.mailWarnFrom; }
   inline bool isMailAliveEnabled() const { return m_configData.mailAliveEnabled; }
   inline uint16_t getMailAliveHours() const { return m_configData.mailAliveHours; }
   inline bool isMailBootEnabled() const { return m_configData.mailBootEnabled; }
@@ -164,6 +166,7 @@ public:
   ConfigResult setMailTo(const String& to);
   ConfigResult setMailSensors(const String& sensors);
   ConfigResult setMailWarnHours(uint16_t hours);
+  ConfigResult setMailWarnFrom(uint8_t level);
   ConfigResult setMailAliveEnabled(bool enabled);
   ConfigResult setMailAliveHours(uint16_t hours);
   ConfigResult setMailBootEnabled(bool enabled);

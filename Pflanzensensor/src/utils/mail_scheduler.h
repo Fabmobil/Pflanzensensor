@@ -32,6 +32,41 @@ enum class Kind : uint8_t {
 /// Zustand eines Messwerts, wie ihn der Sensor meldet.
 enum class Level : uint8_t { Unknown, Green, Yellow, Red };
 
+/**
+ * @brief Zustandstext des Sensors in einen Level übersetzen
+ * @details Steht hier und nicht beim Versender, weil auch die Vorlagen die
+ *          Übersetzung brauchen - und beide müssen dieselbe verwenden.
+ */
+inline Level levelVonText(const char* status) {
+  if (!status) {
+    return Level::Unknown;
+  }
+  if (strcmp(status, "green") == 0) {
+    return Level::Green;
+  }
+  if (strcmp(status, "yellow") == 0) {
+    return Level::Yellow;
+  }
+  if (strcmp(status, "red") == 0) {
+    return Level::Red;
+  }
+  return Level::Unknown;
+}
+
+/**
+ * @brief Zählt dieser Zustand als auffällig?
+ * @details Einzige Quelle der Wahrheit für "auffällig": der Zeitplaner
+ *          entscheidet damit über die Warnmail, und der Platzhalter
+ *          {auffaellige} füllt damit seine Tabelle. Zwei Regeln wären eine
+ *          Warnmail, in der nichts Auffälliges steht.
+ */
+inline bool istAuffaellig(Level level, Level ab) {
+  if (level == Level::Unknown || ab == Level::Unknown) {
+    return false;
+  }
+  return static_cast<uint8_t>(level) >= static_cast<uint8_t>(ab);
+}
+
 struct SchedulerConfig {
   bool enabled{false};
   bool bootMail{false};
@@ -44,6 +79,10 @@ struct SchedulerConfig {
   /// Einschalten stehen die Sensoren noch auf "unbekannt" oder wärmen auf; eine
   /// Warnung daraus wäre nur ein Fehlalarm.
   uint32_t settleSeconds{180};
+  /// Ab welchem Zustand gewarnt wird. Gelb heißt "Wert wandert aus dem
+  /// Wohlfühlbereich", Rot heißt "der Pflanze geht es schlecht". Wer den Sensor
+  /// an einer robusten Pflanze hat, will nicht bei jedem gelben Wert eine Mail.
+  Level warnFrom{Level::Yellow};
 };
 
 /**
@@ -98,10 +137,16 @@ public:
     }
   }
 
-  /// @brief Ist mindestens ein überwachter Messwert auffällig?
+  /**
+   * @brief Ist mindestens ein überwachter Messwert auffällig?
+   * @details Auffällig heißt: mindestens so schlimm wie die eingestellte
+   *          Schwelle. Level ist aufsteigend nach Dringlichkeit sortiert, aber
+   *          Unknown steht davor und darf deshalb nie mitzählen - ein Sensor,
+   *          der noch nichts gemeldet hat, ist kein Alarm.
+   */
   bool hasAlarm() const {
     for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
-      if (m_levels[i] == Level::Yellow || m_levels[i] == Level::Red) {
+      if (istAuffaellig(m_levels[i], m_config.warnFrom)) {
         return true;
       }
     }
