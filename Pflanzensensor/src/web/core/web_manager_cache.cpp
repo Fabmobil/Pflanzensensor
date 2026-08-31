@@ -47,6 +47,12 @@ void WebManager::initializeRemainingHandlers() {
       });
     }
 
+    if (AdminEmailHandler::ownsUrl(url)) {
+      return ensureHandler("admin_email", [this]() -> std::unique_ptr<BaseHandler> {
+        return std::make_unique<AdminEmailHandler>(*_server, *_auth, *_cssService);
+      });
+    }
+
     if (AdminSensorHandler::ownsUrl(url)) {
       if (!_sensorManager) {
         return true; // ohne Sensor-Manager gibt es nichts zu registrieren

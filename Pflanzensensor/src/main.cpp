@@ -22,6 +22,7 @@
 // System Components
 #include "chronik/chronik_store.h"
 #include "configs/config.h"
+#include "mail/mail_sender.h"
 #include "utils/helper.h"
 #include "utils/result_types.h"
 
@@ -262,6 +263,8 @@ void setup() {
   }
 #endif
 
+  MailSender::instance().begin();
+
   logger.endMemoryTracking(F("managers_init"));
   logger.logMemoryStats(F("setup_complete"));
   LOG_INFO(F("main"), F("Setup abgeschlossen"));
@@ -393,22 +396,27 @@ void loop() {
   {
     static constexpr unsigned long NTP_RESYNC_INTERVAL = 3600000UL; // 1 Stunde
     static constexpr unsigned long NTP_RETRY_INTERVAL = 60000UL;    // 1 Minute
-    const unsigned long ntpInterval =
-        logger.isNTPInitialized() ? NTP_RESYNC_INTERVAL : NTP_RETRY_INTERVAL;
+    // Entscheidend ist, ob eine brauchbare Uhrzeit vorliegt - nicht, ob der
+    // NTP-Client angelegt wurde. Scheitert die Synchronisation beim Start
+    // (Netz noch nicht bereit), ist der Client initialisiert und die Uhr
+    // trotzdem leer; mit isNTPInitialized() als Bedingung wartete das Gerät
+    // danach eine volle Stunde, statt es gleich noch einmal zu versuchen.
+    const bool uhrLaeuft = Helper::getCurrentTime() > 1600000000;
+    const unsigned long ntpInterval = uhrLaeuft ? NTP_RESYNC_INTERVAL : NTP_RETRY_INTERVAL;
 
     if (currentMillis - lastNtpSync >= ntpInterval) {
       lastNtpSync = currentMillis;
 #if USE_WIFI
       if (WiFi.status() == WL_CONNECTED && !isCaptivePortalAPActive()) {
-        const bool warSchonDa = logger.isNTPInitialized();
         const time_t vorher = Helper::getCurrentTime();
 
         logger.initNTP(); // fängt sich selbst ab, wenn schon initialisiert
         logger.updateNTP();
 
         const time_t nachher = Helper::getCurrentTime();
-        if (!warSchonDa) {
-          LOG_INFO(F("main"), F("NTP nachträglich initialisiert"));
+
+        if (!uhrLaeuft && nachher > 1600000000) {
+          LOG_INFO(F("main"), F("NTP-Zeit nachträglich bekommen"));
         } else if (nachher > 0 && vorher > 0) {
           // Die Abweichung ist die eigentlich interessante Zahl: an ihr sieht
           // man, wie weit der Quarz in einer Stunde davonläuft.
@@ -467,6 +475,11 @@ void loop() {
   // kurzzeitig die anderthalbfache Dateigröße und soll den Platz zuerst
   // bekommen. Auch das ist die EINZIGE Stelle, an der die Chronik schreibt.
   ChronikStore::instance().flushIfDue();
+
+  // Mailversand. Ebenfalls nur hier und nirgends sonst: ein TLS-Handshake
+  // dauert auf diesem Gerät über eine Sekunde und braucht rund 10 KB Heap am
+  // Stück - aus einem Webhandler heraus stünde derweil alles still.
+  MailSender::instance().loop();
 
   // Basic system maintenance
   yield();

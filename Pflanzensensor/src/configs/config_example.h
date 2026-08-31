@@ -216,6 +216,25 @@
 
 // alles hier drunter fliegt irgendwann raus ..
 #define FILE_LOGGING_ENABLED false
+
+// ===== Mailversand =====
+// Vorbelegt mit dem Funktionskonto des Fabmobil-Pflanzensensors: so muss im
+// Webinterface nur noch das Passwort und die Empfängeradresse eingetragen
+// werden. Das Passwort steht bewusst NICHT hier - der ESP8266 kennt weder
+// Flash-Verschlüsselung noch Secure Boot, und die Firmware wird veröffentlicht;
+// alles, was hier steht, ist damit öffentlich lesbar.
+#define MAIL_ENABLED false
+#define MAIL_SMTP_HOST "smtp.datenkollektiv.net"
+#define MAIL_SMTP_PORT 465
+#define MAIL_SMTP_USER "pflanzensensor@fabmobil.org"
+#define MAIL_SMTP_PASSWORD ""
+#define MAIL_FROM "pflanzensensor@fabmobil.org"
+#define MAIL_TO ""
+#define MAIL_WARN_INTERVAL_HOURS 4
+#define MAIL_ALIVE_ENABLED false
+#define MAIL_ALIVE_INTERVAL_HOURS 24
+#define MAIL_BOOT_ENABLED false
+
 #define MAX_LOG_FILE_SIZE 50000 // Maximale Logdateigröße in Bytes
 // E-Mail-Benachrichtigungen. Aus: fuer TLS reicht der RAM nicht.
 #define USE_MAIL false

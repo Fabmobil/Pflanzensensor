@@ -550,8 +550,20 @@ void Logger::verifyTimezone() {
 }
 
 void Logger::updateNTP() {
-  if (m_ntpInitialized) {
-    m_timeClient->update();
+  if (!m_ntpInitialized) {
+    return;
+  }
+  m_timeClient->update();
+
+  // Systemuhr mitziehen. Der Logger rechnet seine Zeit selbst aus dem
+  // NTPClient aus; time() bliebe sonst bei den Sekunden seit dem Einschalten
+  // stehen. BearSSL prüft die Gültigkeitsdauer von Zertifikaten genau dagegen
+  // und hält dann jedes für "noch nicht gültig" - der Mailversand scheiterte
+  // deshalb bei jedem Start, bis die erste stündliche Nachführung lief.
+  const time_t jetzt = m_timeClient->getEpochTime();
+  if (jetzt > 1600000000) {
+    timeval tv = {jetzt, 0};
+    settimeofday(&tv, nullptr);
   }
 }
 

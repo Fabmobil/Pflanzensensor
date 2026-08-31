@@ -74,11 +74,37 @@ struct ConfigData {
   bool debugSensor;
   bool debugDisplay;
   bool debugWebSocket;
+  /// Ausführliches Mitschreiben des SMTP-Dialogs beim Mailversand
+  bool debugMail;
 
   /**
    * @brief Device name (user-configurable)
    */
   String deviceName;
+
+  /**
+   * @brief Mailversand
+   * @details Liegt im Namensraum "general" mit dem Präfix "mail_", nicht in
+   *          einem eigenen: jeder Preferences-Namensraum ist auf LittleFS ein
+   *          Verzeichnis und kostet ein Metadaten-Blockpaar von 16 KB - das
+   *          wären zwei Segmente Chronik weniger, nur für den Ordnernamen.
+   */
+  bool mailEnabled;
+  String mailHost;
+  uint16_t mailPort;
+  String mailUser;
+  String mailPassword;
+  String mailFrom;
+  String mailTo;
+  /// Kommagetrennte Kanalschlüssel ("ANALOG_0,DHT_1"); leer = alle
+  String mailSensors;
+  uint16_t mailWarnHours;
+  bool mailAliveEnabled;
+  uint16_t mailAliveHours;
+  bool mailBootEnabled;
+  /// Zeitpunkte der letzten Sendungen, damit die Sperren einen Neustart überdauern
+  uint32_t mailLastWarning;
+  uint32_t mailLastAlive;
 
   /**
    * @brief WiFi credentials (up to 3 sets)

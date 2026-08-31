@@ -82,6 +82,11 @@
   background: linear-gradient(90deg, #64748b 0%, #475569 100%);
 }
 
+.admin-content-box[data-section*="/email"]::before {
+  content: 'E-MAIL';
+  background: linear-gradient(90deg, #db2777 0%, #9d174d 100%);
+}
+
 .admin-content-box[data-section="chronik"]::before {
   content: 'CHRONIK';
   background: linear-gradient(90deg, #7c3aed 0%, #5b21b6 100%);
@@ -1040,4 +1045,34 @@ button.warning:hover,
   #chronik-canvas {
     height: 260px;
   }
+}
+
+/* === Mailversand ===
+   Wie die Chronikstile hier statt in einer eigenen Datei: eine weitere
+   CSS-Datei kostet mit ihrer .gz-Fassung zwei 8-KB-Blöcke im Dateisystem. */
+.mail-felder {
+  transition: opacity 0.2s ease;
+}
+
+.mail-felder.aus {
+  display: none;
+}
+
+.mail-sensorliste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em 1.2em;
+  margin: 0.4em 0;
+}
+
+.mail-status {
+  margin-top: 0.6em;
+  font-size: 0.85em;
+  color: #b9b9b9;
+}
+
+.mail-hinweis {
+  font-size: 0.8em;
+  color: #b9b9b9;
+  margin-top: 0.4em;
 }

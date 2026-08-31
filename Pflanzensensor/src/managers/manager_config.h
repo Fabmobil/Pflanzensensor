@@ -127,6 +127,50 @@ public:
    */
   inline bool isFileLoggingEnabled() const { return m_configData.fileLoggingEnabled; }
 
+  // === Mailversand ===
+  /// Ausführliches Mitschreiben des SMTP-Dialogs
+  inline bool isDebugMail() const { return m_configData.debugMail; }
+  ConfigResult setDebugMail(bool enabled);
+
+  inline bool isMailEnabled() const { return m_configData.mailEnabled; }
+  inline const String& getMailHost() const { return m_configData.mailHost; }
+  inline uint16_t getMailPort() const { return m_configData.mailPort; }
+  inline const String& getMailUser() const { return m_configData.mailUser; }
+  inline const String& getMailPassword() const { return m_configData.mailPassword; }
+  inline const String& getMailFrom() const { return m_configData.mailFrom; }
+  inline const String& getMailTo() const { return m_configData.mailTo; }
+  inline const String& getMailSensors() const { return m_configData.mailSensors; }
+  inline uint16_t getMailWarnHours() const { return m_configData.mailWarnHours; }
+  inline bool isMailAliveEnabled() const { return m_configData.mailAliveEnabled; }
+  inline uint16_t getMailAliveHours() const { return m_configData.mailAliveHours; }
+  inline bool isMailBootEnabled() const { return m_configData.mailBootEnabled; }
+  inline uint32_t getMailLastWarning() const { return m_configData.mailLastWarning; }
+  inline uint32_t getMailLastAlive() const { return m_configData.mailLastAlive; }
+
+  /**
+   * @brief Wird dieser Messkanal für Warnmails überwacht?
+   * @param key Kanalschlüssel wie "ANALOG_0" oder "DHT_1"
+   * @details Leere Auswahl heißt "alle" - so verhält sich das Gerät nach dem
+   *          Einschalten sinnvoll, ohne dass jemand erst Haken setzen muss.
+   */
+  bool isMailSensorWatched(const String& key) const;
+
+  ConfigResult setMailEnabled(bool enabled);
+  ConfigResult setMailHost(const String& host);
+  ConfigResult setMailPort(uint16_t port);
+  ConfigResult setMailUser(const String& user);
+  ConfigResult setMailPassword(const String& password);
+  ConfigResult setMailFrom(const String& from);
+  ConfigResult setMailTo(const String& to);
+  ConfigResult setMailSensors(const String& sensors);
+  ConfigResult setMailWarnHours(uint16_t hours);
+  ConfigResult setMailAliveEnabled(bool enabled);
+  ConfigResult setMailAliveHours(uint16_t hours);
+  ConfigResult setMailBootEnabled(bool enabled);
+  /// Zeitpunkte der letzten Sendungen festhalten (überdauert den Neustart)
+  ConfigResult setMailLastWarning(uint32_t epoch);
+  ConfigResult setMailLastAlive(uint32_t epoch);
+
   /**
    * @brief Check if a firmware upgrade is scheduled
    * @return True if a firmware upgrade is pending

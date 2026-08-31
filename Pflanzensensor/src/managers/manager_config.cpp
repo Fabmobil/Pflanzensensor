@@ -12,6 +12,7 @@
 #include "../managers/manager_sensor_persistence.h"
 #include "../utils/critical_section.h"
 #include "../utils/flash_persistence.h"
+#include "../utils/mail_scheduler.h"
 #include "../web/handler/admin_handler.h"
 #include "../web/handler/web_ota_handler.h"
 #include "managers/manager_config_preferences.h"
@@ -152,6 +153,156 @@ ConfigManager::ConfigResult ConfigManager::setMD5Verification(bool enabled) {
                                                    val);
       },
       "md5_verification", true);
+}
+
+ConfigManager::ConfigResult ConfigManager::setDebugMail(bool enabled) {
+  return updateBoolConfig(
+      m_configData.debugMail, enabled,
+      [](bool val) {
+        return PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "mail", val);
+      },
+      F("Debug Mail"));
+}
+
+// === Mailversand ===
+//
+// Alle Werte liegen im Namensraum "general" mit dem Präfix "mail_". Ein eigener
+// Namensraum wäre auf LittleFS ein Verzeichnis und kostete 16 KB Metadaten -
+// zwei Segmente Chronik, nur für den Ordnernamen.
+
+bool ConfigManager::isMailSensorWatched(const String& key) const {
+  // Die Vergleichslogik steht in utils/mail_scheduler.h, weil sie dort ohne
+  // Hardware geprüft werden kann - "DHT_1" darf nicht in "DHT_10" treffen.
+  return Mail::isWatched(m_configData.mailSensors.c_str(), key.c_str());
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailEnabled(bool enabled) {
+  return updateBoolConfig(
+      m_configData.mailEnabled, enabled,
+      [](bool val) {
+        return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "mail_on", val);
+      },
+      F("Mailversand"));
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailHost(const String& host) {
+  return updateStringConfig(
+      m_configData.mailHost, host,
+      [](const String& val) {
+        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "mail_host",
+                                                     val);
+      },
+      F("SMTP-Server"));
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailPort(uint16_t port) {
+  m_configData.mailPort = port;
+  auto result =
+      PreferencesManager::updateUIntValue(PreferencesNamespaces::GENERAL, "mail_port", port);
+  return result.isSuccess() ? ConfigResult::success()
+                            : ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailUser(const String& user) {
+  return updateStringConfig(
+      m_configData.mailUser, user,
+      [](const String& val) {
+        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "mail_user",
+                                                     val);
+      },
+      F("SMTP-Benutzer"));
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailPassword(const String& password) {
+  return updateStringConfig(
+      m_configData.mailPassword, password,
+      [](const String& val) {
+        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "mail_pwd",
+                                                     val);
+      },
+      F("SMTP-Passwort"));
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailFrom(const String& from) {
+  return updateStringConfig(
+      m_configData.mailFrom, from,
+      [](const String& val) {
+        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "mail_from",
+                                                     val);
+      },
+      F("Absenderadresse"));
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailTo(const String& to) {
+  return updateStringConfig(
+      m_configData.mailTo, to,
+      [](const String& val) {
+        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "mail_to",
+                                                     val);
+      },
+      F("Empfaengeradresse"));
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailSensors(const String& sensors) {
+  return updateStringConfig(
+      m_configData.mailSensors, sensors,
+      [](const String& val) {
+        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "mail_sens",
+                                                     val);
+      },
+      F("Ueberwachte Sensoren"));
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailWarnHours(uint16_t hours) {
+  m_configData.mailWarnHours = hours;
+  auto result =
+      PreferencesManager::updateUIntValue(PreferencesNamespaces::GENERAL, "mail_warn_h", hours);
+  return result.isSuccess() ? ConfigResult::success()
+                            : ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailAliveEnabled(bool enabled) {
+  return updateBoolConfig(
+      m_configData.mailAliveEnabled, enabled,
+      [](bool val) {
+        return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "mail_alive",
+                                                   val);
+      },
+      F("Lebenszeichen"));
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailAliveHours(uint16_t hours) {
+  m_configData.mailAliveHours = hours;
+  auto result =
+      PreferencesManager::updateUIntValue(PreferencesNamespaces::GENERAL, "mail_alive_h", hours);
+  return result.isSuccess() ? ConfigResult::success()
+                            : ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailBootEnabled(bool enabled) {
+  return updateBoolConfig(
+      m_configData.mailBootEnabled, enabled,
+      [](bool val) {
+        return PreferencesManager::updateBoolValue(PreferencesNamespaces::GENERAL, "mail_boot",
+                                                   val);
+      },
+      F("Startmeldung"));
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailLastWarning(uint32_t epoch) {
+  m_configData.mailLastWarning = epoch;
+  auto result =
+      PreferencesManager::updateUIntValue(PreferencesNamespaces::GENERAL, "mail_lastw", epoch);
+  return result.isSuccess() ? ConfigResult::success()
+                            : ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
+}
+
+ConfigManager::ConfigResult ConfigManager::setMailLastAlive(uint32_t epoch) {
+  m_configData.mailLastAlive = epoch;
+  auto result =
+      PreferencesManager::updateUIntValue(PreferencesNamespaces::GENERAL, "mail_lasta", epoch);
+  return result.isSuccess() ? ConfigResult::success()
+                            : ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
 }
 
 ConfigManager::ConfigResult ConfigManager::setFileLoggingEnabled(bool enabled) {
@@ -329,6 +480,10 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const char* key, const
         return result;
     } else if (keyStr == "debug_websocket") {
       auto result = setDebugWebSocket(newValue);
+      if (!result.isSuccess())
+        return result;
+    } else if (keyStr == "debug_mail") {
+      auto result = setDebugMail(newValue);
       if (!result.isSuccess())
         return result;
     }
@@ -530,6 +685,8 @@ ConfigManager::ConfigResult ConfigManager::setConfigValue(const String& namespac
       result = setDebugDisplay(enabled);
     } else if (key == "websocket") {
       result = setDebugWebSocket(enabled);
+    } else if (key == "mail") {
+      result = setDebugMail(enabled);
     }
     if (result.isSuccess()) {
       LOG_INFO(F("ConfigM"), String(F("Einstellung geändert: ")) + key + String(F(" = ")) +
