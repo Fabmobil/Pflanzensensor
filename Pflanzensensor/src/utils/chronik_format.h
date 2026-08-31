@@ -356,8 +356,9 @@ public:
    *         Rahmen, statt sie ab einer bestimmten Sensorzahl still fallen zu
    *         lassen.
    */
-  bool addChannel(uint8_t channel, bool analog, const char* key, const char* name, const char* unit,
-                  float yellowLow, float greenLow, float greenHigh, float yellowHigh) {
+  bool addChannel(uint8_t channel, bool analog, bool oneSided, const char* key, const char* name,
+                  const char* unit, float yellowLow, float greenLow, float greenHigh,
+                  float yellowHigh) {
     if (!m_ok || m_count >= MAX_CHANNELS) {
       return false;
     }
@@ -366,7 +367,10 @@ public:
       return false;
     }
     detail::putU8(m_dst, m_at, channel);
-    detail::putU8(m_dst, m_at, analog ? 0x01 : 0x00);
+    // Bit1 kam später dazu; ältere Daten haben dort eine Null, und das ist für
+    // die damals unterstützten Sensoren genau richtig (zweiseitige Grenzen).
+    detail::putU8(m_dst, m_at,
+                  static_cast<uint8_t>((analog ? 0x01 : 0x00) | (oneSided ? 0x02 : 0x00)));
     putText(key);
     putText(name);
     putText(unit);
@@ -438,6 +442,9 @@ private:
 struct TableEntry {
   uint8_t channel{0};
   bool analog{false};
+  /// Nur obere Grenzen ausgewertet (Feinstaub, CO2) - siehe
+  /// Sensor::usesOneSidedLimits().
+  bool oneSided{false};
   const char* key{nullptr};
   uint8_t keyLength{0};
   const char* name{nullptr};
@@ -498,7 +505,9 @@ inline size_t readTable(const uint8_t* src, size_t length, TableEntryCallback ca
   for (uint8_t i = 0; i < count; i++) {
     TableEntry entry;
     entry.channel = src[at++];
-    entry.analog = (src[at++] & 0x01) != 0;
+    const uint8_t flags = src[at++];
+    entry.analog = (flags & 0x01) != 0;
+    entry.oneSided = (flags & 0x02) != 0;
 
     const char** texts[3] = {&entry.key, &entry.name, &entry.unit};
     uint8_t* lengths[3] = {&entry.keyLength, &entry.nameLength, &entry.unitLength};

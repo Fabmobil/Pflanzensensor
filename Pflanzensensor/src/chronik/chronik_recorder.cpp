@@ -108,10 +108,10 @@ size_t writeChannelTable(uint8_t* dst, size_t space, uint32_t epoch, uint8_t fro
       name = sensor->getMeasurementName(index);
     }
 
-    if (!builder.addChannel(channel, isAnalogSensor(sensor), key.c_str(), name.c_str(),
-                            measurement.unit.c_str(), measurement.limits.yellowLow,
-                            measurement.limits.greenLow, measurement.limits.greenHigh,
-                            measurement.limits.yellowHigh)) {
+    if (!builder.addChannel(channel, isAnalogSensor(sensor), sensor->usesOneSidedLimits(),
+                            key.c_str(), name.c_str(), measurement.unit.c_str(),
+                            measurement.limits.yellowLow, measurement.limits.greenLow,
+                            measurement.limits.greenHigh, measurement.limits.yellowHigh)) {
       voll = true; // passt nicht mehr - kommt in den nächsten Rahmen
       return;
     }

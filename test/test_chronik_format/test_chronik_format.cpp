@@ -167,8 +167,8 @@ void test_messrahmen_roundtrip_mit_allen_statuswerten() {
 void test_kanaltabelle_roundtrip() {
   uint8_t puffer[256] = {0};
   TableBuilder builder(puffer, sizeof(puffer), 1756612345UL);
-  builder.addChannel(0, true, "ANALOG_0", "Lichtstaerke", "%", 10.0f, 20.0f, 80.0f, 90.0f);
-  builder.addChannel(2, false, "DHT_0", "Lufttemperatur",
+  builder.addChannel(0, true, false, "ANALOG_0", "Lichtstaerke", "%", 10.0f, 20.0f, 80.0f, 90.0f);
+  builder.addChannel(2, false, false, "DHT_0", "Lufttemperatur",
                      "\xC2\xB0"
                      "C",
                      10.0f, 15.0f, 25.0f, 30.0f);
@@ -204,8 +204,8 @@ void test_kanaltabelle_roundtrip() {
 void test_kaputte_kanaltabelle_meldet_nichts() {
   uint8_t puffer[256] = {0};
   TableBuilder builder(puffer, sizeof(puffer), 1756612345UL);
-  builder.addChannel(0, true, "ANALOG_0", "Lichtstaerke", "%", 10.0f, 20.0f, 80.0f, 90.0f);
-  builder.addChannel(1, true, "ANALOG_1", "Bodenfeuchte", "%", 10.0f, 20.0f, 80.0f, 90.0f);
+  builder.addChannel(0, true, false, "ANALOG_0", "Lichtstaerke", "%", 10.0f, 20.0f, 80.0f, 90.0f);
+  builder.addChannel(1, true, false, "ANALOG_1", "Bodenfeuchte", "%", 10.0f, 20.0f, 80.0f, 90.0f);
   const size_t n = builder.finish();
 
   puffer[20] ^= 0x04; // ein Bit im zweiten Eintrag kippen
@@ -213,6 +213,33 @@ void test_kaputte_kanaltabelle_meldet_nichts() {
   Gelesen gelesen;
   TEST_ASSERT_EQUAL_UINT32(0, readTable(puffer, n, sammle, &gelesen));
   TEST_ASSERT_EQUAL_UINT8(0, gelesen.anzahl);
+}
+
+/// Feinstaub und CO2 werten nur die obere Grenze aus. Ohne dieses Kennzeichen
+/// zeichnete die Chronik eine rote Linie bei MHZ19_YELLOW_LOW = 400 ppm - und
+/// widerspräche damit dem Status, den das Gerät selbst meldet.
+void test_einseitige_grenzen_werden_mitgefuehrt() {
+  uint8_t puffer[256] = {0};
+  TableBuilder builder(puffer, sizeof(puffer), 1756612345UL);
+  builder.addChannel(0, false, true, "MHZ19_0", "CO2", "ppm", 400.0f, 600.0f, 1200.0f, 2000.0f);
+  builder.addChannel(1, true, false, "ANALOG_0", "Bodenfeuchte", "%", 10.0f, 20.0f, 80.0f, 90.0f);
+  const size_t n = builder.finish();
+
+  Gelesen gelesen;
+  TEST_ASSERT_EQUAL_UINT32(n, readTable(puffer, n, sammle, &gelesen));
+  TEST_ASSERT_TRUE(gelesen.eintraege[0].oneSided);
+  TEST_ASSERT_FALSE(gelesen.eintraege[0].analog);
+  TEST_ASSERT_FALSE(gelesen.eintraege[1].oneSided);
+  TEST_ASSERT_TRUE(gelesen.eintraege[1].analog);
+
+  // Die beiden Kennzeichen dürfen sich nicht ins Gehege kommen
+  TableBuilder beides(puffer, sizeof(puffer), 1756612345UL);
+  beides.addChannel(0, true, true, "X_0", "Beides", "%", 1.0f, 2.0f, 3.0f, 4.0f);
+  const size_t m = beides.finish();
+  Gelesen zwei;
+  TEST_ASSERT_EQUAL_UINT32(m, readTable(puffer, m, sammle, &zwei));
+  TEST_ASSERT_TRUE(zwei.eintraege[0].analog);
+  TEST_ASSERT_TRUE(zwei.eintraege[0].oneSided);
 }
 
 /// Bei vielen angeschlossenen Sensoren passt die Tabelle nicht in einen
@@ -240,7 +267,7 @@ void test_kanaltabelle_ueber_mehrere_rahmen() {
     for (uint8_t k = von; k < MAX_CHANNELS; k++) {
       char key[16];
       snprintf(key, sizeof(key), "SENSOR_%u", static_cast<unsigned>(k));
-      if (!builder.addChannel(k, k < 2, key, namen[k],
+      if (!builder.addChannel(k, k < 2, false, key, namen[k],
                               "\xC2\xB5"
                               "g/m\xC2\xB3",
                               10.0f, 20.0f, 80.0f, 90.0f)) {
@@ -284,7 +311,7 @@ void test_kuerzung_zerschneidet_kein_utf8_zeichen() {
 
   uint8_t puffer[256] = {0};
   TableBuilder builder(puffer, sizeof(puffer), 1756612345UL);
-  TEST_ASSERT_TRUE(builder.addChannel(0, false, "K", lang, "%", 0, 0, 0, 0));
+  TEST_ASSERT_TRUE(builder.addChannel(0, false, false, "K", lang, "%", 0, 0, 0, 0));
   const size_t n = builder.finish();
   TEST_ASSERT_GREATER_THAN_UINT32(0, n);
 
@@ -296,7 +323,7 @@ void test_kuerzung_zerschneidet_kein_utf8_zeichen() {
 
   // Passt der Text vollständig, wird nichts abgeschnitten
   TableBuilder zweiter(puffer, sizeof(puffer), 1756612345UL);
-  zweiter.addChannel(0, false, "K",
+  zweiter.addChannel(0, false, false, "K",
                      "\xC2\xB5"
                      "g/m\xC2\xB3",
                      "%", 0, 0, 0, 0);
@@ -339,7 +366,7 @@ void test_wertebereiche_der_uebrigen_sensoren() {
 void test_kanaltabelle_ohne_platz() {
   uint8_t puffer[24] = {0};
   TableBuilder builder(puffer, sizeof(puffer), 1756612345UL);
-  builder.addChannel(0, true, "ANALOG_0", "Lichtstaerke", "%", 10.0f, 20.0f, 80.0f, 90.0f);
+  builder.addChannel(0, true, false, "ANALOG_0", "Lichtstaerke", "%", 10.0f, 20.0f, 80.0f, 90.0f);
   TEST_ASSERT_EQUAL_UINT32(0, builder.finish());
 
   // Ohne einen einzigen Kanal ebenfalls nicht
@@ -464,6 +491,7 @@ int main(int, char**) {
   RUN_TEST(test_kanaltabelle_roundtrip);
   RUN_TEST(test_kaputte_kanaltabelle_meldet_nichts);
   RUN_TEST(test_kanaltabelle_ohne_platz);
+  RUN_TEST(test_einseitige_grenzen_werden_mitgefuehrt);
   RUN_TEST(test_kanaltabelle_ueber_mehrere_rahmen);
   RUN_TEST(test_kuerzung_zerschneidet_kein_utf8_zeichen);
   RUN_TEST(test_wertebereiche_der_uebrigen_sensoren);
