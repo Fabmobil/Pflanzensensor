@@ -19,32 +19,14 @@ extern std::unique_ptr<SensorManager> sensorManager;
 namespace {
 constexpr uint32_t MIN_HEAP_FOR_PAGE = 6000;
 
-/// Text so ausgeben, dass er in einem HTML-Attribut nichts kaputt macht.
-String maskiere(const String& roh) {
-  String out;
-  out.reserve(roh.length() + 8);
-  for (size_t i = 0; i < roh.length(); i++) {
-    const char c = roh[i];
-    if (c == '&')
-      out += F("&amp;");
-    else if (c == '<')
-      out += F("&lt;");
-    else if (c == '>')
-      out += F("&gt;");
-    else if (c == '"')
-      out += F("&quot;");
-    else if (c == '\'')
-      out += F("&#39;");
-    else
-      out += c;
-  }
-  return out;
-}
 } // namespace
+
+using AdminEmail::maskiere;
 
 bool AdminEmailHandler::ownsUrl(const String& url) {
   return url == F("/admin/email") || url == F("/admin/email/save") ||
-         url == F("/admin/email/test") || url == F("/admin/email/status");
+         url == F("/admin/email/test") || url == F("/admin/email/status") ||
+         url == F("/admin/email/vorlagen") || url == F("/admin/email/vorlagen/save");
 }
 
 RouterResult AdminEmailHandler::onRegisterRoutes(WebRouter& router) {
@@ -64,6 +46,15 @@ RouterResult AdminEmailHandler::onRegisterRoutes(WebRouter& router) {
     return result;
 
   result = router.addRoute(HTTP_GET, "/admin/email/status", [this]() { handleStatus(); });
+  if (!result.isSuccess())
+    return result;
+
+  result = router.addRoute(HTTP_GET, "/admin/email/vorlagen", [this]() { handleVorlagen(); });
+  if (!result.isSuccess())
+    return result;
+
+  result =
+      router.addRoute(HTTP_POST, "/admin/email/vorlagen/save", [this]() { handleVorlagenSave(); });
   if (!result.isSuccess())
     return result;
 
@@ -210,6 +201,10 @@ void AdminEmailHandler::handlePage() {
         sendChunk(F("<form method='post' action='/admin/email/test' style='margin-top:0.5em'>"
                     "<button type='submit' class='button-secondary'>Nur Testmail senden "
                     "(ohne Speichern)</button></form>"));
+
+        sendChunk(F("<div style='margin-top:0.8em'><a class='button-secondary' "
+                    "href='/admin/email/vorlagen'>\xE2\x9C\x8F\xEF\xB8\x8F Mailtexte "
+                    "bearbeiten</a></div>"));
 
         // Rückmeldung der letzten Sendung
         sendChunk(F("<div class='mail-status' id='mail_status'>"));

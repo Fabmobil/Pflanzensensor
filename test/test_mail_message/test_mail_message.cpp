@@ -81,6 +81,87 @@ void test_ascii_erkennung() {
   TEST_ASSERT_FALSE(isPlainAscii("Betreff\r\nBcc: wer@anders.de"));
 }
 
+/// 23 - RFC 2047 §2 erlaubt höchstens 75 Zeichen je encoded-word. Ein einziges
+/// langes Wort zeigen manche Programme ungekodiert an, und genau das trifft
+/// die Betreffzeilen mit Emojis, die jetzt im Webinterface bearbeitbar sind.
+void test_23_langer_betreff_wird_gefaltet() {
+  char out[256];
+  const char* betreff = "\xF0\x9F\x8C\xB1 Frameclaw PS meldet: Bodenfeuchte kritisch, "
+                        "bitte gie\xC3\x9F"
+                        "en! \xF0\x9F\x9A\xA8";
+  const size_t n = encodeSubject(betreff, out, sizeof(out));
+  TEST_ASSERT_GREATER_THAN_UINT32(0, n);
+
+  // Referenz aus Pythons base64, unabhängig gerechnet
+  TEST_ASSERT_EQUAL_STRING(
+      "=?UTF-8?B?8J+MsSBGcmFtZWNsYXcgUFMgbWVsZGV0OiBCb2RlbmZldWNodGUga3JpdGlz?=\r\n"
+      " =?UTF-8?B?Y2gsIGJpdHRlIGdpZcOfZW4hIPCfmqg=?=",
+      out);
+
+  // Jedes Teilwort für sich unter der Grenze
+  size_t wortLaenge = 0;
+  for (size_t i = 0; i < n; i++) {
+    if (out[i] == '\r') {
+      TEST_ASSERT_LESS_OR_EQUAL_UINT32(75, wortLaenge);
+      wortLaenge = 0;
+      i += 2; // CRLF und das Leerzeichen überspringen
+      continue;
+    }
+    wortLaenge++;
+  }
+  TEST_ASSERT_LESS_OR_EQUAL_UINT32(75, wortLaenge);
+}
+
+/// 24 - ein Emoji ist vier Byte lang; ein Schnitt mittendrin ergäbe beim
+/// Empfänger zwei Ersatzzeichen statt des Zeichens.
+void test_24_faltung_zerreisst_kein_emoji() {
+  // 30 Emojis à vier Byte = 120 Byte. Die Stückgrenze liegt bei 45 Byte und
+  // damit gerade NICHT auf einem Vielfachen von vier - genau der Fall, in dem
+  // ein naiver Schnitt ein Emoji zerlegt.
+  char betreff[121];
+  for (uint8_t i = 0; i < 30; i++) {
+    memcpy(betreff + i * 4, "\xF0\x9F\x8C\xB1", 4);
+  }
+  betreff[120] = '\0';
+
+  char out[400];
+  const size_t n = encodeSubject(betreff, out, sizeof(out));
+  TEST_ASSERT_GREATER_THAN_UINT32(0, n);
+
+  // Aus der base64-Länge samt Auffüllzeichen die Rohlänge zurückrechnen: sie
+  // muss durch vier teilbar sein, dann enthält das Stück nur ganze Emojis.
+  const char* p = out;
+  uint8_t woerter = 0;
+  while ((p = strstr(p, "=?UTF-8?B?")) != nullptr) {
+    p += 10;
+    const char* ende = strstr(p, "?=");
+    TEST_ASSERT_NOT_NULL(ende);
+    const size_t b64 = static_cast<size_t>(ende - p);
+    TEST_ASSERT_EQUAL_UINT32(0, b64 % 4);
+
+    size_t fuellzeichen = 0;
+    if (b64 >= 1 && p[b64 - 1] == '=')
+      fuellzeichen++;
+    if (b64 >= 2 && p[b64 - 2] == '=')
+      fuellzeichen++;
+    const size_t roh = (b64 / 4) * 3 - fuellzeichen;
+    TEST_ASSERT_EQUAL_UINT32(0, roh % 4);
+
+    woerter++;
+    p = ende + 2;
+  }
+  TEST_ASSERT_GREATER_THAN_UINT8(1, woerter);
+}
+
+/// 25 - Regression: reines ASCII darf nicht plötzlich kodiert werden
+void test_25_ascii_bleibt_unkodiert() {
+  char out[256];
+  const char* betreff = "Frameclaw PS: Bodenfeuchte kritisch, bitte nachschauen und giessen";
+  encodeSubject(betreff, out, sizeof(out));
+  TEST_ASSERT_EQUAL_STRING(betreff, out);
+  TEST_ASSERT_NULL(strstr(out, "=?UTF-8?"));
+}
+
 // === Message-ID und Domäne ===
 
 void test_message_id() {
@@ -134,6 +215,9 @@ int main(int, char**) {
   RUN_TEST(test_betreff_mit_umlauten_wird_kodiert);
   RUN_TEST(test_betreff_zu_kleiner_puffer);
   RUN_TEST(test_ascii_erkennung);
+  RUN_TEST(test_23_langer_betreff_wird_gefaltet);
+  RUN_TEST(test_24_faltung_zerreisst_kein_emoji);
+  RUN_TEST(test_25_ascii_bleibt_unkodiert);
   RUN_TEST(test_message_id);
   RUN_TEST(test_domaene_aus_adresse);
   RUN_TEST(test_adressen_pruefung);

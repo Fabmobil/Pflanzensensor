@@ -64,12 +64,30 @@ inline bool isPlainAscii(const char* text) {
   return true;
 }
 
+/// Rahmen eines encoded-words: "=?UTF-8?B?" plus "?=".
+static constexpr size_t EW_RAHMEN = 12;
+/// RFC 2047 §2: ein encoded-word darf höchstens 75 Zeichen lang sein.
+static constexpr size_t EW_MAX = 75;
+/// Damit bleiben 63 Zeichen für base64; das muss ein Vielfaches von vier sein,
+/// also 60 - und das sind 45 Eingabebytes.
+static constexpr size_t EW_ROH_MAX = 45;
+
 /**
  * @brief Betreff kopieren, bei Nicht-ASCII nach RFC 2047 kodieren
  * @return Länge ohne Nullbyte, 0 bei zu kleinem Puffer
- * @details "=?UTF-8?B?...?=" - Base64 statt Quoted-Printable, weil der Kodierer
- *          dafür schon da ist (AUTH LOGIN) und deutsche Betreffzeilen ohnehin
- *          reichlich Umlaute haben.
+ * @details Reines ASCII bleibt unverändert - das ist der häufige Fall und
+ *          spart die Kodierung.
+ *
+ *          Sonst wird in mehrere encoded-words à höchstens 75 Zeichen gefaltet,
+ *          getrennt durch CRLF und ein Leerzeichen. Ein einziges langes Wort
+ *          verstößt gegen RFC 2047 §2, und manche Programme zeigen es dann
+ *          ungekodiert an - genau bei den Betreffzeilen mit Emojis, um die es
+ *          hier geht.
+ *
+ *          Geschnitten wird ausschließlich an UTF-8-Zeichengrenzen: jedes
+ *          encoded-word muss für sich decodierbar sein. Ein Emoji ist vier
+ *          Byte lang, ein Schnitt mittendrin ergäbe beim Empfänger zwei
+ *          Ersatzzeichen.
  */
 inline size_t encodeSubject(const char* subject, char* out, size_t outSize) {
   if (!subject || !out) {
@@ -85,22 +103,41 @@ inline size_t encodeSubject(const char* subject, char* out, size_t outSize) {
     return length;
   }
 
-  const char* PRAEFIX = "=?UTF-8?B?";
-  const char* SUFFIX = "?=";
-  const size_t b64Laenge = ((length + 2) / 3) * 4;
-  const size_t noetig = strlen(PRAEFIX) + b64Laenge + strlen(SUFFIX);
-  if (noetig + 1 > outSize) {
-    return 0;
+  size_t gelesen = 0;
+  size_t at = 0;
+  while (gelesen < length) {
+    // Stück an einer Zeichengrenze abschneiden
+    size_t nimm = (length - gelesen) < EW_ROH_MAX ? (length - gelesen) : EW_ROH_MAX;
+    while (nimm > 1 && (gelesen + nimm) < length &&
+           (static_cast<unsigned char>(subject[gelesen + nimm]) & 0xC0) == 0x80) {
+      nimm--;
+    }
+
+    const size_t b64Laenge = ((nimm + 2) / 3) * 4;
+    const size_t noetig = EW_RAHMEN + b64Laenge + (at > 0 ? 3 : 0); // 3 für CRLF + Leerzeichen
+    if (at + noetig + 1 > outSize) {
+      return 0;
+    }
+
+    if (at > 0) {
+      out[at++] = '\r';
+      out[at++] = '\n';
+      out[at++] = ' ';
+    }
+    memcpy(out + at, "=?UTF-8?B?", 10);
+    at += 10;
+    if (Smtp::base64Encode(subject + gelesen, nimm, out + at, outSize - at) == 0) {
+      return 0;
+    }
+    at += b64Laenge;
+    out[at++] = '?';
+    out[at++] = '=';
+
+    gelesen += nimm;
   }
 
-  size_t at = strlen(PRAEFIX);
-  memcpy(out, PRAEFIX, at);
-  if (Smtp::base64Encode(subject, length, out + at, outSize - at) == 0) {
-    return 0;
-  }
-  at += b64Laenge;
-  memcpy(out + at, SUFFIX, strlen(SUFFIX) + 1);
-  return at + strlen(SUFFIX);
+  out[at] = '\0';
+  return at;
 }
 
 /**

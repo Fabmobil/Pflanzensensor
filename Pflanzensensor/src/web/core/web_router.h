@@ -75,15 +75,16 @@ public:
   /// std::function und die Methode, also grob 64 Byte.
   ///
   /// Maßgeblich ist nicht die Zahl der addRoute()-Aufrufstellen im Projekt
-  /// (aktuell 34), sondern wieviele Routen gleichzeitig registriert sein
+  /// (aktuell 40), sondern wieviele Routen gleichzeitig registriert sein
   /// können: Handler werden lazy geladen, und beim Verdrängen aus dem
   /// LRU-Cache räumt removeHandlerRoutes() ihre Routen wieder weg.
   ///
   /// Dauerhaft registriert sind 4 (/admin/config/update,
   /// /admin/config/setConfigValue, /status, /admin/update). Dazu kommen
   /// höchstens MAX_ACTIVE_HANDLERS = 3 Handler; die routenreichste Kombination
-  /// ist admin_sensor (13) + admin (6) + display (2) = 21. Macht 25 im
-  /// ungünstigsten Fall.
+  /// ist seit den Mailvorlagen admin_sensor (13) + admin_email (6) + admin (6)
+  /// = 25. Macht 29 im ungünstigsten Fall - der Abstand ist auf drei Routen
+  /// geschrumpft, die nächste Erweiterung sollte das nachrechnen.
   ///
   /// Kleinere Werte sind nicht sicher: mit 25 scheiterte im Test die
   /// Registrierung von /admin/display und /getLatestValues mit

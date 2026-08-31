@@ -5,6 +5,9 @@
 
 #include "mail/mail_sender.h"
 
+#include "mail/mail_vorlagen.h"
+#include "utils/mail_template.h"
+
 #include <WiFiClientSecure.h>
 
 #include <memory>
@@ -221,6 +224,83 @@ void sendeZeile(WiFiClient& client, const String& text) {
   client.print(F("\r\n"));
 }
 
+/**
+ * @brief Eine Rumpfzeile stopfen und senden
+ * @details Punkt-Stuffing bleibt auch bei HTML unverzichtbar: eine Zeile kann
+ *          mit einem Punkt beginnen (CSS-Klasse, Fließtext), und der Server
+ *          läse sie sonst als Ende der Nachricht (RFC 5321 4.5.2).
+ */
+/// Empfänger der Rumpfzeilen. Ein eigener Typ statt eines nackten
+/// Clientzeigers: der Weg über void* muss auf genau denselben Typ
+/// zurückcasten, sonst ist das Ergebnis undefiniert - bei einer Basisklasse
+/// kann der Zeiger versetzt sein.
+struct SendeZiel {
+  BearSSL::WiFiClientSecure* client;
+};
+
+void sendeRumpfZeile(const char* text, size_t length, void* context) {
+  SendeZiel* ziel = static_cast<SendeZiel*>(context);
+  BearSSL::WiFiClientSecure* client = ziel->client;
+
+  // Ohne Zwischenpuffer: die Kette SendBody -> sendeRumpf -> leseAbschnitt ->
+  // expandiereZeile -> hierher türmt schon genug auf dem 4-KB-Stack, und ein
+  // weiterer 256-Byte-Puffer je Zeile brachte ihn zum Überlaufen.
+  if (Smtp::needsStuffing(text, length)) {
+    const uint8_t punkt = '.';
+    client->write(&punkt, 1);
+  }
+  if (length > 0) {
+    client->write(reinterpret_cast<const uint8_t*>(text), length);
+  }
+  client->write(reinterpret_cast<const uint8_t*>("\r\n"), 2);
+
+  // Unbedingt yield(), nicht optimistic_yield(): der Rumpf ist die längste
+  // ununterbrochene Arbeit im ganzen Versand.
+  yield();
+}
+
+/**
+ * @brief Kopfzeilen der Nachricht senden
+ * @details Eigene Funktion, damit ihre Puffer den Stack wieder freigeben,
+ *          bevor der Rumpf gestreamt wird.
+ */
+void sendeKopfzeilen(BearSSL::WiFiClientSecure& client, uint32_t jetzt, const String& von,
+                     const String& an, const char* betreff, uint32_t laufendeNummer) {
+  String kopf;
+  char puffer[128];
+  Mail::formatDate(jetzt, puffer, sizeof(puffer));
+  kopf = String(F("Date: ")) + puffer + F("\r\n");
+  kopf += String(F("From: ")) + von + F("\r\n");
+  kopf += String(F("To: ")) + an + F("\r\n");
+
+  // 256 statt 200: ein gefalteter Betreff braucht je Teilwort zwölf
+  // Rahmenzeichen und drei für die Faltung (siehe Mail::encodeSubject).
+  char betreffKodiert[256];
+  if (Mail::encodeSubject(betreff, betreffKodiert, sizeof(betreffKodiert)) == 0) {
+    strncpy(betreffKodiert, "Pflanzensensor", sizeof(betreffKodiert) - 1);
+    betreffKodiert[sizeof(betreffKodiert) - 1] = '\0';
+  }
+  kopf += String(F("Subject: ")) + betreffKodiert + F("\r\n");
+
+  char domaene[64];
+  char messageId[128];
+  if (Mail::domainOf(von.c_str(), domaene, sizeof(domaene)) > 0 &&
+      Mail::formatMessageId(ConfigMgr.getDeviceName().c_str(), domaene, jetzt, laufendeNummer,
+                            messageId, sizeof(messageId)) > 0) {
+    kopf += String(F("Message-ID: ")) + messageId + F("\r\n");
+  }
+
+  kopf += F("MIME-Version: 1.0\r\n");
+  // HTML statt Klartext: die Vorlagen bringen Farben, Emojis und eine Tabelle
+  // mit. Kein multipart und kein Textteil - das bräuchte eine zweite Vorlage je
+  // Mailart oder eine automatische Umwandlung, beides zuviel für ein Gerät mit
+  // 15 KB freiem Heap.
+  kopf += F("Content-Type: text/html; charset=utf-8\r\n");
+  kopf += F("Content-Transfer-Encoding: 8bit\r\n");
+  kopf += F("\r\n");
+  client.print(kopf);
+}
+
 } // namespace
 
 MailSender& MailSender::instance() {
@@ -374,69 +454,6 @@ void MailSender::loop() {
   }
 }
 
-bool MailSender::baueRumpf(Mail::Kind kind, String& rumpf, String& betreff) {
-  const String geraet = ConfigMgr.getDeviceName();
-
-  switch (kind) {
-  case Mail::Kind::Boot:
-    betreff = geraet + F(": neu gestartet");
-    rumpf = F("Der Pflanzensensor ist neu gestartet und meldet sich zurück.\n\n");
-    break;
-  case Mail::Kind::Warning:
-    betreff = geraet + F(": Messwert außerhalb des grünen Bereichs");
-    rumpf = F("Mindestens ein überwachter Messwert liegt außerhalb des grünen Bereichs.\n\n");
-    break;
-  default:
-    betreff = geraet + F(": Lebenszeichen");
-    rumpf = F("Der Pflanzensensor läuft. Aktuelle Messwerte:\n\n");
-    break;
-  }
-
-  if (sensorManager) {
-    for (const auto& sensor : sensorManager->getSensors()) {
-      if (!sensor || !sensor->isEnabled()) {
-        continue;
-      }
-      const SensorConfig& config = sensor->config();
-      const MeasurementData& daten = sensor->getMeasurementData();
-      for (size_t i = 0; i < config.activeMeasurements; i++) {
-        if (!config.measurements[i].enabled) {
-          continue;
-        }
-        String name = config.measurements[i].name;
-        if (name.length() == 0) {
-          name = sensor->getMeasurementName(i);
-        }
-        const String status = sensor->getStatus(i);
-        const bool ueberwacht = ConfigMgr.isMailSensorWatched(sensor->getId() + "_" + String(i));
-
-        rumpf += F("  ");
-        rumpf += name;
-        rumpf += F(": ");
-        if (i < daten.activeValues && !isnan(daten.values[i])) {
-          rumpf += String(daten.values[i], 1);
-          rumpf += config.measurements[i].unit;
-        } else {
-          rumpf += F("--");
-        }
-        rumpf += F("  [");
-        rumpf += status;
-        rumpf += ueberwacht ? F("]\n") : F(", nicht überwacht]\n");
-        yield();
-      }
-    }
-  }
-
-  rumpf += F("\nGerät: ");
-  rumpf += geraet;
-  rumpf += F("\nAdresse: http://");
-  rumpf += WiFi.localIP().toString();
-  rumpf += F("\nLaufzeit: ");
-  rumpf += String(millis() / 60000UL);
-  rumpf += F(" Minuten\n");
-  return true;
-}
-
 bool MailSender::sende(Mail::Kind kind, String& fehler) {
   const String host = ConfigMgr.getMailHost();
   const uint16_t port = ConfigMgr.getMailPort();
@@ -460,9 +477,14 @@ bool MailSender::sende(Mail::Kind kind, String& fehler) {
     return false;
   }
 
-  String betreff;
-  String rumpf;
-  baueRumpf(kind, rumpf, betreff);
+  // Betreff jetzt, der Rumpf erst beim Senden: der Betreff muss in die
+  // Kopfzeilen, der Rumpf wird zeilenweise aus der Vorlagendatei gestreamt und
+  // liegt damit nie ganz im Heap.
+  char betreff[MailVorlage::BETREFF_MAX + 1];
+  if (MailVorlagen::betreff(kind, betreff, sizeof(betreff)) == 0) {
+    strncpy(betreff, "Pflanzensensor", sizeof(betreff) - 1);
+    betreff[sizeof(betreff) - 1] = '\0';
+  }
 
   // Erst mit Prüfung versuchen, bei Fehlschlag ungeprüft. Nur Let's-Encrypt-
   // Server lassen sich mit der einen mitgelieferten Wurzel prüfen; für alle
@@ -610,47 +632,23 @@ bool MailSender::sende(Mail::Kind kind, String& fehler) {
       tlsClient.stop();
       return false;
     case Smtp::Step::SendBody: {
-      String kopf;
-      char puffer[128];
-      Mail::formatDate(jetzt, puffer, sizeof(puffer));
-      kopf = String(F("Date: ")) + puffer + F("\r\n");
-      kopf += String(F("From: ")) + von + F("\r\n");
-      kopf += String(F("To: ")) + an + F("\r\n");
-      char betreffKodiert[200];
-      if (Mail::encodeSubject(betreff.c_str(), betreffKodiert, sizeof(betreffKodiert)) == 0) {
-        strncpy(betreffKodiert, "Pflanzensensor", sizeof(betreffKodiert));
-      }
-      kopf += String(F("Subject: ")) + betreffKodiert + F("\r\n");
-      char domaene[64];
-      char messageId[128];
-      if (Mail::domainOf(von.c_str(), domaene, sizeof(domaene)) > 0 &&
-          Mail::formatMessageId(ConfigMgr.getDeviceName().c_str(), domaene, jetzt, m_sent,
-                                messageId, sizeof(messageId)) > 0) {
-        kopf += String(F("Message-ID: ")) + messageId + F("\r\n");
-      }
-      kopf += F("MIME-Version: 1.0\r\n");
-      kopf += F("Content-Type: text/plain; charset=utf-8\r\n");
-      kopf += F("Content-Transfer-Encoding: 8bit\r\n");
-      kopf += F("\r\n");
-      tlsClient.print(kopf);
+      // Kopfzeilen in einer eigenen Funktion: ihre Puffer (Betreff kodiert,
+      // Domäne, Message-ID) sind zusammen fast ein halbes Kilobyte, und ihr
+      // Stackrahmen muss weg sein, bevor das Streamen beginnt.
+      sendeKopfzeilen(tlsClient, jetzt, von, an, betreff, m_sent);
 
-      // Rumpf zeilenweise mit Punkt-Stuffing
-      int start = 0;
-      while (start <= static_cast<int>(rumpf.length())) {
-        const int ende = rumpf.indexOf('\n', start);
-        const String zeileRumpf =
-            (ende < 0) ? rumpf.substring(start) : rumpf.substring(start, ende);
-        char gestopft[ZEILE_MAX + 2];
-        if (Smtp::stuffLine(zeileRumpf.c_str(), gestopft, sizeof(gestopft)) > 0 ||
-            zeileRumpf.length() == 0) {
-          sendeZeile(tlsClient, zeileRumpf.length() ? gestopft : "");
-        }
-        if (ende < 0) {
-          break;
-        }
-        start = ende + 1;
-        yield();
+      if (!sitzung.supports8BitMime()) {
+        // Kein Abbruchgrund - praktisch jeder Server kann es. Aber es gehört
+        // ins Log, statt still zu hoffen.
+        LOG_WARN(F("Mail"), F("Server bietet kein 8BITMIME an - Umlaute koennten leiden"));
       }
+
+      // Rumpf zeilenweise aus der Vorlage. Die Datei wird erst hier geöffnet
+      // und gleich wieder geschlossen: ein offenes Dateihandle hält einen
+      // Cachepuffer, der nicht mit der Handshake-Spitze zusammenfallen darf.
+      SendeZiel ziel{&tlsClient};
+      MailVorlagen::sendeRumpf(kind, sendeRumpfZeile, &ziel);
+
       tlsClient.print(F(".\r\n"));
       break;
     }

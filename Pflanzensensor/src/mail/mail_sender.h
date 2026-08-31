@@ -66,7 +66,6 @@ private:
 
   void aktualisiereZustaende();
   bool sende(Mail::Kind kind, String& fehler);
-  bool baueRumpf(Mail::Kind kind, String& rumpf, String& betreff);
   bool genugSpeicher(String& fehler);
   /// Reicht der Speicher zusätzlich für die Zertifikatsprüfung?
   bool genugSpeicherFuerPruefung() const;

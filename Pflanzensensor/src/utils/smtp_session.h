@@ -128,6 +128,7 @@ public:
     m_lastCode = 0;
     m_authLogin = false;
     m_authPlain = false;
+    m_eightBit = false;
     m_lastText[0] = '\0';
   }
 
@@ -142,6 +143,8 @@ public:
   bool authOffered() const { return m_authLogin || m_authPlain; }
   bool supportsAuthLogin() const { return m_authLogin; }
   bool supportsAuthPlain() const { return m_authPlain; }
+  /// Bot der Server 8BITMIME an? Für Mails mit Umlauten und Emojis relevant.
+  bool supports8BitMime() const { return m_eightBit; }
 
   /**
    * @brief Eine Antwortzeile des Servers verarbeiten
@@ -170,6 +173,9 @@ public:
         if (enthaelt(line, "PLAIN")) {
           m_authPlain = true;
         }
+      }
+      if (enthaelt(line, "8BITMIME")) {
+        m_eightBit = true;
       }
     }
 
@@ -401,10 +407,21 @@ private:
   int m_lastCode{0};
   bool m_authLogin{false};
   bool m_authPlain{false};
+  bool m_eightBit{false};
   char m_command[COMMAND_MAX]{};
   char m_lastText[80]{};
   char m_error[112]{};
 };
+
+/**
+ * @brief Muss diese Zeile gestopft werden?
+ * @details Für Aufrufer, die die Zeile nicht kopieren können - auf dem ESP8266
+ *          ist der Stack nur 4 KB groß, und ein 256-Byte-Puffer je Zeile war
+ *          dort einmal zuviel. Dieselbe Regel wie stuffLine(), nur ohne Puffer.
+ */
+inline bool needsStuffing(const char* line, size_t length) {
+  return line && length > 0 && line[0] == '.';
+}
 
 /**
  * @brief Eine Rumpfzeile punkt-gestopft ausgeben
