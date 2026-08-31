@@ -334,9 +334,16 @@ void MailSender::aktualisiereZustaende() {
     return;
   }
   uint8_t kanal = 0;
+  bool alleGemessen = true;
   for (const auto& sensor : sensorManager->getSensors()) {
     if (!sensor || !sensor->isEnabled()) {
       continue;
+    }
+    // Dieselbe Bedingung wie im SensorHandler (sensor_handler.cpp:231): ohne
+    // Startzeit hat der Sensor noch nie erfolgreich gemessen, seine Werte wären
+    // die Platzhalter aus dem Hochlauf.
+    if (sensor->getMeasurementStartTime() == 0) {
+      alleGemessen = false;
     }
     const SensorConfig& config = sensor->config();
     for (size_t i = 0; i < config.activeMeasurements; i++) {
@@ -344,7 +351,7 @@ void MailSender::aktualisiereZustaende() {
         continue;
       }
       if (kanal >= Mail::Scheduler::MAX_CHANNELS) {
-        return;
+        break; // kein return: sonst bliebe die Bereitschaft unten ungemeldet
       }
       const String schluessel = sensor->getId() + "_" + String(i);
       m_scheduler.reportLevel(kanal, levelVon(sensor->getStatus(i)),
@@ -352,6 +359,7 @@ void MailSender::aktualisiereZustaende() {
       kanal++;
     }
   }
+  m_scheduler.setSensorsReady(alleGemessen);
 }
 
 bool MailSender::genugSpeicherFuerPruefung() const {

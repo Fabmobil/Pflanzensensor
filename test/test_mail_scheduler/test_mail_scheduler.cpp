@@ -64,6 +64,7 @@ void test_startmeldung_genau_einmal() {
 
   Scheduler s;
   s.begin(c, T0);
+  s.setSensorsReady(true);
   TEST_ASSERT_EQUAL(Kind::Boot, s.due(T0));
 
   s.markSent(Kind::Boot, T0);
@@ -234,6 +235,48 @@ void test_startzeitpunkt_wird_nachgetragen() {
   TEST_ASSERT_EQUAL(Kind::Alive, s.due(T0 + 24 * STUNDE));
 }
 
+/// Die Startmeldung wartet auf die erste Messung aller Sensoren - sonst stünden
+/// dort Lücken statt Werten
+void test_startmeldung_wartet_auf_sensoren() {
+  SchedulerConfig c = standard();
+  c.bootMail = true;
+
+  Scheduler s;
+  s.begin(c, T0);
+  TEST_ASSERT_EQUAL(Kind::None, s.due(T0));
+  TEST_ASSERT_EQUAL(Kind::None, s.due(T0 + 60));
+
+  s.setSensorsReady(true);
+  TEST_ASSERT_EQUAL(Kind::Boot, s.due(T0 + 61));
+}
+
+/// Ein defekter Sensor darf die Startmeldung nicht für immer aufhalten
+void test_startmeldung_hat_eine_obergrenze() {
+  SchedulerConfig c = standard();
+  c.bootMail = true;
+  c.bootWaitSeconds = 300;
+
+  Scheduler s;
+  s.begin(c, T0);
+  TEST_ASSERT_EQUAL(Kind::None, s.due(T0 + 299));
+  TEST_ASSERT_EQUAL(Kind::Boot, s.due(T0 + 300));
+}
+
+/// Ein Neustart setzt die Bereitschaft zurück - die Sensoren fangen von vorn an
+void test_bereitschaft_gilt_nur_bis_zum_neustart() {
+  SchedulerConfig c = standard();
+  c.bootMail = true;
+
+  Scheduler s;
+  s.begin(c, T0);
+  s.setSensorsReady(true);
+  TEST_ASSERT_TRUE(s.sensorsReady());
+
+  s.begin(c, T0 + 1000);
+  TEST_ASSERT_FALSE(s.sensorsReady());
+  TEST_ASSERT_EQUAL(Kind::None, s.due(T0 + 1000));
+}
+
 /// Warnschwelle Rot: gelbe Werte lösen dann keine Mail mehr aus
 void test_warnschwelle_rot() {
   SchedulerConfig c = standard();
@@ -282,6 +325,9 @@ int main(int, char**) {
   RUN_TEST(test_sensorauswahl);
   RUN_TEST(test_stunden_werden_begrenzt);
   RUN_TEST(test_kanalgrenze);
+  RUN_TEST(test_startmeldung_wartet_auf_sensoren);
+  RUN_TEST(test_startmeldung_hat_eine_obergrenze);
+  RUN_TEST(test_bereitschaft_gilt_nur_bis_zum_neustart);
   RUN_TEST(test_warnschwelle_rot);
   RUN_TEST(test_warnschwelle_vorgabe_ist_gelb);
   return UNITY_END();

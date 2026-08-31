@@ -40,18 +40,25 @@ RouterResult WebRouter::addRoute(HTTPMethod method, const String& url, HandlerCa
     return RouterResult::fail(RouterError::REGISTRATION_FAILED, F("Routen-Limit überschritten"));
   }
 
-  // Check for duplicate before modifying anything
-  for (const auto& route : _routes) {
+  // Use provided handlerType, or fall back to context if not specified
+  String effectiveHandlerType = handlerType.isEmpty() ? _currentHandlerType : handlerType;
+
+  // Schon vorhanden? Dann den Rückruf ersetzen statt die alte Route zu behalten.
+  //
+  // Vorher blieb die alte stehen und die Registrierung meldete trotzdem Erfolg.
+  // Das ist harmlos, solange dasselbe Objekt dahintersteht - nach einem
+  // Aufräumen des Handler-Caches zeigt der alte Rückruf aber auf ein zerstörtes
+  // Objekt, und der nächste Aufruf endet in "Fatal exception 28". Ersetzen
+  // macht die Registrierung wiederholbar.
+  for (auto& route : _routes) {
     if (route.url == url && route.method == method) {
-      // Route already exists - update handler if different handlerType
-      LOG_DEBUG(F("WebRouter"), String(F("Route bereits registriert: ")) + methodToString(method) +
-                                    String(F(" ")) + url);
+      LOG_DEBUG(F("WebRouter"),
+                String(F("Route erneuert: ")) + methodToString(method) + String(F(" ")) + url);
+      route.handler = handler;
+      route.handlerType = effectiveHandlerType;
       return RouterResult::success();
     }
   }
-
-  // Use provided handlerType, or fall back to context if not specified
-  String effectiveHandlerType = handlerType.isEmpty() ? _currentHandlerType : handlerType;
 
   // Store route with handler type for cleanup tracking
   _routes.emplace_back(url, method, handler, effectiveHandlerType);

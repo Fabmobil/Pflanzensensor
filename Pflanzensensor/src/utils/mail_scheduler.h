@@ -83,6 +83,10 @@ struct SchedulerConfig {
   /// Wohlfühlbereich", Rot heißt "der Pflanze geht es schlecht". Wer den Sensor
   /// an einer robusten Pflanze hat, will nicht bei jedem gelben Wert eine Mail.
   Level warnFrom{Level::Yellow};
+  /// Wie lange die Startmeldung höchstens auf die erste Messung aller Sensoren
+  /// wartet. Ohne Obergrenze bliebe sie bei einem defekten Sensor für immer
+  /// aus - dann ist eine Mail mit Lücken besser als gar keine.
+  uint32_t bootWaitSeconds{300};
 };
 
 /**
@@ -98,6 +102,7 @@ public:
     m_lastWarning = 0;
     m_lastAlive = 0;
     m_warnCount = 0;
+    m_sensorsReady = false;
     clearLevels();
   }
 
@@ -130,6 +135,10 @@ public:
     }
     m_levels[channel] = watched ? level : Level::Unknown;
   }
+
+  /// @brief Haben alle eingeschalteten Sensoren einmal gemessen?
+  void setSensorsReady(bool ready) { m_sensorsReady = ready; }
+  bool sensorsReady() const { return m_sensorsReady; }
 
   void clearLevels() {
     for (uint8_t i = 0; i < MAX_CHANNELS; i++) {
@@ -167,7 +176,13 @@ public:
     }
 
     if (m_config.bootMail && !m_bootSent) {
-      return Kind::Boot;
+      // Erst wenn jeder Sensor einmal gemessen hat. Sonst stünden in der
+      // Startmeldung Lücken - beim DHT dauert die erste Messung gut eine
+      // Minute, der Versand wäre längst durch.
+      if (m_sensorsReady || (now - m_startedAt) >= m_config.bootWaitSeconds) {
+        return Kind::Boot;
+      }
+      return Kind::None;
     }
 
     if (hasAlarm() && (now - m_startedAt) >= m_config.settleSeconds) {
@@ -219,6 +234,7 @@ private:
   Level m_levels[MAX_CHANNELS]{};
   uint32_t m_startedAt{0};
   uint32_t m_lastWarning{0};
+  bool m_sensorsReady{false};
   uint32_t m_lastAlive{0};
   uint32_t m_warnCount{0};
   bool m_bootSent{false};
