@@ -41,6 +41,9 @@ SensorMeasurementCycleManager::SensorMeasurementCycleManager(Sensor* sensor)
   }
 }
 
+SensorMeasurementCycleManager::MeasurementDoneCallback
+    SensorMeasurementCycleManager::s_measurementDone = nullptr;
+
 bool SensorMeasurementCycleManager::updateMeasurementCycle() {
   if (!m_sensor) {
     return false;

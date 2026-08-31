@@ -277,6 +277,10 @@ export function makeElement(tag = 'div', classNames = []) {
       contains: (c) => set.has(c)
     },
     appendChild(child) { child.parentNode = el; el.children.push(child); return child; },
+    // Nur der Setter wird gebraucht: chronik.js leert damit die Legende, bevor
+    // es sie neu aufbaut. Der Getter liefert bewusst nichts Erfundenes.
+    set innerHTML(html) { el.children = []; el._html = html; },
+    get innerHTML() { return el._html || ''; },
     setAttribute(name, value) { el._attrs[name] = String(value); },
     removeAttribute(name) { delete el._attrs[name]; },
     getAttribute(name) { return getAttr(el, name); },
@@ -396,4 +400,96 @@ export function loadSensors({ rows = [], respond = () => ({ ok: true, status: 20
 
   return Object.assign(sandbox.Sensors, { _document: doc, _fetches: fetches, _clock: clock,
                                           _window: sandbox });
+}
+
+/** Fake-Canvas: protokolliert alle Zeichenaufrufe, statt zu malen. */
+export function makeCanvas(width = 640, height = 320) {
+  const calls = [];
+  const record = (name) => (...args) => { calls.push([name, ...args]); };
+  const ctx = {
+    _calls: calls,
+    font: '', lineWidth: 1, strokeStyle: '', fillStyle: '', textAlign: '',
+    setTransform: record('setTransform'), clearRect: record('clearRect'),
+    beginPath: record('beginPath'), closePath: record('closePath'),
+    moveTo: record('moveTo'), lineTo: record('lineTo'), arc: record('arc'),
+    stroke: record('stroke'), fill: record('fill'), fillText: record('fillText'),
+    setLineDash: record('setLineDash'), save: record('save'), restore: record('restore')
+  };
+  const canvas = makeElement('canvas', []);
+  canvas.clientWidth = width;
+  canvas.clientHeight = height;
+  canvas.width = width;
+  canvas.height = height;
+  canvas.getContext = () => ctx;
+  canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width, height });
+  canvas.setPointerCapture = () => {};
+  canvas._ctx = ctx;
+  return canvas;
+}
+
+/**
+ * Lädt data/js/chronik.js kopflos und gibt window.Chronik zurück.
+ *
+ * Wie bei loadSensors() verhindert ein window.addEventListener, das nichts
+ * tut, dass der DOMContentLoaded-Block anläuft und Daten holen will. Geprüft
+ * werden die reinen Funktionen sowie ein Zeichendurchlauf gegen den
+ * Fake-Canvas.
+ */
+export function loadChronik({ respond = () => new Uint8Array(0), clock = makeClock() } = {}) {
+  const canvas = makeCanvas();
+  const elemente = {
+    'chronik-canvas': canvas,
+    'chronik-legend': makeElement('div', ['chronik-legend']),
+    'chronik-hint': makeElement('div', ['chronik-hint']),
+    'chronik-ranges': makeElement('div', ['chronik-ranges']),
+    'chronik-raw': makeElement('input', [])
+  };
+  elemente['chronik-hint'].style = {};
+  elemente['chronik-raw'].checked = false;
+
+  const fetches = [];
+  const doc = {
+    readyState: 'loading',
+    visibilityState: 'visible',
+    getElementById: (id) => elemente[id] || null,
+    createElement: (tag) => {
+      const el = makeElement(tag, []);
+      el.style = {};
+      return el;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener: () => {}
+  };
+
+  const sandbox = {
+    console: { log() {}, error() {}, warn() {} },
+    setTimeout: (fn, ms) => setTimeout(fn, Math.min(ms ?? 0, 5)),
+    clearTimeout,
+    setInterval: () => 0,
+    clearInterval: () => {},
+    Date: new Proxy(Date, { get: (t, p) => (p === 'now' ? () => clock.now : Reflect.get(t, p)) }),
+    document: doc,
+    Map, Set, Uint8Array, DataView, ArrayBuffer, Number, Math, String, JSON,
+    decodeURIComponent, escape,
+    devicePixelRatio: 1,
+    location: { pathname: '/chronik', host: 'testgerät' },
+    fetch: async (url) => {
+      fetches.push(url);
+      const body = respond(url);
+      if (body === null) throw new Error('nicht erreichbar');
+      return { ok: true, status: 200, arrayBuffer: async () => body.buffer ?? body };
+    }
+  };
+  sandbox.window = sandbox;
+  sandbox.globalThis = sandbox;
+  sandbox.window.addEventListener = () => {};
+
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(JS_DIR, 'chronik.js'), 'utf8'), sandbox,
+                  { filename: 'chronik.js' });
+
+  return Object.assign(sandbox.Chronik, {
+    _document: doc, _elemente: elemente, _canvas: canvas, _fetches: fetches, _clock: clock
+  });
 }

@@ -74,12 +74,20 @@ public:
   /// (_routes.reserve(MAX_ROUTES)). Ein Route-Eintrag umfasst zwei Strings, ein
   /// std::function und die Methode, also grob 64 Byte.
   ///
-  /// Das Projekt hat aktuell 31 addRoute()-Aufrufe - mehr Routen kann es also
-  /// nie gleichzeitig geben, selbst wenn alle Handler zugleich im LRU-Cache
-  /// lägen. Der Puffer beträgt damit genau eine Route: die nächste neue
-  /// verlangt eine Anhebung dieses Werts. Kleinere Werte sind nicht sicher: mit
-  /// 25 scheiterte im Test die Registrierung von /admin/display und
-  /// /getLatestValues mit "Routen-Limit überschritten".
+  /// Maßgeblich ist nicht die Zahl der addRoute()-Aufrufstellen im Projekt
+  /// (aktuell 34), sondern wieviele Routen gleichzeitig registriert sein
+  /// können: Handler werden lazy geladen, und beim Verdrängen aus dem
+  /// LRU-Cache räumt removeHandlerRoutes() ihre Routen wieder weg.
+  ///
+  /// Dauerhaft registriert sind 4 (/admin/config/update,
+  /// /admin/config/setConfigValue, /status, /admin/update). Dazu kommen
+  /// höchstens MAX_ACTIVE_HANDLERS = 3 Handler; die routenreichste Kombination
+  /// ist admin_sensor (13) + admin (6) + display (2) = 21. Macht 25 im
+  /// ungünstigsten Fall.
+  ///
+  /// Kleinere Werte sind nicht sicher: mit 25 scheiterte im Test die
+  /// Registrierung von /admin/display und /getLatestValues mit
+  /// "Routen-Limit überschritten".
   static constexpr size_t MAX_ROUTES = 32;
   /// Maximum number of middleware functions
   static constexpr size_t MAX_MIDDLEWARE = 8;

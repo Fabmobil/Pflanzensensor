@@ -82,6 +82,11 @@
   background: linear-gradient(90deg, #64748b 0%, #475569 100%);
 }
 
+.admin-content-box[data-section="chronik"]::before {
+  content: 'CHRONIK';
+  background: linear-gradient(90deg, #7c3aed 0%, #5b21b6 100%);
+}
+
 
 /* --- Layout --- */
 .admin-grid {
@@ -923,4 +928,116 @@ button.warning:hover,
 
 .devicewait-actions:not(:empty) {
   margin-top: 1.2em;
+}
+
+/* === Chronik ===
+   Bewusst hier und nicht in einer eigenen chronik.css: eine weitere Datei
+   kostet mit ihrer .gz-Fassung zwei 8-KB-Blöcke im Dateisystem, und genau
+   dieser Platz fehlte dann dem rollenden Messwertfenster. admin.css wird von
+   der Chronikseite über renderAdminPage() ohnehin geladen. */
+.chronik-card {
+  margin-bottom: 1em;
+}
+
+.chronik-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6em;
+  margin-bottom: 0.8em;
+}
+
+.chronik-ranges {
+  display: flex;
+  gap: 0.3em;
+}
+
+.chronik-ranges button {
+  padding: 0.3em 0.7em;
+}
+
+.chronik-canvas-wrap {
+  position: relative;
+  width: 100%;
+}
+
+/* Feste Höhe statt Seitenverhältnis: das Diagramm soll auf dem Handy nicht zu
+   einem Streifen zusammenfallen, in dem man nichts mehr unterscheidet. */
+#chronik-canvas {
+  width: 100%;
+  height: 340px;
+  display: block;
+  touch-action: none; /* sonst scrollt die Seite statt zu verschieben */
+  cursor: grab;
+}
+
+#chronik-canvas:active {
+  cursor: grabbing;
+}
+
+.chronik-hint {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #d6cece;
+  font-size: 0.9em;
+  pointer-events: none;
+}
+
+.chronik-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4em 1.2em;
+  margin-top: 0.6em;
+}
+
+.chronik-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  cursor: pointer;
+  font-size: 0.85em;
+  user-select: none;
+}
+
+.chronik-legend-item.aus {
+  opacity: 0.35;
+  text-decoration: line-through;
+}
+
+/* Rohwertspur: gehört sichtbar zum Kanal darüber, ist aber eine andere Größe.
+   Gestrichelt gezeichnet wird sie ohnehin schon im Diagramm. */
+.chronik-legend-item.roh .chronik-legend-name {
+  font-style: italic;
+  opacity: 0.8;
+}
+
+.chronik-legend-item.roh .chronik-dot {
+  border-radius: 0;
+  height: 0.25em;
+}
+
+.chronik-dot {
+  width: 0.7em;
+  height: 0.7em;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.chronik-legend-werte {
+  color: #b9b9b9;
+  font-variant-numeric: tabular-nums;
+}
+
+.chronik-note {
+  margin-top: 0.6em;
+  font-size: 0.8em;
+  color: #b9b9b9;
+}
+
+@media (max-width: 600px) {
+  #chronik-canvas {
+    height: 260px;
+  }
 }

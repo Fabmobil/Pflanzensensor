@@ -160,6 +160,11 @@ void sendPixelatedFooter(ESPWebServer& server, const String& version, const Stri
     sendChunk(server, F(" active"));
   sendChunk(server, F("'>START</a></li>"));
 
+  sendChunk(server, F("<li><a href='/chronik' id='nav-chronik' class='nav-item"));
+  if (activeSection == "chronik")
+    sendChunk(server, F(" active"));
+  sendChunk(server, F("'>CHRONIK</a></li>"));
+
   sendChunk(server, F("<li><a href='/logs' id='nav-logs' class='nav-item"));
   if (activeSection == "logs")
     sendChunk(server, F(" active"));
