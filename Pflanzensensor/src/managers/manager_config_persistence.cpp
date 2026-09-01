@@ -64,6 +64,30 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
     config.md5Verification = PreferencesManager::getBool(generalPrefs, "md5_verify", false);
     config.fileLoggingEnabled =
         PreferencesManager::getBool(generalPrefs, "file_log", FILE_LOGGING_ENABLED);
+
+    // Mailversand über den Mailbot - die Vorgaben stammen aus der
+    // Konfigurationsdatei, damit im Webinterface im Regelfall nur noch der
+    // Empfänger fehlt.
+    config.mailEnabled = PreferencesManager::getBool(generalPrefs, "mail_on", MAIL_ENABLED);
+    config.mailServiceUrl =
+        PreferencesManager::getString(generalPrefs, "mail_url", MAIL_SERVICE_URL);
+    config.mailDeviceId = PreferencesManager::getString(generalPrefs, "mail_devid", MAIL_DEVICE_ID);
+    config.mailSecretKey = PreferencesManager::getString(generalPrefs, "mail_key", MAIL_SECRET_KEY);
+    config.mailTo = PreferencesManager::getString(generalPrefs, "mail_to", MAIL_TO);
+    config.mailSensors = PreferencesManager::getString(generalPrefs, "mail_sens", "");
+    config.mailWarnHours = static_cast<uint16_t>(
+        PreferencesManager::getUInt(generalPrefs, "mail_warn_h", MAIL_WARN_INTERVAL_HOURS));
+    config.mailWarnFrom = static_cast<uint8_t>(
+        PreferencesManager::getUInt(generalPrefs, "mail_warn_ab", MAIL_WARN_FROM));
+    config.mailAliveEnabled =
+        PreferencesManager::getBool(generalPrefs, "mail_alive", MAIL_ALIVE_ENABLED);
+    config.mailAliveHours = static_cast<uint16_t>(
+        PreferencesManager::getUInt(generalPrefs, "mail_alive_h", MAIL_ALIVE_INTERVAL_HOURS));
+    config.mailBootEnabled =
+        PreferencesManager::getBool(generalPrefs, "mail_boot", MAIL_BOOT_ENABLED);
+    config.mailLastWarning = PreferencesManager::getUInt(generalPrefs, "mail_lastw", 0);
+    config.mailLastAlive = PreferencesManager::getUInt(generalPrefs, "mail_lasta", 0);
+
     generalPrefs.end();
   }
 
@@ -97,6 +121,7 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
     config.debugSensor = PreferencesManager::getBool(debugPrefs, "sensor", false);
     config.debugDisplay = PreferencesManager::getBool(debugPrefs, "display", false);
     config.debugWebSocket = PreferencesManager::getBool(debugPrefs, "websocket", false);
+    config.debugMail = PreferencesManager::getBool(debugPrefs, "mail", false);
     debugPrefs.end();
   }
 
@@ -247,6 +272,11 @@ ConfigPersistence::PersistenceResult ConfigPersistence::save(const ConfigData& c
 
   result = PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "websocket",
                                                config.debugWebSocket);
+  if (!result.isSuccess())
+    return result;
+
+  result =
+      PreferencesManager::updateBoolValue(PreferencesNamespaces::DEBUG, "mail", config.debugMail);
   if (!result.isSuccess())
     return result;
 

@@ -485,7 +485,7 @@ void AdminSensorHandler::renderFlowerStatusSensorCard() {
 void AdminSensorHandler::generateAndSendLedTrafficLightSettingsCard() {
 #if USE_LED_TRAFFIC_LIGHT
   sendChunk(F("<div class='card'><h3>LED-Ampel Einstellungen</h3>"));
-  sendChunk(F("<form method='post' action='/admin/updateSettings' "
+  sendChunk(F("<form data-autosave='1' "
               "class='config-form'>"));
   sendChunk(F("<input type='hidden' name='section' value='led_traffic_light'>"));
 

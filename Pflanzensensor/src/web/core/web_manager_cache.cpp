@@ -47,6 +47,12 @@ void WebManager::initializeRemainingHandlers() {
       });
     }
 
+    if (AdminEmailHandler::ownsUrl(url)) {
+      return ensureHandler("admin_email", [this]() -> std::unique_ptr<BaseHandler> {
+        return std::make_unique<AdminEmailHandler>(*_server, *_auth, *_cssService);
+      });
+    }
+
     if (AdminSensorHandler::ownsUrl(url)) {
       if (!_sensorManager) {
         return true; // ohne Sensor-Manager gibt es nichts zu registrieren
@@ -129,6 +135,19 @@ void WebManager::cleanupNonEssentialHandlers() {
                                  String(m_handlerCache.size()) + F(" Einträge)"));
 
   for (auto& entry : m_handlerCache) {
+    // Erst die Routen weg, dann der Handler - dieselbe Reihenfolge wie bei der
+    // LRU-Verdrängung.
+    //
+    // Ohne das Entfernen blieben die Routen im Router stehen, während die
+    // Handler-Objekte zerstört werden: ihre Lambdas fangen den Handler per
+    // Zeiger, und der nächste Aufruf liefe in "Fatal exception 28". Genau das
+    // ist passiert, wenn der MailSender vor dem Versand aufgeräumt hat
+    // (mail_sender.cpp:370) und danach jemand eine vorher besuchte Seite
+    // aufrief - das Gerät startete neu. Eine erneute Registrierung repariert
+    // es nicht: addRoute() erkennt die alte Route als Duplikat.
+    if (_router) {
+      _router->removeHandlerRoutes(entry.handlerType);
+    }
     if (entry.handler) {
       LOG_DEBUG(F("WebManager"), String(F("Cleanup: ")) + entry.handlerType);
       entry.handler->cleanup();
@@ -137,7 +156,10 @@ void WebManager::cleanupNonEssentialHandlers() {
   // Clear the entire handler cache
   m_handlerCache.clear();
 
-  m_handlersInitialized = false;
+  // m_handlersInitialized bleibt true: die Lazy-Loading-Middleware hängt im
+  // Router und überlebt das Aufräumen. Ein Zurücksetzen würde bei einem
+  // erneuten initializeRemainingHandlers() eine zweite, gleiche Middleware
+  // anhängen.
 }
 
 void WebManager::cleanupHandlers() {

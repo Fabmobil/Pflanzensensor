@@ -21,6 +21,7 @@
 #include "web/core/web_auth.h"
 #include "web/core/web_router.h"
 #include "web/handler/admin_display_handler.h"
+#include "web/handler/admin_email_handler.h"
 #include "web/handler/admin_handler.h"
 #include "web/handler/admin_minimal_handler.h"
 #include "web/handler/admin_sensor_handler.h"

@@ -494,3 +494,42 @@ export function loadChronik({ respond = () => new Uint8Array(0), clock = makeClo
     _document: doc, _elemente: elemente, _canvas: canvas, _fetches: fetches, _clock: clock
   });
 }
+
+/**
+ * Lädt data/js/mailvorlagen.js kopflos und gibt window.MailVorlagen zurück.
+ *
+ * Wie loadChronik(): ein window.addEventListener, das nichts tut, verhindert,
+ * dass die Verdrahtung anläuft. Geprüft werden die reinen Funktionen - vor
+ * allem die Ersetzung, die es ein zweites Mal in C++ gibt.
+ */
+export function loadMailVorlagen() {
+  const elemente = {};
+  const doc = {
+    readyState: 'loading',
+    getElementById: (id) => elemente[id] || null,
+    createElement: (tag) => {
+      const el = makeElement(tag, []);
+      el.style = {};
+      return el;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener: () => {}
+  };
+
+  const sandbox = {
+    console: { log() {}, error() {}, warn() {} },
+    document: doc,
+    String, Number, Math, JSON, RegExp, Array, Object,
+    location: { pathname: '/admin/email/vorlagen' }
+  };
+  sandbox.window = sandbox;
+  sandbox.globalThis = sandbox;
+  sandbox.window.addEventListener = () => {};
+
+  vm.createContext(sandbox);
+  vm.runInContext(fs.readFileSync(path.join(JS_DIR, 'mailvorlagen.js'), 'utf8'), sandbox,
+                  { filename: 'mailvorlagen.js' });
+
+  return Object.assign(sandbox.MailVorlagen, { _document: doc, _elemente: elemente });
+}

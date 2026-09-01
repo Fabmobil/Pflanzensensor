@@ -251,6 +251,14 @@ void sendPixelatedFooter(ESPWebServer& server, const String& version, const Stri
   sendChunk(server, F("'>Display</a>"));
   sendChunk(server, F("</span><span class='stats-value'>&nbsp;</span></div>"));
 #endif
+  // E-Mail zwischen Display und Update
+  sendChunk(server, F("<div class='stats-row'>"));
+  sendChunk(server, F("<span class='stats-label'>"));
+  sendChunk(server, F("<a href='/admin/email' class='nav-item"));
+  if (activeSection == "admin/email")
+    sendChunk(server, F(" active"));
+  sendChunk(server, F("'>E-Mail</a>"));
+  sendChunk(server, F("</span><span class='stats-value'>&nbsp;</span></div>"));
   sendChunk(server, F("<div class='stats-row'>"));
   sendChunk(server, F("<span class='stats-label'>"));
   sendChunk(server, F("<a href='/admin/update' class='nav-item"));

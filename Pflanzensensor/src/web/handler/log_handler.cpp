@@ -96,7 +96,7 @@ void LogHandler::handleLogs() {
         // Card 1: Debug settings form (auto-saved by admin.js)
         sendChunk(F("<div class='card log-controls-card'>"));
         sendChunk(F("<div class='log-controls-label'>Log Einstellungen</div>"));
-        sendChunk(F("<form method='post' action='/admin/updateSettings' class='config-form'>"));
+        sendChunk(F("<form data-autosave='1' class='config-form'>"));
         sendChunk(F("<input type='hidden' name='section' value='debug'>"));
         // Debug RAM
         sendChunk(F("<div><label class='checkbox-label'>"));
@@ -130,6 +130,12 @@ void LogHandler::handleLogs() {
         if (ConfigMgr.isDebugWebSocket())
           sendChunk(F(" checked"));
         sendChunk(F("> Debug WebSocket</label></div>"));
+        // Debug Mail
+        sendChunk(F("<div><label class='checkbox-label'>"));
+        sendChunk(F("<input type='checkbox' id='debug_mail' name='debug_mail' value='true'"));
+        if (ConfigMgr.isDebugMail())
+          sendChunk(F(" checked"));
+        sendChunk(F("> Debug Mail</label></div>"));
         sendChunk(F("</form>"));
         sendChunk(F("</div>"));
         // Card 2: WebSocket Status and Auto-scroll (with Log-Level buttons below)

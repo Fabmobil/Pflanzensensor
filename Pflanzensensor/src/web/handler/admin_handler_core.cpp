@@ -44,7 +44,8 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
   LOG_DEBUG(F("AdminHandler"), F("Registrierte /admin-Route"));
 
   // Note: Config updates are now handled by unified /admin/config/setConfigValue
-  // Old /admin/updateSettings route has been removed.
+  // Die alte Route /admin/updateSettings gibt es nicht mehr; die Formulare
+  // tragen jetzt data-autosave und speichern per AJAX.
 
   // Register config reset route
   result = router.addRoute(HTTP_POST, "/admin/reset", [this]() {
@@ -76,7 +77,7 @@ RouterResult AdminHandler::onRegisterRoutes(WebRouter& router) {
 
   // Register config set route
   // Note: /admin/config/set handled by legacy route in WebManager; admin
-  // updates are consolidated to the single /admin/updateSettings endpoint.
+  // updates are consolidated to the single /admin/config/setConfigValue endpoint.
 
   result = router.addRoute(HTTP_GET, "/admin/downloadLog", [this]() {
     if (!validateRequest()) {
@@ -140,7 +141,7 @@ HandlerResult AdminHandler::handlePost(const String& uri, const std::map<String,
 }
 
 // AdminHandler::handleConfigSet removed - admin updates are handled via
-// the single AJAX endpoint /admin/updateSettings.
+// den einzigen AJAX-Endpunkt /admin/config/setConfigValue.
 
 void AdminHandler::handleAdminPage() {
   LOG_DEBUG(F("AdminHandler"), F("handleAdminPage called"));

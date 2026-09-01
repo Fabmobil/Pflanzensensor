@@ -74,11 +74,44 @@ struct ConfigData {
   bool debugSensor;
   bool debugDisplay;
   bool debugWebSocket;
+  /// Ausführliches Mitschreiben des SMTP-Dialogs beim Mailversand
+  bool debugMail;
 
   /**
    * @brief Device name (user-configurable)
    */
   String deviceName;
+
+  /**
+   * @brief Mailversand
+   * @details Liegt im Namensraum "general" mit dem Präfix "mail_", nicht in
+   *          einem eigenen: jeder Preferences-Namensraum ist auf LittleFS ein
+   *          Verzeichnis und kostet ein Metadaten-Blockpaar von 16 KB - das
+   *          wären zwei Segmente Chronik weniger, nur für den Ordnernamen.
+   */
+  bool mailEnabled;
+  /// Adresse des Mailbot-Dienstes samt Port, z.B.
+  /// http://pflanzensensormailbot.fabmobil.org:45480 - ohne "/send.php",
+  /// das hängt MailClient an.
+  String mailServiceUrl;
+  /// Geräte-ID und Geheimschlüssel (32 Byte, Base64) aus dem Adminbereich des
+  /// Mailbots. Der Schlüssel verschlüsselt die Nutzlast; er verlässt das Gerät
+  /// nie.
+  String mailDeviceId;
+  String mailSecretKey;
+  String mailTo;
+  /// Kommagetrennte Kanalschlüssel ("ANALOG_0,DHT_1"); leer = alle
+  String mailSensors;
+  uint16_t mailWarnHours;
+  /// Ab welchem Zustand gewarnt wird: 1 = gelb, 2 = rot. Zahlen statt eines
+  /// Aufzählungstyps, weil Preferences hier nur Ganzzahlen speichert.
+  uint8_t mailWarnFrom;
+  bool mailAliveEnabled;
+  uint16_t mailAliveHours;
+  bool mailBootEnabled;
+  /// Zeitpunkte der letzten Sendungen, damit die Sperren einen Neustart überdauern
+  uint32_t mailLastWarning;
+  uint32_t mailLastAlive;
 
   /**
    * @brief WiFi credentials (up to 3 sets)

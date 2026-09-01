@@ -68,6 +68,18 @@ uint32_t PreferencesManager::getUInt(const char* namespaceKey, const char* key,
 }
 
 bool PreferencesManager::putString(Preferences& prefs, const char* key, const String& value) {
+  // putString() liefert die Zahl der geschriebenen Bytes - bei einem leeren
+  // Text also null, und das galt hier als Fehlschlag. Ein Feld ließ sich damit
+  // nie wieder leeren: die Oberfläche meldete "Failed to save" und der alte
+  // Wert blieb stehen. Aufgefallen ist es beim Löschen der Mail-Empfänger-
+  // adresse, betrifft aber jedes Textfeld.
+  //
+  // Ein leerer Wert heißt deshalb: Schlüssel entfernen. Beim Lesen greift dann
+  // wieder die Vorgabe aus der Konfigurationsdatei.
+  if (value.length() == 0) {
+    prefs.remove(key);
+    return true;
+  }
   return prefs.putString(key, value) > 0;
 }
 
@@ -237,6 +249,7 @@ PreferencesManager::PrefResult PreferencesManager::initDebugNamespace() {
   putBool(prefs, "sensor", DEBUG_SENSOR);
   putBool(prefs, "display", DEBUG_DISPLAY);
   putBool(prefs, "websocket", DEBUG_WEBSOCKET);
+  putBool(prefs, "mail", false);
 
   prefs.end();
   LOG_INFO(F("PrefMgr"), F("Debug-Namespace mit Standardwerten initialisiert"));

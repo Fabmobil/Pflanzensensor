@@ -656,7 +656,11 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
       if (lastSlash >= 0) {
         filename = filename.substring(lastSlash + 1);
       }
-      if (filename.endsWith(".json") && !filename.endsWith(".example")) {
+      // .txt gehört dazu: /config/mailvorlagen.txt trägt die bearbeitbaren
+      // Mailvorlagen. Ohne diese Erweiterung wären sie nach jedem
+      // Dateisystem-Update wieder auf Werkseinstellung, ohne dass es auffällt.
+      if ((filename.endsWith(".json") || filename.endsWith(".txt")) &&
+          !filename.endsWith(".example")) {
         files[fileCount].filename = filename;
         files[fileCount].size = entry.size();
         fileCount++;
@@ -670,7 +674,9 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
   Dir dir = LittleFS.openDir("/config");
   while (dir.next() && fileCount < 16) {
     String filename = dir.fileName();
-    if (filename.endsWith(".json") && !filename.endsWith(".example")) {
+    // Siehe oben: .txt trägt die Mailvorlagen.
+    if ((filename.endsWith(".json") || filename.endsWith(".txt")) &&
+        !filename.endsWith(".example")) {
       File f = LittleFS.open("/config/" + filename, "r");
       if (f) {
         files[fileCount].filename = filename;

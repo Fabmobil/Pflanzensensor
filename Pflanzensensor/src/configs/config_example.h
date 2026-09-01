@@ -216,7 +216,46 @@
 
 // alles hier drunter fliegt irgendwann raus ..
 #define FILE_LOGGING_ENABLED false
-#define MAX_LOG_FILE_SIZE 50000 // Maximale Logdateigröße in Bytes
+
+// ===== Mailversand =====
+// Der Versand laeuft ueber den Mailbot-Webservice: die Firmware verschluesselt
+// Empfaenger, Betreff und Inhalt selbst (AES-256-GCM) und schickt sie per
+// Klartext-HTTP dorthin. Der ESP8266 hat zu wenig RAM fuer einen
+// TLS-Handshake - gemessene 11,7 KB gegen 15-17 KB freien Heap, das ging mal
+// gut und mal nicht.
+#define MAIL_ENABLED false
+// Adresse des Mailbot-Dienstes samt Port, ohne "/send.php" - das haengt die
+// Firmware an. Bewusst ein roher TCP-Port und keine HTTPS-Domain: Uberspace
+// leitet jeden domainbasierten Aufruf zwangsweise auf HTTPS um, und dieser
+// Umleitung kann der ESP nicht folgen.
+// Solange der DNS-Eintrag fuer diesen Namen noch nicht veroeffentlicht ist,
+// muss hier die IP stehen (http://185.26.156.36:45480) - der ESP kann keine
+// /etc/hosts lesen. Im Webinterface laesst sich das jederzeit umstellen.
+#define MAIL_SERVICE_URL "http://pflanzensensormailbot.fabmobil.org:45480"
+// Geraete-ID und Geheimschluessel kommen aus dem Adminbereich des Mailbots und
+// werden im Webinterface des Sensors eingetragen, nicht hier: der ESP8266 kennt
+// weder Flash-Verschluesselung noch Secure Boot - was einkompiliert ist, laesst
+// sich aus dem Abbild auslesen. Genau deshalb stand hier auch nie ein
+// SMTP-Passwort.
+#define MAIL_DEVICE_ID ""
+#define MAIL_SECRET_KEY ""
+#define MAIL_TO ""
+#define MAIL_WARN_INTERVAL_HOURS 4
+// Ab welchem Zustand gewarnt wird: 1 = gelb, 2 = rot. Gelb ist die
+// aufmerksamere Vorgabe - wer nur bei echtem Notstand gestoert werden will,
+// stellt im Webinterface auf rot.
+#define MAIL_WARN_FROM 1
+#define MAIL_ALIVE_ENABLED false
+#define MAIL_ALIVE_INTERVAL_HOURS 24
+#define MAIL_BOOT_ENABLED false
+
+// Maximale Logdateigroesse in Bytes. Haengt mit der Chronik zusammen: die
+// Rotation legt kurzzeitig eine zweite Datei mit der halben Groesse an, und
+// genau diese Spitze haelt ChronikBudget::RESERVE_FILE_LOG_ON frei. Mit den
+// frueheren 50000 war die Reserve so gross, dass auf einem gut gefuellten
+// Geraet gar keine Chronik mehr passte. 16000 belegen aufgerundet drei
+// LittleFS-Bloecke und reichen fuer rund 200 Zeilen.
+#define MAX_LOG_FILE_SIZE 16000
 // E-Mail-Benachrichtigungen. Aus: fuer TLS reicht der RAM nicht.
 #define USE_MAIL false
 #define DHT_TEMPERATURE_FIELD_NAME "lufttemperatur" // für InfluxDB

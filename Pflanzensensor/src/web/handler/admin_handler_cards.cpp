@@ -16,7 +16,7 @@
 
 void AdminHandler::generateAndSendDebugSettingsCard() {
   sendChunk(F("<div class='card'><h3>Log Einstellungen</h3>"));
-  sendChunk(F("<form method='post' action='/admin/updateSettings' "
+  sendChunk(F("<form data-autosave='1' "
               "class='config-form'>"));
   sendChunk(F("<input type='hidden' name='section' value='debug'>"));
   // File logging
@@ -93,7 +93,7 @@ void AdminHandler::generateAndSendDebugSettingsCard() {
 
 void AdminHandler::generateAndSendSystemSettingsCard() {
   sendChunk(F("<div class='card'><h3>Systemeinstellungen</h3>"));
-  sendChunk(F("<form method='post' action='/admin/updateSettings' "
+  sendChunk(F("<form data-autosave='1' "
               "class='config-form'>"));
   sendChunk(F("<input type='hidden' name='section' value='system'>"));
   // Device name field

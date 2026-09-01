@@ -11,6 +11,15 @@
 #include "managers/manager_config.h"
 #include "utils/helper.h"
 
+// Die Reserve für das Datei-Log steht in chronik_budget.h, seine Größe in der
+// Gerätekonfiguration. Die nativen Tests können die Konfiguration nicht
+// einbinden (dort ist CONFIG_FILE nicht gesetzt), also treffen sich die beiden
+// Zahlen hier. Läuft die Logdatei der Reserve davon, reißt ihre Rotation das
+// Dateisystem leer - und mit ihm die Konfigurationsschreibvorgänge.
+static_assert(ChronikBudget::RESERVE_FILE_LOG_ON >=
+                  ((MAX_LOG_FILE_SIZE + MAX_LOG_FILE_SIZE / 2 + 8191) / 8192) * 8192,
+              "RESERVE_FILE_LOG_ON deckt die Rotationsspitze von MAX_LOG_FILE_SIZE nicht ab");
+
 using namespace ChronikFormat;
 using namespace ChronikSegments;
 
