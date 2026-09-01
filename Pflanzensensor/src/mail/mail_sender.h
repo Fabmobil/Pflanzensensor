@@ -23,6 +23,10 @@
 class MailSender {
 public:
   static constexpr uint32_t TEST_GEDULD_MS = 120000;
+  /// Darunter wird vor dem Versand der Handler-Cache des Webservers geleert.
+  /// Der Versand selbst braucht nur rund 650 Byte, aber lwIP will für die
+  /// Übertragung eigene Puffer - und die fehlten am Gerät bei knapp 14 KB.
+  static constexpr uint32_t AUFRAEUMEN_UNTER = 17000;
   /// Takt, in dem eine wartende Testmail es erneut versucht. Nicht kürzer:
   /// jeder Versuch räumt den Handler-Cache des Webservers leer, und der muss
   /// sich danach neu aufbauen - im Sekundentakt macht das die Oberfläche zäh.

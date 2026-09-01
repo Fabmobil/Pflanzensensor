@@ -8,8 +8,10 @@
 
 #include "configs/config.h"
 #include "logger/logger.h"
+#include "managers/manager_config.h"
 #include "managers/manager_display.h"
 #include "managers/manager_resource.h"
+#include "utils/mdns_name.h"
 #include "utils/wifi.h"
 
 #if USE_DISPLAY
@@ -51,6 +53,13 @@ ResourceResult setupWiFiWithDisplay(bool showDisplay = false) {
       displayManager->updateLogStatus(F("WiFi verbunden"), true);
       displayManager->updateLogStatus(String(F("SSID: ")) + WiFi.SSID(), true);
       displayManager->updateLogStatus(String(F("IP: ")) + WiFi.localIP().toString(), true);
+      // Der Name, den man sich merken kann - beim Start einmal mitlesen zu
+      // können erspart später das Suchen der IP.
+      {
+        char host[MdnsName::MAX_LEN + 1];
+        MdnsName::hostnameVon(ConfigMgr.getDeviceName().c_str(), host, sizeof(host));
+        displayManager->updateLogStatus(String(host) + F(".local"), true);
+      }
     }
   }
 #endif

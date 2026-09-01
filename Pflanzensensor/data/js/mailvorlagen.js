@@ -19,12 +19,13 @@ const STIL_MAX = 1200;
 
 const BLOCK_MESSWERTE = 'messwerte';
 const BLOCK_AUFFAELLIGE = 'auffaellige';
-const BEKANNT = ['geraet', 'ip', 'ssid', 'neustarts', 'laufzeit', 'datum', 'uhrzeit',
+const BEKANNT = ['geraet', 'name', 'ip', 'ssid', 'neustarts', 'laufzeit', 'datum', 'uhrzeit',
                  BLOCK_MESSWERTE, BLOCK_AUFFAELLIGE];
 
 /** Beispielwerte für die Vorschau - dieselbe Auswahl wie am Gerät. */
 const BEISPIEL = {
   geraet: 'Frameclaw PS',
+  name: 'frameclaw-ps.local',
   ip: '192.168.1.44',
   ssid: 'Magrathea',
   neustarts: '7',

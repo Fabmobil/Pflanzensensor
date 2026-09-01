@@ -176,7 +176,8 @@ void sendeTextFelder(ESPWebServer& server, const Art& art) {
 
   Component::sendChunk(server, F("<div class='mail-hinweis'>Platzhalter einfügen:</div>"));
   Component::sendChunk(server, F("<div class='mail-sensorliste' id='vorlage_platzhalter'>"));
-  const char* einfache[] = {"geraet", "ip", "ssid", "neustarts", "laufzeit", "datum", "uhrzeit"};
+  const char* einfache[] = {"geraet",    "name",     "ip",    "ssid",
+                            "neustarts", "laufzeit", "datum", "uhrzeit"};
   for (const char* name : einfache) {
     Component::sendChunk(server, F("<button type='button' class='button-secondary' data-ph='{"));
     Component::sendChunk(server, name);

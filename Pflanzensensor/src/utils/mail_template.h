@@ -650,8 +650,8 @@ inline const char* entwerte(const char* zeile) {
 /// Alle bekannten Platzhalternamen - für die Prüfung in der Weboberfläche und
 /// als einzige Quelle der Wahrheit gegenüber dem JavaScript.
 inline bool istBekannt(const char* name, size_t length) {
-  static const char* NAMEN[] = {"geraet", "ip",      "ssid",          "neustarts",      "laufzeit",
-                                "datum",  "uhrzeit", BLOCK_MESSWERTE, BLOCK_AUFFAELLIGE};
+  static const char* NAMEN[] = {"geraet",   "name",  "ip",      "ssid",          "neustarts",
+                                "laufzeit", "datum", "uhrzeit", BLOCK_MESSWERTE, BLOCK_AUFFAELLIGE};
   for (const char* n : NAMEN) {
     if (strlen(n) == length && strncmp(n, name, length) == 0) {
       return true;

@@ -13,6 +13,8 @@
 #include "logger/logger.h"
 #include "managers/manager_config.h"
 #include "utils/critical_section.h"
+#include "utils/mdns_name.h"
+#include "utils/wifi.h"
 
 DisplayResult SSD1306Display::begin() {
   if (m_initialized)
@@ -151,6 +153,39 @@ String SSD1306Display::truncateToFit(const String& text, int maxWidth) {
   return out;
 }
 
+/**
+ * @brief Text auf zwei Zeilen aufteilen, statt ihn abzuschneiden
+ * @param text Der volle Text
+ * @param maxWidth Breite einer Zeile in Pixeln
+ * @param zweite Nimmt den Rest auf - leer, wenn alles in eine Zeile passt
+ * @return Die erste Zeile
+ * @details Für den mDNS-Namen: "frameclaw-ps.local" passt gerade so, ein
+ *          längerer Gerätename nicht mehr. Abschneiden wäre hier besonders
+ *          ärgerlich - man kann den Namen dann nicht abtippen, und genau dafür
+ *          steht er auf dem Display.
+ */
+String SSD1306Display::splitToFit(const String& text, int maxWidth, String& zweite) {
+  zweite = "";
+  int16_t x1, y1;
+  uint16_t w, h;
+  m_display.getTextBounds(text, 0, 0, &x1, &y1, &w, &h);
+  if (w <= maxWidth) {
+    return text;
+  }
+  // Größte Länge suchen, die noch passt
+  size_t passt = text.length();
+  while (passt > 0) {
+    String versuch = text.substring(0, passt);
+    m_display.getTextBounds(versuch, 0, 0, &x1, &y1, &w, &h);
+    if (w <= maxWidth) {
+      break;
+    }
+    passt--;
+  }
+  zweite = truncateToFit(text.substring(passt), maxWidth);
+  return text.substring(0, passt);
+}
+
 DisplayResult SSD1306Display::showInfoScreen(const String& ipAddress) {
 #if USE_DISPLAY
   if (!m_initialized) {
@@ -166,11 +201,21 @@ DisplayResult SSD1306Display::showInfoScreen(const String& ipAddress) {
   m_display.drawLine(0, 63, 127, 63, SSD1306_WHITE);
 
   // Prepare info
-  String name = ConfigMgr.getDeviceName();
+  // Der mDNS-Name statt Gerätename und Version: unter dem hier abgelesenen
+  // Namen ist das Gerät auch erreichbar, die Version steht im Webinterface.
+  // Passt er nicht in eine Zeile, läuft er in die zweite - abtippen können
+  // muss man ihn.
+  String mdns = mdnsName();
+  if (mdns.length() == 0) {
+    char host[MdnsName::MAX_LEN + 1];
+    MdnsName::hostnameVon(ConfigMgr.getDeviceName().c_str(), host, sizeof(host));
+    mdns = host;
+  }
+  mdns += F(".local");
+
   String ip = ipAddress;
   if (ip.startsWith(F("http://")))
     ip = ip.substring(7);
-  String versionStr = "v" VERSION;
   String ssid;
   if (WiFi.getMode() == WIFI_AP || WiFi.getMode() == WIFI_AP_STA) {
     ssid = WiFi.softAPSSID();
@@ -187,10 +232,12 @@ DisplayResult SSD1306Display::showInfoScreen(const String& ipAddress) {
   int yOffset = 8;
 
   // Draw stacked text block, truncating if needed
+  String mdnsZeile2;
+  const String mdnsZeile1 = splitToFit(mdns, textBlockWidth, mdnsZeile2);
   m_display.setCursor(0, yOffset);
-  m_display.println(truncateToFit(name, textBlockWidth));
+  m_display.println(mdnsZeile1);
   m_display.setCursor(0, yOffset + 12);
-  m_display.println(truncateToFit(versionStr, textBlockWidth));
+  m_display.println(mdnsZeile2); // leer, wenn der Name in eine Zeile passt
   m_display.setCursor(0, yOffset + 24);
   m_display.println(truncateToFit(ip, textBlockWidth));
   m_display.setCursor(0, yOffset + 36);

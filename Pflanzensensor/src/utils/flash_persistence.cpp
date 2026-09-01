@@ -76,6 +76,29 @@ ResourceResult FlashPersistence::saveToFlash() {
   String textData;
   textData.reserve(8192); // Pre-allocate to reduce fragmentation
 
+  // Jede Zeile stückweise anhängen statt als eine Verkettungskette.
+  //
+  // "a + b + c + d" hält alle Zwischenergebnisse gleichzeitig im Stapelrahmen;
+  // bei rund fünfzig solchen Zeilen in einer Funktion reicht der 4 KB große
+  // Loop-Stack des ESP8266 nicht mehr. Das Ergebnis war ein
+  // "Panic core_esp8266_main.cpp:215 loop_task" mitten im Sichern - die
+  // Sicherung wurde nie fertig, und nach einem Dateisystem-Update kam ein
+  // veralteter Stand zurück, ohne dass es jemandem auffiel.
+  auto zeile = [&textData](const char* ns, const char* key, const String& wert) {
+    textData += ns;
+    textData += ':';
+    textData += key;
+    textData += '=';
+    textData += wert;
+    textData += '\n';
+  };
+  auto zeileBool = [&zeile](const char* ns, const char* key, bool wert) {
+    zeile(ns, key, wert ? F("1") : F("0"));
+  };
+  auto zeileZahl = [&zeile](const char* ns, const char* key, uint32_t wert) {
+    zeile(ns, key, String(wert));
+  };
+
   Preferences prefs;
 
   // List of all namespaces to backup
@@ -92,45 +115,56 @@ ResourceResult FlashPersistence::saveToFlash() {
     // Get all keys (Preferences library limitation - we know the keys)
     // For general namespace
     if (strcmp(ns, PreferencesNamespaces::GENERAL) == 0) {
-      textData += String(ns) + ":initialized=1\n"; // Marker key for namespace existence
+      zeile(ns, "initialized", F("1")); // Marker key for namespace existence
       // Vorgaben identisch zum Ladepfad halten - ein leerer Rückfallwert würde
       // beim Wiederherstellen nach einem Dateisystem-Update ein leeres
       // Adminpasswort setzen, falls der Schlüssel nie explizit geschrieben wurde.
-      textData += String(ns) + ":device_name=" + prefs.getString("device_name", DEVICE_NAME) + "\n";
-      textData += String(ns) + ":admin_pwd=" + prefs.getString("admin_pwd", ADMIN_PASSWORD) + "\n";
-      textData += String(ns) +
-                  ":md5_verify=" + String(prefs.getBool("md5_verify", false) ? "1" : "0") + "\n";
-      textData += String(ns) + ":file_log=" +
-                  String(prefs.getBool("file_log", FILE_LOGGING_ENABLED) ? "1" : "0") + "\n";
-      textData += String(ns) + ":flower_sens=" + prefs.getString("flower_sens", "") + "\n";
+      zeile(ns, "device_name", prefs.getString("device_name", DEVICE_NAME));
+      zeile(ns, "admin_pwd", prefs.getString("admin_pwd", ADMIN_PASSWORD));
+      zeileBool(ns, "md5_verify", prefs.getBool("md5_verify", false));
+      zeileBool(ns, "file_log", prefs.getBool("file_log", FILE_LOGGING_ENABLED));
+      zeile(ns, "flower_sens", prefs.getString("flower_sens", ""));
+      // Mailversand. Ohne diese Zeilen war die komplette Mailkonfiguration nach
+      // jedem Dateisystem-Update weg - Geraete-ID, Schluessel und Empfaenger
+      // mussten jedes Mal neu eingetippt werden, und zwar unbemerkt: die
+      // Oberflaeche zeigte danach die einkompilierten Vorgaben, nicht die
+      // eigenen Werte. Die Liste hier wird von Hand gepflegt (die
+      // Preferences-Bibliothek kann ihre Schluessel nicht aufzaehlen), sie muss
+      // also zum Ladepfad in manager_config_persistence.cpp passen.
+      zeileBool(ns, "mail_on", prefs.getBool("mail_on", MAIL_ENABLED));
+      zeile(ns, "mail_url", prefs.getString("mail_url", MAIL_SERVICE_URL));
+      zeile(ns, "mail_devid", prefs.getString("mail_devid", MAIL_DEVICE_ID));
+      zeile(ns, "mail_key", prefs.getString("mail_key", MAIL_SECRET_KEY));
+      zeile(ns, "mail_to", prefs.getString("mail_to", MAIL_TO));
+      zeile(ns, "mail_sens", prefs.getString("mail_sens", ""));
+      zeileZahl(ns, "mail_warn_h", prefs.getUInt("mail_warn_h", MAIL_WARN_INTERVAL_HOURS));
+      zeileZahl(ns, "mail_warn_ab", prefs.getUInt("mail_warn_ab", MAIL_WARN_FROM));
+      zeileBool(ns, "mail_boot", prefs.getBool("mail_boot", MAIL_BOOT_ENABLED));
+      zeileBool(ns, "mail_alive", prefs.getBool("mail_alive", MAIL_ALIVE_ENABLED));
+      zeileZahl(ns, "mail_alive_h", prefs.getUInt("mail_alive_h", MAIL_ALIVE_INTERVAL_HOURS));
     }
     // For WiFi namespaces
     else if (strncmp(ns, "wifi", 4) == 0) {
-      textData += String(ns) + ":initialized=1\n";
-      textData += String(ns) + ":ssid=" + prefs.getString("ssid", "") + "\n";
-      textData += String(ns) + ":pwd=" + prefs.getString("pwd", "") + "\n";
+      zeile(ns, "initialized", F("1"));
+      zeile(ns, "ssid", prefs.getString("ssid", ""));
+      zeile(ns, "pwd", prefs.getString("pwd", ""));
     }
     // For display namespace
     else if (strcmp(ns, PreferencesNamespaces::DISP) == 0) {
-      textData += String(ns) + ":initialized=1\n";
+      zeile(ns, "initialized", F("1"));
       textData +=
           String(ns) + ":show_ip=" + String(prefs.getBool("show_ip", true) ? "1" : "0") + "\n";
-      textData += String(ns) +
-                  ":show_clock=" + String(prefs.getBool("show_clock", true) ? "1" : "0") + "\n";
-      textData += String(ns) +
-                  ":show_flower=" + String(prefs.getBool("show_flower", true) ? "1" : "0") + "\n";
-      textData += String(ns) +
-                  ":show_fabmobil=" + String(prefs.getBool("show_fabmobil", true) ? "1" : "0") +
-                  "\n";
-      textData += String(ns) + ":screen_dur=" + String(prefs.getUInt("screen_dur", 5)) + "\n";
-      textData += String(ns) + ":clock_fmt=" + prefs.getString("clock_fmt", "24h") + "\n";
+      zeileBool(ns, "show_clock", prefs.getBool("show_clock", true));
+      zeileBool(ns, "show_flower", prefs.getBool("show_flower", true));
+      zeileBool(ns, "show_fabmobil", prefs.getBool("show_fabmobil", true));
+      zeileZahl(ns, "screen_dur", prefs.getUInt("screen_dur", 5));
+      zeile(ns, "clock_fmt", prefs.getString("clock_fmt", "24h"));
     }
     // For debug namespace
     else if (strcmp(ns, PreferencesNamespaces::DEBUG) == 0) {
-      textData += String(ns) + ":initialized=1\n";
-      textData += String(ns) + ":ram=" + String(prefs.getBool("ram", false) ? "1" : "0") + "\n";
-      textData += String(ns) +
-                  ":meas_cycle=" + String(prefs.getBool("meas_cycle", false) ? "1" : "0") + "\n";
+      zeile(ns, "initialized", F("1"));
+      zeileBool(ns, "ram", prefs.getBool("ram", false));
+      zeileBool(ns, "meas_cycle", prefs.getBool("meas_cycle", false));
       textData +=
           String(ns) + ":sensor=" + String(prefs.getBool("sensor", false) ? "1" : "0") + "\n";
       textData +=
@@ -140,17 +174,15 @@ ResourceResult FlashPersistence::saveToFlash() {
     }
     // For log namespace
     else if (strcmp(ns, PreferencesNamespaces::LOG) == 0) {
-      textData += String(ns) + ":initialized=1\n";
-      textData += String(ns) + ":level=" + prefs.getString("level", "INFO") + "\n";
-      textData += String(ns) +
-                  ":file_enabled=" + String(prefs.getBool("file_enabled", false) ? "1" : "0") +
-                  "\n";
+      zeile(ns, "initialized", F("1"));
+      zeile(ns, "level", prefs.getString("level", "INFO"));
+      zeileBool(ns, "file_enabled", prefs.getBool("file_enabled", false));
     }
     // For LED traffic namespace
     else if (strcmp(ns, PreferencesNamespaces::LED_TRAFFIC) == 0) {
-      textData += String(ns) + ":initialized=1\n";
-      textData += String(ns) + ":mode=" + String(prefs.getUChar("mode", 0)) + "\n";
-      textData += String(ns) + ":sel_meas=" + prefs.getString("sel_meas", "") + "\n";
+      zeile(ns, "initialized", F("1"));
+      zeileZahl(ns, "mode", prefs.getUChar("mode", 0));
+      zeile(ns, "sel_meas", prefs.getString("sel_meas", ""));
     }
 
     prefs.end();

@@ -116,6 +116,8 @@ private:
    * @return The truncated string.
    */
   String truncateToFit(const String& text, int maxWidth);
+  /// @brief Text auf zwei Zeilen aufteilen statt abschneiden - siehe .cpp
+  String splitToFit(const String& text, int maxWidth, String& zweite);
 
   /**
    * @brief Updates the cached QR code if the IP address has changed.

@@ -39,7 +39,7 @@ const char BOOT_RUMPF[] PROGMEM = "# 🌱 Ich bin wieder wach!\n"
                                   "{messwerte}\n"
                                   "\n"
                                   "🔁 Neustart Nr. {neustarts} · ⏱️ läuft seit {laufzeit}\n"
-                                  "📶 {ssid} · 🔗 [{ip}](http://{ip})\n"
+                                  "📶 {ssid} · 🔗 [{name}](http://{name}) · {ip}\n"
                                   "🗓️ {datum} um {uhrzeit}\n";
 
 const char WARNUNG_RUMPF[] PROGMEM = "# 🚨 Deine Pflanze braucht dich!\n"
@@ -52,7 +52,7 @@ const char WARNUNG_RUMPF[] PROGMEM = "# 🚨 Deine Pflanze braucht dich!\n"
                                      "\n"
                                      "{messwerte}\n"
                                      "\n"
-                                     "🔗 [Jetzt nachschauen](http://{ip})\n"
+                                     "🔗 [Jetzt nachschauen](http://{name}) · {ip}\n"
                                      "🗓️ {datum} um {uhrzeit} · ⏱️ läuft seit {laufzeit}\n";
 
 const char ALIVE_RUMPF[] PROGMEM = "# 🪴 Alles im grünen Bereich\n"
@@ -62,7 +62,7 @@ const char ALIVE_RUMPF[] PROGMEM = "# 🪴 Alles im grünen Bereich\n"
                                    "\n"
                                    "{messwerte}\n"
                                    "\n"
-                                   "📶 {ssid} · 🔗 [{ip}](http://{ip})\n"
+                                   "📶 {ssid} · 🔗 [{name}](http://{name}) · {ip}\n"
                                    "🗓️ {datum} um {uhrzeit} · 🔁 Neustart Nr. {neustarts}\n";
 
 /**

@@ -13,6 +13,8 @@
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
 #include "utils/helper.h"
+#include "utils/mdns_name.h"
+#include "utils/wifi.h"
 #include "web/core/components.h"
 
 extern std::unique_ptr<SensorManager> sensorManager;
@@ -165,11 +167,20 @@ void leseAbschnitt(Abschnitt gesucht, RohZeile aus, void* context) {
  *          einer offenen TLS-Verbindung.
  */
 struct Werte {
-  String geraet, ip, ssid, neustarts, laufzeit, datum, uhrzeit;
-  MailVorlage::Paar paare[7];
+  String geraet, name, ip, ssid, neustarts, laufzeit, datum, uhrzeit;
+  MailVorlage::Paar paare[8];
 
   Werte() {
     geraet = ConfigMgr.getDeviceName();
+    // Der Name, unter dem das Gerät im Netz erreichbar ist. Er überlebt einen
+    // Wechsel der IP - genau deshalb steht er in der Mail.
+    name = mdnsName();
+    if (name.length() == 0) {
+      char host[MdnsName::MAX_LEN + 1];
+      MdnsName::hostnameVon(geraet.c_str(), host, sizeof(host));
+      name = host;
+    }
+    name += F(".local");
     ip = Component::getDisplayIP();
     ssid = Component::getDisplaySSID();
     neustarts = String(Helper::getRebootCount());
@@ -178,12 +189,13 @@ struct Werte {
     uhrzeit = Helper::getFormattedTime(true);
 
     paare[0] = {"geraet", geraet.c_str()};
-    paare[1] = {"ip", ip.c_str()};
-    paare[2] = {"ssid", ssid.c_str()};
-    paare[3] = {"neustarts", neustarts.c_str()};
-    paare[4] = {"laufzeit", laufzeit.c_str()};
-    paare[5] = {"datum", datum.c_str()};
-    paare[6] = {"uhrzeit", uhrzeit.c_str()};
+    paare[1] = {"name", name.c_str()};
+    paare[2] = {"ip", ip.c_str()};
+    paare[3] = {"ssid", ssid.c_str()};
+    paare[4] = {"neustarts", neustarts.c_str()};
+    paare[5] = {"laufzeit", laufzeit.c_str()};
+    paare[6] = {"datum", datum.c_str()};
+    paare[7] = {"uhrzeit", uhrzeit.c_str()};
   }
 };
 

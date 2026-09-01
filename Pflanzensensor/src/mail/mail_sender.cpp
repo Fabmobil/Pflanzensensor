@@ -16,6 +16,7 @@
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
 #include "utils/helper.h"
+#include "utils/memory_manager.h"
 
 extern std::unique_ptr<SensorManager> sensorManager;
 
@@ -237,6 +238,17 @@ bool MailSender::sende(Mail::Kind kind, String& fehler) {
     return false;
   }
 
+  // Der Webserver hält seine zuletzt benutzten Handler im Cache. Sie kosten
+  // ein paar Kilobyte und bauen sich beim nächsten Seitenaufruf von selbst
+  // wieder auf - vor einem Versand sind sie besser weg. Das tat früher
+  // genugSpeicher() und fiel mit der TLS-Speicherprüfung heraus; ohne den
+  // Aufruf scheiterte der Versand am Gerät mit "send payload failed", weil
+  // lwIP keine Sendepuffer mehr bekam.
+  if (ESP.getFreeHeap() < AUFRAEUMEN_UNTER) {
+    MemoryMgr.emergencyCleanup();
+    yield();
+  }
+
   char betreff[MailVorlage::BETREFF_MAX + 1];
   if (MailVorlagen::betreff(kind, betreff, sizeof(betreff)) == 0) {
     strncpy(betreff, "Pflanzensensor", sizeof(betreff) - 1);
@@ -278,9 +290,12 @@ bool MailSender::sende(Mail::Kind kind, String& fehler) {
     fehler = ergebnis.message;
     // Hat der Mailbot geantwortet, ist das ein Urteil - falscher Schlüssel,
     // Tageslimit, zu lange Nutzlast. Das wiederholt sich nur. Kam die Anfrage
-    // dagegen gar nicht durch (httpStatus 0: kein WLAN, Name nicht auflösbar,
-    // Verbindung unter Last abgerissen), lohnt ein zweiter Versuch.
-    m_voruebergehend = (ergebnis.httpStatus == 0);
+    // dagegen gar nicht durch, lohnt ein zweiter Versuch.
+    //
+    // Die Grenze ist <= 0, nicht == 0: der HTTPClient meldet Transportfehler
+    // als negative Codes (-1 Verbindung, -3 "send payload failed"). Mit == 0
+    // lief die Wiederholung ins Leere - genau der Fall, der am Gerät auftrat.
+    m_voruebergehend = (ergebnis.httpStatus <= 0);
     return false;
   }
   m_voruebergehend = false;

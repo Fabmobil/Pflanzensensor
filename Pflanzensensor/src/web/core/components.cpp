@@ -14,6 +14,8 @@
 
 #include "logger/logger.h"
 #include "utils/helper.h"
+#include "utils/mdns_name.h"
+#include "utils/wifi.h"
 
 namespace Component {
 
@@ -195,7 +197,21 @@ void sendPixelatedFooter(ESPWebServer& server, const String& version, const Stri
                       "class='stats-value'>"));
   sendChunk(server, getDisplaySSID());
   sendChunk(server, F("</span></div>"));
-  // Row 3: IP
+  // Row 3: Name im Netz. Steht vor der IP, weil er sich nicht ändert, wenn der
+  // Router neu vergibt - und weil man ihn sich merken kann.
+  sendChunk(server, F("<div class='stats-row'><span class='stats-label'>🏷️ NAME</span><span "
+                      "class='stats-value'>"));
+  {
+    String name = mdnsName();
+    if (name.length() == 0) {
+      char host[MdnsName::MAX_LEN + 1];
+      MdnsName::hostnameVon(ConfigMgr.getDeviceName().c_str(), host, sizeof(host));
+      name = host;
+    }
+    sendChunk(server, name + F(".local"));
+  }
+  sendChunk(server, F("</span></div>"));
+  // Row 4: IP
   sendChunk(
       server,
       F("<div class='stats-row'><span class='stats-label'>💻 IP</span><span class='stats-value'>"));
