@@ -76,189 +76,66 @@ ResourceResult FlashPersistence::saveToFlash() {
   String textData;
   textData.reserve(8192); // Pre-allocate to reduce fragmentation
 
-  // Jede Zeile stückweise anhängen statt als eine Verkettungskette.
+  // Alle Namensräume und Schlüssel selbst einsammeln, statt sie aufzuzählen.
   //
-  // "a + b + c + d" hält alle Zwischenergebnisse gleichzeitig im Stapelrahmen;
-  // bei rund fünfzig solchen Zeilen in einer Funktion reicht der 4 KB große
-  // Loop-Stack des ESP8266 nicht mehr. Das Ergebnis war ein
-  // "Panic core_esp8266_main.cpp:215 loop_task" mitten im Sichern - die
-  // Sicherung wurde nie fertig, und nach einem Dateisystem-Update kam ein
-  // veralteter Stand zurück, ohne dass es jemandem auffiel.
-  auto zeile = [&textData](const char* ns, const char* key, const String& wert) {
-    textData += ns;
-    textData += ':';
-    textData += key;
-    textData += '=';
-    textData += wert;
-    textData += '\n';
-  };
-  auto zeileBool = [&zeile](const char* ns, const char* key, bool wert) {
-    zeile(ns, key, wert ? F("1") : F("0"));
-  };
-  auto zeileZahl = [&zeile](const char* ns, const char* key, uint32_t wert) {
-    zeile(ns, key, String(wert));
-  };
+  // Die Preferences-Bibliothek legt jeden Schlüssel als eigene Datei unter
+  // /nvs/<namensraum>/<schluessel> ab. Damit lässt sich der Bestand auflisten -
+  // und genau das ist der Punkt: die frühere Liste war handgepflegt, und was
+  // dort fehlte, war nach einem Dateisystem-Update stillschweigend weg. Der
+  // komplette Mailversand ist so verlorengegangen, ohne dass es jemandem
+  // auffiel.
+  //
+  // Gespeichert werden die rohen Bytes als Hexadezimaltext. Das ist kein
+  // Schönheitsfehler, sondern nötig: die Dateien tragen keine Typkennung
+  // (getType() liefert PT_INVALID), und bei vier Byte lässt sich uint32, int32
+  // und float nicht unterscheiden. Wer den Wert später liest, weiß seinen Typ -
+  // die Sicherung muss ihn deshalb gar nicht kennen, sie muss ihn nur
+  // unverändert zurückgeben.
+  textData += PREFS_FORMAT_MARKER;
+  textData += '\n';
 
-  Preferences prefs;
-
-  // List of all namespaces to backup
-  const char* namespaces[] = {PreferencesNamespaces::GENERAL, PreferencesNamespaces::WIFI1,
-                              PreferencesNamespaces::WIFI2,   PreferencesNamespaces::WIFI3,
-                              PreferencesNamespaces::DISP,    PreferencesNamespaces::DEBUG,
-                              PreferencesNamespaces::LOG,     PreferencesNamespaces::LED_TRAFFIC};
-
-  // Export each namespace
-  for (const char* ns : namespaces) {
-    if (!prefs.begin(ns, true))
-      continue;
-
-    // Get all keys (Preferences library limitation - we know the keys)
-    // For general namespace
-    if (strcmp(ns, PreferencesNamespaces::GENERAL) == 0) {
-      zeile(ns, "initialized", F("1")); // Marker key for namespace existence
-      // Vorgaben identisch zum Ladepfad halten - ein leerer Rückfallwert würde
-      // beim Wiederherstellen nach einem Dateisystem-Update ein leeres
-      // Adminpasswort setzen, falls der Schlüssel nie explizit geschrieben wurde.
-      zeile(ns, "device_name", prefs.getString("device_name", DEVICE_NAME));
-      zeile(ns, "admin_pwd", prefs.getString("admin_pwd", ADMIN_PASSWORD));
-      zeileBool(ns, "md5_verify", prefs.getBool("md5_verify", false));
-      zeileBool(ns, "file_log", prefs.getBool("file_log", FILE_LOGGING_ENABLED));
-      zeile(ns, "flower_sens", prefs.getString("flower_sens", ""));
-      // Mailversand. Ohne diese Zeilen war die komplette Mailkonfiguration nach
-      // jedem Dateisystem-Update weg - Geraete-ID, Schluessel und Empfaenger
-      // mussten jedes Mal neu eingetippt werden, und zwar unbemerkt: die
-      // Oberflaeche zeigte danach die einkompilierten Vorgaben, nicht die
-      // eigenen Werte. Die Liste hier wird von Hand gepflegt (die
-      // Preferences-Bibliothek kann ihre Schluessel nicht aufzaehlen), sie muss
-      // also zum Ladepfad in manager_config_persistence.cpp passen.
-      zeileBool(ns, "mail_on", prefs.getBool("mail_on", MAIL_ENABLED));
-      zeile(ns, "mail_url", prefs.getString("mail_url", MAIL_SERVICE_URL));
-      zeile(ns, "mail_devid", prefs.getString("mail_devid", MAIL_DEVICE_ID));
-      zeile(ns, "mail_key", prefs.getString("mail_key", MAIL_SECRET_KEY));
-      zeile(ns, "mail_to", prefs.getString("mail_to", MAIL_TO));
-      zeile(ns, "mail_sens", prefs.getString("mail_sens", ""));
-      zeileZahl(ns, "mail_warn_h", prefs.getUInt("mail_warn_h", MAIL_WARN_INTERVAL_HOURS));
-      zeileZahl(ns, "mail_warn_ab", prefs.getUInt("mail_warn_ab", MAIL_WARN_FROM));
-      zeileBool(ns, "mail_boot", prefs.getBool("mail_boot", MAIL_BOOT_ENABLED));
-      zeileBool(ns, "mail_alive", prefs.getBool("mail_alive", MAIL_ALIVE_ENABLED));
-      zeileZahl(ns, "mail_alive_h", prefs.getUInt("mail_alive_h", MAIL_ALIVE_INTERVAL_HOURS));
-    }
-    // For WiFi namespaces
-    else if (strncmp(ns, "wifi", 4) == 0) {
-      zeile(ns, "initialized", F("1"));
-      zeile(ns, "ssid", prefs.getString("ssid", ""));
-      zeile(ns, "pwd", prefs.getString("pwd", ""));
-    }
-    // For display namespace
-    else if (strcmp(ns, PreferencesNamespaces::DISP) == 0) {
-      zeile(ns, "initialized", F("1"));
-      textData +=
-          String(ns) + ":show_ip=" + String(prefs.getBool("show_ip", true) ? "1" : "0") + "\n";
-      zeileBool(ns, "show_clock", prefs.getBool("show_clock", true));
-      zeileBool(ns, "show_flower", prefs.getBool("show_flower", true));
-      zeileBool(ns, "show_fabmobil", prefs.getBool("show_fabmobil", true));
-      zeileZahl(ns, "screen_dur", prefs.getUInt("screen_dur", 5));
-      zeile(ns, "clock_fmt", prefs.getString("clock_fmt", "24h"));
-    }
-    // For debug namespace
-    else if (strcmp(ns, PreferencesNamespaces::DEBUG) == 0) {
-      zeile(ns, "initialized", F("1"));
-      zeileBool(ns, "ram", prefs.getBool("ram", false));
-      zeileBool(ns, "meas_cycle", prefs.getBool("meas_cycle", false));
-      textData +=
-          String(ns) + ":sensor=" + String(prefs.getBool("sensor", false) ? "1" : "0") + "\n";
-      textData +=
-          String(ns) + ":display=" + String(prefs.getBool("display", false) ? "1" : "0") + "\n";
-      textData +=
-          String(ns) + ":websocket=" + String(prefs.getBool("websocket", false) ? "1" : "0") + "\n";
-    }
-    // For log namespace
-    else if (strcmp(ns, PreferencesNamespaces::LOG) == 0) {
-      zeile(ns, "initialized", F("1"));
-      zeile(ns, "level", prefs.getString("level", "INFO"));
-      zeileBool(ns, "file_enabled", prefs.getBool("file_enabled", false));
-    }
-    // For LED traffic namespace
-    else if (strcmp(ns, PreferencesNamespaces::LED_TRAFFIC) == 0) {
-      zeile(ns, "initialized", F("1"));
-      zeileZahl(ns, "mode", prefs.getUChar("mode", 0));
-      zeile(ns, "sel_meas", prefs.getString("sel_meas", ""));
-    }
-
-    prefs.end();
-  }
-
-  // Also backup sensor namespaces (dynamic: s_SENSORID)
-  // Known sensor types that might exist
-  const char* knownSensors[] = {"ANALOG", "DHT", "DHT22"};
-
-  for (const char* sensorId : knownSensors) {
-    String sensorNs = "s_" + String(sensorId);
-    if (sensorNs.length() > 15)
-      sensorNs = sensorNs.substring(0, 15);
-
-    if (!prefs.begin(sensorNs.c_str(), true))
-      continue; // Namespace doesn't exist
-
-    // Check if it's initialized
-    if (!prefs.isKey("initialized")) {
-      prefs.end();
+  uint16_t schluesselGesamt = 0;
+  Dir nvs = LittleFS.openDir(F("/nvs"));
+  while (nvs.next()) {
+    const String ns = nvs.fileName();
+    if (ns.length() == 0 || ns.length() > 30) {
       continue;
     }
-
-    textData += sensorNs + ":initialized=1\n";
-    textData += sensorNs + ":name=" + prefs.getString("name", "") + "\n";
-    textData += sensorNs + ":meas_int=" + String(prefs.getUInt("meas_int", 10000)) + "\n";
-    textData += sensorNs + ":has_err=" + String(prefs.getBool("has_err", false) ? "1" : "0") + "\n";
-
-    // Save all measurements (max 8 measurements per sensor)
-    for (uint8_t idx = 0; idx < 8; idx++) {
-      String prefix = "m" + String(idx) + "_";
-
-      // Check if measurement exists
-      if (!prefs.isKey((prefix + "en").c_str()))
-        break;
-
-      textData += sensorNs + ":" + prefix +
-                  "en=" + String(prefs.getBool((prefix + "en").c_str(), false) ? "1" : "0") + "\n";
-      textData +=
-          sensorNs + ":" + prefix + "nm=" + prefs.getString((prefix + "nm").c_str(), "") + "\n";
-      textData +=
-          sensorNs + ":" + prefix + "fn=" + prefs.getString((prefix + "fn").c_str(), "") + "\n";
-      textData +=
-          sensorNs + ":" + prefix + "un=" + prefs.getString((prefix + "un").c_str(), "") + "\n";
-      textData += sensorNs + ":" + prefix +
-                  "min=" + String(prefs.getInt((prefix + "min").c_str(), 0)) + "\n";
-      textData += sensorNs + ":" + prefix +
-                  "max=" + String(prefs.getInt((prefix + "max").c_str(), 0)) + "\n";
-      textData += sensorNs + ":" + prefix +
-                  "yl=" + String(prefs.getUChar((prefix + "yl").c_str(), 0)) + "\n";
-      textData += sensorNs + ":" + prefix +
-                  "gl=" + String(prefs.getUChar((prefix + "gl").c_str(), 0)) + "\n";
-      textData += sensorNs + ":" + prefix +
-                  "gh=" + String(prefs.getUChar((prefix + "gh").c_str(), 0)) + "\n";
-      textData += sensorNs + ":" + prefix +
-                  "yh=" + String(prefs.getUChar((prefix + "yh").c_str(), 0)) + "\n";
-      textData += sensorNs + ":" + prefix +
-                  "inv=" + String(prefs.getBool((prefix + "inv").c_str(), false) ? "1" : "0") +
-                  "\n";
-      textData += sensorNs + ":" + prefix +
-                  "cal=" + String(prefs.getBool((prefix + "cal").c_str(), false) ? "1" : "0") +
-                  "\n";
-      textData += sensorNs + ":" + prefix +
-                  "acd=" + String(prefs.getUInt((prefix + "acd").c_str(), 86400)) + "\n";
-      textData += sensorNs + ":" + prefix +
-                  "rmin=" + String(prefs.getInt((prefix + "rmin").c_str(), INT32_MAX)) + "\n";
-      textData += sensorNs + ":" + prefix +
-                  "rmax=" + String(prefs.getInt((prefix + "rmax").c_str(), INT32_MIN)) + "\n";
-      textData += sensorNs + ":" + prefix +
-                  "absMin=" + String(prefs.getFloat((prefix + "absMin").c_str(), INFINITY)) + "\n";
-      textData += sensorNs + ":" + prefix +
-                  "absMax=" + String(prefs.getFloat((prefix + "absMax").c_str(), -INFINITY)) + "\n";
+    Dir keys = LittleFS.openDir(String(F("/nvs/")) + ns);
+    while (keys.next()) {
+      const String key = keys.fileName();
+      // Die Bibliothek legt beim Schreiben kurzzeitig eine Zwischendatei an -
+      // die gehört nicht in die Sicherung.
+      if (key.length() == 0 || key.startsWith(F("\a"))) {
+        continue;
+      }
+      File f = LittleFS.open(String(F("/nvs/")) + ns + "/" + key, "r");
+      if (!f) {
+        continue;
+      }
+      textData += ns;
+      textData += ':';
+      textData += key;
+      textData += '=';
+      // Stückweise lesen: ein Schlüssel darf beliebig lang sein, der Stapel
+      // dieses Geräts ist es nicht.
+      uint8_t brocken[64];
+      while (f.available()) {
+        const size_t n = f.read(brocken, sizeof(brocken));
+        for (size_t i = 0; i < n; i++) {
+          const char hex[] = "0123456789abcdef";
+          textData += hex[brocken[i] >> 4];
+          textData += hex[brocken[i] & 0x0F];
+        }
+        optimistic_yield(1000);
+      }
+      f.close();
+      textData += '\n';
+      schluesselGesamt++;
     }
-
-    prefs.end();
   }
+  LOG_INFO(F("FlashPers"),
+           String(F("Preferences gesichert: ")) + String(schluesselGesamt) + F(" Schluessel"));
 
   uint32_t dataSize = textData.length();
   LOG_INFO(F("FlashPers"), String(F("Textgröße: ")) + String(dataSize) + F(" Bytes"));
@@ -345,6 +222,19 @@ ResourceResult FlashPersistence::saveToFlash() {
   LOG_INFO(F("FlashPers"), F("Erfolgreich gespeichert"));
   return ResourceResult::success();
 }
+
+namespace {
+/// @brief Eine Hexziffer in ihren Wert, -1 bei Unsinn
+int hexZiffer(char c) {
+  if (c >= '0' && c <= '9')
+    return c - '0';
+  if (c >= 'a' && c <= 'f')
+    return c - 'a' + 10;
+  if (c >= 'A' && c <= 'F')
+    return c - 'A' + 10;
+  return -1;
+}
+} // namespace
 
 ResourceResult FlashPersistence::restoreFromFlash() {
   // CRITICAL: NO LOGGER CALLS - heap is too fragmented, use Serial only
@@ -440,6 +330,12 @@ ResourceResult FlashPersistence::restoreFromFlash() {
 
   char lineBuffer[256];
   int linePos = 0;
+  // Erste Zeile entscheidet über das Format. Ohne Kennzeichen ist es eine
+  // Sicherung der ersten Fassung (Klartext) - die muss weiterhin gelesen
+  // werden, sonst verliert jedes Gerät beim Update auf diese Firmware seine
+  // Einstellungen.
+  bool ersteZeile = true;
+  bool hexFormat = false;
   uint32_t readOffset = offset + 16;
   uint32_t bytesRead = 0;
 
@@ -464,6 +360,15 @@ ResourceResult FlashPersistence::restoreFromFlash() {
       if (c == '\n' || c == '\r' || linePos >= 255) {
         if (linePos > 0) {
           lineBuffer[linePos] = '\0';
+
+          if (ersteZeile) {
+            ersteZeile = false;
+            if (strcmp(lineBuffer, PREFS_FORMAT_MARKER) == 0) {
+              hexFormat = true;
+              linePos = 0;
+              continue;
+            }
+          }
 
           // Parse "namespace:key=value"
           char* colon = strchr(lineBuffer, ':');
@@ -497,7 +402,31 @@ ResourceResult FlashPersistence::restoreFromFlash() {
                 }
               }
 
-              if (nsOpen) {
+              if (nsOpen && hexFormat) {
+                // Rohe Bytes zurückschreiben - kein Raten nötig. Wer den Wert
+                // später liest, kennt seinen Typ; die Sicherung muss ihn nur
+                // unverändert zurückgeben.
+                const size_t hexLen = strlen(value);
+                uint8_t bytes[128];
+                size_t n = 0;
+                bool sauber = (hexLen % 2 == 0) && (hexLen / 2 <= sizeof(bytes));
+                for (size_t h = 0; sauber && h < hexLen; h += 2) {
+                  const int hi = hexZiffer(value[h]);
+                  const int lo = hexZiffer(value[h + 1]);
+                  if (hi < 0 || lo < 0) {
+                    sauber = false;
+                    break;
+                  }
+                  bytes[n++] = static_cast<uint8_t>((hi << 4) | lo);
+                }
+                if (sauber) {
+                  prefs.putBytes(key, bytes, n);
+                  lineCount++;
+                } else {
+                  Serial.print(F("[FlashPers] Unbrauchbarer Wert uebersprungen: "));
+                  Serial.println(key);
+                }
+              } else if (nsOpen) {
                 // Determine type and write
                 // Check for boolean (exactly "0" or "1")
                 if (strcmp(value, "0") == 0 || strcmp(value, "1") == 0) {

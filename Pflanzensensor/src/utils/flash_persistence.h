@@ -66,6 +66,12 @@ private:
 
   // Separate storage areas to avoid heap exhaustion
   static constexpr uint32_t FP_PREFS_MAX_SIZE = 8 * 1024; // 8KB for Preferences
+  /// Kennzeichen der zweiten Fassung des Preferences-Sicherungsformats: rohe
+  /// Bytes als Hexadezimaltext, Schlüssel selbst eingesammelt. Fehlt die Zeile,
+  /// stammt die Sicherung aus der ersten Fassung (Klartext, handgepflegte
+  /// Schlüsselliste) und wird weiterhin gelesen - sonst verlöre jedes Gerät
+  /// beim ersten Update auf diese Firmware seine Einstellungen.
+  static constexpr const char* PREFS_FORMAT_MARKER = "#PF2";
   static constexpr uint32_t FP_JSON_MAX_SIZE = 32 * 1024; // 32KB for JSON configs
 
   /**
