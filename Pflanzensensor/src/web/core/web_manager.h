@@ -126,6 +126,18 @@ public:
   ESPWebServer& getServer() { return *_server; }
 
   /**
+   * @brief Webserver für einen speicherkritischen Abschnitt anhalten
+   * @details Der Mailversand braucht in der Spitze knapp 12 KB Heap. Nimmt der
+   *          Browser in genau diesem Moment eine Seite oder pollt
+   *          /getLatestValues, fordert der Webserver dafür Puffer an - und die
+   *          fehlende Allokation endet in einem Schreibzugriff auf 0x00000000
+   *          (Exception 29). Deshalb hört das Gerät während des Versands kurz
+   *          nicht zu; danach geht es normal weiter.
+   */
+  void pausiereWebserver();
+  void setzeWebserverFort();
+
+  /**
    * @brief Check if a route exists for given path and method
    * @param path The URL path to check
    * @param method The HTTP method to check
@@ -476,6 +488,7 @@ private:
   bool m_configUploadAuthorized{false};       ///< Auth-Ergebnis des laufenden Config-Uploads
                                               ///< (/admin/uploadConfig umgeht die Middleware)
   std::unique_ptr<ESPWebServer> _server;      ///< Web server instance
+  bool m_webserverPausiert{false};            ///< siehe pausiereWebserver()
   std::unique_ptr<WebRouter> _router;         ///< URL router
   std::unique_ptr<WebAuth> _auth;             ///< Authentication service
   std::unique_ptr<CSSService> _cssService;    ///< CSS management service

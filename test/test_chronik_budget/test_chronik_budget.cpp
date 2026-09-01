@@ -37,7 +37,24 @@ void test_datei_log_verkleinert_das_fenster() {
   in.freeBytes = FREI_AUF_GERAET;
   in.ownBytes = 0;
   in.fileLogEnabled = true;
-  TEST_ASSERT_EQUAL_UINT8(12, targetSegments(in));
+  TEST_ASSERT_EQUAL_UINT8(19, targetSegments(in));
+}
+
+/// Der Fall vom 01.09.2026: das Abbild war gewachsen, frei blieben genau
+/// 120 KB - und exakt so groß war damals die Reserve mit eingeschaltetem
+/// Datei-Log (80 + 24 + 16 KB). Die Chronik bekam null Segmente und zeichnete
+/// nichts auf, ohne dass es jemandem auffiel. Seit die Logdatei auf 16000 B
+/// begrenzt ist, bleibt auch im engen Fall Platz für Historie.
+void test_enges_geraet_zeichnet_trotz_datei_log_auf() {
+  Input in;
+  in.freeBytes = 122880; // 120 KB
+  in.ownBytes = 0;
+  in.fileLogEnabled = true;
+  TEST_ASSERT_EQUAL_UINT8(7, targetSegments(in));
+
+  // Ohne Datei-Log bleibt es beim bisherigen Wert
+  in.fileLogEnabled = false;
+  TEST_ASSERT_EQUAL_UINT8(8, targetSegments(in));
 }
 
 /// Der eigene Verbrauch zählt zum verfügbaren Platz: sonst schrumpfte das
@@ -107,6 +124,7 @@ int main(int, char**) {
   UNITY_BEGIN();
   RUN_TEST(test_geraetezahlen_ergeben_zwanzig_segmente);
   RUN_TEST(test_datei_log_verkleinert_das_fenster);
+  RUN_TEST(test_enges_geraet_zeichnet_trotz_datei_log_auf);
   RUN_TEST(test_eigener_verbrauch_zaehlt_mit);
   RUN_TEST(test_zu_wenig_platz_ergibt_null_segmente);
   RUN_TEST(test_obergrenze_greift);

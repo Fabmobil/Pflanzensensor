@@ -366,11 +366,13 @@ function mapFieldToConfig(fieldName, section) {
  */
 function initConfigAutoSave() {
   document.querySelectorAll('form.config-form').forEach(form => {
-    const actionAttr = form.getAttribute('action') || '';
-  // Only target the main settings forms which post to /admin/updateSettings.
-  // WiFi form (action '/admin/updateWiFi') should not auto-save — it will be
-  // handled by an explicit Save button below.
-  if (!actionAttr.includes('/admin/updateSettings')) return;
+  // Erkennungsmerkmal ist data-autosave. Vorher stand hier die Zieladresse
+  // '/admin/updateSettings' - eine Route, die es gar nicht gibt: gespeichert
+  // wird ausschließlich per AJAX über /admin/config/setConfigValue. Wer das
+  // Formular ohne JavaScript abschickte, bekam ein 404.
+  // Das WLAN-Formular (action '/admin/updateWiFi') speichert nicht automatisch,
+  // es hat weiter unten einen eigenen Knopf.
+  if (!form.hasAttribute('data-autosave')) return;
 
     // Hide the visual save button to reduce clutter. The form remains in the DOM for accessibility,
     // but it must be submitted via JavaScript (AJAX) and direct HTML submissions are not supported.

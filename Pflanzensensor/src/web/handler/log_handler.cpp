@@ -96,7 +96,7 @@ void LogHandler::handleLogs() {
         // Card 1: Debug settings form (auto-saved by admin.js)
         sendChunk(F("<div class='card log-controls-card'>"));
         sendChunk(F("<div class='log-controls-label'>Log Einstellungen</div>"));
-        sendChunk(F("<form method='post' action='/admin/updateSettings' class='config-form'>"));
+        sendChunk(F("<form data-autosave='1' class='config-form'>"));
         sendChunk(F("<input type='hidden' name='section' value='debug'>"));
         // Debug RAM
         sendChunk(F("<div><label class='checkbox-label'>"));

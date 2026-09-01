@@ -20,6 +20,7 @@
 #include "utils/mail_message.h"
 #include "utils/memory_manager.h"
 #include "utils/smtp_session.h"
+#include "web/core/web_manager.h"
 
 extern std::unique_ptr<SensorManager> sensorManager;
 
@@ -94,6 +95,24 @@ void sendeZeile(WiFiClient& client, const String& text) {
 /// kann der Zeiger versetzt sein.
 struct SendeZiel {
   BearSSL::WiFiClientSecure* client;
+};
+
+/**
+ * @class WebPause
+ * @brief Hält den Webserver für die Dauer des Versands an
+ * @details Zwei Gründe. Erstens Platz: die Anfragepuffer werden frei. Zweitens
+ *          und wichtiger die Ruhe - kommt während des TLS-Handshakes eine
+ *          Anfrage herein, fordert der Webserver Speicher an, den es gerade
+ *          nicht gibt. Zwei Versuche mit praktisch gleichem freien Heap gingen
+ *          deshalb unterschiedlich aus: einer lief durch, der andere endete in
+ *          Exception 29. Als Wächter, damit auch jeder Fehlerausgang aus
+ *          sende() den Server wieder anschaltet.
+ */
+struct WebPause {
+  WebPause() { WebManager::getInstance().pausiereWebserver(); }
+  ~WebPause() { WebManager::getInstance().setzeWebserverFort(); }
+  WebPause(const WebPause&) = delete;
+  WebPause& operator=(const WebPause&) = delete;
 };
 
 void sendeRumpfZeile(const char* text, size_t length, void* context) {
@@ -378,6 +397,13 @@ bool MailSender::sende(Mail::Kind kind, String& fehler) {
   // Kette prüfen; bei jedem anderen Anbieter war der erste Versuch verlorene
   // Zeit und eine zerstückelte Halde. Die Zugangsdaten sind trotzdem
   // verschlüsselt unterwegs, nur die Echtheit des Servers wird nicht geprüft.
+  // Ab hier schweigt der Webserver. Bewusst erst hier und nicht schon vor der
+  // Speicherprüfung: die läuft bei einer wartenden Testmail alle paar Sekunden,
+  // und ein Server, der sich im Sekundentakt ab- und anmeldet, ist für den
+  // Browser schlicht nicht erreichbar. Genau das war er zwischenzeitlich.
+  const WebPause webPause;
+  yield();
+
   BearSSL::WiFiClientSecure tlsClient;
   tlsClient.setInsecure();
   // 512-Byte-Puffer statt der üblichen 16 KB. Ohne das passt TLS auf diesem
@@ -396,6 +422,15 @@ bool MailSender::sende(Mail::Kind kind, String& fehler) {
   // Der Punkt mit dem geringsten Vorrat im ganzen Versand: die TLS-Puffer
   // stehen, der Rumpf kommt erst danach und wird gestreamt.
   meldeSpeicher(F("nach dem Handshake"));
+
+  const uint32_t restNachHandshake = ESP.getFreeHeap();
+  if (restNachHandshake < MIN_FREE_NACH_HANDSHAKE) {
+    tlsClient.stop();
+    fehler = String(F("Nach dem Handshake nur noch ")) + String(restNachHandshake) +
+             F(" B frei - abgebrochen, bevor etwas abstuerzt");
+    m_speichermangel = true;
+    return false;
+  }
 
   Smtp::Config sc;
   sc.helo = "pflanzensensor";

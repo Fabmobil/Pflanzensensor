@@ -239,7 +239,13 @@
 #define MAIL_ALIVE_INTERVAL_HOURS 24
 #define MAIL_BOOT_ENABLED false
 
-#define MAX_LOG_FILE_SIZE 50000 // Maximale Logdateigröße in Bytes
+// Maximale Logdateigroesse in Bytes. Haengt mit der Chronik zusammen: die
+// Rotation legt kurzzeitig eine zweite Datei mit der halben Groesse an, und
+// genau diese Spitze haelt ChronikBudget::RESERVE_FILE_LOG_ON frei. Mit den
+// frueheren 50000 war die Reserve so gross, dass auf einem gut gefuellten
+// Geraet gar keine Chronik mehr passte. 16000 belegen aufgerundet drei
+// LittleFS-Bloecke und reichen fuer rund 200 Zeilen.
+#define MAX_LOG_FILE_SIZE 16000
 // E-Mail-Benachrichtigungen. Aus: fuer TLS reicht der RAM nicht.
 #define USE_MAIL false
 #define DHT_TEMPERATURE_FIELD_NAME "lufttemperatur" // für InfluxDB

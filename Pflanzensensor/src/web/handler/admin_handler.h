@@ -80,7 +80,8 @@ public:
    *          - Returns results
    * @note Expects JSON in format: {"key": "setting_name", "value": "new_value"}
    * Individual key updates are handled via AJAX partial updates to
-   * /admin/updateSettings (AJAX-only). No HTML form POST fallback is supported.
+   * /admin/config/setConfigValue (AJAX-only). No HTML form POST fallback is
+   * supported; die Formulare tragen dafür data-autosave.
    */
   /**
    * @brief Streams the log file to the client for download if file logging is

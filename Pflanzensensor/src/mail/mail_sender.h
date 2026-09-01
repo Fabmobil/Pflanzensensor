@@ -29,21 +29,44 @@ public:
   /// davon liegt bei gut 4 KB. Eine Blockschwelle von 17 KB, wie hier zuerst
   /// eingetragen, verhinderte den Versand bei 30 % Fragmentierung grundlos.
   ///
-  /// Der freie Heap dagegen ist bindend: gemessen am Gerät verbraucht der
-  /// Handshake 11720 Byte (18912 vor, 7192 danach). Darunter darf nicht
-  /// gestartet werden - der Speicher geht mitten im Handshake aus, und das
-  /// endet in "Unhandled C++ exception: OOM" samt Neustart im Betrieb.
-  /// 14000 lässt gut 2 KB für alles, was während des Versands weiterläuft.
+  /// Der freie Heap dagegen ist bindend. Der Handshake verbraucht gemessen
+  /// rund 11,7 KB, und zwar erstaunlich gleichmäßig - was danach übrig bleibt,
+  /// hängt allein davon ab, womit man startet:
   ///
-  /// Vorher standen hier 15000, eine Zahl aus der Zeit der
-  /// Zertifikatsprüfung - die brauchte gut 5 KB mehr. Ohne sie war das zu
-  /// streng: nach ein paar Seitenaufrufen steht das Gerät bei knapp 15 KB, und
-  /// eine Testmail scheiterte an 64 fehlenden Bytes.
-  static constexpr uint32_t MIN_FREE_HEAP = 14000;
+  ///   Start 15488 -> Tiefpunkt 3896  ging gerade noch durch
+  ///   Start 15616 -> Absturz         Exception 29, Schreibzugriff auf 0
+  ///   Start 19456 -> Tiefpunkt 7704  unauffällig
+  ///   Start 19608 -> Tiefpunkt 7856  unauffällig
+  ///
+  /// Unterhalb von etwa 4 KB Rest scheitert irgendeine Allokation - in
+  /// BearSSL, in lwIP oder in einem String der Protokollausgabe - und weil
+  /// niemand den Rückgabewert prüft, schreibt das Gerät nach 0x00000000.
+  /// Entscheidend war aber nicht die Zahl allein: bei den beiden Versuchen mit
+  /// praktisch gleichem Start lief im Hintergrund einmal eine Browseranfrage
+  /// mit und einmal nicht. Seit der Webserver während des Versands anhält
+  /// (WebPause in mail_sender.cpp), allokiert daneben niemand mehr, und ein
+  /// Tiefpunkt um 4 KB ist tragbar.
+  ///
+  /// 16000 ist der Wert, den das Gerät im Betrieb tatsächlich frei hat
+  /// (gemessen 16184 - 16392 mit angehaltenem Webserver). Eine höhere Schwelle
+  /// wäre sauberer gerechnet, hieße aber: die Testmail geht nie raus.
+  ///
+  /// Hier standen zwischendurch 14000. Das war zu wenig - 2 KB Rest überlebt
+  /// der Versand nicht.
+  static constexpr uint32_t MIN_FREE_HEAP = 16000;
+  /// Notbremse nach dem Handshake: reicht es hier nicht mehr, wird sauber
+  /// abgebrochen statt in die nächste fehlschlagende Allokation zu laufen.
+  /// Der Verbrauch schwankt mit der Zertifikatskette des Servers, deshalb
+  /// genügt die Prüfung vor dem Verbindungsaufbau nicht.
+  /// 3000, nicht mehr: 3896 B haben nachweislich gereicht. Die Bremse soll
+  /// nur greifen, wenn es schlechter aussieht als alles bisher Gemessene.
+  static constexpr uint32_t MIN_FREE_NACH_HANDSHAKE = 3000;
   /// So lange wird eine angeforderte Testmail bei Speichermangel wiederholt.
   static constexpr uint32_t TEST_GEDULD_MS = 120000;
-  /// Takt, in dem eine wartende Testmail es erneut versucht.
-  static constexpr uint32_t TEST_ABSTAND_MS = 2000;
+  /// Takt, in dem eine wartende Testmail es erneut versucht. Nicht kürzer:
+  /// jeder Versuch räumt den Handler-Cache des Webservers leer, und der muss
+  /// sich danach neu aufbauen - im Sekundentakt macht das die Oberfläche zäh.
+  static constexpr uint32_t TEST_ABSTAND_MS = 5000;
   static constexpr uint32_t MIN_FREE_BLOCK = 9000;
 
   static MailSender& instance();

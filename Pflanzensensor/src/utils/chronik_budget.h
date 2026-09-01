@@ -33,10 +33,20 @@ static constexpr uint32_t SEGMENT_SIZE = 7936;
 /// Segmentliste im ChronikStore sind darauf ausgelegt.
 static constexpr uint8_t MAX_SEGMENTS = 28;
 
-/// Spitzenbedarf des Datei-Logs: /log.txt darf 50000 B werden, die Rotation
-/// legt zusätzlich /log.txt.tmp mit bis zur halben Größe an (logger.cpp:386ff).
-/// Aufgerundet auf ganze Blöcke.
-static constexpr uint32_t RESERVE_FILE_LOG_ON = 81920;
+/// Spitzenbedarf des Datei-Logs: /log.txt darf MAX_LOG_FILE_SIZE groß werden,
+/// die Rotation legt zusätzlich /log.txt.tmp mit bis zur halben Größe an
+/// (logger.cpp:386ff). Aufgerundet auf ganze Blöcke: 16000 + 8000 = 24000 B,
+/// also drei Blöcke.
+///
+/// Die Zahl muss zu MAX_LOG_FILE_SIZE passen; weil die Gerätekonfiguration
+/// hier nicht eingebunden werden kann (die nativen Tests kennen CONFIG_FILE
+/// nicht), prüft ein static_assert in chronik_store.cpp beide gegeneinander.
+///
+/// Vorher standen hier 81920, passend zu einem 50-KB-Log. Zusammen mit den
+/// übrigen Reserven waren das genau 120 KB - und exakt so viel war auf dem
+/// Gerät frei. Ergebnis: null Segmente, die Chronik zeichnete gar nicht auf,
+/// sobald das Datei-Log eingeschaltet war.
+static constexpr uint32_t RESERVE_FILE_LOG_ON = 24576;
 /// Auch ohne Datei-Log bleibt Luft: es lässt sich jederzeit einschalten, und
 /// bis die nächste Rotation greift, vergehen Minuten.
 static constexpr uint32_t RESERVE_FILE_LOG_OFF = 16384;
