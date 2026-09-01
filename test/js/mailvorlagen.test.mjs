@@ -274,3 +274,55 @@ test('die Vorschau ersetzt alle bekannten Platzhalter', () => {
 test('die Vorschau lässt unbekannte Platzhalter stehen', () => {
   assert.ok(M.vorschau('<p>{quatsch}</p>').includes('{quatsch}'));
 });
+
+/**
+ * Die mitgelieferten Vorlagen müssen unter die Grenze des Mailbots passen
+ * (max_body_length in dessen config.php, 2000 Byte). Geprüft wird gegen die
+ * echten PROGMEM-Literale aus mail_vorlagen_standard.h - so fällt es hier auf,
+ * wenn jemand die Standardtexte oder das Design großzügiger macht, und nicht
+ * erst beim Empfänger, der keine Mail bekommt.
+ *
+ * Gerechnet wird mit vier Messwerten. Mehr Sensoren kosten rund 75 Byte je
+ * Zeile; wer viele anschließt, muss den Wert am Server anheben.
+ */
+test('Standardvorlagen bleiben unter der Grenze des Mailbots', async () => {
+  const { readFileSync } = await import('node:fs');
+  const quelle = readFileSync(
+    new URL('../../Pflanzensensor/src/mail/mail_vorlagen_standard.h', import.meta.url), 'utf8');
+
+  // Ohne Regex-Verschachtelung: Anfang und Ende des Literals suchen, dann die
+  // aneinandergereihten C-Stringstuecke einsammeln.
+  const literal = (name) => {
+    const kopf = quelle.indexOf('const char ' + name + '[] PROGMEM =');
+    assert.ok(kopf >= 0, name + ' nicht gefunden');
+    // Bis zum Literalende, nicht bis zum ersten Semikolon: im CSS wimmelt es
+    // von Semikolons.
+    const roh = quelle.slice(kopf, quelle.indexOf('";', kopf) + 1);
+    const stuecke = [];
+    let i = roh.indexOf('"');
+    while (i >= 0) {
+      let j = i + 1;
+      let text = '';
+      while (j < roh.length && roh[j] !== '"') {
+        if (roh[j] === '\\') {
+          const c = roh[j + 1];
+          text += c === 'n' ? '\n' : c;
+          j += 2;
+        } else {
+          text += roh[j];
+          j++;
+        }
+      }
+      stuecke.push(text);
+      i = roh.indexOf('"', j + 1);
+    }
+    return stuecke.join('');
+  };
+
+  const stil = literal('STIL');
+  for (const name of ['BOOT_RUMPF', 'WARNUNG_RUMPF', 'ALIVE_RUMPF']) {
+    const mail = M.vorschau(literal(name), stil);
+    assert.ok(M.byteLaenge(mail) <= 2000,
+      `${name} rendert zu ${M.byteLaenge(mail)} Bytes, erlaubt sind 2000`);
+  }
+});

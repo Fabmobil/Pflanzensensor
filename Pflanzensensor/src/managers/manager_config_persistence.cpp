@@ -65,16 +65,14 @@ ConfigPersistence::PersistenceResult ConfigPersistence::load(ConfigData& config)
     config.fileLoggingEnabled =
         PreferencesManager::getBool(generalPrefs, "file_log", FILE_LOGGING_ENABLED);
 
-    // Mailversand - die Vorgaben stammen aus der Konfigurationsdatei, damit im
-    // Webinterface im Regelfall nur noch Passwort und Empfänger fehlen.
+    // Mailversand über den Mailbot - die Vorgaben stammen aus der
+    // Konfigurationsdatei, damit im Webinterface im Regelfall nur noch der
+    // Empfänger fehlt.
     config.mailEnabled = PreferencesManager::getBool(generalPrefs, "mail_on", MAIL_ENABLED);
-    config.mailHost = PreferencesManager::getString(generalPrefs, "mail_host", MAIL_SMTP_HOST);
-    config.mailPort = static_cast<uint16_t>(
-        PreferencesManager::getUInt(generalPrefs, "mail_port", MAIL_SMTP_PORT));
-    config.mailUser = PreferencesManager::getString(generalPrefs, "mail_user", MAIL_SMTP_USER);
-    config.mailPassword =
-        PreferencesManager::getString(generalPrefs, "mail_pwd", MAIL_SMTP_PASSWORD);
-    config.mailFrom = PreferencesManager::getString(generalPrefs, "mail_from", MAIL_FROM);
+    config.mailServiceUrl =
+        PreferencesManager::getString(generalPrefs, "mail_url", MAIL_SERVICE_URL);
+    config.mailDeviceId = PreferencesManager::getString(generalPrefs, "mail_devid", MAIL_DEVICE_ID);
+    config.mailSecretKey = PreferencesManager::getString(generalPrefs, "mail_key", MAIL_SECRET_KEY);
     config.mailTo = PreferencesManager::getString(generalPrefs, "mail_to", MAIL_TO);
     config.mailSensors = PreferencesManager::getString(generalPrefs, "mail_sens", "");
     config.mailWarnHours = static_cast<uint16_t>(

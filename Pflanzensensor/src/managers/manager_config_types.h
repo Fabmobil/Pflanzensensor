@@ -90,11 +90,15 @@ struct ConfigData {
    *          wären zwei Segmente Chronik weniger, nur für den Ordnernamen.
    */
   bool mailEnabled;
-  String mailHost;
-  uint16_t mailPort;
-  String mailUser;
-  String mailPassword;
-  String mailFrom;
+  /// Adresse des Mailbot-Dienstes samt Port, z.B.
+  /// http://pflanzensensormailbot.fabmobil.org:45480 - ohne "/send.php",
+  /// das hängt MailClient an.
+  String mailServiceUrl;
+  /// Geräte-ID und Geheimschlüssel (32 Byte, Base64) aus dem Adminbereich des
+  /// Mailbots. Der Schlüssel verschlüsselt die Nutzlast; er verlässt das Gerät
+  /// nie.
+  String mailDeviceId;
+  String mailSecretKey;
   String mailTo;
   /// Kommagetrennte Kanalschlüssel ("ANALOG_0,DHT_1"); leer = alle
   String mailSensors;

@@ -2,7 +2,7 @@
  * @file mail_template.h
  * @brief Platzhalter in Mailvorlagen ersetzen - ohne Hardware
  * @details Header-only und frei von Arduino, LittleFS und Sensoren, wie
- *          utils/chronik_format.h und utils/smtp_session.h. So ist die
+ *          utils/chronik_format.h und utils/mail_scheduler.h. So ist die
  *          Ersetzung nativ prüfbar; am Gerät ließe sie sich nur beobachten,
  *          indem man sich eine Mail schickt.
  *

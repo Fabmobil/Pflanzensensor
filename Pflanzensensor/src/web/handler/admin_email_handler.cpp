@@ -11,7 +11,6 @@
 #include "mail/mail_sender.h"
 #include "managers/manager_config.h"
 #include "managers/manager_sensor.h"
-#include "utils/mail_message.h"
 #include "web/core/components.h"
 
 extern std::unique_ptr<SensorManager> sensorManager;
@@ -133,29 +132,24 @@ void AdminEmailHandler::handlePage() {
         sendChunk(F("<div class='mail-felder' id='mail_felder'>"));
 
         sendChunk(F("<h3>Zugang</h3>"));
-        sendChunk(F("<div><label>SMTP-Server<br><input type='text' name='host' value='"));
-        sendChunk(maskiere(ConfigMgr.getMailHost()));
+        sendChunk(F("<div class='mail-hinweis'>Der Sensor verschickt nicht selbst, sondern gibt "
+                    "die Mail an den Fabmobil-Mailbot weiter. Geräte-ID und Geheimschlüssel "
+                    "bekommst du dort im Adminbereich.</div>"));
+
+        sendChunk(F("<div><label>Mailbot-Adresse<br><input type='text' name='url' value='"));
+        sendChunk(maskiere(ConfigMgr.getMailServiceUrl()));
         sendChunk(F("'></label></div>"));
 
-        sendChunk(F("<div><label>Port<br><input type='number' name='port' min='1' max='65535' "
-                    "value='"));
-        sendChunk(String(ConfigMgr.getMailPort()));
-        sendChunk(F("'></label></div>"));
-        sendChunk(F("<div class='mail-hinweis'>Port 465 (TLS von Anfang an). Port 587 mit "
-                    "STARTTLS wird nicht unterstützt.</div>"));
-
-        sendChunk(F("<div><label>Benutzername<br><input type='text' name='user' value='"));
-        sendChunk(maskiere(ConfigMgr.getMailUser()));
+        sendChunk(F("<div><label>Geräte-ID<br><input type='text' name='devid' value='"));
+        sendChunk(maskiere(ConfigMgr.getMailDeviceId()));
         sendChunk(F("'></label></div>"));
 
-        // Das Passwort wird nie zurückgeschickt. Leer lassen heißt: unverändert.
-        sendChunk(F("<div><label>Passwort<br><input type='password' name='pwd' placeholder='"));
-        sendChunk(ConfigMgr.getMailPassword().length() ? F("gespeichert - leer lassen zum Behalten")
-                                                       : F("noch nicht gesetzt"));
-        sendChunk(F("'></label></div>"));
-
-        sendChunk(F("<div><label>Absenderadresse<br><input type='text' name='from' value='"));
-        sendChunk(maskiere(ConfigMgr.getMailFrom()));
+        // Der Schlüssel wird nie zurückgeschickt. Leer lassen heißt: unverändert.
+        sendChunk(F("<div><label>Geheimschlüssel<br><input type='password' name='key' "
+                    "placeholder='"));
+        sendChunk(ConfigMgr.getMailSecretKey().length()
+                      ? F("gespeichert - leer lassen zum Behalten")
+                      : F("noch nicht gesetzt"));
         sendChunk(F("'></label></div>"));
 
         sendChunk(F("<div><label>Empfängeradresse<br><input type='text' name='to' value='"));
@@ -233,10 +227,11 @@ void AdminEmailHandler::handlePage() {
         }
         sendChunk(F("</div>"));
 
-        sendChunk(F("<div class='mail-hinweis'>Verschlüsselung ist Pflicht: das Gerät verbindet "
-                    "sich nur über TLS. Die Echtheit des Servers wird dabei nicht geprüft - dafür "
-                    "reicht der Speicher dieses Geräts nicht. Der Versand läuft "
-                    "im Hintergrund - das Ergebnis erscheint hier nach ein paar Sekunden.</div>"));
+        sendChunk(F("<div class='mail-hinweis'>Empfänger, Betreff und Inhalt gehen verschlüsselt "
+                    "(AES-256-GCM) an den Mailbot, der die Mail verschickt. Mitlesen kann sie "
+                    "unterwegs niemand. Der Sensor selbst kann kein TLS - dafür reicht sein "
+                    "Speicher nicht. Der Versand läuft im Hintergrund, das Ergebnis erscheint "
+                    "hier nach ein paar Sekunden.</div>"));
         sendChunk(F("</div>"));
 
         // Kleines Skript statt eigener Datei: eine zusätzliche .js-Datei
@@ -260,24 +255,17 @@ void AdminEmailHandler::handlePage() {
 void AdminEmailHandler::handleSave() {
   const bool an = _server.hasArg("mail_on");
   ConfigMgr.setMailEnabled(an);
-  ConfigMgr.setMailHost(_server.arg("host"));
+  ConfigMgr.setMailServiceUrl(_server.arg("url"));
+  ConfigMgr.setMailDeviceId(_server.arg("devid"));
 
-  const long port = _server.arg("port").toInt();
-  if (port > 0 && port < 65536) {
-    ConfigMgr.setMailPort(static_cast<uint16_t>(port));
-  }
-
-  ConfigMgr.setMailUser(_server.arg("user"));
-
-  // Leeres Passwortfeld heißt "unverändert" - so muss es beim Ändern anderer
-  // Einstellungen nicht jedes Mal neu eingetippt werden, und es steht nie im
+  // Leeres Schlüsselfeld heißt "unverändert" - so muss er beim Ändern anderer
+  // Einstellungen nicht jedes Mal neu eingetippt werden, und er steht nie im
   // ausgelieferten HTML.
-  const String pwd = _server.arg("pwd");
-  if (pwd.length() > 0) {
-    ConfigMgr.setMailPassword(pwd);
+  const String key = _server.arg("key");
+  if (key.length() > 0) {
+    ConfigMgr.setMailSecretKey(key);
   }
 
-  ConfigMgr.setMailFrom(_server.arg("from"));
   ConfigMgr.setMailTo(_server.arg("to"));
 
   // Alle angehakten Sensoren einsammeln. Sind es alle, wird leer gespeichert -

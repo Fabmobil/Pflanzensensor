@@ -185,52 +185,34 @@ ConfigManager::ConfigResult ConfigManager::setMailEnabled(bool enabled) {
       F("Mailversand"));
 }
 
-ConfigManager::ConfigResult ConfigManager::setMailHost(const String& host) {
+ConfigManager::ConfigResult ConfigManager::setMailServiceUrl(const String& url) {
   return updateStringConfig(
-      m_configData.mailHost, host,
+      m_configData.mailServiceUrl, url,
       [](const String& val) {
-        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "mail_host",
+        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "mail_url",
                                                      val);
       },
-      F("SMTP-Server"));
+      F("Mailbot-Adresse"));
 }
 
-ConfigManager::ConfigResult ConfigManager::setMailPort(uint16_t port) {
-  m_configData.mailPort = port;
-  auto result =
-      PreferencesManager::updateUIntValue(PreferencesNamespaces::GENERAL, "mail_port", port);
-  return result.isSuccess() ? ConfigResult::success()
-                            : ConfigResult::fail(ConfigError::SAVE_FAILED, result.getMessage());
-}
-
-ConfigManager::ConfigResult ConfigManager::setMailUser(const String& user) {
+ConfigManager::ConfigResult ConfigManager::setMailDeviceId(const String& deviceId) {
   return updateStringConfig(
-      m_configData.mailUser, user,
+      m_configData.mailDeviceId, deviceId,
       [](const String& val) {
-        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "mail_user",
+        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "mail_devid",
                                                      val);
       },
-      F("SMTP-Benutzer"));
+      F("Geraete-ID"));
 }
 
-ConfigManager::ConfigResult ConfigManager::setMailPassword(const String& password) {
+ConfigManager::ConfigResult ConfigManager::setMailSecretKey(const String& secretKey) {
   return updateStringConfig(
-      m_configData.mailPassword, password,
+      m_configData.mailSecretKey, secretKey,
       [](const String& val) {
-        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "mail_pwd",
+        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "mail_key",
                                                      val);
       },
-      F("SMTP-Passwort"));
-}
-
-ConfigManager::ConfigResult ConfigManager::setMailFrom(const String& from) {
-  return updateStringConfig(
-      m_configData.mailFrom, from,
-      [](const String& val) {
-        return PreferencesManager::updateStringValue(PreferencesNamespaces::GENERAL, "mail_from",
-                                                     val);
-      },
-      F("Absenderadresse"));
+      F("Geheimschluessel"));
 }
 
 ConfigManager::ConfigResult ConfigManager::setMailTo(const String& to) {

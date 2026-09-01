@@ -218,17 +218,27 @@
 #define FILE_LOGGING_ENABLED false
 
 // ===== Mailversand =====
-// Vorbelegt mit dem Funktionskonto des Fabmobil-Pflanzensensors: so muss im
-// Webinterface nur noch das Passwort und die Empfängeradresse eingetragen
-// werden. Das Passwort steht bewusst NICHT hier - der ESP8266 kennt weder
-// Flash-Verschlüsselung noch Secure Boot, und die Firmware wird veröffentlicht;
-// alles, was hier steht, ist damit öffentlich lesbar.
+// Der Versand laeuft ueber den Mailbot-Webservice: die Firmware verschluesselt
+// Empfaenger, Betreff und Inhalt selbst (AES-256-GCM) und schickt sie per
+// Klartext-HTTP dorthin. Der ESP8266 hat zu wenig RAM fuer einen
+// TLS-Handshake - gemessene 11,7 KB gegen 15-17 KB freien Heap, das ging mal
+// gut und mal nicht.
 #define MAIL_ENABLED false
-#define MAIL_SMTP_HOST "smtp.datenkollektiv.net"
-#define MAIL_SMTP_PORT 465
-#define MAIL_SMTP_USER "pflanzensensor@fabmobil.org"
-#define MAIL_SMTP_PASSWORD ""
-#define MAIL_FROM "pflanzensensor@fabmobil.org"
+// Adresse des Mailbot-Dienstes samt Port, ohne "/send.php" - das haengt die
+// Firmware an. Bewusst ein roher TCP-Port und keine HTTPS-Domain: Uberspace
+// leitet jeden domainbasierten Aufruf zwangsweise auf HTTPS um, und dieser
+// Umleitung kann der ESP nicht folgen.
+// Solange der DNS-Eintrag fuer diesen Namen noch nicht veroeffentlicht ist,
+// muss hier die IP stehen (http://185.26.156.36:45480) - der ESP kann keine
+// /etc/hosts lesen. Im Webinterface laesst sich das jederzeit umstellen.
+#define MAIL_SERVICE_URL "http://pflanzensensormailbot.fabmobil.org:45480"
+// Geraete-ID und Geheimschluessel kommen aus dem Adminbereich des Mailbots und
+// werden im Webinterface des Sensors eingetragen, nicht hier: der ESP8266 kennt
+// weder Flash-Verschluesselung noch Secure Boot - was einkompiliert ist, laesst
+// sich aus dem Abbild auslesen. Genau deshalb stand hier auch nie ein
+// SMTP-Passwort.
+#define MAIL_DEVICE_ID ""
+#define MAIL_SECRET_KEY ""
 #define MAIL_TO ""
 #define MAIL_WARN_INTERVAL_HOURS 4
 // Ab welchem Zustand gewarnt wird: 1 = gelb, 2 = rot. Gelb ist die

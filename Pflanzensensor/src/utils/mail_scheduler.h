@@ -1,7 +1,7 @@
 /**
  * @file mail_scheduler.h
  * @brief Entscheidet, wann welche Mail fällig ist - ohne Hardware
- * @details Header-only wie utils/smtp_session.h, damit die Entscheidungen
+ * @details Header-only wie utils/chronik_format.h, damit die Entscheidungen
  *          nativ prüfbar sind. Am Gerät ließen sie sich kaum testen: eine
  *          Warnsperre von vier Stunden und ein Lebenszeichen alle 24 Stunden
  *          bräuchten einen Tag pro Versuch.

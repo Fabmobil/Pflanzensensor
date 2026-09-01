@@ -22,46 +22,6 @@
 
 class MailSender {
 public:
-  /// Untergrenzen für einen Sendeversuch, gemessen am Gerät.
-  ///
-  /// Bindend ist der größte zusammenhängende Block, nicht der freie Heap
-  /// insgesamt: BearSSL fordert viele kleine bis mittlere Stücke an, das größte
-  /// davon liegt bei gut 4 KB. Eine Blockschwelle von 17 KB, wie hier zuerst
-  /// eingetragen, verhinderte den Versand bei 30 % Fragmentierung grundlos.
-  ///
-  /// Der freie Heap dagegen ist bindend. Der Handshake verbraucht gemessen
-  /// rund 11,7 KB, und zwar erstaunlich gleichmäßig - was danach übrig bleibt,
-  /// hängt allein davon ab, womit man startet:
-  ///
-  ///   Start 15488 -> Tiefpunkt 3896  ging gerade noch durch
-  ///   Start 15616 -> Absturz         Exception 29, Schreibzugriff auf 0
-  ///   Start 19456 -> Tiefpunkt 7704  unauffällig
-  ///   Start 19608 -> Tiefpunkt 7856  unauffällig
-  ///
-  /// Unterhalb von etwa 4 KB Rest scheitert irgendeine Allokation - in
-  /// BearSSL, in lwIP oder in einem String der Protokollausgabe - und weil
-  /// niemand den Rückgabewert prüft, schreibt das Gerät nach 0x00000000.
-  /// Entscheidend war aber nicht die Zahl allein: bei den beiden Versuchen mit
-  /// praktisch gleichem Start lief im Hintergrund einmal eine Browseranfrage
-  /// mit und einmal nicht. Seit der Webserver während des Versands anhält
-  /// (WebPause in mail_sender.cpp), allokiert daneben niemand mehr, und ein
-  /// Tiefpunkt um 4 KB ist tragbar.
-  ///
-  /// 16000 ist der Wert, den das Gerät im Betrieb tatsächlich frei hat
-  /// (gemessen 16184 - 16392 mit angehaltenem Webserver). Eine höhere Schwelle
-  /// wäre sauberer gerechnet, hieße aber: die Testmail geht nie raus.
-  ///
-  /// Hier standen zwischendurch 14000. Das war zu wenig - 2 KB Rest überlebt
-  /// der Versand nicht.
-  static constexpr uint32_t MIN_FREE_HEAP = 16000;
-  /// Notbremse nach dem Handshake: reicht es hier nicht mehr, wird sauber
-  /// abgebrochen statt in die nächste fehlschlagende Allokation zu laufen.
-  /// Der Verbrauch schwankt mit der Zertifikatskette des Servers, deshalb
-  /// genügt die Prüfung vor dem Verbindungsaufbau nicht.
-  /// 3000, nicht mehr: 3896 B haben nachweislich gereicht. Die Bremse soll
-  /// nur greifen, wenn es schlechter aussieht als alles bisher Gemessene.
-  static constexpr uint32_t MIN_FREE_NACH_HANDSHAKE = 3000;
-  /// So lange wird eine angeforderte Testmail bei Speichermangel wiederholt.
   static constexpr uint32_t TEST_GEDULD_MS = 120000;
   /// Takt, in dem eine wartende Testmail es erneut versucht. Nicht kürzer:
   /// jeder Versuch räumt den Handler-Cache des Webservers leer, und der muss
@@ -91,7 +51,6 @@ private:
 
   void aktualisiereZustaende();
   bool sende(Mail::Kind kind, String& fehler);
-  bool genugSpeicher(String& fehler);
 
   /// Server, bei dem die Prüfung schon einmal scheiterte. Ein zweiter Anlauf
   /// kostet nur Zeit und Speicher - die eine mitgelieferte Wurzel passt dann
@@ -107,9 +66,9 @@ private:
   /// wird. Ein Fehlschlag um ein paar hundert Byte ist ein Momentzustand -
   /// gleich darauf gibt der Webserver seine Puffer frei.
   uint32_t m_testFristMs{0};
-  /// War der letzte Fehlschlag bloß Speichermangel? Dann lohnt ein neuer
-  /// Versuch; eine Absage des Servers dagegen wiederholt sich nur.
-  bool m_speichermangel{false};
+  /// War der letzte Fehlschlag vorübergehend (kein WLAN, keine Uhrzeit)? Dann
+  /// lohnt ein neuer Versuch; eine Absage des Mailbots wiederholt sich nur.
+  bool m_voruebergehend{false};
 };
 
 #endif // MAIL_SENDER_H

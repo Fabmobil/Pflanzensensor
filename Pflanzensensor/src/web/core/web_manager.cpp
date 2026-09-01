@@ -42,22 +42,6 @@ WebManager::WebManager()
 
 WebManager::~WebManager() { stop(); }
 
-void WebManager::pausiereWebserver() {
-  if (_server && !m_webserverPausiert) {
-    _server->close();
-    m_webserverPausiert = true;
-    LOG_DEBUG(F("WebManager"), F("Webserver für den Mailversand angehalten"));
-  }
-}
-
-void WebManager::setzeWebserverFort() {
-  if (_server && m_webserverPausiert) {
-    _server->begin();
-    m_webserverPausiert = false;
-    LOG_DEBUG(F("WebManager"), F("Webserver wieder aktiv"));
-  }
-}
-
 void WebManager::handleClient() {
   if (!_initialized || !_server)
     return;

@@ -133,11 +133,9 @@ public:
   ConfigResult setDebugMail(bool enabled);
 
   inline bool isMailEnabled() const { return m_configData.mailEnabled; }
-  inline const String& getMailHost() const { return m_configData.mailHost; }
-  inline uint16_t getMailPort() const { return m_configData.mailPort; }
-  inline const String& getMailUser() const { return m_configData.mailUser; }
-  inline const String& getMailPassword() const { return m_configData.mailPassword; }
-  inline const String& getMailFrom() const { return m_configData.mailFrom; }
+  inline const String& getMailServiceUrl() const { return m_configData.mailServiceUrl; }
+  inline const String& getMailDeviceId() const { return m_configData.mailDeviceId; }
+  inline const String& getMailSecretKey() const { return m_configData.mailSecretKey; }
   inline const String& getMailTo() const { return m_configData.mailTo; }
   inline const String& getMailSensors() const { return m_configData.mailSensors; }
   inline uint16_t getMailWarnHours() const { return m_configData.mailWarnHours; }
@@ -158,11 +156,9 @@ public:
   bool isMailSensorWatched(const String& key) const;
 
   ConfigResult setMailEnabled(bool enabled);
-  ConfigResult setMailHost(const String& host);
-  ConfigResult setMailPort(uint16_t port);
-  ConfigResult setMailUser(const String& user);
-  ConfigResult setMailPassword(const String& password);
-  ConfigResult setMailFrom(const String& from);
+  ConfigResult setMailServiceUrl(const String& url);
+  ConfigResult setMailDeviceId(const String& deviceId);
+  ConfigResult setMailSecretKey(const String& secretKey);
   ConfigResult setMailTo(const String& to);
   ConfigResult setMailSensors(const String& sensors);
   ConfigResult setMailWarnHours(uint16_t hours);
