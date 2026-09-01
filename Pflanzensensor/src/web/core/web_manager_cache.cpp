@@ -126,6 +126,20 @@ bool WebManager::ensureHandler(const char* handlerType,
 }
 
 void WebManager::cleanupNonEssentialHandlers() {
+  // Läuft gerade eine Anfrage, wird nur vorgemerkt.
+  //
+  // Der Aufruf kommt über MemoryMgr.emergencyCleanup() von überall her, auch
+  // aus einem Webhandler heraus. Genau dort ist er tödlich: der Cache enthält
+  // den gerade laufenden Handler, nach seiner Zerstörung zeigt "this" ins
+  // Leere und der nächste Zugriff endet in "Fatal exception 28". Statt das an
+  // jeder Aufrufstelle zu kommentieren, ist es hier einmal richtig geregelt -
+  // handleClientInternal() holt es im nächsten Durchlauf nach.
+  if (m_bedientAnfrage) {
+    m_aufraeumenOffen = true;
+    LOG_DEBUG(F("WebManager"), F("Aufraeumen waehrend einer Anfrage - aufgeschoben"));
+    return;
+  }
+
   // Ensure all cached handlers are cleaned up before clearing the cache.
   // Some handlers (e.g. LogHandler) hold resources like WebSocket client
   // lists or callbacks that must be released via cleanup(). Simply

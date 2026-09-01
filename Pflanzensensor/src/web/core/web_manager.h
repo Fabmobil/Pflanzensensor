@@ -472,7 +472,12 @@ private:
   static constexpr size_t BUFFER_SIZE = 256; ///< Response buffer size
   static char s_responseBuffer[BUFFER_SIZE]; ///< Static response buffer
 
-  bool m_handlersInitialized{false};          ///< Handler initialization flag
+  bool m_handlersInitialized{false}; ///< Handler initialization flag
+  /// Läuft gerade eine Anfrage? Dann darf der Handler-Cache nicht angefasst
+  /// werden - siehe cleanupNonEssentialHandlers().
+  bool m_bedientAnfrage{false};
+  /// Aufräumen wurde während einer Anfrage gewünscht und aufgeschoben.
+  bool m_aufraeumenOffen{false};
   bool m_configUploadAuthorized{false};       ///< Auth-Ergebnis des laufenden Config-Uploads
                                               ///< (/admin/uploadConfig umgeht die Middleware)
   std::unique_ptr<ESPWebServer> _server;      ///< Web server instance

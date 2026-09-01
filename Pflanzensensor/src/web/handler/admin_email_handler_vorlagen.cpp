@@ -14,6 +14,7 @@
 #include "mail/mail_sender.h"
 #include "mail/mail_vorlagen.h"
 #include "managers/manager_config.h"
+#include "utils/memory_manager.h"
 #include "web/core/components.h"
 
 using AdminEmail::maskiere;
@@ -399,15 +400,19 @@ void AdminEmailHandler::handleVorlagenSave() {
     return;
   }
 
-  // KEIN MemoryMgr.emergencyCleanup() hier, so verlockend es wäre: die
-  // Aufräumfunktion leert den Handler-Cache des Webservers - und darin steckt
-  // genau dieser Handler. Nach dem Aufruf zeigt "this" ins Leere, und der
-  // nächste Zugriff auf _server endet in "Fatal exception 28". Der MailSender
-  // darf das, weil er aus loop() läuft und dabei kein Handler auf dem Stack
-  // liegt.
   if (ESP.getFreeHeap() < MIN_HEAP_SPEICHERN) {
     LOG_ERROR(F("AdminEmail"),
               String(F("Zu wenig Speicher zum Speichern: ")) + String(ESP.getFreeHeap()));
+    // Aufräumen anstoßen, aber diesem Versuch hilft es nicht mehr: der
+    // Handler-Cache enthält genau diesen Handler, deshalb schiebt der
+    // WebManager die Arbeit bis nach der Antwort auf. Der nächste Versuch
+    // findet dann mehr Platz vor - das ist der Sinn der Meldung "bitte gleich
+    // noch einmal versuchen".
+    //
+    // (Früher stand hier eine Warnung, das auf keinen Fall zu tun: der Aufruf
+    // zerstörte den laufenden Handler und endete in "Fatal exception 28". Seit
+    // cleanupNonEssentialHandlers() das selbst erkennt, ist er ungefährlich.)
+    MemoryMgr.emergencyCleanup();
     sendRedirect(ziel + F("&fehler=speicher"));
     return;
   }

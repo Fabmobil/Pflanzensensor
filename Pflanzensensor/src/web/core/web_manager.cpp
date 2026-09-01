@@ -48,7 +48,9 @@ void WebManager::handleClient() {
 
   // In minimal mode, only handle basic web requests
   if (ConfigMgr.getDoFirmwareUpgrade()) {
+    m_bedientAnfrage = true;
     _server->handleClient();
+    m_bedientAnfrage = false;
     return;
   }
 
@@ -89,9 +91,18 @@ void WebManager::handleClientInternal() {
     }
   }
 
+  // Aufgeschobenes Aufräumen zuerst - jetzt läuft kein Handler.
+  if (m_aufraeumenOffen) {
+    m_aufraeumenOffen = false;
+    LOG_DEBUG(F("WebManager"), F("Hole aufgeschobenes Aufraeumen nach"));
+    cleanupNonEssentialHandlers();
+  }
+
   // Handle web server and WebSocket
   if (_initialized && _server) {
+    m_bedientAnfrage = true;
     _server->handleClient();
+    m_bedientAnfrage = false;
 
 #if USE_WEBSOCKET
     auto& ws = WebSocketService::getInstance();

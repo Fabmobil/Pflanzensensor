@@ -199,8 +199,13 @@ ResourceResult FlashPersistence::saveToFlash() {
     uint32_t writeOffset = offset + 16;
 
     while (written < dataSize) {
-      uint32_t chunk[256];
-      uint32_t chunkSize = min((uint32_t)1024, dataSize - written);
+      // 256 statt 1024 Byte: der Puffer liegt auf dem Stapel, und der ist im
+      // Loop-Task 4 KB groß. Ein Kilobyte davon für einen Schreibblock war ein
+      // Viertel des Budgets in einer einzigen Funktion - gemessen mit
+      // -fstack-usage: 1616 Byte Rahmen. Die vier zusätzlichen SPI-Aufrufe je
+      // Kilobyte fallen bei einer Sicherung vor dem Update nicht ins Gewicht.
+      uint32_t chunk[64];
+      uint32_t chunkSize = min((uint32_t)sizeof(chunk), dataSize - written);
       memcpy(chunk, dataPtr + written, chunkSize);
       uint32_t alignedSize = (chunkSize + 3) & ~3;
 
@@ -748,8 +753,9 @@ ResourceResult FlashPersistence::saveJsonToFlash() {
     uint32_t manifestWritten = 0;
 
     while (manifestWritten < manifestSize) {
-      uint32_t chunk[256];
-      uint32_t chunkSize = min((uint32_t)1024, manifestSize - manifestWritten);
+      // Kleiner Puffer aus demselben Grund wie oben: 4 KB Stapel im Loop-Task.
+      uint32_t chunk[64];
+      uint32_t chunkSize = min((uint32_t)sizeof(chunk), manifestSize - manifestWritten);
       memcpy(chunk, manifestPtr + manifestWritten, chunkSize);
       uint32_t alignedSize = (chunkSize + 3) & ~3;
 
