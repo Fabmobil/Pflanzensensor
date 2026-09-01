@@ -365,6 +365,12 @@ void loop() {
   }
 #endif
 
+#if USE_WIFI
+  // Jeden Durchlauf: der mDNS-Responder muss eingehende Anfragen zeitnah
+  // beantworten, ein 30-Sekunden-Takt wäre dafür zu grob.
+  aktualisiereMdns();
+#endif
+
   // WiFi connectivity check
   if (currentMillis - lastWiFiCheck >= 30000) { // Every 30 seconds
 #if USE_WIFI

@@ -57,6 +57,24 @@ ResourceResult checkAPModeRecovery();
 ResourceResult checkWiFiConnection();
 
 /**
+ * @brief mDNS-Ansage aktuell halten - aus loop() aufrufen
+ * @details Macht den Sensor im lokalen Netz unter <geraetename>.local
+ *          erreichbar, ohne dass jemand die IP kennen muss. Die Funktion ist
+ *          absichtlich idempotent und kümmert sich selbst um alle Übergänge:
+ *          Erstverbindung, Wiederverbindung mit neuer IP, Wechsel in den und
+ *          aus dem AP-Modus und eine Umbenennung des Geräts. Deshalb genügt
+ *          ein einziger Aufruf je Schleifendurchlauf statt verstreuter
+ *          MDNS.begin()-Aufrufe an jeder Stelle, an der sich der
+ *          Verbindungszustand ändert.
+ */
+void aktualisiereMdns();
+
+/**
+ * @brief Aktuell angesagter mDNS-Name, ohne ".local" - leer wenn inaktiv
+ */
+String mdnsName();
+
+/**
  * @brief Get the current WiFi signal strength (RSSI)
  * @return TypedResult<ResourceError, int> WiFi signal strength in dBm
  * @details Returns the Received Signal Strength Indicator (RSSI) value.

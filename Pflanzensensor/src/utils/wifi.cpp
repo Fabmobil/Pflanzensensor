@@ -8,6 +8,9 @@
 #include "configs/config.h"
 #include "logger/logger.h"
 #include "managers/manager_config.h"
+#include "utils/mdns_name.h"
+
+#include <ESP8266mDNS.h>
 
 WiFiClient client;
 
@@ -66,6 +69,15 @@ bool isCaptivePortalAPActive() { return apModeActive; }
 ResourceResult setupWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
+
+  // Vor dem Verbinden setzen: der Name geht mit der DHCP-Anfrage raus, danach
+  // wäre es zu spät. Dadurch steht im Router "frameclaw-ps" statt "ESP-A4C138"
+  // - unabhängig von mDNS, das erst später dazukommt.
+  {
+    char host[MdnsName::MAX_LEN + 1];
+    MdnsName::hostnameVon(ConfigMgr.getDeviceName().c_str(), host, sizeof(host));
+    WiFi.hostname(host);
+  }
 
 #if USE_STATIC_IP
   IPAddress ip(STATIC_IP);
@@ -410,4 +422,58 @@ bool tryAllWiFiCredentialsWithDisplay(std::function<void(const String&, bool)> d
   }
 
   return false;
+}
+
+// === mDNS ===============================================================
+
+namespace {
+
+/// Was gerade angesagt wird. Leer heißt: der Responder läuft nicht.
+String g_mdnsName;
+/// IP, für die die Ansage gilt. Ändert sie sich, muss neu angesagt werden -
+/// sonst schickt der Sensor Fragende weiterhin an seine alte Adresse.
+IPAddress g_mdnsIp(0, 0, 0, 0);
+
+} // namespace
+
+String mdnsName() { return g_mdnsName; }
+
+void aktualisiereMdns() {
+  const bool verbunden = (WiFi.status() == WL_CONNECTED);
+  const IPAddress ip = verbunden ? WiFi.localIP() : WiFi.softAPIP();
+
+  // Ohne Adresse gibt es nichts anzusagen (z.B. kurz nach dem Start).
+  if (ip == IPAddress(0, 0, 0, 0)) {
+    if (g_mdnsName.length()) {
+      MDNS.end();
+      g_mdnsName = "";
+      g_mdnsIp = IPAddress(0, 0, 0, 0);
+    }
+    return;
+  }
+
+  char host[MdnsName::MAX_LEN + 1];
+  MdnsName::hostnameVon(ConfigMgr.getDeviceName().c_str(), host, sizeof(host));
+
+  if (g_mdnsName != host || g_mdnsIp != ip) {
+    if (g_mdnsName.length()) {
+      MDNS.end();
+    }
+    if (MDNS.begin(host)) {
+      // Der Dienstverweis ist nicht bloß Zierde: erst dadurch taucht der Sensor
+      // in Netzwerkübersichten auf (Avahi, Bonjour, "Netzwerk" im Dateimanager).
+      MDNS.addService(F("http"), F("tcp"), 80);
+      g_mdnsName = host;
+      g_mdnsIp = ip;
+      LOG_INFO(F("mDNS"),
+               String(F("Erreichbar als ")) + host + F(".local (") + ip.toString() + F(")"));
+    } else {
+      g_mdnsName = "";
+      LOG_WARN(F("mDNS"), F("Responder liess sich nicht starten"));
+    }
+  }
+
+  if (g_mdnsName.length()) {
+    MDNS.update();
+  }
 }
