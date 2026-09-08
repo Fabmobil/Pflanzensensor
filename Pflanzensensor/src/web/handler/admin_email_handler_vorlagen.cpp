@@ -151,6 +151,13 @@ void sendeTextFelder(ESPWebServer& server, const Art& art) {
     Component::sendChunk(server, maskiere(betreffRoh));
   }
   Component::sendChunk(server, F("'></label></div>"));
+  // Warum das hier steht: der Name taucht im Postfach auf, ohne dass er in der
+  // Vorlage vorkommt. Ohne diesen Hinweis schreibt man {geraet} selbst noch
+  // einmal hinein und wundert sich über den doppelten Namen.
+  Component::sendChunk(server,
+                       F("<div class='mail-hinweis'>Der Gerätename kommt automatisch davor: „["));
+  Component::sendChunk(server, maskiere(ConfigMgr.getDeviceName()));
+  Component::sendChunk(server, F("] …“. Nicht noch einmal {geraet} eintragen.</div>"));
 
   Component::sendChunk(server, F("<div style='margin-top:0.6em'><label>Text der Mail<br>"
                                  "<textarea name='rumpf' id='vorlage_rumpf' rows='14' "

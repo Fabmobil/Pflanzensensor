@@ -25,11 +25,14 @@
 
 namespace MailVorlagenStandard {
 
-// Betreffzeilen. Emojis vorn, weil in der Übersicht des Postfachs nur die
-// ersten Zeichen zu sehen sind.
-const char BOOT_BETREFF[] PROGMEM = "🌱 {geraet} ist wieder wach!";
-const char WARNUNG_BETREFF[] PROGMEM = "🚨 {geraet}: da stimmt was nicht!";
-const char ALIVE_BETREFF[] PROGMEM = "🪴 {geraet} meldet sich – alles gut ({datum})";
+// Betreffzeilen. Ohne {geraet}: der Mailbot stellt den Gerätenamen von sich aus
+// als "[Name] " voran, und zwar bei jeder Mail - auch bei selbst geschriebenen
+// Vorlagen. Stünde der Platzhalter hier noch, hieße es "[Balkon] 🌱 Balkon ist
+// wieder wach!". Emojis deshalb gleich am Anfang: hinter dem Namen sind es die
+// ersten Zeichen, die in der Übersicht des Postfachs zu sehen sind.
+const char BOOT_BETREFF[] PROGMEM = "🌱 ist wieder wach!";
+const char WARNUNG_BETREFF[] PROGMEM = "🚨 da stimmt was nicht!";
+const char ALIVE_BETREFF[] PROGMEM = "🪴 meldet sich – alles gut ({datum})";
 
 const char BOOT_RUMPF[] PROGMEM = "# 🌱 Ich bin wieder wach!\n"
                                   "\n"

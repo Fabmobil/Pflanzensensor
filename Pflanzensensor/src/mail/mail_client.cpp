@@ -66,6 +66,12 @@ MailClient::SendResult MailClient::send(const String& subject, const String& bod
   plainDoc["to"] = recipient;
   plainDoc["subject"] = subject;
   plainDoc["body"] = body;
+  // Der Gerätename wird vom Mailbot dem Betreff vorangestellt: "[Balkon] ...".
+  // Er steht damit im Postfach an derselben Stelle wie auf dem Display und im
+  // Footer der Startseite. Vorher stand dort das Label aus dem Adminbereich des
+  // Mailbots - das kennt nur, wer die Geräte dort angelegt hat, und bei einem
+  // Workshop mit zwanzig Sensoren ist das nicht die Person, die die Mail liest.
+  plainDoc["name"] = ConfigMgr.getDeviceName();
   String plaintext;
   serializeJson(plainDoc, plaintext);
 
