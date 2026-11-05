@@ -189,7 +189,8 @@ void test_reboot_event_after_response() {
 
 void test_captive_redirect() {
   Rig r;
-  r.net.begin(hal::now()); // ohne WLAN → AP
+  r.cfg.setWifi(2, "", "", false); // Fabmobil-Voreinstellung weg: ohne WLAN
+  r.net.begin(hal::now());         // → AP
   FakeRes res = r.call(hal::HttpMethod::Get, "/generate_204");
   TEST_ASSERT_EQUAL(302, res.code);
   TEST_ASSERT_EQUAL_STRING("http://192.168.4.1/admin", res.headers["Location"].c_str());

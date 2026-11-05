@@ -5,7 +5,9 @@
 #include <string>
 
 #include "board.h"
+#include "core/config/defaults.h"
 #include "core/provision.h"
+#include "core/util/sha256.h"
 #include "services/config_service.h"
 #include "services/provision_service.h"
 #include "services/state_store.h"
@@ -148,9 +150,12 @@ void test_provision_roundtrip_and_errors() {
   const uint8_t ip[4] = {192, 168, 1, 50}, gw[4] = {192, 168, 1, 1};
   memcpy(b.hardware.staticIp.ip, ip, 4);
   memcpy(b.hardware.staticIp.gateway, gw, 4);
-  b.settings.hasWifi = true;
-  strcpy(b.settings.wifiSsid, "Garten");
-  strcpy(b.settings.wifiPassword, "geheim");
+  b.settings.wifi[2].set = true;
+  strcpy(b.settings.wifi[2].ssid, "Garten");
+  strcpy(b.settings.wifi[2].password, "geheim");
+  b.settings.channelNameCount = 1;
+  strcpy(b.settings.channelNames[0].key, "ANALOG_0");
+  strcpy(b.settings.channelNames[0].name, "Licht Süd");
   uint8_t sector[provision::kSectorSize];
   TEST_ASSERT_TRUE(provision::encode(b, true, sector, sizeof(sector)));
   provision::Block back;
@@ -161,8 +166,14 @@ void test_provision_roundtrip_and_errors() {
   TEST_ASSERT_EQUAL(DhtType::Dht22, back.hardware.features.dhtType);
   TEST_ASSERT_TRUE(back.hardware.staticIp.enabled);
   TEST_ASSERT_EQUAL(50, back.hardware.staticIp.ip[3]);
-  TEST_ASSERT_TRUE(back.settings.hasWifi);
-  TEST_ASSERT_EQUAL_STRING("geheim", back.settings.wifiPassword);
+  TEST_ASSERT_FALSE(back.settings.wifi[0].set);
+  TEST_ASSERT_FALSE(back.settings.wifi[1].set);
+  TEST_ASSERT_TRUE(back.settings.wifi[2].set);
+  TEST_ASSERT_EQUAL_STRING("Garten", back.settings.wifi[2].ssid);
+  TEST_ASSERT_EQUAL_STRING("geheim", back.settings.wifi[2].password);
+  TEST_ASSERT_EQUAL(1, back.settings.channelNameCount);
+  TEST_ASSERT_EQUAL_STRING("ANALOG_0", back.settings.channelNames[0].key);
+  TEST_ASSERT_EQUAL_STRING("Licht Süd", back.settings.channelNames[0].name);
   TEST_ASSERT_FALSE(back.settings.hasAdminPassword);
   // Ohne Einstellungen
   TEST_ASSERT_TRUE(provision::encode(b, false, sector, sizeof(sector)));
@@ -202,7 +213,16 @@ void test_vector_block_from_webflasher_parses() {
                         (b.hardware.features.ds18b20 ? b.hardware.features.ds18b20Max : 0));
   TEST_ASSERT_EQUAL(e["oneWire"].as<int>(), b.hardware.pins.oneWire);
   TEST_ASSERT_EQUAL_STRING(e["deviceName"].as<const char*>(), b.settings.deviceName);
-  TEST_ASSERT_EQUAL_STRING(e["wifiSsid"].as<const char*>(), b.settings.wifiSsid);
+  for (uint8_t i = 0; i < provision::kWifiSlots; i++) {
+    const char* ssid = e["wifi"][i] | "";
+    TEST_ASSERT_EQUAL(*ssid != '\0', b.settings.wifi[i].set);
+    TEST_ASSERT_EQUAL_STRING(ssid, b.settings.wifi[i].ssid);
+  }
+  JsonObjectConst names = e["channelNames"];
+  TEST_ASSERT_EQUAL(names.size(), b.settings.channelNameCount);
+  for (uint8_t i = 0; i < b.settings.channelNameCount; i++)
+    TEST_ASSERT_EQUAL_STRING(names[b.settings.channelNames[i].key].as<const char*>(),
+                             b.settings.channelNames[i].name);
 }
 
 namespace {
@@ -222,9 +242,19 @@ void test_provision_service_applies_once_and_strips_secrets() {
   strcpy(b.hardware.name, "eigene");
   b.settings.hasDeviceName = true;
   strcpy(b.settings.deviceName, "Balkon Süd");
-  b.settings.hasWifi = true;
-  strcpy(b.settings.wifiSsid, "Garten");
-  strcpy(b.settings.wifiPassword, "geheim12");
+  b.settings.wifi[0].set = true;
+  strcpy(b.settings.wifi[0].ssid, "Garten");
+  strcpy(b.settings.wifi[0].password, "geheim12");
+  b.settings.wifi[1].set = true;
+  strcpy(b.settings.wifi[1].ssid, "Schule");
+  strcpy(b.settings.wifi[1].password, "geheim34");
+  b.settings.channelNameCount = 3;
+  strcpy(b.settings.channelNames[0].key, "ANALOG_0");
+  strcpy(b.settings.channelNames[0].name, "Licht Balkon");
+  strcpy(b.settings.channelNames[1].key, "DHT_1");
+  strcpy(b.settings.channelNames[1].name, "Feuchte innen");
+  strcpy(b.settings.channelNames[2].key, "MHZ19_0"); // nicht bestückt: ignoriert
+  strcpy(b.settings.channelNames[2].name, "CO2");
   b.settings.hasAdminPassword = true;
   strcpy(b.settings.adminPassword, "NeuesPw1");
   uint8_t sector[provision::kSectorSize];
@@ -241,7 +271,21 @@ void test_provision_service_applies_once_and_strips_secrets() {
   TEST_ASSERT_TRUE(ps1.applySettings(r.cfg));
   TEST_ASSERT_EQUAL_STRING("Balkon Süd", r.cfg.device().deviceName.c_str());
   TEST_ASSERT_EQUAL_STRING("Garten", r.cfg.device().wifiSsid[0].c_str());
+  TEST_ASSERT_EQUAL_STRING("geheim12", r.cfg.secrets().wifiPassword[0].c_str());
+  TEST_ASSERT_EQUAL_STRING("Schule", r.cfg.device().wifiSsid[1].c_str());
+  TEST_ASSERT_EQUAL_STRING("geheim34", r.cfg.secrets().wifiPassword[1].c_str());
+  // Slot 3 nicht im Block: Voreinstellung (Fabmobil-WLAN) bleibt
+  TEST_ASSERT_EQUAL_STRING(defaults::kFabmobilWifiSsid, r.cfg.device().wifiSsid[2].c_str());
   TEST_ASSERT_TRUE(r.cfg.checkAdminPassword("NeuesPw1"));
+  // Kanalnamen gespeichert (neu geladen)
+  {
+    ConfigService again{r.fs, r.tpl, r.st};
+    again.load();
+    TEST_ASSERT_EQUAL_STRING("Licht Balkon", again.sensors().channels[0].name.c_str());
+    TEST_ASSERT_EQUAL_STRING("Feuchte innen", again.sensors().channels[3].name.c_str());
+    TEST_ASSERT_EQUAL_STRING("Lufttemperatur", again.sensors().channels[2].name.c_str());
+    TEST_ASSERT_EQUAL_STRING("Schule", again.device().wifiSsid[1].c_str());
+  }
   // Sektor ohne Geheimnisse, Hardware bleibt
   const std::string& s = native::provisionSector();
   TEST_ASSERT_EQUAL(std::string::npos, s.find("geheim12"));
@@ -252,6 +296,26 @@ void test_provision_service_applies_once_and_strips_secrets() {
   ps2.loadHardware();
   TEST_ASSERT_TRUE(ps2.fromWebflasher());
   TEST_ASSERT_FALSE(ps2.applySettings(r.cfg));
+}
+
+void test_default_wifi_slot3_is_fabmobil() {
+  DeviceConfig d;
+  defaults::device(d);
+  Secrets sec;
+  defaults::secrets(sec);
+  TEST_ASSERT_EQUAL_STRING("Fabmobil Gäste", d.wifiSsid[2].c_str());
+  TEST_ASSERT_TRUE(d.wifiSsid[0].empty());
+  // Klartext steht nicht im Quelltext; geprüft wird über den SHA-256
+  const char* pw = sec.wifiPassword[2].c_str();
+  uint8_t h[32];
+  Sha256 sha;
+  sha.update(pw);
+  sha.finish(h);
+  char hex[65];
+  for (int i = 0; i < 32; i++)
+    snprintf(hex + 2 * i, 3, "%02x", h[i]);
+  TEST_ASSERT_EQUAL_STRING("f148993e88fd73168c12863e9b35f2441c61b172dd2a822285fcb8caa6a3b266", hex);
+  TEST_ASSERT_TRUE(sec.wifiPassword[0].empty());
 }
 
 void test_provision_service_invalid_hardware_keeps_default() {
@@ -300,6 +364,7 @@ int main() {
   RUN_TEST(test_provision_roundtrip_and_errors);
   RUN_TEST(test_vector_block_from_webflasher_parses);
   RUN_TEST(test_provision_service_applies_once_and_strips_secrets);
+  RUN_TEST(test_default_wifi_slot3_is_fabmobil);
   RUN_TEST(test_provision_service_invalid_hardware_keeps_default);
   RUN_TEST(test_state_store_discards_on_layout_change);
   return UNITY_END();

@@ -55,6 +55,36 @@
 
   const MAX_CHANNELS = { Analog: 8, Ds18b20: 8 };
 
+  /**
+   * Messkanäle je Sensor in Firmware-Reihenfolge (SensorType) mit den
+   * Standardnamen aus firmware/src/core/sensors/catalog.cpp (Test vergleicht).
+   * Schlüssel wie in der Oberfläche: "<ID>_<Index>".
+   */
+  const CHANNELS = [
+    { id: 'ANALOG', feature: 'analog', names: ['Lichtstärke', 'Bodenfeuchte', 'Bodenfeuchte 2', 'Bodenfeuchte 3',
+      'Bodenfeuchte 4', 'Bodenfeuchte 5', 'Bodenfeuchte 6', 'Bodenfeuchte 7'] },
+    { id: 'DHT', feature: 'dht', names: ['Lufttemperatur', 'Luftfeuchte'] },
+    { id: 'DS18B20', feature: 'ds18b20', names: ['DS18B20_1', 'DS18B20_2', 'DS18B20_3', 'DS18B20_4', 'DS18B20_5',
+      'DS18B20_6', 'DS18B20_7', 'DS18B20_8'] },
+    { id: 'SDS011', feature: 'sds011', names: ['PM10', 'PM2.5'] },
+    { id: 'MHZ19', feature: 'mhz19', names: ['CO2'] },
+    { id: 'HX711', feature: 'hx711', names: ['Gewicht'] },
+    { id: 'BMP280', feature: 'bmp280', names: ['BMP_Temperatur', 'Luftdruck'] },
+    { id: 'SERIAL_RECEIVER', feature: 'serialReceiver', names: ['Flow Rate', 'Absolute Counts', 'Sum Flow Rate',
+      '24h Flow Rate', 'Arduino Time', 'Uptime', 'Liters per Hour'] }
+  ];
+
+  /** Kanäle der bestückten Sensoren: [{key, name, feature}] (wie board::slot) */
+  function channels(f) {
+    const out = [];
+    CHANNELS.forEach(c => {
+      if (!f[c.feature]) return;
+      const n = c.feature === 'analog' ? f.analogChannels : c.feature === 'ds18b20' ? f.ds18b20Max : c.names.length;
+      for (let i = 0; i < n && i < c.names.length; i++) out.push({ key: c.id + '_' + i, name: c.names[i], feature: c.feature });
+    });
+    return out;
+  }
+
   /** Messkanäle zusammen (wie board::channelsOf) */
   function channelCount(f) {
     return (f.analog ? f.analogChannels : 0) + (f.dht ? 2 : 0) + (f.ds18b20 ? f.ds18b20Max : 0) +
@@ -153,5 +183,5 @@
   }
 
   global.Hardware = { PIN_FIELDS, PRESETS, emptyFeatures, emptyPins, preset, channelCount, maxChannels, uses,
-    check, describe, MAX_CHANNELS };
+    check, describe, MAX_CHANNELS, CHANNELS, channels };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -10,12 +10,27 @@
 
 #include "core/config/schema.h"
 
+#include <string.h>
+
 namespace ps {
 namespace defaults {
 
 namespace {
 bool isKnown(const char* key) { return schema::isChannelKey(key); }
+
+/// Fabmobil-WLAN-Passwort, Byte i XOR (0xA5 + 37·i)
+constexpr uint8_t kFabmobilWifiPw[] = {0xE2, 0xA3, 0x8D, 0x59, 0x50, 0x2C, 0xCA, 0xC6,
+                                       0xB9, 0x97, 0x65, 0x52, 0x04, 0xF2, 0x8A};
 } // namespace
+
+void fabmobilWifiPassword(char* out, size_t cap) {
+  if (!cap)
+    return;
+  size_t i = 0;
+  for (; i < sizeof(kFabmobilWifiPw) && i + 1 < cap; i++)
+    out[i] = static_cast<char>(kFabmobilWifiPw[i] ^ static_cast<uint8_t>(0xA5 + 37 * i));
+  out[i] = '\0';
+}
 
 void device(DeviceConfig& c) {
   c = DeviceConfig{};
@@ -25,6 +40,7 @@ void device(DeviceConfig& c) {
   c.mailUrl = kMailUrl;
   if (!board::features().display && c.ledMode == 1)
     c.ledMode = 2;
+  c.wifiSsid[2] = kFabmobilWifiSsid;
 #if defined(PS_DEV_SECRETS)
   c.wifiSsid[0] = DEV_WIFI_SSID_1;
   c.wifiSsid[1] = DEV_WIFI_SSID_2;
@@ -34,6 +50,10 @@ void device(DeviceConfig& c) {
 
 void secrets(Secrets& s) {
   s = Secrets{};
+  char pw[24];
+  fabmobilWifiPassword(pw, sizeof(pw));
+  s.wifiPassword[2] = pw;
+  memset(pw, 0, sizeof(pw));
 #if defined(PS_DEV_SECRETS)
   s.wifiPassword[0] = DEV_WIFI_PASSWORD_1;
   s.wifiPassword[1] = DEV_WIFI_PASSWORD_2;

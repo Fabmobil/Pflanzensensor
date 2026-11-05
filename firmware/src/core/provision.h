@@ -5,9 +5,12 @@
  *          {
  *            "hardware": {"name": "pcb_v1", "features": {…}, "pins": {…},
  *                         "staticIp": {"ip": "192.168.1.50", …}},
- *            "settings": {"deviceName": "…", "wifiSsid": "…",
- *                         "wifiPassword": "…", "adminPassword": "…"}
+ *            "settings": {"deviceName": "…", "adminPassword": "…",
+ *                         "wifi": [{"ssid": "…", "password": "…"}, null, {…}],
+ *                         "channelNames": {"ANALOG_0": "Licht", …}}
  *          }
+ *          "wifi" hat je Slot einen Eintrag; null lässt den Slot unverändert.
+ *          "channelNames" benennt Messkanäle (Schlüssel wie in der Oberfläche).
  *          Die Hardware bleibt im Block und gilt bei jedem Start (auch nach
  *          OTA-Updates). Die Einstellungen übernimmt das Gerät einmal; danach
  *          schreibt es den Block ohne sie zurück (keine Passwörter im Klartext
@@ -29,15 +32,38 @@ constexpr size_t kSectorSize = 4096;
 constexpr size_t kHeaderSize = 16;
 constexpr char kMagic[8] = {'P', 'S', 'P', 'R', 'O', 'V', '1', '\0'};
 
+constexpr uint8_t kWifiSlots = 3;
+/// Höchstens so viele Kanalnamen (größte Kanalzahl, ESP32)
+constexpr uint8_t kMaxChannelNames = 31;
+
+struct WifiSetting {
+  bool set = false;
+  char ssid[33] = {};
+  char password[65] = {};
+};
+
+struct ChannelName {
+  char key[20] = {};  ///< "ANALOG_0"
+  char name[25] = {}; ///< wie ChannelConfig::name (24 Byte UTF-8)
+};
+
 struct Settings {
   bool hasDeviceName = false;
   char deviceName[33] = {};
-  bool hasWifi = false;
-  char wifiSsid[33] = {};
-  char wifiPassword[65] = {};
+  WifiSetting wifi[kWifiSlots];
   bool hasAdminPassword = false;
   char adminPassword[33] = {};
-  bool any() const { return hasDeviceName || hasWifi || hasAdminPassword; }
+  uint8_t channelNameCount = 0;
+  ChannelName channelNames[kMaxChannelNames];
+  bool anyWifi() const {
+    for (const auto& w : wifi)
+      if (w.set)
+        return true;
+    return false;
+  }
+  bool any() const {
+    return hasDeviceName || anyWifi() || hasAdminPassword || channelNameCount > 0;
+  }
 };
 
 struct Block {

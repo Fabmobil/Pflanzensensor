@@ -42,7 +42,7 @@
     { key: 'ledTraffic', label: 'LED-Ampel', opts: [], pins: [['ledGreen', 'grün'], ['ledYellow', 'gelb'], ['ledRed', 'rot']] }
   ];
 
-  const state = { releases: [], release: null, mode: 'pcb_v1', hw: H.preset('pcb_v1'), urls: [] };
+  const state = { releases: [], release: null, mode: 'pcb_v1', hw: H.preset('pcb_v1'), urls: [], names: {}, nameKeys: '' };
 
   function el(tag, attrs, children) {
     const e = document.createElement(tag);
@@ -126,10 +126,47 @@
     }
   }
 
+  /** Drei WLAN-Slots; Slot 3 mit dem Fabmobil-WLAN vorbelegt */
+  function renderWifi() {
+    const box = $('wifiSlots');
+    for (let i = 1; i <= 3; i++) {
+      const ssid = el('input', { type: 'text', id: 'wifiSsid' + i, maxlength: '32', autocomplete: 'off',
+        placeholder: 'SSID', 'aria-label': 'WLAN ' + i + ' Name' });
+      const pw = el('input', { type: 'password', id: 'wifiPassword' + i, maxlength: '64', autocomplete: 'new-password',
+        placeholder: 'Passwort', 'aria-label': 'WLAN ' + i + ' Passwort' });
+      if (i === 3) {
+        ssid.value = F.FABMOBIL_SSID;
+        pw.placeholder = 'eingebaut';
+        const sync = () => { pw.placeholder = ssid.value.trim() === F.FABMOBIL_SSID ? 'eingebaut' : 'Passwort'; };
+        ssid.addEventListener('input', sync);
+      }
+      [ssid, pw].forEach(x => x.addEventListener('input', changed));
+      box.append(el('span', { class: 'slot', text: 'Slot ' + i + (i === 3 ? ' (Fabmobil)' : '') }), ssid, pw);
+    }
+  }
+
+  /** Eingabefelder für die Kanalnamen – nur neu aufbauen, wenn sich die Kanäle ändern */
+  function renderNames() {
+    const list = H.channels(state.hw.features);
+    const keys = list.map(c => c.key).join(',');
+    if (keys === state.nameKeys) return;
+    state.nameKeys = keys;
+    const box = $('channelNames');
+    box.textContent = '';
+    list.forEach(c => {
+      const input = el('input', { type: 'text', maxlength: '24', placeholder: c.name, value: state.names[c.key] || '' });
+      input.addEventListener('input', () => { state.names[c.key] = input.value; changed(); });
+      box.appendChild(el('label', {}, [el('span', {}, [c.name + ' ', el('span', { class: 'key', text: c.key })]), input]));
+    });
+  }
+
   function settingsFromForm() {
+    const names = {};
+    H.channels(state.hw.features).forEach(c => { if (state.names[c.key]) names[c.key] = state.names[c.key]; });
     return {
       deviceName: $('deviceName').value, adminPassword: $('adminPassword').value,
-      wifiSsid: $('wifiSsid').value, wifiPassword: $('wifiPassword').value,
+      wifi: [1, 2, 3].map(i => ({ ssid: $('wifiSsid' + i).value, password: $('wifiPassword' + i).value })),
+      channelNames: names,
       staticIp: { ip: $('ipIp').value, gateway: $('ipGateway').value, subnet: $('ipSubnet').value || '255.255.255.0', dns1: $('ipDns1').value }
     };
   }
@@ -151,6 +188,7 @@
     let provisionUrl = null;
     if (!keep) {
       state.hw.name = isPreset() ? state.mode : 'eigene';
+      renderNames();
       const r = H.check(chip, state.hw.features, state.hw.pins);
       const n = H.channelCount(state.hw.features);
       $('hwStatus').textContent = (r.problem === 'ok' ? '✓ ' : '✗ ') + H.describe(r) + ' ' + n + ' von höchstens ' +
@@ -205,7 +243,8 @@
 
   function wire() {
     $('mode').addEventListener('change', () => setMode($('mode').value));
-    ['deviceName', 'adminPassword', 'wifiSsid', 'wifiPassword', 'ipIp', 'ipGateway', 'ipSubnet', 'ipDns1']
+    renderWifi();
+    ['deviceName', 'adminPassword', 'ipIp', 'ipGateway', 'ipSubnet', 'ipDns1']
       .forEach(id => $(id).addEventListener('input', changed));
     $('version').addEventListener('change', () => {
       state.release = state.releases[Number($('version').value)];

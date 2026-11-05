@@ -31,7 +31,8 @@
   function ipString(v) { return typeof v === 'string' ? v.trim() : ''; }
 
   /**
-   * JSON für den Block. settings: {deviceName, wifiSsid, wifiPassword, adminPassword} – leere Felder fehlen.
+   * JSON für den Block. settings (wie Flasher.cleanSettings): {deviceName, adminPassword,
+   * wifi: [{ssid, password} | null ×3], channelNames: {"ANALOG_0": "…"}} – leere Felder fehlen.
    */
   function blockJson(hw, settings) {
     const doc = {
@@ -46,8 +47,11 @@
     const s = {};
     if (settings) {
       if (settings.deviceName) s.deviceName = settings.deviceName;
-      if (settings.wifiSsid) { s.wifiSsid = settings.wifiSsid; s.wifiPassword = settings.wifiPassword || ''; }
       if (settings.adminPassword) s.adminPassword = settings.adminPassword;
+      const wifi = (settings.wifi || []).slice(0, 3).map(w => (w && w.ssid ? { ssid: w.ssid, password: w.password || '' } : null));
+      if (wifi.some(w => w)) s.wifi = wifi;
+      const names = settings.channelNames || {};
+      if (Object.keys(names).length) s.channelNames = Object.assign({}, names);
     }
     if (Object.keys(s).length) doc.settings = s;
     return JSON.stringify(doc);
