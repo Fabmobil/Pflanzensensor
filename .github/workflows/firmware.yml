@@ -44,7 +44,7 @@ jobs:
         with: { node-version: "22" }
       - run: tools/run_js_tests.sh
       # Webflasher teilt Testvektoren mit der Firmware (hardware_check, provision_block)
-      - run: node --test ../webflasher/test/
+      - run: node --test ../webflasher/test/*.test.mjs
 
   build:
     name: Firmware ${{ matrix.env }}

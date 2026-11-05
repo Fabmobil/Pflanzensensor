@@ -32,7 +32,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: "22" }
       - name: Tests (Prüfregeln wie die Firmware, Block, Manifest)
-        run: node --test webflasher/test/
+        run: node --test webflasher/test/*.test.mjs
       - name: ESP Web Tools holen (wird mit der Seite ausgeliefert, kein fremdes CDN)
         run: |
           mkdir -p /tmp/ewt && cd /tmp/ewt
