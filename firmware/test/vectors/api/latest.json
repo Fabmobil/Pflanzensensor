@@ -1,0 +1,140 @@
+{
+  "currentTime": 35000,
+  "deviceName": "Balkon",
+  "flowerStatusSensor": "ANALOG_1",
+  "ip": "192.168.1.23",
+  "sensors": {
+    "ANALOG_0": {
+      "value": 48.62,
+      "unit": "%",
+      "lastMeasurement": 5700,
+      "measurementInterval": 60000,
+      "status": "green",
+      "absoluteMin": 48.62,
+      "absoluteMax": 48.62,
+      "raw": 500,
+      "absoluteRawMin": 500,
+      "absoluteRawMax": 500,
+      "calibrationMode": false,
+      "minmax": {
+        "min": 5,
+        "max": 1023
+      }
+    },
+    "ANALOG_1": {
+      "value": 50,
+      "unit": "%",
+      "lastMeasurement": 5700,
+      "measurementInterval": 60000,
+      "status": "green",
+      "absoluteMin": 50,
+      "absoluteMax": 50,
+      "raw": 500,
+      "absoluteRawMin": 500,
+      "absoluteRawMax": 500,
+      "calibrationMode": false,
+      "minmax": {
+        "min": 250,
+        "max": 750
+      }
+    },
+    "HX711_0": {
+      "value": 500,
+      "unit": "g",
+      "lastMeasurement": 15200,
+      "measurementInterval": 60000,
+      "status": "green",
+      "absoluteMin": 500,
+      "absoluteMax": 500
+    },
+    "BMP280_0": {
+      "value": null,
+      "unit": "°C",
+      "lastMeasurement": 17200,
+      "measurementInterval": 60000,
+      "status": "error",
+      "absoluteMin": null,
+      "absoluteMax": null
+    },
+    "BMP280_1": {
+      "value": 500,
+      "unit": "hPa",
+      "lastMeasurement": 17200,
+      "measurementInterval": 60000,
+      "status": "red",
+      "absoluteMin": 500,
+      "absoluteMax": 500
+    },
+    "SERIAL_RECEIVER_0": {
+      "value": 500,
+      "unit": "l/min",
+      "lastMeasurement": 19000,
+      "measurementInterval": 60000,
+      "status": "yellow",
+      "absoluteMin": 500,
+      "absoluteMax": 500
+    },
+    "SERIAL_RECEIVER_1": {
+      "value": 500,
+      "unit": "counts",
+      "lastMeasurement": 19000,
+      "measurementInterval": 60000,
+      "status": "green",
+      "absoluteMin": 500,
+      "absoluteMax": 500
+    },
+    "SERIAL_RECEIVER_2": {
+      "value": 500,
+      "unit": "l/min",
+      "lastMeasurement": 19000,
+      "measurementInterval": 60000,
+      "status": "green",
+      "absoluteMin": 500,
+      "absoluteMax": 500
+    },
+    "SERIAL_RECEIVER_3": {
+      "value": 500,
+      "unit": "l/min",
+      "lastMeasurement": 19000,
+      "measurementInterval": 60000,
+      "status": "yellow",
+      "absoluteMin": 500,
+      "absoluteMax": 500
+    },
+    "SERIAL_RECEIVER_4": {
+      "value": 500,
+      "unit": "ms",
+      "lastMeasurement": 19000,
+      "measurementInterval": 60000,
+      "status": "green",
+      "absoluteMin": 500,
+      "absoluteMax": 500
+    },
+    "SERIAL_RECEIVER_5": {
+      "value": 500,
+      "unit": "s",
+      "lastMeasurement": 19000,
+      "measurementInterval": 60000,
+      "status": "green",
+      "absoluteMin": 500,
+      "absoluteMax": 500
+    },
+    "SERIAL_RECEIVER_6": {
+      "value": 500,
+      "unit": "l/h",
+      "lastMeasurement": 19000,
+      "measurementInterval": 60000,
+      "status": "green",
+      "absoluteMin": 500,
+      "absoluteMax": 500
+    }
+  },
+  "system": {
+    "freeHeap": 30000,
+    "heapFragmentation": 10,
+    "rebootCount": 1,
+    "version": "3.0.0",
+    "buildDate": "Nov  4 2026",
+    "processedSensors": 4
+  }
+}

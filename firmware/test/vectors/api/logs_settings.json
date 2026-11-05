@@ -1,0 +1,12 @@
+{
+  "ok": true,
+  "log": {
+    "level": "INFO",
+    "debugRam": false,
+    "debugCycle": false,
+    "debugSensor": false,
+    "debugDisplay": false,
+    "debugWeb": false,
+    "debugMail": false
+  }
+}

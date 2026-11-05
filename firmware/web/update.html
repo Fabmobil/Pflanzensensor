@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Update</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/start.css">
+<link rel="stylesheet" href="/css/admin.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body data-title="Update">
+<div class="box status-unknown"><div class="group">
+<div class="cloud" id="cloud"></div>
+<div class="admin-content-box" data-section="admin/update">
+<div class="card update-section">
+  <h2>Firmware-Update</h2>
+  <table class="info-table"><tr><td>Installiert:</td><td id="otaVersion">–</td></tr></table>
+  <div class="warning-box"><ul>
+    <li>Neue Versionen: <a href="https://github.com/Fabmobil/Pflanzensensor/releases" target="_blank" rel="noopener">github.com/Fabmobil/Pflanzensensor/releases</a> (Datei firmware.bin).</li>
+    <li>Einstellungen und Chronik bleiben erhalten.</li>
+    <li>Während des Updates den Strom nicht trennen. Geht etwas schief, bleibt die alte Firmware aktiv.</li></ul></div>
+  <div class="form-group"><label for="otaFile">Firmware-Datei (.bin)</label><input type="file" id="otaFile" accept=".bin"></div>
+  <div class="form-group" id="md5Group"><label for="otaMd5">Prüfsumme (MD5, optional)</label><input type="text" id="otaMd5" maxlength="32"></div>
+  <p><button class="button button-primary" id="otaStart">Hochladen und installieren</button></p>
+  <div class="progress-container"><div class="progress" id="otaBar"></div></div>
+  <div class="status" id="otaStatus"></div>
+</div>
+</div>
+<div id="footer"></div>
+</div></div>
+<script src="/js/ui.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/footer.js"></script>
+<script src="/js/devicewait.js"></script>
+<script src="/js/update.js"></script>
+</body>
+</html>

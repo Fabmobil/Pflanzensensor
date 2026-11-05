@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chronik</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/start.css">
+<link rel="stylesheet" href="/css/admin.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body data-title="Chronik">
+<div class="box status-unknown"><div class="group">
+<div class="cloud" id="cloud"></div>
+<div class="admin-content-box" data-section="chronik">
+<div class="card chronik-card">
+  <div class="chronik-controls">
+    <div class="chronik-ranges" id="chronik-ranges">
+      <button type="button" class="button-secondary" data-range="3600">1 h</button>
+      <button type="button" class="button-secondary" data-range="21600">6 h</button>
+      <button type="button" class="button-primary" data-range="86400">24 h</button>
+      <button type="button" class="button-secondary" data-range="0">Alles</button>
+    </div>
+    <a class="button button-secondary" href="/api/v1/chronik/export.csv">CSV</a>
+  </div>
+  <div class="chronik-canvas-wrap">
+    <canvas id="chronik-canvas"></canvas>
+    <div class="chronik-hint" id="chronik-hint">Daten werden geladen …</div>
+  </div>
+  <div class="chronik-legend" id="chronik-legend"></div>
+  <div class="chronik-note">Ziehen verschiebt, Mausrad zoomt. Ein Klick in der Legende blendet eine Reihe ein oder aus; die Rohwerte der Analogkanäle stehen dort als eigene Einträge und sind anfangs ausgeblendet. Bleibt genau eine Messreihe übrig, zeigt das Diagramm ihre Schwellwerte als Linien und den grünen Bereich als Fläche.</div>
+</div>
+<div class="card chronik-card"><table class="info-table" id="chronik-info"></table></div>
+</div>
+<div id="footer"></div>
+</div></div>
+<script src="/js/ui.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/footer.js"></script>
+<script src="/js/chronik.js"></script>
+</body>
+</html>

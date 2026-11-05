@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Einstellungen</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/start.css">
+<link rel="stylesheet" href="/css/admin.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body data-title="Einstellungen">
+<div class="box status-unknown"><div class="group">
+<div class="cloud" id="cloud"></div>
+<div class="admin-content-box" data-section="admin">
+<div class="admin-grid">
+  <div class="card">
+    <h2>Systemeinstellungen</h2>
+    <div class="form-group"><label for="deviceName">Gerätename</label>
+      <input type="text" id="deviceName" maxlength="32" data-path="general.deviceName">
+      <div class="hint">Erscheint in Wolke, Display, Mails und als Netzwerkname (<span id="hostPreview">–</span>.local).</div></div>
+    <div class="form-group"><label><input type="checkbox" id="otaRequireMd5" data-path="general.otaRequireMd5"> Prüfsumme (MD5) bei Updates verlangen</label></div>
+    <h3>Admin-Passwort</h3>
+    <div class="form-group"><label for="pw1">Neues Passwort</label><input type="password" id="pw1" maxlength="32" autocomplete="new-password"></div>
+    <div class="form-group"><label for="pw2">Wiederholung</label><input type="password" id="pw2" maxlength="32" autocomplete="new-password"></div>
+    <div class="hint">1 bis 32 druckbare ASCII-Zeichen. Andere angemeldete Browser müssen sich danach neu anmelden.</div>
+    <button class="button button-primary" id="pwSave">Passwort ändern</button>
+  </div>
+
+  <div class="card">
+    <h2>Systemaktionen</h2>
+    <p><button class="button button-warning" id="reboot">Neustart</button></p>
+    <div class="warning-box"><h3>Werksreset</h3>
+      <ul><li>Löscht alle Einstellungen, WLAN-Zugänge, Passwörter, Mailvorlagen und den Messwertzustand.</li>
+      <li>Die Chronik und das Datei-Log bleiben erhalten.</li>
+      <li>Danach öffnet das Gerät ggf. einen eigenen Zugangspunkt.</li></ul>
+      <button class="button button-danger" id="reset">Auf Werkseinstellungen zurücksetzen</button></div>
+    <h3>Dateien</h3>
+    <p><a class="button button-secondary" href="/api/v1/logs/file">Log herunterladen</a>
+       <a class="button button-secondary" href="/api/v1/config/export">Konfiguration herunterladen</a></p>
+    <div class="form-group"><label for="importFile">Konfiguration hochladen (auch config.json der Firmware 2.x)</label>
+      <input type="file" id="importFile" accept=".json,application/json"></div>
+    <button class="button button-primary" id="importBtn">Hochladen und neu starten</button>
+    <div class="hint">Passwörter und Schlüssel sind im Export nicht enthalten.</div>
+  </div>
+
+  <div class="card">
+    <h2>WLAN</h2>
+    <div id="wifiSlots"></div>
+    <label><input type="checkbox" id="wifiReconnect"> Nach dem Speichern neu verbinden</label>
+    <div class="hint">Der gerade benutzte Zugang ist nicht änderbar. Ein leeres Passwort lässt das gespeicherte stehen; offene Netze: Passwort leer und „Passwort löschen“.</div>
+  </div>
+
+  <div class="card">
+    <h2>Systeminformation</h2>
+    <table class="info-table" id="sysinfo"></table>
+  </div>
+
+  <div class="card">
+    <h2>Log-Einstellungen</h2>
+    <div class="form-group"><label for="logLevel">Log-Level</label>
+      <select id="logLevel" data-path="log.level">
+        <option value="DEBUG">DEBUG</option><option value="INFO">INFO</option>
+        <option value="WARNING">WARNING</option><option value="ERROR">ERROR</option></select></div>
+    <div class="form-group"><label><input type="checkbox" data-path="log.file"> Datei-Log (/log.txt, höchstens 16 KB)</label></div>
+    <h3>Debug-Ausgaben</h3>
+    <div class="switch-list">
+      <label><input type="checkbox" data-path="log.debugRam"> RAM</label>
+      <label><input type="checkbox" data-path="log.debugCycle"> Messzyklus</label>
+      <label><input type="checkbox" data-path="log.debugSensor"> Sensoren</label>
+      <label><input type="checkbox" data-path="log.debugDisplay"> Display</label>
+      <label><input type="checkbox" data-path="log.debugWeb"> Web</label>
+      <label><input type="checkbox" data-path="log.debugMail"> Mail</label>
+    </div>
+    <div class="hint">Wirken nur bei Log-Level DEBUG und wählen dort die Bereiche aus; keiner gewählt = alle.</div>
+  </div>
+</div>
+</div>
+<div id="footer"></div>
+</div></div>
+<script src="/js/ui.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/footer.js"></script>
+<script src="/js/devicewait.js"></script>
+<script src="/js/config-bind.js"></script>
+<script src="/js/admin.js"></script>
+</body>
+</html>

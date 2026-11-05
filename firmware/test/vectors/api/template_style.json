@@ -1,0 +1,5 @@
+{
+  "kind": "style",
+  "body": "body{margin:0;padding:18px;background:#eef6e6;color:#213;\nfont-family:system-ui,Arial,sans-serif;font-size:15px;\nline-height:1.5}\nh1{margin:0 0 12px;font-size:26px}\np{margin:8px 0}\ntable.werte{width:100%;max-width:520px;border-collapse:collapse;\nbackground:#fff;border-radius:8px;margin:12px 0}\ntable.werte td{padding:7px 10px;border-bottom:1px solid #e4eede}\ntd.wert{text-align:right;font-weight:600;white-space:nowrap}\na{color:#2a7}",
+  "custom": false
+}

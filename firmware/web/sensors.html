@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sensoren</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/start.css">
+<link rel="stylesheet" href="/css/admin.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body data-title="Sensoren">
+<div class="box status-unknown"><div class="group">
+<div class="cloud" id="cloud"></div>
+<div class="admin-content-box" data-section="admin/sensors">
+<div class="admin-grid">
+  <div class="card">
+    <h2>Gesicht der Blume</h2>
+    <div class="form-group"><label for="flower">Die Blume zeigt den Zustand von</label>
+      <select id="flower" data-path="general.flowerChannel"></select></div>
+  </div>
+  <div class="card" id="ledCard">
+    <h2>LED-Ampel</h2>
+    <div class="form-group"><label for="ledMode">Modus</label>
+      <select id="ledMode" data-path="led.mode">
+        <option value="0">Aus</option>
+        <option value="1" data-feature="display">Folgt dem Display</option>
+        <option value="2">Fester Messwert</option></select></div>
+    <div class="form-group" id="ledChannelGroup"><label for="ledChannel">Messwert</label>
+      <select id="ledChannel" data-path="led.channel"></select></div>
+    <label><input type="checkbox" data-path="led.onlyRed"> Nur Rot (gelb und grün bleiben aus)</label>
+  </div>
+</div>
+<div id="sensorCards"></div>
+</div>
+<div id="footer"></div>
+</div></div>
+<script src="/js/ui.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/footer.js"></script>
+<script src="/js/config-bind.js"></script>
+<script src="/js/threshold-slider.js"></script>
+<script src="/js/sensors.js"></script>
+</body>
+</html>

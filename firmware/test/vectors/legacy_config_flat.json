@@ -1,0 +1,10 @@
+{
+  "general": {"device_name": "Altstruktur", "admin_pwd": "Fabmobil", "md5_verify": false, "flower_sens": "ANALOG_0"},
+  "display": {"screen_dur": 5, "clock_fmt": "24h"},
+  "log": {"level": "Info", "file_enabled": true},
+  "sensors": [
+    {"id": "ANALOG", "measInt": 60000, "idx": 1, "en": true, "nm": "Flach", "fn": "bodenfeuchte", "un": "%",
+     "min": 200, "max": 800, "thresh": {"yl": 1, "gl": 2, "gh": 3, "yh": 4}, "inv": true, "cal": false, "ahl": 0,
+     "lastRawValue": 333, "lastValue": 77.7}
+  ]
+}

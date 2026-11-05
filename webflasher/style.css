@@ -1,0 +1,23 @@
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  color: #f2f2f2; background: linear-gradient(180deg, #d4b3ff 0%, #a855f7 45%, #7c3aed 100%) fixed;
+}
+main { max-width: 760px; margin: 0 auto; padding: 2em 1em 3em; }
+h1 { margin: 0 0 0.2em; font-size: 2em; color: #fff; text-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+.lead { margin: 0 0 1.5em; color: #1f1033; font-weight: 500; }
+.card { background: #2a2a2a; border: 1px solid #3a3a3a; border-radius: 10px; padding: 1.1em 1.3em; margin-bottom: 1em; box-shadow: 0 4px 16px rgba(0,0,0,0.25); }
+.card h2 { margin: 0 0 0.6em; font-size: 1.2em; }
+.row { display: flex; flex-wrap: wrap; gap: 0.6em 1em; align-items: center; }
+select { font: inherit; color: #f2f2f2; background: #333; border: 1px solid #555; border-radius: 6px; padding: 0.45em 0.6em; min-width: 16em; }
+button.primary { font: inherit; font-weight: 600; color: #fff; background: #a855f7; border: 0; border-radius: 6px; padding: 0.7em 1.3em; cursor: pointer; }
+button.primary:hover { background: #9333ea; }
+.hint { color: #b0b0b0; font-size: 0.9em; margin: 0.6em 0 0; }
+.warn { display: block; color: #ffd24a; }
+a { color: #c9a2ff; }
+ul { padding-left: 1.2em; margin: 0; }
+li { margin: 0.4em 0; }
+footer { text-align: center; color: #1f1033; margin-top: 2em; font-size: 0.9em; }
+footer a { color: #1f1033; }
+@media (max-width: 500px) { select { min-width: 0; width: 100%; } }

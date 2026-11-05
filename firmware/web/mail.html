@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Mail</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/start.css">
+<link rel="stylesheet" href="/css/admin.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body data-title="E-Mail">
+<div class="box status-unknown"><div class="group">
+<div class="cloud" id="cloud"></div>
+<div class="admin-content-box" data-section="admin/email">
+<div class="admin-grid">
+  <div class="card">
+    <h2>E-Mail-Benachrichtigungen</h2>
+    <label><input type="checkbox" id="mail-enabled"> Mails verschicken</label>
+    <div id="mail-felder-wrap"><div class="mail-felder" id="mail-fields">
+      <div class="form-group"><label for="mail-url">Mailbot-URL</label><input type="url" id="mail-url" maxlength="96"></div>
+      <div class="form-group"><label for="mail-deviceId">Geräte-ID</label><input type="text" id="mail-deviceId" maxlength="32"></div>
+      <div class="form-group"><label for="mail-key">Schlüssel (32 Byte, Base64)</label><input type="password" id="mail-key" autocomplete="off"></div>
+      <div class="form-group"><label for="mail-to">Empfänger</label><input type="email" id="mail-to" maxlength="96"></div>
+      <h3>Warnungen</h3>
+      <div class="form-group"><label for="mail-warnFrom">Warnen ab</label>
+        <select id="mail-warnFrom"><option value="yellow">Gelb</option><option value="red">Rot</option></select></div>
+      <div class="form-group"><label for="mail-warnHours">Höchstens eine Warnung alle … Stunden (1 bis 720)</label>
+        <input type="number" id="mail-warnHours" min="1" max="720" step="1"></div>
+      <div class="form-group"><label>Überwachte Messwerte (keine Auswahl = alle)</label><div class="mail-sensorliste switch-list" id="mail-watch"></div></div>
+      <h3>Weitere Mails</h3>
+      <label><input type="checkbox" id="mail-boot"> Startmeldung nach jedem Neustart</label><br>
+      <label><input type="checkbox" id="mail-alive"> Lebenszeichen</label>
+      <div class="form-group"><label for="mail-aliveHours">Lebenszeichen alle … Stunden (1 bis 720)</label>
+        <input type="number" id="mail-aliveHours" min="1" max="720" step="1"></div>
+    </div></div>
+    <p><button class="button button-primary" id="mail-save">Speichern</button>
+       <button class="button button-secondary" id="mail-save-test">Speichern und Testmail</button>
+       <button class="button button-secondary" id="mail-test">Nur Testmail</button>
+       <a class="button button-secondary" href="/admin/mail/templates">Mailtexte bearbeiten</a></p>
+    <div class="mail-status" id="mail-status">–</div>
+  </div>
+  <div class="card mail-hinweis">
+    <h2>Wie das funktioniert</h2>
+    <p>Das Gerät schickt seine Mails nicht selbst, sondern über den Fabmobil-Mailbot. Dort wird es mit Geräte-ID und Schlüssel angelegt; beides kommt hier hinein.</p>
+    <p>Der Inhalt wird auf dem Gerät mit AES-256-GCM verschlüsselt, bevor er über das Netz geht. Für eine TLS-Verbindung reicht der Speicher des ESP8266 nicht.</p>
+    <p>Der Schlüssel wird nie angezeigt und ist im Konfigurations-Export nicht enthalten. Leer lassen behält den gespeicherten.</p>
+  </div>
+</div>
+</div>
+<div id="footer"></div>
+</div></div>
+<script src="/js/ui.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/footer.js"></script>
+<script src="/js/mail.js"></script>
+</body>
+</html>

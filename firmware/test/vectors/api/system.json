@@ -1,0 +1,145 @@
+{
+  "deviceName": "Balkon",
+  "version": "3.0.0",
+  "buildDate": "Nov  4 2026",
+  "platform": "native",
+  "board": "native",
+  "ip": "192.168.1.23",
+  "ssid": "Heimnetz",
+  "hostname": "balkon",
+  "ap": false,
+  "rssi": -60,
+  "uptime": 35,
+  "rebootCount": 1,
+  "timeValid": true,
+  "time": "04.11.2025 12:00",
+  "epoch": 1762257600,
+  "flowerChannel": "ANALOG_1",
+  "features": {
+    "display": true,
+    "led": true,
+    "hx711": true
+  },
+  "heap": {
+    "freeHeap": 30000,
+    "maxBlock": 20000,
+    "heapFragmentation": 10,
+    "minFreeHeap": 30000
+  },
+  "channels": [
+    {
+      "key": "ANALOG_0",
+      "sensor": "ANALOG",
+      "name": "Lichtstärke",
+      "unit": "%"
+    },
+    {
+      "key": "ANALOG_1",
+      "sensor": "ANALOG",
+      "name": "Bodenfeuchte",
+      "unit": "%"
+    },
+    {
+      "key": "DHT_0",
+      "sensor": "DHT",
+      "name": "Lufttemperatur",
+      "unit": "°C"
+    },
+    {
+      "key": "DHT_1",
+      "sensor": "DHT",
+      "name": "Luftfeuchte",
+      "unit": "%"
+    },
+    {
+      "key": "DS18B20_0",
+      "sensor": "DS18B20",
+      "name": "DS18B20_1",
+      "unit": "°C"
+    },
+    {
+      "key": "DS18B20_1",
+      "sensor": "DS18B20",
+      "name": "DS18B20_2",
+      "unit": "°C"
+    },
+    {
+      "key": "SDS011_0",
+      "sensor": "SDS011",
+      "name": "PM10",
+      "unit": "µg/m³"
+    },
+    {
+      "key": "SDS011_1",
+      "sensor": "SDS011",
+      "name": "PM2.5",
+      "unit": "µg/m³"
+    },
+    {
+      "key": "MHZ19_0",
+      "sensor": "MHZ19",
+      "name": "CO2",
+      "unit": "ppm"
+    },
+    {
+      "key": "HX711_0",
+      "sensor": "HX711",
+      "name": "Gewicht",
+      "unit": "g"
+    },
+    {
+      "key": "BMP280_0",
+      "sensor": "BMP280",
+      "name": "BMP_Temperatur",
+      "unit": "°C"
+    },
+    {
+      "key": "BMP280_1",
+      "sensor": "BMP280",
+      "name": "Luftdruck",
+      "unit": "hPa"
+    },
+    {
+      "key": "SERIAL_RECEIVER_0",
+      "sensor": "SERIAL_RECEIVER",
+      "name": "Flow Rate",
+      "unit": "l/min"
+    },
+    {
+      "key": "SERIAL_RECEIVER_1",
+      "sensor": "SERIAL_RECEIVER",
+      "name": "Absolute Counts",
+      "unit": "counts"
+    },
+    {
+      "key": "SERIAL_RECEIVER_2",
+      "sensor": "SERIAL_RECEIVER",
+      "name": "Sum Flow Rate",
+      "unit": "l/min"
+    },
+    {
+      "key": "SERIAL_RECEIVER_3",
+      "sensor": "SERIAL_RECEIVER",
+      "name": "24h Flow Rate",
+      "unit": "l/min"
+    },
+    {
+      "key": "SERIAL_RECEIVER_4",
+      "sensor": "SERIAL_RECEIVER",
+      "name": "Arduino Time",
+      "unit": "ms"
+    },
+    {
+      "key": "SERIAL_RECEIVER_5",
+      "sensor": "SERIAL_RECEIVER",
+      "name": "Uptime",
+      "unit": "s"
+    },
+    {
+      "key": "SERIAL_RECEIVER_6",
+      "sensor": "SERIAL_RECEIVER",
+      "name": "Liters per Hour",
+      "unit": "l/h"
+    }
+  ]
+}

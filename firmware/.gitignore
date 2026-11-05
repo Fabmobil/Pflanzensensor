@@ -1,0 +1,7 @@
+src/web/assets.h
+.pio/
+platformio.local.ini
+platformio.test.ini
+platformio.stack.ini
+src/core/build_date.h
+dist/

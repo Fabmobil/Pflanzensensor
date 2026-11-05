@@ -1,0 +1,8 @@
+{
+  "ok": false,
+  "error": "invalid",
+  "message": "Ungültige Werte",
+  "fields": {
+    "display.screenDuration": "range"
+  }
+}

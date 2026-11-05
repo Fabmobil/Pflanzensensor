@@ -1,0 +1,27 @@
+{
+  "general": {"device_name": "Balkon Süd", "admin_pwd": "geheim-platzhalter", "md5_verify": true, "file_log": true, "flower_sens": "ANALOG_1"},
+  "wifi": {"ssid1": "Heimnetz", "pwd1": "platzhalter1", "ssid2": "", "pwd2": "", "ssid3": "Gast", "pwd3": ""},
+  "display": {"show_ip": false, "show_clock": true, "show_flower": true, "show_fabmobil": false, "show_qr": true, "screen_dur": 8000, "clock_fmt": "12h", "sensor_disp": "ANALOG:1,0;DHT:0,1"},
+  "debug": {"ram": true, "meas_cycle": false, "sensor": true, "display": false, "websocket": false},
+  "log": {"level": "DEBUG", "file_enabled": false},
+  "led_traffic": {"mode": 2, "sel_meas": "DHT_1", "only_red": true},
+  "sensors": [
+    {"id": "ANALOG", "measInt": 120000, "measurements": [
+      {"idx": 0, "en": true, "nm": "Licht", "fn": "lichtstaerke", "un": "%", "min": 10, "max": 1000,
+       "thresh": {"yl": 5.5, "gl": 15.25, "gh": 85, "yh": 95}, "inv": false, "cal": false, "ahl": 86400,
+       "rmin": 12, "rmax": 990, "amin": 1.5, "amax": 97.25, "lastRawValue": 512, "lastValue": 49.2},
+      {"idx": 1, "en": true, "nm": "Topf links", "fn": "bodenfeuchte", "un": "%", "min": 300, "max": 700,
+       "thresh": {"yl": 10, "gl": 20, "gh": 80, "yh": 90}, "inv": true, "cal": true, "ahl": 604800,
+       "rmin": 0, "rmax": 1023, "amin": null, "amax": null, "lastRawValue": 450, "lastValue": null},
+      {"idx": 5, "en": true, "nm": "gibt es nicht", "fn": "x", "un": "%", "min": 0, "max": 100,
+       "thresh": {"yl": 0, "gl": 0, "gh": 0, "yh": 0}}
+    ]},
+    {"id": "DHT", "measInt": 5000, "measurements": [
+      {"idx": 0, "en": true, "nm": "Luft", "fn": "lufttemperatur", "un": "°C", "min": 0, "max": 100,
+       "thresh": {"yl": 30, "gl": 15, "gh": 25, "yh": 10}, "lastValue": 21.4},
+      {"idx": 1, "en": false, "nm": "Feuchte", "fn": "luftfeuchte", "un": "%", "min": 0, "max": 100,
+       "thresh": {"yl": 20, "gl": 30, "gh": 80, "yh": 90}, "lastValue": 55}
+    ]},
+    {"id": "GIBTSNICHT", "measInt": 60000, "measurements": []}
+  ]
+}

@@ -1,0 +1,146 @@
+{
+  "lines": [
+    {
+      "seq": 0,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "WLAN",
+      "text": "WLAN 1: Heimnetz ..."
+    },
+    {
+      "seq": 1,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "WLAN",
+      "text": "Verbunden: 192.168.1.23"
+    },
+    {
+      "seq": 2,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "WLAN",
+      "text": "mDNS: balkon.local"
+    },
+    {
+      "seq": 3,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "Sensor",
+      "text": "Lichtstärke: erster Wert 48.6 % (OK)"
+    },
+    {
+      "seq": 4,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "Sensor",
+      "text": "Bodenfeuchte: erster Wert 50.0 % (OK)"
+    },
+    {
+      "seq": 5,
+      "ts": "2025-11-04 12:00:00",
+      "level": "WARNING",
+      "module": "Sensor",
+      "text": "Lufttemperatur: kein gültiger Messwert (vorher unbekannt)"
+    },
+    {
+      "seq": 6,
+      "ts": "2025-11-04 12:00:00",
+      "level": "WARNING",
+      "module": "Sensor",
+      "text": "Luftfeuchte: kein gültiger Messwert (vorher unbekannt)"
+    },
+    {
+      "seq": 7,
+      "ts": "2025-11-04 12:00:00",
+      "level": "WARNING",
+      "module": "Sensor",
+      "text": "DS18B20_1: kein gültiger Messwert (vorher unbekannt)"
+    },
+    {
+      "seq": 8,
+      "ts": "2025-11-04 12:00:00",
+      "level": "WARNING",
+      "module": "Sensor",
+      "text": "DS18B20_2: kein gültiger Messwert (vorher unbekannt)"
+    },
+    {
+      "seq": 9,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "Sensor",
+      "text": "Gewicht: erster Wert 500.0 g (OK)"
+    },
+    {
+      "seq": 10,
+      "ts": "2025-11-04 12:00:00",
+      "level": "WARNING",
+      "module": "Sensor",
+      "text": "BMP_Temperatur: kein gültiger Messwert (vorher unbekannt)"
+    },
+    {
+      "seq": 11,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "Sensor",
+      "text": "Luftdruck: erster Wert 500.0 hPa (Kritisch)"
+    },
+    {
+      "seq": 12,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "Sensor",
+      "text": "Flow Rate: erster Wert 500.0 l/min (Warnung)"
+    },
+    {
+      "seq": 13,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "Sensor",
+      "text": "Absolute Counts: erster Wert 500.0 counts (OK)"
+    },
+    {
+      "seq": 14,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "Sensor",
+      "text": "Sum Flow Rate: erster Wert 500.0 l/min (OK)"
+    },
+    {
+      "seq": 15,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "Sensor",
+      "text": "24h Flow Rate: erster Wert 500.0 l/min (Warnung)"
+    },
+    {
+      "seq": 16,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "Sensor",
+      "text": "Arduino Time: erster Wert 500.0 ms (OK)"
+    },
+    {
+      "seq": 17,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "Sensor",
+      "text": "Uptime: erster Wert 500.0 s (OK)"
+    },
+    {
+      "seq": 18,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "Sensor",
+      "text": "Liters per Hour: erster Wert 500.0 l/h (OK)"
+    },
+    {
+      "seq": 19,
+      "ts": "2025-11-04 12:00:00",
+      "level": "INFO",
+      "module": "Main",
+      "text": "Vertragstest"
+    }
+  ],
+  "next": 20,
+  "dropped": 0
+}

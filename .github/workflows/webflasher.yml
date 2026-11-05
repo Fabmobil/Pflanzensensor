@@ -1,0 +1,56 @@
+name: Webflasher
+
+# Baut die Webflasher-Seite (webflasher/) und veröffentlicht sie über GitHub
+# Pages. Die Firmware-Dateien der Releases werden dabei in die Seite kopiert,
+# weil der Browser Release-Downloads von github.com nicht laden darf (keine
+# CORS-Kopfzeilen). Einmalig nötig: Settings → Pages → Source „GitHub Actions“.
+
+on:
+  release:
+    types: [published, edited, deleted]
+  push:
+    branches: [main]
+    paths: ["webflasher/**", ".github/workflows/webflasher.yml"]
+  # Auch vom Release-Job in firmware.yml angestoßen: Releases, die mit dem
+  # GITHUB_TOKEN angelegt werden, lösen kein release-Ereignis aus.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: ESP Web Tools holen (wird mit der Seite ausgeliefert, kein fremdes CDN)
+        run: |
+          mkdir -p /tmp/ewt && cd /tmp/ewt
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund esp-web-tools@10
+      - name: Seite bauen
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 webflasher/build_site.py --out _site \
+            --esp-web-tools /tmp/ewt/node_modules/esp-web-tools/dist/web
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: _site }
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anmelden</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/start.css">
+<link rel="stylesheet" href="/css/admin.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body data-title="Anmelden">
+<div class="box status-unknown"><div class="group">
+<div class="cloud" id="cloud"></div>
+<div class="admin-content-box" data-section="admin">
+<form class="card login-card" id="loginForm">
+  <h2>Anmelden</h2>
+  <div class="form-group"><label for="loginPassword">Adminpasswort</label>
+    <input type="password" id="loginPassword" autocomplete="current-password" required autofocus></div>
+  <p><button class="button button-primary" type="submit" id="loginBtn">Anmelden</button></p>
+  <div class="hint" id="loginMsg"></div>
+</form>
+</div>
+<div id="footer"></div>
+</div></div>
+<script src="/js/ui.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/footer.js"></script>
+<script src="/js/login.js"></script>
+</body>
+</html>

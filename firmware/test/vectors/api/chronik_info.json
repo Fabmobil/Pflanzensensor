@@ -1,0 +1,10 @@
+{
+  "segments": 0,
+  "targetSegments": 0,
+  "segmentSize": 7936,
+  "usedBytes": 0,
+  "enabled": false,
+  "reason": "space",
+  "dropped": 0,
+  "skippedChannels": 3
+}
