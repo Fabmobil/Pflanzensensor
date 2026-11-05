@@ -2,7 +2,16 @@
 
 Dies ist das Repository mit dem Quellcode und allen Informationen zum Fabmobil Pflanzensensor. Weiterführende Erklärungen sind im [Wiki](https://github.com/Fabmobil/Pflanzensensor/wiki) zu finden.
 
-Der Quellcode befindet sich im [Pflanzensensor](https://github.com/Fabmobil/Pflanzensensor/tree/main/Pflanzensensor)-Verzeichnis. Das [Dokumentation](https://github.com/Fabmobil/Pflanzensensor/tree/main/Dokumentation)-Verzeichnis enthält Datenblätter, Schaltpläne und Pinouts der verwendeten Bauteile sowie 3D Modelle für Zubehörteile, die gedruckt werden können. Im [Wiki](https://github.com/Fabmobil/Pflanzensensor/wiki) gibt es weiterführende Informationen und Anleitungen.
+**Firmware flashen ohne Programmierumgebung:** im Browser per USB über den
+[Webflasher](https://fabmobil.github.io/Pflanzensensor/) (Chrome, Edge oder Opera am Computer).
+
+| Verzeichnis | Inhalt |
+| --- | --- |
+| [`firmware/`](firmware) | Quellcode der Firmware 3 (PlatformIO, ESP8266 und ESP32), Weboberfläche, Tests – Bauen und Entwickeln siehe [firmware/README.md](firmware/README.md) |
+| [`webflasher/`](webflasher) | Seite zum Flashen per USB im Browser (GitHub Pages) |
+| [`Dokumentation/`](Dokumentation) | Datenblätter, Schaltpläne, Pinouts, 3D-Modelle, Workshop-Unterlagen |
+
+Im [Wiki](https://github.com/Fabmobil/Pflanzensensor/wiki) gibt es weiterführende Informationen und Anleitungen.
 
 
 ![Pflanzensensor](https://github.com/Fabmobil/Pflanzensensor/blob/main/Dokumentation/Bilder/Pflanzensensor.jpeg?raw=true)

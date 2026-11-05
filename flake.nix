@@ -1,5 +1,5 @@
 {
-  description = "Entwicklungsumgebung fuer den Fabmobil-Pflanzensensor (PlatformIO/ESP8266)";
+  description = "Entwicklungsumgebung fuer den Fabmobil-Pflanzensensor (PlatformIO, ESP8266/ESP32)";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -24,13 +24,13 @@
             cppcheck
             # Achtung: liefert python3.12, aber NICHT das blanke python3 -
             # das kommt aus den Abhaengigkeiten von pre-commit/platformio und
-            # ist derzeit 3.14. Die Projektskripte (bump_version.py,
-            # compress_assets.py, generate_md5.py) kommen mit der
-            # Standardbibliothek aus, die Nebenversion spielt also keine Rolle.
+            # ist derzeit 3.14. Die Projektskripte (firmware/tools/*.py,
+            # webflasher/build_site.py) kommen mit der Standardbibliothek aus.
             python312
             platformio
-            # Für ./run_js_tests.sh - node bringt Testläufer und
+            # Für firmware/tools/run_js_tests.sh - node bringt Testläufer und
             # Zusicherungen selbst mit, es gibt keine npm-Abhängigkeiten.
+            # (npm braucht nur der Webflasher-Bau für esp-web-tools.)
             nodejs_22
           ];
 
