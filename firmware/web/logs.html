@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Logs</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/start.css">
+<link rel="stylesheet" href="/css/admin.css">
+<link rel="stylesheet" href="/css/logs.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body data-title="Logs">
+<div class="box status-unknown"><div class="group">
+<div class="cloud" id="cloud"></div>
+<div class="admin-content-box" data-section="logs">
+<div class="card log-controls-card">
+  <div class="toolbar">
+    <span class="ws-status" id="logStatus">verbinde …</span>
+    <label class="check"><input type="checkbox" id="autoScroll" checked> Automatisch scrollen</label>
+    <span class="toolbar-spacer"></span>
+    <button class="button button-secondary button-small" id="logClear" type="button">Ansicht leeren</button>
+    <a class="button button-secondary button-small" href="/api/v1/logs/file" download>Log-Datei</a>
+  </div>
+  <div class="toolbar">
+    <span class="toolbar-label">Level</span>
+    <div class="segmented" role="group" aria-label="Log-Level">
+      <button class="log-level-btn" type="button" data-level="DEBUG">Debug</button><button class="log-level-btn" type="button" data-level="INFO">Info</button><button class="log-level-btn" type="button" data-level="WARNING">Warnung</button><button class="log-level-btn" type="button" data-level="ERROR">Fehler</button>
+    </div>
+  </div>
+  <div class="toolbar">
+    <span class="toolbar-label">Debug</span>
+    <div class="switch-list">
+      <label class="check"><input type="checkbox" data-log="debugRam"> RAM</label>
+      <label class="check"><input type="checkbox" data-log="debugCycle"> Messzyklus</label>
+      <label class="check"><input type="checkbox" data-log="debugSensor"> Sensoren</label>
+      <label class="check"><input type="checkbox" data-log="debugDisplay"> Display</label>
+      <label class="check"><input type="checkbox" data-log="debugWeb"> Web</label>
+      <label class="check"><input type="checkbox" data-log="debugMail"> Mail</label>
+    </div>
+    <span class="hint" id="debugHint">Nur bei Level Debug. Keiner gewählt = alle Bereiche.</span>
+  </div>
+</div>
+<div class="log-container" id="logBox"></div>
+</div>
+<div id="footer"></div>
+</div></div>
+<script src="/js/ui.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/footer.js"></script>
+<script src="/js/logs.js"></script>
+</body>
+</html>

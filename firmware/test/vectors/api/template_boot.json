@@ -1,0 +1,6 @@
+{
+  "kind": "boot",
+  "subject": "🌱 ist wieder wach!",
+  "body": "# 🌱 Ich bin wieder wach!\n\nMoin! **{geraet}** hat neu gestartet und passt ab jetzt wieder auf die Pflanze auf. 🪴\n\n{messwerte}\n\n🔁 Neustart Nr. {neustarts} · ⏱️ läuft seit {laufzeit}\n📶 {ssid} · 🔗 [{name}](http://{name}) · {ip}\n🗓️ {datum} um {uhrzeit}",
+  "custom": false
+}

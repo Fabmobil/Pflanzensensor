@@ -1,0 +1,190 @@
+{
+  "ok": true,
+  "config": {
+    "schema": 1,
+    "general": {
+      "deviceName": "Balkon",
+      "otaRequireMd5": false,
+      "flowerChannel": "ANALOG_1"
+    },
+    "wifi": {
+      "ssid1": "Heimnetz",
+      "ssid2": "",
+      "ssid3": ""
+    },
+    "display": {
+      "screenDuration": 5,
+      "clockFormat": "24h",
+      "showIp": true,
+      "showClock": true,
+      "showQr": false,
+      "showFlower": true,
+      "showFabmobil": true
+    },
+    "led": {
+      "mode": 2,
+      "channel": "ANALOG_1",
+      "onlyRed": false
+    },
+    "log": {
+      "level": "INFO",
+      "file": false,
+      "debugRam": false,
+      "debugCycle": false,
+      "debugSensor": false,
+      "debugDisplay": false,
+      "debugWeb": false,
+      "debugMail": false
+    },
+    "mail": {
+      "enabled": true,
+      "url": "http://pflanzensensormailbot.fabmobil.org:45480",
+      "deviceId": "dev1",
+      "to": "ich@example.org",
+      "watch": "ANALOG_1",
+      "warnFrom": "yellow",
+      "warnHours": 4,
+      "boot": false,
+      "alive": false,
+      "aliveHours": 24
+    }
+  },
+  "secrets": {
+    "admin": {
+      "set": false
+    },
+    "wifi": [
+      {
+        "set": true
+      },
+      {
+        "set": false
+      },
+      {
+        "set": false
+      }
+    ],
+    "mailKey": {
+      "set": false
+    }
+  },
+  "activeWifiSlot": 0,
+  "features": {
+    "display": true,
+    "led": true
+  },
+  "channels": [
+    {
+      "key": "ANALOG_0",
+      "name": "Lichtstärke",
+      "enabled": true
+    },
+    {
+      "key": "ANALOG_1",
+      "name": "Bodenfeuchte",
+      "enabled": true
+    },
+    {
+      "key": "DHT_0",
+      "name": "Lufttemperatur",
+      "enabled": true
+    },
+    {
+      "key": "DHT_1",
+      "name": "Luftfeuchte",
+      "enabled": true
+    },
+    {
+      "key": "DS18B20_0",
+      "name": "DS18B20_1",
+      "enabled": true
+    },
+    {
+      "key": "DS18B20_1",
+      "name": "DS18B20_2",
+      "enabled": true
+    },
+    {
+      "key": "SDS011_0",
+      "name": "PM10",
+      "enabled": true
+    },
+    {
+      "key": "SDS011_1",
+      "name": "PM2.5",
+      "enabled": true
+    },
+    {
+      "key": "MHZ19_0",
+      "name": "CO2",
+      "enabled": true
+    },
+    {
+      "key": "HX711_0",
+      "name": "Gewicht",
+      "enabled": true
+    },
+    {
+      "key": "BMP280_0",
+      "name": "BMP_Temperatur",
+      "enabled": true
+    },
+    {
+      "key": "BMP280_1",
+      "name": "Luftdruck",
+      "enabled": true
+    },
+    {
+      "key": "SERIAL_RECEIVER_0",
+      "name": "Flow Rate",
+      "enabled": true
+    },
+    {
+      "key": "SERIAL_RECEIVER_1",
+      "name": "Absolute Counts",
+      "enabled": true
+    },
+    {
+      "key": "SERIAL_RECEIVER_2",
+      "name": "Sum Flow Rate",
+      "enabled": true
+    },
+    {
+      "key": "SERIAL_RECEIVER_3",
+      "name": "24h Flow Rate",
+      "enabled": true
+    },
+    {
+      "key": "SERIAL_RECEIVER_4",
+      "name": "Arduino Time",
+      "enabled": true
+    },
+    {
+      "key": "SERIAL_RECEIVER_5",
+      "name": "Uptime",
+      "enabled": true
+    },
+    {
+      "key": "SERIAL_RECEIVER_6",
+      "name": "Liters per Hour",
+      "enabled": true
+    }
+  ],
+  "system": {
+    "freeHeap": 30000,
+    "maxBlock": 20000,
+    "heapFragmentation": 10,
+    "minFreeHeap": 30000,
+    "uptime": 35,
+    "ssid": "Heimnetz",
+    "rssi": -60,
+    "ip": "192.168.1.23",
+    "mac": "AA:BB:CC:DD:EE:FF",
+    "fsTotal": 972800,
+    "fsUsed": 0,
+    "logFileSize": 0,
+    "logFileMax": 16000,
+    "version": "3.0.0",
+    "buildDate": "Nov  4 2026"
+  }
+}

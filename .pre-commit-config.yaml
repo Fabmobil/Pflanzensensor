@@ -1,16 +1,10 @@
-# Reihenfolge zaehlt: Hooks, die Dateien anfassen (clang-format, Versions-
+# Reihenfolge zählt: Hooks, die Dateien anfassen (clang-format, Versions-
 # anhebung), laufen vor "Require Clean Working Tree" - sonst meldet der
-# saubere Arbeitsbaum genau die Aenderung, die eben erst entstanden ist.
+# saubere Arbeitsbaum genau die Änderung, die eben erst entstanden ist.
 #
-# Die Tests sind ueber files:-Muster eingegrenzt. Ein Commit, der nur
+# Die Tests sind über files:-Muster eingegrenzt: Ein Commit, der nur
 # JavaScript anfasst, soll nicht den nativen C++-Testlauf mitschleppen (und
-# umgekehrt) - sonst kostet jeder Commit eine halbe Minute.
-#
-# Die Web-Assets werden hier bewusst NICHT komprimiert: compress_assets.py
-# haengt als extra_script an der Erzeugung von littlefs.bin und laeuft damit
-# bei jedem buildfs/uploadfs von selbst. Die .gz-Dateien sind Bauartefakte und
-# werden ohnehin nicht versioniert - ein zweiter Aufruf beim Commit brächte
-# nichts.
+# umgekehrt).
 repos:
 -   repo: https://github.com/pocc/pre-commit-hooks
     rev: v1.3.5
@@ -23,31 +17,31 @@ repos:
     hooks:
     # --- Version -----------------------------------------------------------
     -   id: bump-version
-        name: Patch-Version anheben (bei C++-Aenderungen)
-        entry: python3 bump_version.py
+        name: Patch-Version anheben (bei C++-Änderungen)
+        entry: python3 firmware/tools/bump_version.py
         language: system
         pass_filenames: false
-        files: ^Pflanzensensor/src/.*\.(cpp|h|hpp|ino)$
+        files: ^firmware/(src|boards)/.*\.(cpp|h|hpp|c)$
         stages: [pre-commit]
 
     # --- Tests -------------------------------------------------------------
     -   id: native-tests
         name: Native Unit-Tests (pio test -e native)
-        entry: pio test -e native
+        entry: bash -c 'cd firmware && pio test -e native'
         language: system
         pass_filenames: false
-        files: ^(Pflanzensensor/src/|test/(?!js/)|platformio\.ini)
+        files: ^firmware/(src|boards|test/native|test/vectors|platformio\.ini)
         stages: [pre-commit]
 
     -   id: js-tests
         name: JavaScript-Tests
-        entry: ./run_js_tests.sh
+        entry: firmware/tools/run_js_tests.sh
         language: system
         pass_filenames: false
-        files: ^(Pflanzensensor/data/js/|test/js/)
+        files: ^firmware/(web/js|test/js|test/vectors)/
         stages: [pre-commit]
 
-    # --- Zuletzt: nichts Unvorgemerktes zurueckgelassen --------------------
+    # --- Zuletzt: nichts Unvorgemerktes zurückgelassen --------------------
     -   id: require-clean-working-tree
         name: Require Clean Working Tree
         entry: git diff --exit-code

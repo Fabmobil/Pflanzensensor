@@ -1,0 +1,6 @@
+{
+  "kind": "alive",
+  "subject": "🪴 meldet sich – alles gut ({datum})",
+  "body": "# 🪴 Alles im grünen Bereich\n\nLebenszeichen von **{geraet}** – läuft seit {laufzeit} ohne Zicken. 😎\n\n{messwerte}\n\n📶 {ssid} · 🔗 [{name}](http://{name}) · {ip}\n🗓️ {datum} um {uhrzeit} · 🔁 Neustart Nr. {neustarts}",
+  "custom": false
+}

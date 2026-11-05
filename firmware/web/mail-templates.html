@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mailtexte</title>
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/css/style.css">
+<link rel="stylesheet" href="/css/start.css">
+<link rel="stylesheet" href="/css/admin.css">
+<link rel="stylesheet" href="/css/app.css">
+</head>
+<body data-title="Mailtexte">
+<div class="box status-unknown"><div class="group">
+<div class="cloud" id="cloud"></div>
+<div class="admin-content-box" data-section="admin/email">
+<div class="card">
+  <h2>Mailtexte <span class="hint" id="tplCustom"></span></h2>
+  <div class="tabs" id="tplTabs"></div>
+  <div class="form-group" id="subjectGroup"><label for="tplSubject">Betreff</label>
+    <input type="text" id="tplSubject"><div class="counter" id="tplSubjectCounter"></div>
+    <div class="hint">Der Mailbot stellt „[Gerätename] “ voran: <span id="tplSubjectPreview"></span></div></div>
+  <div class="form-group"><label for="tplBody">Text</label>
+    <textarea id="tplBody" spellcheck="false"></textarea><div class="counter" id="tplCounter"></div></div>
+  <div class="emoji-palette" id="tplEmojis"></div>
+  <div class="placeholder-buttons" id="tplPlaceholders"></div>
+  <div class="hint"><code># </code> am Zeilenanfang: Überschrift · <code>**fett**</code> · <code>[Text](https://…)</code> · <code>{messwerte}</code> und <code>{auffaellige}</code> allein in einer Zeile setzen eine Tabelle ein.</div>
+  <h3>Prüfung</h3><ul class="checks" id="tplChecks"></ul>
+  <p><button class="button button-primary" id="tplSave">Speichern</button>
+     <button class="button button-warning" id="tplReset">Auf Standard zurücksetzen</button></p>
+</div>
+<div class="card"><h2>Vorschau mit Beispielwerten</h2>
+  <iframe class="preview-frame" id="tplPreview" sandbox="" title="Vorschau"></iframe></div>
+</div>
+<div id="footer"></div>
+</div></div>
+<script src="/js/ui.js"></script>
+<script src="/js/api.js"></script>
+<script src="/js/footer.js"></script>
+<script src="/js/template-engine.js"></script>
+<script src="/js/mail-templates.js"></script>
+</body>
+</html>

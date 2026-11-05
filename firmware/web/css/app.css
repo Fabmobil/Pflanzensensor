@@ -1,0 +1,204 @@
+/* Ergänzungen zur übernommenen Optik (Firmware 3.x) */
+.toast-box { position: fixed; right: 16px; bottom: 16px; z-index: 1000; display: flex; flex-direction: column; gap: 8px; }
+.toast { padding: 10px 14px; border: 3px solid #222; background: #e8ffe0; color: #222; font-family: inherit; box-shadow: 4px 4px 0 #222; max-width: 320px; }
+.toast-error { background: #ffe0e0; }
+.toast-warning { background: #fff4c0; }
+.card input[type="text"], .card input[type="password"], .card input[type="email"], .card input[type="url"], .card textarea {
+  width: 100%; box-sizing: border-box; padding: 6px 8px; font-family: inherit; font-size: 14px; border: 2px solid #444; border-radius: 4px; }
+.card textarea { min-height: 220px; font-family: monospace; }
+.form-group { margin: 10px 0; }
+.form-group label { display: block; margin-bottom: 4px; }
+.form-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.saving { outline: 2px dashed #4aa3ff; }
+.invalid { outline: 2px solid #ff4d4d; }
+.hint { font-size: 12px; opacity: 0.8; }
+.switch-list label { display: inline-flex; gap: 6px; align-items: center; margin-right: 14px; }
+.tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.tabs .button.active { background: #5ac85a; color: #000; }
+.counter { font-size: 12px; text-align: right; }
+.counter.warn { color: #c98a00; }
+.counter.over { color: #d62020; font-weight: bold; }
+.emoji-palette button { font-size: 18px; padding: 2px 6px; margin: 2px; cursor: pointer; background: #fff; border: 1px solid #888; }
+.placeholder-buttons button { margin: 2px; }
+.preview-frame { width: 100%; min-height: 420px; border: 2px solid #444; background: #fff; }
+.checks li { font-size: 13px; }
+.checks li.bad { color: #d62020; }
+.sensor-card.disabled { opacity: 0.6; }
+.measurement-card.flash { animation: flash 0.8s; }
+@keyframes flash { from { box-shadow: 0 0 0 2px #a855f7; } to { box-shadow: 0 0 0 2px transparent; } }
+.threshold-container.one-sided .threshold-handle[data-key="yellowLow"],
+.threshold-container.one-sided .threshold-handle[data-key="greenLow"] { display: none; }
+.progress-container { width: 100%; height: 14px; border: 1px solid #555; border-radius: 7px; background: #1f1f1f; margin: 1em 0 0.5em; overflow: hidden; }
+.progress { height: 100%; width: 0; background: #5ac85a; border-radius: 7px; transition: width 0.2s; }
+.log-container .ts { opacity: 0.7; margin-right: 6px; }
+
+/* ======================================================================
+   Einheitliches Layout für alle Seiten mit .admin-content-box
+   Die übernommene Optik skaliert die Schrift mit der Fensterbreite (vw):
+   am Desktop riesige Beschriftungen und Knöpfe, am Handy winzige. Hier
+   gilt eine feste Grundgröße; alles andere rechnet in em davon.
+   ====================================================================== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+.admin-content-box {
+  font-size: 16px;
+  line-height: 1.45;
+  width: min(1100px, 94%);
+  box-sizing: border-box;
+  padding: 1.6em 1.2em 1.2em;
+}
+.admin-content-box *, .admin-content-box *::before, .admin-content-box *::after { box-sizing: border-box; }
+.admin-content-box .card { padding: 1.1em 1.2em; margin: 0 0 1em; }
+.admin-content-box h2 { font-size: 1.3em; margin: 0 0 0.7em; line-height: 1.2; }
+.admin-content-box h3 { font-size: 1.05em; margin: 1.3em 0 0.5em; }
+.admin-content-box h4 { font-size: 1em; }
+.admin-content-box p { margin: 0.7em 0; }
+.admin-content-box .form-group { margin: 0 0 0.8em; }
+.admin-content-box .form-group > label { display: block; margin-bottom: 0.3em; font-weight: 500; }
+.admin-content-box .hint { font-size: 0.85em; color: #a0a0a0; opacity: 1; margin-top: 0.3em; line-height: 1.35; }
+.admin-content-box h2 .hint { font-weight: normal; margin-left: 0.4em; }
+
+/* Karten nebeneinander, sobald Platz ist */
+.admin-content-box .admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  gap: 1em;
+  align-items: start;
+  margin-bottom: 1em;
+}
+.admin-content-box .admin-grid > .card { min-width: 0; max-width: none; margin: 0; }
+
+/* Eingaben: gleiche Schrift wie der Text, dunkel, nicht endlos breit */
+.admin-content-box input[type="text"], .admin-content-box input[type="password"],
+.admin-content-box input[type="email"], .admin-content-box input[type="url"],
+.admin-content-box input[type="number"], .admin-content-box select, .admin-content-box textarea {
+  font: inherit;
+  color: #f2f2f2;
+  background: #333;
+  border: 1px solid #4f4f4f;
+  border-radius: 4px;
+  padding: 0.45em 0.6em;
+  max-width: 100%;
+}
+.admin-content-box input[type="text"], .admin-content-box input[type="password"],
+.admin-content-box input[type="email"], .admin-content-box input[type="url"],
+.admin-content-box select { width: 100%; }
+.admin-content-box .form-group > input[type="text"], .admin-content-box .form-group > input[type="password"],
+.admin-content-box .form-group > input[type="email"], .admin-content-box .form-group > input[type="url"],
+.admin-content-box .form-group > select { max-width: 30em; }
+.admin-content-box input[type="number"] { width: 7em; }
+.admin-content-box textarea { width: 100%; font-family: monospace; font-size: 0.9em; background: #1f1f1f; }
+.admin-content-box input:disabled, .admin-content-box select:disabled { opacity: 0.55; }
+
+.admin-content-box input[type="file"] { font: inherit; color: #b0b0b0; max-width: 100%; }
+.admin-content-box input[type="file"]::file-selector-button {
+  font: inherit; color: #f2f2f2; background: #505050; border: 0; border-radius: 4px;
+  padding: 0.45em 0.9em; margin-right: 0.8em; cursor: pointer;
+}
+
+/* Kontrollkästchen: Kasten und Text auf einer Linie */
+.admin-content-box label > input[type="checkbox"] { vertical-align: -0.12em; margin: 0 0.45em 0 0; width: auto; }
+.admin-content-box .card > label, .admin-content-box .mail-felder > label { display: block; margin: 0.4em 0; }
+.admin-content-box .switch-list { display: flex; flex-wrap: wrap; gap: 0.4em 1.4em; }
+.admin-content-box .switch-list label { display: inline-flex; align-items: center; margin: 0; gap: 0.4em; white-space: nowrap; }
+.admin-content-box .switch-list label > input[type="checkbox"] { margin: 0; }
+
+/* Knöpfe: ohne Außenabstand, Abstand macht die Zeile */
+.admin-content-box .button, .admin-content-box button {
+  margin: 0;
+  padding: 0.5em 1em;
+  font-size: 0.95em;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+.admin-content-box p:has(> .button), .admin-content-box p:has(> button) {
+  display: flex; flex-wrap: wrap; gap: 0.5em; align-items: center;
+}
+.admin-content-box .card > .button, .admin-content-box .card > button { margin-top: 0.4em; }
+.admin-content-box .button.button-small { padding: 0.3em 0.75em; font-size: 0.85em; }
+
+/* Tabellen */
+.admin-content-box .info-table { font-size: 0.95em; margin: 0 0 1em; }
+.admin-content-box .info-table td { padding: 0.35em 0.6em; vertical-align: top; }
+.admin-content-box .info-table td:first-child { width: 12em; white-space: nowrap; }
+
+.admin-content-box .warning-box { padding: 0.8em 1.1em; margin: 1em 0; }
+.admin-content-box .warning-box h3 { margin-top: 0; }
+.admin-content-box .warning-box ul { margin: 0.3em 0 0.8em; padding-left: 1.2em; }
+
+/* Reiter (Mailtexte) und Bausteine */
+.admin-content-box .tabs { gap: 0.4em; margin-bottom: 1em; }
+.admin-content-box .tabs .button { margin: 0; }
+.admin-content-box .emoji-palette { display: flex; flex-wrap: wrap; gap: 3px; margin: 0.5em 0; }
+.admin-content-box .emoji-palette button { margin: 0; padding: 0.1em 0.3em; font-size: 1.15em; line-height: 1.3; background: #3a3a3a; border: 1px solid #555; color: inherit; }
+.admin-content-box .emoji-palette button:hover { background: #4a4a4a; }
+.admin-content-box .placeholder-buttons { display: flex; flex-wrap: wrap; gap: 0.35em; margin: 0.5em 0; }
+.admin-content-box .placeholder-buttons button { margin: 0; padding: 0.25em 0.6em; font-size: 0.85em; font-family: monospace; background: #3a3a3a; color: #e0e0e0; }
+.admin-content-box .placeholder-buttons button:hover { background: #4a4a4a; }
+.admin-content-box .counter { color: #a0a0a0; margin-top: 0.2em; }
+.admin-content-box .checks { margin: 0.3em 0; padding-left: 1.2em; }
+.admin-content-box .checks li { font-size: 0.9em; }
+.admin-content-box .checks li.bad { color: #ff7a7a; }
+
+/* Logs */
+.admin-content-box .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5em 1em; }
+.admin-content-box .toolbar + .toolbar { margin-top: 0.8em; }
+.admin-content-box .toolbar-spacer { flex: 1; }
+.admin-content-box .toolbar-label { color: #d4a574; font-weight: 600; min-width: 3.5em; }
+.admin-content-box .ws-status { padding: 0.2em 0.7em; border-radius: 1em; font-size: 0.9em; }
+.segmented { display: inline-flex; border: 1px solid #555; border-radius: 6px; overflow: hidden; }
+.admin-content-box .segmented button {
+  margin: 0; border-radius: 0; background: #333; color: #ccc; padding: 0.4em 0.9em; font-size: 0.9em;
+}
+.admin-content-box .segmented button + button { margin-left: 0; border-left: 1px solid #555; }
+.admin-content-box .segmented button:hover { background: #444; }
+.admin-content-box .segmented button.active { background: #a855f7; color: #fff; }
+.admin-content-box .log-controls-card { max-width: none; margin-bottom: 1em; }
+.admin-content-box .log-container { height: 65vh; min-height: 18em; margin: 0; padding: 0.6em; }
+.admin-content-box .log-entry { font-size: 0.8em; padding: 0.1em 0.3em; }
+
+@media (max-width: 600px) {
+  .box .group { width: 100%; }
+  .admin-content-box { font-size: 15px; width: 100%; padding: 1.4em 0.6em 0.8em; border-left: 0; border-right: 0; border-radius: 0; }
+  .admin-content-box .card { padding: 0.9em 0.8em; }
+  .admin-content-box .info-table td:first-child { width: auto; white-space: normal; }
+  .admin-content-box .toolbar-spacer { display: none; }
+  .admin-content-box .log-container { height: 60vh; }
+  .admin-content-box .log-entry { font-size: 0.75em; }
+  .admin-content-box .segmented { display: flex; width: 100%; }
+  .admin-content-box .segmented button { flex: 1; padding: 0.45em 0.2em; }
+  .admin-content-box .toolbar-label { min-width: 0; width: 100%; margin-bottom: -0.2em; }
+}
+
+/* Fußzeile: Name nie abschneiden, sondern umbrechen */
+.stats-value { max-width: none; white-space: normal; overflow: visible; overflow-wrap: anywhere; }
+
+/* WLAN-Zugänge: SSID und Passwort nebeneinander */
+.admin-content-box .wifi-slot { padding-bottom: 0.8em; border-bottom: 1px solid #3a3a3a; margin-bottom: 0.4em; }
+.admin-content-box .wifi-slot h3 { margin-top: 0.6em; }
+.admin-content-box .wifi-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(12em, 1fr)); gap: 0 1em; }
+.admin-content-box .wifi-fields .form-group { margin-bottom: 0.5em; }
+.admin-content-box .wifi-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5em 1em; }
+.admin-content-box .wifi-actions label { margin: 0; }
+
+/* Fußzeile: feste Mindestgrößen statt reiner vw-Skalierung (am Handy sonst 7 px) */
+#footer .nav-item { font-size: clamp(15px, 0.9vw + 11px, 24px); }
+#footer .stats-table { font-size: clamp(12px, 0.4vw + 10px, 15px); min-width: 0; max-width: 34em; }
+#footer .stats-label { flex: 0 0 auto; min-width: 7.5em; margin-right: 0.8em; }
+#footer .stats-value { flex: 1 1 auto; }
+#footer #footer-admin-menu { font-size: clamp(14px, 0.6vw + 11px, 19px); }
+#footer #footer-admin-menu .stats-label { min-width: 0; flex: 1 1 auto; margin-right: 0; }
+#footer .footer-version, #footer .footer-build { font-size: clamp(11px, 0.3vw + 10px, 13px); }
+#footer .footer-logo img { height: clamp(16px, 1vw + 12px, 24px); }
+/* Langer Gerätename in der Wolke: umbrechen statt über den Rand laufen */
+.box .cloud-label { white-space: normal; width: max-content; max-width: 68%; text-align: center; line-height: 1.15; }
+
+.admin-content-box .update-section { max-width: none; }
+.admin-content-box .status:empty { display: none; }
+.admin-content-box .status { margin: 0.8em 0 0; }
+.admin-content-box a { overflow-wrap: anywhere; }
+.admin-content-box .switch-list label:has(input:disabled) { opacity: 0.5; }
+
+/* Anmeldung */
+.admin-content-box .login-card { max-width: 26em; margin: 0 auto 1em; }
+.admin-content-box #loginMsg:not(:empty) { color: #ff8a8a; }
