@@ -86,7 +86,7 @@ Err ConfigService::patchDevice(JsonObjectConst patch, schema::FieldErrors& errs,
   schema::apply(schema::deviceTable(), patch, &copy, errs, true);
   if (!errs.empty())
     return Err::InvalidArgument;
-  if (copy.ledMode == 1 && !board::kFeatures.display) {
+  if (copy.ledMode == 1 && !board::features().display) {
     errs.add("led.mode", Err::Unsupported);
     return Err::InvalidArgument;
   }
@@ -304,7 +304,7 @@ ConfigService::ImportResult ConfigService::importFile() {
       setAdminPassword(ex->adminPassword.c_str());
       sec = sec_;
     }
-    for (uint8_t i = 0; i < board::kSlotCount; i++)
+    for (uint8_t i = 0; i < board::slotCount(); i++)
       if (ex->hasState[i])
         state_.channel(i) = ex->state[i];
     ex->~Extras();

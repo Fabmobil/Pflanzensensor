@@ -239,14 +239,14 @@ void FieldErrors::writeJson(JsonWriter& w) const {
 }
 
 void keyOfSlot(uint8_t slot, char* out, size_t cap) {
-  if (slot >= board::kSlotCount) {
+  if (slot >= board::slotCount()) {
     if (cap)
       out[0] = '\0';
     return;
   }
   char id[16];
-  copyP(id, sizeof(id), catalog::id(board::kSensors[board::kSlots[slot].sensor].type));
-  snprintf(out, cap, "%s_%u", id, static_cast<unsigned>(board::kSlots[slot].channel));
+  copyP(id, sizeof(id), catalog::id(board::sensor(board::slot(slot).sensor).type));
+  snprintf(out, cap, "%s_%u", id, static_cast<unsigned>(board::slot(slot).channel));
 }
 
 int slotOfKey(const char* key) {
@@ -265,9 +265,9 @@ int slotOfKey(const char* key) {
   const int si = board::sensorIndexOf(t);
   if (si < 0)
     return -1;
-  if (idx >= board::kSensors[si].channels)
+  if (idx >= board::sensor(si).channels)
     return -1;
-  return board::kSensors[si].firstSlot + static_cast<int>(idx);
+  return board::sensor(si).firstSlot + static_cast<int>(idx);
 }
 
 bool isChannelKey(const char* s) { return slotOfKey(s) >= 0; }

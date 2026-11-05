@@ -57,7 +57,7 @@ public:
 
 private:
   hal::Fs& fs_;
-  ChannelState ch_[board::kSlotCount];
+  ChannelState ch_[board::kMaxSlots];
   uint32_t mailLastWarning_ = 0;
   uint32_t mailLastAlive_ = 0;
   bool dirty_ = false;

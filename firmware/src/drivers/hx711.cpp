@@ -21,7 +21,7 @@ HX711& scale() {
 
 Step Hx711::begin(Instant) {
   if (!begun_) {
-    scale().begin(board::kPins.hxDout, board::kPins.hxSck);
+    scale().begin(board::pins().hxDout, board::pins().hxSck);
     begun_ = true; // kein Tarieren beim Start: der Nullpunkt ist gespeichert
   }
   return Step::Ok;

@@ -12,7 +12,7 @@ namespace doc {
 namespace {
 
 void sensorId(uint8_t sensor, char* out, size_t cap) {
-  copyP(out, cap, catalog::id(board::kSensors[sensor].type));
+  copyP(out, cap, catalog::id(board::sensor(sensor).type));
 }
 
 int sensorFromKey(const char* key) {
@@ -25,17 +25,17 @@ int sensorFromKey(const char* key) {
 } // namespace
 
 bool slotOneSided(uint8_t slot) {
-  if (slot >= board::kSlotCount)
+  if (slot >= board::slotCount())
     return false;
-  const auto& s = board::kSlots[slot];
-  return catalog::channel(board::kSensors[s.sensor].type, s.channel).oneSided;
+  const auto& s = board::slot(slot);
+  return catalog::channel(board::sensor(s.sensor).type, s.channel).oneSided;
 }
 
 bool slotHasRaw(uint8_t slot) {
-  if (slot >= board::kSlotCount)
+  if (slot >= board::slotCount())
     return false;
-  const auto& s = board::kSlots[slot];
-  return catalog::channel(board::kSensors[s.sensor].type, s.channel).hasRaw;
+  const auto& s = board::slot(slot);
+  return catalog::channel(board::sensor(s.sensor).type, s.channel).hasRaw;
 }
 
 void writeDevice(JsonWriter& w, const DeviceConfig& c) {
@@ -55,7 +55,7 @@ void writeSensor(JsonWriter& w, const SensorsConfig& c, uint8_t sensor) {
   w.beginObject();
   schema::writeAll(w, schema::sensorTable(), &c.sensors[sensor]);
   w.key(FS_("channels")).beginObject();
-  const auto& se = board::kSensors[sensor];
+  const auto& se = board::sensor(sensor);
   for (uint8_t ch = 0; ch < se.channels; ch++) {
     char idx[4];
     snprintf(idx, sizeof(idx), "%u", static_cast<unsigned>(ch));
@@ -69,7 +69,7 @@ void writeSensor(JsonWriter& w, const SensorsConfig& c, uint8_t sensor) {
 
 void writeSensors(JsonWriter& w, const SensorsConfig& c) {
   w.beginObject();
-  for (uint8_t i = 0; i < board::kSensorCount; i++) {
+  for (uint8_t i = 0; i < board::sensorCount(); i++) {
     char id[16];
     sensorId(i, id, sizeof(id));
     w.key(id);
@@ -116,7 +116,7 @@ uint16_t applySensors(JsonObjectConst sensors, SensorsConfig& c, schema::FieldEr
     JsonObjectConst chs = so["channels"].as<JsonObjectConst>();
     if (chs.isNull())
       continue;
-    const auto& se = board::kSensors[si];
+    const auto& se = board::sensor(si);
     for (JsonPairConst cp : chs) {
       char* end = nullptr;
       const long idx = strtol(cp.key().c_str(), &end, 10);

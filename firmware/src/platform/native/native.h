@@ -27,6 +27,8 @@ void setResetReason(hal::ResetReason r);
 std::string& console();
 /// Was die Konsole als Nächstes "empfängt" (Improv-Tests)
 std::string& consoleInput();
+/// Inhalt des Provisionierungssektors (leer = unbeschrieben)
+std::string& provisionSector();
 
 /// Dateisystem im RAM
 class MemFs final : public hal::Fs {

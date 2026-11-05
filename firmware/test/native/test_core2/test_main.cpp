@@ -395,7 +395,7 @@ void test_document_helpers() {
   char key[32];
   schema::keyOfSlot(250, key, sizeof(key));
   TEST_ASSERT_EQUAL_STRING("", key);
-  for (uint8_t i = 0; i < board::kSlotCount; i++) {
+  for (uint8_t i = 0; i < board::slotCount(); i++) {
     schema::keyOfSlot(i, key, sizeof(key));
     TEST_ASSERT_EQUAL(i, schema::slotOfKey(key));
   }

@@ -72,8 +72,8 @@ void parseSensorDisp(const char* s, SensorsConfig& sens, Report& r) {
             ch++;
             continue;
           }
-          if (ch < board::kSensors[si].channels && (*q == '0' || *q == '1')) {
-            sens.channels[board::kSensors[si].firstSlot + ch].display = (*q == '1');
+          if (ch < board::sensor(si).channels && (*q == '0' || *q == '1')) {
+            sens.channels[board::sensor(si).firstSlot + ch].display = (*q == '1');
             r.applied++;
           }
         }
@@ -91,11 +91,11 @@ void importMeasurement(JsonObjectConst m, uint8_t sensor, SensorType type, Senso
   const int idx = m["idx"] | 0;
   char path[40];
   snprintf(path, sizeof(path), "sensors.%s.%d", id, idx);
-  if (idx < 0 || idx >= board::kSensors[sensor].channels) {
+  if (idx < 0 || idx >= board::sensor(sensor).channels) {
     r.ignore(path);
     return;
   }
-  const uint8_t slot = static_cast<uint8_t>(board::kSensors[sensor].firstSlot + idx);
+  const uint8_t slot = static_cast<uint8_t>(board::sensor(sensor).firstSlot + idx);
   ChannelConfig cc = sens.channels[slot];
   const bool analog = type == SensorType::Analog;
 
@@ -282,7 +282,7 @@ void import(JsonObjectConst root, DeviceConfig& dev, SensorsConfig& sens, Secret
   if (!led.isNull()) {
     double d;
     if (number(led["mode"], d)) {
-      if (d >= 0 && d <= 2 && !(d == 1 && !board::kFeatures.display)) {
+      if (d >= 0 && d <= 2 && !(d == 1 && !board::features().display)) {
         dev.ledMode = static_cast<uint8_t>(d);
         r.applied++;
       } else {

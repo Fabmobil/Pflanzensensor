@@ -10,7 +10,7 @@
 
 #include "core/board_types.h"
 
-namespace board {
+namespace board_profile {
 
 constexpr ps::Platform kPlatform = ps::Platform::Esp32;
 constexpr char kName[] = "esp32_devkit";
@@ -45,4 +45,4 @@ constexpr ps::Features kFeatures = [] {
 
 constexpr ps::StaticIp kStaticIp{};
 
-} // namespace board
+} // namespace board_profile

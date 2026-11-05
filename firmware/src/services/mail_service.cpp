@@ -104,9 +104,9 @@ void blockLines(const char* name, MailVorlage::ZeilenSenke aus, void* senkeCtx, 
   const char* open = "<table class=\"werte\">";
   aus(open, strlen(open), senkeCtx);
   bool any = false;
-  for (uint8_t s = 0; s < board::kSlotCount; s++) {
+  for (uint8_t s = 0; s < board::slotCount(); s++) {
     const ChannelConfig& cc = b.cfg->sensors().channels[s];
-    if (!cc.enabled || !b.cfg->sensors().sensors[board::kSlots[s].sensor].enabled)
+    if (!cc.enabled || !b.cfg->sensors().sensors[board::slot(s).sensor].enabled)
       continue;
     const ChannelStatus st = b.sensors->status(s, now);
     char key[32];
@@ -246,7 +246,7 @@ void MailService::updateLevels() {
   const Instant now = hal::now();
   const DeviceConfig& d = cfg_.device();
   sched_.clearLevels();
-  for (uint8_t s = 0; s < board::kSlotCount && s < Mail::Scheduler::MAX_CHANNELS; s++) {
+  for (uint8_t s = 0; s < board::slotCount() && s < Mail::Scheduler::MAX_CHANNELS; s++) {
     const ChannelConfig& cc = cfg_.sensors().channels[s];
     if (!cc.enabled)
       continue;

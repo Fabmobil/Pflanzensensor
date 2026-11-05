@@ -1,0 +1,97 @@
+/**
+ * @file provision_service.cpp
+ */
+#include "services/provision_service.h"
+
+#include <ArduinoJson.h>
+#include <new>
+#include <string.h>
+
+#include "board.h"
+#include "hal/system.h"
+#include "services/config_service.h"
+#include "services/log.h"
+
+namespace ps {
+
+void ProvisionService::loadHardware() {
+  hal::TempBuffer sector(provision::kSectorSize);
+  if (!sector || !hal::provisionRead(sector.data(), sector.size())) {
+    read_ = provision::Result::BadLength;
+    return;
+  }
+  // Der Block lebt bis applySettings() (beim Start ist Heap reichlich frei)
+  void* mem = hal::tempAlloc(sizeof(provision::Block));
+  if (!mem)
+    return;
+  block_ = new (mem) provision::Block();
+  read_ = provision::parse(sector.data(), sector.size(), board::defaultHardware(), *block_);
+  if (read_ != provision::Result::Ok) {
+    if (read_ != provision::Result::Empty)
+      LOGW(Mod::Boot, "Webflasher-Block unbrauchbar (%s) - Voreinstellung %s",
+           provision::resultName(read_), board::name());
+    block_->~Block();
+    hal::tempFree(block_);
+    block_ = nullptr;
+    return;
+  }
+  if (block_->hasHardware) {
+    problem_ = board::setHardware(block_->hardware);
+    if (problem_.problem == HwProblem::None) {
+      fromBlock_ = true;
+      LOGI(Mod::Boot, "Hardware aus dem Webflasher: %s, %u Sensoren, %u Kanäle", board::name(),
+           board::sensorCount(), board::slotCount());
+    } else {
+      LOGE(Mod::Boot, "Hardware aus dem Webflasher ungültig (%s, Pin %d) - Voreinstellung %s",
+           hwProblemCode(problem_.problem), problem_.pin, board::name());
+    }
+  }
+}
+
+bool ProvisionService::applySettings(ConfigService& cfg) {
+  if (!block_)
+    return false;
+  provision::Block& b = *block_;
+  bool applied = false;
+  if (b.settings.any()) {
+    if (b.settings.hasDeviceName) {
+      JsonDocument doc;
+      doc["general"]["deviceName"] = b.settings.deviceName;
+      schema::FieldErrors errs;
+      uint8_t changed = 0;
+      if (cfg.patchDevice(doc.as<JsonObjectConst>(), errs, changed) == Err::None)
+        LOGI(Mod::Config, "Gerätename aus dem Webflasher: %s", b.settings.deviceName);
+      else
+        LOGW(Mod::Config, "Gerätename aus dem Webflasher ungültig");
+    }
+    if (b.settings.hasWifi) {
+      if (cfg.setWifi(0, b.settings.wifiSsid, b.settings.wifiPassword, false) == Err::None)
+        LOGI(Mod::Wifi, "WLAN 1 aus dem Webflasher: %s", b.settings.wifiSsid);
+    }
+    if (b.settings.hasAdminPassword) {
+      if (cfg.setAdminPassword(b.settings.adminPassword) == Err::None)
+        LOGI(Mod::Auth, "Adminpasswort aus dem Webflasher gesetzt");
+      else
+        LOGW(Mod::Auth, "Adminpasswort aus dem Webflasher ungültig - nicht übernommen");
+    }
+    cfg.tick(hal::now(), true); // sofort speichern, bevor der Sektor bereinigt wird
+    applied = true;
+    // Block ohne Einstellungen zurückschreiben: keine Passwörter im Klartext
+    // im Flash, und spätere Änderungen in der Oberfläche bleiben bestehen.
+    hal::TempBuffer sector(provision::kSectorSize);
+    if (sector && provision::encode(b, false, sector.data(), sector.size()) &&
+        hal::provisionWrite(sector.data(), sector.size()))
+      LOGI(Mod::Boot, "Einstellungen aus dem Webflasher übernommen");
+    else
+      LOGE(Mod::Boot, "Webflasher-Block konnte nicht bereinigt werden");
+  }
+  // Passwörter nicht im freigegebenen Speicher liegen lassen
+  memset(b.settings.wifiPassword, 0, sizeof(b.settings.wifiPassword));
+  memset(b.settings.adminPassword, 0, sizeof(b.settings.adminPassword));
+  b.~Block();
+  hal::tempFree(block_);
+  block_ = nullptr;
+  return applied;
+}
+
+} // namespace ps

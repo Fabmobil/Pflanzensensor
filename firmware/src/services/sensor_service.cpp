@@ -34,7 +34,7 @@ void formatValue(char* out, size_t cap, float v, const char* unit) {
 struct SensorId {
   char s[16];
   explicit SensorId(uint8_t sensor) {
-    copyP(s, sizeof(s), catalog::id(board::kSensors[sensor].type));
+    copyP(s, sizeof(s), catalog::id(board::sensor(sensor).type));
   }
 };
 } // namespace
@@ -51,7 +51,7 @@ void SensorService::onRounds(uint8_t sensor, const Reading* samples, uint8_t rou
                              uint8_t n) {
   if (rounds < 2 || !log::enabled(LogLevel::Debug, Mod::Cycle))
     return;
-  const auto& se = board::kSensors[sensor];
+  const auto& se = board::sensor(sensor);
   const SensorsConfig& sc = cfg_.sensors();
   for (uint8_t ch = 0; ch < n && ch < se.channels; ch++) {
     const uint8_t slot = static_cast<uint8_t>(se.firstSlot + ch);
@@ -110,14 +110,14 @@ void SensorService::logResult(uint8_t slot, float value, int16_t raw, ChannelSta
 
 void SensorService::begin(SensorDriver* const* drivers, Instant now) {
   const SensorsConfig& c = cfg_.sensors();
-  for (uint8_t i = 0; i < board::kSensorCount; i++) {
+  for (uint8_t i = 0; i < board::sensorCount(); i++) {
     drivers_[i] = drivers[i];
     drivers_[i]->configure(c.sensors[i]);
-    sched_.add(*drivers_[i], board::kSensors[i].channels, c.sensors[i].intervalS * 1000UL,
+    sched_.add(*drivers_[i], board::sensor(i).channels, c.sensors[i].intervalS * 1000UL,
                c.sensors[i].enabled);
   }
   // Autokalibrierung: Float-Zustand aus gespeichertem Zustand oder Startwerten
-  for (uint8_t s = 0; s < board::kSlotCount; s++) {
+  for (uint8_t s = 0; s < board::slotCount(); s++) {
     const ChannelConfig& cc = c.channels[s];
     ChannelState& st = state_.channel(s);
     if (cc.autocal && !st.cal.valid())
@@ -138,7 +138,7 @@ int SensorService::sensorByName(const char* id) {
 MeasureResult SensorService::measureNow(uint8_t sensor, Instant now, bool publicRequest,
                                         uint32_t& waitMs) {
   waitMs = 0;
-  if (sensor >= board::kSensorCount)
+  if (sensor >= board::sensorCount())
     return MeasureResult::NotFound;
   if (publicRequest && !publicThrottle_.tryAcquire(now.millis())) {
     waitMs = publicThrottle_.remaining(now.millis());
@@ -164,7 +164,7 @@ MeasureResult SensorService::measureNow(uint8_t sensor, Instant now, bool public
 
 void SensorService::applyConfig(uint32_t changed, Instant now) {
   const SensorsConfig& c = cfg_.sensors();
-  for (uint8_t i = 0; i < board::kSensorCount; i++) {
+  for (uint8_t i = 0; i < board::sensorCount(); i++) {
     if (!(changed & (1u << i)))
       continue;
     if (drivers_[i])
@@ -183,7 +183,7 @@ void SensorService::applyConfig(uint32_t changed, Instant now) {
     sched_.setEnabled(i, c.sensors[i].enabled, now);
     sched_.setInterval(i, c.sensors[i].intervalS * 1000UL, now);
     // Autokalibrierung neu eingeschaltet: Start aus konfigurierten Grenzen
-    const auto& se = board::kSensors[i];
+    const auto& se = board::sensor(i);
     for (uint8_t ch = 0; ch < se.channels; ch++) {
       const uint8_t slot = static_cast<uint8_t>(se.firstSlot + ch);
       ChannelState& st = state_.channel(slot);
@@ -199,7 +199,7 @@ void SensorService::applyConfig(uint32_t changed, Instant now) {
 }
 
 void SensorService::resetExtrema(uint8_t slot, bool raw, Instant now) {
-  if (slot >= board::kSlotCount)
+  if (slot >= board::slotCount())
     return;
   ChannelState& st = state_.channel(slot);
   if (raw)
@@ -210,7 +210,7 @@ void SensorService::resetExtrema(uint8_t slot, bool raw, Instant now) {
 }
 
 Err SensorService::tare(uint8_t sensor, Instant now) {
-  if (sensor >= board::kSensorCount || board::kSensors[sensor].type != SensorType::Hx711)
+  if (sensor >= board::sensorCount() || board::sensor(sensor).type != SensorType::Hx711)
     return Err::Unsupported;
   pendingTare_ |= (1u << sensor);
   uint32_t wait;
@@ -223,16 +223,16 @@ Err SensorService::tare(uint8_t sensor, Instant now) {
 }
 
 ChannelStatus SensorService::status(uint8_t slot, Instant now) const {
-  if (slot >= board::kSlotCount)
+  if (slot >= board::slotCount())
     return ChannelStatus::Unknown;
-  const uint8_t sensor = board::kSlots[slot].sensor;
+  const uint8_t sensor = board::slot(slot).sensor;
   if (sched_.inStartWarmup(sensor, now))
     return ChannelStatus::Warmup;
   return state_.channel(slot).status;
 }
 
 bool SensorService::allMeasuredOnce() const {
-  for (uint8_t i = 0; i < board::kSensorCount; i++)
+  for (uint8_t i = 0; i < board::sensorCount(); i++)
     if (sched_.state(i).enabled && !lastOk_[i].ok)
       return false;
   return true;
@@ -240,7 +240,7 @@ bool SensorService::allMeasuredOnce() const {
 
 uint8_t SensorService::processedSensors() const {
   uint8_t n = 0;
-  for (uint8_t i = 0; i < board::kSensorCount; i++)
+  for (uint8_t i = 0; i < board::sensorCount(); i++)
     if (sched_.state(i).enabled && lastOk_[i].ok)
       n++;
   return n;
@@ -248,7 +248,7 @@ uint8_t SensorService::processedSensors() const {
 
 void SensorService::onMeasurement(uint8_t sensor, const Reading* values, uint8_t n, Instant now) {
   SensorsConfig& sc = cfg_.sensorsMutable();
-  const auto& se = board::kSensors[sensor];
+  const auto& se = board::sensor(sensor);
   const uint32_t intervalMs = sc.sensors[sensor].intervalS * 1000UL;
   bool configChanged = false;
   bool important = false;
@@ -367,10 +367,10 @@ void SensorService::onMeasurement(uint8_t sensor, const Reading* values, uint8_t
 void SensorService::onFailure(uint8_t sensor, Health health, uint8_t failures, bool becameFailed,
                               Instant now) {
   char id[16];
-  copyP(id, sizeof(id), catalog::id(board::kSensors[sensor].type));
+  copyP(id, sizeof(id), catalog::id(board::sensor(sensor).type));
   failuresBefore_[sensor] = failures;
   if (health == Health::Failed) {
-    const auto& se = board::kSensors[sensor];
+    const auto& se = board::sensor(sensor);
     for (uint8_t ch = 0; ch < se.channels; ch++) {
       ChannelState& st = state_.channel(static_cast<uint8_t>(se.firstSlot + ch));
       st.status = ChannelStatus::Error;
@@ -382,7 +382,7 @@ void SensorService::onFailure(uint8_t sensor, Health health, uint8_t failures, b
       e.type = EventType::SensorFailed;
       e.a = sensor;
       events_.push(e);
-      if (board::kSensors[sensor].type == SensorType::Ds18b20 && restartGate_ &&
+      if (board::sensor(sensor).type == SensorType::Ds18b20 && restartGate_ &&
           restartGate_(restartCtx_)) {
         LOGW(Mod::Sensor, "DS18B20 hängt - Gerät wird neu gestartet");
         Event r;

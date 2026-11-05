@@ -15,17 +15,17 @@ namespace ps {
 namespace drivers {
 
 namespace {
-constexpr auto& P = board::kPins;
-constexpr auto& F = board::kFeatures;
+inline const ps::Pins& muxPins() { return board::pins(); }
+inline const ps::Features& feat() { return board::features(); }
 } // namespace
 
-uint8_t AnalogMux::channelCount() const { return F.analogChannels; }
+uint8_t AnalogMux::channelCount() const { return feat().analogChannels; }
 
 Step AnalogMux::begin(Instant) {
-  if (F.multiplexer) {
-    pinMode(P.muxA, OUTPUT);
-    pinMode(P.muxB, OUTPUT);
-    pinMode(P.muxC, OUTPUT);
+  if (feat().multiplexer) {
+    pinMode(muxPins().muxA, OUTPUT);
+    pinMode(muxPins().muxB, OUTPUT);
+    pinMode(muxPins().muxC, OUTPUT);
   }
 #if defined(ARDUINO_ARCH_ESP32)
   analogReadResolution(12);
@@ -38,10 +38,11 @@ bool AnalogMux::select(uint8_t ch) {
   const uint8_t addr = proto::muxAddress(ch);
   const int a = addr & 1, b = (addr >> 1) & 1, c = (addr >> 2) & 1;
   for (uint8_t attempt = 0; attempt < 2; attempt++) {
-    digitalWrite(P.muxA, a);
-    digitalWrite(P.muxB, b);
-    digitalWrite(P.muxC, c);
-    if (digitalRead(P.muxA) == a && digitalRead(P.muxB) == b && digitalRead(P.muxC) == c)
+    digitalWrite(muxPins().muxA, a);
+    digitalWrite(muxPins().muxB, b);
+    digitalWrite(muxPins().muxC, c);
+    if (digitalRead(muxPins().muxA) == a && digitalRead(muxPins().muxB) == b &&
+        digitalRead(muxPins().muxC) == c)
       return true;
   }
   LOGW(Mod::Sensor, "Multiplexer-Pins stehen nicht auf Kanal %u", ch + 1);
@@ -53,10 +54,10 @@ Step AnalogMux::pollRound(Instant, Reading* out, uint8_t n) {
     return Step::Error;
   for (uint8_t ch = 0; ch < n; ch++) {
     out[ch] = Reading{};
-    if (F.multiplexer && !select(ch))
+    if (feat().multiplexer && !select(ch))
       continue;
     delayMicroseconds(kSettleUs);
-    int raw = analogRead(P.adc);
+    int raw = analogRead(muxPins().adc);
 #if defined(ARDUINO_ARCH_ESP32)
     raw >>= 2; // 12 Bit → 0..1023
 #endif

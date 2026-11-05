@@ -69,6 +69,14 @@
     }
   },
   "activeWifiSlot": 0,
+  "hardware": {
+    "name": "native",
+    "source": "profil",
+    "platform": "native",
+    "sensors": 8,
+    "channels": 19,
+    "maxChannels": 31
+  },
   "features": {
     "display": true,
     "led": true

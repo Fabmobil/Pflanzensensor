@@ -89,9 +89,9 @@ void test_get_latest_values_compat() {
     }
   };
   std::vector<D*> ds;
-  SensorDriver* drivers[board::kSensorCount];
-  for (uint8_t i = 0; i < board::kSensorCount; i++) {
-    ds.push_back(new D(board::kSensors[i].type));
+  SensorDriver* drivers[board::sensorCount()];
+  for (uint8_t i = 0; i < board::sensorCount(); i++) {
+    ds.push_back(new D(board::sensor(i).type));
     drivers[i] = ds.back();
   }
   r.sensors.begin(drivers, hal::now());

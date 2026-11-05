@@ -386,14 +386,14 @@ void test_config_random_patches_keep_invariants() {
     schema::FieldErrors e;
     uint32_t changed;
     r.cfg.patchSensors(d.as<JsonObjectConst>(), e, changed);
-    for (uint8_t slot = 0; slot < board::kSlotCount; slot++) {
+    for (uint8_t slot = 0; slot < board::slotCount(); slot++) {
       const ChannelConfig& c = r.cfg.sensors().channels[slot];
       TEST_ASSERT_TRUE(limitsOrdered(c.limits, doc::slotOneSided(slot)));
       TEST_ASSERT_TRUE(c.rawMin <= c.rawMax);
       TEST_ASSERT_FALSE(c.name.empty());
       TEST_ASSERT_TRUE(halfLifeAllowed(c.halfLifeS));
     }
-    for (uint8_t i = 0; i < board::kSensorCount; i++) {
+    for (uint8_t i = 0; i < board::sensorCount(); i++) {
       TEST_ASSERT_TRUE(r.cfg.sensors().sensors[i].intervalS >= 10);
       TEST_ASSERT_TRUE(r.cfg.sensors().sensors[i].intervalS <= 3600);
     }
@@ -455,7 +455,7 @@ void test_legacy_import_mutations() {
     legacy::Extras* ex = new legacy::Extras();
     legacy::Report rep;
     legacy::import(d.as<JsonObjectConst>(), dev, sens, sec, *ex, rep);
-    for (uint8_t slot = 0; slot < board::kSlotCount; slot++) {
+    for (uint8_t slot = 0; slot < board::slotCount(); slot++) {
       TEST_ASSERT_TRUE(limitsOrdered(sens.channels[slot].limits, doc::slotOneSided(slot)));
       TEST_ASSERT_TRUE(sens.channels[slot].rawMin <= sens.channels[slot].rawMax);
     }

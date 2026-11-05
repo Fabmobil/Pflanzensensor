@@ -59,4 +59,13 @@ struct StaticIp {
   uint8_t dns2[4] = {0, 0, 0, 0};
 };
 
+/// Vollständige Hardware-Beschreibung: Voreinstellung aus dem Board-Profil
+/// oder aus dem Webflasher (Provisionierungsblock, siehe core/provision.h).
+struct Hardware {
+  char name[17] = {}; ///< Profil bzw. Vorlage, z.B. "pcb_v1" oder "eigene"
+  Pins pins;
+  Features features;
+  StaticIp staticIp;
+};
+
 } // namespace ps

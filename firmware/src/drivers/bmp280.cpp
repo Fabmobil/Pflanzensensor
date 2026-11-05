@@ -22,9 +22,9 @@ Adafruit_BMP280& bmp() {
 } // namespace
 
 Step Bmp280::begin(Instant) {
-  Wire.begin(board::kPins.sda, board::kPins.scl);
-  if (!bmp().begin(board::kFeatures.bmp280Address)) {
-    LOGW(Mod::Sensor, "BMP280 nicht gefunden (0x%02X)", board::kFeatures.bmp280Address);
+  Wire.begin(board::pins().sda, board::pins().scl);
+  if (!bmp().begin(board::features().bmp280Address)) {
+    LOGW(Mod::Sensor, "BMP280 nicht gefunden (0x%02X)", board::features().bmp280Address);
     return Step::Error;
   }
   bmp().setSampling(Adafruit_BMP280::MODE_NORMAL, Adafruit_BMP280::SAMPLING_X2,

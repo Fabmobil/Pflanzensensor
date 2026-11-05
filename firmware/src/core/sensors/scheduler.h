@@ -55,7 +55,10 @@ struct SensorRunState {
   bool startWarmupDone = true;
 };
 
-template <uint8_t MaxSensors, uint8_t MaxChannels, uint8_t MaxRounds = 3>
+/// MaxSlots: Kanäle aller Sensoren zusammen; die Runden liegen in einem
+/// gemeinsamen Puffer (spart RAM gegenüber MaxSensors × MaxChannels).
+template <uint8_t MaxSensors, uint8_t MaxChannels, uint8_t MaxRounds = 3,
+          uint8_t MaxSlots = MaxSensors * MaxChannels>
 class MeasurementScheduler {
 public:
   static constexpr uint8_t kRetryFailures = 5; ///< ab hier Failed
@@ -72,10 +75,15 @@ public:
   bool add(SensorDriver& d, uint8_t channels, uint32_t intervalMs, bool enabled) {
     if (count_ >= MaxSensors)
       return false;
+    const uint8_t ch = channels > MaxChannels ? MaxChannels : channels;
+    if (usedSlots_ + ch > MaxSlots)
+      return false;
     Slot& s = slots_[count_++];
     s.driver = &d;
     s.info = d.info();
-    s.channels = channels > MaxChannels ? MaxChannels : channels;
+    s.channels = ch;
+    s.base = static_cast<uint16_t>(usedSlots_ * MaxRounds);
+    usedSlots_ = static_cast<uint8_t>(usedSlots_ + ch);
     if (s.info.rounds == 0)
       s.info.rounds = 1;
     if (s.info.rounds > MaxRounds)
@@ -232,7 +240,7 @@ private:
     Instant deadline;
     Instant waitUntil;
     Instant roundDeadline;
-    Reading samples[MaxRounds * MaxChannels];
+    uint16_t base = 0; ///< erster Eintrag in samples_
   };
 
   void startJob(uint8_t i, Instant now, bool byPriority) {
@@ -247,8 +255,8 @@ private:
     s.deadline = now + Duration::ms(budget);
     s.round = 0;
     s.woke = false;
-    for (auto& r : s.samples)
-      r = Reading{};
+    for (uint16_t k = 0; k < static_cast<uint16_t>(MaxRounds * s.channels); k++)
+      samples_[s.base + k] = Reading{};
     s.phase = s.needsBegin ? Phase::Begin : Phase::Wake;
     listener_.onJobStart(i, byPriority, now);
   }
@@ -281,7 +289,7 @@ private:
 
   void advance(uint8_t i, Instant now) {
     Slot& s = slots_[i];
-    const uint8_t stride = MaxChannels;
+    const uint8_t stride = s.channels;
     for (uint8_t guard = 0; guard < 8 && s.phase != Phase::Idle; guard++) {
       const Phase before = s.phase;
       switch (s.phase) {
@@ -335,7 +343,7 @@ private:
         break;
       }
       case Phase::InRound: {
-        Reading* out = &s.samples[s.round * stride];
+        Reading* out = &samples_[s.base + s.round * stride];
         const uint8_t n = channels(s);
         const Step r = s.driver->pollRound(now, out, n);
         if (r == Step::Pending) {
@@ -367,10 +375,10 @@ private:
     Slot& s = slots_[i];
     Reading agg[MaxChannels];
     const uint8_t n = channels(s);
-    listener_.onRounds(i, s.samples, s.info.rounds, MaxChannels, n);
+    listener_.onRounds(i, &samples_[s.base], s.info.rounds, s.channels, n);
     uint8_t valid = 0;
     for (uint8_t c = 0; c < n; c++) {
-      agg[c] = aggregateChannel(s.samples, s.info.rounds, MaxChannels, c);
+      agg[c] = aggregateChannel(&samples_[s.base], s.info.rounds, s.channels, c);
       if (!isnan(agg[c].value))
         valid++;
     }
@@ -419,7 +427,9 @@ private:
 
   MeasurementListener& listener_;
   Slot slots_[MaxSensors];
+  Reading samples_[MaxRounds * MaxSlots];
   uint8_t count_ = 0;
+  uint8_t usedSlots_ = 0;
   uint8_t busy_ = 0;
   bool started_ = false;
   bool paused_ = false;

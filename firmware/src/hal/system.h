@@ -63,6 +63,12 @@ void consoleBegin(uint32_t baud);
 /// Empfangene Bytes der Konsole (ohne zu warten); Anzahl gelesener Bytes
 size_t consoleRead(uint8_t* buf, size_t cap);
 
+/// Provisionierungssektor des Webflashers (4 KB, siehe core/provision.h).
+/// ESP8266: Flash 0x3FA000 (zwischen LittleFS und EEPROM), ESP32: Partition
+/// "provision". buf muss 4-Byte-ausgerichtet sein (tempAlloc).
+bool provisionRead(uint8_t* buf, size_t len);
+bool provisionWrite(const uint8_t* buf, size_t len);
+
 /// Temporärer Speicher für seltene Vorgänge (Mailversand, Import).
 /// Dokumentierte Ausnahme von "keine Heap-Allokation" (refactor.md 5.3).
 void* tempAlloc(size_t n);

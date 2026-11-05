@@ -35,9 +35,9 @@ uint8_t statusCode(ChannelStatus s) {
 } // namespace
 
 void ChronikService::buildEncodings() {
-  for (uint8_t s = 0; s < board::kSlotCount && s < kMaxChannels; s++) {
-    const auto& sl = board::kSlots[s];
-    const ChannelDef d = catalog::channel(board::kSensors[sl.sensor].type, sl.channel);
+  for (uint8_t s = 0; s < board::slotCount() && s < kMaxChannels; s++) {
+    const auto& sl = board::slot(s);
+    const ChannelDef d = catalog::channel(board::sensor(sl.sensor).type, sl.channel);
     enc_.enc[s].kind = d.encoding;
     enc_.enc[s].scale = d.encScale;
     enc_.enc[s].offset = d.encOffset;
@@ -133,7 +133,7 @@ uint32_t ChronikService::usedBytes() const {
 
 uint8_t ChronikService::skippedChannels() const {
   uint8_t n = 0;
-  for (uint8_t s = kMaxChannels; s < board::kSlotCount; s++)
+  for (uint8_t s = kMaxChannels; s < board::slotCount(); s++)
     if (cfg_.sensors().channels[s].enabled)
       n++;
   return n;
@@ -191,7 +191,7 @@ void ChronikService::record(uint8_t sensor, uint32_t epoch, Instant now) {
   }
   SampleFrame f;
   f.epoch = epoch;
-  const auto& se = board::kSensors[sensor];
+  const auto& se = board::sensor(sensor);
   for (uint8_t ch = 0; ch < se.channels; ch++) {
     const uint8_t slot = static_cast<uint8_t>(se.firstSlot + ch);
     if (slot >= kMaxChannels || !cfg_.sensors().channels[slot].enabled)
@@ -248,7 +248,7 @@ bool ChronikService::writeTables(uint32_t epoch, bool (*fn)(void*, const uint8_t
   const SensorsConfig& sc = cfg_.sensors();
   uint8_t from = 0;
   bool ok = true;
-  const uint8_t limit = board::kSlotCount < kMaxChannels ? board::kSlotCount : kMaxChannels;
+  const uint8_t limit = board::slotCount() < kMaxChannels ? board::slotCount() : kMaxChannels;
   while (from < limit && ok) {
     TableBuilder b(frame, kMaxFrame, epoch);
     uint8_t s = from;
@@ -256,8 +256,8 @@ bool ChronikService::writeTables(uint32_t epoch, bool (*fn)(void*, const uint8_t
       const ChannelConfig& cc = sc.channels[s];
       if (!cc.enabled)
         continue;
-      const auto& sl = board::kSlots[s];
-      const ChannelDef d = catalog::channel(board::kSensors[sl.sensor].type, sl.channel);
+      const auto& sl = board::slot(s);
+      const ChannelDef d = catalog::channel(board::sensor(sl.sensor).type, sl.channel);
       char key[kMaxText + 1];
       schema::keyOfSlot(s, key, sizeof(key));
       if (!b.add(s, d.hasRaw, d.oneSided, key, cc.name.c_str(), cc.unit.c_str(), cc.limits,

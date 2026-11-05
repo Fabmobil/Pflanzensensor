@@ -29,8 +29,24 @@ Computer, USB-Datenkabel): **https://fabmobil.github.io/Pflanzensensor/**
 (`webflasher/`, gebaut von `.github/workflows/webflasher.yml`, Flashen mit
 [ESP Web Tools](https://esphome.github.io/esp-web-tools/)).
 
-- Es wird nur die Firmware geschrieben; Einstellungen, Chronik und Log
-  bleiben, solange man „Gerät löschen“ nicht ankreuzt.
+- Es gibt **eine Firmware je Chip** (ESP8266, ESP32). Welche Sensoren an
+  welchen Pins hängen, wählt man im Webflasher: Voreinstellung
+  Pflanzensensor-PCB bzw. ESP32-DevKit, aufklappbar jeder Sensor mit Pins
+  und Optionen. Dazu optional Gerätename, WLAN 1, Adminpasswort, feste IP.
+- Die Seite schreibt neben der Firmware einen 4-KB-**Provisionierungsblock**
+  (`src/core/provision.*`, `webflasher/provision.js`; ESP8266 Flash 0x3FA000,
+  ESP32 Partition `provision` bei 0x3F0000). Beim Start liest die Firmware
+  daraus die Hardware (`ProvisionService::loadHardware()`, sonst Voreinstellung
+  des Profils) und übernimmt einmal die Einstellungen; danach schreibt sie den
+  Block ohne sie zurück (keine Passwörter im Klartext im Flash). OTA-Updates
+  lassen den Block stehen. „Nur Firmware aktualisieren“ schreibt keinen Block.
+- Prüfregeln für Pins gibt es zweimal mit gemeinsamen Testvektoren
+  (`test/vectors/hardware_check.json`): `src/core/hardware_check.h`
+  (constexpr: Profile beim Bauen, Webflasher-Angaben zur Laufzeit) und
+  `webflasher/hardware.js`. Ungültige Angaben lehnt auch die Firmware ab.
+- Höchstens 16 Messkanäle auf dem ESP8266 (RAM), 31 auf dem ESP32.
+- Einstellungen, Chronik und Log bleiben, solange man „Gerät löschen“ nicht
+  ankreuzt.
 - Danach fragt der Assistent über Improv Serial (`src/core/net/improv.*`,
   `src/services/improv_service.*`) nach dem WLAN, wenn das Gerät noch keins
   hat. Das landet in Slot 1; überspringen geht. Eingerichtete Geräte werden
@@ -67,7 +83,7 @@ Mit Sanitizern: `EXTRA_FLAGS=-fsanitize=address,undefined tools/run_native_tests
 
 | Verzeichnis | Inhalt |
 |---|---|
-| `boards/` | Board-Profile (`pcb_v1.h`, `esp32_devkit.h`, `native_test.h`), `board.h` (Kanal-Layout zur Compile-Zeit), `profile_check.h` (Pinkonflikte als `static_assert`) |
+| `boards/` | Board-Profile als Voreinstellung (`pcb_v1.h`, `esp32_devkit.h`, `native_test.h`), `board.h` (Hardware und Kanal-Layout zur Laufzeit, Höchstwerte für Arrays), `profile_check.h` (Prüfregeln auf die Voreinstellung als `static_assert`) |
 | `src/core/` | Fachlogik ohne Arduino: Typen, JSON-Writer, Konfig-Schema, Import der Altkonfiguration, Mess-Scheduler, Status, Autokalibrierung, Chronik v2, Mail-Scheduler/-Vorlagen/-Umschlag, Display-Renderer |
 | `src/hal/` | Schnittstellen zur Plattform (System, Dateisystem, RTC-RAM, WLAN, HTTP, TCP, Krypto, OTA, Display) |
 | `src/platform/` | `arduino/` (ESP8266 und ESP32, einzige Stelle mit Plattform-`#ifdef`s), `native/` (Fakes für Tests), `progmem.h` |

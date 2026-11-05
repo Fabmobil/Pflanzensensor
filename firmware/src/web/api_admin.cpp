@@ -36,13 +36,13 @@ const char* healthName(Health h) {
 
 void writeChannelList(JsonWriter& w, const SensorsConfig& sc) {
   w.key(FS_("channels")).beginArray();
-  for (uint8_t s = 0; s < board::kSlotCount; s++) {
+  for (uint8_t s = 0; s < board::slotCount(); s++) {
     char key[32];
     schema::keyOfSlot(s, key, sizeof(key));
     w.beginObject();
     w.kv(FS_("key"), static_cast<const char*>(key));
     w.kv(FS_("name"), sc.channels[s].name.c_str());
-    w.kv(FS_("enabled"), sc.channels[s].enabled && sc.sensors[board::kSlots[s].sensor].enabled);
+    w.kv(FS_("enabled"), sc.channels[s].enabled && sc.sensors[board::slot(s).sensor].enabled);
     w.endObject();
   }
   w.endArray();
@@ -74,9 +74,19 @@ void configGet(WebContext& c, hal::Request& req, hal::Response& res, const char*
   w.key(FS_("mailKey")).beginObject().kv(FS_("set"), !sec.mailKey.empty()).endObject();
   w.endObject();
   w.kv(FS_("activeWifiSlot"), static_cast<int32_t>(c.net.activeSlot()));
+  w.key(FS_("hardware")).beginObject();
+  w.kv(FS_("name"), board::name());
+  w.kv(FS_("source"), c.provision && c.provision->fromWebflasher() ? "webflasher" : "profil");
+  w.kv(FS_("platform"), board::kPlatformName);
+  w.kv(FS_("sensors"), static_cast<uint32_t>(board::sensorCount()));
+  w.kv(FS_("channels"), static_cast<uint32_t>(board::slotCount()));
+  w.kv(FS_("maxChannels"), static_cast<uint32_t>(board::kMaxSlots));
+  if (c.provision && c.provision->hardwareProblem().problem != HwProblem::None)
+    w.kv(FS_("problem"), hwProblemCode(c.provision->hardwareProblem().problem));
+  w.endObject();
   w.key(FS_("features")).beginObject();
-  w.kv(FS_("display"), board::kFeatures.display);
-  w.kv(FS_("led"), board::kFeatures.ledTraffic);
+  w.kv(FS_("display"), board::features().display);
+  w.kv(FS_("led"), board::features().ledTraffic);
   w.endObject();
   writeChannelList(w, c.cfg.sensors());
   w.key(FS_("system")).beginObject();
@@ -376,15 +386,15 @@ void sensorsGet(WebContext& c, hal::Request& req, hal::Response& res, const char
   w.kv(FS_("now"), now.millis());
   w.kv(FS_("flowerChannel"), c.cfg.device().flowerChannel.c_str());
   w.key(FS_("led")).beginObject();
-  w.kv(FS_("available"), board::kFeatures.ledTraffic);
+  w.kv(FS_("available"), board::features().ledTraffic);
   w.kv(FS_("mode"), static_cast<uint32_t>(c.cfg.device().ledMode));
   w.kv(FS_("channel"), c.cfg.device().ledChannel.c_str());
   w.kv(FS_("onlyRed"), c.cfg.device().ledOnlyRed);
-  w.kv(FS_("displayAvailable"), board::kFeatures.display);
+  w.kv(FS_("displayAvailable"), board::features().display);
   w.endObject();
   w.key(FS_("sensors")).beginArray();
-  for (uint8_t i = 0; i < board::kSensorCount; i++) {
-    const auto& se = board::kSensors[i];
+  for (uint8_t i = 0; i < board::sensorCount(); i++) {
+    const auto& se = board::sensor(i);
     const SensorRunState& run = c.sensors.run(i);
     char id[16];
     copyP(id, sizeof(id), catalog::id(se.type));
@@ -504,7 +514,7 @@ void sensorsAction(WebContext& c, hal::Request& req, hal::Response& res, const c
   char* end = nullptr;
   const long idx = strtol(action, &end, 10);
   if (end && strcmp(end, "/reset-extrema") == 0 && idx >= 0 &&
-      idx < board::kSensors[sensor].channels) {
+      idx < board::sensor(sensor).channels) {
     bool raw = false;
     if (req.body() && req.bodyLength()) {
       JsonDocument doc;
@@ -512,7 +522,7 @@ void sensorsAction(WebContext& c, hal::Request& req, hal::Response& res, const c
         return;
       raw = doc["raw"] | false;
     }
-    c.sensors.resetExtrema(static_cast<uint8_t>(board::kSensors[sensor].firstSlot + idx), raw, now);
+    c.sensors.resetExtrema(static_cast<uint8_t>(board::sensor(sensor).firstSlot + idx), raw, now);
     sendOk(res);
     return;
   }

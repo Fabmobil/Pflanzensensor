@@ -2,6 +2,8 @@
 /* sketch @0x40200000 (~1575KB) (1613824B) */
 /* ota    @0x40389000 (~1575KB) (1613824B) */
 /* spiffs @0x40512000 (~1000KB) (1024000B) */
+/* provision @0x405FA000 (4KB): Hardware/Einstellungen aus dem Webflasher
+   (src/core/provision.h), liegt zwischen LittleFS und EEPROM. */
 /* eeprom @0x405FB000 (4KB) - von der Firmware nicht genutzt.
    Layout aus der Firmware 2.x übernommen (refactor.md 2.1). LittleFS enthält
    nur Daten und wird nie per OTA überschrieben (E6). */
