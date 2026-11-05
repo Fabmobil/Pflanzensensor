@@ -7,6 +7,7 @@
 #include "board.h"
 #include "core/config/defaults.h"
 #include "core/provision.h"
+#include "core/util/crc.h"
 #include "core/util/sha256.h"
 #include "services/config_service.h"
 #include "services/provision_service.h"
@@ -298,6 +299,128 @@ void test_provision_service_applies_once_and_strips_secrets() {
   TEST_ASSERT_FALSE(ps2.applySettings(r.cfg));
 }
 
+namespace {
+/// Block aus provision_config_blocks.json in den (nativen) Provisionierungssektor legen
+void loadConfigBlock(const char* name) {
+  JsonDocument doc;
+  TEST_ASSERT_TRUE_MESSAGE(pstest::loadVector("provision_config_blocks.json", doc),
+                           "provision_config_blocks.json fehlt");
+  const char* hex = nullptr;
+  for (JsonObjectConst c : doc["cases"].as<JsonArrayConst>())
+    if (strcmp(c["name"] | "", name) == 0)
+      hex = c["hex"];
+  TEST_ASSERT_NOT_NULL(hex);
+  std::string bytes;
+  for (size_t i = 0; hex[i] && hex[i + 1]; i += 2)
+    bytes += static_cast<char>(std::stoi(std::string(hex + i, 2), nullptr, 16));
+  bytes.resize(provision::kSectorSize, '\xFF');
+  native::provisionSector() = bytes;
+}
+
+int slotOf(const char* key) { return schema::slotOfKey(key); }
+} // namespace
+
+void test_provision_config_from_firmware2_file() {
+  // webflasher/test/fixtures/config_v2.json, durch den Webflasher verteilt:
+  // Name, Passwort, WLAN 1 und Kanalnamen im Formular, der Rest als "config"
+  loadConfigBlock("v2");
+  ProvisionService ps1;
+  ps1.loadHardware();
+  CfgRig r;
+  r.cfg.load();
+  TEST_ASSERT_TRUE(ps1.applySettings(r.cfg));
+  const DeviceConfig& d = r.cfg.device();
+  TEST_ASSERT_EQUAL_STRING("Gemeinschaftskueche", d.deviceName.c_str());
+  TEST_ASSERT_TRUE(r.cfg.checkAdminPassword("Kuechenpasswort"));
+  TEST_ASSERT_EQUAL_STRING("Kuechen-WLAN", d.wifiSsid[0].c_str());
+  TEST_ASSERT_EQUAL_STRING("kuechen-wlan-pw", r.cfg.secrets().wifiPassword[0].c_str());
+  TEST_ASSERT_EQUAL_STRING(defaults::kFabmobilWifiSsid, d.wifiSsid[2].c_str());
+  // aus der Datei (Altformat → neu)
+  TEST_ASSERT_FALSE(d.showIp);
+  TEST_ASSERT_FALSE(d.showQr);
+  TEST_ASSERT_FALSE(d.showFabmobil);
+  TEST_ASSERT_EQUAL(3, d.screenDurationS); // 3000 ms
+  TEST_ASSERT_TRUE(d.ledOnlyRed);
+  TEST_ASSERT_EQUAL(static_cast<uint8_t>(LogLevel::Debug), d.logLevel);
+  TEST_ASSERT_TRUE(d.fileLog); // general.file_log vor log.file_enabled
+  TEST_ASSERT_TRUE(d.debugRam);
+  TEST_ASSERT_FALSE(d.debugDisplay);
+  const int t = slotOf("DHT_0");
+  TEST_ASSERT_TRUE(t >= 0);
+  TEST_ASSERT_EQUAL_FLOAT(-10, r.cfg.sensors().channels[t].limits.yellowLow);
+  TEST_ASSERT_EQUAL_FLOAT(30, r.cfg.sensors().channels[t].limits.greenHigh);
+  TEST_ASSERT_EQUAL_STRING("Lufttemperatur", r.cfg.sensors().channels[t].name.c_str());
+  // Datei ist weg, Passwörter auch
+  const std::string& s = native::provisionSector();
+  TEST_ASSERT_EQUAL(std::string::npos, s.find("Kuechenpasswort"));
+  TEST_ASSERT_EQUAL(std::string::npos, s.find("kuechen-wlan-pw"));
+  TEST_ASSERT_EQUAL(std::string::npos, s.find("thresh"));
+  ProvisionService ps2;
+  ps2.loadHardware();
+  TEST_ASSERT_FALSE(ps2.applySettings(r.cfg));
+}
+
+void test_provision_config_from_firmware3_export() {
+  loadConfigBlock("v3");
+  ProvisionService ps1;
+  ps1.loadHardware();
+  CfgRig r;
+  r.cfg.load();
+  // Vorher eingerichtetes WLAN: der Export hat keine Passwörter und darf es nicht anfassen
+  TEST_ASSERT_EQUAL(Err::None, r.cfg.setWifi(0, "Werkstatt", "werkstatt-pw", false));
+  TEST_ASSERT_TRUE(ps1.applySettings(r.cfg));
+  const DeviceConfig& d = r.cfg.device();
+  TEST_ASSERT_EQUAL_STRING("Fensterbank", d.deviceName.c_str());
+  TEST_ASSERT_EQUAL_STRING("Werkstatt", d.wifiSsid[0].c_str());
+  TEST_ASSERT_EQUAL_STRING("werkstatt-pw", r.cfg.secrets().wifiPassword[0].c_str());
+  TEST_ASSERT_EQUAL(5, d.screenDurationS);
+  TEST_ASSERT_TRUE(d.ledOnlyRed);
+  TEST_ASSERT_EQUAL_STRING("kueche@example.org", d.mailTo.c_str());
+  TEST_ASSERT_EQUAL(static_cast<uint8_t>(LogLevel::Debug), d.logLevel);
+  const int a1 = slotOf("ANALOG_1"), a0 = slotOf("ANALOG_0"), t = slotOf("DHT_0");
+  TEST_ASSERT_TRUE(a1 >= 0 && a0 >= 0 && t >= 0);
+  const SensorsConfig& sc = r.cfg.sensors();
+  TEST_ASSERT_EQUAL(300, sc.channels[a1].rawMin);
+  TEST_ASSERT_EQUAL(700, sc.channels[a1].rawMax);
+  TEST_ASSERT_TRUE(sc.channels[a1].inverted);
+  TEST_ASSERT_TRUE(sc.channels[a1].autocal);
+  TEST_ASSERT_EQUAL(259200, sc.channels[a1].halfLifeS);
+  TEST_ASSERT_EQUAL_STRING("Licht Fenster", sc.channels[a0].name.c_str());
+  TEST_ASSERT_EQUAL_FLOAT(5, sc.channels[t].limits.yellowLow);
+  TEST_ASSERT_EQUAL_FLOAT(35, sc.channels[t].limits.yellowHigh);
+  TEST_ASSERT_EQUAL(120, sc.sensors[board::sensorIndexOf(SensorType::Analog)].intervalS);
+  TEST_ASSERT_TRUE(r.tpl.isCustom(TemplateKind::Boot));
+  TEST_ASSERT_FALSE(r.tpl.isCustom(TemplateKind::Warning));
+}
+
+void test_provision_config_broken_is_skipped() {
+  // "config" ohne gültigen Inhalt: Rest der Einstellungen gilt trotzdem
+  const std::string json =
+      "{\"settings\":{\"deviceName\":\"Nur Name\",\"config\":{\"schema\":7,\"device\":{}}}}";
+  uint8_t sector[provision::kSectorSize];
+  memset(sector, 0xFF, sizeof(sector));
+  memcpy(sector, provision::kMagic, sizeof(provision::kMagic));
+  const uint32_t n = static_cast<uint32_t>(json.size());
+  for (int i = 0; i < 4; i++)
+    sector[8 + i] = static_cast<uint8_t>(n >> (8 * i));
+  memcpy(sector + provision::kHeaderSize, json.data(), n);
+  const uint32_t c = crc::crc32(sector + provision::kHeaderSize, n);
+  for (int i = 0; i < 4; i++)
+    sector[12 + i] = static_cast<uint8_t>(c >> (8 * i));
+  native::provisionSector().assign(reinterpret_cast<char*>(sector), sizeof(sector));
+  provision::Block b;
+  TEST_ASSERT_EQUAL(provision::Result::Ok, provision::parse(sector, sizeof(sector), Hardware{}, b));
+  TEST_ASSERT_TRUE(b.settings.hasConfig);
+  TEST_ASSERT_FALSE(b.hasHardware);
+  ProvisionService ps1;
+  ps1.loadHardware();
+  CfgRig r;
+  r.cfg.load();
+  TEST_ASSERT_TRUE(ps1.applySettings(r.cfg));
+  TEST_ASSERT_EQUAL_STRING("Nur Name", r.cfg.device().deviceName.c_str());
+  TEST_ASSERT_EQUAL(std::string::npos, native::provisionSector().find("schema"));
+}
+
 void test_default_wifi_slot3_is_fabmobil() {
   DeviceConfig d;
   defaults::device(d);
@@ -364,6 +487,9 @@ int main() {
   RUN_TEST(test_provision_roundtrip_and_errors);
   RUN_TEST(test_vector_block_from_webflasher_parses);
   RUN_TEST(test_provision_service_applies_once_and_strips_secrets);
+  RUN_TEST(test_provision_config_from_firmware2_file);
+  RUN_TEST(test_provision_config_from_firmware3_export);
+  RUN_TEST(test_provision_config_broken_is_skipped);
   RUN_TEST(test_default_wifi_slot3_is_fabmobil);
   RUN_TEST(test_provision_service_invalid_hardware_keeps_default);
   RUN_TEST(test_state_store_discards_on_layout_change);

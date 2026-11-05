@@ -143,3 +143,100 @@ test('Manifest: Firmware-Teile absolut, Block an der Chip-Adresse; Einstellungen
   assert.match(Flasher.settingsProblem({ staticIp: { ip: '192.168.1.30' } }), /Gateway/);
   assert.equal(Flasher.settingsProblem({ staticIp: { ip: '192.168.1.30', gateway: '192.168.1.1' } }), '');
 });
+
+const FIXTURES = path.join(HERE, 'fixtures');
+const plain = x => JSON.parse(JSON.stringify(x));
+const fixture = name => fs.readFileSync(path.join(FIXTURES, name), 'utf8');
+
+test('Konfiguration übernehmen: config.json der Firmware 2.x', () => {
+  const { ConfigImport, Hardware } = load('hardware.js', 'configimport.js');
+  const r = ConfigImport.read(fixture('config_v2.json'));
+  assert.equal(r.format, 'v2');
+  assert.deepEqual(plain(r.form), {
+    deviceName: 'Gemeinschaftskueche', adminPassword: 'Kuechenpasswort',
+    wifi: [{ ssid: 'Kuechen-WLAN', password: 'kuechen-wlan-pw' }, null, null],
+    channelNames: { DHT_0: 'Lufttemperatur', DHT_1: 'Luftfeuchte' }
+  });
+  const c = JSON.stringify(r.config);
+  for (const secret of ['Kuechenpasswort', 'kuechen-wlan-pw', 'Kuechen-WLAN', 'Gemeinschaftskueche'])
+    assert.ok(!c.includes(secret), secret + ' gehört ins Formular, nicht in die Datei');
+  assert.equal(r.config.wifi, undefined);
+  assert.equal(r.config.display.screen_dur, 3000, 'der Rest bleibt im Altformat (die Firmware rechnet um)');
+  assert.equal(r.config.sensors[1].measurements[0].thresh.yl, -10);
+  assert.equal(r.config.sensors[1].measurements[0].nm, undefined, 'Kanalnamen kommen aus dem Formular');
+  assert.deepEqual(plain(r.sensors).sort(), ['ANALOG', 'DHT', 'MHZ19'], 'auch Sensoren aus flower_sens/sel_meas');
+  assert.deepEqual(plain(ConfigImport.missingSensors(r, Hardware.preset('pcb_v1').features)), ['MHZ19']);
+  assert.equal(JSON.parse(fixture('config_v2.json')).wifi.pwd1, 'kuechen-wlan-pw', 'Eingabe unverändert');
+});
+
+test('Konfiguration übernehmen: Export der Firmware 3', () => {
+  const { ConfigImport, Hardware } = load('hardware.js', 'configimport.js');
+  const r = ConfigImport.read(fixture('config_v3.json'));
+  assert.equal(r.format, 'v3');
+  assert.deepEqual(plain(r.form), {
+    deviceName: 'Fensterbank', adminPassword: '', wifi: [null, null, null],
+    channelNames: { ANALOG_0: 'Licht Fenster', ANALOG_1: 'Bodenfeuchte', DHT_0: 'Lufttemperatur', DHT_1: 'Luftfeuchte' }
+  });
+  assert.deepEqual(plain(r.wifiNames), ['Werkstatt'], 'ohne Passwort nicht ins Formular (wäre ein offenes Netz)');
+  assert.equal(r.config.device.wifi, undefined);
+  assert.equal(r.config.device.general.deviceName, undefined);
+  assert.equal(r.config.device.display.screenDuration, 5);
+  assert.equal(r.config.sensors.ANALOG.channels['1'].rawMin, 300, 'Rohgrenzen der Analogkanäle bleiben');
+  assert.equal(r.config.sensors.DHT.channels['0'].rawMin, undefined, 'ohne Bedeutung für DHT: weg');
+  assert.equal(r.config.sensors.DHT.scale, undefined, 'Waagenfaktor nur bei HX711');
+  assert.equal(r.config.sensors.DHT.channels['0'].yellowLow, 5);
+  assert.equal(r.config.templates.boot.subject, '🌱 Küche ist wach');
+  assert.deepEqual(plain(ConfigImport.missingSensors(r, Hardware.preset('pcb_v1').features)), []);
+});
+
+test('Konfiguration übernehmen: Fehler und Grenzfälle', () => {
+  const { ConfigImport } = load('configimport.js');
+  assert.throws(() => ConfigImport.read('kein json'), /kein gültiges JSON/);
+  assert.throws(() => ConfigImport.read('{"schema":2,"device":{}}'), /schema 2/);
+  assert.throws(() => ConfigImport.read('{"foo":1}'), /keine Konfigurationsdatei/);
+  assert.throws(() => ConfigImport.read('[1,2]'), /keine Konfigurationsdatei/);
+  assert.equal(ConfigImport.detect({ general: {} }), 'v2');
+  assert.equal(ConfigImport.detect({ schema: 1 }), 'v3');
+  // Altformat ohne "measurements": Gruppe = eine Messung
+  const old = ConfigImport.read('{"sensors":[{"id":"ANALOG","idx":1,"nm":"Topf"}]}');
+  assert.deepEqual(plain(old.form.channelNames), { ANALOG_1: 'Topf' });
+  assert.equal(ConfigImport.sensorOfKey('SERIAL_RECEIVER_3'), 'SERIAL_RECEIVER');
+  assert.equal(ConfigImport.sensorOfKey('quatsch'), '');
+});
+
+test('Konfiguration im Block: zu groß → erst ohne Mailtexte, sonst gar nicht', () => {
+  const { ConfigImport, Provision, Hardware, Flasher } = load('hardware.js', 'provision.js', 'flasher.js', 'configimport.js');
+  const hw = Hardware.preset('pcb_v1');
+  const small = { config: { schema: 1, device: {} } };
+  assert.ok(Flasher.cleanSettings(small).config, 'cleanSettings reicht config durch');
+  assert.equal(ConfigImport.encodeFitting(Provision, hw, small).droppedTemplates, false);
+  const big = { config: { schema: 1, device: {}, templates: { boot: { subject: 'x', body: 'y'.repeat(3500) } } } };
+  const fit = ConfigImport.encodeFitting(Provision, hw, big);
+  assert.equal(fit.droppedTemplates, true);
+  assert.ok(fit.bytes);
+  assert.ok(big.config.templates, 'Eingabe unverändert');
+  const tooBig = { config: { schema: 1, device: { x: 'y'.repeat(4000) } } };
+  assert.equal(ConfigImport.encodeFitting(Provision, hw, tooBig).bytes, null);
+});
+
+test('Blöcke mit Konfiguration für den C++-Test (firmware/test/vectors/provision_config_blocks.json)', () => {
+  const { ConfigImport, Provision, Hardware, Flasher } = load('hardware.js', 'provision.js', 'flasher.js', 'configimport.js');
+  const cases = [];
+  for (const [name, file] of [['v2', 'config_v2.json'], ['v3', 'config_v3.json']]) {
+    const r = ConfigImport.read(fixture(file));
+    const hw = Hardware.preset('pcb_v1');
+    // wie app.js: Formular aus der Datei, Slot 3 bleibt auf der Fabmobil-Voreinstellung
+    const wifi = r.form.wifi.map((w, i) => w || (i === 2 ? { ssid: Flasher.FABMOBIL_SSID, password: '' } : { ssid: '', password: '' }));
+    const s = { deviceName: r.form.deviceName, adminPassword: r.form.adminPassword, wifi,
+      channelNames: r.form.channelNames, config: r.config };
+    assert.equal(Flasher.settingsProblem(s), '', name);
+    const fit = ConfigImport.encodeFitting(Provision, hw, Flasher.cleanSettings(s));
+    assert.ok(fit.bytes && !fit.droppedTemplates, name + ' passt in den Block');
+    const len = 16 + new DataView(fit.bytes.buffer).getUint32(8, true);
+    cases.push({ name, bytes: len, hex: Buffer.from(fit.bytes.slice(0, len)).toString('hex') });
+  }
+  const vec = { description: 'Vom Webflasher erzeugte Blöcke mit importierter Konfiguration (webflasher/test/fixtures); test_hardware wendet sie an.', cases };
+  const file = path.join(VECTORS, 'provision_config_blocks.json');
+  if (process.env.WRITE_VECTORS) fs.writeFileSync(file, JSON.stringify(vec, null, 1) + '\n');
+  assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')), vec, 'Vektor veraltet: WRITE_VECTORS=1 setzen');
+});

@@ -28,6 +28,10 @@
             # webflasher/build_site.py) kommen mit der Standardbibliothek aus.
             python312
             platformio
+            # Native Tests (pio test -e native, pre-commit) binden <openssl/evp.h>
+            # ein und linken -lcrypto (AES-GCM/SHA als Referenz); die CI nimmt
+            # dafür libssl-dev.
+            openssl
             # Für firmware/tools/run_js_tests.sh - node bringt Testläufer und
             # Zusicherungen selbst mit, es gibt keine npm-Abhängigkeiten.
             # (npm braucht nur der Webflasher-Bau für esp-web-tools.)

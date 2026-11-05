@@ -4,7 +4,7 @@
  */
 (function () {
   'use strict';
-  const H = window.Hardware, P = window.Provision, F = window.Flasher;
+  const H = window.Hardware, P = window.Provision, F = window.Flasher, C = window.ConfigImport;
   const $ = id => document.getElementById(id);
 
   /** Pins zur Auswahl je Chip: [GPIO, Beschriftung] */
@@ -42,7 +42,8 @@
     { key: 'ledTraffic', label: 'LED-Ampel', opts: [], pins: [['ledGreen', 'grün'], ['ledYellow', 'gelb'], ['ledRed', 'rot']] }
   ];
 
-  const state = { releases: [], release: null, mode: 'pcb_v1', hw: H.preset('pcb_v1'), urls: [], names: {}, nameKeys: '' };
+  const state = { releases: [], release: null, mode: 'pcb_v1', hw: H.preset('pcb_v1'), urls: [], names: {}, nameKeys: '',
+    imported: null, importName: '' };
 
   function el(tag, attrs, children) {
     const e = document.createElement(tag);
@@ -167,8 +168,77 @@
       deviceName: $('deviceName').value, adminPassword: $('adminPassword').value,
       wifi: [1, 2, 3].map(i => ({ ssid: $('wifiSsid' + i).value, password: $('wifiPassword' + i).value })),
       channelNames: names,
+      config: state.imported ? state.imported.config : null,
       staticIp: { ip: $('ipIp').value, gateway: $('ipGateway').value, subnet: $('ipSubnet').value || '255.255.255.0', dns1: $('ipDns1').value }
     };
+  }
+
+  const FORMAT = { v2: 'Firmware 2', v3: 'Firmware 3' };
+
+  /** Zustand der übernommenen Datei anzeigen (hängt auch von der Hardware ab) */
+  function showImport(droppedTemplates) {
+    const st = $('configStatus');
+    $('configClear').hidden = !state.imported;
+    if (!state.imported) return;
+    const r = state.imported;
+    const lines = [['ok', '✓ ' + state.importName + ' (' + FORMAT[r.format] + '): ' + filled(r) +
+      ' stehen jetzt in den Feldern unten. Alles andere – Grenzwerte, Messintervalle, Kalibrierung, Display, ' +
+      'LED-Ampel, Log und Mail – übernimmt das Gerät beim ersten Start. Was du unten änderst, gilt.']];
+    if (r.wifiNames.length)
+      lines.push(['warn', 'WLAN: Exporte der Firmware 3 enthalten keine Passwörter. Netze in der Datei: ' +
+        r.wifiNames.join(', ') + ' – bei Bedarf unten mit Passwort eintragen.']);
+    const missing = C.missingSensors(r, state.hw.features);
+    if (missing.length)
+      lines.push(['warn', 'In der Datei, aber unter „2. Gerät“ nicht eingeschaltet: ' + missing.join(', ') +
+        ' – deren Einstellungen übergeht das Gerät.']);
+    if (droppedTemplates)
+      lines.push(['warn', 'Die eigenen Mailtexte passen nicht mehr in den Block und werden nicht übernommen – ' +
+        'nach dem Flashen die Datei unter Admin → Einstellungen hochladen, um sie zurückzuholen.']);
+    st.textContent = '';
+    st.className = 'import-status';
+    lines.forEach(([cls, text]) => st.appendChild(el('p', { class: 'status ' + cls, text })));
+  }
+
+  function filled(r) {
+    const f = [];
+    if (r.form.deviceName) f.push('Gerätename');
+    if (r.form.adminPassword) f.push('Adminpasswort');
+    const w = r.form.wifi.map((x, i) => (x ? String(i + 1) : '')).filter(Boolean);
+    if (w.length) f.push('WLAN ' + w.join(', '));
+    const n = Object.keys(r.form.channelNames).length;
+    if (n) f.push(n === 1 ? 'ein Kanalname' : n + ' Kanalnamen');
+    return f.length ? f.join(', ') : 'Keine Felder';
+  }
+
+  /** Datei lesen und ins Formular verteilen */
+  function importFile(file) {
+    file.text().then(text => {
+      const r = C.read(text);
+      state.imported = r;
+      state.importName = file.name;
+      if (r.form.deviceName) $('deviceName').value = r.form.deviceName;
+      if (r.form.adminPassword) $('adminPassword').value = r.form.adminPassword;
+      r.form.wifi.forEach((w, i) => {
+        if (!w) return;
+        $('wifiSsid' + (i + 1)).value = w.ssid;
+        $('wifiPassword' + (i + 1)).value = w.password;
+        $('wifiSsid' + (i + 1)).dispatchEvent(new Event('input')); // Platzhalter von Slot 3
+      });
+      if (Object.keys(r.form.channelNames).length) {
+        Object.assign(state.names, r.form.channelNames);
+        state.nameKeys = ''; // Felder neu aufbauen
+        $('namesBox').open = true;
+      }
+      changed();
+    }).catch(e => {
+      state.imported = null;
+      $('configFile').value = '';
+      $('configStatus').textContent = '';
+      $('configStatus').className = 'import-status';
+      $('configStatus').appendChild(el('p', { class: 'status bad', text: '✗ ' + file.name + ': ' + e.message }));
+      $('configClear').hidden = true;
+      changed();
+    });
   }
 
   function isPreset() {
@@ -200,11 +270,21 @@
       $('settingsStatus').textContent = sp;
       $('settingsStatus').className = 'status ' + (sp ? 'bad' : '');
       if (sp) problem = problem || sp;
+      let dropped = false;
       if (!problem) {
         const hw = Object.assign({}, state.hw, { staticIp: s.staticIp.ip.trim() ? s.staticIp : null });
-        provisionUrl = URL.createObjectURL(new Blob([P.encode(hw, F.cleanSettings(s))], { type: 'application/octet-stream' }));
-        state.urls.push(provisionUrl);
+        const fit = C.encodeFitting(P, hw, F.cleanSettings(s));
+        dropped = fit.droppedTemplates;
+        if (fit.bytes) {
+          provisionUrl = URL.createObjectURL(new Blob([fit.bytes], { type: 'application/octet-stream' }));
+          state.urls.push(provisionUrl);
+        } else {
+          problem = state.imported
+            ? 'Die Konfigurationsdatei ist zu groß für den Webflasher. Ohne sie flashen und die Datei danach unter Admin → Einstellungen hochladen.'
+            : 'Zu viele Angaben für den Webflasher-Block.';
+        }
       }
+      showImport(dropped);
     } else {
       $('hwStatus').textContent = 'Nur die Firmware wird geschrieben; die Hardware-Angabe auf dem Gerät bleibt ' +
         '(ohne Angabe: Voreinstellung ' + (chip === 'ESP8266' ? 'Pflanzensensor-PCB' : 'ESP32-DevKit') + ').';
@@ -243,6 +323,17 @@
 
   function wire() {
     $('mode').addEventListener('change', () => setMode($('mode').value));
+    $('configFile').addEventListener('change', () => {
+      const f = $('configFile').files[0];
+      if (f) importFile(f);
+    });
+    $('configClear').addEventListener('click', () => {
+      // Was schon im Formular steht, bleibt – das kann man dort ändern
+      state.imported = null;
+      $('configFile').value = '';
+      $('configStatus').textContent = '';
+      changed();
+    });
     renderWifi();
     ['deviceName', 'adminPassword', 'ipIp', 'ipGateway', 'ipSubnet', 'ipDns1']
       .forEach(id => $(id).addEventListener('input', changed));

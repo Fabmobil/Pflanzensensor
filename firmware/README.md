@@ -47,6 +47,18 @@ Computer, USB-Datenkabel): **https://fabmobil.github.io/Pflanzensensor/**
   des Profils) und übernimmt einmal die Einstellungen; danach schreibt sie den
   Block ohne sie zurück (keine Passwörter im Klartext im Flash). OTA-Updates
   lassen den Block stehen. „Nur Firmware aktualisieren“ schreibt keinen Block.
+- **Konfiguration übernehmen:** Der Webflasher nimmt eine `config.json` der
+  Firmware 2.x oder einen Export der Firmware 3 (`webflasher/configimport.js`).
+  Gerätename, Adminpasswort, WLAN (nur 2.x – 3.x-Exporte haben keine
+  Passwörter) und Kanalnamen kommen sichtbar ins Formular und werden aus der
+  Datei entfernt; den Rest schreibt die Seite als `settings.config` in den
+  Block. Das Gerät übergibt ihn beim ersten Start an
+  `ConfigService::importJson()` (derselbe Import wie beim Hochladen, 2.x über
+  `legacy::import`) und wendet danach die Formularfelder an. `parse()` liest
+  `config` nicht mit (Filter), erst `provision::readConfig()`. Passt der Block
+  nicht in 4 KB, fallen zuerst die Mailtexte weg, sonst lehnt die Seite ab.
+  Testdaten: `webflasher/test/fixtures/`, gemeinsamer Vektor
+  `test/vectors/provision_config_blocks.json`.
 - Prüfregeln für Pins gibt es zweimal mit gemeinsamen Testvektoren
   (`test/vectors/hardware_check.json`): `src/core/hardware_check.h`
   (constexpr: Profile beim Bauen, Webflasher-Angaben zur Laufzeit) und

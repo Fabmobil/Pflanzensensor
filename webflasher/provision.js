@@ -32,7 +32,8 @@
 
   /**
    * JSON für den Block. settings (wie Flasher.cleanSettings): {deviceName, adminPassword,
-   * wifi: [{ssid, password} | null ×3], channelNames: {"ANALOG_0": "…"}} – leere Felder fehlen.
+   * wifi: [{ssid, password} | null ×3], channelNames: {"ANALOG_0": "…"}, config: {…}} – leere Felder fehlen.
+   * config: importierte Konfigurationsdatei (ConfigImport.read), übernimmt das Gerät vor den übrigen Feldern.
    */
   function blockJson(hw, settings) {
     const doc = {
@@ -52,6 +53,7 @@
       if (wifi.some(w => w)) s.wifi = wifi;
       const names = settings.channelNames || {};
       if (Object.keys(names).length) s.channelNames = Object.assign({}, names);
+      if (settings.config && typeof settings.config === 'object') s.config = settings.config;
     }
     if (Object.keys(s).length) doc.settings = s;
     return JSON.stringify(doc);
@@ -60,7 +62,7 @@
   /** Block als Uint8Array(4096) */
   function encode(hw, settings) {
     const json = new TextEncoder().encode(blockJson(hw, settings));
-    if (json.length > SECTOR - HEADER) throw new Error('Block zu groß');
+    if (json.length > SECTOR - HEADER) throw new Error('Block zu groß (' + json.length + ' von ' + (SECTOR - HEADER) + ' Bytes)');
     const out = new Uint8Array(SECTOR).fill(0xFF);
     out.set(MAGIC, 0);
     const dv = new DataView(out.buffer);

@@ -116,7 +116,7 @@ def main():
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
-    for f in ("index.html", "app.js", "style.css", "hardware.js", "provision.js", "flasher.js"):
+    for f in ("index.html", "app.js", "style.css", "hardware.js", "provision.js", "flasher.js", "configimport.js"):
         shutil.copy(HERE / f, out / f)
     shutil.copy(HERE.parent / "firmware" / "web" / "favicon.ico", out / "favicon.ico")
     if a.esp_web_tools:

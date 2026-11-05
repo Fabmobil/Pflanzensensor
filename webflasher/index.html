@@ -45,6 +45,13 @@
     <h2>3. Einstellungen <span class="hint">(optional)</span></h2>
     <p class="hint">Nur ausgefüllte Felder werden übernommen – einmal, beim ersten Start nach dem Flashen.
       Leer lassen heißt: Was auf dem Gerät eingestellt ist, bleibt.</p>
+    <div class="import">
+      <label>Konfiguration übernehmen
+        <span class="hint">– die <code>config.json</code> aus „Konfiguration herunterladen“ (Firmware 2 oder 3)</span>
+        <input type="file" id="configFile" accept=".json,application/json"></label>
+      <button type="button" class="link" id="configClear" hidden>Datei nicht mehr übernehmen</button>
+      <div class="import-status" id="configStatus"></div>
+    </div>
     <div class="grid">
       <label>Gerätename <input type="text" id="deviceName" maxlength="32" placeholder="z.B. Balkon Süd"></label>
       <label>Adminpasswort <input type="password" id="adminPassword" maxlength="32" autocomplete="new-password"></label>
@@ -101,7 +108,9 @@
         Angaben (z.B. doppelt belegte Pins) lehnt auch das Gerät ab und nutzt dann die
         Voreinstellung.</li>
       <li><strong>Von Firmware 2.x:</strong> vorher in der alten Oberfläche die Konfiguration
-        herunterladen und nach dem Update unter Admin → Einstellungen wieder hochladen.</li>
+        herunterladen und oben bei „Konfiguration übernehmen“ auswählen – das Gerät übernimmt sie beim
+        ersten Start. Die erste Firmware 3 räumt die alten Dateien auf; ohne die Datei sind die
+        Einstellungen danach weg.</li>
       <li>Spätere Updates gehen auch ohne Kabel über Admin → Update im Gerät.</li>
     </ul>
   </section>
@@ -114,6 +123,7 @@
 <script src="hardware.js"></script>
 <script src="provision.js"></script>
 <script src="flasher.js"></script>
+<script src="configimport.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

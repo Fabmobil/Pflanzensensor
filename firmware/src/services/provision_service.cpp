@@ -74,12 +74,53 @@ void ProvisionService::applyChannelName(ConfigService& cfg, const provision::Cha
     LOGW(Mod::Config, "Kanalname für %s ungültig", cn.key);
 }
 
+void ProvisionService::importConfig(ConfigService& cfg) {
+  // Der Block steht nur noch im Flash (parse() hat "config" übersprungen)
+  JsonDocument doc;
+  provision::Result r;
+  {
+    hal::TempBuffer sector(provision::kSectorSize);
+    if (!sector || !hal::provisionRead(sector.data(), sector.size())) {
+      LOGE(Mod::Config, "Konfiguration aus dem Webflasher: Block nicht lesbar");
+      return;
+    }
+    r = provision::readConfig(sector.data(), sector.size(), doc);
+  }
+  if (r != provision::Result::Ok) {
+    LOGW(Mod::Config, "Konfiguration aus dem Webflasher unbrauchbar (%s)",
+         provision::resultName(r));
+    return;
+  }
+  // Ergebnis (≈ 350 B) nicht auf den Stapel (Grenze 512 B je Rahmen)
+  hal::TempBuffer mem(sizeof(ConfigService::ImportResult));
+  if (!mem)
+    return;
+  ConfigService::ImportResult& res = *new (mem.data()) ConfigService::ImportResult();
+  cfg.importJson(doc["settings"]["config"], res);
+  if (res.err != Err::None) {
+    char why[32];
+    copyP(why, sizeof(why), errText(res.err));
+    LOGW(Mod::Config, "Konfiguration aus dem Webflasher nicht übernommen (%s)", why);
+  } else {
+    LOGI(Mod::Config,
+         "Konfiguration aus dem Webflasher (%s): %u übernommen, %u ignoriert, %u ungültig",
+         res.legacyFormat ? "Firmware 2.x" : "Firmware 3",
+         static_cast<unsigned>(res.report.applied), static_cast<unsigned>(res.report.ignored),
+         static_cast<unsigned>(res.report.invalid));
+  }
+  res.~ImportResult();
+}
+
 bool ProvisionService::applySettings(ConfigService& cfg) {
   if (!block_)
     return false;
   provision::Block& b = *block_;
   bool applied = false;
   if (b.settings.any()) {
+    // Zuerst die importierte Datei, damit Name, WLAN, Kanalnamen und
+    // Passwort aus dem Formular des Webflashers Vorrang haben.
+    if (b.settings.hasConfig)
+      importConfig(cfg);
     if (b.settings.hasDeviceName) {
       JsonDocument doc;
       doc["general"]["deviceName"] = b.settings.deviceName;

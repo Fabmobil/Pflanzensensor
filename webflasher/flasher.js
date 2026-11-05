@@ -38,6 +38,7 @@
    * s.wifi: [{ssid, password} ×3]. Slot 3 unverändert auf dem Fabmobil-WLAN ohne
    * Passwort wird nicht geschickt – die Firmware bringt es als Voreinstellung mit.
    * s.channelNames: {key: name}; leere Namen bleiben weg (Gerät behält seinen).
+   * s.config: importierte Konfigurationsdatei (ConfigImport), wird unverändert durchgereicht.
    */
   function cleanSettings(s) {
     const out = {};
@@ -58,6 +59,7 @@
       if (n) names[k] = n;
     });
     if (Object.keys(names).length) out.channelNames = names;
+    if (s.config) out.config = s.config;
     return out;
   }
 

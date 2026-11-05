@@ -1,0 +1,88 @@
+{
+  "general": {
+    "device_name": "Gemeinschaftskueche",
+    "admin_pwd": "Kuechenpasswort",
+    "md5_verify": false,
+    "file_log": true,
+    "flower_sens": "MHZ19_0"
+  },
+  "wifi": {
+    "ssid1": "Kuechen-WLAN",
+    "pwd1": "kuechen-wlan-pw",
+    "ssid2": "",
+    "pwd2": "",
+    "ssid3": "",
+    "pwd3": ""
+  },
+  "display": {
+    "show_ip": false,
+    "show_clock": true,
+    "show_flower": true,
+    "show_fabmobil": false,
+    "show_qr": false,
+    "screen_dur": 3000,
+    "clock_fmt": "24h",
+    "sensor_disp": ""
+  },
+  "debug": {
+    "ram": true,
+    "meas_cycle": true,
+    "sensor": true,
+    "display": false,
+    "websocket": false
+  },
+  "log": {
+    "level": "DEBUG",
+    "file_enabled": false
+  },
+  "led_traffic": {
+    "mode": 2,
+    "sel_meas": "MHZ19_0",
+    "only_red": true
+  },
+  "sensors": [
+    {
+      "id": "ANALOG",
+      "measInt": 60000,
+      "measurements": []
+    },
+    {
+      "id": "DHT",
+      "measInt": 60000,
+      "measurements": [
+        {
+          "idx": 0,
+          "en": true,
+          "nm": "Lufttemperatur",
+          "fn": "air_temperature",
+          "un": "°C",
+          "min": 0,
+          "max": 0,
+          "thresh": {
+            "yl": -10,
+            "gl": 0,
+            "gh": 30,
+            "yh": 40
+          },
+          "lastValue": 23.1
+        },
+        {
+          "idx": 1,
+          "en": true,
+          "nm": "Luftfeuchte",
+          "fn": "air_humidity",
+          "un": "%",
+          "min": 0,
+          "max": 0,
+          "thresh": {
+            "yl": 10,
+            "gl": 20,
+            "gh": 80,
+            "yh": 90
+          },
+          "lastValue": 57.46666
+        }
+      ]
+    }
+  ]
+}

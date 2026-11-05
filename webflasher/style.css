@@ -54,3 +54,10 @@ h2 .hint { font-weight: 400; font-size: 0.75em; }
   .wifi-grid .slot { grid-column: 1 / -1; margin-top: 0.3em; }
 }
 .grid label .key { color: #888; font-size: 0.85em; }
+
+.import { margin: 0.8em 0 1em; padding: 0.7em 0.9em; border: 1px dashed #666; border-radius: 6px; }
+.import label { display: block; }
+.import input[type=file] { display: block; margin-top: 0.4em; }
+.import-status .status { font-weight: 400; margin-top: 0.5em; }
+.status.warn { color: #ffd27a; }
+button.link { background: none; border: 0; padding: 0; margin-top: 0.4em; color: #c9a7ff; text-decoration: underline; cursor: pointer; font: inherit; }

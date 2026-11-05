@@ -67,6 +67,13 @@ public:
   };
   /// /import.tmp prüfen und übernehmen (schreibt sofort); Neustart macht der Aufrufer
   ImportResult importFile();
+  /**
+   * @brief Konfiguration übernehmen (Format der Firmware 2.x oder Export mit "schema": 1)
+   * @details Schreibt sofort. Genutzt vom Upload (importFile) und vom
+   *          Webflasher-Block beim Start (ProvisionService). Ergebnis über
+   *          res (≈ 350 B), damit es nicht zweimal auf dem Stapel liegt.
+   */
+  void importJson(JsonObjectConst root, ImportResult& res);
 
   /// Konfiguration, Zustand und Vorlagen löschen (Chronik und Log bleiben)
   void factoryReset();

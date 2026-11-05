@@ -7,10 +7,16 @@
  *                         "staticIp": {"ip": "192.168.1.50", …}},
  *            "settings": {"deviceName": "…", "adminPassword": "…",
  *                         "wifi": [{"ssid": "…", "password": "…"}, null, {…}],
- *                         "channelNames": {"ANALOG_0": "Licht", …}}
+ *                         "channelNames": {"ANALOG_0": "Licht", …},
+ *                         "config": {…}}
  *          }
  *          "wifi" hat je Slot einen Eintrag; null lässt den Slot unverändert.
  *          "channelNames" benennt Messkanäle (Schlüssel wie in der Oberfläche).
+ *          "config" ist eine Konfigurationsdatei (config.json der Firmware 2.x
+ *          oder Export mit "schema": 1), die der Webflasher importiert hat; das
+ *          Gerät übernimmt sie mit ConfigService::importJson() vor den übrigen
+ *          Einstellungen (die also Vorrang haben). parse() merkt sich nur, dass
+ *          sie da ist (hasConfig); gelesen wird sie mit readConfig().
  *          Die Hardware bleibt im Block und gilt bei jedem Start (auch nach
  *          OTA-Updates). Die Einstellungen übernimmt das Gerät einmal; danach
  *          schreibt es den Block ohne sie zurück (keine Passwörter im Klartext
@@ -21,6 +27,8 @@
 
 #include <stddef.h>
 #include <stdint.h>
+
+#include <ArduinoJson.h>
 
 #include "core/board_types.h"
 #include "core/types.h"
@@ -55,6 +63,8 @@ struct Settings {
   char adminPassword[33] = {};
   uint8_t channelNameCount = 0;
   ChannelName channelNames[kMaxChannelNames];
+  /// Block enthält "settings.config" (Inhalt über readConfig())
+  bool hasConfig = false;
   bool anyWifi() const {
     for (const auto& w : wifi)
       if (w.set)
@@ -62,7 +72,7 @@ struct Settings {
     return false;
   }
   bool any() const {
-    return hasDeviceName || anyWifi() || hasAdminPassword || channelNameCount > 0;
+    return hasDeviceName || anyWifi() || hasAdminPassword || channelNameCount > 0 || hasConfig;
   }
 };
 
@@ -78,8 +88,15 @@ enum class Result : uint8_t { Ok, Empty, BadMagic, BadLength, BadCrc, BadJson };
 /// Hardware-Felder, die fehlen, kommen aus base (Voreinstellung).
 Result parse(const uint8_t* sector, size_t len, const Hardware& base, Block& out);
 
+/**
+ * @brief Nur "settings.config" lesen (Filter, damit der Rest keinen Heap braucht)
+ * @details Ok: doc["settings"]["config"] ist das Objekt. Prüft Kopf und CRC wie parse().
+ */
+Result readConfig(const uint8_t* sector, size_t len, JsonDocument& doc);
+
 /// Block schreiben (Header + JSON + 0xFF-Auffüllung auf kSectorSize).
-/// withSettings=false lässt die Einstellungen weg. Rückgabe: false bei Überlänge.
+/// withSettings=false lässt die Einstellungen weg; "config" wird nie
+/// geschrieben (das Gerät erzeugt sie nicht). Rückgabe: false bei Überlänge.
 bool encode(const Block& b, bool withSettings, uint8_t* sector, size_t len);
 
 const char* resultName(Result r);

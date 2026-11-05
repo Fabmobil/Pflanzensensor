@@ -270,8 +270,12 @@ ConfigService::ImportResult ConfigService::importFile() {
     }
   }
   fs_.remove(kImportPath);
-  JsonObjectConst root = doc.as<JsonObjectConst>();
+  importJson(doc.as<JsonObjectConst>(), res); // res hier nur einmal im Rahmen (≤ 512 B)
+  return res;
+}
 
+void ConfigService::importJson(JsonObjectConst root, ImportResult& res) {
+  // res kommt frisch vom Aufrufer (kein "res = {}": das Provisorium läge auf dem Stapel)
   // Arbeitskopien nicht auf dem Stack
   struct Work {
     DeviceConfig dev;
@@ -283,7 +287,7 @@ ConfigService::ImportResult ConfigService::importFile() {
   hal::TempBuffer mem(sizeof(Work));
   if (!mem) {
     res.err = Err::NoSpace;
-    return res;
+    return;
   }
   Work& work = *new (mem.data()) Work{dev_, sens_, sec_, {}, {}};
   DeviceConfig& dev = work.dev;
@@ -295,7 +299,7 @@ ConfigService::ImportResult ConfigService::importFile() {
     legacy::Extras* ex = static_cast<legacy::Extras*>(hal::tempAlloc(sizeof(legacy::Extras)));
     if (!ex) {
       res.err = Err::NoSpace;
-      return res;
+      return;
     }
     new (ex) legacy::Extras();
     legacy::import(root, dev, sens, sec, *ex, res.report);
@@ -340,7 +344,7 @@ ConfigService::ImportResult ConfigService::importFile() {
     }
   } else {
     res.err = Err::ParseError;
-    return res;
+    return;
   }
 
   dev_ = dev;
@@ -354,7 +358,6 @@ ConfigService::ImportResult ConfigService::importFile() {
   LOGI(Mod::Config, "Import: %u übernommen, %u ignoriert, %u ungültig",
        static_cast<unsigned>(res.report.applied), static_cast<unsigned>(res.report.ignored),
        static_cast<unsigned>(res.report.invalid));
-  return res;
 }
 
 void ConfigService::factoryReset() {

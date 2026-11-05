@@ -4,7 +4,8 @@
  * @details Zwei Schritte beim Start:
  *          1. loadHardware() - vor ConfigService::load(): Hardware aus dem
  *             Provisionierungssektor setzen (sonst Profil-Voreinstellung).
- *          2. applySettings() - nach ConfigService::load(): Name, WLAN 1-3, Kanalnamen und
+ *          2. applySettings() - nach ConfigService::load(): eine mitgegebene
+ *             Konfigurationsdatei importieren, dann Name, WLAN 1-3, Kanalnamen und
  *             Adminpasswort übernehmen und den Sektor ohne sie zurückschreiben.
  */
 #pragma once
@@ -29,6 +30,8 @@ public:
 
 private:
   static void applyChannelName(ConfigService& cfg, const provision::ChannelName& cn);
+  /// "settings.config" (Konfigurationsdatei aus dem Webflasher) importieren
+  static void importConfig(ConfigService& cfg);
   provision::Result read_ = provision::Result::Empty;
   bool fromBlock_ = false;
   HwCheckResult problem_;

@@ -163,13 +163,8 @@ void writeHardware(JsonObject h, const Hardware& hw) {
   }
 }
 
-} // namespace
-
-Result parse(const uint8_t* sector, size_t len, const Hardware& base, Block& out) {
-  // Nicht "out = Block{}": das Provisorium läge auf dem Stack (≈ 1,7 KB)
-  out.~Block();
-  new (&out) Block();
-  out.hardware = base;
+/// Kopf prüfen; Ok: n = Länge des JSON hinter dem Kopf
+Result payload(const uint8_t* sector, size_t len, uint32_t& n) {
   if (len < kHeaderSize)
     return Result::BadLength;
   bool erased = true;
@@ -179,13 +174,38 @@ Result parse(const uint8_t* sector, size_t len, const Hardware& base, Block& out
     return Result::Empty;
   if (memcmp(sector, kMagic, sizeof(kMagic)) != 0)
     return Result::BadMagic;
-  const uint32_t n = le32(sector + 8);
+  n = le32(sector + 8);
   if (n == 0 || n > len - kHeaderSize)
     return Result::BadLength;
   if (crc::crc32(sector + kHeaderSize, n) != le32(sector + 12))
     return Result::BadCrc;
+  return Result::Ok;
+}
+
+} // namespace
+
+Result parse(const uint8_t* sector, size_t len, const Hardware& base, Block& out) {
+  // Nicht "out = Block{}": das Provisorium läge auf dem Stack (≈ 1,7 KB)
+  out.~Block();
+  new (&out) Block();
+  out.hardware = base;
+  uint32_t n = 0;
+  const Result pr = payload(sector, len, n);
+  if (pr != Result::Ok)
+    return pr;
+  // Nur Hardware und die kurzen Einstellungen; "config" kann gut 3 KB groß
+  // sein und wird erst in readConfig() gelesen.
+  JsonDocument filter;
+  filter[PS_JK("hardware")] = true;
+  JsonObject fs = filter[PS_JK("settings")].to<JsonObject>();
+  fs[PS_JK("deviceName")] = true;
+  fs[PS_JK("wifi")] = true;
+  fs[PS_JK("adminPassword")] = true;
+  fs[PS_JK("channelNames")] = true;
+  fs[PS_JK("config")].to<JsonObject>(); // leeres Objekt: nur ob es da ist, ohne Inhalt
   JsonDocument doc;
-  if (deserializeJson(doc, reinterpret_cast<const char*>(sector + kHeaderSize), n))
+  if (deserializeJson(doc, reinterpret_cast<const char*>(sector + kHeaderSize), n,
+                      DeserializationOption::Filter(filter)))
     return Result::BadJson;
   JsonObjectConst h = doc[PS_JK("hardware")];
   if (!h.isNull()) {
@@ -221,6 +241,23 @@ Result parse(const uint8_t* sector, size_t len, const Hardware& base, Block& out
     snprintf(cn.key, sizeof(cn.key), "%s", kv.key().c_str());
     snprintf(cn.name, sizeof(cn.name), "%s", name);
   }
+  st.hasConfig = s[PS_JK("config")].is<JsonObjectConst>();
+  return Result::Ok;
+}
+
+Result readConfig(const uint8_t* sector, size_t len, JsonDocument& doc) {
+  doc.clear();
+  uint32_t n = 0;
+  const Result pr = payload(sector, len, n);
+  if (pr != Result::Ok)
+    return pr;
+  JsonDocument filter;
+  filter[PS_JK("settings")][PS_JK("config")] = true;
+  if (deserializeJson(doc, reinterpret_cast<const char*>(sector + kHeaderSize), n,
+                      DeserializationOption::Filter(filter)))
+    return Result::BadJson;
+  if (!doc[PS_JK("settings")][PS_JK("config")].is<JsonObjectConst>())
+    return Result::Empty;
   return Result::Ok;
 }
 
