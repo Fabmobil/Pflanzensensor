@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pflanzensensor – Webflasher</title>
+<link rel="stylesheet" href="style.css">
+<script type="module" src="esp-web-tools/install-button.js?module"></script>
+</head>
+<body>
+<main>
+  <h1>🌱 Pflanzensensor flashen</h1>
+  <p class="lead">Firmware direkt aus dem Browser per USB auf den Pflanzensensor spielen –
+    ohne Programmierumgebung.</p>
+
+  <section class="card">
+    <h2>1. Version wählen</h2>
+    <div class="row">
+      <select id="version" aria-label="Version"></select>
+      <a id="notes" href="#" target="_blank" rel="noopener">Änderungen</a>
+    </div>
+    <p class="hint" id="chips"></p>
+    <p class="hint" id="empty" hidden>Noch kein Release der Firmware 3 vorhanden.</p>
+  </section>
+
+  <section class="card">
+    <h2>2. Anschließen und installieren</h2>
+    <p>Pflanzensensor mit einem <strong>Datenkabel</strong> anschließen, dann:</p>
+    <esp-web-install-button id="install">
+      <button slot="activate" class="primary">Verbinden und installieren</button>
+      <span slot="unsupported" class="warn">Dieser Browser kann nicht auf USB zugreifen.
+        Bitte Chrome, Edge oder Opera auf einem Computer verwenden.</span>
+      <span slot="not-allowed" class="warn">USB-Zugriff ist nur über HTTPS erlaubt.</span>
+    </esp-web-install-button>
+    <p class="hint">Kein Gerät in der Liste? Treiber für den USB-Chip installieren
+      (<a href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers" target="_blank" rel="noopener">CP210x</a>
+      bzw. <a href="https://www.wch-ic.com/downloads/CH341SER_ZIP.html" target="_blank" rel="noopener">CH340</a>)
+      und ein anderes Kabel probieren.</p>
+  </section>
+
+  <section class="card">
+    <h2>Was dabei passiert</h2>
+    <ul>
+      <li><strong>Einstellungen bleiben erhalten.</strong> Nur die Firmware wird ersetzt;
+        WLAN, Sensoren, Chronik und Log bleiben auf dem Gerät. Das Kästchen
+        „Gerät löschen“ nur ankreuzen, wenn wirklich alles weg soll.</li>
+      <li><strong>WLAN einrichten (nur bei neuen Geräten nötig).</strong> Hat das Gerät noch
+        kein WLAN, bietet der Assistent nach dem Flashen an, eins einzutragen – es landet in
+        WLAN-Slot 1. Der Schritt lässt sich überspringen; das Gerät öffnet dann einen eigenen
+        Zugangspunkt zur Einrichtung. Bei eingerichteten Geräten kommt der Schritt nicht;
+        über „Verbinden“ → „WLAN ändern“ geht es trotzdem.</li>
+      <li><strong>Von Firmware 2.x:</strong> vorher in der alten Oberfläche die Konfiguration
+        herunterladen. Firmware 3 räumt beim ersten Start die alten Dateien weg; danach unter
+        Admin → Einstellungen → „Konfiguration hochladen“ wieder einspielen.</li>
+      <li>Später geht jedes Update auch ohne Kabel über Admin → Update im Gerät.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <a href="https://github.com/Fabmobil/Pflanzensensor">Fabmobil/Pflanzensensor</a> ·
+    Flashen mit <a href="https://esphome.github.io/esp-web-tools/">ESP Web Tools</a>
+  </footer>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
