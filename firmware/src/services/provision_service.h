@@ -4,7 +4,7 @@
  * @details Zwei Schritte beim Start:
  *          1. loadHardware() - vor ConfigService::load(): Hardware aus dem
  *             Provisionierungssektor setzen (sonst Profil-Voreinstellung).
- *          2. applySettings() - nach ConfigService::load(): Name, WLAN 1 und
+ *          2. applySettings() - nach ConfigService::load(): Name, WLAN 1-3, Kanalnamen und
  *             Adminpasswort übernehmen und den Sektor ohne sie zurückschreiben.
  */
 #pragma once
@@ -28,6 +28,7 @@ public:
   HwCheckResult hardwareProblem() const { return problem_; }
 
 private:
+  static void applyChannelName(ConfigService& cfg, const provision::ChannelName& cn);
   provision::Result read_ = provision::Result::Empty;
   bool fromBlock_ = false;
   HwCheckResult problem_;

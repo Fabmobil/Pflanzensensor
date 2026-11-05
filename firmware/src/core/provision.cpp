@@ -4,6 +4,7 @@
 #include "core/provision.h"
 
 #include <ArduinoJson.h>
+#include <new>
 #include <stdio.h>
 #include <string.h>
 
@@ -165,7 +166,9 @@ void writeHardware(JsonObject h, const Hardware& hw) {
 } // namespace
 
 Result parse(const uint8_t* sector, size_t len, const Hardware& base, Block& out) {
-  out = Block{};
+  // Nicht "out = Block{}": das Provisorium läge auf dem Stack (≈ 1,7 KB)
+  out.~Block();
+  new (&out) Block();
   out.hardware = base;
   if (len < kHeaderSize)
     return Result::BadLength;
@@ -195,14 +198,28 @@ Result parse(const uint8_t* sector, size_t len, const Hardware& base, Block& out
     st.hasDeviceName = true;
     copyStr(s[PS_JK("deviceName")], st.deviceName, sizeof(st.deviceName));
   }
-  if (s[PS_JK("wifiSsid")].is<const char*>() && *s[PS_JK("wifiSsid")].as<const char*>()) {
-    st.hasWifi = true;
-    copyStr(s[PS_JK("wifiSsid")], st.wifiSsid, sizeof(st.wifiSsid));
-    copyStr(s[PS_JK("wifiPassword")], st.wifiPassword, sizeof(st.wifiPassword));
+  JsonArrayConst wifi = s[PS_JK("wifi")];
+  for (uint8_t i = 0; i < kWifiSlots && i < wifi.size(); i++) {
+    JsonObjectConst w = wifi[i];
+    const char* ssid = w[PS_JK("ssid")];
+    if (!ssid || !*ssid)
+      continue; // null oder leer: Slot bleibt
+    st.wifi[i].set = true;
+    copyStr(w[PS_JK("ssid")], st.wifi[i].ssid, sizeof(st.wifi[i].ssid));
+    copyStr(w[PS_JK("password")], st.wifi[i].password, sizeof(st.wifi[i].password));
   }
   if (s[PS_JK("adminPassword")].is<const char*>() && *s[PS_JK("adminPassword")].as<const char*>()) {
     st.hasAdminPassword = true;
     copyStr(s[PS_JK("adminPassword")], st.adminPassword, sizeof(st.adminPassword));
+  }
+  JsonObjectConst names = s[PS_JK("channelNames")];
+  for (JsonPairConst kv : names) {
+    const char* name = kv.value().as<const char*>();
+    if (!name || !*name || st.channelNameCount >= kMaxChannelNames)
+      continue;
+    ChannelName& cn = st.channelNames[st.channelNameCount++];
+    snprintf(cn.key, sizeof(cn.key), "%s", kv.key().c_str());
+    snprintf(cn.name, sizeof(cn.name), "%s", name);
   }
   return Result::Ok;
 }
@@ -217,12 +234,25 @@ bool encode(const Block& b, bool withSettings, uint8_t* sector, size_t len) {
     JsonObject s = doc[PS_JK("settings")].to<JsonObject>();
     if (b.settings.hasDeviceName)
       s[PS_JK("deviceName")] = b.settings.deviceName;
-    if (b.settings.hasWifi) {
-      s[PS_JK("wifiSsid")] = b.settings.wifiSsid;
-      s[PS_JK("wifiPassword")] = b.settings.wifiPassword;
+    if (b.settings.anyWifi()) {
+      JsonArray wifi = s[PS_JK("wifi")].to<JsonArray>();
+      for (const auto& w : b.settings.wifi) {
+        if (!w.set) {
+          wifi.add(nullptr);
+          continue;
+        }
+        JsonObject o = wifi.add<JsonObject>();
+        o[PS_JK("ssid")] = w.ssid;
+        o[PS_JK("password")] = w.password;
+      }
     }
     if (b.settings.hasAdminPassword)
       s[PS_JK("adminPassword")] = b.settings.adminPassword;
+    if (b.settings.channelNameCount) {
+      JsonObject n = s[PS_JK("channelNames")].to<JsonObject>();
+      for (uint8_t i = 0; i < b.settings.channelNameCount; i++)
+        n[b.settings.channelNames[i].key] = b.settings.channelNames[i].name;
+    }
   }
   memset(sector, 0xFF, kSectorSize);
   const size_t n =

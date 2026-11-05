@@ -56,11 +56,27 @@ test('Voreinstellungen entsprechen den Board-Profilen der Firmware', () => {
   }
 });
 
+test('Kanalnamen entsprechen dem Katalog der Firmware', () => {
+  const { Hardware } = load('hardware.js');
+  const src = fs.readFileSync(path.join(ROOT, 'firmware', 'src', 'core', 'sensors', 'catalog.cpp'), 'utf8');
+  const tables = { ANALOG: 'kAnalog', DHT: 'kDht', DS18B20: 'kDs18b20', SDS011: 'kSds011', MHZ19: 'kMhz19',
+    HX711: 'kHx711', BMP280: 'kBmp280', SERIAL_RECEIVER: 'kSerial' };
+  assert.deepEqual(JSON.parse(JSON.stringify(Hardware.CHANNELS.map(c => c.id))), Object.keys(tables), 'Reihenfolge wie SensorType');
+  for (const c of Hardware.CHANNELS) {
+    const body = new RegExp('ChannelDef ' + tables[c.id] + '\\[\\d+\\] PS_PROGMEM = \\{([\\s\\S]*?)\\n\\};').exec(src);
+    assert.ok(body, c.id);
+    const names = [...body[1].matchAll(/\{"[^"]*", "([^"]*)"/g)].map(m => m[1]);
+    assert.deepEqual(JSON.parse(JSON.stringify(c.names)), names, c.id);
+  }
+  const pcb = Hardware.preset('pcb_v1');
+  assert.deepEqual(JSON.parse(JSON.stringify(Hardware.channels(pcb.features).map(c => c.key))), ['ANALOG_0', 'ANALOG_1', 'DHT_0', 'DHT_1']);
+});
+
 test('CRC-32 und Blockaufbau', () => {
   const { Provision, Hardware } = load('hardware.js', 'provision.js');
   assert.equal(Provision.crc32(new TextEncoder().encode('123456789')), 0xCBF43926);
   const hw = Hardware.preset('pcb_v1');
-  const b = Provision.encode(hw, { deviceName: '', wifiSsid: '' });
+  const b = Provision.encode(hw, { deviceName: '', wifi: [null, { ssid: '' }, null], channelNames: {} });
   assert.equal(b.length, 4096);
   assert.equal(String.fromCharCode(...b.slice(0, 7)), 'PSPROV1');
   const len = new DataView(b.buffer).getUint32(8, true);
@@ -82,11 +98,14 @@ test('Block für den C++-Test (firmware/test/vectors/provision_block.json)', () 
   hw.pins.oneWire = 14;
   hw.staticIp = { ip: '192.168.1.50', gateway: '192.168.1.1', subnet: '255.255.255.0' };
   assert.equal(Hardware.check('ESP8266', hw.features, hw.pins).problem, 'ok');
-  const b = Provision.encode(hw, { deviceName: 'Balkon Süd', wifiSsid: 'Garten', wifiPassword: 'geheim12' });
+  const settings = { deviceName: 'Balkon Süd', wifi: [{ ssid: 'Garten', password: 'geheim12' }, null, { ssid: 'Schule', password: '' }],
+    channelNames: { ANALOG_0: 'Licht Süd', DS18B20_2: 'Teich' } };
+  const b = Provision.encode(hw, settings);
   const len = 16 + new DataView(b.buffer).getUint32(8, true);
   const hex = Buffer.from(b.slice(0, len)).toString('hex');
   const vec = { description: 'Vom Webflasher (webflasher/provision.js) erzeugter Block; test_hardware parst ihn.',
-    hex, expect: { name: 'eigene', slots: 7, oneWire: 14, deviceName: 'Balkon Süd', wifiSsid: 'Garten' } };
+    hex, expect: { name: 'eigene', slots: 7, oneWire: 14, deviceName: 'Balkon Süd', wifi: ['Garten', '', 'Schule'],
+      channelNames: settings.channelNames } };
   const file = path.join(VECTORS, 'provision_block.json');
   if (process.env.WRITE_VECTORS) fs.writeFileSync(file, JSON.stringify(vec, null, 1) + '\n');
   assert.deepEqual(JSON.parse(fs.readFileSync(file, 'utf8')), vec, 'Vektor veraltet: WRITE_VECTORS=1 setzen');
@@ -107,10 +126,19 @@ test('Manifest: Firmware-Teile absolut, Block an der Chip-Adresse; Einstellungen
   const only = Flasher.manifest(rel, 'ESP32', 'https://h/', null);
   assert.equal(only.builds[0].parts.length, 2, 'nur Firmware: kein Block');
   assert.throws(() => Flasher.manifest({ version: '1', parts: {} }, 'ESP32', 'https://h/', null));
-  assert.deepEqual(JSON.parse(JSON.stringify(Flasher.cleanSettings({ deviceName: '  ', wifiSsid: 'Netz', wifiPassword: '', adminPassword: '' }))),
-    { wifiSsid: 'Netz', wifiPassword: '' });
+  const clean = s => JSON.parse(JSON.stringify(Flasher.cleanSettings(s)));
+  const fab = { ssid: Flasher.FABMOBIL_SSID, password: '' };
+  assert.deepEqual(clean({ deviceName: '  ', wifi: [{ ssid: 'Netz', password: '' }, {}, fab], adminPassword: '' }),
+    { wifi: [{ ssid: 'Netz', password: '' }, null, null] }, 'Slot 3 unverändert: nicht geschickt');
+  assert.deepEqual(clean({ wifi: [{}, {}, fab] }), {}, 'nur Voreinstellungen: keine Einstellungen');
+  assert.deepEqual(clean({ wifi: [{}, {}, { ssid: 'Anderes', password: 'geheim123' }] }),
+    { wifi: [null, null, { ssid: 'Anderes', password: 'geheim123' }] });
+  assert.deepEqual(clean({ channelNames: { ANALOG_0: ' Licht ', DHT_0: '  ' } }), { channelNames: { ANALOG_0: 'Licht' } });
+  assert.match(Flasher.settingsProblem({ channelNames: { ANALOG_0: 'ÄÄÄÄÄÄÄÄÄÄÄÄÄ' } }), /24 Bytes/);
+  assert.equal(Flasher.settingsProblem({ channelNames: { ANALOG_0: 'ÄÄÄÄÄÄÄÄÄÄÄÄ' } }), '');
+  assert.match(Flasher.settingsProblem({ wifi: [{}, { ssid: '', password: 'geheim123' }] }), /WLAN 2: Name/);
   assert.equal(Flasher.settingsProblem({ adminPassword: 'ä' }), 'Adminpasswort: 1 bis 32 druckbare ASCII-Zeichen.');
-  assert.match(Flasher.settingsProblem({ wifiPassword: 'kurz' }), /mindestens 8/);
+  assert.match(Flasher.settingsProblem({ wifi: [{ ssid: 'a', password: 'kurz' }] }), /WLAN 1: Passwort mindestens 8/);
   assert.match(Flasher.settingsProblem({ staticIp: { ip: '192.168.1.300' } }), /keine IPv4/);
   assert.match(Flasher.settingsProblem({ staticIp: { ip: '192.168.1.30' } }), /Gateway/);
   assert.equal(Flasher.settingsProblem({ staticIp: { ip: '192.168.1.30', gateway: '192.168.1.1' } }), '');

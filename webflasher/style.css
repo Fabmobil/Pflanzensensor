@@ -46,3 +46,11 @@ summary { cursor: pointer; color: #c9a2ff; font-weight: 600; }
 #modeHint { margin-top: 0.4em; }
 #mode { width: 100%; }
 h2 .hint { font-weight: 400; font-size: 0.75em; }
+.card h3 { margin: 1em 0 0.2em; font-size: 1em; color: #eee; }
+.wifi-grid { display: grid; grid-template-columns: auto 1fr 1fr; gap: 0.5em 0.8em; align-items: center; margin-top: 0.6em; }
+.wifi-grid .slot { color: #ccc; font-size: 0.95em; white-space: nowrap; }
+@media (max-width: 500px) {
+  .wifi-grid { grid-template-columns: 1fr 1fr; }
+  .wifi-grid .slot { grid-column: 1 / -1; margin-top: 0.3em; }
+}
+.grid label .key { color: #888; font-size: 0.85em; }

@@ -542,6 +542,7 @@ void test_net_rename_and_reconnect() {
 
 void test_net_failed_status_switches_early_and_ap_reconnect_request() {
   Rig r;
+  r.cfg.setWifi(2, "", "", false); // ohne Fabmobil-Voreinstellung
   r.cfg.setWifi(0, "A", "", false);
   r.cfg.setWifi(1, "B", "", false);
   r.net.begin(hal::now());

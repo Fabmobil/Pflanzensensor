@@ -10,7 +10,7 @@
     "wifi": {
       "ssid1": "Heimnetz",
       "ssid2": "",
-      "ssid3": ""
+      "ssid3": "Fabmobil Gäste"
     },
     "display": {
       "screenDuration": 5,
@@ -61,7 +61,7 @@
         "set": false
       },
       {
-        "set": false
+        "set": true
       }
     ],
     "mailKey": {

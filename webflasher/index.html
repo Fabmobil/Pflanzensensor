@@ -48,9 +48,17 @@
     <div class="grid">
       <label>Gerätename <input type="text" id="deviceName" maxlength="32" placeholder="z.B. Balkon Süd"></label>
       <label>Adminpasswort <input type="password" id="adminPassword" maxlength="32" autocomplete="new-password"></label>
-      <label>WLAN-Name (Slot 1) <input type="text" id="wifiSsid" maxlength="32" autocomplete="off"></label>
-      <label>WLAN-Passwort <input type="password" id="wifiPassword" maxlength="64" autocomplete="new-password"></label>
     </div>
+    <h3>WLAN</h3>
+    <p class="hint">Das Gerät verbindet sich mit dem ersten erreichbaren Netz. Slot 3 ist ab Werk das
+      Fabmobil-WLAN (Passwort steckt in der Firmware) – so lassen, dann bleibt auf schon eingerichteten
+      Geräten alles, wie es ist.</p>
+    <div class="wifi-grid" id="wifiSlots"></div>
+    <details id="namesBox">
+      <summary>Namen der Messkanäle</summary>
+      <p class="hint">Leer lassen heißt: Das Gerät behält seinen Namen (ab Werk der grau angezeigte).</p>
+      <div class="grid" id="channelNames"></div>
+    </details>
     <details>
       <summary>Feste IP-Adresse statt DHCP</summary>
       <div class="grid">
@@ -61,8 +69,8 @@
       </div>
       <p class="hint">Die feste IP gehört zur Hardware-Angabe und bleibt über Updates bestehen.</p>
     </details>
-    <p class="hint">Ohne WLAN hier bietet der Assistent nach dem Flashen an, eins einzutragen
-      (nur bei Geräten ohne WLAN); sonst öffnet das Gerät einen eigenen Zugangspunkt.</p>
+    <p class="hint">Ohne eigenes WLAN hier bietet der Assistent nach dem Flashen an, eins in Slot 1 einzutragen,
+      solange das Gerät keine Verbindung hat; ohne erreichbares Netz öffnet es einen eigenen Zugangspunkt.</p>
     <p class="status" id="settingsStatus"></p>
   </section>
 

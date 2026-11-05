@@ -32,7 +32,14 @@ Computer, USB-Datenkabel): **https://fabmobil.github.io/Pflanzensensor/**
 - Es gibt **eine Firmware je Chip** (ESP8266, ESP32). Welche Sensoren an
   welchen Pins hängen, wählt man im Webflasher: Voreinstellung
   Pflanzensensor-PCB bzw. ESP32-DevKit, aufklappbar jeder Sensor mit Pins
-  und Optionen. Dazu optional Gerätename, WLAN 1, Adminpasswort, feste IP.
+  und Optionen. Dazu optional Gerätename, WLAN-Slots 1–3, Namen der
+  Messkanäle, Adminpasswort, feste IP.
+- WLAN-Slot 3 ist ab Werk das Fabmobil-WLAN („Fabmobil Gäste“,
+  `defaults::kFabmobilWifiSsid`). Das Passwort steht nur XOR-verschleiert im
+  Quelltext (`defaults::fabmobilWifiPassword()`); ein Hash wie beim
+  Notfallpasswort geht nicht, weil das WLAN den Klartext braucht. Der
+  Webflasher kennt das Passwort nicht: Bleibt Slot 3 dort unverändert, schickt
+  er nichts, und das Gerät behält, was es hat.
 - Die Seite schreibt neben der Firmware einen 4-KB-**Provisionierungsblock**
   (`src/core/provision.*`, `webflasher/provision.js`; ESP8266 Flash 0x3FA000,
   ESP32 Partition `provision` bei 0x3F0000). Beim Start liest die Firmware
@@ -48,8 +55,8 @@ Computer, USB-Datenkabel): **https://fabmobil.github.io/Pflanzensensor/**
 - Einstellungen, Chronik und Log bleiben, solange man „Gerät löschen“ nicht
   ankreuzt.
 - Danach fragt der Assistent über Improv Serial (`src/core/net/improv.*`,
-  `src/services/improv_service.*`) nach dem WLAN, wenn das Gerät noch keins
-  hat. Das landet in Slot 1; überspringen geht. Eingerichtete Geräte werden
+  `src/services/improv_service.*`) nach dem WLAN, wenn das Gerät nicht
+  verbunden ist. Das landet in Slot 1; überspringen geht. Eingerichtete Geräte werden
   nicht gefragt („WLAN ändern“ geht trotzdem).
 - Releases: Liegt auf `main` eine `VERSION` ohne Tag, legt der Job `release`
   in `.github/workflows/firmware.yml` das Release `v<VERSION>` an (Dateien aus

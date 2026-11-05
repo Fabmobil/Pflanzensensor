@@ -5,6 +5,7 @@
 
 #include <ArduinoJson.h>
 #include <new>
+#include <stdio.h>
 #include <string.h>
 
 #include "board.h"
@@ -48,6 +49,31 @@ void ProvisionService::loadHardware() {
   }
 }
 
+void ProvisionService::applyChannelName(ConfigService& cfg, const provision::ChannelName& cn) {
+  const int slot = schema::slotOfKey(cn.key);
+  if (slot < 0) {
+    LOGW(Mod::Config, "Kanalname aus dem Webflasher: %s gibt es nicht", cn.key);
+    return;
+  }
+  // {"<Sensor-ID>": {"channels": {"<Index>": {"name": "…"}}}}
+  char id[20];
+  snprintf(id, sizeof(id), "%s", cn.key);
+  char* us = strrchr(id, '_');
+  *us = '\0';
+  JsonDocument doc;
+  doc[id]["channels"][us + 1]["name"] = cn.name;
+  // FieldErrors (≈ 340 B) nicht auf den Stack (Grenze 512 B je Rahmen)
+  hal::TempBuffer mem(sizeof(schema::FieldErrors));
+  if (!mem)
+    return;
+  schema::FieldErrors& errs = *new (mem.data()) schema::FieldErrors();
+  uint32_t changed = 0;
+  if (cfg.patchSensors(doc.as<JsonObjectConst>(), errs, changed) == Err::None)
+    LOGI(Mod::Config, "Kanal %s heißt jetzt %s", cn.key, cn.name);
+  else
+    LOGW(Mod::Config, "Kanalname für %s ungültig", cn.key);
+}
+
 bool ProvisionService::applySettings(ConfigService& cfg) {
   if (!block_)
     return false;
@@ -64,10 +90,17 @@ bool ProvisionService::applySettings(ConfigService& cfg) {
       else
         LOGW(Mod::Config, "Gerätename aus dem Webflasher ungültig");
     }
-    if (b.settings.hasWifi) {
-      if (cfg.setWifi(0, b.settings.wifiSsid, b.settings.wifiPassword, false) == Err::None)
-        LOGI(Mod::Wifi, "WLAN 1 aus dem Webflasher: %s", b.settings.wifiSsid);
+    for (uint8_t i = 0; i < provision::kWifiSlots; i++) {
+      const provision::WifiSetting& w = b.settings.wifi[i];
+      if (!w.set)
+        continue;
+      if (cfg.setWifi(i, w.ssid, w.password, false) == Err::None)
+        LOGI(Mod::Wifi, "WLAN %u aus dem Webflasher: %s", i + 1, w.ssid);
+      else
+        LOGW(Mod::Wifi, "WLAN %u aus dem Webflasher ungültig", i + 1);
     }
+    for (uint8_t i = 0; i < b.settings.channelNameCount; i++)
+      applyChannelName(cfg, b.settings.channelNames[i]);
     if (b.settings.hasAdminPassword) {
       if (cfg.setAdminPassword(b.settings.adminPassword) == Err::None)
         LOGI(Mod::Auth, "Adminpasswort aus dem Webflasher gesetzt");
@@ -86,7 +119,8 @@ bool ProvisionService::applySettings(ConfigService& cfg) {
       LOGE(Mod::Boot, "Webflasher-Block konnte nicht bereinigt werden");
   }
   // Passwörter nicht im freigegebenen Speicher liegen lassen
-  memset(b.settings.wifiPassword, 0, sizeof(b.settings.wifiPassword));
+  for (auto& w : b.settings.wifi)
+    memset(w.password, 0, sizeof(w.password));
   memset(b.settings.adminPassword, 0, sizeof(b.settings.adminPassword));
   b.~Block();
   hal::tempFree(block_);
