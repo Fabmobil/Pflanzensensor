@@ -1,6 +1,6 @@
 name: Firmware
 
-# Tests, Bau und Releases der Firmware unter firmware/ (firmware/refactor.md 5.18).
+# Tests, Bau und Releases der Firmware unter firmware/.
 
 on:
   push:
@@ -77,40 +77,6 @@ jobs:
             firmware/.pio/build/${{ matrix.env }}/firmware.bin
             firmware/.pio/build/${{ matrix.env }}/firmware.bin.md5
 
-  release:
-    name: Release veröffentlichen
-    runs-on: ubuntu-latest
-    needs: [native, js, build]
-    if: github.ref == 'refs/heads/main'
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - name: Version bestimmen
-        id: version
-        run: |
-          v=$(cat VERSION | tr -d '[:space:]')
-          echo "version=$v" >> "$GITHUB_OUTPUT"
-          if git rev-parse -q --verify "refs/tags/v$v" >/dev/null; then echo "needed=false" >> "$GITHUB_OUTPUT"; else echo "needed=true" >> "$GITHUB_OUTPUT"; fi
-      - uses: actions/download-artifact@v4
-        if: steps.version.outputs.needed == 'true'
-        with: { path: firmware/artifacts }
-      - name: Release anlegen (je Board-Profil ein Artefakt, ohne littlefs.bin)
-        if: steps.version.outputs.needed == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          mkdir -p out
-          for b in esp8266_pcb esp32_devkit; do
-            cp artifacts/firmware-$b/firmware.bin out/firmware-$b.bin
-            md5sum out/firmware-$b.bin | cut -d' ' -f1 > out/firmware-$b.bin.md5
-          done
-          { git log -1 --pretty=%B; echo; echo "| Datei | MD5 |"; echo "| --- | --- |";
-            for b in esp8266_pcb esp32_devkit; do echo "| firmware-$b.bin | \`$(cat out/firmware-$b.bin.md5)\` |"; done; } > notes.md
-          gh release create "v$VERSION" --title "v$VERSION" --notes-file notes.md --target "$GITHUB_SHA" out/*
-
   # ---------------------------------------------------------------------------
   # Veröffentlichung
   # ---------------------------------------------------------------------------
@@ -167,7 +133,7 @@ jobs:
             echo
             echo "| Datei | MD5 |"
             echo "| --- | --- |"
-            for f in dist/*.bin; do echo "| $(basename $f) | \`$(md5sum $f | cut -d' ' -f1)\` |"; done
+            for f in dist/*.bin; do echo "| $(basename "$f") | \`$(md5sum "$f" | cut -d' ' -f1)\` |"; done
           } > notes.md
           gh release create "v$VERSION" --title "v$VERSION" --notes-file notes.md \
             --target "$GITHUB_SHA" dist/*

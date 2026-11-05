@@ -1,9 +1,8 @@
 # Pflanzensensor – Firmware 3
 
-Neubau der Firmware nach `refactor.md`. Zielhardware ist das eigene PCB mit
-ESP8266 (NodeMCU v2, 4 MB). Die Firmware baut und läuft zusätzlich auf ESP32.
-Die Firmware 2.x unter `Pflanzensensor/` bleibt als Referenz liegen, bis die
-Hardware-Abnahme (AP-15, siehe `ABNAHME.md`) durch ist.
+Zielhardware ist das eigene PCB mit ESP8266 (NodeMCU v2, 4 MB). Die Firmware
+baut und läuft zusätzlich auf ESP32. Die Firmware 2.x findet sich in der
+Git-Historie (bis Commit `d7c3ba5`).
 
 ## Bauen und flashen
 
@@ -118,7 +117,7 @@ die API antwortet mit 401 ohne `WWW-Authenticate`. Geschützt: `/api/v1/config`
 (GET/PATCH), `/api/v1/secrets/…`, `/api/v1/sensors` (GET/PATCH, Aktionen unter
 `/api/v1/sensors/<ID>/…`), `/api/v1/mail/…`,
 `/api/v1/config/{export,import}`, `/api/v1/system/{reboot,factory-reset}`,
-`/api/v1/ota`. Tabelle: `src/web/router.cpp`, Details: `refactor.md` 5.9.
+`/api/v1/ota`. Tabelle: `src/web/router.cpp`.
 
 Fehlerformat: `{"ok":false,"error":"<code>","message":"…","fields":{…}}`.
 
@@ -126,12 +125,11 @@ Fehlerformat: `{"ok":false,"error":"<code>","message":"…","fields":{…}}`.
 
 - **O3 (OTA ohne Update-Modus):** Upload im Normalbetrieb. Sensoren werden
   pausiert und alles wird gesichert; es gibt keinen Neustart in einen Update-Modus.
-  Der freie Heap während des Uploads muss auf dem Gerät noch gemessen werden
-  (`ABNAHME.md`, AP-12).
+  Gemessen: mindestens ~13 KB freier Heap während des Uploads (Ziel ≥ 8 KB).
 - **O5 (Display):** eigener SSD1306-Treiber mit 1-KB-Framebuffer und eigenem
   5×7-Font (mit ä ö ü ß °). Spart die Adafruit-Bibliotheken; die Bildschirme
   sind reine Funktionen und nativ per Pixel-Hash getestet.
-- **Live-Log:** Polling statt WebSocket (refactor.md 5.10).
+- **Live-Log:** Polling statt WebSocket.
 - **DHT ohne Bibliothek:** DHTesp wartet für das Startsignal des DHT11 mit
   `delay(18)`; mit WLAN-Last wurden daraus 35–40 ms Schleifenzeit. Der eigene
   Treiber zieht die Leitung in einem Schritt auf LOW und liest 20 ms später
@@ -143,9 +141,8 @@ Fehlerformat: `{"ok":false,"error":"<code>","message":"…","fields":{…}}`.
 
 ## Abnahme am Gerät
 
-Was nur auf echter Hardware geht, steht als Checkliste mit dem Stand der
-letzten Abnahme in `ABNAHME.md`. Alles, was über HTTP prüfbar ist, erledigt
-`tools/acceptance.py` (nur Python-Standardbibliothek):
+Alles, was über HTTP prüfbar ist, erledigt `tools/acceptance.py` (nur
+Python-Standardbibliothek):
 
 ```
 python3 tools/acceptance.py <ip> --password <pw> [--loop 120] [--robust] [--reboot] [--ota firmware.bin] [--long 600]
@@ -155,5 +152,5 @@ Ausgabe: Markdown-Bericht auf stdout und `acceptance-report.json`.
 
 **Beim ersten Start nach Firmware 2.x** löscht die Firmware alle Dateien,
 die nicht zu ihr gehören (alte Web-Dateien, `/nvs`, `/config`, …; ~750 KB).
-Eine Migration gibt es nicht (refactor.md E2) – die alte Konfiguration also
+Eine Migration gibt es nicht – die alte Konfiguration also
 vorher mit „Konfiguration herunterladen“ sichern und danach importieren.
