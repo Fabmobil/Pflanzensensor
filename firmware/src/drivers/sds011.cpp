@@ -22,7 +22,7 @@ void Sds011::send(const uint8_t* cmd) { port().write(cmd, 19); }
 
 Step Sds011::begin(Instant) {
   if (!begun_)
-    begun_ = port().begin(9600, board::kPins.sdsRx, board::kPins.sdsTx);
+    begun_ = port().begin(9600, board::pins().sdsRx, board::pins().sdsTx);
   return begun_ ? Step::Ok : Step::Error;
 }
 

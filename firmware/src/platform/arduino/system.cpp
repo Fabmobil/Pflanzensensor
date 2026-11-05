@@ -18,6 +18,7 @@
 #include <user_interface.h>
 #elif defined(ARDUINO_ARCH_ESP32)
 #include <WiFi.h>
+#include <esp_partition.h>
 #include <esp_random.h>
 #include <esp_system.h>
 #include <mbedtls/gcm.h>
@@ -136,6 +137,45 @@ ResetReason resetReason() {
 uint32_t freeSketchSpace() { return ESP.getFreeSketchSpace(); }
 
 void consoleBegin(uint32_t baud) { Serial.begin(baud); }
+
+#if defined(ARDUINO_ARCH_ESP8266)
+namespace {
+/// Ein freier Sektor hinter LittleFS (_FS_end) und vor dem EEPROM-Sektor,
+/// siehe boards/eagle.flash.4mmore.ld
+constexpr uint32_t kProvisionAddr = 0x3FA000;
+} // namespace
+
+bool provisionRead(uint8_t* buf, size_t len) {
+  return len % 4 == 0 && ESP.flashRead(kProvisionAddr, reinterpret_cast<uint32_t*>(buf), len);
+}
+
+bool provisionWrite(const uint8_t* buf, size_t len) {
+  if (len % 4 != 0 || len > 4096)
+    return false;
+  if (!ESP.flashEraseSector(kProvisionAddr / 4096))
+    return false;
+  return ESP.flashWrite(kProvisionAddr, reinterpret_cast<const uint32_t*>(buf), len);
+}
+#else
+namespace {
+const esp_partition_t* provisionPartition() {
+  return esp_partition_find_first(ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_ANY, "provision");
+}
+} // namespace
+
+bool provisionRead(uint8_t* buf, size_t len) {
+  const esp_partition_t* p = provisionPartition();
+  return p && len <= p->size && esp_partition_read(p, 0, buf, len) == ESP_OK;
+}
+
+bool provisionWrite(const uint8_t* buf, size_t len) {
+  const esp_partition_t* p = provisionPartition();
+  if (!p || len > p->size)
+    return false;
+  return esp_partition_erase_range(p, 0, p->size) == ESP_OK &&
+         esp_partition_write(p, 0, buf, len) == ESP_OK;
+}
+#endif
 
 size_t consoleRead(uint8_t* buf, size_t cap) {
   size_t n = 0;

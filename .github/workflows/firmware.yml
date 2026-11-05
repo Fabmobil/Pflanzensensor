@@ -5,9 +5,9 @@ name: Firmware
 on:
   push:
     branches: ["**"]
-    paths: ["firmware/**", ".github/workflows/firmware.yml"]
+    paths: ["firmware/**", "webflasher/**", ".github/workflows/firmware.yml"]
   pull_request:
-    paths: ["firmware/**"]
+    paths: ["firmware/**", "webflasher/**"]
   workflow_dispatch:
 
 defaults:
@@ -43,6 +43,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: "22" }
       - run: tools/run_js_tests.sh
+      # Webflasher teilt Testvektoren mit der Firmware (hardware_check, provision_block)
+      - run: node --test ../webflasher/test/
 
   build:
     name: Firmware ${{ matrix.env }}

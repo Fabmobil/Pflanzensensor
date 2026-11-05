@@ -12,6 +12,7 @@
 #include "services/metrics_service.h"
 #include "services/net_service.h"
 #include "services/ota_service.h"
+#include "services/provision_service.h"
 #include "services/sensor_service.h"
 #include "services/system_info.h"
 #include "services/template_store.h"
@@ -35,6 +36,8 @@ struct WebContext {
   Events& events;
   hal::Fs& fs;
   bool otaRunning = false;
+  /// Herkunft der Hardware (Webflasher oder Profil); im Test nullptr
+  const ProvisionService* provision = nullptr;
 };
 
 } // namespace ps

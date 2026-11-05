@@ -175,14 +175,14 @@ void test_system_endpoint() {
   TEST_ASSERT_TRUE(d["features"]["display"]);
   TEST_ASSERT_TRUE(d["heap"]["freeHeap"].as<int>() > 0);
   JsonArray ch = d["channels"];
-  TEST_ASSERT_EQUAL(board::kSlotCount, ch.size());
+  TEST_ASSERT_EQUAL(board::slotCount(), ch.size());
   TEST_ASSERT_EQUAL_STRING("ANALOG_0", ch[0]["key"]);
   TEST_ASSERT_EQUAL_STRING("ANALOG", ch[0]["sensor"]);
   TEST_ASSERT_EQUAL_STRING("Lichtstärke", ch[0]["name"]);
   // Deaktivierter Kanal fehlt
   r.admin(M::Patch, "/api/v1/sensors", "{\"ANALOG\":{\"channels\":{\"0\":{\"enabled\":false}}}}");
   d = r.get("/api/v1/system").json();
-  TEST_ASSERT_EQUAL(board::kSlotCount - 1, d["channels"].as<JsonArray>().size());
+  TEST_ASSERT_EQUAL(board::slotCount() - 1, d["channels"].as<JsonArray>().size());
   native::setEpoch(0);
   d = r.get("/api/v1/system").json();
   TEST_ASSERT_TRUE(d["time"].isNull());
@@ -298,7 +298,7 @@ void test_config_get_shape() {
   TEST_ASSERT_TRUE(d["secrets"]["mailKey"]["set"]);
   TEST_ASSERT_EQUAL(3, d["secrets"]["wifi"].as<JsonArray>().size());
   TEST_ASSERT_EQUAL(-1, d["activeWifiSlot"].as<int>());
-  TEST_ASSERT_EQUAL(board::kSlotCount, d["channels"].as<JsonArray>().size());
+  TEST_ASSERT_EQUAL(board::slotCount(), d["channels"].as<JsonArray>().size());
   TEST_ASSERT_EQUAL_STRING("AA:BB:CC:DD:EE:FF", d["system"]["mac"]);
   TEST_ASSERT_EQUAL(16000, d["system"]["logFileMax"].as<int>());
   TEST_ASSERT_EQUAL(std::string::npos, r.admin(M::Get, "/api/v1/config").body.find("AAECAwQF"));

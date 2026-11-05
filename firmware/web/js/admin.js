@@ -63,7 +63,7 @@
     }
   }
 
-  function renderInfo(s) {
+  function renderInfo(s, hw) {
     const t = document.getElementById('sysinfo');
     const rows = [
       ['Freier Heap', global.UI.formatBytes(s.freeHeap)],
@@ -77,6 +77,12 @@
       ['Log-Datei', global.UI.formatBytes(s.logFileSize) + ' (' + Math.round(100 * s.logFileSize / s.logFileMax) + ' % von max.)'],
       ['Version', s.version + ' (' + s.buildDate + ')']
     ];
+    if (hw) {
+      rows.push(['Hardware', hw.name + ' (' + hw.platform + ', ' +
+        (hw.source === 'webflasher' ? 'aus dem Webflasher' : 'Voreinstellung') + '), ' +
+        hw.channels + ' von max. ' + hw.maxChannels + ' Kanälen' +
+        (hw.problem ? ' – Webflasher-Angabe ungültig: ' + hw.problem : '')]);
+    }
     t.textContent = '';
     rows.forEach(([k, v]) => t.appendChild(el('tr', {}, [el('td', { text: k + ':' }), el('td', { text: v })])));
   }
@@ -90,7 +96,7 @@
     }).then(data => {
       preview();
       renderWifi(data);
-      renderInfo(data.system);
+      renderInfo(data.system, data.hardware);
     });
 
     document.getElementById('pwSave').addEventListener('click', () => {
@@ -98,7 +104,7 @@
       const problem = passwordProblem(a, b);
       if (problem) return toast(problem, 'error');
       global.Api.put('/api/v1/secrets/admin-password', { password: a }).then(() => {
-        toast('Passwort geändert - der Browser fragt gleich neu nach der Anmeldung.');
+        toast('Passwort geändert - andere Browser müssen sich neu anmelden.');
         document.getElementById('pw1').value = document.getElementById('pw2').value = '';
       });
     });

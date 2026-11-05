@@ -22,7 +22,7 @@ volatile uint32_t g_cycles = 0;
 
 void IRAM_ATTR onEdge() {
   const uint32_t t = micros();
-  if (digitalRead(board::kPins.mhz19Pwm)) {
+  if (digitalRead(board::pins().mhz19Pwm)) {
     if (g_fallUs) {
       g_lowUs = t - g_fallUs;
       g_cycles++; // Zyklus vollständig: High gefolgt von Low
@@ -38,8 +38,8 @@ void IRAM_ATTR onEdge() {
 
 Step Mhz19::begin(Instant) {
   if (!attached_) {
-    pinMode(board::kPins.mhz19Pwm, INPUT);
-    attachInterrupt(digitalPinToInterrupt(board::kPins.mhz19Pwm), onEdge, CHANGE);
+    pinMode(board::pins().mhz19Pwm, INPUT);
+    attachInterrupt(digitalPinToInterrupt(board::pins().mhz19Pwm), onEdge, CHANGE);
     attached_ = true;
   }
   return Step::Ok;
@@ -57,7 +57,7 @@ Step Mhz19::pollRound(Instant, Reading* out, uint8_t n) {
   noInterrupts();
   const uint32_t th = g_highUs, tl = g_lowUs;
   interrupts();
-  const float ppm = proto::mhz19Ppm(th, tl, board::kFeatures.mhz19Range);
+  const float ppm = proto::mhz19Ppm(th, tl, board::features().mhz19Range);
   if (n > 0 && ppm > 0 && ppm <= 5000)
     out[0].value = ppm;
   return Step::Ok;

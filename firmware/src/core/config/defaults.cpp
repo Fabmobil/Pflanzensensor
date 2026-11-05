@@ -23,7 +23,7 @@ void device(DeviceConfig& c) {
   c.flowerChannel = isKnown(kFlowerChannel) ? kFlowerChannel : "";
   c.ledChannel = isKnown(kLedChannel) ? kLedChannel : "";
   c.mailUrl = kMailUrl;
-  if (!board::kFeatures.display && c.ledMode == 1)
+  if (!board::features().display && c.ledMode == 1)
     c.ledMode = 2;
 #if defined(PS_DEV_SECRETS)
   c.wifiSsid[0] = DEV_WIFI_SSID_1;
@@ -44,14 +44,14 @@ void secrets(Secrets& s) {
 } // namespace defaults
 
 void sensorDefaults(SensorsConfig& c) {
-  for (uint8_t i = 0; i < board::kSensorCount; i++) {
-    const SensorInfo inf = catalog::info(board::kSensors[i].type);
+  for (uint8_t i = 0; i < board::sensorCount(); i++) {
+    const SensorInfo inf = catalog::info(board::sensor(i).type);
     c.sensors[i] = SensorConfig{};
     c.sensors[i].intervalS = inf.defaultIntervalS;
   }
-  for (uint8_t s = 0; s < board::kSlotCount; s++) {
-    const auto& slot = board::kSlots[s];
-    const ChannelDef d = catalog::channel(board::kSensors[slot.sensor].type, slot.channel);
+  for (uint8_t s = 0; s < board::slotCount(); s++) {
+    const auto& slot = board::slot(s);
+    const ChannelDef d = catalog::channel(board::sensor(slot.sensor).type, slot.channel);
     ChannelConfig& ch = c.channels[s];
     ch = ChannelConfig{};
     ch.name = d.name;

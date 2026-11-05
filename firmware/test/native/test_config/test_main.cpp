@@ -250,7 +250,7 @@ void test_legacy_import_measurements() {
   TEST_ASSERT_EQUAL(604800u, s.channels[1].halfLifeS);
   TEST_ASSERT_TRUE(s.channels[0].display);
   TEST_ASSERT_FALSE(s.channels[1].display);
-  const uint8_t dhtSlot = board::kSensors[board::sensorIndexOf(SensorType::Dht)].firstSlot;
+  const uint8_t dhtSlot = board::sensor(board::sensorIndexOf(SensorType::Dht)).firstSlot;
   TEST_ASSERT_FALSE(s.channels[dhtSlot + 1].enabled);
   TEST_ASSERT_EQUAL_FLOAT(
       15, s.channels[dhtSlot].limits.greenLow); // ungültige Schwellen nicht übernommen

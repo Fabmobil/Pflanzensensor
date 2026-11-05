@@ -38,6 +38,10 @@ std::string& consoleInput() {
   static std::string s;
   return s;
 }
+std::string& provisionSector() {
+  static std::string s;
+  return s;
+}
 
 hal::File* MemFs::open(const char* path, hal::OpenMode mode) {
   if ((mode == hal::OpenMode::Read || mode == hal::OpenMode::ReadWrite) && !files_.count(path))
@@ -214,6 +218,16 @@ ResetReason resetReason() { return native::g_reason; }
 uint32_t freeSketchSpace() { return 1500000; }
 void consoleWrite(const char* d, size_t n) { native::console().append(d, n); }
 void consoleBegin(uint32_t) {}
+bool provisionRead(uint8_t* buf, size_t len) {
+  const std::string& s = native::provisionSector();
+  memset(buf, 0xFF, len);
+  memcpy(buf, s.data(), s.size() < len ? s.size() : len);
+  return true;
+}
+bool provisionWrite(const uint8_t* buf, size_t len) {
+  native::provisionSector().assign(reinterpret_cast<const char*>(buf), len);
+  return true;
+}
 size_t consoleRead(uint8_t* buf, size_t cap) {
   std::string& in = native::consoleInput();
   const size_t n = in.size() < cap ? in.size() : cap;

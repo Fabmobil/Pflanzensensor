@@ -12,13 +12,13 @@
 namespace ps {
 
 namespace {
-constexpr uint8_t kScreenCount = 5 + board::kSlotCount;
+constexpr uint8_t kScreenCount = 5 + board::kMaxSlots; // Bildschirme ohne Kanal werden übersprungen
 }
 
 void DisplayService::begin() {
-  if (!board::kFeatures.display)
+  if (!board::features().display)
     return;
-  present_ = bus_.begin(board::kFeatures.displayAddress);
+  present_ = bus_.begin(board::features().displayAddress);
   if (!present_) {
     LOGW(Mod::Display, "Kein Display gefunden - es geht ohne weiter");
     return;
@@ -87,10 +87,10 @@ bool DisplayService::screenAvailable(uint8_t s) const {
     return d.showFabmobil;
   default: {
     const uint8_t slot = static_cast<uint8_t>(s - FirstChannel);
-    if (slot >= board::kSlotCount)
+    if (slot >= board::slotCount())
       return false;
     const ChannelConfig& cc = cfg_.sensors().channels[slot];
-    const uint8_t sensor = board::kSlots[slot].sensor;
+    const uint8_t sensor = board::slot(slot).sensor;
     return cc.enabled && cc.display && cfg_.sensors().sensors[sensor].enabled;
   }
   }

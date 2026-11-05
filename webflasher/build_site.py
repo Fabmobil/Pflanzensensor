@@ -88,11 +88,16 @@ def add_release(out, entries, tag, version, name, date, prerelease, url, fetch):
         shutil.rmtree(d)
         return
     (d / "manifest.json").write_text(json.dumps(m, indent=2))
+    # Die Seite setzt das Manifest im Browser selbst zusammen (Firmware +
+    # Provisionierungsblock mit Hardware und Einstellungen); dafür die Teile.
+    parts = {b["chipFamily"]: [{"path": f"firmware/{tag}/{p['path']}", "offset": p["offset"]}
+                               for p in b["parts"]] for b in m["builds"]}
     entries.append({
         "tag": tag, "version": version, "name": name or tag, "date": date,
         "prerelease": prerelease, "url": url,
         "manifest": f"firmware/{tag}/manifest.json",
         "chips": [b["chipFamily"] for b in m["builds"]],
+        "parts": parts,
     })
 
 
@@ -111,7 +116,7 @@ def main():
     if out.exists():
         shutil.rmtree(out)
     out.mkdir(parents=True)
-    for f in ("index.html", "app.js", "style.css"):
+    for f in ("index.html", "app.js", "style.css", "hardware.js", "provision.js", "flasher.js"):
         shutil.copy(HERE / f, out / f)
     shutil.copy(HERE.parent / "firmware" / "web" / "favicon.ico", out / "favicon.ico")
     if a.esp_web_tools:

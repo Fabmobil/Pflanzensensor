@@ -59,10 +59,10 @@ struct ValueDriver final : ps::SensorDriver {
 /// Alle Sensoren des Board-Profils als ValueDriver
 struct DriverSet {
   std::vector<ValueDriver*> all;
-  ps::SensorDriver* ptrs[board::kSensorCount];
+  ps::SensorDriver* ptrs[board::kMaxSensors] = {};
   DriverSet() {
-    for (uint8_t i = 0; i < board::kSensorCount; i++) {
-      all.push_back(new ValueDriver(board::kSensors[i].type));
+    for (uint8_t i = 0; i < board::sensorCount(); i++) {
+      all.push_back(new ValueDriver(board::sensor(i).type));
       ptrs[i] = all.back();
     }
   }

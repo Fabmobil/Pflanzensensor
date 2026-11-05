@@ -112,9 +112,9 @@ void test_display_clock_skipped_without_time_and_ampm() {
   // Alle Kanäle aus: ohne Uhr bleibt nur der leere Bildschirm
   JsonDocument d;
   std::string all = "{";
-  for (uint8_t i = 0; i < board::kSensorCount; i++) {
+  for (uint8_t i = 0; i < board::sensorCount(); i++) {
     char id[16];
-    copyP(id, sizeof(id), catalog::id(board::kSensors[i].type));
+    copyP(id, sizeof(id), catalog::id(board::sensor(i).type));
     all += std::string(i ? "," : "") + "\"" + id + "\":{\"enabled\":false}";
   }
   all += "}";
@@ -457,7 +457,7 @@ void test_ds18b20_failure_requests_reboot_once() {
   }
   TEST_ASSERT_TRUE(reboot);
   TEST_ASSERT_TRUE(failed);
-  const uint8_t slot = board::kSensors[board::sensorIndexOf(SensorType::Ds18b20)].firstSlot;
+  const uint8_t slot = board::sensor(board::sensorIndexOf(SensorType::Ds18b20)).firstSlot;
   TEST_ASSERT_EQUAL(ChannelStatus::Error, r.sensors.status(slot, hal::now()));
   TEST_ASSERT_FALSE(r.sensors.allMeasuredOnce());
 }
@@ -466,13 +466,13 @@ void test_invalid_values_and_warmup_status() {
   Rig r;
   r.drivers.of(SensorType::Bmp280).value = 5000; // außerhalb 300..1100 bzw. -40..85
   r.sensors.begin(r.drivers.ptrs, hal::now());
-  const uint8_t mh = board::kSensors[board::sensorIndexOf(SensorType::Mhz19)].firstSlot;
+  const uint8_t mh = board::sensor(board::sensorIndexOf(SensorType::Mhz19)).firstSlot;
   TEST_ASSERT_EQUAL(ChannelStatus::Warmup, r.sensors.status(mh, hal::now()));
   for (int k = 0; k < 200; k++) {
     native::advance(100);
     r.sensors.tick(hal::now());
   }
-  const uint8_t b = board::kSensors[board::sensorIndexOf(SensorType::Bmp280)].firstSlot;
+  const uint8_t b = board::sensor(board::sensorIndexOf(SensorType::Bmp280)).firstSlot;
   TEST_ASSERT_TRUE(isnan(r.sensors.channel(b).value));
   // Unbekannter Sensorname
   TEST_ASSERT_EQUAL(-1, SensorService::sensorByName("NICHTS"));

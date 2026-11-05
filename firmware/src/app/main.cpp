@@ -38,6 +38,7 @@
 #include "services/metrics_service.h"
 #include "services/net_service.h"
 #include "services/ota_service.h"
+#include "services/provision_service.h"
 #include "services/sensor_service.h"
 #include "services/state_store.h"
 #include "services/storage.h"
@@ -53,42 +54,36 @@ using namespace ps;
 namespace {
 
 // ---------------------------------------------------------------------------
-// Treiber: nur die vom Profil verlangten existieren
+// Treiber: alle sind einkompiliert, angemeldet werden die bestückten
+// (board::hardware() - Webflasher oder Profil-Voreinstellung)
 // ---------------------------------------------------------------------------
-struct Absent {};
-template <bool On, typename T> using Opt = typename std::conditional<On, T, Absent>::type;
-
-constexpr auto& F = board::kFeatures;
-Opt<F.analog, drivers::AnalogMux> g_analog;
-Opt<F.dht, drivers::Dht> g_dht;
-Opt<F.ds18b20, drivers::Ds18b20> g_ds18b20;
-Opt<F.sds011, drivers::Sds011> g_sds011;
-Opt<F.mhz19, drivers::Mhz19> g_mhz19;
-Opt<F.hx711, drivers::Hx711> g_hx711;
-Opt<F.bmp280, drivers::Bmp280> g_bmp280;
-Opt<F.serialReceiver, drivers::SerialReceiver> g_serial;
-
-SensorDriver* asDriver(SensorDriver& d) { return &d; }
-SensorDriver* asDriver(Absent&) { return nullptr; }
+drivers::AnalogMux g_analog;
+drivers::Dht g_dht;
+drivers::Ds18b20 g_ds18b20;
+drivers::Sds011 g_sds011;
+drivers::Mhz19 g_mhz19;
+drivers::Hx711 g_hx711;
+drivers::Bmp280 g_bmp280;
+drivers::SerialReceiver g_serial;
 
 SensorDriver* driverFor(SensorType t) {
   switch (t) {
   case SensorType::Analog:
-    return asDriver(g_analog);
+    return &g_analog;
   case SensorType::Dht:
-    return asDriver(g_dht);
+    return &g_dht;
   case SensorType::Ds18b20:
-    return asDriver(g_ds18b20);
+    return &g_ds18b20;
   case SensorType::Sds011:
-    return asDriver(g_sds011);
+    return &g_sds011;
   case SensorType::Mhz19:
-    return asDriver(g_mhz19);
+    return &g_mhz19;
   case SensorType::Hx711:
-    return asDriver(g_hx711);
+    return &g_hx711;
   case SensorType::Bmp280:
-    return asDriver(g_bmp280);
+    return &g_bmp280;
   case SensorType::SerialReceiver:
-    return asDriver(g_serial);
+    return &g_serial;
   default:
     return nullptr;
   }
@@ -122,6 +117,7 @@ MailService g_mail(g_tcp, g_cfg, g_state, g_templates, g_sensors, g_net, g_sys);
 MetricsService g_metrics(g_cfg, g_sensors, g_net, g_sys);
 OtaService g_ota(g_otaPort, g_cfg, g_events);
 Auth g_auth(g_cfg);
+ProvisionService g_provision;
 ImprovService g_improv(g_cfg, g_net);
 WebContext g_webCtx{g_cfg, g_sensors, g_state,   g_chronik, g_log,  g_mail,   g_templates,
                     g_net, g_sys,     g_metrics, g_ota,     g_auth, g_events, g_fs};
@@ -234,7 +230,7 @@ void taskNet(void*, Instant now) {
 }
 void taskSensors(void*, Instant now) { g_sensors.tick(now); }
 void taskLed(void*, Instant now) {
-  if (board::kFeatures.ledTraffic)
+  if (board::features().ledTraffic)
     g_led.tick(now);
 }
 void taskDisplay(void*, Instant now) { g_display.tick(now); }
@@ -297,7 +293,10 @@ void bootLogLine(void*, const char* line) { g_display.bootLine(line); }
 void setup() {
   hal::consoleBegin(115200);
   log::attach(&g_log);
-  LOGI(Mod::Boot, "Pflanzensensor %s (%s, %s) startet", kVersion, board::kName, kBuildDate);
+  // 1. Hardware: aus dem Webflasher-Block, sonst Voreinstellung des Profils.
+  //    Vor allem anderen - Kanal-Layout und Konfiguration hängen davon ab.
+  g_provision.loadHardware();
+  LOGI(Mod::Boot, "Pflanzensensor %s (%s, %s) startet", kVersion, board::name(), kBuildDate);
 
   // 2. Dateisystem
   if (!g_fs.mount()) {
@@ -316,6 +315,8 @@ void setup() {
   g_boot.begin(hal::resetReason());
   // 4. Konfiguration
   g_cfg.load();
+  g_provision.applySettings(g_cfg);
+  g_webCtx.provision = &g_provision;
   g_log.configure(g_cfg.device());
   if (g_boot.fileLogBlocked()) {
     LOGW(Mod::Boot, "Mehrfachstart: Datei-Log aus und gelöscht");
@@ -332,16 +333,16 @@ void setup() {
   // 8. NTP
   g_time.begin();
   // 9. LED-Ampel
-  if (board::kFeatures.ledTraffic) {
+  if (board::features().ledTraffic) {
     g_ledPins.begin();
     g_led.setDisplaySource(displaySlot, nullptr);
   }
   // 10. Sensoren (ein fehlschlagendes begin() lässt den Sensor im Plan, B-10)
   if (!g_state.load())
     LOGI(Mod::Config, "Kein gespeicherter Kanalzustand");
-  SensorDriver* drivers[board::kSensorCount];
-  for (uint8_t i = 0; i < board::kSensorCount; i++)
-    drivers[i] = driverFor(board::kSensors[i].type);
+  SensorDriver* drivers[board::kMaxSensors] = {};
+  for (uint8_t i = 0; i < board::sensorCount(); i++)
+    drivers[i] = driverFor(board::sensor(i).type);
   g_sensors.setRestartGate(BootGuard::sensorRestartGate, &g_boot);
   g_sensors.begin(drivers, hal::now());
   // 11. Chronik

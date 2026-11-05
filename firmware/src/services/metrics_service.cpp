@@ -33,7 +33,7 @@ void MetricsService::write(Sink& out) {
     out.write("\",platform=\"");
     escapeLabel(out, board::kPlatformName);
     out.write("\",board=\"");
-    escapeLabel(out, board::kName);
+    escapeLabel(out, board::name());
     out.write("\"}");
   };
   auto gauge = [&](FStr name, FStr help, double value) {
@@ -65,14 +65,14 @@ void MetricsService::write(Sink& out) {
 
   out.writeP(FS_("# HELP pflanzensensor_sensor_value Current sensor reading\n# TYPE "
                  "pflanzensensor_sensor_value gauge\n"));
-  for (uint8_t s = 0; s < board::kSlotCount; s++) {
+  for (uint8_t s = 0; s < board::slotCount(); s++) {
     const ChannelConfig& cc = cfg_.sensors().channels[s];
-    if (!cc.enabled || !cfg_.sensors().sensors[board::kSlots[s].sensor].enabled)
+    if (!cc.enabled || !cfg_.sensors().sensors[board::slot(s).sensor].enabled)
       continue;
     const ChannelState& st = sensors_.channel(s);
     if (!st.hasOk || isnan(st.value) || isinf(st.value))
       continue;
-    const SensorType t = board::kSensors[board::kSlots[s].sensor].type;
+    const SensorType t = board::sensor(board::slot(s).sensor).type;
     if (t == SensorType::Mhz19 && st.value == 0)
       continue;  // ppm == 0 übersprungen
     char id[24]; // Sensor-ID wie im Altcode ("ANALOG"); field trennt die Kanäle

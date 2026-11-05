@@ -399,10 +399,10 @@ void test_sensor_service() {
   Events ev;
   SensorService svc(cfg, state, ev);
   std::vector<FakeDriver*> fakes;
-  SensorDriver* drivers[board::kSensorCount];
-  for (uint8_t i = 0; i < board::kSensorCount; i++) {
-    const SensorType t = board::kSensors[i].type;
-    auto* f = new FakeDriver(t, ResNone, 100, 0, 0, board::kSensors[i].channels);
+  SensorDriver* drivers[board::sensorCount()];
+  for (uint8_t i = 0; i < board::sensorCount(); i++) {
+    const SensorType t = board::sensor(i).type;
+    auto* f = new FakeDriver(t, ResNone, 100, 0, 0, board::sensor(i).channels);
     if (t == SensorType::Analog) {
       f->values[0] = 500;
       f->values[1] = 1023;
@@ -424,7 +424,7 @@ void test_sensor_service() {
     native::advance(100);
     svc.tick(hal::now());
   }
-  const uint8_t s0 = board::kSensors[a].firstSlot;
+  const uint8_t s0 = board::sensor(a).firstSlot;
   // Lichtstärke: Roh 500 → (500-5)/(1018)·100; Bodenfeuchte invertiert 1023 → begrenzt → 0 %
   TEST_ASSERT_FLOAT_WITHIN(0.5f, 48.6f, svc.channel(s0).value);
   TEST_ASSERT_EQUAL_FLOAT(0, svc.channel(s0 + 1).value);
@@ -433,7 +433,7 @@ void test_sensor_service() {
   TEST_ASSERT_TRUE(svc.measuredOnce(static_cast<uint8_t>(a)));
   // DHT bleibt im Plan und hat Fehlerzählung, aber keinen Wert (≠ 0, B-08)
   TEST_ASSERT_FALSE(svc.measuredOnce(static_cast<uint8_t>(dht)));
-  TEST_ASSERT_TRUE(isnan(svc.channel(board::kSensors[dht].firstSlot).value));
+  TEST_ASSERT_TRUE(isnan(svc.channel(board::sensor(dht).firstSlot).value));
   TEST_ASSERT_TRUE(svc.run(static_cast<uint8_t>(dht)).failures >= 1);
   Event e;
   bool done = false;

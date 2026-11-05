@@ -20,9 +20,9 @@ using namespace ps;
 
 void setUp() {
   shim::reset();
-  shim::muxPins[0] = board::kPins.muxA;
-  shim::muxPins[1] = board::kPins.muxB;
-  shim::muxPins[2] = board::kPins.muxC;
+  shim::muxPins[0] = board::pins().muxA;
+  shim::muxPins[1] = board::pins().muxB;
+  shim::muxPins[2] = board::pins().muxC;
 }
 void tearDown() {}
 
@@ -32,14 +32,14 @@ void test_analog_mux_addresses_and_values() {
     shim::adcValue[a] = 100 + a;
   drivers::AnalogMux mux;
   TEST_ASSERT_EQUAL(Step::Ok, mux.begin(hal::now()));
-  TEST_ASSERT_EQUAL(OUTPUT, shim::pinMode[board::kPins.muxA]);
-  TEST_ASSERT_EQUAL(OUTPUT, shim::pinMode[board::kPins.muxC]);
+  TEST_ASSERT_EQUAL(OUTPUT, shim::pinMode[board::pins().muxA]);
+  TEST_ASSERT_EQUAL(OUTPUT, shim::pinMode[board::pins().muxC]);
   Reading out[2];
   TEST_ASSERT_EQUAL(Step::Ok, mux.pollRound(hal::now(), out, 2));
   TEST_ASSERT_EQUAL(107, out[0].raw); // Kanal 1 = A=B=C=HIGH
   TEST_ASSERT_EQUAL_FLOAT(107, out[0].value);
   TEST_ASSERT_EQUAL(106, out[1].raw);
-  TEST_ASSERT_EQUAL(board::kPins.adc, shim::adcPin);
+  TEST_ASSERT_EQUAL(board::pins().adc, shim::adcPin);
   TEST_ASSERT_EQUAL(2, shim::analogReads); // eine Runde liest alle Kanäle einmal
   TEST_ASSERT_EQUAL(2, mux.channelCount());
 }
@@ -58,25 +58,25 @@ void test_analog_mux_rejects_out_of_range_and_stuck_pins() {
   shim::adcValue[7] = 500;
   shim::adcValue[6] = 300;
   shim::stuckPin = true;
-  const int writes = shim::pinWrites[board::kPins.muxA];
+  const int writes = shim::pinWrites[board::pins().muxA];
   mux.pollRound(hal::now(), out, 2);
   TEST_ASSERT_TRUE(isnan(out[0].value));
   // Kanal 1 (A=HIGH) scheitert zweimal; Kanal 2 (A=LOW) passt zufällig zum Hänger
-  TEST_ASSERT_EQUAL(writes + 2 + 1, shim::pinWrites[board::kPins.muxA]);
+  TEST_ASSERT_EQUAL(writes + 2 + 1, shim::pinWrites[board::pins().muxA]);
   TEST_ASSERT_FALSE(isnan(out[1].value));
 }
 
 void test_led_traffic_pins() {
   drivers::LedTraffic led;
   led.set(true, true, true); // vor begin(): nichts
-  TEST_ASSERT_EQUAL(0, shim::pinWrites[board::kPins.ledGreen]);
+  TEST_ASSERT_EQUAL(0, shim::pinWrites[board::pins().ledGreen]);
   led.begin();
-  TEST_ASSERT_EQUAL(OUTPUT, shim::pinMode[board::kPins.ledRed]);
-  TEST_ASSERT_EQUAL(LOW, shim::pinLevel[board::kPins.ledGreen]); // aus nach begin()
+  TEST_ASSERT_EQUAL(OUTPUT, shim::pinMode[board::pins().ledRed]);
+  TEST_ASSERT_EQUAL(LOW, shim::pinLevel[board::pins().ledGreen]); // aus nach begin()
   led.set(false, true, false);
-  TEST_ASSERT_EQUAL(LOW, shim::pinLevel[board::kPins.ledGreen]);
-  TEST_ASSERT_EQUAL(HIGH, shim::pinLevel[board::kPins.ledYellow]);
-  TEST_ASSERT_EQUAL(LOW, shim::pinLevel[board::kPins.ledRed]);
+  TEST_ASSERT_EQUAL(LOW, shim::pinLevel[board::pins().ledGreen]);
+  TEST_ASSERT_EQUAL(HIGH, shim::pinLevel[board::pins().ledYellow]);
+  TEST_ASSERT_EQUAL(LOW, shim::pinLevel[board::pins().ledRed]);
 }
 
 namespace {
@@ -92,7 +92,7 @@ void cycle(uint32_t& t, uint32_t thMs, uint32_t tlMs) {
 void test_mhz19_isr_measures_pwm() {
   drivers::Mhz19 co2;
   TEST_ASSERT_EQUAL(Step::Ok, co2.begin(hal::now()));
-  TEST_ASSERT_EQUAL(board::kPins.mhz19Pwm, shim::isrPin);
+  TEST_ASSERT_EQUAL(board::pins().mhz19Pwm, shim::isrPin);
   Reading out[1];
   co2.startRound(hal::now());
   TEST_ASSERT_EQUAL(Step::Pending, co2.pollRound(hal::now(), out, 1)); // noch kein Zyklus

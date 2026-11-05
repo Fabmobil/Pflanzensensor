@@ -8,7 +8,7 @@
 
 #include "core/board_types.h"
 
-namespace board {
+namespace board_profile {
 
 constexpr ps::Platform kPlatform = ps::Platform::Native;
 constexpr char kName[] = "native";
@@ -58,4 +58,4 @@ constexpr ps::Features kFeatures = [] {
 
 constexpr ps::StaticIp kStaticIp{};
 
-} // namespace board
+} // namespace board_profile

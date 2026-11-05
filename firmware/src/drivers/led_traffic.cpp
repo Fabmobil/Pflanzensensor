@@ -13,11 +13,11 @@ namespace ps {
 namespace drivers {
 
 void LedTraffic::begin() {
-  if (!board::kFeatures.ledTraffic)
+  if (!board::features().ledTraffic)
     return;
-  pinMode(board::kPins.ledGreen, OUTPUT);
-  pinMode(board::kPins.ledYellow, OUTPUT);
-  pinMode(board::kPins.ledRed, OUTPUT);
+  pinMode(board::pins().ledGreen, OUTPUT);
+  pinMode(board::pins().ledYellow, OUTPUT);
+  pinMode(board::pins().ledRed, OUTPUT);
   ready_ = true;
   set(false, false, false);
 }
@@ -25,9 +25,9 @@ void LedTraffic::begin() {
 void LedTraffic::set(bool g, bool y, bool r) {
   if (!ready_)
     return;
-  digitalWrite(board::kPins.ledGreen, g ? HIGH : LOW);
-  digitalWrite(board::kPins.ledYellow, y ? HIGH : LOW);
-  digitalWrite(board::kPins.ledRed, r ? HIGH : LOW);
+  digitalWrite(board::pins().ledGreen, g ? HIGH : LOW);
+  digitalWrite(board::pins().ledYellow, y ? HIGH : LOW);
+  digitalWrite(board::pins().ledRed, r ? HIGH : LOW);
 }
 
 } // namespace drivers

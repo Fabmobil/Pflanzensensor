@@ -33,8 +33,8 @@ struct Report {
 struct Extras {
   bool hasAdminPassword = false;
   FixedString<33> adminPassword; ///< Klartext, wird vom Dienst gehasht
-  ChannelState state[board::kSlotCount];
-  bool hasState[board::kSlotCount] = {};
+  ChannelState state[board::kMaxSlots];
+  bool hasState[board::kMaxSlots] = {};
 };
 
 bool isLegacy(JsonObjectConst root);

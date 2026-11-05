@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pflanzensensor – Webflasher</title>
+<link rel="icon" href="favicon.ico">
 <link rel="stylesheet" href="style.css">
 <script type="module" src="esp-web-tools/install-button.js?module"></script>
 </head>
@@ -14,17 +15,59 @@
     ohne Programmierumgebung.</p>
 
   <section class="card">
-    <h2>1. Version wählen</h2>
+    <h2>1. Version</h2>
     <div class="row">
       <select id="version" aria-label="Version"></select>
       <a id="notes" href="#" target="_blank" rel="noopener">Änderungen</a>
     </div>
-    <p class="hint" id="chips"></p>
     <p class="hint" id="empty" hidden>Noch kein Release der Firmware 3 vorhanden.</p>
   </section>
 
   <section class="card">
-    <h2>2. Anschließen und installieren</h2>
+    <h2>2. Gerät</h2>
+    <select id="mode" aria-label="Gerät">
+      <option value="pcb_v1">Pflanzensensor-PCB (ESP8266, NodeMCU)</option>
+      <option value="esp32_devkit">ESP32-DevKit (WROOM-32)</option>
+      <option value="keep:ESP8266">Nur Firmware aktualisieren – ESP8266, Hardware auf dem Gerät bleibt</option>
+      <option value="keep:ESP32">Nur Firmware aktualisieren – ESP32, Hardware auf dem Gerät bleibt</option>
+    </select>
+    <p class="hint" id="modeHint"></p>
+    <details id="customize">
+      <summary>Sensoren und Pins anpassen</summary>
+      <p class="hint">Was hier steht, gilt für das Gerät, bis man es wieder mit dem Webflasher ändert –
+        auch über spätere Updates in der Weboberfläche hinweg.</p>
+      <div id="sensors"></div>
+    </details>
+    <p class="status" id="hwStatus"></p>
+  </section>
+
+  <section class="card" id="settingsCard">
+    <h2>3. Einstellungen <span class="hint">(optional)</span></h2>
+    <p class="hint">Nur ausgefüllte Felder werden übernommen – einmal, beim ersten Start nach dem Flashen.
+      Leer lassen heißt: Was auf dem Gerät eingestellt ist, bleibt.</p>
+    <div class="grid">
+      <label>Gerätename <input type="text" id="deviceName" maxlength="32" placeholder="z.B. Balkon Süd"></label>
+      <label>Adminpasswort <input type="password" id="adminPassword" maxlength="32" autocomplete="new-password"></label>
+      <label>WLAN-Name (Slot 1) <input type="text" id="wifiSsid" maxlength="32" autocomplete="off"></label>
+      <label>WLAN-Passwort <input type="password" id="wifiPassword" maxlength="64" autocomplete="new-password"></label>
+    </div>
+    <details>
+      <summary>Feste IP-Adresse statt DHCP</summary>
+      <div class="grid">
+        <label>IP-Adresse <input type="text" id="ipIp" placeholder="192.168.1.50"></label>
+        <label>Gateway <input type="text" id="ipGateway" placeholder="192.168.1.1"></label>
+        <label>Subnetzmaske <input type="text" id="ipSubnet" placeholder="255.255.255.0"></label>
+        <label>DNS <input type="text" id="ipDns1" placeholder="192.168.1.1"></label>
+      </div>
+      <p class="hint">Die feste IP gehört zur Hardware-Angabe und bleibt über Updates bestehen.</p>
+    </details>
+    <p class="hint">Ohne WLAN hier bietet der Assistent nach dem Flashen an, eins einzutragen
+      (nur bei Geräten ohne WLAN); sonst öffnet das Gerät einen eigenen Zugangspunkt.</p>
+    <p class="status" id="settingsStatus"></p>
+  </section>
+
+  <section class="card">
+    <h2>4. Anschließen und installieren</h2>
     <p>Pflanzensensor mit einem <strong>Datenkabel</strong> anschließen, dann:</p>
     <esp-web-install-button id="install">
       <button slot="activate" class="primary">Verbinden und installieren</button>
@@ -32,6 +75,7 @@
         Bitte Chrome, Edge oder Opera auf einem Computer verwenden.</span>
       <span slot="not-allowed" class="warn">USB-Zugriff ist nur über HTTPS erlaubt.</span>
     </esp-web-install-button>
+    <p class="warn" id="blocked" hidden></p>
     <p class="hint">Kein Gerät in der Liste? Treiber für den USB-Chip installieren
       (<a href="https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers" target="_blank" rel="noopener">CP210x</a>
       bzw. <a href="https://www.wch-ic.com/downloads/CH341SER_ZIP.html" target="_blank" rel="noopener">CH340</a>)
@@ -41,18 +85,16 @@
   <section class="card">
     <h2>Was dabei passiert</h2>
     <ul>
-      <li><strong>Einstellungen bleiben erhalten.</strong> Nur die Firmware wird ersetzt;
-        WLAN, Sensoren, Chronik und Log bleiben auf dem Gerät. Das Kästchen
-        „Gerät löschen“ nur ankreuzen, wenn wirklich alles weg soll.</li>
-      <li><strong>WLAN einrichten (nur bei neuen Geräten nötig).</strong> Hat das Gerät noch
-        kein WLAN, bietet der Assistent nach dem Flashen an, eins einzutragen – es landet in
-        WLAN-Slot 1. Der Schritt lässt sich überspringen; das Gerät öffnet dann einen eigenen
-        Zugangspunkt zur Einrichtung. Bei eingerichteten Geräten kommt der Schritt nicht;
-        über „Verbinden“ → „WLAN ändern“ geht es trotzdem.</li>
+      <li><strong>Einstellungen bleiben erhalten.</strong> Nur die Firmware und die Hardware-Angabe
+        werden geschrieben; WLAN, Sensoreinstellungen, Chronik und Log bleiben. Das Kästchen
+        „Gerät löschen“ im Assistenten nur ankreuzen, wenn wirklich alles weg soll.</li>
+      <li><strong>Eine Firmware für alle Varianten:</strong> Welche Sensoren an welchen Pins hängen,
+        liest das Gerät beim Start aus einem kleinen Block, den diese Seite mitschreibt. Ungültige
+        Angaben (z.B. doppelt belegte Pins) lehnt auch das Gerät ab und nutzt dann die
+        Voreinstellung.</li>
       <li><strong>Von Firmware 2.x:</strong> vorher in der alten Oberfläche die Konfiguration
-        herunterladen. Firmware 3 räumt beim ersten Start die alten Dateien weg; danach unter
-        Admin → Einstellungen → „Konfiguration hochladen“ wieder einspielen.</li>
-      <li>Später geht jedes Update auch ohne Kabel über Admin → Update im Gerät.</li>
+        herunterladen und nach dem Update unter Admin → Einstellungen wieder hochladen.</li>
+      <li>Spätere Updates gehen auch ohne Kabel über Admin → Update im Gerät.</li>
     </ul>
   </section>
 
@@ -61,6 +103,9 @@
     Flashen mit <a href="https://esphome.github.io/esp-web-tools/">ESP Web Tools</a>
   </footer>
 </main>
+<script src="hardware.js"></script>
+<script src="provision.js"></script>
+<script src="flasher.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

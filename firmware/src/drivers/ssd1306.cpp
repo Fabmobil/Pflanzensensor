@@ -21,7 +21,7 @@ void Ssd1306::command(uint8_t c) {
 
 bool Ssd1306::begin(uint8_t address) {
   addr_ = address;
-  Wire.begin(board::kPins.sda, board::kPins.scl);
+  Wire.begin(board::pins().sda, board::pins().scl);
   Wire.setClock(400000);
   Wire.beginTransmission(addr_);
   if (Wire.endTransmission() != 0)

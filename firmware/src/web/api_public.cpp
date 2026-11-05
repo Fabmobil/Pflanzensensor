@@ -35,8 +35,8 @@ void getLatestValues(WebContext& c, hal::Request&, hal::Response& res, const cha
   w.kv(FS_("ip"), static_cast<const char*>(ip));
   w.key(FS_("sensors")).beginObject();
   const SensorsConfig& sc = c.cfg.sensors();
-  for (uint8_t s = 0; s < board::kSlotCount; s++) {
-    const uint8_t sensor = board::kSlots[s].sensor;
+  for (uint8_t s = 0; s < board::slotCount(); s++) {
+    const uint8_t sensor = board::slot(s).sensor;
     const ChannelConfig& cc = sc.channels[s];
     if (!sc.sensors[sensor].enabled || !cc.enabled)
       continue;
@@ -44,7 +44,7 @@ void getLatestValues(WebContext& c, hal::Request&, hal::Response& res, const cha
     // Kanäle ohne bisher erfolgreiche Messung fehlen (Altverhalten)
     if (!c.sensors.measuredOnce(sensor))
       continue;
-    const SensorType type = board::kSensors[sensor].type;
+    const SensorType type = board::sensor(sensor).type;
     if (type == SensorType::Mhz19 && !(st.value > 0))
       continue; // ppm ≤ 0 übersprungen
     char key[32];
@@ -121,7 +121,7 @@ void system(WebContext& c, hal::Request&, hal::Response& res, const char*) {
   w.kv(FS_("version"), kVersion);
   w.kv(FS_("buildDate"), kBuildDate);
   w.kv(FS_("platform"), board::kPlatformName);
-  w.kv(FS_("board"), board::kName);
+  w.kv(FS_("board"), board::name());
   w.kv(FS_("ip"), static_cast<const char*>(ip));
   w.kv(FS_("ssid"), static_cast<const char*>(ssid));
   w.kv(FS_("hostname"), c.net.hostname());
@@ -142,9 +142,9 @@ void system(WebContext& c, hal::Request&, hal::Response& res, const char*) {
   w.kv(FS_("epoch"), ep);
   w.kv(FS_("flowerChannel"), c.cfg.device().flowerChannel.c_str());
   w.key(FS_("features")).beginObject();
-  w.kv(FS_("display"), board::kFeatures.display);
-  w.kv(FS_("led"), board::kFeatures.ledTraffic);
-  w.kv(FS_("hx711"), board::kFeatures.hx711);
+  w.kv(FS_("display"), board::features().display);
+  w.kv(FS_("led"), board::features().ledTraffic);
+  w.kv(FS_("hx711"), board::features().hx711);
   w.endObject();
   w.key(FS_("heap")).beginObject();
   c.sys.writeHeap(w);
@@ -152,13 +152,13 @@ void system(WebContext& c, hal::Request&, hal::Response& res, const char*) {
   // Aktive Kanäle für die Startseite (Name, Einheit, Sensor)
   w.key(FS_("channels")).beginArray();
   const SensorsConfig& sc = c.cfg.sensors();
-  for (uint8_t s = 0; s < board::kSlotCount; s++) {
-    const uint8_t sensor = board::kSlots[s].sensor;
+  for (uint8_t s = 0; s < board::slotCount(); s++) {
+    const uint8_t sensor = board::slot(s).sensor;
     if (!sc.sensors[sensor].enabled || !sc.channels[s].enabled)
       continue;
     char key[32], id[16];
     schema::keyOfSlot(s, key, sizeof(key));
-    copyP(id, sizeof(id), catalog::id(board::kSensors[sensor].type));
+    copyP(id, sizeof(id), catalog::id(board::sensor(sensor).type));
     w.beginObject();
     w.kv(FS_("key"), static_cast<const char*>(key));
     w.kv(FS_("sensor"), static_cast<const char*>(id));
@@ -190,7 +190,7 @@ void measurePublic(WebContext& c, hal::Request& req, hal::Response& res, const c
   if (sensor < 0) {
     const int slot = schema::slotOfKey(id);
     if (slot >= 0)
-      sensor = board::kSlots[slot].sensor;
+      sensor = board::slot(slot).sensor;
   }
   if (sensor < 0) {
     sendError(res, 404, Err::NotFound, "Sensor nicht gefunden");

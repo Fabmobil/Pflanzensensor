@@ -23,14 +23,15 @@ enum class MeasureResult : uint8_t { Accepted, Busy, NotReady, Disabled, NotFoun
 
 class SensorService : public MeasurementListener {
 public:
-  using Scheduler = MeasurementScheduler<board::kSensorCount, board::kMaxChannelsPerSensor>;
+  using Scheduler =
+      MeasurementScheduler<board::kMaxSensors, board::kMaxChannelsPerSensor, 3, board::kMaxSlots>;
   /// Darf ein dauerhaft fehlerhafter Sensor das Gerät neu starten? (DS18B20)
   using RestartGate = bool (*)(void* ctx);
 
   SensorService(ConfigService& cfg, StateStore& state, Events& events)
       : cfg_(cfg), state_(state), events_(events), sched_(*this) {}
 
-  /// Treiber in Reihenfolge von board::kSensors
+  /// Treiber in Reihenfolge der Sensorliste (board::sensor)
   void begin(SensorDriver* const* drivers, Instant now);
   void setRestartGate(RestartGate gate, void* ctx) {
     restartGate_ = gate;
@@ -75,20 +76,20 @@ private:
   /// Messwert eines Kanals für das Log ("17.2 %", "--")
   void logResult(uint8_t slot, float value, int16_t raw, ChannelStatus before, ChannelStatus after,
                  bool newMin, bool newMax);
-  Instant jobStart_[board::kSensorCount];
-  uint8_t failuresBefore_[board::kSensorCount] = {};
-  static_assert(board::kSlotCount <= 32, "clampWarned_ ist eine 32-Bit-Maske");
+  Instant jobStart_[board::kMaxSensors];
+  uint8_t failuresBefore_[board::kMaxSensors] = {};
+  static_assert(board::kMaxSlots <= 32, "clampWarned_ ist eine 32-Bit-Maske");
   /// Kanäle, deren Rohwert gerade begrenzt wird (schon gemeldet)
   uint32_t clampWarned_ = 0;
   ConfigService& cfg_;
   StateStore& state_;
   Events& events_;
   Scheduler sched_;
-  SensorDriver* drivers_[board::kSensorCount] = {};
+  SensorDriver* drivers_[board::kMaxSensors] = {};
   struct LastOk {
     bool ok = false;
     Instant at;
-  } lastOk_[board::kSensorCount];
+  } lastOk_[board::kMaxSensors];
   uint32_t pendingTare_ = 0;
   RequestThrottle publicThrottle_{2000};
   RestartGate restartGate_ = nullptr;

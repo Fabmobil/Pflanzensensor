@@ -1,0 +1,661 @@
+{
+ "description": "Gemeinsame Testvektoren für checkHardware() (C++) und checkHardware() im Webflasher (JS). Fehlende Felder: Voreinstellung der Struktur (alles aus, Pins -1).",
+ "cases": [
+  {
+   "name": "PCB-Voreinstellung",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 0,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "ok",
+   "pin": -1
+  },
+  {
+   "name": "ESP32-DevKit-Voreinstellung",
+   "platform": "ESP32",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 34,
+    "muxA": 25,
+    "muxB": 26,
+    "muxC": 27,
+    "dht": 4,
+    "ledGreen": 16,
+    "ledYellow": 17,
+    "ledRed": 18,
+    "sda": 21,
+    "scl": 22
+   },
+   "problem": "ok",
+   "pin": -1
+  },
+  {
+   "name": "DHT und LED auf demselben Pin",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 14,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "duplicate_pin",
+   "pin": 14
+  },
+  {
+   "name": "Flash-Pin",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 9,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "flash_pin",
+   "pin": 9
+  },
+  {
+   "name": "GPIO15 als Eingang mit Pull-up",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 0,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 15,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "strap_pin",
+   "pin": 15
+  },
+  {
+   "name": "A0 als GPIO",
+   "platform": "ESP8266",
+   "features": {
+    "analog": false,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 17,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "adc_pin",
+   "pin": 17
+  },
+  {
+   "name": "ADC nicht auf A0",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 3,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 0,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "adc_pin",
+   "pin": 3
+  },
+  {
+   "name": "ESP32 ADC2-Pin",
+   "platform": "ESP32",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 25,
+    "muxA": 33,
+    "muxB": 26,
+    "muxC": 27,
+    "dht": 4,
+    "ledGreen": 16,
+    "ledYellow": 17,
+    "ledRed": 18,
+    "sda": 21,
+    "scl": 22
+   },
+   "problem": "adc_pin",
+   "pin": 25
+  },
+  {
+   "name": "ESP32 Eingangspin als LED",
+   "platform": "ESP32",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 34,
+    "muxA": 25,
+    "muxB": 26,
+    "muxC": 27,
+    "dht": 4,
+    "ledGreen": 16,
+    "ledYellow": 17,
+    "ledRed": 35,
+    "sda": 21,
+    "scl": 22
+   },
+   "problem": "input_only_pin",
+   "pin": 35
+  },
+  {
+   "name": "ESP32 Pin 20 gibt es nicht",
+   "platform": "ESP32",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 34,
+    "muxA": 25,
+    "muxB": 26,
+    "muxC": 27,
+    "dht": 20,
+    "ledGreen": 16,
+    "ledYellow": 17,
+    "ledRed": 18,
+    "sda": 21,
+    "scl": 22
+   },
+   "problem": "no_such_pin",
+   "pin": 20
+  },
+  {
+   "name": "Pin fehlt",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": -1,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "missing_pin",
+   "pin": -1
+  },
+  {
+   "name": "Ohne Multiplexer nur ein Analogkanal",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": false,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 0,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "need_multiplexer",
+   "pin": -1
+  },
+  {
+   "name": "Ein Analogkanal ohne Multiplexer",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 1,
+    "multiplexer": false,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 0,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "ok",
+   "pin": -1
+  },
+  {
+   "name": "Analogkanäle 9",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 9,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 0,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "analog_channels",
+   "pin": -1
+  },
+  {
+   "name": "Kein Sensor",
+   "platform": "ESP8266",
+   "features": {
+    "display": true,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 0,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "no_sensor",
+   "pin": -1
+  },
+  {
+   "name": "DS18B20 ohne Anzahl",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true,
+    "ds18b20": true,
+    "ds18b20Max": 0
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 0,
+    "ledGreen": -1,
+    "ledYellow": -1,
+    "ledRed": -1,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "ds18b20_count",
+   "pin": -1
+  },
+  {
+   "name": "MH-Z19 Messbereich",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true,
+    "mhz19": true,
+    "mhz19Range": 3000
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 0,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "mhz19_range",
+   "pin": -1
+  },
+  {
+   "name": "DS18B20 statt LED-Ampel",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": false,
+    "ds18b20": true,
+    "ds18b20Max": 4
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 0,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5,
+    "oneWire": 14
+   },
+   "problem": "ok",
+   "pin": -1
+  },
+  {
+   "name": "BMP280 teilt I2C mit dem Display",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": true,
+    "bmp280": true,
+    "bmp280Address": 118
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 0,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5
+   },
+   "problem": "ok",
+   "pin": -1
+  },
+  {
+   "name": "ESP8266: 17 Kanäle sind zu viele",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 8,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": false,
+    "ds18b20": true,
+    "ds18b20Max": 7
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 0,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5,
+    "oneWire": 14
+   },
+   "problem": "too_many_channels",
+   "pin": -1
+  },
+  {
+   "name": "ESP32: 17 Kanäle gehen",
+   "platform": "ESP32",
+   "features": {
+    "analog": true,
+    "analogChannels": 8,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": false,
+    "ds18b20": true,
+    "ds18b20Max": 7
+   },
+   "pins": {
+    "adc": 34,
+    "muxA": 25,
+    "muxB": 26,
+    "muxC": 27,
+    "dht": 4,
+    "ledGreen": 16,
+    "ledYellow": 17,
+    "ledRed": 18,
+    "sda": 21,
+    "scl": 22,
+    "oneWire": 19
+   },
+   "problem": "ok",
+   "pin": -1
+  },
+  {
+   "name": "Serial Receiver auf ESP8266",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": true,
+    "displayAddress": 60,
+    "ledTraffic": false,
+    "serialReceiver": true
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 0,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": 4,
+    "scl": 5,
+    "serialRx": 12,
+    "serialTx": 14
+   },
+   "problem": "ok",
+   "pin": -1
+  },
+  {
+   "name": "Display aus: I2C-Pins frei",
+   "platform": "ESP8266",
+   "features": {
+    "analog": true,
+    "analogChannels": 2,
+    "multiplexer": true,
+    "dht": true,
+    "dhtType": 11,
+    "display": false,
+    "displayAddress": 60,
+    "ledTraffic": true
+   },
+   "pins": {
+    "adc": 17,
+    "muxA": 15,
+    "muxB": 2,
+    "muxC": 16,
+    "dht": 0,
+    "ledGreen": 14,
+    "ledYellow": 12,
+    "ledRed": 13,
+    "sda": -1,
+    "scl": -1
+   },
+   "problem": "ok",
+   "pin": -1
+  }
+ ]
+}

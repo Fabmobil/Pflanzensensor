@@ -22,14 +22,14 @@ platform::UartPort& port() {
 
 SensorInfo SerialReceiver::info() const {
   SensorInfo i = catalog::info(SensorType::SerialReceiver);
-  i.roundTimeoutMs = static_cast<uint16_t>(board::kFeatures.serialTimeoutMs * 7 + 1000);
+  i.roundTimeoutMs = static_cast<uint16_t>(board::features().serialTimeoutMs * 7 + 1000);
   return i;
 }
 
 Step SerialReceiver::begin(Instant) {
   if (!begun_)
     begun_ =
-        port().begin(board::kFeatures.serialBaud, board::kPins.serialRx, board::kPins.serialTx);
+        port().begin(board::features().serialBaud, board::pins().serialRx, board::pins().serialTx);
   return begun_ ? Step::Ok : Step::Error;
 }
 
@@ -61,7 +61,7 @@ Step SerialReceiver::pollRound(Instant now, Reading* out, uint8_t n) {
         break;
       }
     }
-    if (!done && (now - sentAt_).millis() < static_cast<int32_t>(board::kFeatures.serialTimeoutMs))
+    if (!done && (now - sentAt_).millis() < static_cast<int32_t>(board::features().serialTimeoutMs))
       return Step::Pending;
     idx_++; // Antwort da oder Zeitüberschreitung: nächster Kanal
     if (idx_ < n)

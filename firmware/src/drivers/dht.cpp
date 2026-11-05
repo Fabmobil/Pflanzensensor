@@ -15,10 +15,11 @@ namespace ps {
 namespace drivers {
 
 namespace {
-constexpr bool kDht22 = board::kFeatures.dhtType == DhtType::Dht22;
-constexpr uint8_t kPin = board::kPins.dht;
+/// Typ und Pin kommen aus der Hardware zur Laufzeit (Webflasher)
+inline bool isDht22() { return board::features().dhtType == DhtType::Dht22; }
+inline uint8_t pin() { return static_cast<uint8_t>(board::pins().dht); }
 /// Mindestabstand zweier Lesungen laut Datenblatt
-constexpr int32_t kMinPeriodMs = kDht22 ? 2000 : 1000;
+inline int32_t minPeriodMs() { return isDht22() ? 2000 : 1000; }
 /// DHT11: Startsignal 18-30 ms LOW (ASAIR-Datenblatt); länger ignoriert
 /// der Sensor. Der Sensor-Task läuft alle 10 ms, den Rest bis 20 ms wartet
 /// pollRound() aktiv ab (höchstens kBusyWaitMs).
@@ -40,7 +41,8 @@ portMUX_TYPE g_mux = portMUX_INITIALIZER_UNLOCKED;
 /// Wartet, solange der Pin auf level steht. Dauer in µs, -1 bei Zeitüberschreitung.
 int32_t pulse(int level) {
   const uint32_t start = micros();
-  while (digitalRead(kPin) == level) {
+  const uint8_t p = pin();
+  while (digitalRead(p) == level) {
     if (micros() - start > kPulseTimeoutUs)
       return -1;
   }
@@ -53,7 +55,7 @@ enum class ReadResult : uint8_t { Ok, NoResponse, Timeout };
 ReadResult readFrame(uint8_t out[5]) {
   for (uint8_t i = 0; i < 5; i++)
     out[i] = 0;
-  pinMode(kPin, INPUT_PULLUP); // freigeben; der Sensor antwortet frühestens nach 20 µs
+  pinMode(pin(), INPUT_PULLUP); // freigeben; der Sensor antwortet frühestens nach 20 µs
 #if defined(ARDUINO_ARCH_ESP32)
   portENTER_CRITICAL(&g_mux);
 #else
@@ -86,12 +88,12 @@ ReadResult readFrame(uint8_t out[5]) {
   return r;
 }
 
-void release() { pinMode(kPin, INPUT_PULLUP); }
+void release() { pinMode(pin(), INPUT_PULLUP); }
 } // namespace
 
 SensorInfo Dht::info() const {
   SensorInfo i = catalog::info(SensorType::Dht);
-  i.roundDelayMs = static_cast<uint16_t>(kMinPeriodMs);
+  i.roundDelayMs = static_cast<uint16_t>(minPeriodMs());
   return i;
 }
 
@@ -103,7 +105,7 @@ Step Dht::begin(Instant now) {
     return Step::Pending;
   }
   // Nach dem Einschalten braucht der Sensor etwa eine Sekunde
-  if ((now - setupAt_).millis() < kMinPeriodMs)
+  if ((now - setupAt_).millis() < minPeriodMs())
     return Step::Pending;
   return Step::Ok;
 }
@@ -118,12 +120,12 @@ Step Dht::pollRound(Instant now, Reading* out, uint8_t n) {
   switch (state_) {
   case State::WaitLow:
     // Sofortmessung kurz nach einer Lesung: Mindestabstand abwarten
-    if (haveLastRead_ && (now - lastRead_).millis() < kMinPeriodMs)
+    if (haveLastRead_ && (now - lastRead_).millis() < minPeriodMs())
       return Step::Pending;
-    digitalWrite(kPin, LOW);
-    pinMode(kPin, OUTPUT);
+    digitalWrite(pin(), LOW);
+    pinMode(pin(), OUTPUT);
     lowSince_ = now;
-    if (kDht22) {
+    if (isDht22()) {
       delayMicroseconds(kDht22StartUs);
       break; // gleich lesen
     }
@@ -163,7 +165,7 @@ Step Dht::pollRound(Instant now, Reading* out, uint8_t n) {
     return Step::Error;
   }
   float t = NAN, h = NAN;
-  if (!proto::dhtDecode(b, kDht22, t, h)) {
+  if (!proto::dhtDecode(b, isDht22(), t, h)) {
     LOGD(Mod::Sensor, "DHT: Prüfsumme falsch (%02x %02x %02x %02x %02x)", b[0], b[1], b[2], b[3],
          b[4]);
     return Step::Error;

@@ -51,10 +51,10 @@ void WifiPort::setHostname(const char* host) {
 void WifiPort::beginSta(const char* ssid, const char* password) {
   init();
   WiFi.mode(apOn_ ? WIFI_AP_STA : WIFI_STA);
-  if (board::kStaticIp.enabled) {
-    WiFi.config(fromArr(board::kStaticIp.ip), fromArr(board::kStaticIp.gateway),
-                fromArr(board::kStaticIp.subnet), fromArr(board::kStaticIp.dns1),
-                fromArr(board::kStaticIp.dns2));
+  if (board::hardware().staticIp.enabled) {
+    WiFi.config(fromArr(board::hardware().staticIp.ip), fromArr(board::hardware().staticIp.gateway),
+                fromArr(board::hardware().staticIp.subnet),
+                fromArr(board::hardware().staticIp.dns1), fromArr(board::hardware().staticIp.dns2));
   }
   WiFi.begin(ssid, password && *password ? password : nullptr);
 }

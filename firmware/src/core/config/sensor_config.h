@@ -31,8 +31,8 @@ struct SensorConfig {
 };
 
 struct SensorsConfig {
-  SensorConfig sensors[board::kSensorCount];
-  ChannelConfig channels[board::kSlotCount];
+  SensorConfig sensors[board::kMaxSensors];
+  ChannelConfig channels[board::kMaxSlots];
 };
 
 /// Erlaubte Halbwertszeiten der Autokalibrierung in Sekunden.
