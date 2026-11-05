@@ -17,11 +17,11 @@ repos:
     hooks:
     # --- Version -----------------------------------------------------------
     -   id: bump-version
-        name: Patch-Version anheben (bei C++-Änderungen)
+        name: Patch-Version anheben (bei Firmware- und Weboberflächen-Änderungen)
         entry: python3 firmware/tools/bump_version.py
         language: system
         pass_filenames: false
-        files: ^firmware/(src|boards)/.*\.(cpp|h|hpp|c)$
+        files: ^firmware/((src|boards)/.*\.(cpp|h|hpp|c)|web/.*)$
         stages: [pre-commit]
 
     # --- Tests -------------------------------------------------------------

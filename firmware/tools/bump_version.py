@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """
-pre-commit-Hook: hebt die Patch-Version in firmware/VERSION an, wenn C++-
-Quellen der Firmware vorgemerkt sind (E10: automatisches Patch-Anheben je
+pre-commit-Hook: hebt die Patch-Version in firmware/VERSION an, wenn
+vorgemerkte Dateien in der Firmware landen (E10: automatisches Patch-Anheben je
 Firmware-Commit, Neubau startet bei 3.0.0).
 
 - Wurde VERSION im selben Commit von Hand geändert, passiert nichts.
-- Nur Dateien unter firmware/src/ und firmware/boards/ zählen; Tests, Web,
-  Skripte und CI nicht.
+- Es zählen C++-Quellen unter firmware/src/ und firmware/boards/ sowie die
+  Weboberfläche unter firmware/web/, soweit embed_assets.py sie einbettet
+  (Endungen aus dessen TYPES) - auch eine reine Oberflächenänderung ist eine
+  neue Firmware. Tests, Skripte, Webflasher und CI zählen nicht.
 """
 import pathlib
 import re
@@ -14,6 +16,21 @@ import subprocess
 import sys
 
 VERSION = pathlib.Path("firmware/VERSION")
+EMBED = pathlib.Path("firmware/tools/embed_assets.py")
+
+
+def web_suffixes():
+    """Endungen, die embed_assets.py einbettet (TYPES), ohne es zu importieren
+    (das Skript läuft beim Import als PlatformIO-Vorstufe los)."""
+    block = re.search(r"^TYPES = \{(.*?)^\}", EMBED.read_text(), re.S | re.M)
+    return tuple(re.findall(r'"(\.\w+)"\s*:', block.group(1))) if block else ()
+
+
+def counts(path, suffixes):
+    """Landet diese Datei in der Firmware?"""
+    if path.startswith(("firmware/src/", "firmware/boards/")):
+        return path.endswith((".cpp", ".h", ".hpp", ".c"))
+    return path.startswith("firmware/web/") and path.endswith(suffixes)
 
 
 def staged():
@@ -27,9 +44,11 @@ def main():
     if str(VERSION) in files:
         print("VERSION wurde von Hand geändert - keine automatische Anhebung.")
         return 0
-    cpp = [f for f in files if f.startswith(("firmware/src/", "firmware/boards/"))
-           and f.endswith((".cpp", ".h", ".hpp", ".c"))]
-    if not cpp:
+    suffixes = web_suffixes()
+    if not suffixes:
+        print(f"Keine TYPES-Tabelle in {EMBED} gefunden.", file=sys.stderr)
+        return 1
+    if not any(counts(f, suffixes) for f in files):
         return 0
     text = VERSION.read_text().strip()
     m = re.fullmatch(r"(\d+)\.(\d+)\.(\d+)", text)

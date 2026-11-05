@@ -247,8 +247,9 @@ img {
    scaleY(-1) bei Fehler), die eine Keyframe-Animation überschreiben würde -
    das Blatt spränge beim Wackeln in die Grundstellung.
    Der Wrapper übernimmt dabei die Rolle des Bildes im Textfluss; .stem und
-   .card sind absolut zu .sensor positioniert, liegen also außerhalb und
-   bleiben ruhig stehen. */
+   .card sind absolut zu .sensor positioniert, liegen also außerhalb. Der
+   Stiel bleibt ruhig; der Text bekommt mit .card-inner einen eigenen Wrapper
+   (die Karte hat ihre eigene Status-Drehung) und wackelt synchron mit. */
 .box .sensor .leaf-wrap {
   display: block;
   width: 100%;
@@ -279,17 +280,24 @@ img {
 }
 
 /* Läuft, solange auf das Ergebnis der ausgelösten Messung gewartet wird. */
-.box .sensor.measuring .leaf-wrap {
+.box .sensor.measuring .leaf-wrap,
+.box .sensor.measuring .card-inner {
   animation: leaf-breathe 1.2s ease-in-out infinite;
 }
 
 /* Einmaliges Wackeln, sobald eine neue Messung eintrifft - auch bei den
    automatischen Intervallmessungen. Bewusst nach .measuring deklariert: liegen
    beide Klassen kurz gleichzeitig an, gewinnt das Wackeln.
-   Die Dauer muss zu WIGGLE_MS in js/sensors.js passen, das die Klasse danach
-   wieder entfernt. */
-.box .sensor.wiggle .leaf-wrap {
+   Die Dauer muss zu WIGGLE_MS in js/start.js passen, das die Klasse danach
+   wieder entfernt. Den Drehpunkt von .card-inner setzt start.js
+   (alignCardPivot) auf die Blattmitte, damit der Text mit dem Blatt schwingt. */
+.box .sensor.wiggle .leaf-wrap,
+.box .sensor.wiggle .card-inner {
   animation: leaf-wiggle 0.7s ease-in-out 1;
+}
+
+.box .sensor .card-inner {
+  display: block;
 }
 
 .box .sensor .card {

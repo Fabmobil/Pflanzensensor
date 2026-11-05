@@ -49,6 +49,10 @@ logs/*
 # direnv
 .direnv
 
+# Python-Bytecode (firmware/tools/, webflasher/build_site.py)
+__pycache__/
+*.py[cod]
+
 # Ausgaben von firmware/tools/acceptance.py (enthalten Gerätedaten)
 firmware/acceptance-*.json
 # Webflasher lokal gebaut

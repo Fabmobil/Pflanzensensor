@@ -243,3 +243,36 @@ test('Fußzeile ohne Display blendet den Display-Eintrag aus; AP-Modus', async (
   const active = d.querySelectorAll('#footer-admin-menu .nav-item.active');
   assert.equal(active.length, 1);
 });
+
+test('Text des Blatts sitzt in .card-inner und wackelt mit', async () => {
+  const p = page();
+  p.start();
+  await settle();
+  const r = row(p.document, 'ANALOG_0');
+  const inner = r.querySelector('.card .card-inner');
+  assert.ok(inner, '.card-inner fehlt');
+  for (const sel of ['.label', '.value', '.status', '.interval']) assert.ok(inner.querySelector(sel), sel);
+});
+
+test('Drehpunkt des Texts: Blattmitte im Koordinatensystem der gedrehten Karte', () => {
+  const { Start } = page().ctx;
+  assert.deepEqual([...Start.parseMatrix('none')], [1, 0, 0, 1, 0, 0]);
+  assert.deepEqual([...Start.parseMatrix('matrix(0.5, 0.25, -0.25, 0.5, 3, -4)')], [0.5, 0.25, -0.25, 0.5, 3, -4]);
+  const m3 = 'matrix3d(1, 2, 0, 0, 3, 4, 0, 0, 0, 0, 1, 0, 5, 6, 0, 1)';
+  assert.deepEqual([...Start.parseMatrix(m3)], [1, 2, 3, 4, 5, 6]);
+  const close = (p, x, y) => {
+    assert.ok(Math.abs(p.x - x) < 1e-9 && Math.abs(p.y - y) < 1e-9, `(${p.x}, ${p.y}) statt (${x}, ${y})`);
+  };
+  // Ungedreht: Punkt bleibt, wo er ist
+  close(Start.pivotInCard(120, 30, 50, 20, [1, 0, 0, 1, 0, 0]), 120, 30);
+  // translateY(-50%) bei 40 px Höhe: im Inneren liegt der Punkt 20 px tiefer
+  close(Start.pivotInCard(120, 30, 50, 20, [1, 0, 0, 1, 0, -20]), 120, 50);
+  // 180° um den Ursprung (Fehlerzustand): gespiegelt um O
+  close(Start.pivotInCard(120, 30, 50, 20, [-1, 0, 0, -1, 0, 0]), -20, 10);
+  // Hin und zurück mit beliebiger Drehung + Verschiebung
+  const a = 16 * Math.PI / 180, m = [Math.cos(a), Math.sin(a), -Math.sin(a), Math.cos(a), 0, -17];
+  const local = Start.pivotInCard(150, 40, 60, 17, m);
+  const screenX = 60 + m[0] * (local.x - 60) + m[2] * (local.y - 17) + m[4];
+  const screenY = 17 + m[1] * (local.x - 60) + m[3] * (local.y - 17) + m[5];
+  close({ x: screenX, y: screenY }, 150, 40);
+});

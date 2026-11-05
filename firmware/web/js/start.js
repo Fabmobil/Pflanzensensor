@@ -7,6 +7,8 @@
  *  - Poll alle 10 s, nur bei sichtbarem Tab, nie parallel; nach drei Fehlern Fehlerzustand
  *  - Klick/Enter/Leertaste auf ein Blatt: Sofortmessung des Sensors
  *    (POST /api/v1/measure), danach Schnell-Polls, Wackeln bei neuem Wert
+ *  - Der Text auf dem Blatt (.card-inner) wackelt und atmet mit: gleiche
+ *    Animation, Drehpunkt per alignCardPivot() auf die Blattmitte gelegt
  */
 (function (global) {
   'use strict';
@@ -36,6 +38,28 @@
     return '/img/' + (FACES[status] || 'face-error.gif');
   }
 
+  /** 2D-Matrix aus getComputedStyle(...).transform: [a, b, c, d, e, f] */
+  function parseMatrix(text) {
+    const m = /^matrix(3d)?\((.*)\)$/.exec(String(text || '').trim());
+    if (!m) return [1, 0, 0, 1, 0, 0];
+    const v = m[2].split(',').map(Number);
+    return m[1] ? [v[0], v[1], v[4], v[5], v[12], v[13]] : v.slice(0, 6);
+  }
+
+  /**
+   * Punkt (px, py) aus den Layout-Koordinaten der Karte in ihr eigenes,
+   * transformiertes Koordinatensystem umrechnen. Die Karte bildet x auf
+   * O + M·(x − O) ab (O = transform-origin); gesucht ist x = O + M⁻¹·(p − O).
+   * Dreht man den Inhalt um diesen Punkt, dreht er sich auf dem Bildschirm um p.
+   */
+  function pivotInCard(px, py, ox, oy, m) {
+    const [a, b, c, d, e, f] = m;
+    const det = a * d - b * c;
+    if (!det) return { x: px, y: py };
+    const X = px - ox - e, Y = py - oy - f;
+    return { x: ox + (d * X - c * Y) / det, y: oy + (-b * X + a * Y) / det };
+  }
+
   function intervalText(lastMeasurement, intervalMs, serverNow) {
     if (!lastMeasurement || !intervalMs) return '(--/--)';
     const elapsed = Math.max(0, Math.floor((serverNow - lastMeasurement) / 1000));
@@ -55,12 +79,12 @@
     }, [
       el('img', { class: 'stem', src: '/img/sensor-stem.png', alt: '' }),
       el('span', { class: 'leaf-wrap' }, [el('img', { class: 'leaf', src: '/img/sensor-leaf.png', alt: '' })]),
-      el('div', { class: 'card' }, [
+      el('div', { class: 'card' }, [el('div', { class: 'card-inner' }, [
         el('div', { class: 'label' }, [el('span', { text: ch.name.toUpperCase() })]),
         el('div', { class: 'value' }, [el('span', { text: '--' })]),
         el('div', { class: 'status unknown' }, [el('span', { text: 'STATUS: ' + global.UI.statusText('unknown') })]),
         el('div', { class: 'interval' }, [el('span', { text: '(--/--)' })])
-      ])
+      ])])
     ]);
     const go = () => triggerMeasurement(node);
     node.addEventListener('click', go);
@@ -106,7 +130,26 @@
     if (s) s.textContent = text;
   }
 
+  /**
+   * Drehpunkt des Texts auf die Mitte des Blatts legen, damit er beim Wackeln
+   * mitschwingt statt auf der Stelle zu zittern. Die Karte ist je nach Status
+   * selbst gedreht (gelb/rot, Fehler 180°) – deshalb über ihre Matrix. Ohne
+   * Layout-Angaben (Tests, alte Browser) bleibt es bei der Mitte der Karte.
+   */
+  function alignCardPivot(row) {
+    const card = row.querySelector('.card'), inner = row.querySelector('.card-inner');
+    const leaf = row.querySelector('.leaf-wrap');
+    if (!card || !inner || !leaf || typeof global.getComputedStyle !== 'function') return;
+    const cs = global.getComputedStyle(card);
+    const origin = String(cs.transformOrigin || '').split(' ').map(parseFloat);
+    if (origin.length < 2 || origin.some(isNaN)) return;
+    const p = pivotInCard(leaf.offsetLeft + leaf.offsetWidth / 2 - card.offsetLeft,
+      leaf.offsetTop + leaf.offsetHeight / 2 - card.offsetTop, origin[0], origin[1], parseMatrix(cs.transform));
+    inner.style.transformOrigin = (p.x - inner.offsetLeft) + 'px ' + (p.y - inner.offsetTop) + 'px';
+  }
+
   function startMeasuring(row) {
+    alignCardPivot(row);
     row.classList.add('measuring');
     row.dataset.measuringSince = String(Date.now());
     row.setAttribute('aria-busy', 'true');
@@ -133,6 +176,7 @@
     stopMeasuring(row);
     delete row.dataset.noteUntil;
     row.classList.remove('wiggle');
+    alignCardPivot(row);
     void row.offsetWidth;
     row.classList.add('wiggle');
     setTimeout(() => row.classList.remove('wiggle'), WIGGLE_MS);
@@ -273,6 +317,6 @@
     });
   }
 
-  global.Start = { faceFor, intervalText, renderCards, apply, poll, triggerMeasurement, tickCountdowns,
+  global.Start = { faceFor, intervalText, parseMatrix, pivotInCard, renderCards, apply, poll, triggerMeasurement, tickCountdowns,
                    state, FAST_POLL_DELAYS_MS };
 })(typeof window !== 'undefined' ? window : globalThis);
