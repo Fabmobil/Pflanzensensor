@@ -36,7 +36,17 @@ void ProvisionService::loadHardware() {
     block_ = nullptr;
     return;
   }
-  if (block_->hasHardware) {
+  bool useHardware = block_->hasHardware;
+#if defined(PS_LOCAL_DEFAULTS)
+  // Lokales Geräteprofil (boards/local/): der Build ist für genau dieses
+  // Gerät gemacht, sein Profil gilt. Hardware aus einem früheren
+  // Webflasher-Block bleibt unbeachtet (der Block selbst bleibt unverändert).
+  if (useHardware) {
+    LOGI(Mod::Boot, "Hardware aus dem Webflasher ignoriert - lokales Profil %s", board::name());
+    useHardware = false;
+  }
+#endif
+  if (useHardware) {
     problem_ = board::setHardware(block_->hardware);
     if (problem_.problem == HwProblem::None) {
       fromBlock_ = true;

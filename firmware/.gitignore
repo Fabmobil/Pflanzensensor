@@ -5,3 +5,5 @@ platformio.test.ini
 platformio.stack.ini
 src/core/build_date.h
 dist/
+boards/local/*
+!boards/local/README.md

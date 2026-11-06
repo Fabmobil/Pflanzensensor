@@ -10,6 +10,10 @@
 
 #include "core/config/schema.h"
 
+#if defined(PS_LOCAL_DEFAULTS)
+#include PS_LOCAL_DEFAULTS // boards/local/<gerät>/defaults.h, nicht versioniert
+#endif
+
 #include <string.h>
 
 namespace ps {
@@ -32,6 +36,14 @@ void fabmobilWifiPassword(char* out, size_t cap) {
   out[i] = '\0';
 }
 
+const char* adminPassword() {
+#if defined(PS_LOCAL_DEFAULTS)
+  return local_defaults::kAdminPassword;
+#else
+  return kAdminPassword;
+#endif
+}
+
 void device(DeviceConfig& c) {
   c = DeviceConfig{};
   c.deviceName = kDeviceName;
@@ -46,6 +58,9 @@ void device(DeviceConfig& c) {
   c.wifiSsid[1] = DEV_WIFI_SSID_2;
   c.wifiSsid[2] = DEV_WIFI_SSID_3;
 #endif
+#if defined(PS_LOCAL_DEFAULTS)
+  local_defaults::device(c);
+#endif
 }
 
 void secrets(Secrets& s) {
@@ -58,6 +73,9 @@ void secrets(Secrets& s) {
   s.wifiPassword[0] = DEV_WIFI_PASSWORD_1;
   s.wifiPassword[1] = DEV_WIFI_PASSWORD_2;
   s.wifiPassword[2] = DEV_WIFI_PASSWORD_3;
+#endif
+#if defined(PS_LOCAL_DEFAULTS)
+  local_defaults::secrets(s);
 #endif
 }
 
@@ -84,6 +102,9 @@ void sensorDefaults(SensorsConfig& c) {
       ch.inverted = d.inverted;
     }
   }
+#if defined(PS_LOCAL_DEFAULTS)
+  local_defaults::sensors(c);
+#endif
 }
 
 } // namespace ps

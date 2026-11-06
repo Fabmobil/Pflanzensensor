@@ -15,6 +15,11 @@ pio test -e native                   # Unit-Tests ohne Hardware
 tools/run_js_tests.sh                # Tests der Weboberfläche
 ```
 
+Eigene Geräte mit anderer Pinbelegung und eigenen Standardwerten (WLAN,
+Passwort, Kanäle) liegen unversioniert unter `boards/local/<gerät>/` und
+bekommen ein eigenes Env (`pio run -e <gerät>`), siehe
+`boards/local/README.md`.
+
 Updates bestehen nur aus `firmware.bin` (die Weboberfläche ist gzip-komprimiert
 eingebettet, E6). LittleFS enthält nur Daten und wird nie überschrieben.
 

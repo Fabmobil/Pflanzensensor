@@ -4,6 +4,11 @@
  * @details Zugangsdaten stehen hier nicht. Für Entwickler darf eine nicht
  *          versionierte boards/secrets.h WLAN-Daten vorbelegen
  *          (-D PS_DEV_SECRETS); der Release-Build lehnt das ab.
+ *
+ *          Lokale Geräteprofile (boards/local/<gerät>/, nicht versioniert)
+ *          überschreiben die Standardwerte mit -D PS_LOCAL_DEFAULTS=\"…\":
+ *          der Header liefert namespace local_defaults mit kAdminPassword,
+ *          device(), secrets() und sensors(). Siehe boards/local/README.md.
  */
 #pragma once
 
@@ -16,7 +21,7 @@ namespace ps {
 namespace defaults {
 
 constexpr const char* kDeviceName = "Fabmobil Pflanzensensor";
-/// Initiales Admin-Passwort, solange keines gesetzt wurde.
+/// Initiales Admin-Passwort, solange keines gesetzt wurde (siehe adminPassword()).
 constexpr const char* kAdminPassword = "Fabmobil";
 constexpr const char* kMailUrl = "http://pflanzensensormailbot.fabmobil.org:45480";
 constexpr const char* kFlowerChannel = "ANALOG_1";
@@ -32,6 +37,10 @@ constexpr const char* kFabmobilWifiSsid = "Fabmobil Gäste";
  *          Das ist Verschleierung, kein Schutz.
  */
 void fabmobilWifiPassword(char* out, size_t cap);
+
+/// Initiales Admin-Passwort dieses Builds: kAdminPassword oder das eines
+/// lokalen Geräteprofils (boards/local/, PS_LOCAL_DEFAULTS)
+const char* adminPassword();
 
 /// Gerätekonfiguration mit Standardwerten
 void device(DeviceConfig& c);

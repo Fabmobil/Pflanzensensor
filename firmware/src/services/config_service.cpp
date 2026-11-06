@@ -196,7 +196,7 @@ bool ConfigService::checkAdminPassword(const char* pw) const {
   if (!pw)
     return false;
   if (!sec_.adminSet)
-    return strcmp(pw, defaults::kAdminPassword) == 0;
+    return strcmp(pw, defaults::adminPassword()) == 0;
   uint8_t h[32];
   hashPassword(pw, sec_.adminSalt, h);
   return equalConstTime(h, sec_.adminHash, 32);
