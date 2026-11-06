@@ -19,6 +19,11 @@ class ConfigService;
 
 class ProvisionService {
 public:
+  ProvisionService() = default;
+  ~ProvisionService() { releaseBlock(); }
+  ProvisionService(const ProvisionService&) = delete;
+  ProvisionService& operator=(const ProvisionService&) = delete;
+
   void loadHardware();
   /// true, wenn Einstellungen übernommen wurden
   bool applySettings(ConfigService& cfg);
@@ -32,11 +37,12 @@ private:
   static void applyChannelName(ConfigService& cfg, const provision::ChannelName& cn);
   /// "settings.config" (Konfigurationsdatei aus dem Webflasher) importieren
   static void importConfig(ConfigService& cfg);
+  /// Block freigeben, Passwörter vorher löschen (auch ohne applySettings())
+  void releaseBlock();
   provision::Result read_ = provision::Result::Empty;
   bool fromBlock_ = false;
   HwCheckResult problem_;
   /// Nur bis applySettings(): danach gelöscht
-  provision::Settings* pending_ = nullptr;
   provision::Block* block_ = nullptr;
 };
 

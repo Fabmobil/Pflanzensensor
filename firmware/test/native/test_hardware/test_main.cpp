@@ -456,6 +456,10 @@ void test_provision_service_invalid_hardware_keeps_default() {
   TEST_ASSERT_EQUAL(HwProblem::DuplicatePin, p.hardwareProblem().problem);
   TEST_ASSERT_EQUAL_STRING("native", board::name());
   TEST_ASSERT_EQUAL(19, board::slotCount());
+  // Ohne applySettings(): zweiter Aufruf und Destruktor geben den Block frei
+  // (der Sanitizer-Lauf meldet sonst ein Leck)
+  p.loadHardware();
+  TEST_ASSERT_EQUAL(HwProblem::DuplicatePin, p.hardwareProblem().problem);
   // Leerer Sektor: Voreinstellung, keine Meldung
   native::provisionSector().clear();
   ProvisionService q;

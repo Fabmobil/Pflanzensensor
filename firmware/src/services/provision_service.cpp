@@ -15,7 +15,20 @@
 
 namespace ps {
 
+void ProvisionService::releaseBlock() {
+  if (!block_)
+    return;
+  // Passwörter nicht im freigegebenen Speicher liegen lassen
+  for (auto& w : block_->settings.wifi)
+    memset(w.password, 0, sizeof(w.password));
+  memset(block_->settings.adminPassword, 0, sizeof(block_->settings.adminPassword));
+  block_->~Block();
+  hal::tempFree(block_);
+  block_ = nullptr;
+}
+
 void ProvisionService::loadHardware() {
+  releaseBlock(); // zweiter Aufruf: alten Block nicht verlieren
   hal::TempBuffer sector(provision::kSectorSize);
   if (!sector || !hal::provisionRead(sector.data(), sector.size())) {
     read_ = provision::Result::BadLength;
@@ -31,9 +44,7 @@ void ProvisionService::loadHardware() {
     if (read_ != provision::Result::Empty)
       LOGW(Mod::Boot, "Webflasher-Block unbrauchbar (%s) - Voreinstellung %s",
            provision::resultName(read_), board::name());
-    block_->~Block();
-    hal::tempFree(block_);
-    block_ = nullptr;
+    releaseBlock();
     return;
   }
   bool useHardware = block_->hasHardware;
@@ -169,13 +180,7 @@ bool ProvisionService::applySettings(ConfigService& cfg) {
     else
       LOGE(Mod::Boot, "Webflasher-Block konnte nicht bereinigt werden");
   }
-  // Passwörter nicht im freigegebenen Speicher liegen lassen
-  for (auto& w : b.settings.wifi)
-    memset(w.password, 0, sizeof(w.password));
-  memset(b.settings.adminPassword, 0, sizeof(b.settings.adminPassword));
-  b.~Block();
-  hal::tempFree(block_);
-  block_ = nullptr;
+  releaseBlock();
   return applied;
 }
 
