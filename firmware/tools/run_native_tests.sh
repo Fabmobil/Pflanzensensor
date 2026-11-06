@@ -17,12 +17,15 @@ SRCS="$(find src/core src/services src/web src/platform/native -name '*.cpp') sr
 # Bibliothek einmal bauen
 LIB="$OUT/libps.a"
 if [ ! -f "$LIB" ] || [ -n "$(find src -newer "$LIB" -name '*.[ch]*' | head -1)" ]; then
-  rm -f "$OUT"/*.o
+  rm -f "$OUT"/*.o "$OUT"/.*.o "$LIB" # neu packen: ar rcs behielte alte Objekte
+  OBJS=()
   for f in $SRCS "$QRCODE/qrcode.c"; do
-    o="$OUT/$(echo "$f" | tr '/' '_').o"
+    # Kein Punkt am Anfang: relative Pfade (".pio/…") ergäben versteckte Dateien
+    o="$OUT/o$(echo "$f" | tr '/' '_').o"
     if [[ $f == *.c ]]; then gcc ${EXTRA_FLAGS:-} -c -I "$QRCODE" "$f" -o "$o"; else g++ "${FLAGS[@]}" -c "$f" -o "$o"; fi
+    OBJS+=("$o")
   done
-  ar rcs "$LIB" "$OUT"/*.o
+  ar rcs "$LIB" "${OBJS[@]}"
 fi
 if [[ " $* " == *" --vectors "* ]]; then
   g++ "${FLAGS[@]}" tools/gen_vectors.cpp "$LIB" -lcrypto -o "$OUT/gen_vectors"
