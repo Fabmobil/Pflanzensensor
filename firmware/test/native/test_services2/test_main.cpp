@@ -431,6 +431,260 @@ void test_tare_takes_raw_counts() {
 }
 
 namespace {
+/// Weiterlaufen lassen, ohne die Sensoren neu zu starten
+void runFor(Rig& r, uint32_t ms) {
+  for (uint32_t t = 0; t < ms; t += 100) {
+    native::advance(100);
+    r.sensors.tick(hal::now());
+  }
+}
+std::string calBody(int percent) { return "{\"percent\":" + std::to_string(percent) + "}"; }
+} // namespace
+
+void test_water_channel_points_and_watering() {
+  Rig r;
+  using M = hal::HttpMethod;
+  ValueDriver& hx = r.drivers.of(SensorType::Hx711);
+  const int i = board::sensorIndexOf(SensorType::Hx711);
+  const uint8_t ws = static_cast<uint8_t>(board::sensor(i).firstSlot + 1);
+  TEST_ASSERT_FALSE(r.cfg.sensors().channels[ws].enabled); // ab Werk aus
+  // Vor der ersten Messung gibt es kein Gewicht
+  r.sensors.begin(r.drivers.ptrs, hal::now());
+  TEST_ASSERT_EQUAL(
+      409, r.admin(M::Post, "/api/v1/sensors/HX711/1/calibrate", calBody(100).c_str()).code);
+  hx.value = 3000; // Topf maximal nass
+  runFor(r, 20000);
+  TEST_ASSERT_EQUAL(
+      200, r.admin(M::Post, "/api/v1/sensors/HX711/1/calibrate", calBody(100).c_str()).code);
+  TEST_ASSERT_EQUAL_FLOAT(3000, r.cfg.sensors().sensors[i].wetG);
+  TEST_ASSERT_TRUE(r.cfg.sensors().channels[ws].enabled); // jetzt an
+  TEST_ASSERT_TRUE(r.popEvent(EventType::SensorConfigChanged));
+  hx.value = 2000;
+  runFor(r, 70000);
+  TEST_ASSERT_EQUAL(200,
+                    r.admin(M::Post, "/api/v1/sensors/HX711/1/calibrate", calBody(0).c_str()).code);
+  TEST_ASSERT_EQUAL_FLOAT(2000, r.cfg.sensors().sensors[i].dryG);
+  // Trocken schwerer als nass geht nicht
+  hx.value = 3500;
+  runFor(r, 70000);
+  FakeRes bad = r.admin(M::Post, "/api/v1/sensors/HX711/1/calibrate", calBody(0).c_str());
+  TEST_ASSERT_EQUAL(400, bad.code);
+  TEST_ASSERT_NOT_EQUAL(std::string::npos, bad.body.find("schwerer"));
+  TEST_ASSERT_EQUAL(
+      400, r.admin(M::Post, "/api/v1/sensors/HX711/1/calibrate", calBody(50).c_str()).code);
+  // Gewicht hat keine Kalibrierpunkte, andere Sensoren auch nicht
+  TEST_ASSERT_EQUAL(501,
+                    r.admin(M::Post, "/api/v1/sensors/HX711/0/calibrate", calBody(0).c_str()).code);
+  TEST_ASSERT_EQUAL(501,
+                    r.admin(M::Post, "/api/v1/sensors/DHT/0/calibrate", calBody(0).c_str()).code);
+  TEST_ASSERT_EQUAL(404,
+                    r.admin(M::Post, "/api/v1/sensors/HX711/2/calibrate", calBody(0).c_str()).code);
+  // Halb voll
+  hx.value = 2500;
+  runFor(r, 70000);
+  TEST_ASSERT_EQUAL_FLOAT(50, r.sensors.channel(ws).value);
+  TEST_ASSERT_EQUAL(ChannelStatus::Green, r.sensors.channel(ws).status);
+  // Gießen: +700 g, nach dem Abtropfen schwerer als der alte Nasspunkt
+  hx.value = 3200;
+  runFor(r, 70000);
+  TEST_ASSERT_TRUE(r.sensors.watering().settling());
+  TEST_ASSERT_EQUAL_FLOAT(100, r.sensors.channel(ws).value);
+  JsonDocument d = r.admin(M::Get, "/api/v1/sensors").json();
+  for (JsonObject se : d["sensors"].as<JsonArray>())
+    if (strcmp(se["id"], "HX711") == 0) {
+      TEST_ASSERT_TRUE(se["lastWatering"]["settling"]);
+      TEST_ASSERT_EQUAL(700, se["lastWatering"]["rise"].as<int>());
+      TEST_ASSERT_EQUAL(50, se["watering"].as<int>()); // Schwelle bleibt lesbar
+      TEST_ASSERT_TRUE(se["channels"][1]["calibrate"]);
+      TEST_ASSERT_FALSE(se["channels"][0]["calibrate"]);
+    }
+  hx.value = 3100; // tropft ab
+  runFor(r, 61 * 60000);
+  TEST_ASSERT_FALSE(r.sensors.watering().settling());
+  TEST_ASSERT_EQUAL_FLOAT(3100, r.cfg.sensors().sensors[i].wetG);
+  // Nicht bis zur Sättigung gegossen: Nasspunkt bleibt
+  hx.value = 2400;
+  runFor(r, 70000);
+  hx.value = 2900;
+  runFor(r, 70000);
+  TEST_ASSERT_TRUE(r.sensors.watering().settling());
+  runFor(r, 61 * 60000);
+  TEST_ASSERT_EQUAL_FLOAT(3100, r.cfg.sensors().sensors[i].wetG);
+  // autoWet aus: auch volles Gießen ändert nichts
+  r.admin(M::Patch, "/api/v1/sensors", "{\"HX711\":{\"autoWet\":false}}");
+  hx.value = 3400;
+  runFor(r, 62 * 60000);
+  TEST_ASSERT_EQUAL_FLOAT(3100, r.cfg.sensors().sensors[i].wetG);
+  // Neue Skalierung: der Sprung ist kein Gießen
+  r.admin(M::Patch, "/api/v1/sensors", "{\"HX711\":{\"autoWet\":true,\"scale\":-100}}");
+  runFor(r, 70000);
+  hx.value = 4000; // dieselbe Messung mit neuer Skalierung
+  runFor(r, 70000);
+  TEST_ASSERT_TRUE(r.sensors.watering().settling()); // hier noch gleiche Skalierung: Gießen
+  r.admin(M::Patch, "/api/v1/sensors", "{\"HX711\":{\"scale\":-90}}");
+  hx.value = 4400;
+  runFor(r, 70000);
+  TEST_ASSERT_FALSE(r.sensors.watering().settling());
+  // Erkennung aus
+  r.admin(M::Patch, "/api/v1/sensors", "{\"HX711\":{\"watering\":0}}");
+  hx.value = 2000;
+  runFor(r, 70000);
+  hx.value = 3500;
+  runFor(r, 70000);
+  TEST_ASSERT_FALSE(r.sensors.watering().settling());
+}
+
+void test_scale_calibration() {
+  Rig r;
+  using M = hal::HttpMethod;
+  ValueDriver& hx = r.drivers.of(SensorType::Hx711);
+  const uint8_t i = static_cast<uint8_t>(board::sensorIndexOf(SensorType::Hx711));
+  hx.hasCounts = true;
+  hx.rawCounts = 250000; // Topf steht auf der Waage
+  r.sensors.begin(r.drivers.ptrs, hal::now());
+  runFor(r, 5000);
+  // Ausgangswert merken, dann 1000 g auflegen
+  TEST_ASSERT_EQUAL(200, r.admin(M::Post, "/api/v1/sensors/HX711/scale-reference").code);
+  TEST_ASSERT_TRUE(r.sensors.scalePending());
+  // Zu früh kalibriert: Ausgangswert fehlt noch
+  TEST_ASSERT_EQUAL(409, r.admin(M::Post, "/api/v1/sensors/HX711/scale", "{\"grams\":1000}").code);
+  runFor(r, 5000);
+  TEST_ASSERT_TRUE(r.sensors.scaleReferenceSet());
+  TEST_ASSERT_FALSE(r.sensors.scalePending());
+  hx.rawCounts = 250000 - 98200;
+  TEST_ASSERT_EQUAL(200, r.admin(M::Post, "/api/v1/sensors/HX711/scale", "{\"grams\":1000}").code);
+  runFor(r, 5000);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, -98.2f, r.cfg.sensors().sensors[i].scale);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, -98.2f, hx.lastCfg.scale);
+  TEST_ASSERT_FALSE(r.sensors.scaleReferenceSet()); // verbraucht
+  // Ohne Ausgangswert zählt der Nullpunkt
+  r.admin(M::Patch, "/api/v1/sensors", "{\"HX711\":{\"tare\":50000}}");
+  hx.rawCounts = 51000;
+  TEST_ASSERT_EQUAL(200, r.admin(M::Post, "/api/v1/sensors/HX711/scale", "{\"grams\":500}").code);
+  runFor(r, 5000);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 2.0f, r.cfg.sensors().sensors[i].scale);
+  // Kaum Änderung: Skalierung bleibt
+  hx.rawCounts = 50010;
+  r.admin(M::Post, "/api/v1/sensors/HX711/scale", "{\"grams\":500}");
+  runFor(r, 5000);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 2.0f, r.cfg.sensors().sensors[i].scale);
+  TEST_ASSERT_FALSE(r.sensors.scalePending());
+  // Ungültige Gramm, falscher Sensor
+  TEST_ASSERT_EQUAL(400, r.admin(M::Post, "/api/v1/sensors/HX711/scale", "{\"grams\":0}").code);
+  TEST_ASSERT_EQUAL(400, r.admin(M::Post, "/api/v1/sensors/HX711/scale", "{}").code);
+  TEST_ASSERT_EQUAL(400, r.admin(M::Post, "/api/v1/sensors/HX711/scale").code);
+  TEST_ASSERT_EQUAL(501, r.admin(M::Post, "/api/v1/sensors/DHT/scale", "{\"grams\":5}").code);
+  // Eine Messung, die schon lief, zählt nicht: erst die danach
+  hx.rawCounts = 52000;
+  TEST_ASSERT_EQUAL(MeasureResult::Accepted, [&] {
+    uint32_t w;
+    return r.sensors.measureNow(i, hal::now(), false, w);
+  }());
+  while (!r.sensors.run(i).active) {
+    native::advance(100);
+    r.sensors.tick(hal::now());
+  }
+  TEST_ASSERT_EQUAL(Err::None, r.sensors.scaleCalibrate(i, 1000, hal::now()));
+  const uint32_t last = r.sensors.lastMeasurement(i).millis();
+  while (r.sensors.lastMeasurement(i).millis() == last) {
+    native::advance(100);
+    r.sensors.tick(hal::now());
+  }
+  TEST_ASSERT_TRUE(r.sensors.scalePending()); // laufende Messung übersprungen
+  TEST_ASSERT_TRUE(r.sensors.run(i).active);  // die nächste läuft schon
+  runFor(r, 5000);
+  TEST_ASSERT_FALSE(r.sensors.scalePending());
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 2.0f, r.cfg.sensors().sensors[i].scale);
+}
+
+void test_analog_calibrate_point() {
+  Rig r;
+  using M = hal::HttpMethod;
+  ValueDriver& an = r.drivers.of(SensorType::Analog);
+  r.sensors.begin(r.drivers.ptrs, hal::now());
+  TEST_ASSERT_EQUAL(
+      409, r.admin(M::Post, "/api/v1/sensors/ANALOG/1/calibrate", calBody(100).c_str()).code);
+  r.admin(M::Patch, "/api/v1/sensors", "{\"ANALOG\":{\"channels\":{\"1\":{\"autocal\":true}}}}");
+  an.raw = 310; // Erde nass
+  runFor(r, 70000);
+  TEST_ASSERT_EQUAL(
+      200, r.admin(M::Post, "/api/v1/sensors/ANALOG/1/calibrate", calBody(100).c_str()).code);
+  const ChannelConfig& c = r.cfg.sensors().channels[1];
+  TEST_ASSERT_EQUAL(310, c.rawMin); // invertiert: 100 % = rawMin
+  TEST_ASSERT_FALSE(c.autocal);
+  TEST_ASSERT_FALSE(r.sensors.channel(1).cal.valid());
+  runFor(r, 5000);
+  TEST_ASSERT_EQUAL_FLOAT(100, r.sensors.channel(1).value);
+  an.raw = 900;
+  runFor(r, 70000);
+  FakeRes bad = r.admin(M::Post, "/api/v1/sensors/ANALOG/1/calibrate", calBody(100).c_str());
+  TEST_ASSERT_EQUAL(400, bad.code);
+  TEST_ASSERT_NOT_EQUAL(std::string::npos, bad.body.find("Invertierung"));
+  TEST_ASSERT_EQUAL(
+      200, r.admin(M::Post, "/api/v1/sensors/ANALOG/1/calibrate", calBody(0).c_str()).code);
+  TEST_ASSERT_EQUAL(900, c.rawMax);
+  TEST_ASSERT_EQUAL(400, r.admin(M::Post, "/api/v1/sensors/ANALOG/1/calibrate", "{}").code);
+  JsonDocument d = r.admin(M::Get, "/api/v1/sensors").json();
+  TEST_ASSERT_TRUE(d["sensors"][0]["channels"][1]["calibrate"]);
+}
+
+void test_soil_fit_learns_from_scale() {
+  Rig r;
+  using M = hal::HttpMethod;
+  ValueDriver& hx = r.drivers.of(SensorType::Hx711);
+  ValueDriver& an = r.drivers.of(SensorType::Analog);
+  TEST_ASSERT_EQUAL(200,
+                    r.admin(M::Patch, "/api/v1/sensors",
+                            "{\"HX711\":{\"interval\":10,\"wet\":3000,\"dry\":2000,"
+                            "\"channels\":{\"1\":{\"enabled\":true}}},"
+                            "\"ANALOG\":{\"interval\":10,\"channels\":{\"1\":{\"learn\":true}}}}")
+                        .code);
+  r.sensors.begin(r.drivers.ptrs, hal::now());
+  // Topf trocknet von 95 % auf 5 %; Sensor: 0 % = 700, 100 % = 300
+  for (int w = 95; w >= 5; w -= 10) {
+    hx.value = 2000.0f + 10.0f * w;
+    an.raw = static_cast<int16_t>(700 - 4 * w);
+    runFor(r, 60000);
+  }
+  const SoilFit* f = r.sensors.soilFit(1);
+  TEST_ASSERT_NOT_NULL(f);
+  TEST_ASSERT_FALSE(f->empty());
+  TEST_ASSERT_TRUE(r.sensors.soilFit(0)->empty()); // Lichtsensor lernt nicht
+  TEST_ASSERT_NULL(r.sensors.soilFit(2));          // DHT
+  JsonDocument d = r.admin(M::Get, "/api/v1/sensors").json();
+  JsonObject fit = d["sensors"][0]["channels"][1]["fit"];
+  TEST_ASSERT_EQUAL(10, fit["bins"].as<JsonArray>().size());
+  TEST_ASSERT_TRUE(fit["suggest"]["inverted"]);
+  TEST_ASSERT_INT_WITHIN(30, 300, fit["suggest"]["rawMin"].as<int>());
+  TEST_ASSERT_INT_WITHIN(30, 700, fit["suggest"]["rawMax"].as<int>());
+  TEST_ASSERT_EQUAL(200, r.admin(M::Post, "/api/v1/sensors/ANALOG/1/fit-apply").code);
+  const ChannelConfig& c = r.cfg.sensors().channels[1];
+  TEST_ASSERT_INT_WITHIN(30, 300, c.rawMin);
+  TEST_ASSERT_INT_WITHIN(30, 700, c.rawMax);
+  TEST_ASSERT_TRUE(c.inverted);
+  TEST_ASSERT_TRUE(r.popEvent(EventType::SensorConfigChanged));
+  // Lichtsensor hat keinen Vorschlag, DHT keine Lerndaten
+  TEST_ASSERT_EQUAL(409, r.admin(M::Post, "/api/v1/sensors/ANALOG/0/fit-apply").code);
+  TEST_ASSERT_EQUAL(501, r.admin(M::Post, "/api/v1/sensors/DHT/0/fit-reset").code);
+  TEST_ASSERT_EQUAL(200, r.admin(M::Post, "/api/v1/sensors/ANALOG/1/fit-reset").code);
+  TEST_ASSERT_TRUE(r.sensors.soilFit(1)->empty());
+  // Beim Abtropfen nach dem Gießen wird nicht gelernt
+  hx.value = 2200;
+  runFor(r, 30000);
+  r.admin(M::Post, "/api/v1/sensors/ANALOG/1/fit-reset");
+  hx.value = 3200;
+  runFor(r, 30000);
+  TEST_ASSERT_TRUE(r.sensors.watering().settling());
+  const uint32_t before = r.sensors.soilFit(1)->n[9];
+  runFor(r, 60000);
+  TEST_ASSERT_EQUAL(before, r.sensors.soilFit(1)->n[9]);
+  // Ohne aktuellen Wasservorrat auch nicht
+  r.admin(M::Patch, "/api/v1/sensors", "{\"HX711\":{\"enabled\":false}}");
+  runFor(r, 62 * 60000);
+  TEST_ASSERT_TRUE(isnan(r.sensors.currentWater(hal::now())));
+}
+
+namespace {
 int g_gateCalls = 0;
 bool gate(void*) {
   g_gateCalls++;
@@ -719,6 +973,10 @@ int main() {
   RUN_TEST(test_clamp_warning_once_until_back_in_range);
   RUN_TEST(test_autocal_moves_limits_and_persists);
   RUN_TEST(test_tare_takes_raw_counts);
+  RUN_TEST(test_water_channel_points_and_watering);
+  RUN_TEST(test_scale_calibration);
+  RUN_TEST(test_analog_calibrate_point);
+  RUN_TEST(test_soil_fit_learns_from_scale);
   RUN_TEST(test_ds18b20_failure_requests_reboot_once);
   RUN_TEST(test_invalid_values_and_warmup_status);
   RUN_TEST(test_pause_aborts_and_resumes);

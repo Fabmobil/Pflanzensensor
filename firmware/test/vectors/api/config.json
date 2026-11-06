@@ -74,7 +74,7 @@
     "source": "profil",
     "platform": "native",
     "sensors": 8,
-    "channels": 19,
+    "channels": 20,
     "maxChannels": 31
   },
   "features": {
@@ -131,6 +131,11 @@
       "key": "HX711_0",
       "name": "Gewicht",
       "enabled": true
+    },
+    {
+      "key": "HX711_1",
+      "name": "Wasservorrat",
+      "enabled": false
     },
     {
       "key": "BMP280_0",

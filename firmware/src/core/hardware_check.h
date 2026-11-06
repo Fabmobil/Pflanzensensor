@@ -109,7 +109,7 @@ constexpr HwCheckResult checkHardware(Platform pl, const Features& f, const Pins
   {
     const int n = (f.analog ? f.analogChannels : 0) + (f.dht ? 2 : 0) +
                   (f.ds18b20 ? f.ds18b20Max : 0) + (f.sds011 ? 2 : 0) + (f.mhz19 ? 1 : 0) +
-                  (f.hx711 ? 1 : 0) + (f.bmp280 ? 2 : 0) + (f.serialReceiver ? 7 : 0);
+                  (f.hx711 ? 2 : 0) + (f.bmp280 ? 2 : 0) + (f.serialReceiver ? 7 : 0);
     if (n > maxHardwareChannels(pl))
       return {HwProblem::TooManyChannels, -1};
   }

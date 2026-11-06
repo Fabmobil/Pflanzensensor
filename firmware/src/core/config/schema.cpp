@@ -84,6 +84,10 @@ const FieldDef kSensor[] PS_PROGMEM = {
     SEN("interval", FT::U16, FNone, intervalS, 10, 3600),
     SEN("scale", FT::F32, FNone, scale, -1e9f, 1e9f),
     SEN("tare", FT::I32, FNone, tare, -2147483647.0f, 2147483647.0f),
+    SEN("wet", FT::F32, FNone, wetG, -1e7f, 1e7f),
+    SEN("dry", FT::F32, FNone, dryG, -1e7f, 1e7f),
+    SEN("watering", FT::U16, FNone, wateringG, 0, 10000),
+    SEN("autoWet", FT::Bool, FNone, autoWet, 0, 0),
 };
 #undef SEN
 
@@ -112,6 +116,7 @@ const FieldDef kChannel[] PS_PROGMEM = {
     CH("rawMax", FT::I16, FNone, rawMax, 0, 4095),
     CH("inverted", FT::Bool, FNone, inverted, 0, 0),
     CH("autocal", FT::Bool, FNone, autocal, 0, 0),
+    CH("learn", FT::Bool, FNone, learn, 0, 0),
     CH("halfLife", FT::U32, FHalfLife, halfLifeS, 0, 2592000),
 };
 #undef CH

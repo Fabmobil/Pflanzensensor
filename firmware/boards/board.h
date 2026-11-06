@@ -44,7 +44,7 @@ constexpr uint8_t maxChannelsOf(ps::SensorType t) {
   case ps::SensorType::Mhz19:
     return 1;
   case ps::SensorType::Hx711:
-    return 1;
+    return 2;
   case ps::SensorType::Bmp280:
     return 2;
   case ps::SensorType::SerialReceiver:
@@ -68,7 +68,7 @@ constexpr uint8_t channelsOf(const ps::Features& f, ps::SensorType t) {
   case ps::SensorType::Mhz19:
     return f.mhz19 ? 1 : 0;
   case ps::SensorType::Hx711:
-    return f.hx711 ? 1 : 0;
+    return f.hx711 ? 2 : 0; // Gewicht, Wasservorrat
   case ps::SensorType::Bmp280:
     return f.bmp280 ? 2 : 0;
   case ps::SensorType::SerialReceiver:

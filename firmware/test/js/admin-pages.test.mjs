@@ -153,6 +153,96 @@ test('Sensoren: Werte, Status, Extrema und Rohwerte werden angezeigt', async () 
   assert.equal(writes(p, 'POST').at(-1).url, '/api/v1/sensors/HX711/tare');
 });
 
+const button = (root, text) => root.querySelectorAll('button').find((b) => b.textContent === text);
+
+test('Sensoren: Waage kalibrieren, Wasservorrat, Kalibrierpunkte', async () => {
+  const p = open('sensors.html');
+  await settle(40);
+  const d = p.document;
+  const hx = d.querySelector('[data-sensor="HX711"]');
+  button(hx, '1. Ausgangswert merken').dispatch('click');
+  await settle();
+  assert.equal(writes(p, 'POST').at(-1).url, '/api/v1/sensors/HX711/scale-reference');
+  // Ohne Gramm wird nichts geschickt
+  const n = writes(p, 'POST').length;
+  button(hx, '2. Kalibrieren').dispatch('click');
+  await settle();
+  assert.equal(writes(p, 'POST').length, n);
+  const grams = hx.querySelectorAll('input').find((i) => i.getAttribute('aria-label') === 'Referenzgewicht in Gramm');
+  grams.value = '1000';
+  button(hx, '2. Kalibrieren').dispatch('click');
+  await settle();
+  assert.equal(writes(p, 'POST').at(-1).url, '/api/v1/sensors/HX711/scale');
+  assert.deepEqual(body(writes(p, 'POST').at(-1)), { grams: 1000 });
+  // Skalierung und Nassgewicht speichern als Sensorfelder
+  const field = (label) => hx.querySelectorAll('input').find((i) => i.getAttribute('aria-label') === label);
+  assert.equal(field('Rohwert je Gramm').value, '-7050');
+  type(field('Rohwert je Gramm'), '-98.2');
+  type(field('Nassgewicht in Gramm'), '3100');
+  p.clock.advance(1100);
+  await settle();
+  assert.deepEqual(writes(p, 'PATCH').map(body), [{ HX711: { scale: -98.2 } }, { HX711: { wet: 3100 } }]);
+  assert.match(hx.querySelector('.watering-status').textContent, /nicht erkannt/);
+  // Wasservorrat: aktuelles Gewicht als 100 %
+  const water = hx.querySelector('[data-key="HX711_1"]');
+  button(water, 'Jetzt = 100 %').dispatch('click');
+  await settle();
+  assert.equal(writes(p, 'POST').at(-1).url, '/api/v1/sensors/HX711/1/calibrate');
+  assert.deepEqual(body(writes(p, 'POST').at(-1)), { percent: 100 });
+  // Gewicht selbst hat keine Kalibrierpunkte, DHT auch nicht
+  assert.equal(button(hx.querySelector('[data-key="HX711_0"]'), 'Jetzt = 0 %'), undefined);
+  assert.equal(d.querySelector('[data-key="DHT_0"]').querySelector('.calibration-section'), null);
+  // Analog: Rohwert als 0 %, Lernen einschalten
+  const soil = d.querySelector('[data-key="ANALOG_1"]');
+  button(soil, 'Jetzt = 0 %').dispatch('click');
+  await settle();
+  assert.equal(writes(p, 'POST').at(-1).url, '/api/v1/sensors/ANALOG/1/calibrate');
+  assert.deepEqual(body(writes(p, 'POST').at(-1)), { percent: 0 });
+  const learn = soil.querySelector('.calibration-section input[type="checkbox"]');
+  check(learn, true);
+  p.clock.advance(10);
+  await settle();
+  assert.deepEqual(body(writes(p, 'PATCH').at(-1)), { ANALOG: { channels: { 1: { learn: true } } } });
+  assert.ok(button(soil, 'Vorschlag übernehmen').disabled, 'ohne Vorschlag gesperrt');
+});
+
+test('Sensoren: Werte vom Gerät ziehen nach, nicht beim Tippen', async () => {
+  const later = structuredClone(fixture('sensors.json'));
+  const an = later.sensors.find((s) => s.id === 'ANALOG').channels[1];
+  an.rawMin = 310; // Kalibrierpunkt gesetzt
+  an.fit = { bins: [null, null, null, { n: 5, raw: 588 }, null, { n: 9, raw: 500 }, null, { n: 4, raw: 412 }, null, null],
+    suggest: { rawMin: 280, rawMax: 720, inverted: true, r2: 0.991, bins: 3 } };
+  const hxLater = later.sensors.find((s) => s.id === 'HX711');
+  hxLater.wet = 3150; // nach dem Gießen nachgeführt
+  hxLater.lastWatering = { settling: true, at: later.now - 10 * 60000, rise: 700 };
+  let calls = 0;
+  const p = open('sensors.html', { 'GET /api/v1/sensors': () => ({ body: calls++ ? later : fixture('sensors.json') }) });
+  await settle(40);
+  const d = p.document;
+  const soil = d.querySelector('[data-key="ANALOG_1"]');
+  const [, rmin, rmax] = soil.querySelectorAll('.inverted-section input');
+  type(rmax, '800'); // tippt gerade, Gerät meldet noch 750
+  p.ctx._intervals.forEach((i) => i.fn()); // 5-s-Auffrischung (und Fußzeile)
+  await settle(20);
+  assert.equal(rmin.value, '310');
+  assert.equal(rmax.value, '800', 'Eingabe bleibt');
+  const hx = d.querySelector('[data-sensor="HX711"]');
+  const wet = hx.querySelectorAll('input').find((i) => i.getAttribute('aria-label') === 'Nassgewicht in Gramm');
+  assert.equal(wet.value, '3150');
+  assert.match(hx.querySelector('.watering-status').textContent, /vor 10 min \(\+700 g\), tropft ab/);
+  assert.match(soil.querySelector('.fit-suggestion').textContent, /280 bis 720, invertiert \(R² 0\.99 aus 3 Bereichen\)/);
+  assert.equal(soil.querySelectorAll('.fit-bin').length, 3);
+  const apply = button(soil, 'Vorschlag übernehmen');
+  assert.ok(!apply.disabled);
+  apply.dispatch('click');
+  await settle();
+  assert.equal(writes(p, 'POST').at(-1).url, '/api/v1/sensors/ANALOG/1/fit-apply');
+  // Nachziehen speichert nichts zurück, nur die eigene Eingabe geht raus
+  p.clock.advance(1100);
+  await settle();
+  assert.deepEqual(writes(p, 'PATCH').map(body), [{ ANALOG: { channels: { 1: { rawMax: 800 } } } }]);
+});
+
 test('Sensoren: Autokalibrierung sperrt die Rohgrenzen, Schwellen sind geordnet', async () => {
   const p = open('sensors.html');
   await settle(40);

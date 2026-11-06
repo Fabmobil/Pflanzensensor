@@ -4,7 +4,14 @@
  *
  * Neu und schlanker als in der Firmware 2.x: alles kommt aus GET /api/v1/sensors
  * und geht als Teil-JSON an PATCH /api/v1/sensors. Jedes Feld speichert für
- * sich nach 1 s Ruhe (B-50). Werte werden alle 5 s aufgefrischt.
+ * sich nach 1 s Ruhe (B-50). Werte werden alle 5 s aufgefrischt; Felder, die das
+ * Gerät selbst ändert (Kalibrierpunkte, Nasspunkt nach dem Gießen), ziehen nach,
+ * solange niemand darin tippt.
+ *
+ * Kalibrieren: Analogkanäle und der Wasservorrat der Waage übernehmen den
+ * aktuellen Wert als 0 % bzw. 100 %. Die Waage kalibriert ihre Skalierung mit
+ * einem bekannten Gewicht. Ein Bodenfeuchtesensor im selben Topf kann an der
+ * Waage lernen und bekommt daraus Rohgrenzen vorgeschlagen.
  */
 (function (global) {
   'use strict';
@@ -15,6 +22,48 @@
   const HEALTH = { ok: 'OK', degraded: 'Fehler, neuer Versuch läuft', failed: 'dauerhaft fehlerhaft' };
 
   const live = new Map();  // key → {value, status, obs, raw, rawObs, card}
+  const sensorLive = new Map();  // Sensor-ID → {sync, update}
+
+  /** Feld merkt sich Eingaben, bis das Gerät den Wert bestätigt */
+  function track(field) {
+    const mark = () => { field.dataset.dirty = '1'; };
+    field.addEventListener('input', mark);
+    field.addEventListener('change', mark);
+    return field;
+  }
+
+  /** Wert vom Gerät übernehmen, außer im Feld wird gerade getippt */
+  function sync(field, v) {
+    if (!field || v === undefined) return;
+    const isBox = field.type === 'checkbox';
+    const cur = isBox ? field.checked : (field.value === '' ? null : Number(field.value));
+    const same = isBox || cur === null || v === null ? cur === v
+      : Math.abs(cur - v) <= 1e-4 * Math.max(1, Math.abs(v));
+    if (field.dataset.dirty) {
+      if (same) delete field.dataset.dirty; // gespeichert
+      return;
+    }
+    if (same || (typeof document !== 'undefined' && document.activeElement === field)) return;
+    if (isBox) field.checked = v;
+    else field.value = v === null ? '' : String(v);
+    field.dispatchEvent(new Event('sync')); // nicht change: das würde wieder speichern
+  }
+
+  function post(path, body, message) {
+    return global.Api.post(path, body).then(() => { if (message) toast(message); }).catch(() => {});
+  }
+
+  /** "vor 5 min", "vor 3 h" */
+  function ago(ms) {
+    const m = Math.max(0, Math.round(ms / 60000));
+    if (m < 90) return 'vor ' + m + ' min';
+    const h = Math.round(m / 60);
+    return h < 48 ? 'vor ' + h + ' h' : 'vor ' + Math.round(h / 24) + ' Tagen';
+  }
+
+  function fmt(v, digits) {
+    return v === null || v === undefined || isNaN(v) ? '--' : Number(v).toFixed(digits);
+  }
 
   /** Teil-JSON für ein Kanalfeld */
   function channelPatch(sensorId, index, field, value) {
@@ -53,7 +102,8 @@
     const name = el('input', { type: 'text', class: 'channel-name', maxlength: '24', value: ch.name, 'aria-label': 'Name' });
     bind(name, 'name');
     const enabled = checkbox(ch.enabled, 'aktiv');
-    bind(enabled.box, 'enabled');
+    bind(track(enabled.box), 'enabled');
+    const synced = { enabled: enabled.box };
     const valueEl = el('span', { class: 'readonly-value' });
     const obsEl = el('span', { class: 'readonly-value' });
     const resetObs = smallButton('Zurücksetzen');
@@ -95,14 +145,15 @@
     let rawEl = null, rawObsEl = null;
     if (ch.hasRaw) {
       const inv = checkbox(ch.inverted, 'Skala invertieren (hoher Rohwert = 0 %)');
-      bind(inv.box, 'inverted');
+      bind(track(inv.box), 'inverted');
       const rmin = numberField(ch.rawMin, { step: '1', min: '0', max: '1023', disabled: ch.autocal, 'aria-label': 'Rohwert für 0 %' });
       const rmax = numberField(ch.rawMax, { step: '1', min: '0', max: '1023', disabled: ch.autocal, 'aria-label': 'Rohwert für 100 %' });
-      bind(rmin, 'rawMin');
-      bind(rmax, 'rawMax');
+      bind(track(rmin), 'rawMin');
+      bind(track(rmax), 'rawMax');
       const cal = checkbox(ch.autocal, 'Automatische Kalibrierung',
         [el('a', { href: WIKI, target: '_blank', rel: 'noopener', text: '(Wiki)' })]);
-      bind(cal.box, 'autocal');
+      bind(track(cal.box), 'autocal');
+      Object.assign(synced, { inverted: inv.box, rawMin: rmin, rawMax: rmax, autocal: cal.box });
       const half = el('select', { class: 'half-life' }, HALF_LIVES.map(([v, t]) => el('option', { value: String(v), text: t, selected: v === ch.halfLife })));
       bind(half, 'halfLife', f => Number(f.value));
       const halfRow = el('div', { class: 'kv' }, kv('Halbwertszeit', half));
@@ -111,6 +162,7 @@
         halfRow.style.display = cal.box.checked ? '' : 'none';
       };
       cal.box.addEventListener('change', autocalChanged);
+      cal.box.addEventListener('sync', autocalChanged);
       autocalChanged();
       rawEl = el('span', { class: 'readonly-value' });
       rawObsEl = el('span', { class: 'readonly-value' });
@@ -128,9 +180,120 @@
           kv('Roh beobachtet', rawObsEl, resetRaw)))
       ]));
     }
+    let fit = null;
+    if (ch.calibrate) {
+      const cal = calibrationSection(sensor, ch, synced);
+      fit = cal.fit;
+      parts.push(cal.element);
+    }
     const card = el('div', { class: 'measurement-card', 'data-key': ch.key }, parts);
-    live.set(ch.key, { card, valueEl, obsEl, rawEl, rawObsEl, slider, unit: ch.unit, last: null });
+    live.set(ch.key, { card, valueEl, obsEl, rawEl, rawObsEl, slider, unit: ch.unit, last: null, synced, fit });
     return card;
+  }
+
+  /** Kalibrierpunkte 0 %/100 % und (Analog mit Waage) Lernen an der Waage */
+  function calibrationSection(sensor, ch, synced) {
+    const id = sensor.id;
+    const water = id === 'HX711';
+    const point = (pct) => {
+      const b = smallButton('Jetzt = ' + pct + ' %');
+      b.addEventListener('click', () => post(`/api/v1/sensors/${id}/${ch.index}/calibrate`, { percent: pct },
+        (water ? (pct ? 'Nassgewicht' : 'Trockengewicht') : 'Rohgrenze') + ' übernommen'));
+      return b;
+    };
+    const parts = [
+      el('h4', { text: 'Kalibrieren' }),
+      el('p', { class: 'calibrate-points' }, [point(0), ' ', point(100)]),
+      el('p', { class: 'hint', text: water
+        ? '0 % = die Pflanze braucht Wasser, 100 % = gegossen und abgetropft. Übernimmt das aktuelle Gewicht als Trocken- bzw. Nassgewicht.'
+        : 'Übernimmt den letzten Rohwert als Grenze für 0 % bzw. 100 % und schaltet die automatische Kalibrierung aus.' })
+    ];
+    let fit = null;
+    if (ch.fit !== undefined) {
+      const learn = checkbox(ch.learn, 'An der Waage lernen');
+      global.UI.bindAutosave(track(learn.box), v => save(channelPatch(id, ch.index, 'learn', v)), { delay: 0 });
+      synced.learn = learn.box;
+      const table = el('div', { class: 'fit-bins' });
+      const suggestion = el('p', { class: 'fit-suggestion' });
+      const apply = smallButton('Vorschlag übernehmen');
+      apply.addEventListener('click', () => post(`/api/v1/sensors/${id}/${ch.index}/fit-apply`, undefined, 'Rohgrenzen übernommen'));
+      const reset = smallButton('Lerndaten löschen');
+      reset.addEventListener('click', () => post(`/api/v1/sensors/${id}/${ch.index}/fit-reset`, undefined, 'Lerndaten gelöscht'));
+      parts.push(learn.label,
+        el('p', { class: 'hint', text: 'Steckt der Sensor im Topf auf der Waage, sammelt das Gerät seine Rohwerte je 10 % Wasservorrat (nicht beim Abtropfen nach dem Gießen). Nach einem Trocknungszyklus schlägt es Rohgrenzen vor. R² nahe 1: der Sensor ist linear.' }),
+        table, suggestion, el('p', {}, [apply, ' ', reset]));
+      fit = { table, suggestion, apply };
+    }
+    return { element: el('div', { class: 'calibration-section' }, parts), fit };
+  }
+
+  function renderFit(f, data) {
+    if (!f || !data) return;
+    f.table.textContent = '';
+    data.bins.forEach((b, i) => {
+      if (!b) return;
+      f.table.appendChild(el('span', { class: 'fit-bin', text: `${i * 10}–${i * 10 + 10} %: ${Math.round(b.raw)} (${b.n})` }));
+    });
+    if (!f.table.children.length) f.table.appendChild(el('span', { class: 'hint', text: 'Noch keine Lerndaten.' }));
+    const s = data.suggest;
+    f.suggestion.textContent = s
+      ? `Vorschlag: Rohgrenzen ${s.rawMin} bis ${s.rawMax}${s.inverted ? ', invertiert' : ''} (R² ${fmt(s.r2, 2)} aus ${s.bins} Bereichen)`
+      : 'Noch kein Vorschlag: nötig sind drei Bereiche mit je drei Messungen, die zusammen 30 % Wasservorrat überspannen.';
+    f.apply.disabled = !s;
+  }
+
+  /** Waage: Skalierung mit Referenzgewicht, Wasservorrat, Gießen */
+  function scaleSection(s) {
+    const field = (name, attrs) => {
+      const f = track(numberField(s[name], attrs));
+      global.UI.bindAutosave(f, v => save(sensorPatch(s.id, name, v)));
+      return f;
+    };
+    const scale = field('scale', { 'aria-label': 'Rohwert je Gramm' });
+    const grams = numberField('', { step: 'any', min: '0', placeholder: 'g', 'aria-label': 'Referenzgewicht in Gramm' });
+    const ref = smallButton('1. Ausgangswert merken');
+    ref.addEventListener('click', () => post(`/api/v1/sensors/${s.id}/scale-reference`, undefined, 'Ausgangswert wird bei der nächsten Messung gemerkt'));
+    const calib = smallButton('2. Kalibrieren');
+    calib.addEventListener('click', () => {
+      const g = Number(grams.value);
+      if (!(g > 0)) { toast('Bekanntes Gewicht in Gramm eintragen', 'warning'); return; }
+      post(`/api/v1/sensors/${s.id}/scale`, { grams: g }, 'Skalierung wird bei der nächsten Messung berechnet');
+    });
+    const scaleStatus = el('span', { class: 'scale-status' });
+    const dry = field('dry', { 'aria-label': 'Trockengewicht in Gramm' });
+    const wet = field('wet', { 'aria-label': 'Nassgewicht in Gramm' });
+    const watering = field('watering', { step: '1', min: '0', max: '10000', 'aria-label': 'Gießen erkennen ab Gramm' });
+    const autoWet = checkbox(s.autoWet, 'Nasspunkt nach dem Gießen nachführen');
+    global.UI.bindAutosave(track(autoWet.box), v => save(sensorPatch(s.id, 'autoWet', v)), { delay: 0 });
+    const waterStatus = el('span', { class: 'watering-status' });
+    const element = el('div', { class: 'scale-section' }, [
+      el('h4', { text: 'Waage kalibrieren' }),
+      el('div', { class: 'kv' }, [].concat(
+        kv('Skalierung', scale, el('span', { class: 'hint', text: ' Rohwert je g' })),
+        kv('Referenz', ref, ' ', grams, ' g ', calib),
+        kv('Stand', scaleStatus))),
+      el('p', { class: 'hint', text: 'Der Topf darf stehen bleiben: Ausgangswert merken, ein bekanntes Gewicht (z. B. eine gewogene Wasserflasche) dazustellen, Gramm eintragen, Kalibrieren. Ohne Ausgangswert zählt der Nullpunkt (Tara bei leerer Waage).' }),
+      el('h4', { text: 'Wasservorrat' }),
+      el('div', { class: 'kv' }, [].concat(
+        kv('Trocken (0 %)', dry, ' g'),
+        kv('Nass (100 %)', wet, ' g'),
+        kv('Gießen ab', watering, ' g Anstieg (0 = aus)'),
+        kv('Gegossen', waterStatus))),
+      autoWet.label,
+      el('p', { class: 'hint', text: 'Nach dem Gießen wartet das Gerät 60 min aufs Abtropfen. Ist der Topf dann schwerer als das Nassgewicht, wird es angehoben (die Pflanze wächst).' })
+    ]);
+    const synced = { scale, dry, wet, watering, autoWet: autoWet.box };
+    sensorLive.set(s.id, {
+      sync: (x) => Object.entries(synced).forEach(([k, f]) => sync(f, x[k])),
+      update: (x, now) => {
+        scaleStatus.textContent = x.scalePending ? 'wartet auf die nächste Messung …'
+          : x.scaleRef ? 'Ausgangswert gemerkt – jetzt Gewicht auflegen und kalibrieren' : '–';
+        const w = x.lastWatering || {};
+        waterStatus.textContent = w.at === null || w.at === undefined ? 'seit dem Start nicht erkannt'
+          : ago(now - w.at) + ' (+' + fmt(w.rise, 0) + ' g)' + (w.settling ? ', tropft ab …' : '');
+      }
+    });
+    return element;
   }
 
   function sensorCard(s) {
@@ -154,6 +317,7 @@
       tare.addEventListener('click', () => global.Api.post(`/api/v1/sensors/${s.id}/tare`).then(() => toast('Nullpunkt wird bei der nächsten Messung übernommen')));
       head.push(el('p', {}, [tare, el('span', { class: 'hint', text: ' Waage leer lassen.' })]));
     }
+    if (s.id === 'HX711') head.push(scaleSection(s));
     const card = el('div', { class: 'card sensor-card' + (s.enabled ? '' : ' disabled'), 'data-sensor': s.id }, head.concat(s.channels.map(ch => channelCard(s, ch))));
     return card;
   }
@@ -170,6 +334,11 @@
     data.sensors.forEach(s => {
       const st = document.querySelector(`[data-status="${s.id}"]`);
       if (st) st.textContent = sensorStatusText(s);
+      const sl = sensorLive.get(s.id);
+      if (sl) {
+        sl.sync(s);
+        sl.update(s, data.now);
+      }
       s.channels.forEach(ch => {
         const l = live.get(ch.key);
         if (!l) return;
@@ -179,6 +348,8 @@
         if (l.rawEl) l.rawEl.textContent = ch.raw >= 0 ? String(ch.raw) : '--';
         if (l.rawObsEl) l.rawObsEl.textContent = ch.rawObsMin === null ? '--' : ch.rawObsMin + ' … ' + ch.rawObsMax;
         l.slider.update(ch);
+        Object.entries(l.synced).forEach(([k, f]) => sync(f, ch[k]));
+        renderFit(l.fit, ch.fit);
         const sig = s.lastMeasurement;
         if (l.last !== null && l.last !== sig) {
           l.card.classList.remove('flash');
@@ -222,5 +393,5 @@
   }
 
   if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', wire);
-  global.Sensors = { channelPatch, sensorPatch, sensorStatusText };
+  global.Sensors = { channelPatch, sensorPatch, sensorStatusText, ago };
 })(typeof window !== 'undefined' ? window : globalThis);

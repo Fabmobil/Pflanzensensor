@@ -20,6 +20,7 @@ struct ChannelConfig {
   int16_t rawMax = 1023;
   bool inverted = false;
   bool autocal = false;
+  bool learn = false; ///< nur Analog: Rohwerte gegen den Wasservorrat der Waage sammeln
   uint32_t halfLifeS = 86400;
 };
 
@@ -28,6 +29,11 @@ struct SensorConfig {
   uint16_t intervalS = 60;
   float scale = -7050.0f; ///< nur HX711
   int32_t tare = 0;       ///< nur HX711, persistenter Tara-Offset (B-21)
+  // Nur HX711: Wasservorrat (Kanal 1) zwischen Trocken- und Nassgewicht
+  float wetG = 0;          ///< Gewicht bei 100 % (abgetropft nach dem Gießen)
+  float dryG = 0;          ///< Gewicht bei 0 % (Pflanze braucht Wasser)
+  uint16_t wateringG = 50; ///< Anstieg, ab dem Gießen erkannt wird; 0 = aus
+  bool autoWet = true;     ///< Nasspunkt nach dem Gießen anheben
 };
 
 struct SensorsConfig {

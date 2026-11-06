@@ -536,6 +536,29 @@ button.warning:hover,
 
 .card .inverted-section > .check { display: flex; margin: 0.5em 0; }
 
+/* --- Kalibrieren, Waage --- */
+.calibration-section,
+.scale-section {
+  margin-top: 0.6em;
+  padding-top: 0.2em;
+  border-top: 1px solid #4a4a4a;
+}
+
+.card .calibration-section > .check,
+.card .scale-section > .check { display: flex; margin: 0.5em 0; }
+
+.scale-section input[type="number"] { width: 7em; }
+
+.fit-bins {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3em 0.8em;
+  font-size: 0.85em;
+  color: #b0b0b0;
+}
+
+.fit-suggestion { margin: 0.5em 0 0.3em; }
+
 .minmax-section {
   display: inline-flex;
   align-items: center;

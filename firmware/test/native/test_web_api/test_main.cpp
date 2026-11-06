@@ -175,14 +175,15 @@ void test_system_endpoint() {
   TEST_ASSERT_TRUE(d["features"]["display"]);
   TEST_ASSERT_TRUE(d["heap"]["freeHeap"].as<int>() > 0);
   JsonArray ch = d["channels"];
-  TEST_ASSERT_EQUAL(board::slotCount(), ch.size());
+  // Wasservorrat (HX711_1) ist ab Werk aus
+  TEST_ASSERT_EQUAL(board::slotCount() - 1, ch.size());
   TEST_ASSERT_EQUAL_STRING("ANALOG_0", ch[0]["key"]);
   TEST_ASSERT_EQUAL_STRING("ANALOG", ch[0]["sensor"]);
   TEST_ASSERT_EQUAL_STRING("Lichtstärke", ch[0]["name"]);
   // Deaktivierter Kanal fehlt
   r.admin(M::Patch, "/api/v1/sensors", "{\"ANALOG\":{\"channels\":{\"0\":{\"enabled\":false}}}}");
   d = r.get("/api/v1/system").json();
-  TEST_ASSERT_EQUAL(board::slotCount() - 1, d["channels"].as<JsonArray>().size());
+  TEST_ASSERT_EQUAL(board::slotCount() - 2, d["channels"].as<JsonArray>().size());
   native::setEpoch(0);
   d = r.get("/api/v1/system").json();
   TEST_ASSERT_TRUE(d["time"].isNull());

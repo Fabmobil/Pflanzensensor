@@ -209,17 +209,216 @@ void SensorService::resetExtrema(uint8_t slot, bool raw, Instant now) {
   state_.markImportant(now);
 }
 
+Err SensorService::requestScaleAction(uint8_t sensor, Instant now) {
+  pendingAt_ = now;
+  uint32_t wait;
+  // Busy: die laufende Messung begann vorher und zählt nicht; afterScale
+  // fordert danach eine neue an.
+  if (measureNow(sensor, now, false, wait) == MeasureResult::Disabled)
+    return Err::Disabled;
+  return Err::None;
+}
+
 Err SensorService::tare(uint8_t sensor, Instant now) {
   if (sensor >= board::sensorCount() || board::sensor(sensor).type != SensorType::Hx711)
     return Err::Unsupported;
-  pendingTare_ |= (1u << sensor);
-  uint32_t wait;
-  const MeasureResult r = measureNow(sensor, now, false, wait);
-  if (r == MeasureResult::Disabled) {
-    pendingTare_ &= ~(1u << sensor);
-    return Err::Disabled;
+  const Err e = requestScaleAction(sensor, now);
+  if (e == Err::None)
+    pendingTare_ |= (1u << sensor);
+  return e;
+}
+
+Err SensorService::scaleReference(uint8_t sensor, Instant now) {
+  if (sensor >= board::sensorCount() || board::sensor(sensor).type != SensorType::Hx711)
+    return Err::Unsupported;
+  const Err e = requestScaleAction(sensor, now);
+  if (e == Err::None) {
+    pendingRef_ = true;
+    hasRef_ = false;
   }
-  return Err::None; // Busy: die laufende Messung übernimmt den Nullpunkt
+  return e;
+}
+
+Err SensorService::scaleCalibrate(uint8_t sensor, float grams, Instant now) {
+  if (sensor >= board::sensorCount() || board::sensor(sensor).type != SensorType::Hx711)
+    return Err::Unsupported;
+  if (!(grams > 0) || grams > 1e6f)
+    return Err::OutOfRange;
+  if (pendingRef_)
+    return Err::Busy; // Ausgangswert noch nicht gemessen
+  const Err e = requestScaleAction(sensor, now);
+  if (e == Err::None)
+    pendingGrams_ = grams;
+  return e;
+}
+
+Err SensorService::calibratePoint(uint8_t slot, uint8_t percent, Instant now) {
+  if (slot >= board::slotCount())
+    return Err::NotFound;
+  if (percent != 0 && percent != 100)
+    return Err::InvalidArgument;
+  const auto& sl = board::slot(slot);
+  const auto& se = board::sensor(sl.sensor);
+  const ChannelDef def = catalog::channel(se.type, sl.channel);
+  SensorsConfig& sc = cfg_.sensorsMutable();
+  ChannelConfig& cc = sc.channels[slot];
+  if (def.hasRaw) {
+    const ChannelState& st = state_.channel(slot);
+    if (!st.hasOk || st.raw < 0)
+      return Err::NotReady;
+    ChannelConfig copy = cc;
+    const Err e = analogSetPoint(copy, st.raw, percent);
+    if (e != Err::None)
+      return e;
+    cc = copy;
+    LOGI(Mod::Sensor, "%s: Rohwert %d ist jetzt %u %% (Grenzen %d..%d)", cc.name.c_str(), st.raw,
+         percent, cc.rawMin, cc.rawMax);
+  } else if (se.type == SensorType::Hx711 && sl.channel == 1) {
+    const ChannelState& w = state_.channel(se.firstSlot);
+    if (!w.hasOk || isnan(w.value))
+      return Err::NotReady;
+    SensorConfig copy = sc.sensors[sl.sensor];
+    const Err e = weightSetPoint(copy, w.value, percent);
+    if (e != Err::None)
+      return e;
+    sc.sensors[sl.sensor] = copy;
+    cc.enabled = true;
+    LOGI(Mod::Sensor, "%s: %s = %.0f g", cc.name.c_str(), percent ? "nass" : "trocken",
+         static_cast<double>(w.value));
+  } else {
+    return Err::Unsupported;
+  }
+  cfg_.markSensorsDirty(now);
+  applyConfig(1u << sl.sensor, now);
+  uint32_t wait;
+  measureNow(sl.sensor, now, false, wait); // neuen Prozentwert gleich zeigen
+  return Err::None;
+}
+
+const SoilFit* SensorService::soilFit(uint8_t slot) const {
+  if (slot >= board::slotCount())
+    return nullptr;
+  const auto& sl = board::slot(slot);
+  if (board::sensor(sl.sensor).type != SensorType::Analog)
+    return nullptr;
+  return &state_.soilFit(sl.channel);
+}
+
+Err SensorService::applySoilFit(uint8_t slot, Instant now) {
+  const SoilFit* f = soilFit(slot);
+  if (!f)
+    return Err::Unsupported;
+  const FitSuggestion sug = f->suggest();
+  if (!sug.ok)
+    return Err::NotReady;
+  ChannelConfig& cc = cfg_.sensorsMutable().channels[slot];
+  cc.rawMin = sug.rawMin;
+  cc.rawMax = sug.rawMax;
+  cc.inverted = sug.inverted;
+  cc.autocal = false;
+  LOGI(Mod::Sensor, "%s: Rohgrenzen aus der Waage %d..%d%s", cc.name.c_str(), cc.rawMin, cc.rawMax,
+       cc.inverted ? ", invertiert" : "");
+  cfg_.markSensorsDirty(now);
+  applyConfig(1u << board::slot(slot).sensor, now);
+  return Err::None;
+}
+
+Err SensorService::resetSoilFit(uint8_t slot, Instant now) {
+  if (!soilFit(slot))
+    return Err::Unsupported;
+  state_.soilFit(board::slot(slot).channel).clear();
+  state_.markImportant(now);
+  return Err::None;
+}
+
+float SensorService::currentWater(Instant now) const {
+  const int hx = board::sensorIndexOf(SensorType::Hx711);
+  if (hx < 0 || board::sensor(hx).channels < 2 || water_.settling())
+    return NAN;
+  const uint8_t slot = static_cast<uint8_t>(board::sensor(hx).firstSlot + 1);
+  const ChannelState& w = state_.channel(slot);
+  if (!cfg_.sensors().channels[slot].enabled || !w.hasOk || isnan(w.value))
+    return NAN;
+  // Höchstens zwei Messintervalle der Waage alt, mindestens 10 min
+  uint32_t maxAge = cfg_.sensors().sensors[hx].intervalS * 2000UL;
+  if (maxAge < 600000UL)
+    maxAge = 600000UL;
+  if ((now - w.lastOk).millis() > static_cast<int32_t>(maxAge))
+    return NAN;
+  return w.value;
+}
+
+bool SensorService::afterScale(uint8_t sensor, float weight, Instant now) {
+  SensorConfig& hc = cfg_.sensorsMutable().sensors[sensor];
+  bool changed = false;
+  if (hc.scale != seenScale_ || hc.tare != seenTare_) {
+    water_.restart(); // ein Sprung durch Tara/Kalibrieren ist kein Gießen
+    seenScale_ = hc.scale;
+    seenTare_ = hc.tare;
+  }
+  if (water_.feed(weight, hc.wateringG, now))
+    LOGI(Mod::Sensor, "Gegossen: +%.0f g, Nasspunkt wird nach dem Abtropfen geprüft",
+         static_cast<double>(water_.lastRise()));
+  if (water_.settledNow(now) && !isnan(weight)) {
+    if (hc.autoWet && hc.wetG > hc.dryG && weight > hc.wetG) {
+      LOGI(Mod::Sensor, "Abgetropft: Nasspunkt %.0f g -> %.0f g", static_cast<double>(hc.wetG),
+           static_cast<double>(weight));
+      hc.wetG = weight;
+      changed = true;
+    } else {
+      LOGI(Mod::Sensor, "Abgetropft: %.0f g (Nasspunkt %.0f g)", static_cast<double>(weight),
+           static_cast<double>(hc.wetG));
+    }
+  }
+
+  const bool tare = pendingTare_ & (1u << sensor);
+  if (!(tare || pendingRef_ || !isnan(pendingGrams_)) || !drivers_[sensor])
+    return changed;
+  if (!pendingAt_.before(jobStart_[sensor])) {
+    // Messung lief schon, als die Aktion kam (Gewicht evtl. noch nicht drauf)
+    uint32_t wait;
+    measureNow(sensor, now, false, wait);
+    return changed;
+  }
+  int32_t counts;
+  if (!drivers_[sensor]->lastRawCounts(counts))
+    return changed;
+  bool remeasure = false;
+  if (tare) {
+    hc.tare = counts;
+    LOGI(Mod::Sensor, "Tariert: Nullpunkt %ld", static_cast<long>(counts));
+    changed = remeasure = true;
+  }
+  if (pendingRef_) {
+    refCounts_ = counts;
+    hasRef_ = true;
+    LOGI(Mod::Sensor, "Waage: Ausgangswert %ld gemerkt, jetzt Gewicht auflegen",
+         static_cast<long>(counts));
+  } else if (!isnan(pendingGrams_)) {
+    const int32_t base = hasRef_ ? refCounts_ : hc.tare;
+    const float delta = static_cast<float>(static_cast<int64_t>(counts) - base);
+    if (fabsf(delta) < 50.0f) {
+      LOGW(Mod::Sensor, "Waage: Rohwert ändert sich kaum (%.0f) - liegt das Gewicht auf?",
+           static_cast<double>(delta));
+    } else {
+      const float scale = delta / pendingGrams_;
+      LOGI(Mod::Sensor, "Waage kalibriert mit %.0f g: Skalierung %.3f -> %.3f",
+           static_cast<double>(pendingGrams_), static_cast<double>(hc.scale),
+           static_cast<double>(scale));
+      hc.scale = scale;
+      changed = remeasure = true;
+    }
+    hasRef_ = false;
+  }
+  pendingTare_ &= ~(1u << sensor);
+  pendingRef_ = false;
+  pendingGrams_ = NAN;
+  if (remeasure) {
+    drivers_[sensor]->configure(hc);
+    uint32_t wait;
+    measureNow(sensor, now, false, wait); // Wert mit neuer Einstellung zeigen
+  }
+  return changed;
 }
 
 ChannelStatus SensorService::status(uint8_t slot, Instant now) const {
@@ -264,6 +463,12 @@ void SensorService::onMeasurement(uint8_t sensor, const Reading* values, uint8_t
     float value = values[ch].value;
     const ChannelStatus before = st.status;
 
+    if (se.type == SensorType::Hx711 && ch == 1) {
+      // Wasservorrat aus dem Gewicht dieser Messung
+      const SensorConfig& hc = sc.sensors[sensor];
+      value = waterPercent(values[0].value, hc.dryG, hc.wetG);
+    }
+
     if (def.hasRaw) {
       const int16_t raw = values[ch].raw;
       if (raw < 0 || isnan(value)) {
@@ -284,6 +489,14 @@ void SensorService::onMeasurement(uint8_t sensor, const Reading* values, uint8_t
             configChanged = true;
             important = true;
             LOGD(Mod::Sensor, "Autokalibrierung Kanal %u: %d..%d", slot, cc.rawMin, cc.rawMax);
+          }
+        }
+        if (cc.learn && se.type == SensorType::Analog) {
+          const float water = currentWater(now);
+          if (!isnan(water)) {
+            state_.soilFit(ch).add(water, raw);
+            LOGD(Mod::Sensor, "%s lernt: Rohwert %d bei %.0f %% Wasservorrat", cc.name.c_str(), raw,
+                 static_cast<double>(water));
           }
         }
         bool clamped = false;
@@ -331,17 +544,9 @@ void SensorService::onMeasurement(uint8_t sensor, const Reading* values, uint8_t
     state_.markDirty(now);
   if (configChanged)
     cfg_.markSensorsDirty(now);
-
-  if ((pendingTare_ & (1u << sensor)) && drivers_[sensor]) {
-    int32_t rawCounts;
-    if (drivers_[sensor]->lastRawCounts(rawCounts)) {
-      sc.sensors[sensor].tare = rawCounts;
-      drivers_[sensor]->configure(sc.sensors[sensor]);
-      cfg_.markSensorsDirty(now);
-      LOGI(Mod::Sensor, "Tariert: Nullpunkt %ld", static_cast<long>(rawCounts));
-    }
-    pendingTare_ &= ~(1u << sensor);
-  }
+  // Konfiguration (Tara, Skalierung, Nasspunkt), kein Kanalzustand
+  if (se.type == SensorType::Hx711 && afterScale(sensor, n > 0 ? values[0].value : NAN, now))
+    cfg_.markSensorsDirty(now);
 
   if (failuresBefore_[sensor] > 0) {
     LOGI(Mod::Sensor, "%s misst wieder (nach %u Fehlschlägen)", SensorId(sensor).s,

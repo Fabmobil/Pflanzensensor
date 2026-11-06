@@ -68,7 +68,7 @@
       'DS18B20_6', 'DS18B20_7', 'DS18B20_8'] },
     { id: 'SDS011', feature: 'sds011', names: ['PM10', 'PM2.5'] },
     { id: 'MHZ19', feature: 'mhz19', names: ['CO2'] },
-    { id: 'HX711', feature: 'hx711', names: ['Gewicht'] },
+    { id: 'HX711', feature: 'hx711', names: ['Gewicht', 'Wasservorrat'] },
     { id: 'BMP280', feature: 'bmp280', names: ['BMP_Temperatur', 'Luftdruck'] },
     { id: 'SERIAL_RECEIVER', feature: 'serialReceiver', names: ['Flow Rate', 'Absolute Counts', 'Sum Flow Rate',
       '24h Flow Rate', 'Arduino Time', 'Uptime', 'Liters per Hour'] }
@@ -88,7 +88,7 @@
   /** Messkanäle zusammen (wie board::channelsOf) */
   function channelCount(f) {
     return (f.analog ? f.analogChannels : 0) + (f.dht ? 2 : 0) + (f.ds18b20 ? f.ds18b20Max : 0) +
-      (f.sds011 ? 2 : 0) + (f.mhz19 ? 1 : 0) + (f.hx711 ? 1 : 0) + (f.bmp280 ? 2 : 0) + (f.serialReceiver ? 7 : 0);
+      (f.sds011 ? 2 : 0) + (f.mhz19 ? 1 : 0) + (f.hx711 ? 2 : 0) + (f.bmp280 ? 2 : 0) + (f.serialReceiver ? 7 : 0);
   }
 
   function maxChannels(chip) { return chip === 'ESP8266' ? 16 : 31; }

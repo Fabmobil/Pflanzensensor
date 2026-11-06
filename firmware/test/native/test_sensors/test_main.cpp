@@ -9,6 +9,7 @@
 #include "core/sensors/autocal.h"
 #include "core/sensors/protocols.h"
 #include "core/sensors/scheduler.h"
+#include "core/sensors/water.h"
 #include "services/sensor_service.h"
 #include "test_support.h"
 
@@ -448,6 +449,147 @@ void test_sensor_service() {
     delete f;
 }
 
+// ---------------------------------------------------------------------------
+// Wasservorrat, Kalibrierpunkte, Gießerkennung, Lernen an der Waage
+// ---------------------------------------------------------------------------
+void test_water_percent() {
+  TEST_ASSERT_EQUAL_FLOAT(50, waterPercent(2500, 2000, 3000));
+  TEST_ASSERT_EQUAL_FLOAT(0, waterPercent(1500, 2000, 3000));   // unter trocken
+  TEST_ASSERT_EQUAL_FLOAT(100, waterPercent(3300, 2000, 3000)); // frisch gegossen
+  TEST_ASSERT_TRUE(isnan(waterPercent(2500, 0, 0)));            // nicht eingerichtet
+  TEST_ASSERT_TRUE(isnan(waterPercent(2500, 3000, 2000)));      // vertauscht
+  TEST_ASSERT_TRUE(isnan(waterPercent(NAN, 2000, 3000)));
+}
+
+void test_analog_set_point() {
+  ChannelConfig c;
+  c.rawMin = 250;
+  c.rawMax = 750;
+  c.inverted = true; // Bodenfeuchte: nass = kleiner Rohwert
+  c.autocal = true;
+  TEST_ASSERT_EQUAL(Err::None, analogSetPoint(c, 300, 100));
+  TEST_ASSERT_EQUAL(300, c.rawMin);
+  TEST_ASSERT_FALSE(c.autocal);
+  TEST_ASSERT_EQUAL(Err::None, analogSetPoint(c, 820, 0));
+  TEST_ASSERT_EQUAL(820, c.rawMax);
+  // Nass mit hohem Rohwert passt nicht zur Invertierung
+  TEST_ASSERT_EQUAL(Err::OutOfRange, analogSetPoint(c, 900, 100));
+  TEST_ASSERT_EQUAL(Err::OutOfRange, analogSetPoint(c, 300, 0)); // gleich der anderen Grenze
+  TEST_ASSERT_EQUAL(300, c.rawMin);
+  TEST_ASSERT_EQUAL(Err::InvalidArgument, analogSetPoint(c, 500, 50));
+  TEST_ASSERT_EQUAL(Err::InvalidArgument, analogSetPoint(c, -1, 0));
+  // Nicht invertiert (Licht): 100 % ist rawMax
+  ChannelConfig l;
+  l.rawMin = 5;
+  l.rawMax = 1023;
+  TEST_ASSERT_EQUAL(Err::None, analogSetPoint(l, 900, 100));
+  TEST_ASSERT_EQUAL(900, l.rawMax);
+  TEST_ASSERT_EQUAL(Err::None, analogSetPoint(l, 40, 0));
+  TEST_ASSERT_EQUAL(40, l.rawMin);
+}
+
+void test_weight_set_point() {
+  SensorConfig c;
+  TEST_ASSERT_EQUAL(Err::None, weightSetPoint(c, 3000, 100)); // nass zuerst
+  TEST_ASSERT_EQUAL_FLOAT(3000, c.wetG);
+  TEST_ASSERT_EQUAL(Err::OutOfRange, weightSetPoint(c, 3100, 0));
+  TEST_ASSERT_EQUAL(Err::None, weightSetPoint(c, 2100, 0));
+  TEST_ASSERT_EQUAL_FLOAT(2100, c.dryG);
+  TEST_ASSERT_EQUAL(Err::OutOfRange, weightSetPoint(c, 2000, 100));
+  TEST_ASSERT_EQUAL(Err::InvalidArgument, weightSetPoint(c, NAN, 100));
+  // Trocken zuerst geht auch
+  SensorConfig d;
+  TEST_ASSERT_EQUAL(Err::None, weightSetPoint(d, 2100, 0));
+  TEST_ASSERT_EQUAL(Err::None, weightSetPoint(d, 3000, 100));
+}
+
+void test_watering_detector() {
+  WateringDetector w;
+  Instant t = Instant::fromMillis(1000);
+  const Duration minute = Duration::ms(60000);
+  // Austrocknen: kein Gießen
+  for (int i = 0; i < 10; i++) {
+    TEST_ASSERT_FALSE(w.feed(3000.0f - 5 * i, 50, t));
+    t = t + minute;
+  }
+  TEST_ASSERT_FALSE(w.watered());
+  // Langsam gegossen: zweimal +30 g, zusammen über der Schwelle
+  TEST_ASSERT_FALSE(w.feed(2985, 50, t));
+  TEST_ASSERT_TRUE(w.feed(3015, 50, t + minute));
+  TEST_ASSERT_TRUE(w.settling());
+  TEST_ASSERT_TRUE(w.watered());
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 60, w.lastRise()); // gegen das Minimum 2955
+  // Nachgießen verlängert das Abtropfen
+  t = t + Duration::ms(30 * 60000);
+  TEST_ASSERT_TRUE(w.feed(3200, 50, t));
+  TEST_ASSERT_FALSE(w.settledNow(t + Duration::ms(59 * 60000)));
+  TEST_ASSERT_TRUE(w.settledNow(t + Duration::ms(60 * 60000)));
+  TEST_ASSERT_FALSE(w.settling());
+  TEST_ASSERT_FALSE(w.settledNow(t + Duration::ms(61 * 60000))); // nur einmal
+  // Neustart vergisst die Historie und das Abtropfen
+  TEST_ASSERT_TRUE(w.feed(3500, 50, t));
+  w.restart();
+  TEST_ASSERT_FALSE(w.settling());
+  TEST_ASSERT_FALSE(w.feed(9000, 50, t));
+  // Schwelle 0 = aus
+  WateringDetector off;
+  off.feed(1000, 0, t);
+  TEST_ASSERT_FALSE(off.feed(5000, 0, t));
+  TEST_ASSERT_FALSE(off.feed(NAN, 50, t));
+}
+
+void test_soil_fit_linear_and_curved() {
+  SoilFit f;
+  TEST_ASSERT_TRUE(f.empty());
+  TEST_ASSERT_FALSE(f.suggest().ok);
+  // Sensor: 0 % Wasser = 700, 100 % = 300 (invertiert), nur 30..90 % beobachtet
+  for (int rep = 0; rep < 5; rep++)
+    for (int w = 35; w <= 95; w += 10)
+      f.add(static_cast<float>(w), static_cast<int16_t>(700 - 4 * w));
+  FitSuggestion s = f.suggest();
+  TEST_ASSERT_TRUE(s.ok);
+  TEST_ASSERT_TRUE(s.inverted);
+  TEST_ASSERT_INT_WITHIN(1, 300, s.rawMin);
+  TEST_ASSERT_INT_WITHIN(1, 700, s.rawMax);
+  TEST_ASSERT_FLOAT_WITHIN(0.001f, 1.0f, s.r2);
+  TEST_ASSERT_EQUAL(7, s.bins);
+  // Gekrümmt: Bestimmtheitsmaß sinkt
+  SoilFit g;
+  for (int rep = 0; rep < 5; rep++)
+    for (int w = 5; w <= 95; w += 10)
+      g.add(static_cast<float>(w), static_cast<int16_t>(300 + w * w / 20));
+  s = g.suggest();
+  TEST_ASSERT_TRUE(s.ok);
+  TEST_ASSERT_FALSE(s.inverted);
+  TEST_ASSERT_TRUE(s.r2 < 0.98f);
+  // Zu wenig Spanne (zwei Bereiche) bzw. zu wenige Messungen
+  SoilFit h;
+  for (int rep = 0; rep < 5; rep++) {
+    h.add(55, 500);
+    h.add(65, 480);
+  }
+  h.add(85, 400); // nur eine Messung: zählt nicht
+  TEST_ASSERT_FALSE(h.suggest().ok);
+  TEST_ASSERT_EQUAL(2, h.suggest().bins);
+  // Sensor reagiert nicht: kein Vorschlag
+  SoilFit flat;
+  for (int rep = 0; rep < 5; rep++)
+    for (int w = 5; w <= 95; w += 10)
+      flat.add(static_cast<float>(w), 512);
+  TEST_ASSERT_FALSE(flat.suggest().ok);
+  // Ränder und Gleitmittel
+  TEST_ASSERT_EQUAL(0, SoilFit::binOf(-3));
+  TEST_ASSERT_EQUAL(9, SoilFit::binOf(100));
+  SoilFit e;
+  for (int i = 0; i < 200; i++)
+    e.add(50, 400);
+  for (int i = 0; i < 200; i++)
+    e.add(50, 600);
+  TEST_ASSERT_FLOAT_WITHIN(5, 600, e.raw[5]); // folgt nach kWindow Messungen dem neuen Wert
+  e.clear();
+  TEST_ASSERT_TRUE(e.empty());
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_median);
@@ -464,6 +606,11 @@ int main() {
   RUN_TEST(test_disable_enable_runtime);
   RUN_TEST(test_all_invalid_is_failure);
   RUN_TEST(test_sensor_service);
+  RUN_TEST(test_water_percent);
+  RUN_TEST(test_analog_set_point);
+  RUN_TEST(test_weight_set_point);
+  RUN_TEST(test_watering_detector);
+  RUN_TEST(test_soil_fit_linear_and_curved);
   RUN_TEST(test_dht_decode);
   return UNITY_END();
 }

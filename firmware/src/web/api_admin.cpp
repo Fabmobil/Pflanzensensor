@@ -372,6 +372,53 @@ void logsFile(WebContext& c, hal::Request&, hal::Response& res, const char*) {
 // ---------------------------------------------------------------------------
 // Sensoren
 // ---------------------------------------------------------------------------
+namespace {
+/// Lerndaten eines Analogkanals: Rohwert je 10 % Wasservorrat und Vorschlag
+void writeSoilFit(JsonWriter& w, const SoilFit& f) {
+  w.key(FS_("fit")).beginObject();
+  w.key(FS_("bins")).beginArray();
+  for (uint8_t i = 0; i < SoilFit::kBins; i++) {
+    if (!f.n[i]) {
+      w.null();
+      continue;
+    }
+    w.beginObject();
+    w.kv(FS_("n"), static_cast<uint32_t>(f.n[i]));
+    w.key(FS_("raw")).value(f.raw[i], 1);
+    w.endObject();
+  }
+  w.endArray();
+  const FitSuggestion s = f.suggest();
+  if (s.ok) {
+    w.key(FS_("suggest")).beginObject();
+    w.kv(FS_("rawMin"), static_cast<int32_t>(s.rawMin));
+    w.kv(FS_("rawMax"), static_cast<int32_t>(s.rawMax));
+    w.kv(FS_("inverted"), s.inverted);
+    w.key(FS_("r2")).value(s.r2, 3);
+    w.kv(FS_("bins"), static_cast<uint32_t>(s.bins));
+    w.endObject();
+  } else {
+    w.key(FS_("suggest")).null();
+  }
+  w.endObject();
+}
+
+/// Fehlermeldung für einen abgelehnten Kalibrierpunkt
+const char* calibrateMessage(Err e, bool scale) {
+  switch (e) {
+  case Err::NotReady:
+    return "Noch kein Messwert - erst messen";
+  case Err::OutOfRange:
+    return scale ? "Nass muss schwerer sein als trocken"
+                 : "Rohwert liegt jenseits der anderen Grenze - Invertierung prüfen";
+  case Err::Unsupported:
+    return "Kanal lässt sich so nicht kalibrieren";
+  default:
+    return "percent: 0 oder 100";
+  }
+}
+} // namespace
+
 void sensorsGet(WebContext& c, hal::Request& req, hal::Response& res, const char* rest) {
   if (req.method() == hal::HttpMethod::Patch) {
     sensorsPatch(c, req, res, rest);
@@ -410,6 +457,22 @@ void sensorsGet(WebContext& c, hal::Request& req, hal::Response& res, const char
     w.kv(FS_("measured"), c.sensors.measuredOnce(i));
     w.kv(FS_("lastMeasurement"), c.sensors.lastMeasurement(i).millis());
     w.kv(FS_("tare"), se.type == SensorType::Hx711);
+    if (se.type == SensorType::Hx711) {
+      w.kv(FS_("scaleRef"), c.sensors.scaleReferenceSet());
+      w.kv(FS_("scalePending"), c.sensors.scalePending());
+      const WateringDetector& wd = c.sensors.watering();
+      // nicht "watering": so heißt die Schwelle in der Konfiguration
+      w.key(FS_("lastWatering")).beginObject();
+      w.kv(FS_("settling"), wd.settling());
+      if (wd.watered()) {
+        w.kv(FS_("at"), wd.wateredAt().millis());
+        w.key(FS_("rise")).value(wd.lastRise(), 0);
+      } else {
+        w.key(FS_("at")).null();
+        w.key(FS_("rise")).null();
+      }
+      w.endObject();
+    }
     w.key(FS_("channels")).beginArray();
     for (uint8_t ch = 0; ch < se.channels; ch++) {
       const uint8_t slot = static_cast<uint8_t>(se.firstSlot + ch);
@@ -423,6 +486,8 @@ void sensorsGet(WebContext& c, hal::Request& req, hal::Response& res, const char
       schema::writeAll(w, schema::channelTable(), &sc.channels[slot]);
       w.kv(FS_("oneSided"), d.oneSided);
       w.kv(FS_("hasRaw"), d.hasRaw);
+      // Kalibrierpunkte 0 %/100 % aus dem aktuellen Wert (POST …/calibrate)
+      w.kv(FS_("calibrate"), d.hasRaw || (se.type == SensorType::Hx711 && ch == 1));
       w.key(FS_("validMin")).value(d.validMin, 1);
       w.key(FS_("validMax")).value(d.validMax, 1);
       w.key(FS_("value")).value(st.value, 2);
@@ -439,6 +504,9 @@ void sensorsGet(WebContext& c, hal::Request& req, hal::Response& res, const char
           w.key(FS_("rawObsMax")).null();
         }
       }
+      const SoilFit* fit = c.sensors.soilFit(slot);
+      if (fit && board::sensorIndexOf(SensorType::Hx711) >= 0)
+        writeSoilFit(w, *fit);
       w.endObject();
     }
     w.endArray();
@@ -471,6 +539,8 @@ void sensorsPatch(WebContext& c, hal::Request& req, hal::Response& res, const ch
 }
 
 /// POST /api/v1/sensors/<ID>/measure | /<ID>/<idx>/reset-extrema | /HX711/tare
+///      /HX711/scale-reference | /HX711/scale {"grams"} | /<ID>/<idx>/calibrate {"percent"}
+///      /ANALOG/<idx>/fit-apply | /ANALOG/<idx>/fit-reset
 void sensorsAction(WebContext& c, hal::Request& req, hal::Response& res, const char* rest) {
   char id[24];
   const char* slash = strchr(rest, '/');
@@ -502,19 +572,69 @@ void sensorsAction(WebContext& c, hal::Request& req, hal::Response& res, const c
     }
     return;
   }
-  if (strcmp(action, "tare") == 0) {
-    const Err e = c.sensors.tare(static_cast<uint8_t>(sensor), now);
-    if (e != Err::None)
+  if (strcmp(action, "tare") == 0 || strcmp(action, "scale-reference") == 0 ||
+      strcmp(action, "scale") == 0) {
+    Err e;
+    if (action[0] == 't') {
+      e = c.sensors.tare(static_cast<uint8_t>(sensor), now);
+    } else if (strcmp(action, "scale") == 0) {
+      JsonDocument doc;
+      if (!parseBody(req, res, doc))
+        return;
+      const float grams = doc["grams"] | NAN;
+      e = c.sensors.scaleCalibrate(static_cast<uint8_t>(sensor), grams, now);
+    } else {
+      e = c.sensors.scaleReference(static_cast<uint8_t>(sensor), now);
+    }
+    if (e == Err::OutOfRange)
+      sendError(res, 400, e, "grams: bekanntes Gewicht in g, größer als 0");
+    else if (e == Err::Busy)
+      sendError(res, 409, e, "Ausgangswert wird noch gemessen - kurz warten");
+    else if (e != Err::None)
       sendError(res, statusFor(e), e);
     else
       sendOk(res);
     return;
   }
-  // <idx>/reset-extrema
+  // <idx>/<aktion>
   char* end = nullptr;
   const long idx = strtol(action, &end, 10);
-  if (end && strcmp(end, "/reset-extrema") == 0 && idx >= 0 &&
-      idx < board::sensor(sensor).channels) {
+  if (!end || end == action || idx < 0 || idx >= board::sensor(sensor).channels) {
+    sendError(res, 404, Err::NotFound);
+    return;
+  }
+  const uint8_t slot = static_cast<uint8_t>(board::sensor(sensor).firstSlot + idx);
+  if (strcmp(end, "/calibrate") == 0) {
+    JsonDocument doc;
+    if (!parseBody(req, res, doc))
+      return;
+    const int percent = doc["percent"] | -1;
+    const Err e = percent == 0 || percent == 100
+                      ? c.sensors.calibratePoint(slot, static_cast<uint8_t>(percent), now)
+                      : Err::InvalidArgument;
+    if (e != Err::None) {
+      sendError(res, statusFor(e), e,
+                calibrateMessage(e, board::sensor(sensor).type == SensorType::Hx711));
+      return;
+    }
+    pushEvent(c, EventType::SensorConfigChanged, 0xFF, 1u << sensor);
+    sendOk(res);
+    return;
+  }
+  const bool apply = strcmp(end, "/fit-apply") == 0;
+  if (apply || strcmp(end, "/fit-reset") == 0) {
+    const Err e = apply ? c.sensors.applySoilFit(slot, now) : c.sensors.resetSoilFit(slot, now);
+    if (e != Err::None) {
+      sendError(res, statusFor(e), e,
+                e == Err::NotReady ? "Noch zu wenige Daten für einen Vorschlag" : nullptr);
+      return;
+    }
+    if (apply)
+      pushEvent(c, EventType::SensorConfigChanged, 0xFF, 1u << sensor);
+    sendOk(res);
+    return;
+  }
+  if (strcmp(end, "/reset-extrema") == 0) {
     bool raw = false;
     if (req.body() && req.bodyLength()) {
       JsonDocument doc;
@@ -522,7 +642,7 @@ void sensorsAction(WebContext& c, hal::Request& req, hal::Response& res, const c
         return;
       raw = doc["raw"] | false;
     }
-    c.sensors.resetExtrema(static_cast<uint8_t>(board::sensor(sensor).firstSlot + idx), raw, now);
+    c.sensors.resetExtrema(slot, raw, now);
     sendOk(res);
     return;
   }

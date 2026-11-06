@@ -20,7 +20,7 @@ const SensorInfo kInfo[kSensorTypeCount] PS_PROGMEM = {
     {"DS18B20", ResOneWire, 8, 60, 0, 0, 0, 1500, 3},
     {"SDS011", ResSoftUart, 2, 600, 0, 30000, 1000, 1500, 3},
     {"MHZ19", ResNone, 1, 60, 180000, 0, 2000, 3000, 3},
-    {"HX711", ResNone, 1, 60, 0, 0, 100, 1000, 3},
+    {"HX711", ResNone, 2, 60, 0, 0, 100, 2500, 3},
     {"BMP280", ResI2c, 2, 60, 0, 0, 100, 200, 3},
     {"SERIAL_RECEIVER", ResSoftUart, 7, 60, 0, 0, 0, 30000, 1},
 };
@@ -84,9 +84,12 @@ const ChannelDef kMhz19[1] PS_PROGMEM = {
      0},
 };
 
-const ChannelDef kHx711[1] PS_PROGMEM = {
+// Kanal 1 rechnet der Sensordienst aus Kanal 0 und Nass-/Trockengewicht.
+const ChannelDef kHx711[2] PS_PROGMEM = {
     {"gewicht", "Gewicht", "g", -1e7f, 1e7f, LIM(0, 10, 5000, 10000), false, false, 0, 0, false, F,
      1, 0},
+    {"wasservorrat", "Wasservorrat", "%", 0, 100, LIM(10, 25, 100, 100), false, false, 0, 0, false,
+     H, 1, 0},
 };
 
 const ChannelDef kBmp280[2] PS_PROGMEM = {
@@ -133,7 +136,7 @@ Table table(SensorType t) {
   case SensorType::Mhz19:
     return {kMhz19, 1};
   case SensorType::Hx711:
-    return {kHx711, 1};
+    return {kHx711, 2};
   case SensorType::Bmp280:
     return {kBmp280, 2};
   case SensorType::SerialReceiver:

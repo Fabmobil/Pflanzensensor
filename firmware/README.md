@@ -161,6 +161,38 @@ die API antwortet mit 401 ohne `WWW-Authenticate`. Geschützt: `/api/v1/config`
 
 Fehlerformat: `{"ok":false,"error":"<code>","message":"…","fields":{…}}`.
 
+## Waage und Bodenfeuchte kalibrieren
+
+Die Waage (HX711) hat zwei Kanäle: `HX711_0` Gewicht in g und `HX711_1`
+Wasservorrat in % zwischen Trocken- und Nassgewicht (Sensorfelder `dry`/`wet`,
+`core/sensors/water.h`). Der Wasservorrat ist ab Werk aus; den ersten
+Kalibrierpunkt zu setzen schaltet ihn ein. Alle Aktionen sind
+`POST /api/v1/sensors/…` und stehen auch auf der Sensorseite:
+
+| Aktion | Wirkung |
+|---|---|
+| `HX711/tare` | Rohwert der nächsten Messung wird Nullpunkt (Waage leer) |
+| `HX711/scale-reference` | Rohwert der nächsten Messung als Ausgangswert merken (Topf darf stehen bleiben) |
+| `HX711/scale {"grams":G}` | nächste Messung: Skalierung = (Rohwert − Ausgangswert bzw. Nullpunkt) / G |
+| `<ID>/<idx>/calibrate {"percent":0\|100}` | Analog: letzter Rohwert wird Rohgrenze, Autokalibrierung aus. `HX711/1`: aktuelles Gewicht wird Trocken- bzw. Nassgewicht |
+| `ANALOG/<idx>/fit-apply`, `…/fit-reset` | Rohgrenzen aus den Lerndaten übernehmen bzw. Lerndaten löschen |
+
+Tara und Skalierung zählen nur Messungen, die nach der Anforderung begonnen
+haben. Der Treiber mittelt je Runde bis zu 8 Wandlungen (Median aus 3 Runden),
+Tara und Skalierung nehmen den Mittelwert der ganzen Messung.
+
+Gießen erkennt der Sensordienst an einem Anstieg um `watering` g (Standard 50,
+0 = aus) gegen das kleinste der letzten fünf Gewichte. Nach 60 min Abtropfen
+hebt er das Nassgewicht an, wenn der Topf schwerer ist (`autoWet`), z. B. weil
+die Pflanze gewachsen ist; gesenkt wird es nie automatisch.
+
+Ein Analogkanal mit `learn` sammelt seine Rohwerte je 10 % Wasservorrat
+(gleitender Mittelwert, nicht beim Abtropfen, nur bei höchstens zwei
+Messintervalle altem Wasservorrat). Aus mindestens drei Bereichen mit je drei
+Messungen, die 30 % überspannen, schlägt er per Ausgleichsgerade Rohgrenzen
+für 0 % und 100 % vor, samt R² (nahe 1: Sensor ist linear). Die Lerndaten
+liegen in `/state.bin` (ab Version 3; Version 1 und 2 werden weiter gelesen).
+
 ## Entscheidungen aus den offenen Punkten
 
 - **O3 (OTA ohne Update-Modus):** Upload im Normalbetrieb. Sensoren werden

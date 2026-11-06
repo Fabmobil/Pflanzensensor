@@ -50,6 +50,26 @@ public:
   void resetExtrema(uint8_t slot, bool raw, Instant now);
   /// HX711: aktuellen Rohwert als Nullpunkt übernehmen (nächste Messung)
   Err tare(uint8_t sensor, Instant now);
+  /// HX711: Rohwert der nächsten Messung als Ausgangswert für scaleCalibrate
+  /// merken (Topf darf auf der Waage stehen bleiben)
+  Err scaleReference(uint8_t sensor, Instant now);
+  /**
+   * @brief HX711: Skalierung aus einem bekannten Gewicht (nächste Messung)
+   * @details Skalierung = (Rohwert − Ausgangswert) / grams. Ausgangswert ist
+   *          der mit scaleReference gemerkte Rohwert, sonst der Nullpunkt.
+   */
+  Err scaleCalibrate(uint8_t sensor, float grams, Instant now);
+  /**
+   * @brief Aktuellen Messwert als 0 % bzw. 100 % übernehmen
+   * @details Analog: Rohwert wird zur passenden Rohgrenze, Autokalibrierung
+   *          aus. HX711 Kanal 1 (Wasservorrat): aktuelles Gewicht wird
+   *          Trocken- bzw. Nassgewicht, der Kanal wird eingeschaltet.
+   */
+  Err calibratePoint(uint8_t slot, uint8_t percent, Instant now);
+  /// Analog: Vorschlag aus den Lerndaten übernehmen (Rohgrenzen, Invertierung)
+  Err applySoilFit(uint8_t slot, Instant now);
+  /// Analog: Lerndaten verwerfen
+  Err resetSoilFit(uint8_t slot, Instant now);
   void pause(bool paused) { sched_.pause(paused); }
 
   // Lesen
@@ -61,6 +81,15 @@ public:
   Instant lastMeasurement(uint8_t sensor) const { return lastOk_[sensor].at; }
   bool allMeasuredOnce() const;
   uint8_t processedSensors() const;
+  /// Lerndaten eines Analogkanals, sonst nullptr
+  const SoilFit* soilFit(uint8_t slot) const;
+  const WateringDetector& watering() const { return water_; }
+  /// HX711: Ausgangswert für die Skalierung gemerkt bzw. angefordert
+  bool scaleReferenceSet() const { return hasRef_ || pendingRef_; }
+  /// HX711: Tara oder Skalierung wartet auf die nächste Messung
+  bool scalePending() const { return pendingTare_ != 0 || pendingRef_ || !isnan(pendingGrams_); }
+  /// Aktueller Wasservorrat in %, NaN wenn unbekannt, veraltet oder beim Abtropfen
+  float currentWater(Instant now) const;
   /// Sensor-Index eines Typs/einer ID ("ANALOG") oder -1
   static int sensorByName(const char* id);
 
@@ -76,6 +105,11 @@ private:
   /// Messwert eines Kanals für das Log ("17.2 %", "--")
   void logResult(uint8_t slot, float value, int16_t raw, ChannelStatus before, ChannelStatus after,
                  bool newMin, bool newMax);
+  /// HX711 nach der Messung: Gießen erkennen, Tara und Skalierung übernehmen.
+  /// true, wenn die Konfiguration geändert wurde.
+  bool afterScale(uint8_t sensor, float weight, Instant now);
+  /// Sofortmessung für eine HX711-Aktion anfordern (Ergebnis in afterScale)
+  Err requestScaleAction(uint8_t sensor, Instant now);
   Instant jobStart_[board::kMaxSensors];
   uint8_t failuresBefore_[board::kMaxSensors] = {};
   static_assert(board::kMaxSlots <= 32, "clampWarned_ ist eine 32-Bit-Maske");
@@ -91,6 +125,14 @@ private:
     Instant at;
   } lastOk_[board::kMaxSensors];
   uint32_t pendingTare_ = 0;
+  bool pendingRef_ = false;
+  float pendingGrams_ = NAN;
+  Instant pendingAt_;   ///< erst Messungen, die danach begannen, zählen
+  bool hasRef_ = false; ///< refCounts_ gilt
+  int32_t refCounts_ = 0;
+  WateringDetector water_;
+  float seenScale_ = NAN; ///< Skalierung/Tara der letzten Gießprüfung
+  int32_t seenTare_ = 0;
   RequestThrottle publicThrottle_{2000};
   RestartGate restartGate_ = nullptr;
   void* restartCtx_ = nullptr;

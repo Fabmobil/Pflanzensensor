@@ -120,9 +120,9 @@ void test_shared_vectors() {
 }
 
 void test_layout_follows_hardware() {
-  // Voreinstellung des Testprofils: alle Sensoren
+  // Voreinstellung des Testprofils: alle Sensoren (HX711 mit Gewicht und Wasservorrat)
   TEST_ASSERT_EQUAL(8, board::sensorCount());
-  TEST_ASSERT_EQUAL(19, board::slotCount());
+  TEST_ASSERT_EQUAL(20, board::slotCount());
   // PCB-Hardware: ANALOG (2) und DHT (2)
   Hardware h = pcb();
   TEST_ASSERT_EQUAL(HwProblem::None, board::setHardware(h).problem);
@@ -455,7 +455,7 @@ void test_provision_service_invalid_hardware_keeps_default() {
   TEST_ASSERT_FALSE(p.fromWebflasher());
   TEST_ASSERT_EQUAL(HwProblem::DuplicatePin, p.hardwareProblem().problem);
   TEST_ASSERT_EQUAL_STRING("native", board::name());
-  TEST_ASSERT_EQUAL(19, board::slotCount());
+  TEST_ASSERT_EQUAL(20, board::slotCount());
   // Ohne applySettings(): zweiter Aufruf und Destruktor geben den Block frei
   // (der Sanitizer-Lauf meldet sonst ein Leck)
   p.loadHardware();

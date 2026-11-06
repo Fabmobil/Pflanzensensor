@@ -5,6 +5,7 @@
  */
 #include "app/boot_guard.h"
 #include "core/display/screens.h"
+#include "core/util/crc.h"
 #include "services/improv_service.h"
 #include "services/led_service.h"
 #include "services/log_service.h"
@@ -415,6 +416,38 @@ void test_state_store() {
   TEST_ASSERT_FALSE(u.load());
 }
 
+void test_state_store_soil_fit_and_v2() {
+  native::MemFs fs;
+  StateStore s(fs);
+  s.channel(1).value = 42;
+  for (int i = 0; i < 4; i++)
+    s.soilFit(1).add(55, 480);
+  s.soilFit(0).add(5, 900);
+  TEST_ASSERT_TRUE(s.save());
+  StateStore t(fs);
+  TEST_ASSERT_TRUE(t.load());
+  TEST_ASSERT_EQUAL(4, t.soilFit(1).n[5]);
+  TEST_ASSERT_EQUAL_FLOAT(480, t.soilFit(1).raw[5]);
+  TEST_ASSERT_EQUAL(1, t.soilFit(0).n[0]);
+  TEST_ASSERT_TRUE(t.soilFit(2).empty());
+  // Datei der Version 2 (ohne Lerndaten) wird weiter gelesen
+  std::string v3(fs.files_[StateStore::kPath].begin(), fs.files_[StateStore::kPath].end());
+  const size_t header = 4 + 1 + 1 + 4 + 4 + 4; // bis zur Layout-Prüfsumme
+  const size_t records = board::slotCount() * 26u;
+  std::string v2 = v3.substr(0, header) + v3.substr(header + 1, records);
+  v2[4] = 2;
+  const uint32_t crc = crc::crc32(reinterpret_cast<const uint8_t*>(v2.data()), v2.size());
+  v2.append(reinterpret_cast<const char*>(&crc), 4);
+  fs.files_[StateStore::kPath].assign(v2.begin(), v2.end());
+  StateStore u(fs);
+  TEST_ASSERT_TRUE(u.load());
+  TEST_ASSERT_EQUAL_FLOAT(42, u.channel(1).value);
+  TEST_ASSERT_TRUE(u.soilFit(1).empty());
+  // clear() verwirft auch die Lerndaten
+  t.clear();
+  TEST_ASSERT_TRUE(t.soilFit(1).empty());
+}
+
 void test_led_logic() {
   bool g, y, r;
   LedService::lights(ChannelStatus::Green, false, g, y, r);
@@ -497,6 +530,7 @@ int main() {
   RUN_TEST(test_improv_unreachable_network);
   RUN_TEST(test_boot_guard);
   RUN_TEST(test_state_store);
+  RUN_TEST(test_state_store_soil_fit_and_v2);
   RUN_TEST(test_led_logic);
   RUN_TEST(test_display_renderers);
   RUN_TEST(test_template_store);

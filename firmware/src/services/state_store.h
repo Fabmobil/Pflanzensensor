@@ -11,6 +11,7 @@
 
 #include "board.h"
 #include "core/sensors/channel.h"
+#include "core/sensors/water.h"
 #include "hal/fs.h"
 
 namespace ps {
@@ -29,6 +30,9 @@ public:
 
   ChannelState& channel(uint8_t slot) { return ch_[slot]; }
   const ChannelState& channel(uint8_t slot) const { return ch_[slot]; }
+  /// Lerndaten des Analogkanals idx (Kanalindex des Sensors ANALOG)
+  SoilFit& soilFit(uint8_t idx) { return fit_[idx]; }
+  const SoilFit& soilFit(uint8_t idx) const { return fit_[idx]; }
 
   /// Wert geändert (normaler Takt) bzw. Extremwerte/Kalibrierung geändert
   void markDirty(Instant now) {
@@ -58,6 +62,7 @@ public:
 private:
   hal::Fs& fs_;
   ChannelState ch_[board::kMaxSlots];
+  SoilFit fit_[board::kMaxChannelsPerSensor];
   uint32_t mailLastWarning_ = 0;
   uint32_t mailLastAlive_ = 0;
   bool dirty_ = false;

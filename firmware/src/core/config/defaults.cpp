@@ -102,6 +102,11 @@ void sensorDefaults(SensorsConfig& c) {
       ch.inverted = d.inverted;
     }
   }
+  // Wasservorrat erst einschalten, wenn Nass- und Trockengewicht bekannt sind
+  // (Kalibrierpunkt setzen schaltet ihn ein)
+  const int hx = board::sensorIndexOf(SensorType::Hx711);
+  if (hx >= 0 && board::sensor(hx).channels > 1)
+    c.channels[board::sensor(hx).firstSlot + 1].enabled = false;
 #if defined(PS_LOCAL_DEFAULTS)
   local_defaults::sensors(c);
 #endif
