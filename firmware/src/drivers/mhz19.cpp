@@ -19,10 +19,15 @@ volatile uint32_t g_fallUs = 0;
 volatile uint32_t g_highUs = 0;
 volatile uint32_t g_lowUs = 0;
 volatile uint32_t g_cycles = 0;
+/// Pin als Kopie im RAM: Die ISR darf nichts aus dem Flash aufrufen.
+/// board::pins() führt über hardware()/layout() in Flash-Code; feuert eine
+/// Flanke, während die Firmware Flash schreibt (Log, Konfiguration, Chronik),
+/// ist der Flash-Cache aus und der ESP8266 stürzt ohne Meldung ab.
+uint8_t g_pin = 0;
 
 void IRAM_ATTR onEdge() {
-  const uint32_t t = micros();
-  if (digitalRead(board::pins().mhz19Pwm)) {
+  const uint32_t t = micros(); // IRAM im ESP8266-Core
+  if (digitalRead(g_pin)) {    // IRAM im ESP8266-Core
     if (g_fallUs) {
       g_lowUs = t - g_fallUs;
       g_cycles++; // Zyklus vollständig: High gefolgt von Low
@@ -38,8 +43,9 @@ void IRAM_ATTR onEdge() {
 
 Step Mhz19::begin(Instant) {
   if (!attached_) {
-    pinMode(board::pins().mhz19Pwm, INPUT);
-    attachInterrupt(digitalPinToInterrupt(board::pins().mhz19Pwm), onEdge, CHANGE);
+    g_pin = static_cast<uint8_t>(board::pins().mhz19Pwm);
+    pinMode(g_pin, INPUT);
+    attachInterrupt(digitalPinToInterrupt(g_pin), onEdge, CHANGE);
     attached_ = true;
   }
   return Step::Ok;
