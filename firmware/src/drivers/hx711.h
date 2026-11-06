@@ -16,7 +16,10 @@ public:
   Step begin(Instant now) override;
   Step wake(Instant now) override;
   Step pollRound(Instant now, Reading* out, uint8_t n) override;
-  void sleep() override;
+  // Kein sleep(): Der HX711 bleibt dauerhaft an. Mit power_down() zwischen
+  // den Messungen schwankte der Wert von Messung zu Messung um einige Gramm
+  // (vermutlich braucht die Messbrücke nach dem Einschalten länger als eine
+  // Messung, bis sie stabil ist). Kostet am Netzteil nur ein paar mA.
   void configure(const SensorConfig& c) override {
     scale_ = c.scale;
     tare_ = c.tare;

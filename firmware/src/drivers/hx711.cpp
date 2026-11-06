@@ -28,7 +28,7 @@ Step Hx711::begin(Instant) {
 }
 
 Step Hx711::wake(Instant) {
-  scale().power_up();
+  scale().power_up(); // ohne Wirkung, solange er an ist (kein sleep())
   return Step::Ok;
 }
 
@@ -42,8 +42,6 @@ Step Hx711::pollRound(Instant, Reading* out, uint8_t n) {
     out[0].value = static_cast<float>(raw - tare_) / scale_;
   return Step::Ok;
 }
-
-void Hx711::sleep() { scale().power_down(); }
 
 } // namespace drivers
 } // namespace ps
